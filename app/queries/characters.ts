@@ -1,8 +1,11 @@
-import { defineQueryOptions } from '@pinia/colada'
+import {
+  characterEsiPersistence,
+  defineEsiQueryOptions,
+} from '@eve-space/platform-module-nuxt/runtime'
 import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
 import { toApiQueryError } from '../utils/query-error'
-import { PRIVATE_QUERY_KEYS, PUBLIC_QUERY_KEYS } from './query-keys'
+import { PRIVATE_QUERY_KEYS } from './query-keys'
 import { QUERY_POLICY } from './query-policy'
 
 type CharacterRosterResponse = InferResponseType<ApiClient['api']['me']['characters']['$get'], 200>
@@ -33,7 +36,7 @@ interface CharacterQueryParameters {
   characterId: number
 }
 
-export const characterRosterQuery = defineQueryOptions((apiClient: ApiClient) => ({
+export const characterRosterQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
   key: PRIVATE_QUERY_KEYS.roster(),
   query: async ({ signal }) => {
     const response = await apiClient.api.me.characters.$get(undefined, { init: { signal } })
@@ -43,11 +46,12 @@ export const characterRosterQuery = defineQueryOptions((apiClient: ApiClient) =>
     return response.json()
   },
   ...QUERY_POLICY.characterRoster,
+  esiPersistence: { kind: 'none' },
 }))
 
-export const publicCharacterQuery = defineQueryOptions(
+export const publicCharacterQuery = defineEsiQueryOptions(
   ({ apiClient, characterId }: CharacterQueryParameters) => ({
-    key: PUBLIC_QUERY_KEYS.character(characterId),
+    key: PRIVATE_QUERY_KEYS.characterRecord(characterId),
     query: async ({ signal }) => {
       const response = await apiClient.api.characters[':characterId'].$get(
         { param: { characterId: String(characterId) } },
@@ -59,11 +63,11 @@ export const publicCharacterQuery = defineQueryOptions(
       return response.json() as Promise<PublicCharacterResponse>
     },
     ...QUERY_POLICY.character,
-    ssrCatchError: true,
+    esiPersistence: { kind: 'none' },
   }),
 )
 
-export const characterOverviewQuery = defineQueryOptions(
+export const characterOverviewQuery = defineEsiQueryOptions(
   ({ apiClient, characterId }: CharacterQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterOverview(characterId),
     query: async ({ signal }) => {
@@ -77,10 +81,11 @@ export const characterOverviewQuery = defineQueryOptions(
       return response.json()
     },
     ...QUERY_POLICY.characterOverview,
+    esiPersistence: characterEsiPersistence(characterId),
   }),
 )
 
-export const characterAttributesQuery = defineQueryOptions(
+export const characterAttributesQuery = defineEsiQueryOptions(
   ({ apiClient, characterId }: CharacterQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterAttributes(characterId),
     query: async ({ signal }) => {
@@ -94,10 +99,11 @@ export const characterAttributesQuery = defineQueryOptions(
       return response.json()
     },
     ...QUERY_POLICY.characterAttributes,
+    esiPersistence: characterEsiPersistence(characterId),
   }),
 )
 
-export const characterSkillsQuery = defineQueryOptions(
+export const characterSkillsQuery = defineEsiQueryOptions(
   ({ apiClient, characterId }: CharacterQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterSkills(characterId),
     query: async ({ signal }) => {
@@ -111,10 +117,11 @@ export const characterSkillsQuery = defineQueryOptions(
       return response.json()
     },
     ...QUERY_POLICY.characterSkills,
+    esiPersistence: characterEsiPersistence(characterId),
   }),
 )
 
-export const characterSkillQueueQuery = defineQueryOptions(
+export const characterSkillQueueQuery = defineEsiQueryOptions(
   ({ apiClient, characterId }: CharacterQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterSkillQueue(characterId),
     query: async ({ signal }) => {
@@ -128,10 +135,11 @@ export const characterSkillQueueQuery = defineQueryOptions(
       return response.json()
     },
     ...QUERY_POLICY.characterSkillQueue,
+    esiPersistence: characterEsiPersistence(characterId),
   }),
 )
 
-export const characterHistoryQuery = defineQueryOptions(
+export const characterHistoryQuery = defineEsiQueryOptions(
   ({ apiClient, characterId }: CharacterQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterHistory(characterId),
     query: async ({ signal }) => {
@@ -145,5 +153,6 @@ export const characterHistoryQuery = defineQueryOptions(
       return response.json()
     },
     ...QUERY_POLICY.characterHistory,
+    esiPersistence: characterEsiPersistence(characterId),
   }),
 )

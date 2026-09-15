@@ -112,17 +112,28 @@ describe('query infrastructure', () => {
     expect(error.retryAfterSeconds).toBeUndefined()
   })
 
-  it('bounds transient retries and excludes application responses', () => {
+  it('bounds transient retries', () => {
     expect(shouldRetryQuery(0, new TypeError('network'))).toBe(true)
     expect(shouldRetryQuery(1, new ApiQueryError('Gateway', { status: 502 }))).toBe(true)
     expect(shouldRetryQuery(2, new TypeError('network'))).toBe(false)
 
-    for (const status of [400, 401, 403, 404, 422, 429]) {
-      expect(shouldRetryQuery(0, new ApiQueryError('Application response', { status }))).toBe(false)
-    }
-
     expect(queryRetryDelay(0)).toBe(500)
     expect(queryRetryDelay(1)).toBe(1_000)
+  })
+
+  it.each([
+    ['authentication', 401, 'AUTH_REQUIRED'],
+    ['authorization', 403, 'ORGANIZATION_PERMISSION_REQUIRED'],
+    ['scope', 403, 'EVE_SCOPE_REQUIRED'],
+    ['validation', 422, 'VALIDATION_FAILED'],
+    ['not-found', 404, 'CHARACTER_NOT_FOUND'],
+    ['quota', 429, 'QUOTA_EXHAUSTED'],
+    ['invalid ESI response', 502, 'ESI_RESPONSE_INVALID'],
+    ['other controlled', 409, 'CONFLICT'],
+  ])('does not retry %s outcomes', (_classification, status, code) => {
+    expect(shouldRetryQuery(0, new ApiQueryError('Controlled response', { code, status }))).toBe(
+      false,
+    )
   })
 
   it('performs at most two retry attempts for an active transient query', async () => {
@@ -133,7 +144,6 @@ describe('query infrastructure', () => {
         useQuery({
           key: ['test', 'retry-limit'],
           query,
-          retry: { retry: shouldRetryQuery, delay: 0 },
         })
         return () => h('span')
       },
@@ -155,7 +165,6 @@ describe('query infrastructure', () => {
         useQuery({
           key: ['test', 'quota'],
           query,
-          retry: { retry: shouldRetryQuery, delay: 0 },
         })
         return () => h('span')
       },

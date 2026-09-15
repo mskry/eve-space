@@ -13,3 +13,9 @@ declare module '#build/eve-space-platform/navigation' {
   export const platformNavigation: readonly import('../src/runtime/navigation.js').PlatformNavigationEntry[]
   export const platformPageMetadata: readonly import('../src/runtime/navigation.js').PlatformPageMetadata[]
 }
+
+declare module '#build/eve-space-platform/query-admission-scopes' {
+  export const platformQueryAdmissionScopes: readonly (import('@eve-space/platform-module-contract').PlatformQueryAdmissionScopeDescriptor & {
+    readonly moduleId: string
+  })[]
+}

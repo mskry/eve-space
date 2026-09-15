@@ -102,8 +102,8 @@ describe('authorized snapshot reads', () => {
 })
 
 describe('activity routes behind host authorization', () => {
-  function app() {
-    const cap = capabilities()
+  function app(status = 'current', failure: string | null = null) {
+    const cap = capabilities(status, failure)
     const server = new Hono()
       .use('*', (c, next) => {
         c.set(
@@ -171,4 +171,31 @@ describe('activity routes behind host authorization', () => {
       expect(await response.json()).toMatchObject({ organizationVersion: 7, activity: { id } })
     },
   )
+
+  test('normalizes stale detail and participation metadata onto each response root', async () => {
+    const { server } = app('stale', 'esi-unavailable')
+
+    const detail = await server.request(`/details/job/${id}`)
+    const participation = await server.request(`/participation/job/${id}`)
+
+    await expect(detail.json()).resolves.toMatchObject({
+      stale: true,
+      validatedAt: '2026-09-07T10:00:00Z',
+      refreshFailureClass: 'esi-unavailable',
+    })
+    await expect(participation.json()).resolves.toMatchObject({
+      stale: true,
+      validatedAt: '2026-09-07T10:00:00Z',
+      refreshFailureClass: 'esi-unavailable',
+    })
+  })
+
+  test('does not invent a success timestamp for unavailable collection data', async () => {
+    const { server } = app('unavailable')
+
+    const body = await (await server.request(`/details/job/${id}`)).json()
+
+    expect(body).toMatchObject({ stale: false, activity: null, objectives: [] })
+    expect(body).not.toHaveProperty('validatedAt')
+  })
 })

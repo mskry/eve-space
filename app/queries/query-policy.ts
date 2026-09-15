@@ -14,15 +14,42 @@ export const QUERY_POLICY = {
   characterImplants: { staleTime: 120_000, gcTime: QUERY_GC_TIME },
   characterHistory: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
   characterAssets: { staleTime: 60 * 60_000, gcTime: QUERY_GC_TIME },
-  characterAssetRoutes: { staleTime: 60 * 60_000, gcTime: QUERY_GC_TIME },
-  characterFinanceBalance: { staleTime: 2 * 60_000, gcTime: QUERY_GC_TIME },
-  characterFinanceJournal: { staleTime: 60 * 60_000, gcTime: QUERY_GC_TIME },
-  characterFinanceTransactions: { staleTime: 60 * 60_000, gcTime: QUERY_GC_TIME },
-  characterFinanceOpenOrders: { staleTime: 20 * 60_000, gcTime: QUERY_GC_TIME },
-  characterFinanceOrderHistory: { staleTime: 60 * 60_000, gcTime: QUERY_GC_TIME },
-  characterFinanceContracts: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
-  characterFinanceContractItems: { staleTime: 60 * 60_000, gcTime: QUERY_GC_TIME },
-  characterFinanceContractBids: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
+  characterAssetRoutes: {
+    staleTime: 60 * 60_000,
+    gcTime: QUERY_GC_TIME,
+  },
+  characterFinanceBalance: {
+    staleTime: 2 * 60_000,
+    gcTime: QUERY_GC_TIME,
+  },
+  characterFinanceJournal: {
+    staleTime: 60 * 60_000,
+    gcTime: QUERY_GC_TIME,
+  },
+  characterFinanceTransactions: {
+    staleTime: 60 * 60_000,
+    gcTime: QUERY_GC_TIME,
+  },
+  characterFinanceOpenOrders: {
+    staleTime: 20 * 60_000,
+    gcTime: QUERY_GC_TIME,
+  },
+  characterFinanceOrderHistory: {
+    staleTime: 60 * 60_000,
+    gcTime: QUERY_GC_TIME,
+  },
+  characterFinanceContracts: {
+    staleTime: 5 * 60_000,
+    gcTime: QUERY_GC_TIME,
+  },
+  characterFinanceContractItems: {
+    staleTime: 60 * 60_000,
+    gcTime: QUERY_GC_TIME,
+  },
+  characterFinanceContractBids: {
+    staleTime: 5 * 60_000,
+    gcTime: QUERY_GC_TIME,
+  },
   mailHeaders: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
   mailDetail: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
   mailLabels: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
@@ -34,8 +61,14 @@ export const QUERY_POLICY = {
   organizationAudit: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
   organizationRoles: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
   organizationRosterCoverage: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
-  mailRecipientResolution: { staleTime: 60 * 60_000, gcTime: QUERY_GC_TIME },
-  mailRecipientSearch: { staleTime: 60 * 60_000, gcTime: QUERY_GC_TIME },
+  mailRecipientResolution: {
+    staleTime: 60 * 60_000,
+    gcTime: QUERY_GC_TIME,
+  },
+  mailRecipientSearch: {
+    staleTime: 60 * 60_000,
+    gcTime: QUERY_GC_TIME,
+  },
   corporation: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
   corporationAllianceHistory: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
   staticTypeDetail: { staleTime: 24 * 60 * 60_000, gcTime: QUERY_GC_TIME },

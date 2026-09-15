@@ -9,7 +9,7 @@ const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const queryCache = useQueryCache()
-const { authLoading, authSession, initializeAuth } = useAuthSession(apiClient)
+const { authLoading, authSession, authUnavailable, initializeAuth } = useAuthSession(apiClient)
 const {
   attachCharacter,
   characters,
@@ -145,6 +145,21 @@ useHead({ title: 'Characters // EVE Space' })
     <UiStatePanel v-if="authLoading" compact role="status">
       <template #icon><div class="app-scanner" aria-hidden="true" /></template>
       <p>Verifying account identity...</p>
+    </UiStatePanel>
+    <UiStatePanel
+      v-else-if="authUnavailable"
+      code="ERR / SESSION"
+      title="Session unavailable"
+      compact
+      role="alert"
+      tone="error"
+    >
+      <p>EVE Space could not verify your session. Character data remains locked.</p>
+      <template #action>
+        <button class="ui-action-secondary" type="button" @click="initializeAuth(true)">
+          RETRY UPLINK
+        </button>
+      </template>
     </UiStatePanel>
     <section v-else-if="!authSession.authenticated" class="access-locked-panel">
       <span class="access-locked-icon"><AppIcon name="auth" /></span>

@@ -1,4 +1,4 @@
-import { useQuery } from '@pinia/colada'
+import { useQuery, type QueryCache, type UseQueryEntry } from '@pinia/colada'
 import { flushPromises } from '@vue/test-utils'
 import { defineComponent, h, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -12,6 +12,7 @@ import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 describe('query prefetching and hooks', () => {
   it('opts the production session query into the centralized error policy', () => {
     expect(authSessionQuery(createApiClient('http://localhost')).meta).toEqual({
+      esiPersistence: { kind: 'none' },
       globalErrorMessage: 'Session verification is unavailable.',
     })
   })
@@ -50,6 +51,24 @@ describe('query prefetching and hooks', () => {
     wrapper.unmount()
   })
 
+  it('preserves the ensure-options then refresh-entry prefetch flow', async () => {
+    const options = { key: ['test', 'prefetch-flow'] as const, query: async () => 'value' }
+    const entry = { key: options.key } as UseQueryEntry<string>
+    const refreshResult = Promise.resolve({
+      data: 'value',
+      error: null,
+      status: 'success',
+    } as const)
+    const queryCache = {
+      ensure: vi.fn(() => entry),
+      refresh: vi.fn(() => refreshResult),
+    } as unknown as QueryCache
+
+    await expect(prefetchQuery(queryCache, options)).resolves.toMatchObject({ data: 'value' })
+    expect(queryCache.ensure).toHaveBeenCalledWith(options)
+    expect(queryCache.refresh).toHaveBeenCalledWith(entry)
+  })
+
   it('skips protected prefetch without a browser identity', async () => {
     const query = vi.fn().mockResolvedValue({ name: 'Private' })
     const options = { key: ['private', 'test'] as const, query }
@@ -66,9 +85,10 @@ describe('query prefetching and hooks', () => {
     await prefetchProtectedQuery(queryCache, options, { ...allowed, authenticationReady: false }, 7)
     await prefetchProtectedQuery(queryCache, options, { ...allowed, authenticated: false }, 7)
     await prefetchProtectedQuery(queryCache, options, { ...allowed, ownsCharacter: false }, 7)
-    await prefetchProtectedQuery(queryCache, options, allowed)
-
     expect(query).not.toHaveBeenCalled()
+
+    await prefetchProtectedQuery(queryCache, options, allowed, 7)
+    expect(query).toHaveBeenCalledOnce()
     wrapper.unmount()
   })
 

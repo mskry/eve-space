@@ -1,68 +1,56 @@
 // @vitest-environment node
 
 import { $fetch, createPage, setup, useTestContext } from '@nuxt/test-utils/e2e'
+import { expect as expectPage, type BrowserContext, type Page } from '@playwright/test'
+import type { IncomingMessage } from 'node:http'
 import { fileURLToPath } from 'node:url'
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { startCorsJsonApi } from '../support/cors-json-api'
 
+const DATABASE_NAME = 'eve-space-query-cache'
+const DATABASE_VERSION = 1
+const OBJECT_STORE_NAME = 'query-cache'
+const PERSISTED_CACHE_KEY = 'eve-space-esi-query-cache'
+const INVALIDATION_CONTROL_KEY = 'eve-space-esi-query-cache-control'
+const PUBLIC_QUERY_KEY = ['public', 'e2e', 'query-persistence'] as const
+const PRIVATE_QUERY_KEY = ['private', 'characters', 7, 'overview'] as const
+const PUBLIC_FIXTURE_PATH = '/__e2e/query-persistence'
+
 let apiAvailable = false
-const apiServer = await startCorsJsonApi((request) => {
-  if (apiAvailable) {
-    if (request.url === '/auth/session')
-      return {
-        body: {
-          authenticated: true,
-          account: { userId: 'test-user', mainCharacter: { characterId: 7, name: 'Test Pilot' } },
-        },
-      }
-    else if (request.url === '/auth/config')
-      return { body: { configured: false, loginUrl: '', attachUrl: '' } }
-    else if (request.url === '/api/admin/session') return { body: { authenticated: false } }
-    else if (request.url === '/api/me/characters') return { body: { characters: [] } }
-    else if (request.url === '/api/status')
-      return {
-        body: {
-          status: 'operational',
-          checkedAt: '2026-09-03T11:00:00.000Z',
-          cachedUntil: '2026-09-03T11:00:15.000Z',
-          services: {
-            api: { status: 'operational', uptimeSeconds: 100 },
-            database: { status: 'operational', latencyMs: 1 },
-            esi: {
-              status: 'operational',
-              latencyMs: 2,
-              checkedAt: '2026-09-03T11:00:00.000Z',
-              players: 20_000,
-              serverVersion: 'test',
-              startedAt: null,
-              vip: false,
-              errorBudgetRemaining: 100,
-              errorBudgetResetSeconds: 10,
-            },
-          },
-        },
-      }
-    else if (request.url === '/api/modules')
-      return {
-        body: {
-          enabledModuleIds: [],
-          shellNavigationOrder: { dashboard: [], character: [] },
-        },
-      }
-    return { body: { code: 'NOT_FOUND', message: 'Not found.' } }
-  }
-  return {
-    status: 403,
-    body: { code: 'TEST_FAILURE', message: 'API unavailable for SSR test.' },
-  }
-})
+let characterDataAvailable = true
+let rosterDataAvailable = true
+let currentUserId: string | null = 'test-user'
+let publicDataAvailable = true
+let publicFixtureText = 'Current public ESI data.'
+let publicRequestCount = 0
+let publicBrowserRequestCount = 0
+let overviewRequestCount = 0
+let admissionRequestCount = 0
+let overviewText = 'Cached capsuleer record.'
+let admissionGate: Deferred | undefined
+let overviewGate: Deferred | undefined
+let overviewDeferredUserId: string | undefined
+let rosterCharacters: ReturnType<typeof ownedCharacter>[] = []
+const managedPages = new Set<Page>()
+const managedContexts = new Set<BrowserContext>()
+
+const apiServer = await startCorsJsonApi(handleApiRequest)
 process.env.NUXT_PUBLIC_API_BASE = apiServer.origin
 
 afterAll(apiServer.close)
+beforeEach(resetFixtureState)
+afterEach(async () => {
+  admissionGate?.resolve()
+  overviewGate?.resolve()
+  await Promise.all([...managedPages].map((page) => page.close()))
+  managedPages.clear()
+  await Promise.all([...managedContexts].map((context) => context.close()))
+  managedContexts.clear()
+})
 
 describe('Nuxt anonymous SSR boundary', async () => {
   await setup({
-    rootDir: fileURLToPath(new URL('..', import.meta.url)),
+    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
     build: false,
     nuxtConfig: {
       nitro: {
@@ -77,18 +65,363 @@ describe('Nuxt anonymous SSR boundary', async () => {
     setupTimeout: 120_000,
   })
 
-  it('renders a neutral session state instead of anonymous dashboard content', async () => {
-    const html = await $fetch('/')
+  it('renders a neutral session state without requiring the API during SSR', async () => {
+    const html = await $fetch('/characters')
 
     expect(html).toContain('Verifying account identity...')
-    expect(html).not.toContain('Command overview')
+    expect(html).toContain('All characters')
     expect(html).toContain('data-ssr="true"')
-    expect(html).toContain('ApiQueryError')
+    expect(html).not.toContain('ApiQueryError')
+  })
+
+  it('keeps the character route available when the API is down', async () => {
+    apiAvailable = false
+    apiServer.setAllowedOrigin(applicationOrigin())
+    const page = await createPage('/characters')
+
+    await page.getByRole('heading', { name: 'Session unavailable' }).waitFor()
+
+    expect(new URL(page.url()).pathname).toBe('/characters')
+    expect(await page.getByRole('heading', { name: 'All characters' }).isVisible()).toBe(true)
+    expect(await page.locator('#main-content').count()).toBe(1)
+  })
+
+  it('keeps successful public SSR data over a fast IndexedDB restore without a client fetch', async () => {
+    configureAuthenticatedApi()
+    const persistedAt = Date.now() - 60_000
+    const envelope = persistenceEnvelope({
+      publicText: 'Obsolete persisted public data.',
+      persistedAt,
+    })
+    const page = await createPersistencePage(envelope)
+    await observePersistenceReadsOnNextDocument(page)
+    const browserRequests: string[] = []
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === '/api/e2e/public-esi') {
+        browserRequests.push(request.url())
+      }
+    })
+
+    await navigateAndWaitForHydration(page, PUBLIC_FIXTURE_PATH)
+
+    await expectPage(page.getByTestId('public-value')).toHaveText('Current public ESI data.')
+    const observedTexts = (await readPublicHistory(page)).map(({ text }) => text)
+    expect(observedTexts).toContain('Current public ESI data.')
+    expect(observedTexts).not.toContain('Obsolete persisted public data.')
+    expect(publicRequestCount).toBe(1)
+    expect(publicBrowserRequestCount).toBe(0)
+    expect(browserRequests).toEqual([])
+    expect(await readPersistenceReadCount(page)).toBeGreaterThan(0)
+    await expect
+      .poll(async () => readPublicTupleText(page), { timeout: 5_000 })
+      .toBe('Current public ESI data.')
+  })
+
+  it('keeps a current client fetch over a staged public fallback', async () => {
+    configureAuthenticatedApi()
+    const persistedText = 'Obsolete fallback staged for a client fetch.'
+    const page = await createPersistencePage(
+      persistenceEnvelope({ publicText: persistedText, persistedAt: Date.now() - 60_000 }),
+    )
+    await observePersistenceReadsOnNextDocument(page)
+
+    await navigateAndWaitForHydration(page, `${PUBLIC_FIXTURE_PATH}?source=client`)
+
+    await expectPage(page.getByTestId('public-value')).toHaveText('Current public ESI data.')
+    const observedTexts = (await readPublicHistory(page)).map(({ text }) => text)
+    expect(observedTexts).toContain('Current public ESI data.')
+    expect(observedTexts).not.toContain(persistedText)
+    expect(publicRequestCount).toBe(1)
+    expect(publicBrowserRequestCount).toBe(1)
+    expect(await readPersistenceReadCount(page)).toBeGreaterThan(0)
+    await expect
+      .poll(async () => readPublicTupleText(page), { timeout: 5_000 })
+      .toBe('Current public ESI data.')
+  })
+
+  it('releases a failed public SSR fallback only after hydration completes', async () => {
+    configureAuthenticatedApi()
+    publicDataAvailable = false
+    const persistedAt = Date.now() - 60_000
+    const persistedText = 'Retained public fallback.'
+    const requestsBeforeSsr = publicRequestCount
+    const html = await $fetch<string>(PUBLIC_FIXTURE_PATH)
+
+    expect(html).toContain('NO_PUBLIC_DATA')
+    expect(html).not.toContain(persistedText)
+    expect(publicRequestCount).toBe(requestsBeforeSsr + 1)
+    expect(publicBrowserRequestCount).toBe(0)
+
+    const page = await createPersistencePage(
+      persistenceEnvelope({ publicText: persistedText, persistedAt }),
+    )
+    await navigateAndWaitForHydration(page, PUBLIC_FIXTURE_PATH)
+
+    await expectPage(page.getByTestId('public-value')).toHaveText(persistedText)
+    expect(await readPublicHistory(page)).toEqual([{ hydrating: false, text: persistedText }])
+  })
+
+  it('settles a delayed restore before mount and keeps current SSR over staged fallback', async () => {
+    configureAuthenticatedApi()
+    const page = await createPersistencePage(
+      persistenceEnvelope({
+        publicText: 'Delayed obsolete public fallback.',
+        persistedAt: Date.now() - 60_000,
+      }),
+    )
+    await delayIndexedDbEventsOnNextDocument(page)
+
+    await page.goto(applicationUrl(PUBLIC_FIXTURE_PATH), { waitUntil: 'domcontentloaded' })
+
+    await expectPage(page.getByTestId('public-value')).toHaveText('Current public ESI data.')
+    await expectPage(page.getByTestId('public-history')).toHaveAttribute(
+      'data-client-mounted',
+      'false',
+    )
+
+    await releaseIndexedDbEvents(page)
+    await waitForNuxtHydration(page)
+
+    await expectPage(page.getByTestId('public-history')).toHaveAttribute(
+      'data-client-mounted',
+      'true',
+    )
+    const observedTexts = (await readPublicHistory(page)).map(({ text }) => text)
+    expect(observedTexts).toContain('Current public ESI data.')
+    expect(observedTexts).not.toContain('Delayed obsolete public fallback.')
+    await expect
+      .poll(async () => readPublicTupleText(page), { timeout: 5_000 })
+      .toBe('Current public ESI data.')
+  })
+
+  it('does not expose restored private data before live identity and admission complete', async () => {
+    configureAuthenticatedApi()
+    characterDataAvailable = false
+    admissionGate = deferred()
+    const privateText = 'Quarantined private capsuleer record.'
+    const page = await createPersistencePage(
+      persistenceEnvelope({ privateText, persistedAt: Date.now() - 60_000 }),
+    )
+    await observeTextOnNextDocument(page, privateText)
+
+    await navigateAndWaitForHydration(page, '/characters/7')
+    await expect.poll(() => admissionRequestCount).toBeGreaterThan(0)
+
+    expect(await page.getByText(privateText, { exact: true }).count()).toBe(0)
+    expect(await textWasObserved(page)).toBe(false)
+    expect(overviewRequestCount).toBe(0)
+
+    admissionGate.resolve()
+    await page.getByText(privateText, { exact: true }).waitFor()
+    expect(await page.getByRole('heading', { name: 'Record unavailable' }).count()).toBe(0)
+  })
+
+  it('retains admitted private data and its original timestamp across two failed reloads', async () => {
+    configureAuthenticatedApi()
+    const page = await createPersistencePage(persistenceEnvelope())
+
+    await navigateAndWaitForHydration(page, '/characters/7')
+    await page.getByText('Cached capsuleer record.', { exact: true }).waitFor()
+    await expect
+      .poll(async () => readPrivateTupleTimestamp(page), { timeout: 5_000 })
+      .toSatisfy((timestamp) => typeof timestamp === 'number')
+
+    const originalTimestamp = Date.now() - 60_000
+    await replacePrivateTupleTimestamp(page, originalTimestamp)
+    characterDataAvailable = false
+
+    for (let reload = 0; reload < 2; reload += 1) {
+      const requestsBeforeReload = overviewRequestCount
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await waitForNuxtHydration(page)
+      await page.getByText('Cached capsuleer record.', { exact: true }).waitFor()
+      await expect.poll(() => overviewRequestCount).toBeGreaterThan(requestsBeforeReload)
+      await expect
+        .poll(async () => readPrivateTupleTimestamp(page), { timeout: 5_000 })
+        .toBe(originalTimestamp)
+      expect(await page.getByRole('heading', { name: 'Record unavailable' }).count()).toBe(0)
+    }
+  })
+
+  it('wins a logout race against pending private success and persister writes in another tab', async () => {
+    configureAuthenticatedApi()
+    const publicTimestamp = Date.now() - 60_000
+    const publicText = 'Independent public tuple.'
+    const privateText = 'Logout-race private data.'
+    const obsoleteResponseText = 'Obsolete logout-race HTTP response.'
+    const envelope = persistenceEnvelope({ privateText, publicText, persistedAt: publicTimestamp })
+    overviewText = obsoleteResponseText
+    overviewGate = deferred()
+    overviewDeferredUserId = 'test-user'
+    const firstPage = await createPersistencePage(envelope)
+    const secondPage = trackPage(await firstPage.context().newPage())
+    await installPersistenceWriteObserver(firstPage)
+    await installPersistenceWriteObserver(secondPage)
+    await observeTextOnNextDocument(firstPage, obsoleteResponseText)
+
+    await navigateAndWaitForHydration(firstPage, '/characters/7')
+    await firstPage.getByText(privateText, { exact: true }).waitFor()
+    await expect.poll(() => overviewRequestCount).toBeGreaterThan(0)
+    await navigateAndWaitForHydration(secondPage, '/characters/7')
+    await Promise.all([
+      firstPage.getByText(privateText, { exact: true }).waitFor(),
+      secondPage.getByText(privateText, { exact: true }).waitFor(),
+    ])
+    await observeInvalidationChannel(firstPage)
+    const writesBeforeLogout = await readPersistenceWriteCount(firstPage)
+
+    await secondPage.bringToFront()
+    await logoutThroughAuthPage(secondPage)
+
+    await expect.poll(() => readInvalidationNotificationCount(firstPage)).toBeGreaterThan(0)
+    await expectPage(firstPage.getByText(privateText, { exact: true })).toHaveCount(0)
+    overviewGate.resolve()
+    await expect
+      .poll(() => readPersistenceWriteCount(firstPage), { timeout: 5_000 })
+      .toBeGreaterThan(writesBeforeLogout)
+
+    await expectPage(firstPage.getByText(privateText, { exact: true })).toHaveCount(0)
+    await expectPage(firstPage.getByText(obsoleteResponseText, { exact: true })).toHaveCount(0)
+    expect(await textWasObserved(firstPage)).toBe(false)
+    await expectPersistenceWritesAfterToExclude(firstPage, writesBeforeLogout, [
+      privateText,
+      obsoleteResponseText,
+    ])
+    await expectPrivatePersistenceToExclude(firstPage, privateText)
+    await expectPrivatePersistenceToExclude(firstPage, obsoleteResponseText)
+    await expectPublicTupleToEqual(firstPage, envelope.public[JSON.stringify(PUBLIC_QUERY_KEY)]!)
+  })
+
+  it('wins a user-switch race against an obsolete private response in another tab', async () => {
+    configureAuthenticatedApi()
+    const publicText = 'User-switch independent public tuple.'
+    const privateText = 'Prior-owner private data.'
+    const obsoleteResponseText = 'Obsolete prior-owner HTTP response.'
+    const envelope = persistenceEnvelope({
+      privateText,
+      publicText,
+      persistedAt: Date.now() - 60_000,
+    })
+    overviewGate = deferred()
+    overviewDeferredUserId = 'test-user'
+    overviewText = obsoleteResponseText
+    const firstPage = await createPersistencePage(envelope)
+    const secondPage = trackPage(await firstPage.context().newPage())
+    await installPersistenceWriteObserver(firstPage)
+    await observeTextOnNextDocument(firstPage, obsoleteResponseText)
+
+    await navigateAndWaitForHydration(firstPage, '/characters/7')
+    await firstPage.getByText(privateText, { exact: true }).waitFor()
+    await expect.poll(() => overviewRequestCount).toBeGreaterThan(0)
+    await navigateAndWaitForHydration(secondPage, '/characters/7')
+    await Promise.all([
+      firstPage.getByText(privateText, { exact: true }).waitFor(),
+      secondPage.getByText(privateText, { exact: true }).waitFor(),
+    ])
+    await observeInvalidationChannel(firstPage)
+    const writesBeforeSwitch = await readPersistenceWriteCount(firstPage)
+
+    currentUserId = 'next-user'
+    rosterCharacters = []
+    await secondPage.reload({ waitUntil: 'domcontentloaded' })
+    await waitForNuxtHydration(secondPage)
+
+    await expect.poll(() => readInvalidationNotificationCount(firstPage)).toBeGreaterThan(0)
+    await expectPage(firstPage.getByText(privateText, { exact: true })).toHaveCount(0)
+    overviewGate.resolve()
+    await expect
+      .poll(() => readPersistenceWriteCount(firstPage), { timeout: 5_000 })
+      .toBeGreaterThan(writesBeforeSwitch)
+
+    await expectPage(firstPage.getByText(privateText, { exact: true })).toHaveCount(0)
+    await expectPage(firstPage.getByText(obsoleteResponseText, { exact: true })).toHaveCount(0)
+    expect(await textWasObserved(firstPage)).toBe(false)
+    await expectPersistenceWritesAfterToExclude(firstPage, writesBeforeSwitch, [
+      privateText,
+      obsoleteResponseText,
+    ])
+    await expectPrivatePersistenceToExclude(firstPage, privateText)
+    await expectPrivatePersistenceToExclude(firstPage, obsoleteResponseText)
+    await expectPublicTupleToEqual(firstPage, envelope.public[JSON.stringify(PUBLIC_QUERY_KEY)]!)
+  })
+
+  it('detects durable invalidation on pageshow, focus, and visibility after missed notifications', async () => {
+    configureAuthenticatedApi()
+    overviewGate = deferred()
+    overviewDeferredUserId = 'test-user'
+    const privateText = 'Missed-notification private data.'
+    const envelope = persistenceEnvelope({
+      privateText,
+      publicText: 'Lifecycle-independent public tuple.',
+      persistedAt: Date.now() - 60_000,
+    })
+    for (const lifecycleEvent of ['pageshow', 'focus', 'visibilitychange']) {
+      const page = await createPersistencePage(envelope)
+      await disableInvalidationNotificationsOnNextDocument(page)
+      await delayLifecycleChecksOnNextDocument(page)
+      await installPersistenceWriteObserver(page)
+      await navigateAndWaitForHydration(page, '/characters/7')
+      await page.getByText(privateText, { exact: true }).waitFor()
+      await waitForPersistenceWritesToSettle(page)
+
+      await advanceDurableInvalidationGeneration(page)
+      expect(await page.getByText(privateText, { exact: true }).isVisible()).toBe(true)
+      await page.evaluate((eventType) => {
+        const browserState = globalThis as typeof globalThis & {
+          e2eQueryPersistenceLifecycleEnabled?: boolean
+        }
+        browserState.e2eQueryPersistenceLifecycleEnabled = true
+        if (eventType === 'visibilitychange' && document.visibilityState !== 'visible') {
+          throw new Error('The visibility lifecycle fixture must be visible.')
+        }
+        const target = eventType === 'visibilitychange' ? document : window
+        target.dispatchEvent(new Event(eventType))
+      }, lifecycleEvent)
+
+      await expectPage(page.getByText(privateText, { exact: true })).toHaveCount(0)
+      await expectPrivatePersistenceToExclude(page, privateText)
+      await expectPublicTupleToEqual(page, envelope.public[JSON.stringify(PUBLIC_QUERY_KEY)]!)
+    }
+  })
+
+  it('fails private persistence closed when the durable control check is invalid', async () => {
+    configureAuthenticatedApi()
+    const obsoletePrivateText = 'Private data behind an invalid durable control.'
+    overviewText = 'Live authorized private query.'
+    publicFixtureText = 'Live public data with private persistence disabled.'
+    const page = await createPersistencePage(
+      persistenceEnvelope({
+        privateText: obsoletePrivateText,
+        publicText: 'Prior public data.',
+        persistedAt: Date.now() - 60_000,
+      }),
+      { invalidControl: true },
+    )
+    await installPersistenceWriteObserver(page)
+    await observeTextOnNextDocument(page, obsoletePrivateText)
+
+    await navigateAndWaitForHydration(page, '/characters/7')
+    await page.getByText(overviewText, { exact: true }).waitFor()
+    await expect.poll(() => readPersistenceWriteCount(page), { timeout: 5_000 }).toBeGreaterThan(0)
+
+    const publicPage = trackPage(await page.context().newPage())
+    await navigateAndWaitForHydration(publicPage, PUBLIC_FIXTURE_PATH)
+    await expectPage(publicPage.getByTestId('public-value')).toHaveText(publicFixtureText)
+    await expect
+      .poll(async () => readPublicTupleText(publicPage), { timeout: 5_000 })
+      .toBe(publicFixtureText)
+
+    const records = await readPersistenceRecords(publicPage)
+    expect(records.control).toEqual({ invalid: true })
+    expect(records.envelope?.characters).toEqual({})
+    expect(await textWasObserved(page)).toBe(false)
+    expect(JSON.stringify(records.envelope)).not.toContain(obsoletePrivateText)
+    expect(JSON.stringify(records.envelope)).not.toContain(overviewText)
   })
 
   it('keeps dashboard navigation keyboard accessible on mobile', async () => {
     apiAvailable = true
-    apiServer.setAllowedOrigin(useTestContext().url)
+    apiServer.setAllowedOrigin(applicationOrigin())
     const page = await createPage('/')
     await page.setViewportSize({ width: 390, height: 844 })
 
@@ -114,7 +447,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
 
   it('keeps destination focus after navigating from the mobile drawer', async () => {
     apiAvailable = true
-    apiServer.setAllowedOrigin(useTestContext().url)
+    apiServer.setAllowedOrigin(applicationOrigin())
     const page = await createPage('/')
     await page.setViewportSize({ width: 390, height: 844 })
     const trigger = page.getByRole('button', { name: 'Open navigation' })
@@ -139,7 +472,8 @@ describe('Nuxt anonymous SSR boundary', async () => {
   })
 
   it('uses persistent navigation on the supported desktop layout', async () => {
-    apiServer.setAllowedOrigin(useTestContext().url)
+    apiAvailable = true
+    apiServer.setAllowedOrigin(applicationOrigin())
     const page = await createPage('/')
     await page.setViewportSize({ width: 1280, height: 800 })
 
@@ -151,7 +485,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
 
   it('keeps theme text and focus indicators at accessible contrast', async () => {
     apiAvailable = true
-    apiServer.setAllowedOrigin(useTestContext().url)
+    apiServer.setAllowedOrigin(applicationOrigin())
     const page = await createPage('/')
     const themes = ['gallente', 'high-sec', 'amarr', 'minmatar', 'caldari']
     const textTokens = [
@@ -207,7 +541,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
 
   it('skips to one main target and moves focus only for represented page changes', async () => {
     apiAvailable = true
-    apiServer.setAllowedOrigin(useTestContext().url)
+    apiServer.setAllowedOrigin(applicationOrigin())
     const page = await createPage('/admin/login')
     const skipLink = page.getByRole('link', { name: 'Skip to main content' })
     const main = page.locator('#main-content')
@@ -275,11 +609,678 @@ describe('Nuxt anonymous SSR boundary', async () => {
       .poll(() => page.locator('.nuxt-route-announcer [role="status"]').textContent())
       .toBe('Overview // EVE Space')
 
-    await page.goto(new URL('/characters', useTestContext().url).toString())
+    await page.goto(new URL('/characters', applicationOrigin()).toString())
     expect(await page.locator('main').count()).toBe(1)
     expect(await page.locator('#main-content').getAttribute('tabindex')).toBe('-1')
   })
 })
+
+type PersistedEsiQuery =
+  | { readonly kind: 'public-esi' }
+  | { readonly kind: 'character-esi'; readonly characterId: number }
+
+type PersistedQueryTuple = [
+  data: unknown,
+  error: null,
+  when: number,
+  meta: { readonly esiPersistence: PersistedEsiQuery },
+]
+
+interface QueryPersistenceEnvelope {
+  version: 1
+  invalidationGeneration: number
+  public: Record<string, PersistedQueryTuple>
+  characters: Record<
+    string,
+    {
+      ownerUserId: string
+      admissionRevision: string
+      cache: Record<string, PersistedQueryTuple>
+    }
+  >
+  organizations: Record<string, never>
+}
+
+interface Deferred {
+  readonly promise: Promise<void>
+  readonly resolve: () => void
+}
+
+async function handleApiRequest(request: IncomingMessage) {
+  if (!apiAvailable) {
+    return {
+      status: 403,
+      body: { code: 'TEST_FAILURE', message: 'API unavailable for SSR test.' },
+    }
+  }
+
+  const path = request.url?.split('?', 1)[0]
+  if (path === '/api/e2e/public-esi') {
+    publicRequestCount += 1
+    if (request.headers.origin) publicBrowserRequestCount += 1
+    return publicDataAvailable
+      ? {
+          body: { marker: 'PUBLIC_ESI_FIXTURE', text: publicFixtureText },
+        }
+      : esiUnavailable()
+  }
+  if (path === '/auth/session') {
+    return currentUserId
+      ? {
+          body: {
+            authenticated: true,
+            account: {
+              userId: currentUserId,
+              mainCharacter: { characterId: 7, name: 'Persistent Pilot' },
+            },
+          },
+        }
+      : { body: { authenticated: false } }
+  }
+  if (path === '/auth/logout' && request.method === 'POST') {
+    currentUserId = null
+    return { body: null }
+  }
+  if (path === '/auth/config') {
+    return { body: { configured: false, loginUrl: '', attachUrl: '' } }
+  }
+  if (path === '/api/admin/session') return { body: { authenticated: false } }
+  if (path === '/api/me/cache-admission') {
+    admissionRequestCount += 1
+    const admittedUserId = currentUserId
+    if (!admittedUserId) {
+      return { status: 401, body: { code: 'AUTH_REQUIRED', message: 'Authentication required.' } }
+    }
+    const gate = admissionGate
+    if (gate) await gate.promise
+    return { body: cacheAdmission(admittedUserId) }
+  }
+  if (path === '/api/me/characters') {
+    return rosterDataAvailable ? { body: { characters: rosterCharacters } } : esiUnavailable()
+  }
+  if (path === '/api/me/characters/7') {
+    overviewRequestCount += 1
+    const requestingUserId = currentUserId
+    const responseText = overviewText
+    if (overviewGate && requestingUserId === overviewDeferredUserId) await overviewGate.promise
+    return characterDataAvailable ? { body: overviewResponse(responseText) } : esiUnavailable()
+  }
+  if (path === '/api/status') return { body: systemStatusResponse() }
+  if (path === '/api/modules') {
+    return {
+      body: {
+        enabledModuleIds: [],
+        shellNavigationOrder: { dashboard: [], character: [] },
+      },
+    }
+  }
+  return { status: 404, body: { code: 'NOT_FOUND', message: 'Not found.' } }
+}
+
+function resetFixtureState() {
+  admissionGate?.resolve()
+  overviewGate?.resolve()
+  apiAvailable = false
+  characterDataAvailable = true
+  rosterDataAvailable = true
+  currentUserId = 'test-user'
+  publicDataAvailable = true
+  publicFixtureText = 'Current public ESI data.'
+  publicRequestCount = 0
+  publicBrowserRequestCount = 0
+  overviewRequestCount = 0
+  admissionRequestCount = 0
+  overviewText = 'Cached capsuleer record.'
+  admissionGate = undefined
+  overviewGate = undefined
+  overviewDeferredUserId = undefined
+  rosterCharacters = []
+}
+
+function configureAuthenticatedApi() {
+  apiAvailable = true
+  currentUserId = 'test-user'
+  rosterCharacters = [ownedCharacter()]
+  apiServer.setAllowedOrigin(applicationOrigin())
+}
+
+function cacheAdmission(userId: string) {
+  return {
+    userId,
+    characters: [
+      {
+        characterId: 7,
+        admissionRevision:
+          userId === 'test-user' ? 'character-revision-1' : 'next-character-revision-1',
+      },
+    ],
+    organization: null,
+  }
+}
+
+function esiUnavailable() {
+  return {
+    status: 503,
+    body: { code: 'ESI_UNAVAILABLE', message: 'EVE Online ESI is unavailable.' },
+  }
+}
+
+function systemStatusResponse() {
+  return {
+    status: 'operational',
+    checkedAt: '2026-09-03T11:00:00.000Z',
+    cachedUntil: '2026-09-03T11:00:15.000Z',
+    services: {
+      api: { status: 'operational', uptimeSeconds: 100 },
+      database: { status: 'operational', latencyMs: 1 },
+      esi: {
+        status: 'operational',
+        latencyMs: 2,
+        checkedAt: '2026-09-03T11:00:00.000Z',
+        players: 20_000,
+        serverVersion: 'test',
+        startedAt: null,
+        vip: false,
+        errorBudgetRemaining: 100,
+        errorBudgetResetSeconds: 10,
+      },
+    },
+  }
+}
+
+function deferred(): Deferred {
+  let resolve!: () => void
+  const promise = new Promise<void>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
+}
+
+function persistenceEnvelope(
+  options: {
+    readonly persistedAt?: number
+    readonly privateText?: string
+    readonly publicText?: string
+  } = {},
+): QueryPersistenceEnvelope {
+  const persistedAt = options.persistedAt ?? Date.now()
+  const envelope: QueryPersistenceEnvelope = {
+    version: 1,
+    invalidationGeneration: 0,
+    public: {},
+    characters: {},
+    organizations: {},
+  }
+  if (options.publicText) {
+    envelope.public[JSON.stringify(PUBLIC_QUERY_KEY)] = persistedTuple(
+      { marker: 'PUBLIC_ESI_FIXTURE', text: options.publicText },
+      persistedAt,
+      { kind: 'public-esi' },
+    )
+  }
+  if (options.privateText) {
+    envelope.characters['7'] = {
+      ownerUserId: 'test-user',
+      admissionRevision: 'character-revision-1',
+      cache: {
+        [JSON.stringify(PRIVATE_QUERY_KEY)]: persistedTuple(
+          overviewResponse(options.privateText),
+          persistedAt,
+          { kind: 'character-esi', characterId: 7 },
+        ),
+      },
+    }
+  }
+  return envelope
+}
+
+function persistedTuple(
+  data: unknown,
+  when: number,
+  esiPersistence: PersistedEsiQuery,
+): PersistedQueryTuple {
+  return [data, null, when, { esiPersistence }]
+}
+
+async function createPersistencePage(
+  envelope: QueryPersistenceEnvelope,
+  options: { readonly invalidControl?: boolean } = {},
+) {
+  const browser = useTestContext().browser
+  if (!browser) throw new Error('The Nuxt browser is unavailable.')
+  const context = await browser.newContext()
+  managedContexts.add(context)
+  const page = trackPage(await context.newPage())
+  await page.goto(applicationUrl('/favicon.svg'), { waitUntil: 'load' })
+  await writePersistenceRecords(
+    page,
+    envelope,
+    options.invalidControl
+      ? { invalid: true }
+      : { version: 1, invalidationGeneration: envelope.invalidationGeneration },
+  )
+  return page
+}
+
+function trackPage(page: Page) {
+  managedPages.add(page)
+  return page
+}
+
+function applicationUrl(path: string) {
+  return new URL(path, applicationOrigin()).toString()
+}
+
+function applicationOrigin() {
+  const origin = useTestContext().url
+  if (!origin) throw new Error('The Nuxt test server URL is unavailable.')
+  return origin
+}
+
+async function navigateAndWaitForHydration(page: Page, path: string) {
+  await page.goto(applicationUrl(path), { waitUntil: 'domcontentloaded' })
+  await waitForNuxtHydration(page)
+}
+
+async function waitForNuxtHydration(page: Page) {
+  await page.waitForFunction(
+    () =>
+      (window as typeof window & { useNuxtApp?: () => { isHydrating: boolean } }).useNuxtApp?.()
+        .isHydrating === false,
+    undefined,
+    { timeout: 10_000 },
+  )
+}
+
+async function writePersistenceRecords(
+  page: Page,
+  envelope: QueryPersistenceEnvelope,
+  control: unknown,
+) {
+  await page.evaluate(
+    async ({
+      cacheKey,
+      controlKey,
+      databaseName,
+      databaseVersion,
+      envelopeValue,
+      storeName,
+      value,
+    }) => {
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(databaseName, databaseVersion)
+        request.addEventListener('upgradeneeded', () => {
+          if (!request.result.objectStoreNames.contains(storeName)) {
+            request.result.createObjectStore(storeName)
+          }
+        })
+        request.addEventListener('success', () => resolve(request.result), { once: true })
+        request.addEventListener('error', () => reject(request.error), { once: true })
+        request.addEventListener(
+          'blocked',
+          () => reject(new Error('IndexedDB open was blocked.')),
+          {
+            once: true,
+          },
+        )
+      })
+      await new Promise<void>((resolve, reject) => {
+        const transaction = database.transaction(storeName, 'readwrite')
+        const store = transaction.objectStore(storeName)
+        store.put(JSON.stringify(envelopeValue), cacheKey)
+        store.put(value, controlKey)
+        transaction.addEventListener('complete', () => resolve(), { once: true })
+        transaction.addEventListener('error', () => reject(transaction.error), { once: true })
+        transaction.addEventListener('abort', () => reject(transaction.error), { once: true })
+      })
+      database.close()
+    },
+    {
+      cacheKey: PERSISTED_CACHE_KEY,
+      controlKey: INVALIDATION_CONTROL_KEY,
+      databaseName: DATABASE_NAME,
+      databaseVersion: DATABASE_VERSION,
+      envelopeValue: envelope,
+      storeName: OBJECT_STORE_NAME,
+      value: control,
+    },
+  )
+}
+
+async function readPersistenceRecords(page: Page) {
+  return page.evaluate(
+    async ({ cacheKey, controlKey, databaseName, databaseVersion, storeName }) => {
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(databaseName, databaseVersion)
+        request.addEventListener('success', () => resolve(request.result), { once: true })
+        request.addEventListener('error', () => reject(request.error), { once: true })
+        request.addEventListener(
+          'blocked',
+          () => reject(new Error('IndexedDB open was blocked.')),
+          {
+            once: true,
+          },
+        )
+      })
+      const transaction = database.transaction(storeName, 'readonly')
+      const store = transaction.objectStore(storeName)
+      const read = (key: string) =>
+        new Promise<unknown>((resolve, reject) => {
+          const request = store.get(key)
+          request.addEventListener('success', () => resolve(request.result), { once: true })
+          request.addEventListener('error', () => reject(request.error), { once: true })
+        })
+      const [storedEnvelope, control] = await Promise.all([read(cacheKey), read(controlKey)])
+      database.close()
+      return {
+        envelope:
+          typeof storedEnvelope === 'string'
+            ? (JSON.parse(storedEnvelope) as QueryPersistenceEnvelope)
+            : null,
+        control,
+      }
+    },
+    {
+      cacheKey: PERSISTED_CACHE_KEY,
+      controlKey: INVALIDATION_CONTROL_KEY,
+      databaseName: DATABASE_NAME,
+      databaseVersion: DATABASE_VERSION,
+      storeName: OBJECT_STORE_NAME,
+    },
+  )
+}
+
+async function replacePrivateTupleTimestamp(page: Page, timestamp: number) {
+  const records = await readPersistenceRecords(page)
+  const envelope = records.envelope
+  const tuple = envelope?.characters['7']?.cache[JSON.stringify(PRIVATE_QUERY_KEY)]
+  if (!envelope || !tuple) throw new Error('The persisted private tuple is missing.')
+  tuple[2] = timestamp
+  await writePersistenceRecords(page, envelope, records.control)
+}
+
+async function readPublicTupleText(page: Page) {
+  const tuple = (await readPersistenceRecords(page)).envelope?.public[
+    JSON.stringify(PUBLIC_QUERY_KEY)
+  ]
+  const data = tuple?.[0]
+  return data && typeof data === 'object' && 'text' in data ? data.text : null
+}
+
+async function readPrivateTupleTimestamp(page: Page) {
+  return (await readPersistenceRecords(page)).envelope?.characters['7']?.cache[
+    JSON.stringify(PRIVATE_QUERY_KEY)
+  ]?.[2]
+}
+
+async function readPublicHistory(page: Page) {
+  return page.evaluate(
+    () =>
+      (
+        globalThis as typeof globalThis & {
+          e2ePublicHistory?: Array<{ hydrating: boolean; text: string }>
+        }
+      ).e2ePublicHistory ?? [],
+  )
+}
+
+async function expectPrivatePersistenceToExclude(page: Page, obsoleteText: string) {
+  await expect
+    .poll(async () => JSON.stringify((await readPersistenceRecords(page)).envelope), {
+      timeout: 5_000,
+    })
+    .not.toContain(obsoleteText)
+}
+
+async function expectPublicTupleToEqual(page: Page, expected: PersistedQueryTuple) {
+  await expect
+    .poll(
+      async () =>
+        (await readPersistenceRecords(page)).envelope?.public[JSON.stringify(PUBLIC_QUERY_KEY)],
+      { timeout: 5_000 },
+    )
+    .toEqual(expected)
+}
+
+async function delayIndexedDbEventsOnNextDocument(page: Page) {
+  await page.addInitScript(() => {
+    const browserState = globalThis as typeof globalThis & {
+      e2eReleaseIndexedDbEvents?: () => void
+    }
+    const pendingEvents: Array<() => void> = []
+    let released = false
+    const addEventListener = EventTarget.prototype.addEventListener
+    EventTarget.prototype.addEventListener = function (type, listener, options) {
+      if (this instanceof IDBRequest && (type === 'success' || type === 'error') && listener) {
+        const delayedListener: EventListener = (event) => {
+          const dispatch = () => {
+            if (typeof listener === 'function') listener(event)
+            else listener.handleEvent(event)
+          }
+          if (released) dispatch()
+          else pendingEvents.push(dispatch)
+        }
+        addEventListener.call(this, type, delayedListener, options)
+        return
+      }
+      addEventListener.call(this, type, listener, options)
+    }
+    browserState.e2eReleaseIndexedDbEvents = () => {
+      released = true
+      for (const dispatch of pendingEvents.splice(0)) dispatch()
+    }
+  })
+}
+
+async function releaseIndexedDbEvents(page: Page) {
+  await page.evaluate(() => {
+    const release = (globalThis as typeof globalThis & { e2eReleaseIndexedDbEvents?: () => void })
+      .e2eReleaseIndexedDbEvents
+    if (!release) throw new Error('The IndexedDB release control is unavailable.')
+    release()
+  })
+}
+
+async function installPersistenceWriteObserver(page: Page) {
+  await page.addInitScript(
+    ({ cacheKey }) => {
+      const browserState = globalThis as typeof globalThis & {
+        e2ePersistenceWriteCount?: number
+        e2ePersistenceWrites?: string[]
+      }
+      browserState.e2ePersistenceWriteCount = 0
+      browserState.e2ePersistenceWrites = []
+      const put = IDBObjectStore.prototype.put
+      IDBObjectStore.prototype.put = function (value, key) {
+        if (key === cacheKey) {
+          browserState.e2ePersistenceWriteCount! += 1
+          if (typeof value === 'string') browserState.e2ePersistenceWrites!.push(value)
+        }
+        return key === undefined ? put.call(this, value) : put.call(this, value, key)
+      }
+    },
+    { cacheKey: PERSISTED_CACHE_KEY },
+  )
+}
+
+async function observePersistenceReadsOnNextDocument(page: Page) {
+  await page.addInitScript(
+    ({ cacheKey }) => {
+      const browserState = globalThis as typeof globalThis & {
+        e2ePersistenceReadCount?: number
+      }
+      browserState.e2ePersistenceReadCount = 0
+      const get = IDBObjectStore.prototype.get
+      IDBObjectStore.prototype.get = function (key) {
+        if (key === cacheKey) browserState.e2ePersistenceReadCount! += 1
+        return get.call(this, key)
+      }
+    },
+    { cacheKey: PERSISTED_CACHE_KEY },
+  )
+}
+
+async function observeTextOnNextDocument(page: Page, text: string) {
+  await page.addInitScript((observedText) => {
+    const browserState = globalThis as typeof globalThis & { e2eObservedText?: boolean }
+    browserState.e2eObservedText = false
+    const record = () => {
+      if (document.body?.innerText.includes(observedText)) browserState.e2eObservedText = true
+    }
+    new MutationObserver(record).observe(document, {
+      characterData: true,
+      childList: true,
+      subtree: true,
+    })
+    document.addEventListener('DOMContentLoaded', record, { once: true })
+  }, text)
+}
+
+async function textWasObserved(page: Page) {
+  return page.evaluate(
+    () =>
+      (globalThis as typeof globalThis & { e2eObservedText?: boolean }).e2eObservedText ?? false,
+  )
+}
+
+async function readPersistenceWriteCount(page: Page) {
+  return page.evaluate(
+    () =>
+      (globalThis as typeof globalThis & { e2ePersistenceWriteCount?: number })
+        .e2ePersistenceWriteCount ?? 0,
+  )
+}
+
+async function readPersistenceReadCount(page: Page) {
+  return page.evaluate(
+    () =>
+      (globalThis as typeof globalThis & { e2ePersistenceReadCount?: number })
+        .e2ePersistenceReadCount ?? 0,
+  )
+}
+
+async function waitForPersistenceWritesToSettle(page: Page) {
+  await page.waitForTimeout(500)
+  const settledCount = await readPersistenceWriteCount(page)
+  await page.waitForTimeout(250)
+  expect(await readPersistenceWriteCount(page)).toBe(settledCount)
+}
+
+async function expectPersistenceWritesAfterToExclude(
+  page: Page,
+  startIndex: number,
+  obsoleteTexts: readonly string[],
+) {
+  const writes = await page.evaluate(
+    (index) =>
+      (
+        globalThis as typeof globalThis & {
+          e2ePersistenceWrites?: string[]
+        }
+      ).e2ePersistenceWrites?.slice(index) ?? [],
+    startIndex,
+  )
+  expect(writes.length).toBeGreaterThan(0)
+  for (const write of writes) {
+    for (const obsoleteText of obsoleteTexts) expect(write).not.toContain(obsoleteText)
+  }
+}
+
+async function observeInvalidationChannel(page: Page) {
+  await page.evaluate(() => {
+    const browserState = globalThis as typeof globalThis & {
+      e2eInvalidationChannel?: BroadcastChannel
+      e2eInvalidationNotificationCount?: number
+    }
+    browserState.e2eInvalidationNotificationCount = 0
+    browserState.e2eInvalidationChannel = new BroadcastChannel(
+      'eve-space-esi-query-cache-invalidation',
+    )
+    browserState.e2eInvalidationChannel.addEventListener('message', () => {
+      browserState.e2eInvalidationNotificationCount! += 1
+    })
+  })
+}
+
+async function readInvalidationNotificationCount(page: Page) {
+  return page.evaluate(
+    () =>
+      (globalThis as typeof globalThis & { e2eInvalidationNotificationCount?: number })
+        .e2eInvalidationNotificationCount ?? 0,
+  )
+}
+
+async function disableInvalidationNotificationsOnNextDocument(page: Page) {
+  await page.addInitScript(() => {
+    class SilentBroadcastChannel extends EventTarget {
+      readonly name: string
+      onmessage: ((event: MessageEvent) => void) | null = null
+      onmessageerror: ((event: MessageEvent) => void) | null = null
+
+      constructor(name: string) {
+        super()
+        this.name = name
+      }
+
+      close() {}
+
+      postMessage() {}
+    }
+    Object.defineProperty(globalThis, 'BroadcastChannel', {
+      configurable: true,
+      value: SilentBroadcastChannel,
+      writable: true,
+    })
+  })
+}
+
+async function delayLifecycleChecksOnNextDocument(page: Page) {
+  await page.addInitScript(() => {
+    const browserState = globalThis as typeof globalThis & {
+      e2eQueryPersistenceLifecycleEnabled?: boolean
+    }
+    browserState.e2eQueryPersistenceLifecycleEnabled = false
+    const addEventListener = EventTarget.prototype.addEventListener
+    EventTarget.prototype.addEventListener = function (type, listener, options) {
+      const delayed =
+        listener &&
+        ((this === window && (type === 'pageshow' || type === 'focus')) ||
+          (this === document && type === 'visibilitychange'))
+      if (!delayed) {
+        addEventListener.call(this, type, listener, options)
+        return
+      }
+      const wrappedListener: EventListener = (event) => {
+        if (!browserState.e2eQueryPersistenceLifecycleEnabled) return
+        if (typeof listener === 'function') listener(event)
+        else listener.handleEvent(event)
+      }
+      addEventListener.call(this, type, wrappedListener, options)
+    }
+  })
+}
+
+async function advanceDurableInvalidationGeneration(page: Page) {
+  const records = await readPersistenceRecords(page)
+  if (!records.envelope) throw new Error('The persisted envelope is missing.')
+  const control = records.control as { invalidationGeneration?: unknown }
+  const currentGeneration = control.invalidationGeneration
+  if (typeof currentGeneration !== 'number') throw new Error('The durable generation is invalid.')
+  records.envelope.invalidationGeneration = currentGeneration + 1
+  records.envelope.characters = {}
+  await writePersistenceRecords(page, records.envelope, {
+    version: 1,
+    invalidationGeneration: currentGeneration + 1,
+  })
+}
+
+async function logoutThroughAuthPage(page: Page) {
+  await navigateAndWaitForHydration(page, '/auth')
+  const logout = page.getByRole('button', { name: 'LOG OUT' })
+  await logout.waitFor({ state: 'visible' })
+  await logout.evaluate((button) => button.click())
+  await expect.poll(() => currentUserId).toBeNull()
+}
 
 function contrastRatio(foreground: string, background: string, backdrop = '#fff') {
   const backdropColor = parseColor(backdrop)
@@ -347,4 +1348,57 @@ function relativeLuminance(color: [number, number, number]) {
     return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
   })
   return red! * 0.2126 + green! * 0.7152 + blue! * 0.0722
+}
+
+function ownedCharacter() {
+  return {
+    characterId: 7,
+    name: 'Persistent Pilot',
+    corporationId: 98_000_001,
+    allianceId: null,
+    isMain: true,
+    birthday: '2020-01-01T00:00:00.000Z',
+    gender: 'Female',
+    race: 'Caldari',
+    bloodline: 'Deteis',
+    securityStatus: 1,
+    corporation: {
+      id: 98_000_001,
+      name: 'Persistence Corporation',
+      ticker: 'CACHE',
+      memberCount: 1,
+    },
+    alliance: null,
+    location: null,
+    ship: null,
+    skills: null,
+  }
+}
+
+function overviewResponse(bio = 'Cached capsuleer record.') {
+  return {
+    profile: {
+      id: 7,
+      name: 'Persistent Pilot',
+      birthday: '2020-01-01T00:00:00.000Z',
+      gender: 'Female',
+      race: 'Caldari',
+      raceFactionId: null,
+      bloodline: 'Deteis',
+      securityStatus: 1,
+      achievementScore: 0,
+      factionId: null,
+      bio,
+      corporation: {
+        id: 98_000_001,
+        name: 'Persistence Corporation',
+        ticker: 'CACHE',
+        memberCount: 1,
+      },
+      alliance: null,
+    },
+    location: { status: 'unavailable', message: 'Unavailable' },
+    ship: { status: 'unavailable', message: 'Unavailable' },
+    skills: { status: 'unavailable', message: 'Unavailable' },
+  }
 }

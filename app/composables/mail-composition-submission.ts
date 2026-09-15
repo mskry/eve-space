@@ -1,6 +1,7 @@
-import { useMutation } from '@pinia/colada'
+import { useMutation, useQueryCache } from '@pinia/colada'
 import { computed, ref, type ComputedRef } from 'vue'
 import { calculateMailCspaMutation, sendMailMutation, type MailRecipient } from '../queries/mail'
+import { reportPrivateQueryAuthorizationDenial } from '../query-persistence/runtime'
 import type { ApiClient } from '../utils/api-client'
 import {
   MAIL_BODY_LIMIT,
@@ -27,6 +28,7 @@ type MailSubmission = Pick<
 >
 
 export function useMailCompositionSubmission(options: MailSubmissionOptions) {
+  const queryCache = useQueryCache()
   const deliveryUnknown = ref(false)
   const chargeRecoveryAvailable = ref(false)
   const sendAuthorizationMessage = ref('')
@@ -63,6 +65,12 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
     sendAuthorizationUrl.value = ''
   }
 
+  function resetSubmissionState() {
+    resetOutcomes()
+    sendMutation.reset()
+    cspaMutation.reset()
+  }
+
   async function send() {
     const characterId = options.characterId.value
     if (!characterId || sendDisabledReason.value) return
@@ -96,9 +104,10 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
         submission,
       )
     } catch (error) {
+      if (!reportFailure(characterId, operationGeneration, error)) return
+      showAuthorizationToast(error, 'Mail charge authorization required')
       if (!options.draft.isCurrent(operationGeneration)) return
       options.draft.feedback.value = 'The recipient charge could not be determined.'
-      showAuthorizationToast(error, 'Mail charge authorization required')
       options.openConfirmDialog({
         confirmLabel: 'Send without approval',
         description:
@@ -145,7 +154,7 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
         submission,
       )
     } catch (error) {
-      if (!options.draft.isCurrent(operationGeneration)) return
+      if (!reportFailure(characterId, operationGeneration, error)) return
       options.draft.feedback.value = 'The recipient charge could not be determined.'
       showAuthorizationToast(error, 'Mail charge authorization required')
     }
@@ -175,6 +184,7 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
     operationGeneration: number,
     submission: MailSubmission,
   ) {
+    if (!options.draft.isCurrent(operationGeneration)) return
     try {
       await sendMutation.mutateAsync({
         apiClient: options.apiClient,
@@ -189,8 +199,7 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
         title: 'Mail sent',
       })
     } catch (error) {
-      if (!options.draft.isCurrent(operationGeneration)) return
-      handleSendFailure(error)
+      if (reportFailure(characterId, operationGeneration, error)) handleSendFailure(error)
     }
   }
 
@@ -245,11 +254,19 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
     })
   }
 
+  // Reporting a denial can synchronously reset the draft, so currency is read first.
+  function reportFailure(characterId: number, operationGeneration: number, error: unknown) {
+    const current = options.draft.isCurrent(operationGeneration)
+    reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'character', characterId }, error)
+    return current
+  }
+
   return {
     chargeRecoveryAvailable,
     deliveryUnknown,
     recoverCharge,
     resetOutcomes,
+    resetSubmissionState,
     send,
     sendAuthorizationMessage,
     sendAuthorizationUrl,

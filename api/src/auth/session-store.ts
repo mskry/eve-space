@@ -1,4 +1,4 @@
-import { and, eq, gt } from 'drizzle-orm'
+import { and, eq, gt, lt, sql } from 'drizzle-orm'
 import { db, type DatabaseTransaction } from '../db/client.js'
 import { characters, sessions, users } from '../db/schema.js'
 import { hashToken } from './security.js'
@@ -14,6 +14,12 @@ export interface CharacterSummary {
 export interface SessionAccount {
   userId: string
   mainCharacter: CharacterSummary
+}
+
+export interface SessionLifetime {
+  idleSeconds: number
+  absoluteSeconds: number
+  renewalIntervalSeconds: number
 }
 
 export async function findSession(sessionToken: string): Promise<SessionAccount | null> {
@@ -44,6 +50,29 @@ export async function findSession(sessionToken: string): Promise<SessionAccount 
       isMain: record.isMain,
     },
   }
+}
+
+export async function renewSession(
+  sessionToken: string,
+  lifetime: SessionLifetime,
+  now = new Date(),
+): Promise<Date | null> {
+  const idleExpiry = new Date(now.getTime() + lifetime.idleSeconds * 1_000)
+  const renewalThreshold = new Date(idleExpiry.getTime() - lifetime.renewalIntervalSeconds * 1_000)
+  const renewedExpiry = sql`least(${idleExpiry.toISOString()}::timestamptz, ${sessions.createdAt} + make_interval(secs => ${lifetime.absoluteSeconds}))`
+  const [record] = await db
+    .update(sessions)
+    .set({ expiresAt: renewedExpiry })
+    .where(
+      and(
+        eq(sessions.sessionHash, hashToken(sessionToken)),
+        gt(sessions.expiresAt, now),
+        lt(sessions.expiresAt, renewalThreshold),
+        lt(sessions.expiresAt, renewedExpiry),
+      ),
+    )
+    .returning({ expiresAt: sessions.expiresAt })
+  return record?.expiresAt ?? null
 }
 
 export async function deleteSession(sessionToken: string) {

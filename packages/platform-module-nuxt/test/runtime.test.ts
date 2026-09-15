@@ -15,8 +15,29 @@ import {
   reviveApiQueryError,
   toApiQueryError,
 } from '../src/runtime/query-error.js'
+import { selectEsiQueryPersistencePresentation } from '../src/runtime/query-persistence-presentation.js'
 
 describe('platform module runtime surface', () => {
+  it('selects the most actionable active persistence presentation', () => {
+    expect(
+      selectEsiQueryPersistencePresentation([
+        { kind: 'fresh' },
+        { kind: 'restored', originalSuccessAt: '2026-09-15T01:00:00.000Z' },
+        {
+          kind: 'restored-refresh-failed',
+          originalSuccessAt: '2026-09-15T01:00:00.000Z',
+          refreshFailureStatus: 503,
+        },
+        {
+          kind: 'server-stale',
+          validatedAt: '2026-09-15T01:02:00.000Z',
+          refreshFailureClass: 'esi-cooldown',
+        },
+      ]),
+    ).toMatchObject({ kind: 'restored-refresh-failed', refreshFailureStatus: 503 })
+    expect(selectEsiQueryPersistencePresentation([])).toEqual({ kind: 'fresh' })
+  })
+
   it('binds module queries to authoritative private subjects', () => {
     expect(
       platformModuleQueryKey('activity', { kind: 'character', characterId: 7 }, ['feed']),

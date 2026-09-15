@@ -1,4 +1,7 @@
-import { defineQueryOptions } from '@pinia/colada'
+import {
+  characterEsiPersistence,
+  defineEsiQueryOptions,
+} from '@eve-space/platform-module-nuxt/runtime'
 import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
 import { ApiQueryError, toApiQueryError } from '../utils/query-error'
@@ -19,7 +22,7 @@ interface CharacterAssetsQueryParameters {
   access: ProtectedCharacterQueryAccess
 }
 
-export const characterAssetsQuery = defineQueryOptions(
+export const characterAssetsQuery = defineEsiQueryOptions(
   ({ apiClient, characterId, access }: CharacterAssetsQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterAssets(characterId),
     query: async ({ signal }) => {
@@ -41,6 +44,7 @@ export const characterAssetsQuery = defineQueryOptions(
       return assets
     },
     ...QUERY_POLICY.characterAssets,
+    esiPersistence: characterEsiPersistence(characterId),
     enabled: canRunProtectedCharacterQuery(access, characterId),
   }),
 )

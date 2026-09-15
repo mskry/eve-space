@@ -12,6 +12,11 @@ afterEach(() => {
 async function mountNotice(props: {
   status: 'operational' | 'degraded' | 'unavailable' | 'partial' | 'stale' | undefined
   checkedAt?: string
+  presentation?:
+    | { kind: 'fresh' }
+    | { kind: 'restored'; originalSuccessAt: string }
+    | { kind: 'restored-refresh-failed'; originalSuccessAt: string; retryAt?: string }
+    | { kind: 'server-stale'; validatedAt?: string; retryAt?: string }
   vip?: boolean
 }) {
   const wrapper = await mountSuspended(AppUpstreamNotice, {
@@ -29,23 +34,44 @@ describe('AppUpstreamNotice', () => {
     expect((await mountNotice({ status: undefined })).find('.upstream-notice').exists()).toBe(false)
   })
 
-  it('explains that cached data is being served when the upstream stops responding', async () => {
-    const wrapper = await mountNotice({ status: 'stale' })
+  it('keeps normal browser restoration quiet while the upstream is healthy', async () => {
+    const wrapper = await mountNotice({
+      status: 'operational',
+      presentation: { kind: 'restored', originalSuccessAt: checkedAt },
+    })
 
-    const notice = wrapper.get('.upstream-notice')
-    expect(notice.element.tagName).toBe('OUTPUT')
-    expect(notice.attributes('data-status')).toBe('stale')
-    expect(notice.text()).toContain('TRANQUILITY NOT RESPONDING')
-    expect(notice.text()).toContain('served from cache')
-    expect(notice.text()).toContain('LAST CONTACT')
+    expect(wrapper.find('.upstream-notice').exists()).toBe(false)
   })
 
-  it('separates an unreachable upstream from a merely stale one', async () => {
+  it('distinguishes a restored snapshot whose refresh failed from server-stale data', async () => {
+    const retryAt = '2026-09-01T11:05:00.000Z'
+    const restored = await mountNotice({
+      status: 'operational',
+      presentation: { kind: 'restored-refresh-failed', originalSuccessAt: checkedAt, retryAt },
+    })
+    expect(restored.get('.upstream-notice').attributes('data-status')).toBe(
+      'restored-refresh-failed',
+    )
+    expect(restored.text()).toContain('HISTORICAL DATA / REFRESH FAILED')
+    expect(restored.text()).toContain('RETRY AFTER')
+
+    const serverStale = await mountNotice({
+      status: 'operational',
+      presentation: { kind: 'server-stale', validatedAt: checkedAt, retryAt },
+    })
+    expect(serverStale.get('.upstream-notice').attributes('data-status')).toBe('server-stale')
+    expect(serverStale.text()).toContain('SERVER CACHE DEGRADED')
+    expect(serverStale.text()).toContain('LAST VALIDATED')
+  })
+
+  it('explains that an unreachable upstream can fall back to previously loaded data', async () => {
     const wrapper = await mountNotice({ status: 'unavailable' })
 
     expect(wrapper.get('.upstream-notice').attributes('data-status')).toBe('unavailable')
     expect(wrapper.get('.upstream-notice').text()).toContain('TRANQUILITY UNREACHABLE')
-    expect(wrapper.get('.upstream-notice').text()).toContain('until EVE Online returns')
+    expect(wrapper.get('.upstream-notice').text()).toContain(
+      'Previously loaded data may be shown from cache.',
+    )
     expect(wrapper.find('.upstream-notice-contact').exists()).toBe(false)
   })
 
@@ -68,7 +94,7 @@ describe('AppUpstreamNotice', () => {
   })
 
   it('omits the contact line when the upstream was never reached', async () => {
-    const wrapper = await mountNotice({ status: 'stale', checkedAt: undefined })
+    const wrapper = await mountNotice({ status: 'unavailable', checkedAt: undefined })
 
     expect(wrapper.find('.upstream-notice-contact').exists()).toBe(false)
   })

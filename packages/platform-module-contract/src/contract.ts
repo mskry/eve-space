@@ -30,6 +30,35 @@ export interface PlatformOrganizationContributionAuthorization {
   readonly requiredPermission: string
 }
 
+export function platformOrganizationAdmissionScope(
+  ownerId: string,
+  authorization: PlatformOrganizationContributionAuthorization,
+) {
+  return `organization:v1:${ownerId}:${authorization.audience}:${authorization.requiredPermission}`
+}
+
+export const coreOrganizationAdmissionScopes = {
+  activities: platformOrganizationAdmissionScope('core', {
+    audience: 'member',
+    requiredPermission: 'organization.activities',
+  }),
+  rosterCoverage: platformOrganizationAdmissionScope('core', {
+    audience: 'hr',
+    requiredPermission: 'organization.roster-coverage',
+  }),
+} as const
+
+export interface PlatformQueryAdmissionScopeDescriptor extends PlatformOrganizationContributionAuthorization {
+  readonly routeId: string
+  readonly admissionScope: string
+  readonly authorization: PlatformAuthorizationStrategy
+}
+
+export interface PlatformInstalledOrganizationAdmissionScopeDescriptor extends PlatformOrganizationContributionAuthorization {
+  readonly moduleId: string
+  readonly admissionScope: string
+}
+
 export const platformNavigationAudiences = [
   'public',
   'authenticated',
@@ -946,6 +975,7 @@ export interface PlatformNavigationContribution {
 export interface PlatformNuxtContributionDescriptor {
   readonly moduleId: string
   readonly defaultIcon: PlatformIconToken
+  readonly queryAdmissionScopes: readonly PlatformQueryAdmissionScopeDescriptor[]
   readonly pages: readonly PlatformPageContribution[]
   readonly navigation: readonly PlatformNavigationContribution[]
   readonly exposed?: PlatformNuxtExposedContributions

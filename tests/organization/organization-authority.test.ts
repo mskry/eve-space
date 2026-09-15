@@ -5,6 +5,7 @@ import { computed, defineComponent, h, onMounted, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useOrganizationAuthority } from '../../app/composables/useOrganizationAuthority'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
+import { invalidatePrivateQueryScope } from '../../app/query-persistence/runtime'
 import { createApiClient } from '../../app/utils/api-client'
 import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
@@ -113,6 +114,94 @@ describe('organization authority', () => {
     expect(invalidateQueries).toHaveBeenCalledTimes(2)
     expect(authority.mutationPending.value).toBe(false)
     expect(authority.errorMessage.value).toBe('')
+    wrapper.unmount()
+  })
+
+  it('resets pending mutation state and ignores a late grant after invalidation', async () => {
+    let finishGrant!: () => void
+    const grantCanFinish = new Promise<void>((resolve) => (finishGrant = resolve))
+    const context = organizationOwnerContext()
+    queryServer.use(
+      http.get('http://localhost/api/admin/setup', () =>
+        HttpResponse.json({ required: false, available: true }),
+      ),
+      http.get('http://localhost/api/organization/context', () => HttpResponse.json(context)),
+      http.get('http://localhost/api/organization/roles', () =>
+        HttpResponse.json({ grants: [roleGrant()] }),
+      ),
+      http.post('http://localhost/api/organization/roles', async () => {
+        await grantCanFinish
+        return HttpResponse.json({ grant: roleGrant() }, { status: 201 })
+      }),
+    )
+    vi.stubGlobal('computed', computed)
+    vi.stubGlobal('useAuthSession', () => ({
+      authSession: ref({ authenticated: true }),
+      initializeAuth: vi.fn().mockResolvedValue(true),
+    }))
+    let authority!: ReturnType<typeof useOrganizationAuthority>
+    let queryCache!: ReturnType<typeof useQueryCache>
+    const Root = defineComponent({
+      setup() {
+        queryCache = useQueryCache()
+        queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationContext(), context)
+        queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationRoles(), { grants: [roleGrant()] })
+        authority = useOrganizationAuthority(apiClient)
+        return () => h('span')
+      },
+    })
+    const { wrapper } = mountWithQueryPlugins(Root)
+    const revision = authority.invalidationRevision.value
+    const grant = authority.grantRole({
+      userId: 'new-user',
+      role: 'hr_auditor',
+      reason: 'Coverage test',
+    })
+    await vi.waitFor(() => expect(authority.mutationPending.value).toBe(true))
+
+    void invalidatePrivateQueryScope(queryCache, { kind: 'organization' })
+
+    expect(authority.invalidationRevision.value).toBe(revision + 1)
+    expect(authority.mutationPending.value).toBe(false)
+    finishGrant()
+    await expect(grant).resolves.toBe(false)
+    expect(authority.mutationPending.value).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('keeps an authorization denial visible after it resets organization state', async () => {
+    queryServer.use(
+      http.post('http://localhost/api/organization/roles', () =>
+        HttpResponse.json(
+          {
+            code: 'ORGANIZATION_OWNER_REQUIRED',
+            message: 'Organization owner authority is required.',
+          },
+          { status: 403 },
+        ),
+      ),
+    )
+    vi.stubGlobal('computed', computed)
+    vi.stubGlobal('useAuthSession', () => ({
+      authSession: ref({ authenticated: false }),
+      initializeAuth: vi.fn().mockResolvedValue(false),
+    }))
+    let authority!: ReturnType<typeof useOrganizationAuthority>
+    const Root = defineComponent({
+      setup() {
+        authority = useOrganizationAuthority(apiClient)
+        return () => h('span')
+      },
+    })
+    const { wrapper } = mountWithQueryPlugins(Root)
+    const revision = authority.invalidationRevision.value
+
+    await expect(
+      authority.grantRole({ userId: 'new-user', role: 'hr_auditor', reason: 'Coverage test' }),
+    ).rejects.toThrow('Organization owner authority is required.')
+
+    expect(authority.invalidationRevision.value).toBe(revision + 1)
+    expect(authority.errorMessage.value).toBe('Organization owner authority is required.')
     wrapper.unmount()
   })
 })

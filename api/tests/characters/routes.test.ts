@@ -54,6 +54,7 @@ vi.mock('../../src/characters/profile.js', () => ({
 
 vi.mock('../../src/characters/history.js', () => ({
   getCharacterEmploymentHistory: mocks.getCharacterEmploymentHistory,
+  getCharacterEmploymentHistoryResult: mocks.getCharacterEmploymentHistory,
 }))
 
 vi.mock('../../src/characters/overview.js', () => ({
@@ -151,14 +152,19 @@ beforeEach(() => {
   ])
   mocks.setMainCharacter.mockResolvedValue({ ...altCharacter, isMain: true })
   mocks.getCharacterProfile.mockResolvedValue(profile)
-  mocks.getCharacterEmploymentHistory.mockResolvedValue([
-    {
-      recordId: 1,
-      startDate: '2020-01-01T00:00:00Z',
-      isDeleted: false,
-      corporation: { id: 1000166, name: 'Test Corp' },
-    },
-  ])
+  mocks.getCharacterEmploymentHistory.mockResolvedValue({
+    data: [
+      {
+        recordId: 1,
+        startDate: '2020-01-01T00:00:00Z',
+        isDeleted: false,
+        corporation: { id: 1000166, name: 'Test Corp' },
+      },
+    ],
+    source: 'cache',
+    quota: {},
+    ...freshness,
+  })
   mocks.getCharacterLocation.mockResolvedValue(location)
   mocks.getCharacterShip.mockResolvedValue(ship)
   mocks.getCharacterSkillsSummary.mockResolvedValue({
@@ -373,12 +379,13 @@ describe('owned character overview', () => {
     )
   })
 
-  test('reports stale location and ship metadata at the overview root', async () => {
-    mocks.getCharacterShip.mockResolvedValue({
-      ...ship,
+  test('retains the profile and exposes its aggregate stale metadata at the overview root', async () => {
+    mocks.getCharacterProfile.mockResolvedValue({
+      ...profile,
       cachedUntil: '2026-09-01T10:59:00.000Z',
       validatedAt: '2026-09-01T10:58:00.000Z',
       stale: true,
+      retryAt: '2026-09-01T11:07:00.000Z',
       refreshFailureClass: 'esi-unavailable',
     })
 
@@ -389,7 +396,13 @@ describe('owned character overview', () => {
       cachedUntil: '2026-09-01T10:59:00.000Z',
       validatedAt: '2026-09-01T10:58:00.000Z',
       stale: true,
+      retryAt: '2026-09-01T11:07:00.000Z',
       refreshFailureClass: 'esi-unavailable',
+      profile: {
+        id: altCharacter.characterId,
+        stale: true,
+        validatedAt: '2026-09-01T10:58:00.000Z',
+      },
     })
   })
 
@@ -579,6 +592,8 @@ describe('owned character employment history', () => {
     expect(await response.json()).toMatchObject({
       characterId: altCharacter.characterId,
       history: [{ corporation: { name: 'Test Corp' } }],
+      stale: false,
+      validatedAt: freshness.validatedAt,
     })
     expect(mocks.getCharacterEmploymentHistory).toHaveBeenCalledWith(altCharacter.characterId)
   })
@@ -601,6 +616,32 @@ describe('owned character employment history', () => {
     expect(await response.json()).toEqual({
       code: 'ESI_UNAVAILABLE',
       message: 'Employment history is temporarily unavailable.',
+    })
+  })
+
+  test('exposes stale employment metadata at the response root', async () => {
+    mocks.getCharacterEmploymentHistory.mockResolvedValue({
+      data: [],
+      source: 'cache',
+      quota: {},
+      cachedUntil: '2026-09-01T10:59:00.000Z',
+      validatedAt: '2026-09-01T10:58:00.000Z',
+      stale: true,
+      retryAt: '2026-09-01T11:07:00.000Z',
+      refreshFailureClass: 'esi-unavailable',
+    })
+
+    const response = await authorizedRequest(`/${altCharacter.characterId}/history`)
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      characterId: altCharacter.characterId,
+      history: [],
+      cachedUntil: '2026-09-01T10:59:00.000Z',
+      validatedAt: '2026-09-01T10:58:00.000Z',
+      stale: true,
+      retryAt: '2026-09-01T11:07:00.000Z',
+      refreshFailureClass: 'esi-unavailable',
     })
   })
 
@@ -739,7 +780,10 @@ function authorizedRequest(path: string, method = 'GET') {
 function mountedAuthorizedRequest(path: string, method = 'GET') {
   return app.request(`/api/me/characters${path}`, {
     method,
-    headers: { Cookie: 'eve_space_session=active-session' },
+    headers: {
+      Cookie: 'eve_space_session=active-session',
+      Origin: 'http://localhost:3000',
+    },
   })
 }
 

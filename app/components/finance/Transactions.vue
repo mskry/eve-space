@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type {
   FinanceResourceState,
   FinanceTransaction,
@@ -15,6 +16,7 @@ const props = defineProps<{
   emptyMessage: string
   filter: FinanceTransactionSideFilter
   now: number
+  presentation?: EsiQueryPersistencePresentation
   rangeIndex: number
   searchQuery: string
   state: FinanceResourceState
@@ -61,6 +63,7 @@ function changeSearch(event: Event) {
   <div class="finance-service-body">
     <FinanceServicePanel
       :has-data="Boolean(transactions)"
+      :presentation="presentation"
       :state="state"
       title="Market transactions"
       :validated-at="transactions?.validatedAt"

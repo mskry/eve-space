@@ -2,6 +2,13 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '#build/eve-space-platform/query-admission-scopes': fileURLToPath(
+        new URL('./test/support/query-admission-scopes.ts', import.meta.url),
+      ),
+    },
+  },
   test: {
     environment: 'node',
     include: ['test/**/*.test.ts'],

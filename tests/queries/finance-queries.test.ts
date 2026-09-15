@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw'
 import { createPinia } from 'pinia'
 import { createSSRApp, defineComponent, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { unauthenticatedSession } from '../../app/queries/auth'
 import {
   characterFinanceBalanceQuery,
@@ -24,8 +24,9 @@ import { clearAuthenticatedQueries, removeCharacterQueries } from '../../app/que
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { QUERY_POLICY } from '../../app/queries/query-policy'
 import { createApiClient } from '../../app/utils/api-client'
-import { coladaOptions, QUERY_GC_TIME } from '../../app/utils/colada-options'
+import { coladaOptions } from '../../app/utils/colada-options'
 import { ApiQueryError } from '../../app/utils/query-error'
+import { ESI_QUERY_RETENTION_MS } from '../../packages/platform-module-nuxt/src/runtime/esi-query-persistence'
 import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
 
@@ -44,6 +45,8 @@ const freshness = {
   stale: true,
   refreshFailureClass: 'esi-unavailable' as const,
 }
+
+afterEach(() => vi.restoreAllMocks())
 
 describe('character Finance query identities and policies', () => {
   it('uses a hierarchical identity for every Finance resource boundary', () => {
@@ -182,11 +185,8 @@ describe('character Finance query identities and policies', () => {
     expect(firstBidPage.key).toEqual(secondBidPage.key)
   })
 
-  it('uses each ESI resource freshness window and memory garbage-collection policy', () => {
-    expect(QUERY_POLICY.characterFinanceBalance).toEqual({
-      staleTime: 2 * 60_000,
-      gcTime: QUERY_GC_TIME,
-    })
+  it('uses each ESI resource freshness window and persisted retention policy', () => {
+    expect(QUERY_POLICY.characterFinanceBalance.staleTime).toBe(2 * 60_000)
     expect(QUERY_POLICY.characterFinanceJournal.staleTime).toBe(60 * 60_000)
     expect(QUERY_POLICY.characterFinanceTransactions.staleTime).toBe(60 * 60_000)
     expect(QUERY_POLICY.characterFinanceOpenOrders.staleTime).toBe(20 * 60_000)
@@ -195,18 +195,9 @@ describe('character Finance query identities and policies', () => {
     expect(QUERY_POLICY.characterFinanceContractItems.staleTime).toBe(60 * 60_000)
     expect(QUERY_POLICY.characterFinanceContractBids.staleTime).toBe(5 * 60_000)
 
-    expect(
-      [
-        QUERY_POLICY.characterFinanceBalance,
-        QUERY_POLICY.characterFinanceJournal,
-        QUERY_POLICY.characterFinanceTransactions,
-        QUERY_POLICY.characterFinanceOpenOrders,
-        QUERY_POLICY.characterFinanceOrderHistory,
-        QUERY_POLICY.characterFinanceContracts,
-        QUERY_POLICY.characterFinanceContractItems,
-        QUERY_POLICY.characterFinanceContractBids,
-      ].every((policy) => policy.gcTime === QUERY_GC_TIME),
-    ).toBe(true)
+    expect(allFinanceOptions().every((options) => options.gcTime === ESI_QUERY_RETENTION_MS)).toBe(
+      true,
+    )
   })
 })
 
@@ -293,6 +284,7 @@ describe('character Finance query gates', () => {
 
 describe('character Finance Hono query factories', () => {
   it('loads every route, forwards page parameters, and preserves stale metadata', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-02T12:30:00.000Z'))
     const parameters = new Map<string, string | null>()
     installSuccessfulHandlers(parameters)
     const Root = allFinanceConsumer()
@@ -403,6 +395,7 @@ describe('character Finance Hono query factories', () => {
   })
 
   it('maps one service error without invalidating successful sibling data', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-02T12:30:00.000Z'))
     queryServer.use(
       http.get('http://localhost/api/me/characters/7/wallet/journal', () =>
         HttpResponse.json(

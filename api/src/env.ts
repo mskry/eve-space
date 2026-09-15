@@ -60,10 +60,6 @@ const schema = z.object({
     (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
     z.string().min(32).optional(),
   ),
-  SESSION_COOKIE_SECURE: z
-    .string()
-    .default('false')
-    .transform((value) => value === 'true'),
   QUEUE_REDIS_URL: redisUrl.default('redis://localhost:6379'),
   QUEUE_COMPLETED_RETENTION_AGE_SECONDS: positiveInteger.default(86_400),
   QUEUE_COMPLETED_RETENTION_COUNT: positiveInteger.default(1_000),

@@ -65,6 +65,25 @@ describe('character employment history service', () => {
 
     await expect(getCharacterEmploymentHistory(90_000_101)).rejects.toMatchObject({ status: 503 })
   })
+
+  test('preserves stale read metadata for route callers', async () => {
+    mocks.executeRepresentation.mockResolvedValue({
+      ...response(employmentHistoryFixture),
+      stale: true,
+      validatedAt: '2026-08-20T11:55:00.000Z',
+      retryAt: '2026-08-20T12:05:00.000Z',
+      refreshFailureClass: 'esi-unavailable',
+    })
+    const { getCharacterEmploymentHistoryResult } = await import('../../src/characters/history.js')
+
+    await expect(getCharacterEmploymentHistoryResult(90_000_101)).resolves.toMatchObject({
+      data: employmentHistoryFixture,
+      stale: true,
+      validatedAt: '2026-08-20T11:55:00.000Z',
+      retryAt: '2026-08-20T12:05:00.000Z',
+      refreshFailureClass: 'esi-unavailable',
+    })
+  })
 })
 
 function response<Data>(data: Data) {

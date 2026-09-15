@@ -32,6 +32,19 @@ export function registerPlatformTemplates(
     getContents: () =>
       `import type { PlatformNavigationEntry, PlatformPageMetadata } from '@eve-space/platform-module-nuxt/runtime'\n\nexport const platformNavigation: readonly PlatformNavigationEntry[] = ${JSON.stringify(navigation)}\n\nexport const platformPageMetadata: readonly PlatformPageMetadata[] = ${JSON.stringify(pages)}\n`,
   })
+  addTemplate({
+    filename: 'eve-space-platform/query-admission-scopes.ts',
+    write: true,
+    getContents: () =>
+      `import type { PlatformQueryAdmissionScopeDescriptor } from '@eve-space/platform-module-contract'\n\nexport const platformQueryAdmissionScopes: readonly (PlatformQueryAdmissionScopeDescriptor & { readonly moduleId: string })[] = ${JSON.stringify(
+        contributions.flatMap((contribution) =>
+          contribution.queryAdmissionScopes.map((scope) => ({
+            moduleId: contribution.moduleId,
+            ...scope,
+          })),
+        ),
+      )}\n`,
+  })
   addTypeTemplate({
     filename: 'types/eve-space-platform-page-meta.d.ts',
     getContents: () => pageMetaTypes,

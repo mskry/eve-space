@@ -163,6 +163,8 @@ These rules apply to every source directory. Keep a directory flat by default, w
 
 ## Code Review Rules
 
+- For fetching, ESI integration, query caching, or browser persistence reviews, follow [the fetching-layer compliance checklist](docs/fetching-layer-compliance-checklist.md). Record evidence and unresolved policy conflicts using its report format.
+
 ### Nuxt/API Execution Boundaries
 
 - Review every changed Nuxt request together with the final Hono route as mounted in `api/src/index.ts`. Do not infer access requirements from feature-router comments or from whether the underlying ESI data is public.
@@ -196,6 +198,7 @@ These rules apply to every source directory. Keep a directory flat by default, w
 - Ordinary attachment must reject a character owned by another application user without merging users or revealing ownership. Cross-user transfer is allowed only through an unexpired, unrevoked deployment-administrator approval bound to the source lifecycle and destination user, followed by destination-session and exact-character EVE SSO proof.
 - Deployment administrators may preview the minimum source/destination identity and blocker data needed to approve a transfer. This narrow permission grants no general character lookup, organization authority, or private organization-data access.
 - Session bearer values are random and stored only as SHA-256 hashes.
+- Application sessions expire after 14 idle days and never outlive 30 days from creation. Session verification renews them at most once per day.
 - EVE access and refresh tokens are encrypted with AES-256-GCM before persistence.
 - Refresh tokens, the EVE client secret, and `TOKEN_ENCRYPTION_KEY` must never reach Nuxt or logs.
 - Domain-event payloads, queue jobs, telemetry, and logs must never contain tokens, session bearers, credentials, encryption material, or secrets.
@@ -204,9 +207,12 @@ These rules apply to every source directory. Keep a directory flat by default, w
 - Organization audit rows are append-only and retained separately from domain-event recovery. They contain actor/subject identifiers, decisions, reasons, policy and organization versions, and resulting entitlement outcomes, never token or raw private ESI fields.
 - JWT signature, expiration, issuer, and required audiences must remain verified.
 - Wallet access requires `esi-wallet.read_character_wallet.v1`; preserve scope checks and reauthorization responses.
-- Keep auth cookies HttpOnly, SameSite Lax, high priority, and secure when `SESSION_COOKIE_SECURE` is enabled.
+- Keep the member session, administrator session, and OAuth state cookies HttpOnly, SameSite Lax, and high priority. They are Secure whenever `EVE_CALLBACK_URL`, the API's public URL, uses HTTPS, and then carry the `__Host-` prefix, or `__Secure-` for path-scoped cookies; plain HTTP is for local development only. Set, read, and delete them through `api/src/http/auth-cookie.ts`.
 - Keep credentialed CORS restricted to `WEB_ORIGIN`.
-- Private data is never persisted by the client query cache; keep `colada.options.ts` in-memory only.
+- Keep global Hono CSRF protection bound to `WEB_ORIGIN`. Unsafe form-compatible requests (form, multipart, plain-text, or missing content type) require that exact `Origin` or same-origin fetch metadata; JSON mutations rely on the credentialed CORS preflight. Route tests for unsafe requests must send the trusted `Origin`. The only exception is the development-only `POST /auth/local-fixture-session` exchange, which also accepts the opaque `Origin: null` sent by the file-based fixture handoff form.
+- Browser query persistence may include explicitly classified public ESI, character ESI, and organization ESI results. Public persistence requires a genuinely public application route; public upstream ESI data does not make a session-protected application response public.
+- Persisted character and organization results must be owner-bound. Restored private entries stay gated until the live application session verifies the same user and current subject admission succeeds. Character entries bind to the current character authorization revision; organization entries additionally bind to the current organization version, authorization revision, and permitted admission scope.
+- Logout, an authentication denial, or an owner change clears both in-memory and persisted private data. A lapsed admission window, or a session verification or cache admission request that returns no verdict (network failure, timeout, or server error), suspends private admission without deleting persisted data or live private query results; retained entries stay gated until verification and admission succeed. Character authorization changes and organization version, compliance, permission, or module-access changes invalidate the affected private bindings. Persisted data never grants authorization; sessions, credentials, administrator state, and authorization decisions remain excluded from query persistence.
 - Never commit `.env`; document new settings in `.env.example`.
 
 ## ESI And Caching

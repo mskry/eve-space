@@ -2,7 +2,7 @@ import { useQuery } from '@pinia/colada'
 import { flushPromises } from '@vue/test-utils'
 import { http, HttpResponse } from 'msw'
 import { defineComponent, h } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   organizationActivitiesQuery,
   organizationAuditQuery,
@@ -24,6 +24,8 @@ import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
 
 const apiClient = createApiClient('http://localhost')
+
+afterEach(() => vi.restoreAllMocks())
 
 describe('organization queries', () => {
   it('loads member compliance through the private API query', async () => {
@@ -69,9 +71,12 @@ describe('organization queries', () => {
   })
 
   it('loads prioritized member activities through the private API query', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-08T10:00:00.000Z'))
     const response = {
       organizationVersion: 1,
       generatedAt: '2026-09-08T10:00:00.000Z',
+      stale: true,
+      validatedAt: '2026-09-08T09:55:00.000Z',
       activities: [
         {
           id: 'organization-activity:project:17',
@@ -99,7 +104,7 @@ describe('organization queries', () => {
             corporationId: 98_000_001,
             characterId: 1_404_328_063,
           },
-          freshness: { state: 'current', collectedAt: '2026-09-08T09:55:00.000Z' },
+          freshness: { state: 'stale', collectedAt: '2026-09-08T09:55:00.000Z' },
         },
       ],
       sources: [
@@ -107,7 +112,7 @@ describe('organization queries', () => {
           sourceId: 'organization-activity:organization-activity',
           moduleId: 'organization-activity',
           providerId: 'organization-activity',
-          freshness: { state: 'current', collectedAt: '2026-09-08T09:55:00.000Z' },
+          freshness: { state: 'stale', collectedAt: '2026-09-08T09:55:00.000Z' },
         },
       ],
     } satisfies OrganizationActivities
@@ -117,14 +122,20 @@ describe('organization queries', () => {
     const Root = defineComponent({
       setup() {
         const activities = useQuery(organizationActivitiesQuery(apiClient))
-        return () => h('span', activities.data.value?.activities[0]?.title ?? 'loading')
+        return () =>
+          h(
+            'span',
+            activities.data.value
+              ? `${activities.data.value.activities[0]?.title}:${activities.data.value.stale}:${activities.data.value.validatedAt}`
+              : 'loading',
+          )
       },
     })
 
     const { wrapper } = mountWithQueryPlugins(Root)
     await flushPromises()
 
-    expect(wrapper.text()).toBe('Build the fleet reserve')
+    expect(wrapper.text()).toBe('Build the fleet reserve:true:2026-09-08T09:55:00.000Z')
     wrapper.unmount()
   })
 
@@ -196,12 +207,16 @@ describe('organization queries', () => {
   })
 
   it('loads HR roster coverage through the private API query', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-01T10:00:00.000Z'))
     const response = {
+      stale: true,
+      validatedAt: '2026-09-01T09:30:00.000Z',
+      refreshFailureClass: 'esi-cooldown',
       managedCorporations: {
-        status: 'current',
-        validatedAt: '2026-09-01T10:00:00.000Z',
+        status: 'stale',
+        validatedAt: '2026-09-01T09:30:00.000Z',
         attemptedAt: '2026-09-01T10:00:00.000Z',
-        lastFailureClass: null,
+        lastFailureClass: 'esi-cooldown',
       },
       corporations: [
         {
@@ -230,14 +245,20 @@ describe('organization queries', () => {
     const Root = defineComponent({
       setup() {
         const coverage = useQuery(organizationRosterCoverageQuery(apiClient))
-        return () => h('span', coverage.data.value?.corporations[0]?.unregisteredCharacters.length)
+        return () =>
+          h(
+            'span',
+            coverage.data.value
+              ? `${coverage.data.value.corporations[0]?.unregisteredCharacters.length}:${coverage.data.value.stale}:${coverage.data.value.validatedAt}`
+              : 'loading',
+          )
       },
     })
 
     const { wrapper } = mountWithQueryPlugins(Root)
     await flushPromises()
 
-    expect(wrapper.text()).toBe('1')
+    expect(wrapper.text()).toBe('1:true:2026-09-01T09:30:00.000Z')
     wrapper.unmount()
   })
 

@@ -1,8 +1,9 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { useQueryCache } from '@pinia/colada'
+import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-contract'
 import { flushPromises, RouterLinkStub } from '@vue/test-utils'
 import { http, HttpResponse } from 'msw'
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import MemberOverviewPage from '../../app/pages/index.vue'
 import type { OrganizationActivities, OrganizationCompliance } from '../../app/queries/organization'
@@ -13,15 +14,21 @@ const mountedWrappers: { unmount: () => void }[] = []
 
 beforeAll(() => queryServer.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => queryServer.close())
+beforeEach(clearQueryCache)
 
 afterEach(async () => {
   for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  clearQueryCache()
+  queryServer.resetHandlers()
+  vi.restoreAllMocks()
+  await flushPromises()
+})
+
+function clearQueryCache() {
   const queryCache = useQueryCache()
   queryCache.cancelQueries()
   for (const entry of queryCache.getEntries()) queryCache.remove(entry)
-  queryServer.resetHandlers()
-  await flushPromises()
-})
+}
 
 describe('authenticated member overview', () => {
   it('prioritizes compliance, remediation, and eligible-character activity', async () => {
@@ -42,6 +49,7 @@ describe('authenticated member overview', () => {
           },
         }),
       ),
+      http.get('*/api/me/cache-admission', () => HttpResponse.json(memberCacheAdmission)),
       http.get('*/api/admin/session', () => HttpResponse.json({ authenticated: false })),
       http.get('*/api/admin/setup', () => HttpResponse.json({ required: false, available: true })),
       http.get('*/api/modules', () =>
@@ -51,7 +59,7 @@ describe('authenticated member overview', () => {
         }),
       ),
       http.get('*/api/organization/compliance', () => HttpResponse.json(complianceResponse)),
-      http.get('*/api/organization/activities', () => HttpResponse.json(activityResponse)),
+      http.get('*/api/organization/activities', () => HttpResponse.json(currentActivityResponse())),
     )
 
     const wrapper = await mountSuspended(MemberOverviewPage, {
@@ -165,8 +173,15 @@ describe('authenticated member overview', () => {
           },
         }),
       ),
+      http.get('*/api/me/cache-admission', () => HttpResponse.json(memberCacheAdmission)),
       http.get('*/api/admin/session', () => HttpResponse.json({ authenticated: false })),
       http.get('*/api/admin/setup', () => HttpResponse.json({ required: true, available: true })),
+      http.get('*/api/modules', () =>
+        HttpResponse.json({
+          enabledModuleIds: [],
+          shellNavigationOrder: { dashboard: [], character: [] },
+        }),
+      ),
       http.get('*/api/organization/compliance', () => {
         complianceRequests += 1
         return HttpResponse.json(complianceResponse)
@@ -228,6 +243,7 @@ function useOverviewHandlers(
         },
       }),
     ),
+    http.get('*/api/me/cache-admission', () => HttpResponse.json(memberCacheAdmission)),
     http.get('*/api/admin/session', () => HttpResponse.json({ authenticated: false })),
     http.get('*/api/admin/setup', () => HttpResponse.json({ required: false, available: true })),
     http.get('*/api/modules', () =>
@@ -239,7 +255,7 @@ function useOverviewHandlers(
     http.get('*/api/organization/compliance', () => HttpResponse.json(compliance)),
     http.get('*/api/organization/activities', () => {
       onActivityRequest?.()
-      return HttpResponse.json(activityResponse)
+      return HttpResponse.json(currentActivityResponse())
     }),
   )
 }
@@ -283,9 +299,25 @@ const complianceResponse = {
     'EVE SSO authorizes one selected character at a time. Registration completeness depends on member disclosure and organization policy.',
 } satisfies OrganizationCompliance
 
+const memberCacheAdmission = {
+  userId: 'member-user',
+  characters: [
+    { characterId: 1_404_328_063, admissionRevision: 'main-character-revision' },
+    { characterId: 90_000_002, admissionRevision: 'industry-character-revision' },
+  ],
+  organization: {
+    organizationVersion: 1,
+    admissionRevision: 'organization-revision-1',
+    validUntil: null,
+    admissionScopes: [coreOrganizationAdmissionScopes.activities],
+  },
+}
+
 const activityResponse = {
   organizationVersion: 1,
   generatedAt: '2026-09-08T10:00:00.000Z',
+  stale: true,
+  validatedAt: '2026-09-08T08:55:00.000Z',
   activities: [
     {
       id: 'organization-activity:project:17',
@@ -354,3 +386,8 @@ const activityResponse = {
     },
   ],
 } satisfies OrganizationActivities
+
+function currentActivityResponse(): OrganizationActivities {
+  const currentTime = new Date().toISOString()
+  return { ...activityResponse, generatedAt: currentTime, validatedAt: currentTime }
+}

@@ -1,4 +1,7 @@
-import { defineQueryOptions } from '@pinia/colada'
+import {
+  characterEsiPersistence,
+  defineEsiQueryOptions,
+} from '@eve-space/platform-module-nuxt/runtime'
 import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
 import { isPositiveSafeInteger } from '../utils/number-guards'
@@ -60,7 +63,7 @@ const financeIdentityMismatch = () =>
     code: 'FINANCE_IDENTITY_MISMATCH',
   })
 
-export const characterFinanceBalanceQuery = defineQueryOptions(
+export const characterFinanceBalanceQuery = defineEsiQueryOptions(
   ({ apiClient, characterId, access }: FinanceQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterFinanceBalance(characterId),
     query: async ({ signal }) => {
@@ -76,11 +79,12 @@ export const characterFinanceBalanceQuery = defineQueryOptions(
       return balance
     },
     ...QUERY_POLICY.characterFinanceBalance,
+    esiPersistence: characterEsiPersistence(characterId),
     enabled: canRunProtectedCharacterQuery(access, characterId),
   }),
 )
 
-export const characterFinanceJournalQuery = defineQueryOptions(
+export const characterFinanceJournalQuery = defineEsiQueryOptions(
   ({ apiClient, characterId, access, requested, page }: PagedFinanceQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterFinanceJournal(characterId, page),
     query: async ({ signal }) => {
@@ -97,6 +101,7 @@ export const characterFinanceJournalQuery = defineQueryOptions(
       return journal
     },
     ...QUERY_POLICY.characterFinanceJournal,
+    esiPersistence: characterEsiPersistence(characterId),
     enabled:
       canRunProtectedCharacterQuery(access, characterId) &&
       requested &&
@@ -104,7 +109,7 @@ export const characterFinanceJournalQuery = defineQueryOptions(
   }),
 )
 
-export const characterFinanceTransactionsQuery = defineQueryOptions(
+export const characterFinanceTransactionsQuery = defineEsiQueryOptions(
   ({ apiClient, characterId, access, requested, fromId }: TransactionQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterFinanceTransactions(characterId, fromId),
     query: async ({ signal }) => {
@@ -124,6 +129,7 @@ export const characterFinanceTransactionsQuery = defineQueryOptions(
       return transactions
     },
     ...QUERY_POLICY.characterFinanceTransactions,
+    esiPersistence: characterEsiPersistence(characterId),
     enabled:
       canRunProtectedCharacterQuery(access, characterId) &&
       requested &&
@@ -131,7 +137,7 @@ export const characterFinanceTransactionsQuery = defineQueryOptions(
   }),
 )
 
-export const characterFinanceOpenOrdersQuery = defineQueryOptions(
+export const characterFinanceOpenOrdersQuery = defineEsiQueryOptions(
   ({ apiClient, characterId, access, requested }: RequestedFinanceQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterFinanceOpenOrders(characterId),
     query: async ({ signal }) => {
@@ -147,11 +153,12 @@ export const characterFinanceOpenOrdersQuery = defineQueryOptions(
       return orders
     },
     ...QUERY_POLICY.characterFinanceOpenOrders,
+    esiPersistence: characterEsiPersistence(characterId),
     enabled: canRunProtectedCharacterQuery(access, characterId) && requested,
   }),
 )
 
-export const characterFinanceOrderHistoryQuery = defineQueryOptions(
+export const characterFinanceOrderHistoryQuery = defineEsiQueryOptions(
   ({ apiClient, characterId, access, requested, page }: PagedFinanceQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterFinanceOrderHistory(characterId, page),
     query: async ({ signal }) => {
@@ -168,6 +175,7 @@ export const characterFinanceOrderHistoryQuery = defineQueryOptions(
       return history
     },
     ...QUERY_POLICY.characterFinanceOrderHistory,
+    esiPersistence: characterEsiPersistence(characterId),
     enabled:
       canRunProtectedCharacterQuery(access, characterId) &&
       requested &&
@@ -175,7 +183,7 @@ export const characterFinanceOrderHistoryQuery = defineQueryOptions(
   }),
 )
 
-export const characterFinanceContractsQuery = defineQueryOptions(
+export const characterFinanceContractsQuery = defineEsiQueryOptions(
   ({ apiClient, characterId, access, requested, page }: PagedFinanceQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterFinanceContractPage(characterId, page),
     query: async ({ signal }) => {
@@ -192,6 +200,7 @@ export const characterFinanceContractsQuery = defineQueryOptions(
       return contracts
     },
     ...QUERY_POLICY.characterFinanceContracts,
+    esiPersistence: characterEsiPersistence(characterId),
     enabled:
       canRunProtectedCharacterQuery(access, characterId) &&
       requested &&
@@ -199,7 +208,7 @@ export const characterFinanceContractsQuery = defineQueryOptions(
   }),
 )
 
-export const characterFinanceContractItemsQuery = defineQueryOptions(
+export const characterFinanceContractItemsQuery = defineEsiQueryOptions(
   ({
     apiClient,
     characterId,
@@ -227,11 +236,12 @@ export const characterFinanceContractItemsQuery = defineQueryOptions(
       return items
     },
     ...QUERY_POLICY.characterFinanceContractItems,
+    esiPersistence: characterEsiPersistence(characterId),
     enabled: canRunContractDetailQuery(access, characterId, requested, contractId, contractPage),
   }),
 )
 
-export const characterFinanceContractBidsQuery = defineQueryOptions(
+export const characterFinanceContractBidsQuery = defineEsiQueryOptions(
   ({
     apiClient,
     characterId,
@@ -259,6 +269,7 @@ export const characterFinanceContractBidsQuery = defineQueryOptions(
       return bids
     },
     ...QUERY_POLICY.characterFinanceContractBids,
+    esiPersistence: characterEsiPersistence(characterId),
     enabled: canRunContractDetailQuery(access, characterId, requested, contractId, contractPage),
   }),
 )

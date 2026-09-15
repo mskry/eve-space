@@ -7,6 +7,7 @@ type Corporation = CorporationResponse['corporation']
 interface CorporationRecordContext {
   readonly corporationId: ComputedRef<number | undefined>
   readonly corporation: ComputedRef<Corporation | undefined>
+  readonly recordAccessAllowed: ComputedRef<boolean>
 }
 
 const corporationRecordKey: InjectionKey<CorporationRecordContext> = Symbol('corporation-record')

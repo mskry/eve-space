@@ -29,6 +29,7 @@ const queries: {
   options: () => any
   data: ReturnType<typeof ref<any>>
   error: ReturnType<typeof ref<Error | null>>
+  persistencePresentation: ReturnType<typeof ref<any>>
   status: ReturnType<typeof ref<string>>
 }[] = []
 const detailGet = vi.fn()
@@ -77,6 +78,7 @@ beforeEach(() => {
       options,
       data: ref<any>(),
       error: ref<Error | null>(null),
+      persistencePresentation: ref<any>({ kind: 'fresh' }),
       status: ref('success'),
       refresh: vi.fn(),
     }
@@ -124,17 +126,116 @@ test('character-only jobs use owned-route details and their freshness', () => {
   queries[1]!.data.value = { activity: { id, title: 'Private job' }, resource: { status: 'stale' } }
   expect(state.activity.value?.title).toBe('Private job')
   expect(state.state.value.status).toBe('stale')
+  expect(state.participationState.value.status).toBe('stale')
   queries[1]!.data.value.resource.status = 'current'
   expect(state.state.value.status).toBe('ready')
+  expect(state.participationState.value.status).toBe('ready')
+})
+
+test('keeps detail and participation persistence presentation distinct', () => {
+  const state = useActivityDetail('job')
+  queries[0]!.data.value = {
+    activity: { id, title: 'Organization detail' },
+    resource: { status: 'current' },
+  }
+  queries[0]!.persistencePresentation.value = {
+    kind: 'server-stale',
+    validatedAt: '2026-09-15T01:00:00.000Z',
+  }
+  queries[1]!.persistencePresentation.value = {
+    kind: 'restored-refresh-failed',
+    originalSuccessAt: '2026-09-15T00:00:00.000Z',
+  }
+
+  expect(state.activityPresentation.value.kind).toBe('server-stale')
+  expect(state.participation.persistencePresentation.value.kind).toBe('restored-refresh-failed')
+
+  queries[0]!.data.value.activity = null
+  queries[1]!.data.value = {
+    activity: { id, title: 'Character detail' },
+    participation: [],
+    resource: { status: 'current' },
+  }
+  expect(state.activityPresentation.value.kind).toBe('restored-refresh-failed')
+})
+
+test('maps participation authorization, failure, loading and empty states', () => {
+  const state = useActivityDetail('job')
+  queries[1]!.data.value = {
+    participation: [],
+    resource: { status: 'authorization-required', message: 'Grant the required scope.' },
+  }
+
+  expect(state.participationState.value).toMatchObject({
+    status: 'authorization-required',
+    title: 'Authorize Pilot',
+    message: 'Grant the required scope.',
+    action: { label: 'Authorize character' },
+  })
+
+  queries[1]!.data.value = undefined
+  queries[1]!.error.value = new Error('ESI is unavailable')
+  expect(state.participationState.value).toEqual({
+    status: 'unavailable',
+    title: 'Participation unavailable',
+    message: 'ESI is unavailable',
+    retryLabel: 'Retry',
+  })
+
+  queries[1]!.error.value = null
+  queries[1]!.status.value = 'pending'
+  expect(state.participationState.value.status).toBe('loading')
+
+  queries[1]!.status.value = 'success'
+  expect(state.participationState.value).toEqual({
+    status: 'unavailable',
+    title: 'Participation unavailable',
+    message: 'No current participation collection is available.',
+  })
+
+  route.query.characterId = '9002'
+  queries[1]!.error.value = new ApiQueryError('Character scope required', { status: 401 })
+  expect(state.participationState.value).toEqual({
+    status: 'authorization-required',
+    title: 'Character authorization required',
+    message: 'Character scope required',
+    action: null,
+  })
 })
 
 test('passes exact IDs and cancellation to typed routes and handles failures', async () => {
   const state = useActivityDetail('job')
-  detailGet.mockResolvedValue(Response.json({ activity: null, objectives: [] }))
-  participationGet.mockResolvedValue(Response.json({ characterId: 9001, participation: [] }))
+  detailGet.mockResolvedValue(
+    Response.json({
+      activity: null,
+      objectives: [],
+      stale: true,
+      validatedAt: '2026-09-07T10:00:00.000Z',
+      refreshFailureClass: 'esi-unavailable',
+    }),
+  )
+  participationGet.mockResolvedValue(
+    Response.json({
+      characterId: 9001,
+      participation: [],
+      stale: true,
+      validatedAt: '2026-09-07T09:55:00.000Z',
+      refreshFailureClass: 'esi-cooldown',
+    }),
+  )
   const signal = new AbortController().signal
-  await queries[0]!.options().query({ signal })
-  await queries[1]!.options().query({ signal })
+  const detail = await queries[0]!.options().query({ signal })
+  const participation = await queries[1]!.options().query({ signal })
+  expect(detail).toMatchObject({
+    stale: true,
+    validatedAt: '2026-09-07T10:00:00.000Z',
+    refreshFailureClass: 'esi-unavailable',
+  })
+  expect(participation).toMatchObject({
+    stale: true,
+    validatedAt: '2026-09-07T09:55:00.000Z',
+    refreshFailureClass: 'esi-cooldown',
+  })
   expect(participationGet.mock.calls[0]?.[0].param).toEqual({
     kind: 'job',
     activityId: id,

@@ -226,7 +226,9 @@ Coverage suites exercise SSO, administrator and organization authorization, comp
 
 Detailed service boundaries, API routes, security decisions, persistence, Redis operations, ESI
 resilience, and background-work recovery are documented in
-[`docs/architecture.md`](docs/architecture.md).
+[`docs/architecture.md`](docs/architecture.md). The browser snapshot privacy, retention, historical
+data, cache-clearing, and rollback model is documented in
+[`docs/browser-query-persistence.md`](docs/browser-query-persistence.md).
 
 ## License
 

@@ -28,7 +28,7 @@ const mocks = vi.hoisted(() => {
 vi.mock('../../src/env.js', () => ({
   env: {
     ADMIN_SETUP_SECRET: 'a-secure-setup-secret-that-is-long-enough',
-    SESSION_COOKIE_SECURE: false,
+    EVE_CALLBACK_URL: 'http://localhost:8788/auth/eve/callback',
     WEB_ORIGIN: 'http://localhost:3000',
   },
 }))

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type { CharacterImplants } from '../../../queries/clones'
 import type { CloneResourceState } from '../../../types/clones'
 import {
@@ -10,6 +11,7 @@ import { toCloneEsiResourceState } from '../../../utils/clone-resource-state'
 
 const props = defineProps<{
   implants?: CharacterImplants
+  presentation?: EsiQueryPersistencePresentation
   state: CloneResourceState
 }>()
 
@@ -48,6 +50,7 @@ const resourceState = computed(() =>
     <EsiResourceBoundary
       :state="resourceState"
       :has-data="Boolean(implants)"
+      :presentation="presentation"
       @retry="$emit('retry')"
     >
       <template v-if="implants">

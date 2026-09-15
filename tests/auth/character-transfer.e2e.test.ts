@@ -44,7 +44,6 @@ describe('explicit character transfer production journeys', async () => {
       EVE_CLIENT_ID: 'deterministic-browser-client',
       EVE_CLIENT_SECRET: 'deterministic-browser-secret',
       TOKEN_ENCRYPTION_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
-      SESSION_COOKIE_SECURE: 'false',
     })
 
     vi.doMock('../../api/src/auth/sso.js', () => ({

@@ -2,11 +2,12 @@ import { useQuery } from '@pinia/colada'
 import { flushPromises } from '@vue/test-utils'
 import { http, HttpResponse } from 'msw'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   characterAttributesQuery,
   characterHistoryQuery,
   characterOverviewQuery,
+  publicCharacterQuery,
   characterSkillQueueQuery,
   characterSkillsQuery,
   type CharacterOverview,
@@ -21,6 +22,8 @@ import { createApiClient } from '../../app/utils/api-client'
 import { ApiQueryError } from '../../app/utils/query-error'
 import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
+
+afterEach(() => vi.restoreAllMocks())
 
 describe('protected character queries', () => {
   it('deduplicates a shared character request', async () => {
@@ -45,6 +48,75 @@ describe('protected character queries', () => {
 
     expect(requests).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toBe('SevenSeven')
+    wrapper.unmount()
+  })
+
+  it('preserves public character stale metadata on the final query DTO', async () => {
+    queryServer.use(
+      http.get('http://localhost/api/characters/7', () =>
+        HttpResponse.json({
+          profile: { id: 7, name: 'Seven', stale: true },
+          cachedUntil: '2026-09-01T10:59:00.000Z',
+          validatedAt: '2026-09-01T10:58:00.000Z',
+          stale: true,
+          retryAt: '2026-09-01T11:07:00.000Z',
+          refreshFailureClass: 'esi-unavailable',
+        }),
+      ),
+    )
+    const apiClient = createApiClient('http://localhost')
+    const Root = defineComponent({
+      setup() {
+        const result = useQuery(publicCharacterQuery({ apiClient, characterId: 7 }))
+        return () =>
+          h(
+            'span',
+            result.data.value
+              ? `${result.data.value.profile.name}:${result.data.value.stale}:${result.data.value.validatedAt}`
+              : 'loading',
+          )
+      },
+    })
+
+    const { wrapper } = mountWithQueryPlugins(Root)
+    await flushPromises()
+
+    expect(wrapper.text()).toBe('Seven:true:2026-09-01T10:58:00.000Z')
+    wrapper.unmount()
+  })
+
+  it('preserves character overview stale metadata on the final query DTO', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-01T11:00:00.000Z'))
+    queryServer.use(
+      http.get('http://localhost/api/me/characters/7', () =>
+        HttpResponse.json({
+          ...characterOverviewResponse(7, 'Seven'),
+          cachedUntil: '2026-09-01T10:59:00.000Z',
+          validatedAt: '2026-09-01T10:58:00.000Z',
+          stale: true,
+          retryAt: '2026-09-01T11:07:00.000Z',
+          refreshFailureClass: 'esi-unavailable',
+        }),
+      ),
+    )
+    const apiClient = createApiClient('http://localhost')
+    const Root = defineComponent({
+      setup() {
+        const result = useQuery(characterOverviewQuery({ apiClient, characterId: 7 }))
+        return () =>
+          h(
+            'span',
+            result.data.value
+              ? `${result.data.value.profile.name}:${result.data.value.stale}:${result.data.value.validatedAt}`
+              : 'loading',
+          )
+      },
+    })
+
+    const { wrapper } = mountWithQueryPlugins(Root)
+    await flushPromises()
+
+    expect(wrapper.text()).toBe('Seven:true:2026-09-01T10:58:00.000Z')
     wrapper.unmount()
   })
 
@@ -102,7 +174,13 @@ describe('protected character queries', () => {
         characterId,
       })
       queryCache.ensure(historyOptions)
-      queryCache.setQueryData(historyOptions.key, { characterId, history: [] })
+      queryCache.setQueryData(historyOptions.key, {
+        characterId,
+        history: [],
+        cachedUntil: '2026-09-01T11:01:00.000Z',
+        validatedAt: '2026-09-01T11:00:00.000Z',
+        stale: false,
+      })
       const transactionOptions = characterFinanceTransactionsQuery({
         apiClient: createApiClient('http://localhost'),
         characterId,
@@ -118,6 +196,8 @@ describe('protected character queries', () => {
       queryCache.ensure(transactionOptions)
       queryCache.setQueryData(transactionOptions.key, {
         characterId,
+        fromId: null,
+        nextFromId: null,
         transactions: [],
         cachedUntil: '2026-08-20T00:00:00.000Z',
         validatedAt: '2026-08-19T23:59:00.000Z',
@@ -161,6 +241,7 @@ describe('protected character queries', () => {
   })
 
   it('keeps a successful stale wallet response and its validation time', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-08-20T00:00:00.000Z'))
     queryServer.use(
       http.get('http://localhost/api/me/characters/7/wallet', () =>
         HttpResponse.json({
@@ -312,10 +393,16 @@ describe('protected character queries', () => {
   })
 
   it('loads employment history for the selected character', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-01T11:00:00.000Z'))
     queryServer.use(
       http.get('http://localhost/api/me/characters/7/history', () =>
         HttpResponse.json({
           characterId: 7,
+          cachedUntil: '2026-09-01T10:59:00.000Z',
+          validatedAt: '2026-09-01T10:58:00.000Z',
+          stale: true,
+          retryAt: '2026-09-01T11:07:00.000Z',
+          refreshFailureClass: 'esi-unavailable',
           history: [
             {
               recordId: 1,
@@ -331,14 +418,20 @@ describe('protected character queries', () => {
     const Root = defineComponent({
       setup() {
         const result = useQuery(characterHistoryQuery({ apiClient, characterId: 7 }))
-        return () => h('span', result.data.value?.history[0]?.corporation.name ?? 'loading')
+        return () =>
+          h(
+            'span',
+            result.data.value
+              ? `${result.data.value.history[0]?.corporation.name}:${result.data.value.stale}:${result.data.value.validatedAt}`
+              : 'loading',
+          )
       },
     })
 
     const { wrapper } = mountWithQueryPlugins(Root)
     await flushPromises()
 
-    expect(wrapper.text()).toBe('Test Corporation')
+    expect(wrapper.text()).toBe('Test Corporation:true:2026-09-01T10:58:00.000Z')
     wrapper.unmount()
   })
 
@@ -485,10 +578,16 @@ function characterOverviewResponse(characterId: number, name: string): Character
       factionId: null,
       corporation: { id: 1, name: 'Corp', ticker: 'CORP', memberCount: 1 },
       alliance: null,
+      cachedUntil: '2026-09-01T11:01:00.000Z',
+      validatedAt: '2026-09-01T11:00:00.000Z',
+      stale: false,
     },
     location: { status: 'unavailable', message: 'Unavailable' },
     ship: { status: 'unavailable', message: 'Unavailable' },
     skills: { status: 'unavailable', message: 'Unavailable' },
+    cachedUntil: '2026-09-01T11:01:00.000Z',
+    validatedAt: '2026-09-01T11:00:00.000Z',
+    stale: false,
   }
 }
 
@@ -502,5 +601,8 @@ function characterAttributesResponse() {
     bonusRemaps: 2,
     accruedRemapCooldownDate: '2026-10-01T12:00:00Z',
     lastRemapDate: '2025-10-01T12:00:00Z',
+    cachedUntil: '2026-09-01T11:01:00.000Z',
+    validatedAt: '2026-09-01T11:00:00.000Z',
+    stale: false,
   }
 }

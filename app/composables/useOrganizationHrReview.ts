@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
+import { readonly, shallowRef } from 'vue'
 import { adminSetupQuery } from '../queries/admin'
 import {
   organizationAuditQuery,
@@ -6,6 +7,11 @@ import {
   organizationExceptionsQuery,
   type OrganizationAudit,
 } from '../queries/organization'
+import { refreshPrivateAuthorization } from '../queries/query-cache'
+import {
+  reportPrivateQueryAuthorizationDenial,
+  subscribePrivateQueryInvalidation,
+} from '../query-persistence/runtime'
 import type { ApiClient } from '../utils/api-client'
 import { toApiQueryError } from '../utils/query-error'
 
@@ -42,6 +48,8 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
     enabled: import.meta.client && canReview.value,
   }))
   const auditEvents = ref<OrganizationAudit['events']>([])
+  const invalidationRevision = ref(0)
+  const actionError = shallowRef<unknown>()
 
   watch(
     () => auditQuery.data.value,
@@ -91,8 +99,11 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
     },
   })
 
+  subscribePrivateQueryInvalidation(queryCache, { kind: 'organization' }, resetReviewState)
+
   const errorMessage = computed(() => {
     const error =
+      actionError.value ??
       approveMutation.error.value ??
       decisionMutation.error.value ??
       setupQuery.error.value ??
@@ -127,22 +138,22 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
   }
 
   async function refreshReviewData() {
-    beforeAuditSequence.value = null
-    auditEvents.value = []
-    await Promise.all([
-      queryCache.invalidateQueries({
-        exact: true,
-        key: organizationExceptionsQuery(apiClient).key,
-      }),
-      queryCache.invalidateQueries({
-        exact: true,
-        key: organizationAuditQuery(apiClient, null).key,
-      }),
-    ])
+    await refreshPrivateAuthorization(queryCache, { kind: 'organization' })
   }
 
   async function approveException(input: ApproveExceptionInput) {
-    await approveMutation.mutateAsync(input)
+    const operationRevision = invalidationRevision.value
+    actionError.value = undefined
+    try {
+      await approveMutation.mutateAsync(input)
+    } catch (error) {
+      const current = operationRevision === invalidationRevision.value
+      if (reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)) {
+        if (current) actionError.value = error
+      }
+      throw error
+    }
+    if (operationRevision !== invalidationRevision.value) return
     await refreshReviewData()
   }
 
@@ -151,7 +162,18 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
     decision: 'expire' | 'revoke',
     reason: string,
   ) {
-    await decisionMutation.mutateAsync({ exceptionId, decision, reason })
+    const operationRevision = invalidationRevision.value
+    actionError.value = undefined
+    try {
+      await decisionMutation.mutateAsync({ exceptionId, decision, reason })
+    } catch (error) {
+      const current = operationRevision === invalidationRevision.value
+      if (reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)) {
+        if (current) actionError.value = error
+      }
+      throw error
+    }
+    if (operationRevision !== invalidationRevision.value) return
     await refreshReviewData()
   }
 
@@ -160,6 +182,15 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
     if (!cursor) return
     beforeAuditSequence.value = cursor
     void auditQuery.refetch()
+  }
+
+  function resetReviewState() {
+    invalidationRevision.value += 1
+    actionError.value = undefined
+    approveMutation.reset()
+    decisionMutation.reset()
+    beforeAuditSequence.value = null
+    auditEvents.value = []
   }
 
   return {
@@ -173,6 +204,7 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
     reviewCandidates: computed(() => exceptionsQuery.data.value?.reviewCandidates ?? []),
     hasOlderAuditEvents,
     initialize,
+    invalidationRevision: readonly(invalidationRevision),
     loadOlderAuditEvents,
     loading,
     mutationPending,

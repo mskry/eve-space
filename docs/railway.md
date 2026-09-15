@@ -23,10 +23,9 @@ Configure:
 NUXT_PUBLIC_API_BASE=https://api.example.com
 WEB_ORIGIN=https://example.com
 EVE_CALLBACK_URL=https://api.example.com/auth/eve/callback
-SESSION_COOKIE_SECURE=true
 ```
 
-Register the exact `EVE_CALLBACK_URL` in the EVE Developer Portal. Do not change the session cookies to `SameSite=None` as a substitute for same-site domains.
+Register the exact `EVE_CALLBACK_URL` in the EVE Developer Portal. Its `https://` scheme makes the API's authentication cookies Secure. Do not change the session cookies to `SameSite=None` as a substitute for same-site domains.
 
 On Railway, set `NUXT_PUBLIC_API_BASE=https://${{api.RAILWAY_PUBLIC_DOMAIN}}` so the value follows the API custom domain and the project canvas displays the `web` to `api` dependency. The resolved browser value remains the public HTTPS URL; do not use the private service domain for browser requests.
 
@@ -71,7 +70,7 @@ API_SHUTDOWN_TIMEOUT_MS=30000
 WORKER_SHUTDOWN_TIMEOUT_MS=30000
 ```
 
-The API additionally needs `WEB_ORIGIN`, `EVE_CALLBACK_URL`, `SESSION_COOKIE_SECURE=true`, and an initial `ADMIN_SETUP_SECRET`. Generate secrets with `openssl rand -base64 32`. Remove `ADMIN_SETUP_SECRET` after the first administrator is created if bootstrap should be disabled.
+The API additionally needs `WEB_ORIGIN`, an `https://` `EVE_CALLBACK_URL`, and an initial `ADMIN_SETUP_SECRET`. Generate secrets with `openssl rand -base64 32`. Remove `ADMIN_SETUP_SECRET` after the first administrator is created if bootstrap should be disabled.
 
 The web needs `NUXT_PUBLIC_API_BASE`. The SDE ingestion deployment needs only `${{postgres.DATABASE_URL}}`.
 

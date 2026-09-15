@@ -1,8 +1,8 @@
-import { defineQueryOptions } from '@pinia/colada'
+import { defineEsiQueryOptions } from '@eve-space/platform-module-nuxt/runtime'
 import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
 import { toApiQueryError } from '../utils/query-error'
-import { PUBLIC_QUERY_KEYS } from './query-keys'
+import { PRIVATE_QUERY_KEYS } from './query-keys'
 import { QUERY_POLICY } from './query-policy'
 
 export type CorporationResponse = InferResponseType<
@@ -18,9 +18,9 @@ interface CorporationParameters {
   corporationId: number
 }
 
-export const corporationQuery = defineQueryOptions(
+export const corporationQuery = defineEsiQueryOptions(
   ({ apiClient, corporationId }: CorporationParameters) => ({
-    key: PUBLIC_QUERY_KEYS.corporation(corporationId),
+    key: PRIVATE_QUERY_KEYS.corporationRecord(corporationId),
     query: async ({ signal }) => {
       const response = await apiClient.api.corporations[':corporationId'].$get(
         { param: { corporationId: String(corporationId) } },
@@ -32,13 +32,13 @@ export const corporationQuery = defineQueryOptions(
       return response.json() as Promise<CorporationResponse>
     },
     ...QUERY_POLICY.corporation,
-    ssrCatchError: true,
+    esiPersistence: { kind: 'none' },
   }),
 )
 
-export const corporationAllianceHistoryQuery = defineQueryOptions(
+export const corporationAllianceHistoryQuery = defineEsiQueryOptions(
   ({ apiClient, corporationId }: CorporationParameters) => ({
-    key: PUBLIC_QUERY_KEYS.corporationAllianceHistory(corporationId),
+    key: PRIVATE_QUERY_KEYS.corporationAllianceHistory(corporationId),
     query: async ({ signal }) => {
       const response = await apiClient.api.corporations[':corporationId']['alliance-history'].$get(
         { param: { corporationId: String(corporationId) } },
@@ -50,6 +50,6 @@ export const corporationAllianceHistoryQuery = defineQueryOptions(
       return response.json() as Promise<AllianceHistoryResponse>
     },
     ...QUERY_POLICY.corporationAllianceHistory,
-    ssrCatchError: true,
+    esiPersistence: { kind: 'none' },
   }),
 )

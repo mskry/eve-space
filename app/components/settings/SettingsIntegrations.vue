@@ -11,6 +11,7 @@ const {
   errorMessage,
   grantRole,
   initialize,
+  invalidationRevision,
   loading,
   mutationPending,
   revokeRole,
@@ -25,6 +26,8 @@ const grantReason = ref('')
 const revokeGrantId = ref<string | null>(null)
 const revokeReason = ref('')
 const actionMessage = ref('')
+
+watch(invalidationRevision, resetRoleAdministrationState, { flush: 'sync' })
 
 const integrations = [
   {
@@ -86,11 +89,12 @@ async function startOwnerClaim() {
 async function submitGrant() {
   actionMessage.value = ''
   try {
-    await grantRole({
+    const granted = await grantRole({
       userId: targetUserId.value.trim(),
       role: delegatedRole.value,
       reason: grantReason.value.trim(),
     })
+    if (!granted) return
     targetUserId.value = ''
     grantReason.value = ''
     actionMessage.value = 'Organization role granted.'
@@ -103,7 +107,8 @@ async function submitRevocation() {
   if (!revokeGrantId.value) return
   actionMessage.value = ''
   try {
-    await revokeRole(revokeGrantId.value, revokeReason.value.trim())
+    const revoked = await revokeRole(revokeGrantId.value, revokeReason.value.trim())
+    if (!revoked) return
     closeRevocation()
     actionMessage.value = 'Organization role revoked.'
   } catch {
@@ -119,6 +124,14 @@ function openRevocation(grantId: string) {
 function closeRevocation() {
   revokeGrantId.value = null
   revokeReason.value = ''
+}
+
+function resetRoleAdministrationState() {
+  targetUserId.value = ''
+  delegatedRole.value = 'hr_auditor'
+  grantReason.value = ''
+  closeRevocation()
+  actionMessage.value = ''
 }
 
 function roleLabel(role: DelegatedOrganizationRole) {

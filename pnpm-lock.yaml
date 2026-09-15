@@ -49,6 +49,12 @@ catalogs:
     '@pinia/colada-nuxt':
       specifier: ^1.0.2
       version: 1.0.2
+    '@pinia/colada-plugin-auto-refetch':
+      specifier: ^0.2.6
+      version: 0.2.6
+    '@pinia/colada-plugin-cache-persister':
+      specifier: ^1.1.1
+      version: 1.1.1
     '@pinia/colada-plugin-retry':
       specifier: ^1.0.2
       version: 1.0.2
@@ -211,6 +217,12 @@ importers:
       '@pinia/colada-nuxt':
         specifier: 'catalog:'
         version: 1.0.2(@pinia/colada@1.4.2(pinia@4.0.3(@typescript/typescript6@6.0.2)(@vue/devtools-api@8.2.1)(vue@3.5.41(@typescript/typescript6@6.0.2)))(vue@3.5.41(@typescript/typescript6@6.0.2)))(magic-string@1.2.3)(magicast@0.5.4)(oxc-parser@0.143.0)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.28.2)(rolldown@1.2.7)(rollup@4.62.4)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0)))
+      '@pinia/colada-plugin-auto-refetch':
+        specifier: 'catalog:'
+        version: 0.2.6(@pinia/colada@1.4.2(pinia@4.0.3(@typescript/typescript6@6.0.2)(@vue/devtools-api@8.2.1)(vue@3.5.41(@typescript/typescript6@6.0.2)))(vue@3.5.41(@typescript/typescript6@6.0.2)))
+      '@pinia/colada-plugin-cache-persister':
+        specifier: 'catalog:'
+        version: 1.1.1(@pinia/colada@1.4.2(pinia@4.0.3(@typescript/typescript6@6.0.2)(@vue/devtools-api@8.2.1)(vue@3.5.41(@typescript/typescript6@6.0.2)))(vue@3.5.41(@typescript/typescript6@6.0.2)))
       '@pinia/colada-plugin-retry':
         specifier: 'catalog:'
         version: 1.0.2(@pinia/colada@1.4.2(pinia@4.0.3(@typescript/typescript6@6.0.2)(@vue/devtools-api@8.2.1)(vue@3.5.41(@typescript/typescript6@6.0.2)))(vue@3.5.41(@typescript/typescript6@6.0.2)))
@@ -2210,6 +2222,16 @@ packages:
     resolution: {integrity: sha512-CqKJLmdfU1VtbP6GHrubykX3n+F0KaP6ekMronJ/7YOgZmwjda6Gc3Ho0oSs7ADyctwefhrKl/sNhboiA3FyIg==}
     peerDependencies:
       '@pinia/colada': '>=1.4.0'
+
+  '@pinia/colada-plugin-auto-refetch@0.2.6':
+    resolution: {integrity: sha512-u/W8orRnOEHKWqatQ1yaHr9R1UPKJseHKjShW23oqq4TrOZvR6RU8Nc7flBtTbauU2KCydpgDQE68tWAZ4sNsg==}
+    peerDependencies:
+      '@pinia/colada': '>=1.0.0'
+
+  '@pinia/colada-plugin-cache-persister@1.1.1':
+    resolution: {integrity: sha512-4C9An/vcf703NfSbqFjhaNdvFbDRvzUHZFKm8sq6MYcEFaJjGmsODrb2BEoTbRWaLh12sEyGWzV6drPqaTSXRw==}
+    peerDependencies:
+      '@pinia/colada': '>=1.4.2'
 
   '@pinia/colada-plugin-retry@1.0.2':
     resolution: {integrity: sha512-hghwdqz3LjRHzDza6H+KyP1AdsoWoJrAfaz7wWk7Xzzg5DcYQZkvTwO/729IIlShXNZk7FG6bMl31KFF6hZiBw==}
@@ -8047,6 +8069,15 @@ snapshots:
       - oxc-parser
       - rolldown
       - unplugin
+
+  '@pinia/colada-plugin-auto-refetch@0.2.6(@pinia/colada@1.4.2(pinia@4.0.3(@typescript/typescript6@6.0.2)(@vue/devtools-api@8.2.1)(vue@3.5.41(@typescript/typescript6@6.0.2)))(vue@3.5.41(@typescript/typescript6@6.0.2)))':
+    dependencies:
+      '@pinia/colada': 1.4.2(pinia@4.0.3(@typescript/typescript6@6.0.2)(@vue/devtools-api@8.2.1)(vue@3.5.41(@typescript/typescript6@6.0.2)))(vue@3.5.41(@typescript/typescript6@6.0.2))
+
+  '@pinia/colada-plugin-cache-persister@1.1.1(@pinia/colada@1.4.2(pinia@4.0.3(@typescript/typescript6@6.0.2)(@vue/devtools-api@8.2.1)(vue@3.5.41(@typescript/typescript6@6.0.2)))(vue@3.5.41(@typescript/typescript6@6.0.2)))':
+    dependencies:
+      '@pinia/colada': 1.4.2(pinia@4.0.3(@typescript/typescript6@6.0.2)(@vue/devtools-api@8.2.1)(vue@3.5.41(@typescript/typescript6@6.0.2)))(vue@3.5.41(@typescript/typescript6@6.0.2))
+      nostics: 1.2.0
 
   '@pinia/colada-plugin-retry@1.0.2(@pinia/colada@1.4.2(pinia@4.0.3(@typescript/typescript6@6.0.2)(@vue/devtools-api@8.2.1)(vue@3.5.41(@typescript/typescript6@6.0.2)))(vue@3.5.41(@typescript/typescript6@6.0.2)))':
     dependencies:

@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import type { ApiClient } from '../utils/api-client'
 import { toApiQueryError } from '../utils/query-error'
 import { characterRosterQuery, type CharacterRosterEntry } from '../queries/characters'
-import { removeCharacterQueries } from '../queries/query-cache'
+import { refreshPrivateAuthorization, removeCharacterQueries } from '../queries/query-cache'
+import { reportPrivateQueryAuthorizationDenial } from '../query-persistence/runtime'
 
 export type { CharacterRosterEntry }
 
@@ -38,6 +39,7 @@ export function useCharacterRoster(apiClient: ApiClient) {
   const characters = computed(() => rosterQuery.data.value?.characters ?? [])
   const rosterStatus = computed(() => {
     if (rosterQuery.status.value === 'error' && !rosterQuery.data.value) return 'error'
+    if (rosterQuery.status.value === 'pending' && !rosterQuery.data.value) return 'loading'
     if (rosterQuery.asyncStatus.value === 'loading' && !rosterQuery.data.value) return 'loading'
     return 'idle'
   })
@@ -111,7 +113,8 @@ export function useCharacterRoster(apiClient: ApiClient) {
       }))
       await initializeAuth(true)
       return true
-    } catch {
+    } catch (error) {
+      reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'character', characterId }, error)
       return false
     }
   }
@@ -125,14 +128,10 @@ export function useCharacterRoster(apiClient: ApiClient) {
 
     try {
       await deleteCharacterMutation.mutateAsync(characterId)
-      queryCache.setQueryData(characterRosterQuery(apiClient).key, (roster) => ({
-        characters: (roster?.characters ?? characters.value).filter(
-          (character) => character.characterId !== characterId,
-        ),
-      }))
-      removeCharacterQueries(queryCache, characterId)
+      await refreshPrivateAuthorization(queryCache, { kind: 'character', characterId })
       return true
-    } catch {
+    } catch (error) {
+      reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'character', characterId }, error)
       return false
     }
   }

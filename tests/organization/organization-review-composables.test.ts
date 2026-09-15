@@ -5,6 +5,7 @@ import { computed, defineComponent, h, ref, watch } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useOrganizationHrReview } from '../../app/composables/useOrganizationHrReview'
 import { useOrganizationRosterCoverage } from '../../app/composables/useOrganizationRosterCoverage'
+import { invalidatePrivateQueryScope } from '../../app/query-persistence/runtime'
 import { createApiClient } from '../../app/utils/api-client'
 import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
@@ -117,7 +118,7 @@ describe('organization HR review', () => {
 
     expect(approvalRequests).toEqual([{ reason: 'Approved for review coverage.', expiresAt: null }])
     expect(decisionRequests).toEqual([{ reason: 'No longer required.' }])
-    expect(invalidateQueries).toHaveBeenCalledTimes(4)
+    expect(invalidateQueries).toHaveBeenCalledTimes(2)
 
     queryServer.use(
       http.post(
@@ -147,7 +148,94 @@ describe('organization HR review', () => {
       review.decideException('exception-1', 'revoke', 'Rejected decision.'),
     ).rejects.toThrow('Decision rejected.')
     expect(review.errorMessage.value).toBe('Approval rejected.')
-    expect(invalidateQueries).toHaveBeenCalledTimes(4)
+    expect(invalidateQueries).toHaveBeenCalledTimes(2)
+    wrapper.unmount()
+  })
+
+  it('clears accumulated review state on same-route organization invalidation', async () => {
+    queryServer.use(
+      http.get('http://localhost/api/admin/setup', () =>
+        HttpResponse.json({ required: false, available: true }),
+      ),
+      http.get('http://localhost/api/organization/context', () =>
+        HttpResponse.json(organizationContext(true)),
+      ),
+      http.get('http://localhost/api/organization/exceptions', () =>
+        HttpResponse.json({ reviewCandidates: [], exceptions: [] }),
+      ),
+      http.get('http://localhost/api/organization/audit', () =>
+        HttpResponse.json({
+          events: [auditEvent('audit-private')],
+          nextBeforeAuditSequence: '1',
+        }),
+      ),
+    )
+    stubNuxtCompositionGlobals(vi.fn().mockResolvedValue(true))
+    let review!: ReturnType<typeof useOrganizationHrReview>
+    let queryCache!: ReturnType<typeof useQueryCache>
+    const Root = defineComponent({
+      setup() {
+        queryCache = useQueryCache()
+        review = useOrganizationHrReview(apiClient)
+        return () => h('span')
+      },
+    })
+    const { wrapper } = mountWithQueryPlugins(Root)
+    await review.initialize()
+    await vi.waitFor(() => expect(review.auditEvents.value).toHaveLength(1))
+    const revision = review.invalidationRevision.value
+
+    void invalidatePrivateQueryScope(queryCache, { kind: 'organization' })
+
+    expect(review.auditEvents.value).toEqual([])
+    expect(review.hasOlderAuditEvents.value).toBe(false)
+    expect(review.invalidationRevision.value).toBe(revision + 1)
+    wrapper.unmount()
+  })
+
+  it('resets pending decision state and ignores late success after invalidation', async () => {
+    let finishDecision!: () => void
+    const decisionCanFinish = new Promise<void>((resolve) => (finishDecision = resolve))
+    queryServer.use(
+      http.get('http://localhost/api/admin/setup', () =>
+        HttpResponse.json({ required: false, available: true }),
+      ),
+      http.get('http://localhost/api/organization/context', () =>
+        HttpResponse.json(organizationContext(true)),
+      ),
+      http.get('http://localhost/api/organization/exceptions', () =>
+        HttpResponse.json({ reviewCandidates: [], exceptions: [] }),
+      ),
+      http.get('http://localhost/api/organization/audit', () =>
+        HttpResponse.json({ events: [], nextBeforeAuditSequence: null }),
+      ),
+      http.post('http://localhost/api/organization/exceptions/:exceptionId/revoke', async () => {
+        await decisionCanFinish
+        return HttpResponse.json({ exception: { exceptionId: 'exception-1' } })
+      }),
+    )
+    stubNuxtCompositionGlobals(vi.fn().mockResolvedValue(true))
+    let review!: ReturnType<typeof useOrganizationHrReview>
+    let queryCache!: ReturnType<typeof useQueryCache>
+    const Root = defineComponent({
+      setup() {
+        queryCache = useQueryCache()
+        review = useOrganizationHrReview(apiClient)
+        return () => h('span')
+      },
+    })
+    const { wrapper } = mountWithQueryPlugins(Root)
+    const revision = review.invalidationRevision.value
+    const decision = review.decideException('exception-1', 'revoke', 'No longer required.')
+    await vi.waitFor(() => expect(review.mutationPending.value).toBe(true))
+
+    void invalidatePrivateQueryScope(queryCache, { kind: 'organization' })
+
+    expect(review.invalidationRevision.value).toBe(revision + 1)
+    expect(review.mutationPending.value).toBe(false)
+    finishDecision()
+    await decision
+    expect(review.mutationPending.value).toBe(false)
     wrapper.unmount()
   })
 

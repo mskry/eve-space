@@ -1,4 +1,8 @@
-import { defineQueryOptions } from '@pinia/colada'
+import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-contract'
+import {
+  defineEsiQueryOptions,
+  organizationEsiPersistence,
+} from '@eve-space/platform-module-nuxt/runtime'
 import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
 import { toApiQueryError } from '../utils/query-error'
@@ -28,7 +32,7 @@ export type OrganizationRosterCoverage = InferResponseType<
 >
 export type DelegatedOrganizationRole = OrganizationRoles['grants'][number]['role']
 
-export const organizationContextQuery = defineQueryOptions((apiClient: ApiClient) => ({
+export const organizationContextQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
   key: PRIVATE_QUERY_KEYS.organizationContext(),
   query: async ({ signal }) => {
     const response = await apiClient.api.organization.context.$get(undefined, { init: { signal } })
@@ -38,10 +42,11 @@ export const organizationContextQuery = defineQueryOptions((apiClient: ApiClient
     return response.json()
   },
   ...QUERY_POLICY.organizationContext,
+  esiPersistence: { kind: 'none' },
   meta: { globalErrorMessage: 'Organization authority is unavailable.' },
 }))
 
-export const organizationComplianceQuery = defineQueryOptions((apiClient: ApiClient) => ({
+export const organizationComplianceQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
   key: PRIVATE_QUERY_KEYS.organizationCompliance(),
   query: async ({ signal }) => {
     const response = await apiClient.api.organization.compliance.$get(undefined, {
@@ -53,10 +58,11 @@ export const organizationComplianceQuery = defineQueryOptions((apiClient: ApiCli
     return response.json()
   },
   ...QUERY_POLICY.organizationCompliance,
+  esiPersistence: { kind: 'none' },
   meta: { globalErrorMessage: 'Organization compliance is unavailable.' },
 }))
 
-export const organizationActivitiesQuery = defineQueryOptions((apiClient: ApiClient) => ({
+export const organizationActivitiesQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
   key: PRIVATE_QUERY_KEYS.organizationActivities(),
   query: async ({ signal }) => {
     const response = await apiClient.api.organization.activities.$get(undefined, {
@@ -68,10 +74,11 @@ export const organizationActivitiesQuery = defineQueryOptions((apiClient: ApiCli
     return response.json()
   },
   ...QUERY_POLICY.organizationActivities,
+  esiPersistence: organizationEsiPersistence(coreOrganizationAdmissionScopes.activities),
   meta: { globalErrorMessage: 'Organization activities are unavailable.' },
 }))
 
-export const organizationExceptionsQuery = defineQueryOptions((apiClient: ApiClient) => ({
+export const organizationExceptionsQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
   key: PRIVATE_QUERY_KEYS.organizationExceptions(),
   query: async ({ signal }) => {
     const response = await apiClient.api.organization.exceptions.$get(undefined, {
@@ -83,10 +90,11 @@ export const organizationExceptionsQuery = defineQueryOptions((apiClient: ApiCli
     return response.json()
   },
   ...QUERY_POLICY.organizationExceptions,
+  esiPersistence: { kind: 'none' },
   meta: { globalErrorMessage: 'Character exceptions are unavailable.' },
 }))
 
-const defineOrganizationAuditQuery = defineQueryOptions(
+const defineOrganizationAuditQuery = defineEsiQueryOptions(
   ({
     apiClient,
     beforeAuditSequence,
@@ -111,6 +119,7 @@ const defineOrganizationAuditQuery = defineQueryOptions(
       return response.json()
     },
     ...QUERY_POLICY.organizationAudit,
+    esiPersistence: { kind: 'none' },
     meta: { globalErrorMessage: 'Organization audit history is unavailable.' },
   }),
 )
@@ -122,7 +131,7 @@ export function organizationAuditQuery(
   return defineOrganizationAuditQuery({ apiClient, beforeAuditSequence })
 }
 
-export const organizationRolesQuery = defineQueryOptions((apiClient: ApiClient) => ({
+export const organizationRolesQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
   key: PRIVATE_QUERY_KEYS.organizationRoles(),
   query: async ({ signal }) => {
     const response = await apiClient.api.organization.roles.$get(undefined, { init: { signal } })
@@ -132,10 +141,11 @@ export const organizationRolesQuery = defineQueryOptions((apiClient: ApiClient) 
     return response.json()
   },
   ...QUERY_POLICY.organizationRoles,
+  esiPersistence: { kind: 'none' },
   meta: { globalErrorMessage: 'Organization roles are unavailable.' },
 }))
 
-export const organizationRosterCoverageQuery = defineQueryOptions((apiClient: ApiClient) => ({
+export const organizationRosterCoverageQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
   key: PRIVATE_QUERY_KEYS.organizationRosterCoverage(),
   query: async ({ signal }) => {
     const response = await apiClient.api.organization['roster-coverage'].$get(undefined, {
@@ -147,5 +157,6 @@ export const organizationRosterCoverageQuery = defineQueryOptions((apiClient: Ap
     return response.json()
   },
   ...QUERY_POLICY.organizationRosterCoverage,
+  esiPersistence: organizationEsiPersistence(coreOrganizationAdmissionScopes.rosterCoverage),
   meta: { globalErrorMessage: 'Organization roster coverage is unavailable.' },
 }))

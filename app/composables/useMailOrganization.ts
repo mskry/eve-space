@@ -12,7 +12,7 @@ interface MailOrganizationOptions {
 }
 
 export function useMailOrganization(options: MailOrganizationOptions) {
-  const { openConfirmDialog } = useConfirmDialog()
+  const { closeConfirmDialog, openConfirmDialog } = useConfirmDialog()
   const { dismissToast, showToast } = useToast()
   const autoReadSuppressedMailId = ref<number | null>(null)
   const labelManagementOpen = ref(false)
@@ -41,6 +41,19 @@ export function useMailOrganization(options: MailOrganizationOptions) {
     cancelReadDwell?.()
     cancelReadDwell = undefined
     autoReadSuppressedMailId.value = null
+  }
+
+  function resetPrivateState() {
+    resetOrganizationView()
+    closeConfirmDialog()
+    labelManagementOpen.value = false
+    labelAssignmentOpen.value = false
+    labelName.value = ''
+    labelColor.value = undefined
+    createLabelFeedback.value = ''
+    assignmentFeedback.value = ''
+    if (organizationToastKey !== undefined) dismissToast(organizationToastKey)
+    organizationToastKey = undefined
   }
 
   function showOrganizationToast(toast: Parameters<typeof showToast>[0]) {
@@ -169,6 +182,7 @@ export function useMailOrganization(options: MailOrganizationOptions) {
     options.mailbox.selectedMailId.value = null
     const outcome = await request
     if (!scopeActive || options.characterId.value !== mutationCharacterId) return true
+    if (outcome.invalidated) return true
     if (outcome.success) {
       options.mailbox.removeLoadedHeader(mailId)
       showOrganizationToast({
@@ -360,13 +374,7 @@ export function useMailOrganization(options: MailOrganizationOptions) {
   watch(
     options.characterId,
     () => {
-      resetOrganizationView()
-      labelManagementOpen.value = false
-      labelAssignmentOpen.value = false
-      labelName.value = ''
-      labelColor.value = undefined
-      createLabelFeedback.value = ''
-      assignmentFeedback.value = ''
+      resetPrivateState()
       options.mutations.resetMailMutations()
     },
     { flush: 'sync' },
@@ -394,5 +402,6 @@ export function useMailOrganization(options: MailOrganizationOptions) {
     openLabelManagement,
     requestLabelDeletion,
     requestMailDeletion,
+    resetPrivateState,
   }
 }

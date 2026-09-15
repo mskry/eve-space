@@ -100,6 +100,15 @@ describe('mail queries', () => {
     expect(QUERY_POLICY.mailingLists.staleTime).toBe(120_000)
   })
 
+  it('opts transient recipient resolution out while keeping recipient search character-bound', () => {
+    expect(
+      resolveMailRecipientsQuery({ apiClient, characterId, names: ['Pilot'] }).meta?.esiPersistence,
+    ).toEqual({ kind: 'none' })
+    expect(
+      searchMailRecipientsQuery({ apiClient, characterId, query: 'Pilot' }).meta?.esiPersistence,
+    ).toEqual({ kind: 'character-esi', characterId })
+  })
+
   it('reuses fresh mail headers without issuing an early request', async () => {
     const requests = vi.fn()
     queryServer.use(

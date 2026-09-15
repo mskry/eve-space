@@ -85,6 +85,45 @@ describe('corporation service', () => {
       mocks.executeRepresentation.mock.calls.map(([definition]) => definition.operation),
     ).toEqual(['corporation-alliance-history', 'corporation-npc-list'])
   })
+
+  test('preserves stale metadata on public corporation and alliance-history results', async () => {
+    mocks.executeRepresentation.mockImplementation((definition) => {
+      const data =
+        definition.operation === 'public-corporation'
+          ? { found: true, corporation }
+          : definition.operation === 'corporation-alliance-history'
+            ? []
+            : [1, 2]
+      return Promise.resolve({
+        ...result(data),
+        stale: true,
+        validatedAt: '2026-08-22T11:55:00.000Z',
+        retryAt: '2026-08-22T12:05:00.000Z',
+        refreshFailureClass: 'esi-unavailable',
+      })
+    })
+    const { getCorporationAllianceHistoryResult, getCorporationPublicResult } =
+      await import('../../src/corporations/public-data.js')
+
+    const [corporationResult, historyResult] = await Promise.all([
+      getCorporationPublicResult(90_000_001),
+      getCorporationAllianceHistoryResult(90_000_001),
+    ])
+    expect(corporationResult).toMatchObject({
+      data: { corporationId: 90_000_001 },
+      stale: true,
+      validatedAt: '2026-08-22T11:55:00.000Z',
+      retryAt: '2026-08-22T12:05:00.000Z',
+      refreshFailureClass: 'esi-unavailable',
+    })
+    expect(historyResult).toMatchObject({
+      data: [],
+      stale: true,
+      validatedAt: '2026-08-22T11:55:00.000Z',
+      retryAt: '2026-08-22T12:05:00.000Z',
+      refreshFailureClass: 'esi-unavailable',
+    })
+  })
 })
 
 function result<Data>(data: Data) {

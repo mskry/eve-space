@@ -27,6 +27,22 @@ export default defineNuxtConfig({
           {
             moduleId: 'alpha',
             defaultIcon: 'character',
+            queryAdmissionScopes: [
+              {
+                routeId: 'alpha-summary',
+                admissionScope: 'organization:v1:alpha:member:alpha.view',
+                authorization: 'authenticated-session',
+                audience: 'member',
+                requiredPermission: 'alpha.view',
+              },
+              {
+                routeId: 'alpha-record',
+                admissionScope: 'organization:v1:alpha:member:alpha.view',
+                authorization: 'owned-character',
+                audience: 'member',
+                requiredPermission: 'alpha.view',
+              },
+            ],
             pages: [
               {
                 id: 'alpha-record',

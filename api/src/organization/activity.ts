@@ -15,6 +15,7 @@ import { installedModuleActivityProviders } from '../generated/platform/installe
 import { loadModuleRuntimeState } from '../platform/module-settings.js'
 import type { OrganizationSessionContext } from './access-policy.js'
 import { loadOrganizationActivityCharacters } from './activity-context.js'
+import { earliestIsoTimestamp } from './freshness.js'
 import { authorizeOrganizationContribution } from './module-authorization.js'
 
 const positiveCharacterIdSchema = z.int().positive()
@@ -137,6 +138,7 @@ export async function aggregateOrganizationActivities(
       generatedAt: now.toISOString(),
       activities: [] as OrganizationActivity[],
       sources: [] as OrganizationActivitySource[],
+      ...aggregateActivityFreshness([], []),
     }
 
   let characters: readonly PlatformActivityProviderCharacter[]
@@ -147,11 +149,13 @@ export async function aggregateOrganizationActivities(
       now,
     )
   } catch {
+    const sources = authorizedProviders.map(unavailableSource)
     return {
       organizationVersion: organization.organizationVersion,
       generatedAt: now.toISOString(),
       activities: [] as OrganizationActivity[],
-      sources: authorizedProviders.map(unavailableSource),
+      sources,
+      ...aggregateActivityFreshness([], sources),
     }
   }
   const timeoutMilliseconds =
@@ -168,11 +172,16 @@ export async function aggregateOrganizationActivities(
       }),
     ),
   )
+  const activities = results
+    .flatMap(({ activities: providerActivities }) => providerActivities)
+    .toSorted(compareActivities)
+  const sources = results.map(({ source }) => source)
   return {
     organizationVersion: organization.organizationVersion,
     generatedAt: now.toISOString(),
-    activities: results.flatMap(({ activities }) => activities).toSorted(compareActivities),
-    sources: results.map(({ source }) => source),
+    activities,
+    sources,
+    ...aggregateActivityFreshness(activities, sources),
   }
 }
 
@@ -370,6 +379,22 @@ function normalizeFreshness(
   )
     return { ...freshness, state: 'stale' }
   return freshness
+}
+
+function aggregateActivityFreshness(
+  activities: readonly { readonly freshness: PlatformActivityFreshness }[],
+  sources: readonly { readonly freshness: PlatformActivityFreshness }[],
+) {
+  const staleFreshness = [...activities, ...sources]
+    .map(({ freshness }) => freshness)
+    .filter(({ state }) => state === 'stale')
+  const validatedAt = earliestIsoTimestamp(
+    staleFreshness.flatMap(({ collectedAt }) => (collectedAt ? [collectedAt] : [])),
+  )
+  return {
+    stale: staleFreshness.length > 0,
+    ...(validatedAt ? { validatedAt } : {}),
+  }
 }
 
 function sameActivityScalars(left: OrganizationActivity, right: OrganizationActivity) {

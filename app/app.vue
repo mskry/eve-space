@@ -1,8 +1,20 @@
 <script setup lang="ts">
+import { useQueryCache } from '@pinia/colada'
 import { computed, defineAsyncComponent } from 'vue'
-import { providePlatformIdentity } from '@eve-space/platform-module-nuxt/runtime'
+import {
+  providePlatformIdentity,
+  providePlatformQueryPersistence,
+} from '@eve-space/platform-module-nuxt/runtime'
+import { invalidatePrivateQueryScope, readQueryPersistenceState } from './query-persistence/runtime'
 
 providePlatformIdentity(usePlatformHostIdentity)
+const queryCache = useQueryCache()
+providePlatformQueryPersistence((key) => readQueryPersistenceState(queryCache, key))
+usePlatformModulePersistenceLifecycle(({ admissionScopes }) => {
+  for (const admissionScope of admissionScopes) {
+    void invalidatePrivateQueryScope(queryCache, { kind: 'organization', admissionScope })
+  }
+})
 
 const siteUrl = 'https://eve-space.com'
 const siteTitle = 'EVE Space // Capsuleer Operations'

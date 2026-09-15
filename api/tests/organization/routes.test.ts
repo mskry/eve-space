@@ -97,7 +97,12 @@ const mocks = vi.hoisted(() => {
   }
 })
 
-vi.mock('../../src/env.js', () => ({ env: { WEB_ORIGIN: 'http://localhost:3000' } }))
+vi.mock('../../src/env.js', () => ({
+  env: {
+    EVE_CALLBACK_URL: 'http://localhost:8788/auth/eve/callback',
+    WEB_ORIGIN: 'http://localhost:3000',
+  },
+}))
 vi.mock('../../src/auth/session-store.js', () => ({ findSession: mocks.findSession }))
 vi.mock('../../src/organization/activity.js', () => ({
   aggregateOrganizationActivities: mocks.aggregateOrganizationActivities,
@@ -242,6 +247,7 @@ beforeEach(() => {
     generatedAt: '2026-09-02T12:00:00.000Z',
     activities: [],
     sources: [],
+    stale: false,
   })
   mocks.listCurrentOrganizationCharacterExceptions.mockResolvedValue([])
   mocks.listCurrentOrganizationCharacterExceptionCandidates.mockResolvedValue([])
@@ -314,6 +320,7 @@ beforeEach(() => {
     unblockReason: 'Review completed.',
   })
   mocks.listOrganizationRosterCoverage.mockResolvedValue({
+    stale: false,
     managedCorporations: {
       status: 'current',
       validatedAt: '2026-09-01T12:00:00.000Z',
@@ -463,6 +470,32 @@ describe('organization compliance routes', () => {
 
     expect(review.status).toBe(200)
     expect(mocks.aggregateOrganizationActivities).toHaveBeenCalledTimes(2)
+  })
+
+  test('returns authoritative stale activity metadata at the response root', async () => {
+    mocks.aggregateOrganizationActivities.mockResolvedValueOnce({
+      organizationVersion: 1,
+      generatedAt: '2026-09-02T12:00:00.000Z',
+      activities: [],
+      sources: [
+        {
+          sourceId: 'organization-activity:activity',
+          moduleId: 'organization-activity',
+          providerId: 'activity',
+          freshness: { state: 'stale', collectedAt: '2026-09-02T11:40:00.000Z' },
+        },
+      ],
+      stale: true,
+      validatedAt: '2026-09-02T11:40:00.000Z',
+    })
+
+    const response = await get('/activities')
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      stale: true,
+      validatedAt: '2026-09-02T11:40:00.000Z',
+    })
   })
 
   test('refuses blocked or suspended activity requests before providers are selected', async () => {
@@ -1263,6 +1296,30 @@ describe('organization corporation roster routes', () => {
 
     expect(response.status).toBe(200)
     expect(mocks.listOrganizationRosterCoverage).toHaveBeenCalledOnce()
+  })
+
+  test('returns authoritative stale roster metadata at the response root', async () => {
+    mocks.listOrganizationRosterCoverage.mockResolvedValueOnce({
+      stale: true,
+      validatedAt: '2026-09-01T11:30:00.000Z',
+      refreshFailureClass: 'esi-unavailable',
+      managedCorporations: {
+        status: 'stale',
+        validatedAt: '2026-09-01T11:30:00.000Z',
+        attemptedAt: '2026-09-01T12:00:00.000Z',
+        lastFailureClass: 'esi-unavailable',
+      },
+      corporations: [],
+    })
+
+    const response = await get('/roster-coverage')
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      stale: true,
+      validatedAt: '2026-09-01T11:30:00.000Z',
+      refreshFailureClass: 'esi-unavailable',
+    })
   })
 
   test('returns bounded audit history to an explicit HR grant', async () => {

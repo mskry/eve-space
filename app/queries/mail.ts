@@ -1,4 +1,7 @@
-import { defineQueryOptions } from '@pinia/colada'
+import {
+  characterEsiPersistence,
+  defineEsiQueryOptions,
+} from '@eve-space/platform-module-nuxt/runtime'
 import type { InferRequestType, InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
 import { ApiQueryError, toApiQueryError } from '../utils/query-error'
@@ -78,7 +81,7 @@ const mailIdentityMismatch = () =>
     code: 'MAIL_IDENTITY_MISMATCH',
   })
 
-export const mailHeadersQuery = defineQueryOptions(
+export const mailHeadersQuery = defineEsiQueryOptions(
   ({ apiClient, characterId, labels = [], lastMailId = null }: MailHeadersQueryParameters) => {
     const normalizedLabels = [...new Set(labels)].toSorted((left, right) => left - right)
     return {
@@ -102,11 +105,12 @@ export const mailHeadersQuery = defineQueryOptions(
         return mail
       },
       ...QUERY_POLICY.mailHeaders,
+      esiPersistence: characterEsiPersistence(characterId),
     }
   },
 )
 
-export const mailDetailQuery = defineQueryOptions(
+export const mailDetailQuery = defineEsiQueryOptions(
   ({ apiClient, characterId, mailId }: MailDetailQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.mailDetail(characterId, mailId),
     query: async ({ signal }) => {
@@ -124,10 +128,11 @@ export const mailDetailQuery = defineQueryOptions(
       return mail
     },
     ...QUERY_POLICY.mailDetail,
+    esiPersistence: characterEsiPersistence(characterId),
   }),
 )
 
-export const mailLabelsQuery = defineQueryOptions(
+export const mailLabelsQuery = defineEsiQueryOptions(
   ({ apiClient, characterId }: MailQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.mailLabels(characterId),
     query: async ({ signal }) => {
@@ -143,10 +148,11 @@ export const mailLabelsQuery = defineQueryOptions(
       return labels
     },
     ...QUERY_POLICY.mailLabels,
+    esiPersistence: characterEsiPersistence(characterId),
   }),
 )
 
-export const mailingListsQuery = defineQueryOptions(
+export const mailingListsQuery = defineEsiQueryOptions(
   ({ apiClient, characterId }: MailQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.mailingLists(characterId),
     query: async ({ signal }) => {
@@ -162,10 +168,11 @@ export const mailingListsQuery = defineQueryOptions(
       return lists
     },
     ...QUERY_POLICY.mailingLists,
+    esiPersistence: characterEsiPersistence(characterId),
   }),
 )
 
-export const resolveMailRecipientsQuery = defineQueryOptions(
+export const resolveMailRecipientsQuery = defineEsiQueryOptions(
   ({ apiClient, characterId, names }: ResolveMailRecipientsQueryParameters) => {
     const normalizedNames = [...new Set(names.map((name) => name.trim()).filter(Boolean))]
     const cacheName = normalizedNames.map((name) => name.toLocaleLowerCase()).join('\u0000')
@@ -188,11 +195,12 @@ export const resolveMailRecipientsQuery = defineQueryOptions(
         return result
       },
       ...QUERY_POLICY.mailRecipientResolution,
+      esiPersistence: { kind: 'none' },
     }
   },
 )
 
-export const searchMailRecipientsQuery = defineQueryOptions(
+export const searchMailRecipientsQuery = defineEsiQueryOptions(
   ({ apiClient, characterId, query }: SearchMailRecipientsQueryParameters) => {
     const normalizedQuery = query.trim()
     return {
@@ -215,6 +223,7 @@ export const searchMailRecipientsQuery = defineQueryOptions(
         return result
       },
       ...QUERY_POLICY.mailRecipientSearch,
+      esiPersistence: characterEsiPersistence(characterId),
     }
   },
 )

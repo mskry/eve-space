@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   readPlatformApiResponse,
+  type EsiQueryPersistencePresentation,
   type PlatformResourceState,
 } from '@eve-space/platform-module-nuxt/runtime'
 
@@ -9,12 +10,14 @@ const api = usePlatformApi()
 const { enabledModuleIds } = usePlatformModuleRuntime()
 const page = ref(1)
 const resourceQuery = usePlatformProtectedQuery(() => ({
+  esiPersistence: { kind: 'none' },
   access: {
     authenticated: true,
     moduleEnabled: enabledModuleIds.value.has('alpha'),
     ownsCharacter: true,
   },
   moduleId: 'alpha',
+  routeId: 'alpha-record',
   resource: ['record'],
   subject: { kind: 'character', characterId: Number(route.params.characterId) },
   query: async ({ signal }) =>
@@ -25,6 +28,19 @@ const resourceQuery = usePlatformProtectedQuery(() => ({
       ),
       'Alpha record is unavailable.',
     ),
+}))
+const persistedSummaryQuery = usePlatformProtectedQuery(() => ({
+  esiPersistence: { kind: 'organization-esi' },
+  access: {
+    authenticated: true,
+    authorized: true,
+    moduleEnabled: enabledModuleIds.value.has('alpha'),
+  },
+  moduleId: 'alpha',
+  routeId: 'alpha-summary',
+  resource: ['summary'],
+  subject: { kind: 'organization', organizationVersion: 1 },
+  query: async () => ({ available: true }),
 }))
 const resourceState = computed<PlatformResourceState>(() => {
   if (route.query.state === 'authorization')
@@ -52,6 +68,24 @@ const resourceState = computed<PlatformResourceState>(() => {
     }
   return { status: 'ready' }
 })
+const persistencePresentation = computed<EsiQueryPersistencePresentation>(() => {
+  if (route.query.presentation === 'restored')
+    return { kind: 'restored', originalSuccessAt: '2026-09-15T01:00:00.000Z' }
+  if (route.query.presentation === 'refresh-failed')
+    return {
+      kind: 'restored-refresh-failed',
+      originalSuccessAt: '2026-09-15T01:00:00.000Z',
+      retryAt: '2026-09-15T01:05:00.000Z',
+      refreshFailureStatus: 503,
+    }
+  if (route.query.presentation === 'server-stale')
+    return {
+      kind: 'server-stale',
+      validatedAt: '2026-09-15T01:02:00.000Z',
+      refreshFailureClass: 'esi-cooldown',
+    }
+  return persistedSummaryQuery.persistencePresentation.value
+})
 const { openConfirmDialog } = usePlatformConfirmDialog()
 const { announceSuccess } = usePlatformMutationAnnouncement()
 
@@ -68,6 +102,7 @@ function confirmRecord() {
   <section data-testid="alpha-page">
     <PlatformResourceBoundary
       :has-data="route.query.retained === 'true'"
+      :presentation="persistencePresentation"
       :state="resourceState"
       @retry="resourceQuery.refresh()"
     >

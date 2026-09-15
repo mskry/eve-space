@@ -1,6 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdCorporationhistoryResponse } from '@evespace/esi-client/types'
-import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
+import { createPublicEsiRead, type EsiReadResult } from '../esi-gateway/feature-execution.js'
 import { resolveUniverseNames } from '../universe/names.js'
 
 interface CharacterEmploymentHistoryEntry {
@@ -30,7 +30,13 @@ const employmentHistoryRead = createPublicEsiRead({
 export async function getCharacterEmploymentHistory(
   characterId: number,
 ): Promise<CharacterEmploymentHistoryEntry[]> {
-  return (await employmentHistoryRead.execute({ characterId })).data
+  return (await getCharacterEmploymentHistoryResult(characterId)).data
+}
+
+export function getCharacterEmploymentHistoryResult(
+  characterId: number,
+): Promise<EsiReadResult<CharacterEmploymentHistoryEntry[]>> {
+  return employmentHistoryRead.execute({ characterId })
 }
 
 async function mapEmploymentHistory(

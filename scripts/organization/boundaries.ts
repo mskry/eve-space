@@ -8,6 +8,7 @@ const modulesByTier = {
     'affiliation-freshness',
     'authority-policy',
     'compliance-evaluator',
+    'freshness',
     'group-mutation-error',
     'owner-claim-policy',
     'registration-policy',

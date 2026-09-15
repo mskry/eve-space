@@ -1,7 +1,20 @@
-import { useQuery, useQueryCache, type DefineQueryOptions, type EntryKey } from '@pinia/colada'
+import {
+  useQuery,
+  useQueryCache,
+  type DefineQueryOptions,
+  type EntryKey,
+  type QueryMeta,
+} from '@pinia/colada'
+import { platformQueryAdmissionScopes } from '#build/eve-space-platform/query-admission-scopes'
 import { computed, toValue, watch, type MaybeRefOrGetter } from 'vue'
+import {
+  ESI_QUERY_RETENTION_MS,
+  resolvePlatformEsiPersistence,
+  type PlatformEsiPersistenceIntent,
+} from '../../esi-query-persistence.js'
 import type { PlatformProtectedQueryAccess } from '../../query-lifecycle.js'
 import { canRunPlatformProtectedQuery, removePlatformQuery } from '../../query-lifecycle.js'
+import { usePlatformQueryPersistence } from '../../query-persistence-presentation.js'
 import type { PlatformQuerySubject } from '../../query-keys.js'
 import {
   isPlatformQuerySubjectValid,
@@ -15,10 +28,14 @@ export type PlatformProtectedQueryOptions<
   TData,
   TError = Error,
   TDataInitial extends TData | undefined = undefined,
-> = Omit<DefineQueryOptions<TData, TError, TDataInitial>, 'enabled' | 'key'> & {
+> = Omit<DefineQueryOptions<TData, TError, TDataInitial>, 'enabled' | 'gcTime' | 'key' | 'meta'> & {
   readonly access: ProtectedAccess
+  readonly esiPersistence: PlatformEsiPersistenceIntent
+  readonly gcTime?: number
+  readonly meta?: Omit<QueryMeta, 'esiPersistence'>
   readonly moduleId: string
   readonly resource?: EntryKey
+  readonly routeId: string
   readonly subject: PlatformQuerySubject
 }
 
@@ -29,9 +46,35 @@ export function usePlatformProtectedQuery<
 >(options: MaybeRefOrGetter<PlatformProtectedQueryOptions<TData, TError, TDataInitial>>) {
   const queryCache = useQueryCache()
   const state = computed(() => {
-    const { access, moduleId, resource = [], subject, ...queryOptions } = toValue(options)
+    const {
+      access,
+      esiPersistence: persistenceIntent,
+      moduleId,
+      resource = [],
+      routeId,
+      subject,
+      ...queryOptions
+    } = toValue(options)
+    const authorization = subject.kind === 'character' ? 'owned-character' : 'authenticated-session'
+    const esiPersistence =
+      persistenceIntent.kind === 'organization-esi'
+        ? resolvePlatformEsiPersistence(
+            platformQueryAdmissionScopes,
+            moduleId,
+            routeId,
+            authorization,
+          )
+        : ({ kind: 'none' } as const)
+    const routeAuthorized = platformQueryAdmissionScopes.some(
+      (scope) =>
+        scope.moduleId === moduleId &&
+        scope.routeId === routeId &&
+        scope.authorization === authorization,
+    )
+    const persistenceEligible = esiPersistence.kind !== 'none'
     const enabled =
       Boolean(moduleId) &&
+      routeAuthorized &&
       canRunPlatformProtectedQuery({
         ...access,
         isClient: globalThis.window !== undefined,
@@ -41,7 +84,18 @@ export function usePlatformProtectedQuery<
       moduleId && isPlatformQuerySubjectValid(subject)
         ? platformModuleQueryKey(moduleId, subject, resource)
         : [...PLATFORM_PRIVATE_QUERY_ROOT, 'inactive-module-query', moduleId, ...resource]
-    return { enabled, key, queryOptions }
+    return {
+      enabled,
+      key,
+      queryOptions: {
+        ...queryOptions,
+        gcTime: persistenceEligible ? ESI_QUERY_RETENTION_MS : queryOptions.gcTime,
+        meta: {
+          ...queryOptions.meta,
+          esiPersistence,
+        },
+      },
+    }
   })
   let retainedKey: EntryKey | undefined
   const query = useQuery(() => ({
@@ -49,6 +103,7 @@ export function usePlatformProtectedQuery<
     key: state.value.key,
     enabled: state.value.enabled,
   }))
+  const persistencePresentation = usePlatformQueryPersistence(() => state.value.key)
 
   watch(
     state,
@@ -61,7 +116,7 @@ export function usePlatformProtectedQuery<
     { immediate: true, flush: 'sync' },
   )
 
-  return query
+  return { ...query, persistencePresentation }
 }
 
 function sameQueryKey(left: EntryKey, right: EntryKey) {

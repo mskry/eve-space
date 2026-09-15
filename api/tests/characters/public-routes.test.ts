@@ -22,6 +22,11 @@ vi.mock('../../src/esi-gateway/failures.js', () => ({ EsiQuotaError: mocks.EsiQu
 import { publicCharacterRoutes } from '../../src/characters/public-routes.js'
 
 let testTime = new Date('2026-08-26T12:00:00.000Z').getTime()
+const freshness = {
+  cachedUntil: '2026-08-26T12:01:00.000Z',
+  validatedAt: '2026-08-26T12:00:00.000Z',
+  stale: false,
+}
 
 function request(path: string, address?: string) {
   const environment = address
@@ -38,7 +43,9 @@ beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(testTime)
   testTime += 61_000
-  mocks.getCharacterProfile.mockReset().mockResolvedValue({ id: 90_000_001, name: 'Capsuleer' })
+  mocks.getCharacterProfile
+    .mockReset()
+    .mockResolvedValue({ id: 90_000_001, name: 'Capsuleer', ...freshness })
 })
 
 afterEach(() => {
@@ -54,7 +61,31 @@ describe('public character routes', () => {
     expect(response.headers.get('vary')).toBe('Cookie')
     expect(mocks.getCharacterProfile).toHaveBeenCalledWith(90_000_001)
     await expect(response.json()).resolves.toEqual({
-      profile: { id: 90_000_001, name: 'Capsuleer' },
+      profile: { id: 90_000_001, name: 'Capsuleer', ...freshness },
+      ...freshness,
+    })
+  })
+
+  test('copies stale profile freshness onto the response root', async () => {
+    mocks.getCharacterProfile.mockResolvedValue({
+      id: 90_000_001,
+      name: 'Capsuleer',
+      cachedUntil: '2026-08-26T11:56:00.000Z',
+      validatedAt: '2026-08-26T11:55:00.000Z',
+      stale: true,
+      retryAt: '2026-08-26T12:05:00.000Z',
+      refreshFailureClass: 'esi-unavailable',
+    })
+
+    const response = await request('/90000001')
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      profile: { id: 90_000_001, stale: true },
+      stale: true,
+      validatedAt: '2026-08-26T11:55:00.000Z',
+      retryAt: '2026-08-26T12:05:00.000Z',
+      refreshFailureClass: 'esi-unavailable',
     })
   })
 

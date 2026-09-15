@@ -24,6 +24,10 @@ export function registerPlatformRuntime() {
       from: resolver.resolve('./runtime/app/composables/usePlatformModuleRuntime'),
     },
     {
+      name: 'usePlatformModulePersistenceLifecycle',
+      from: resolver.resolve('./runtime/app/composables/usePlatformModuleRuntime'),
+    },
+    {
       name: 'usePlatformMutationAnnouncement',
       from: resolver.resolve('./runtime/app/composables/usePlatformMutationAnnouncement'),
     },
@@ -40,6 +44,7 @@ export function registerPlatformRuntime() {
     'PlatformAuthorizationRequired',
     'PlatformEveImage',
     'PlatformPagination',
+    'PlatformQueryPersistenceStatus',
     'PlatformResourceBoundary',
   ]) {
     addComponent({

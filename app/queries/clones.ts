@@ -1,4 +1,7 @@
-import { defineQueryOptions } from '@pinia/colada'
+import {
+  characterEsiPersistence,
+  defineEsiQueryOptions,
+} from '@eve-space/platform-module-nuxt/runtime'
 import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
 import { toApiQueryError } from '../utils/query-error'
@@ -20,7 +23,7 @@ interface CharacterClonesQueryParameters {
   access: ProtectedCharacterQueryAccess
 }
 
-export const characterClonesQuery = defineQueryOptions(
+export const characterClonesQuery = defineEsiQueryOptions(
   ({ apiClient, characterId, access }: CharacterClonesQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterClones(characterId),
     query: async ({ signal }) => {
@@ -34,11 +37,12 @@ export const characterClonesQuery = defineQueryOptions(
       return response.json() as Promise<CharacterClones>
     },
     ...QUERY_POLICY.characterClones,
+    esiPersistence: characterEsiPersistence(characterId),
     enabled: canRunProtectedCharacterQuery(access, characterId),
   }),
 )
 
-export const characterImplantsQuery = defineQueryOptions(
+export const characterImplantsQuery = defineEsiQueryOptions(
   ({ apiClient, characterId, access }: CharacterClonesQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterImplants(characterId),
     query: async ({ signal }) => {
@@ -52,6 +56,7 @@ export const characterImplantsQuery = defineQueryOptions(
       return response.json() as Promise<CharacterImplants>
     },
     ...QUERY_POLICY.characterImplants,
+    esiPersistence: characterEsiPersistence(characterId),
     enabled: canRunProtectedCharacterQuery(access, characterId),
   }),
 )

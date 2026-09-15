@@ -6,6 +6,7 @@ import {
   characterSkillsQuery,
 } from '../../../queries/characters'
 import { canRunProtectedCharacterQuery } from '../../../queries/protected-character-query-access'
+import { PRIVATE_QUERY_KEYS } from '../../../queries/query-keys'
 import type { EsiResourceState } from '../../../types/esi-resource'
 import { ApiQueryError } from '../../../utils/query-error'
 import { parseRouteId } from '../../../utils/route-id'
@@ -40,6 +41,15 @@ const skillQueueQuery = useQuery(() => ({
   ...characterSkillQueueQuery({ apiClient, characterId: characterId.value ?? 0 }),
   enabled: protectedQueryEnabled.value,
 }))
+const skillsPersistencePresentation = useQueryPersistencePresentation(() =>
+  PRIVATE_QUERY_KEYS.characterSkills(characterId.value ?? 0),
+)
+const attributesPersistencePresentation = useQueryPersistencePresentation(() =>
+  PRIVATE_QUERY_KEYS.characterAttributes(characterId.value ?? 0),
+)
+const skillQueuePersistencePresentation = useQueryPersistencePresentation(() =>
+  PRIVATE_QUERY_KEYS.characterSkillQueue(characterId.value ?? 0),
+)
 const skills = skillsQuery.data
 const attributes = attributesQuery.data
 const skillQueue = skillQueueQuery.data
@@ -125,6 +135,7 @@ function queryAuthorizeUrl(error: unknown) {
     <EsiResourceBoundary
       :state="skillsResourceState"
       :has-data="Boolean(skills)"
+      :presentation="skillsPersistencePresentation"
       @retry="loadCharacterSkills(true)"
     >
       <div v-if="skills" class="skills-layout">
@@ -135,6 +146,7 @@ function queryAuthorizeUrl(error: unknown) {
             :attributes-status="attributesStatus"
             :attributes-message="attributesMessage"
             :attributes-authorize-url="attributesAuthorizeUrl"
+            :attributes-presentation="attributesPersistencePresentation"
             @retry-attributes="attributesQuery.refetch()"
           />
           <CharacterSkillsCatalogue
@@ -149,6 +161,7 @@ function queryAuthorizeUrl(error: unknown) {
           :skill-queue="skillQueue"
           :status="skillQueueStatus"
           :message="skillQueueMessage"
+          :presentation="skillQueuePersistencePresentation"
           :authorize-url="skillQueueAuthorizeUrl"
           :unallocated-sp="skills.unallocatedSp"
           @retry="skillQueueQuery.refetch()"

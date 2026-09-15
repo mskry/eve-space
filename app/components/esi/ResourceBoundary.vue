@@ -1,15 +1,18 @@
 <script setup lang="ts">
+import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type { EsiResourceState } from '../../types/esi-resource'
 
 withDefaults(
   defineProps<{
     compact?: boolean
     hasData?: boolean
+    presentation?: EsiQueryPersistencePresentation
     state: EsiResourceState
   }>(),
   {
     compact: true,
     hasData: false,
+    presentation: () => ({ kind: 'fresh' }),
   },
 )
 
@@ -27,6 +30,8 @@ defineSlots<{
 
 <template>
   <slot v-if="hasData || state.status === 'ready'" />
+
+  <PlatformQueryPersistenceStatus :presentation="presentation" />
 
   <slot v-if="!hasData && state.status === 'loading'" name="loading" :state="state">
     <UiStatePanel :code="state.code" :title="state.title" :compact="compact" role="status">
@@ -69,5 +74,28 @@ defineSlots<{
     </UiStatePanel>
   </slot>
 
-  <slot v-else-if="hasData && state.status !== 'ready'" name="retained" :state="state" />
+  <slot v-else-if="hasData && state.status !== 'ready'" name="retained" :state="state">
+    <output class="esi-resource-retained" :role="state.status === 'error' ? 'alert' : 'status'">
+      {{ state.message ?? state.title }}
+      <template v-if="state.retryAt">
+        Retry no earlier than <time :datetime="state.retryAt">{{ state.retryAt }}</time
+        >.
+      </template>
+      <button v-if="'retryLabel' in state && state.retryLabel" type="button" @click="emit('retry')">
+        {{ state.retryLabel }}
+      </button>
+    </output>
+  </slot>
 </template>
+
+<style scoped>
+.esi-resource-retained {
+  display: block;
+  margin-block: 0.75rem;
+  color: var(--ui-text-muted);
+}
+
+.esi-resource-retained button {
+  margin-inline-start: 0.5rem;
+}
+</style>

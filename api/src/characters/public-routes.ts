@@ -24,7 +24,16 @@ export const publicCharacterRoutes = new Hono().get(
     const { characterId } = context.req.valid('param')
     try {
       const profile = await getCharacterProfile(characterId)
-      return context.json({ profile })
+      return context.json({
+        profile,
+        cachedUntil: profile.cachedUntil,
+        validatedAt: profile.validatedAt,
+        stale: profile.stale,
+        ...(profile.retryAt ? { retryAt: profile.retryAt } : {}),
+        ...(profile.refreshFailureClass
+          ? { refreshFailureClass: profile.refreshFailureClass }
+          : {}),
+      })
     } catch (error) {
       if (error instanceof EsiQuotaError) {
         context.header('Retry-After', String(error.retryAfterSeconds))
@@ -48,6 +57,6 @@ export const publicCharacterRoutes = new Hono().get(
 
 function errorStatus(error: unknown) {
   return typeof error === 'object' && error !== null && 'status' in error
-    ? Number((error as { status: unknown }).status)
+    ? Number(error.status)
     : undefined
 }

@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
 import type { Context } from 'hono'
-import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import {
@@ -10,7 +9,7 @@ import {
   saveLogin,
 } from './character-lifecycle.js'
 import { consumeOAuthState, storeOAuthState, type OAuthStateContext } from './oauth-state-store.js'
-import { deleteSession, findSession } from './session-store.js'
+import { deleteSession, findSession, renewSession } from './session-store.js'
 import { getCharacterAffiliation } from '../characters/profile.js'
 import { observeCharacterAffiliation } from '../characters/affiliation-sync.js'
 import { env, isSsoConfigured } from '../env.js'
@@ -19,6 +18,7 @@ import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
 import { loadSession, sessionCookie } from '../middleware/auth-session.js'
 import { createOpaqueToken, tokensMatch } from './security.js'
+import { deleteAuthCookie, readAuthCookie, setAuthCookie } from '../http/auth-cookie.js'
 import { authRequiredBody, routeNotFoundBody } from '../http/contracts.js'
 import { privateNoStore, setPrivateHeaders } from '../http/private-response.js'
 import { requireTrustedMutationOrigin } from '../http/trusted-origin.js'
@@ -43,7 +43,11 @@ import { loadTransferApprovalForStart } from './character-transfer-approvals.js'
 import { CharacterTransferError, transferCharacter } from './character-transfer.js'
 
 const oauthStateCookie = 'eve_space_oauth_state'
-const sessionDurationSeconds = 7 * 24 * 60 * 60
+const sessionLifetime = {
+  idleSeconds: 14 * 24 * 60 * 60,
+  absoluteSeconds: 30 * 24 * 60 * 60,
+  renewalIntervalSeconds: 24 * 60 * 60,
+}
 const maxReturnPathDecodeDepth = 4
 type CharacterAuthorization = Omit<Parameters<typeof attachCharacter>[0], 'userId'>
 const callbackQuery = z.object({
@@ -191,13 +195,10 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
   )
   .get('/eve/callback', zValidator('query', callbackQuery), async (context) => {
     const { error: authorizationError, code, state } = context.req.valid('query')
-    const cookieState = getCookie(context, oauthStateCookie)
+    const cookieState = readAuthCookie(context, oauthStateCookie, '/auth/eve/callback')
     const stateContext = await consumeValidOAuthState(state, cookieState)
 
-    deleteCookie(context, oauthStateCookie, {
-      path: '/auth/eve/callback',
-      secure: env.SESSION_COOKIE_SECURE,
-    })
+    deleteAuthCookie(context, oauthStateCookie, '/auth/eve/callback')
     if (!stateContext) return redirectForIntent(context, { intent: 'login' }, 'error')
     if (authorizationError) return redirectForIntent(context, stateContext, 'cancelled')
     if (!code) return redirectForIntent(context, stateContext, 'error')
@@ -259,27 +260,31 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
     async (context) => {
       const { sessionToken } = context.req.valid('form')
       if (!(await findSession(sessionToken))) return context.json(authRequiredBody, 401)
-      setCookie(context, sessionCookie, sessionToken, sessionCookieOptions(sessionDurationSeconds))
+      setAuthCookie(context, sessionCookie, sessionToken, sessionLifetime.idleSeconds)
       return context.redirect(new URL('/', env.WEB_ORIGIN).toString(), 303)
     },
   )
   .get('/session', async (context) => {
     setPrivateHeaders(context)
-    const sessionToken = getCookie(context, sessionCookie)
+    const sessionToken = readAuthCookie(context, sessionCookie)
     if (!sessionToken) return context.json({ authenticated: false as const })
 
     const session = await findSession(sessionToken)
     if (!session) {
-      deleteCookie(context, sessionCookie, { path: '/', secure: env.SESSION_COOKIE_SECURE })
+      deleteAuthCookie(context, sessionCookie)
       return context.json({ authenticated: false as const })
+    }
+    const renewedExpiry = await renewSession(sessionToken, sessionLifetime)
+    if (renewedExpiry) {
+      setAuthCookie(context, sessionCookie, sessionToken, secondsUntil(renewedExpiry))
     }
     return context.json({ authenticated: true as const, account: session })
   })
   .post('/logout', async (context) => {
     setPrivateHeaders(context)
-    const sessionToken = getCookie(context, sessionCookie)
+    const sessionToken = readAuthCookie(context, sessionCookie)
     if (sessionToken) await deleteSession(sessionToken)
-    deleteCookie(context, sessionCookie, { path: '/', secure: env.SESSION_COOKIE_SECURE })
+    deleteAuthCookie(context, sessionCookie)
     return context.body(null, 204)
   })
 
@@ -308,14 +313,7 @@ async function prepareAuthorization(context: Context, stateContext: OAuthStateCo
 
   const state = createOpaqueToken()
   await storeOAuthState(state, stateContext)
-  setCookie(context, oauthStateCookie, state, {
-    path: '/auth/eve/callback',
-    httpOnly: true,
-    secure: env.SESSION_COOKIE_SECURE,
-    sameSite: 'Lax',
-    priority: 'High',
-    maxAge: 10 * 60,
-  })
+  setAuthCookie(context, oauthStateCookie, state, 10 * 60, '/auth/eve/callback')
   return { authorizationUrl: await createAuthorizationUrl(state, context.req.raw.signal) }
 }
 
@@ -327,7 +325,7 @@ async function consumeValidOAuthState(state: string | undefined, cookieState: st
 async function hasBoundSession(context: Context, stateContext: OAuthStateContext) {
   if (stateContext.intent === 'login') return true
 
-  const sessionToken = getCookie(context, sessionCookie)
+  const sessionToken = readAuthCookie(context, sessionCookie)
   if (!sessionToken) return false
 
   const session = await findSession(sessionToken)
@@ -345,16 +343,16 @@ async function saveAuthorizationForIntent(
       await saveLogin({
         ...authorization,
         sessionToken,
-        sessionExpiresAt: new Date(Date.now() + sessionDurationSeconds * 1000),
+        sessionExpiresAt: new Date(Date.now() + sessionLifetime.idleSeconds * 1000),
       })
-      setCookie(context, sessionCookie, sessionToken, sessionCookieOptions(sessionDurationSeconds))
+      setAuthCookie(context, sessionCookie, sessionToken, sessionLifetime.idleSeconds)
       return
     }
     case 'attach':
       await attachCharacter({
         ...authorization,
         userId: stateContext.userId,
-        sessionToken: getCookie(context, sessionCookie)!,
+        sessionToken: readAuthCookie(context, sessionCookie)!,
       })
       return
     case 'reauthorize':
@@ -362,14 +360,14 @@ async function saveAuthorizationForIntent(
         ...authorization,
         userId: stateContext.userId,
         expectedCharacterId: stateContext.characterId,
-        sessionToken: getCookie(context, sessionCookie)!,
+        sessionToken: readAuthCookie(context, sessionCookie)!,
       })
       return
     case 'claim-organization-owner':
       await saveOrganizationOwnerClaim(
         stateContext,
         authorization,
-        getCookie(context, sessionCookie)!,
+        readAuthCookie(context, sessionCookie)!,
       )
       return
     case 'transfer':
@@ -379,7 +377,7 @@ async function saveAuthorizationForIntent(
         sourceSubjectLifecycleId: stateContext.sourceSubjectLifecycleId,
         destinationUserId: stateContext.userId,
         characterId: stateContext.characterId,
-        destinationSessionToken: getCookie(context, sessionCookie)!,
+        destinationSessionToken: readAuthCookie(context, sessionCookie)!,
         authorization,
       })
       return
@@ -483,15 +481,8 @@ function redirectForIntent(
   return context.redirect(destination.toString())
 }
 
-function sessionCookieOptions(maxAge: number) {
-  return {
-    path: '/',
-    httpOnly: true,
-    secure: env.SESSION_COOKIE_SECURE,
-    sameSite: 'Lax' as const,
-    priority: 'High' as const,
-    maxAge,
-  }
+function secondsUntil(expiresAt: Date) {
+  return Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1_000))
 }
 
 function assertUniqueQueryParameters(url: string) {

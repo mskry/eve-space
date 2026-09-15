@@ -1,5 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { useQueryCache } from '@pinia/colada'
+import { useQuery, useQueryCache } from '@pinia/colada'
 import { http, HttpResponse } from 'msw'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
@@ -47,6 +47,7 @@ afterAll(() => queryServer.close())
 afterEach(async () => {
   queryServer.resetHandlers()
   for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  vi.restoreAllMocks()
   await settle()
   document.body.replaceChildren()
 })
@@ -156,5 +157,52 @@ describe('DashboardShell system status', () => {
       () => expect(wrapper.get('.system-status-panel').text()).toContain('LATEST CHECK FAILED'),
       { timeout: 4_000 },
     )
+  })
+
+  it('aggregates active server-stale ESI presentation without replacing operational status', async () => {
+    const validatedAt = new Date().toISOString()
+    queryServer.use(
+      http.get('*/auth/config', () =>
+        HttpResponse.json({ configured: true, loginUrl: '/login', attachUrl: '/attach' }),
+      ),
+      http.get('*/auth/session', () => HttpResponse.json({ authenticated: false })),
+      http.get('*/api/admin/session', () => HttpResponse.json({ authenticated: false })),
+      http.get('*/api/status', () => HttpResponse.json(telemetry)),
+    )
+
+    const Host = defineComponent({
+      setup() {
+        useQuery({
+          key: ['public', 'dashboard-presentation-test'],
+          query: async () => ({
+            stale: true as const,
+            validatedAt,
+            refreshFailureClass: 'esi-unavailable',
+          }),
+          meta: { esiPersistence: { kind: 'public-esi' } },
+        })
+        return () => h(DashboardShell, null, { default: () => h('p', 'Page content') })
+      },
+    })
+    const wrapper = await mountSuspended(Host, {
+      attachTo: document.body,
+      global: {
+        stubs: {
+          AppSidebar: EmptyStub,
+          UiDrawer: EmptyStub,
+          UiStatusPopover: StatusPopoverStub,
+          UiThemeSwitcher: EmptyStub,
+        },
+      },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+
+    await vi.waitFor(() => {
+      const notice = wrapper.get('[data-persistence-state="server-stale"]')
+      expect(notice.text()).toContain('SERVER CACHE DEGRADED')
+      expect(notice.get('time').attributes('datetime')).toBe(validatedAt)
+    })
+    expect(wrapper.get('.system-status-heading').text()).toContain('OPERATIONAL')
   })
 })

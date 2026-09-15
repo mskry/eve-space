@@ -65,6 +65,7 @@ describe('organization roster coverage', () => {
     })
 
     await expect(listOrganizationRosterCoverage()).resolves.toEqual({
+      stale: false,
       managedCorporations: {
         status: 'current',
         validatedAt: '2026-09-01T09:00:00.000Z',
@@ -104,7 +105,7 @@ describe('organization roster coverage', () => {
     expect(mocks.getCollectionStatus).toHaveBeenCalledOnce()
   })
 
-  test('projects collected alliance and pending corporation coverage', async () => {
+  test('projects collected alliance and stale corporation coverage', async () => {
     selectResults(
       [
         {
@@ -131,10 +132,10 @@ describe('organization roster coverage', () => {
     )
     mocks.getCollectionStatus
       .mockResolvedValueOnce({
-        status: 'never-collected',
-        validatedAt: null,
-        attemptedAt: null,
-        lastFailureClass: null,
+        status: 'stale',
+        validatedAt: '2026-09-02T09:30:00.000+02:00',
+        attemptedAt: '2026-09-02T09:30:00.000Z',
+        lastFailureClass: 'esi-cooldown',
       })
       .mockResolvedValueOnce({
         status: 'stale',
@@ -151,7 +152,12 @@ describe('organization roster coverage', () => {
       attemptedAt: '2026-09-02T10:00:00.000Z',
       lastFailureClass: 'esi-unavailable',
     })
-    expect(result.corporations[0]).toMatchObject({ status: 'pending', attemptedAt: null })
+    expect(result.corporations[0]).toMatchObject({ status: 'stale', attemptedAt: null })
+    expect(result).toMatchObject({
+      stale: true,
+      validatedAt: '2026-09-02T09:30:00.000+02:00',
+      refreshFailureClass: 'esi-cooldown',
+    })
     expect(mocks.getCollectionStatus).toHaveBeenNthCalledWith(2, {
       moduleId: 'core',
       resourceId: 'managed-corporations',

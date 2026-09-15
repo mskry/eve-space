@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type { CharacterSkillQueue } from '../../../queries/characters'
 import type { EsiResourceState } from '../../../types/esi-resource'
 import { formatNumber } from '../../../utils/format'
@@ -17,6 +18,7 @@ const props = defineProps<{
   skillQueue: CharacterSkillQueue | undefined
   status: string
   message: string
+  presentation?: EsiQueryPersistencePresentation
   authorizeUrl: string
   unallocatedSp: number
 }>()
@@ -108,6 +110,7 @@ const resourceState = computed<EsiResourceState>(() => {
     <EsiResourceBoundary
       :state="resourceState"
       :has-data="Boolean(skillQueue)"
+      :presentation="presentation"
       @retry="emit('retry')"
     >
       <template v-if="skillQueue && queueState === 'training' && activeQueueEntry">

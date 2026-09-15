@@ -1,5 +1,6 @@
 import type {
   PlatformAuthenticatedSessionRouteEnv,
+  PlatformCollectionStatus,
   PlatformOwnedCharacterRouteEnv,
 } from '@eve-space/platform-module-contract'
 import { zValidator } from '@eve-space/platform-module-server'
@@ -71,6 +72,7 @@ export function activityRoutes(capabilities: ActivityRouteCapabilities) {
           resource: source.status,
           activity: source.snapshots.find((snapshot) => snapshot.id === activityId) ?? null,
           objectives: source.snapshots.filter((snapshot) => snapshot.campaignId === activityId),
+          ...collectionFreshness(source.status),
         },
         200,
       )
@@ -108,9 +110,19 @@ export function participationRoutes(capabilities: ActivityRouteCapabilities) {
               contributed: snapshot.contributed,
               committed: snapshot.committed,
             })),
+          ...collectionFreshness(source.status),
         },
         200,
       )
     },
   )
+}
+
+function collectionFreshness(status: PlatformCollectionStatus) {
+  if (status.status !== 'stale') return { stale: false as const }
+  return {
+    stale: true as const,
+    ...(status.validatedAt ? { validatedAt: status.validatedAt } : {}),
+    ...(status.lastFailureClass ? { refreshFailureClass: status.lastFailureClass } : {}),
+  }
 }

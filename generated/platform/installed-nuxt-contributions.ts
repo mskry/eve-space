@@ -6,6 +6,22 @@ export const installedNuxtContributions = [
   {
     moduleId: 'organization-activity',
     defaultIcon: 'corporation',
+    queryAdmissionScopes: [
+      {
+        routeId: 'activity-details',
+        authorization: 'authenticated-session',
+        audience: 'member',
+        requiredPermission: 'organization-activity.view',
+        admissionScope: 'organization:v1:organization-activity:member:organization-activity.view',
+      },
+      {
+        routeId: 'activity-participation',
+        authorization: 'owned-character',
+        audience: 'member',
+        requiredPermission: 'organization-activity.view',
+        admissionScope: 'organization:v1:organization-activity:member:organization-activity.view',
+      },
+    ],
     pages: [
       {
         id: 'organization-activity-projects',

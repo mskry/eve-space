@@ -5,8 +5,12 @@ import { http, HttpResponse } from 'msw'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import SettingsIntegrations from '../../app/components/settings/SettingsIntegrations.vue'
+import { useAuthSession } from '../../app/composables/useAuthSession'
 import type { OrganizationContext, OrganizationRoles } from '../../app/queries/organization'
+import { refreshPrivateAuthorization } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
+import { createApiClient } from '../../app/utils/api-client'
+import { cacheAdmissionForOrganization } from '../support/cache-admission'
 import { queryServer } from '../support/query-server'
 
 const mountedWrappers: { unmount: () => void }[] = []
@@ -20,6 +24,7 @@ beforeAll(() => queryServer.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => queryServer.close())
 
 beforeEach(() => {
+  clearQueryCache()
   context = ownerContext()
   grantFails = false
   revokeFails = false
@@ -30,6 +35,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  clearQueryCache()
   queryServer.resetHandlers()
   await flushPromises()
 })
@@ -99,12 +105,31 @@ describe('SettingsIntegrations', () => {
     expect(wrapper.get('[aria-live="polite"]').text()).toBe('')
     expect(wrapper.find('.role-revoke-form').exists()).toBe(true)
   })
+
+  it('clears role forms on same-route organization invalidation', async () => {
+    const wrapper = await mountSettingsIntegrations()
+    await wrapper.get('#role-user-id').setValue('private-user')
+    await wrapper.get('#organization-role').setValue('director')
+    await wrapper.get('#grant-reason').setValue('Private grant reason')
+    await wrapper.get('.role-grant-row > button').trigger('click')
+    await wrapper.get('.role-revoke-form textarea').setValue('Private revocation reason')
+
+    await refreshPrivateAuthorization(useQueryCache(), { kind: 'organization' })
+    await vi.waitFor(() => expect(wrapper.find('#role-user-id').exists()).toBe(true))
+
+    expect(wrapper.get('#role-user-id').element).toHaveProperty('value', '')
+    expect(wrapper.get('#organization-role').element).toHaveProperty('value', 'hr_auditor')
+    expect(wrapper.get('#grant-reason').element).toHaveProperty('value', '')
+    expect(wrapper.find('.role-revoke-form').exists()).toBe(false)
+    expect(wrapper.get('[aria-live="polite"]').text()).toBe('')
+  })
 })
 
 async function mountSettingsIntegrations() {
   const Host = defineComponent({
-    setup() {
+    async setup() {
       const queryCache = useQueryCache()
+      await useAuthSession(createApiClient('http://localhost:8788')).initializeAuth(true)
       queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationContext(), context)
       queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationRoles(), { grants: [roleGrant()] })
       return () => h(SettingsIntegrations)
@@ -118,6 +143,12 @@ async function mountSettingsIntegrations() {
   await vi.waitFor(() => expect(wrapper.text()).toContain('Example Corporation'))
   await vi.waitFor(() => expect(wrapper.text()).toContain('Authority Pilot'))
   return wrapper
+}
+
+function clearQueryCache() {
+  const queryCache = useQueryCache()
+  queryCache.cancelQueries()
+  for (const entry of queryCache.getEntries()) queryCache.remove(entry)
 }
 
 function installHandlers() {
@@ -137,6 +168,9 @@ function installHandlers() {
           mainCharacter: { characterId: 1_404_328_063, name: 'Authority Pilot' },
         },
       }),
+    ),
+    http.get('http://localhost:8788/api/me/cache-admission', () =>
+      HttpResponse.json(cacheAdmissionForOrganization('owner-user', 1_404_328_063)),
     ),
     http.get('http://localhost:8788/api/admin/setup', () =>
       HttpResponse.json({ required: false, available: true }),

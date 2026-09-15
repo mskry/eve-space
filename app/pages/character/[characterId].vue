@@ -10,14 +10,20 @@ definePageMeta({ title: 'Character', layout: 'headerless' })
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
+const { authLoading, authSession } = useAuthSession(apiClient)
 const characterId = computed(() => parseRouteId(route.params.characterId))
+const recordAccessAllowed = computed(() => !authLoading.value && authSession.value.authenticated)
 const detailQuery = useQuery(() => ({
   ...publicCharacterQuery({ apiClient, characterId: characterId.value ?? 0 }),
-  enabled: import.meta.client && characterId.value !== undefined,
+  enabled: import.meta.client && recordAccessAllowed.value && characterId.value !== undefined,
 }))
-const profile = computed(() => detailQuery.data.value?.profile)
+const profile = computed(() =>
+  recordAccessAllowed.value ? detailQuery.data.value?.profile : undefined,
+)
 const detailStatus = computed(() => {
   if (!characterId.value) return 'not-found'
+  if (authLoading.value) return 'loading'
+  if (!recordAccessAllowed.value) return 'idle'
   if (detailQuery.data.value) return 'idle'
   if (detailQuery.error.value instanceof ApiQueryError && detailQuery.error.value.status === 404) {
     return 'not-found'

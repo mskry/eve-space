@@ -168,6 +168,7 @@ test('seeds one guarded production-shaped organization fixture', async () => {
   const { listOrganizationRosterCoverage } =
     await import('../../../src/organization/roster-coverage.js')
   const { aggregateOrganizationActivities } = await import('../../../src/organization/activity.js')
+  const { loadCacheAdmissionContext } = await import('../../../src/cache-admission/service.js')
 
   const session = await loadOrganizationSessionContext(summary.userId)
   expect(session).toMatchObject({ state: 'compliant', blocked: false })
@@ -181,6 +182,24 @@ test('seeds one guarded production-shaped organization fixture', async () => {
         requiredPermission: 'organization-activity.view',
       }),
     ).resolves.toMatchObject({ authorized: true })
+  await expect(loadCacheAdmissionContext(summary.userId)).resolves.toMatchObject({
+    userId: summary.userId,
+    characters: [
+      {
+        characterId: summary.directorCharacterId,
+        admissionRevision: expect.stringMatching(/^character-admission:v1:sha256:[a-f0-9]{64}$/),
+      },
+    ],
+    organization: {
+      organizationVersion: 1,
+      admissionRevision: expect.stringMatching(/^organization-admission:v1:sha256:[a-f0-9]{64}$/),
+      admissionScopes: [
+        'organization:v1:core:hr:organization.roster-coverage',
+        'organization:v1:core:member:organization.activities',
+        'organization:v1:organization-activity:member:organization-activity.view',
+      ],
+    },
+  })
   await expect(listOrganizationRosterCoverage()).resolves.toMatchObject({
     corporations: [
       {

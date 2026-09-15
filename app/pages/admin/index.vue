@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { adminSessionQuery } from '../../queries/admin'
+import { refreshPrivateAuthorization } from '../../queries/query-cache'
 import { ADMIN_QUERY_KEYS } from '../../queries/query-keys'
 import { toApiQueryError } from '../../utils/query-error'
 
@@ -30,7 +31,7 @@ const organizationMutation = useMutation({
       throw await toApiQueryError(response, 'Organization could not be updated.')
     return response.json()
   },
-  onSuccess: ({ organization }) => {
+  onSuccess: async ({ organization }) => {
     const current = adminSession.value
     if (current?.authenticated) {
       queryCache.setQueryData(ADMIN_QUERY_KEYS.session, {
@@ -38,6 +39,7 @@ const organizationMutation = useMutation({
         account: { ...current.account, organization },
       })
     }
+    await refreshPrivateAuthorization(queryCache, { kind: 'organization' })
     feedback.value = 'Deployment organization updated.'
   },
 })

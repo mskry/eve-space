@@ -786,6 +786,35 @@ describe('mail mutations', () => {
     expect(mutations.readPendingIds.value.size).toBe(0)
     unmount()
   })
+
+  it('does not commit a late successful mutation after private state resets', async () => {
+    let finishRequest!: () => void
+    const requestCanFinish = new Promise<void>((resolve) => (finishRequest = resolve))
+    queryServer.use(
+      http.put('http://localhost/api/me/characters/7/mail/1', async () => {
+        await requestCanFinish
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const { mutations, queryCache, unmount } = mountMutations()
+    const key = mailHeadersQuery({ apiClient, characterId }).key
+    queryCache.setQueryData(key, mailHeaders([mailHeader(1, false)]))
+    const request = mutations.setMailRead({
+      characterId,
+      header: mailHeader(1, false),
+      read: true,
+    })
+
+    mutations.resetMailMutations()
+    finishRequest()
+
+    await expect(request).resolves.toEqual({ invalidated: true, success: false })
+    expect(queryCache.getQueryData<ReturnType<typeof mailHeaders>>(key)?.messages[0]?.isRead).toBe(
+      false,
+    )
+    expect(mutations.readStateOverrides.value.size).toBe(0)
+    unmount()
+  })
 })
 
 function mountMutations() {

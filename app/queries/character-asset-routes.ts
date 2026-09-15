@@ -1,4 +1,4 @@
-import { defineQueryOptions } from '@pinia/colada'
+import { defineEsiQueryOptions } from '@eve-space/platform-module-nuxt/runtime'
 import type { ApiClient } from '../utils/api-client'
 import { isNonnegativeSafeInteger, isPositiveSafeInteger } from '../utils/number-guards'
 import { ApiQueryError, toApiQueryError } from '../utils/query-error'
@@ -36,7 +36,7 @@ export function canRunCharacterAssetRoutesQuery(
   )
 }
 
-export const characterAssetRoutesQuery = defineQueryOptions(
+export const characterAssetRoutesQuery = defineEsiQueryOptions(
   ({
     apiClient,
     characterId,
@@ -81,6 +81,7 @@ export const characterAssetRoutesQuery = defineQueryOptions(
         return result
       },
       ...QUERY_POLICY.characterAssetRoutes,
+      esiPersistence: { kind: 'none' },
       enabled: canRunCharacterAssetRoutesQuery(access, characterId, originSystemId, destinations),
     }
   },

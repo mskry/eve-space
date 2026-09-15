@@ -26,7 +26,7 @@ describe('ESI result metadata', () => {
     })
   })
 
-  test('uses the earliest expiry, oldest validation, and oldest stale failure', () => {
+  test('uses the earliest expiry, oldest validation, oldest stale failure, and latest retry', () => {
     expect(
       combineEsiResultMetadata([
         {
@@ -38,14 +38,46 @@ describe('ESI result metadata', () => {
           cachedUntil: '2026-09-01T11:02:00.000Z',
           validatedAt: '2026-09-01T10:58:00.000Z',
           stale: true,
+          retryAt: '2026-09-01T11:04:00.000Z',
           refreshFailureClass: 'response-invalid',
+        },
+        {
+          cachedUntil: '2026-09-01T11:04:00.000Z',
+          validatedAt: '2026-09-01T10:59:00.000Z',
+          stale: true,
+          retryAt: '2026-09-01T11:05:00.000Z',
+          refreshFailureClass: 'esi-cooldown',
+        },
+        {
+          cachedUntil: '2026-09-01T11:05:00.000Z',
+          validatedAt: '2026-09-01T11:01:00.000Z',
+          stale: false,
+          retryAt: '2026-09-01T11:06:00.000Z',
         },
       ]),
     ).toEqual({
       cachedUntil: '2026-09-01T11:02:00.000Z',
       validatedAt: '2026-09-01T10:58:00.000Z',
       stale: true,
+      retryAt: '2026-09-01T11:05:00.000Z',
       refreshFailureClass: 'response-invalid',
+    })
+  })
+
+  test('ignores malformed retry boundaries', () => {
+    expect(
+      combineEsiResultMetadata([
+        {
+          cachedUntil: '2026-09-01T11:02:00.000Z',
+          validatedAt: '2026-09-01T10:58:00.000Z',
+          stale: true,
+          retryAt: 'later',
+        },
+      ]),
+    ).toEqual({
+      cachedUntil: '2026-09-01T11:02:00.000Z',
+      validatedAt: '2026-09-01T10:58:00.000Z',
+      stale: true,
     })
   })
 })
