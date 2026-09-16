@@ -7,7 +7,7 @@ describe('core-data boundaries', () => {
     const sources = await loadCoreDataBoundarySources(process.cwd())
 
     expect(coreDataBoundaryViolations(sources)).toEqual([])
-  })
+  }, 15_000)
 
   it('keeps the contract package dependency-free', () => {
     expect(

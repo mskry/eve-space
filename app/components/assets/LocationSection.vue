@@ -58,7 +58,7 @@ const jumpLabel = computed(() => {
           @click="emit('toggleLocation', group.key)"
         >
           <span class="assets-location-chevron" aria-hidden="true">{{ expanded ? '▾' : '▸' }}</span>
-          <AssetsLocationSecurity
+          <SystemSecurityStatus
             v-if="group.solarSystemSecurityStatus !== null"
             :value="group.solarSystemSecurityStatus"
           />

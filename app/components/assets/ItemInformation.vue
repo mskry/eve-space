@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { PublicTypeDetail } from '../../queries/universe'
 import type { AssetRecord } from '../../types/assets'
 import { assetImageKind, isSkinAsset } from '../../utils/assets-hierarchy'
 
@@ -14,6 +15,19 @@ const open = ref(false)
 const identityLabel = computed(() => props.asset.customName || props.asset.typeName)
 const imageKind = computed(() => assetImageKind(props.asset))
 const imageSource = computed(() => (isSkinAsset(props.asset) ? '/images/eve-skin.png' : undefined))
+const fallbackItem = computed<PublicTypeDetail | undefined>(() => {
+  const { categoryId, categoryName, groupId, groupName, typeId, typeName } = props.asset
+  if (categoryId === null || categoryName === null || groupId === null || groupName === null)
+    return undefined
+  return {
+    typeId,
+    name: typeName,
+    description: null,
+    group: { id: groupId, name: groupName },
+    category: { id: categoryId, name: categoryName },
+    detail: null,
+  }
+})
 
 function updateOpen(value: boolean) {
   open.value = value
@@ -30,6 +44,7 @@ defineExpose({ openInformation })
 <template>
   <EveItemInformationPopover
     :open="open"
+    :fallback-item="fallbackItem"
     :image-kind="imageKind"
     :image-source="imageSource"
     :type-id="asset.typeId"

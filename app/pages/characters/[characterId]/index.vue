@@ -228,7 +228,16 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
                 <dl>
                   <div>
                     <dt>CURRENT SYSTEM</dt>
-                    <dd>{{ systemLabel }}</dd>
+                    <dd class="character-system-detail">
+                      <SystemSecurityStatus
+                        v-if="
+                          location?.status === 'ok' &&
+                          typeof location.data.solarSystemSecurityStatus === 'number'
+                        "
+                        :value="location.data.solarSystemSecurityStatus"
+                      />
+                      <span>{{ systemLabel }}</span>
+                    </dd>
                   </div>
                   <div>
                     <dt>DOCKED AT</dt>

@@ -1,15 +1,18 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { useQueryCache } from '@pinia/colada'
 import { http, HttpResponse } from 'msw'
+import { TooltipProvider } from 'reka-ui'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import FinanceContractDrawer from '../../app/components/finance/ContractDrawer.vue'
+import FinanceJournal from '../../app/components/finance/Journal.vue'
 import FinanceServicePanel from '../../app/components/finance/ServicePanel.vue'
 import FinanceSummary from '../../app/components/finance/Summary.vue'
 import FinancePage from '../../app/pages/characters/[characterId]/finance.vue'
 import { provideCharacterReauthorization } from '../../app/composables/useCharacterReauthorization'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import type { FinanceContract, FinanceResourceState } from '../../app/types/finance'
+import UiTooltip from '../../layers/ui/app/components/ui/UiTooltip.vue'
 import { cacheAdmissionForCharacter } from '../support/cache-admission'
 import { clearQueryCache } from '../support/clear-query-cache'
 import { queryServer } from '../support/query-server'
@@ -37,7 +40,7 @@ const FinanceHost = defineComponent({
       balance: 1_234_567.89,
       ...metadata(),
     })
-    return () => h(FinancePage)
+    return () => h(TooltipProvider, { delayDuration: 0 }, { default: () => h(FinancePage) })
   },
 })
 
@@ -101,11 +104,21 @@ describe('character Finance page', () => {
       'Character finance',
     )
     expect(wrapper.text()).toContain('CHARACTER WALLET')
+    expect(wrapper.get('.character-summary-card').text()).not.toContain('REFRESH BALANCE')
+    expect(wrapper.get('.character-summary-card').text()).not.toContain('SYNCED')
     // Each summary metric appears only once the service behind it has actually loaded.
-    expect(wrapper.get('.finance-hero-metrics').text()).toContain('Net change')
-    expect(wrapper.get('.finance-hero-metrics').text()).toContain('+150.00 ISK')
-    expect(wrapper.get('.finance-hero-metrics').text()).not.toContain('In escrow')
-    expect(wrapper.get('.finance-hero-metrics').text()).not.toContain('Awaiting me')
+    const summaryMetrics = wrapper.get('.finance-hero-metrics')
+    expect(summaryMetrics.classes()).toContain('character-summary-stats')
+    expect(summaryMetrics.text()).toContain('Net change')
+    expect(summaryMetrics.text()).toContain('+150.00 ISK')
+    expect(summaryMetrics.text()).not.toContain('journal entries · loaded page')
+    expect(summaryMetrics.text()).not.toContain('In escrow')
+    expect(summaryMetrics.text()).not.toContain('Awaiting me')
+    expect(
+      wrapper
+        .findAllComponents(UiTooltip)
+        .some((tooltip) => tooltip.props('content') === '2 journal entries · loaded page'),
+    ).toBe(true)
 
     // The journal is the ledger's default tab, and it is the only service with data up front.
     const inactivePanels = wrapper.findAll('.finance-tab-panel[hidden]')
@@ -166,7 +179,12 @@ describe('character Finance page', () => {
     await openTab(wrapper, 'Contracts')
     await seedOnly('Contracts')
     await vi.waitFor(() => expect(wrapper.text()).toContain('Courier package'))
-    expect(wrapper.get('.finance-hero-metrics').text()).toContain('contracts assigned to you')
+    expect(wrapper.get('.finance-hero-metrics').text()).not.toContain('contracts assigned to you')
+    expect(
+      wrapper
+        .findAllComponents(UiTooltip)
+        .some((tooltip) => tooltip.props('content') === 'contracts assigned to you · loaded page'),
+    ).toBe(true)
     await chip(wrapper, 'Couriers').trigger('click')
     expect(wrapper.findAll('.finance-contract-row')).toHaveLength(1)
 
@@ -321,7 +339,6 @@ describe('character Finance page', () => {
         balanceLabel: 'Available balance',
         eyebrow: 'Character wallet',
         metrics: [],
-        now: Date.parse('2026-09-02T12:00:00.000Z'),
         state: resourceState({
           authorizationAction: {
             href: '/reauthorize',
@@ -355,7 +372,53 @@ describe('character Finance page', () => {
       state: resourceState({ canRetry: true, errorMessage: 'Retained refresh failed.' }),
     })
     expect(wrapper.get('.finance-inline-error').text()).toContain('Retained refresh failed.')
-    expect(wrapper.get('.finance-hero-actions button').text()).toBe('REFRESH BALANCE')
+    expect(wrapper.get('.finance-hero-actions button').text()).toBe('RETRY BALANCE')
+  })
+
+  it('formats journal currency, sign color, and truncated-description titles', async () => {
+    const entries = [
+      {
+        journalId: 1,
+        date: '2026-09-04T12:57:00.000Z',
+        referenceType: 'player_donation',
+        description: "Skiasten deposited cash into Bandera Primary's account",
+        amount: 0,
+        balance: 15_226_991.54,
+      },
+      {
+        journalId: 2,
+        date: '2026-09-04T12:58:00.000Z',
+        referenceType: 'market_transaction',
+        description: 'Market purchase',
+        amount: -1_050_000,
+        balance: 14_176_991.54,
+      },
+    ]
+    const wrapper = await mountSuspended(FinanceJournal, {
+      props: {
+        entries,
+        filter: 'All',
+        journal: { entries, page: 1, totalPages: 1, ...metadata() },
+        now: Date.parse('2026-09-04T13:00:00.000Z'),
+        scopeNote: '',
+        state: resourceState(),
+      },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+    const rows = wrapper.findAll('.finance-table--journal tbody tr')
+
+    expect(rows[0]?.findAll('td')[0]?.classes()).toContain('is-subtle')
+    expect(rows[0]?.findAll('td')[1]?.classes()).toContain('is-subtle')
+    expect(rows[0]?.findAll('td')[2]?.classes()).toContain('is-subtle')
+    expect(rows[0]?.findAll('td')[2]?.attributes('title')).toBe(entries[0]?.description)
+    expect(rows[0]?.findAll('td')[3]?.text()).toBe('0 ISK')
+    expect(rows[0]?.findAll('td')[3]?.classes()).toContain('is-income')
+    expect(rows[0]?.findAll('td')[3]?.classes()).not.toContain('is-expense')
+    expect(rows[0]?.findAll('td')[4]?.text()).toBe('15,226,991.54 ISK')
+    expect(rows[0]?.findAll('td')[4]?.classes()).not.toContain('is-subtle')
+    expect(rows[1]?.findAll('td')[3]?.text()).toBe('-1,050,000 ISK')
+    expect(rows[1]?.findAll('td')[3]?.classes()).toContain('is-expense')
   })
 
   it('forwards service-panel retries', async () => {

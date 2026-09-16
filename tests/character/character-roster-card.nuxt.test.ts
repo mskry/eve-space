@@ -14,7 +14,11 @@ const character = {
   birthday: '2020-01-01T00:00:00.000Z',
   securityStatus: 1.2,
   raceFactionId: 500_001,
-  location: { solarSystemId: 30_000_142, solarSystemName: 'Jita' },
+  location: {
+    solarSystemId: 30_000_142,
+    solarSystemName: 'Jita',
+    solarSystemSecurityStatus: 0.945,
+  },
   ship: { typeId: 670, typeName: 'Capsule', name: 'Roster One' },
   walletBalance: 9_876_543.21,
   totalSp: 5_000_000,
@@ -37,6 +41,8 @@ describe('CharacterRosterCard', () => {
     expect(wrapper.get('.roster-portrait img').attributes('alt')).toBe(
       'Roster Pilot character portrait',
     )
+    expect(wrapper.get('.system-security-status').text()).toBe('System security: 0.9')
+    expect(wrapper.get('.system-security-status').classes()).toContain('system-security-status--9')
 
     await wrapper.get('.roster-card-link').trigger('pointerenter')
     expect(prefetch).toHaveBeenCalledWith(7)

@@ -1,9 +1,12 @@
 import { defineEsiQueryOptions } from '@eve-space/platform-module-nuxt/runtime'
+import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
 import { toApiQueryError } from '../utils/query-error'
 import { API_BOOTSTRAP_TIMEOUT_MS, createRequestSignal } from '../utils/request-signal'
 import { PUBLIC_QUERY_KEYS } from './query-keys'
 import { QUERY_POLICY } from './query-policy'
+
+export type SystemStatusTelemetry = InferResponseType<ApiClient['api']['status']['$get'], 200>
 
 export const systemStatusQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
   key: PUBLIC_QUERY_KEYS.systemStatus(),

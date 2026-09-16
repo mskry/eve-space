@@ -4,6 +4,7 @@ import type { PublicTypeDetail } from '../queries/universe'
 const props = withDefaults(
   defineProps<{
     detailsLabel?: string
+    fallbackItem?: PublicTypeDetail
     imageKind?: 'type-bp' | 'type-bpc' | 'type-icon'
     imageSource?: string
     typeId: number
@@ -45,6 +46,7 @@ function updateOpen(value: boolean) {
         v-if="open"
         :description-id="descriptionId"
         :details-label="props.detailsLabel"
+        :fallback-item="props.fallbackItem"
         :image-kind="props.imageKind"
         :image-source="props.imageSource"
         :title-id="titleId"

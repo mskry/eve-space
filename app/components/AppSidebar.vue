@@ -124,9 +124,9 @@ onBeforeUnmount(() => {
         :key="`${section.ownerId}/${section.navigationId}`"
         :content="
           section.access === 'authorized'
-            ? `${section.label} / AUTH REQUIRED`
+            ? `${section.label}`
             : section.access === 'admin'
-              ? `${section.label} / OWNER ACCESS`
+              ? `${section.label}`
               : section.label
         "
         :disabled="variant === 'drawer' || labelsVisible"
@@ -150,9 +150,6 @@ onBeforeUnmount(() => {
           <span class="sidebar-label">
             <strong>{{ section.label }}</strong>
             <small>{{ section.description }}</small>
-          </span>
-          <span v-if="section.access !== 'public'" class="access-mark">
-            {{ section.access === 'admin' ? 'OWNER' : 'AUTH' }}
           </span>
         </NuxtLink>
       </UiTooltip>

@@ -13,46 +13,7 @@
   margin: 0;
   padding-left: 1.375rem;
   justify-self: end;
-  border-left: 0.0625rem solid var(--ui-border);
-}
-
-.finance-hero-metrics > div {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.875rem;
-  padding: 0.5625rem 0;
-  border-top: 0.0625rem solid var(--ui-border);
-}
-
-.finance-hero-metrics > div:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-
-.finance-hero-metrics > div:last-child {
-  padding-bottom: 0;
-}
-
-.finance-hero-metrics dt {
-  color: var(--ui-text-faint);
-  font: 500 0.5625rem/1.4 var(--ui-font-mono);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.finance-hero-metrics dt span {
-  display: block;
-  color: var(--ui-text-subtle);
-  letter-spacing: 0.06em;
-  text-transform: none;
-}
-
-.finance-hero-metrics dd {
-  margin: 0;
-  color: var(--ui-text);
-  font: 300 1.25rem/1 var(--ui-font-body);
-  white-space: nowrap;
+  justify-content: flex-end;
 }
 
 .finance-hero-link {
@@ -70,12 +31,6 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.625rem;
-}
-
-.finance-synced {
-  color: var(--ui-text-faint);
-  font: 400 0.5625rem/1 var(--ui-font-mono);
-  letter-spacing: 0.1em;
 }
 
 /* Ledger shell */
@@ -283,11 +238,11 @@
 }
 
 .finance-table .is-income {
-  color: var(--ui-primary);
+  color: var(--ui-success);
 }
 
 .finance-table .is-expense {
-  color: var(--ui-text);
+  color: var(--ui-warning);
 }
 
 .finance-table .is-urgent {

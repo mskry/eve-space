@@ -248,6 +248,14 @@ function systemStatusResponse() {
     services: {
       api: { status: 'operational', uptimeSeconds: 100 },
       database: { status: 'operational', latencyMs: 1 },
+      sde: {
+        status: 'operational',
+        latencyMs: 1,
+        checkedAt: '2026-08-20T00:00:00.000Z',
+        buildNumber: 3_503_375,
+        ingestVersion: 4,
+        ingestedAt: '2026-08-19T23:00:00.000Z',
+      },
       esi: {
         status: 'operational',
         latencyMs: 2,

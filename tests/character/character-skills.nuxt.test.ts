@@ -582,11 +582,11 @@ describe('character Skills components', () => {
     expect(
       wrapper.findAll('.skill-attribute-cells img').map((image) => image.attributes('src')),
     ).toEqual([
-      '/images/eve-attributes/intelligence.png',
       '/images/eve-attributes/perception.png',
-      '/images/eve-attributes/charisma.png',
-      '/images/eve-attributes/willpower.png',
       '/images/eve-attributes/memory.png',
+      '/images/eve-attributes/willpower.png',
+      '/images/eve-attributes/intelligence.png',
+      '/images/eve-attributes/charisma.png',
     ])
 
     await wrapper.setProps({

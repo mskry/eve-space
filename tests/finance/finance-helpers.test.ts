@@ -101,6 +101,8 @@ describe('Finance presentation helpers', () => {
 
   it('preserves nullable and formatting behavior', () => {
     expect(formatFinanceIsk(1234.5)).toBe('1,234.50')
+    expect(formatFinanceIsk(0, 2, 0)).toBe('0')
+    expect(formatFinanceIsk(-1_050_000, 2, 0)).toBe('-1,050,000')
     expect(formatSignedFinanceIsk(12)).toBe('+12.00')
     expect(formatSignedFinanceIsk(-12)).toBe('-12.00')
     expect(formatSignedFinanceIsk(null)).toBe('UNAVAILABLE')

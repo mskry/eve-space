@@ -48,7 +48,7 @@ Ordinary source generation and drift checking are deterministic and offline. The
 System and module discovery:
 
 - `GET /health` checks API and PostgreSQL availability.
-- `GET /api/status` returns replica-local API, PostgreSQL, Tranquility, queue, worker, outbox, and safe ESI resilience telemetry.
+- `GET /api/status` returns replica-local API, PostgreSQL, committed SDE projection build, Tranquility, queue, worker, outbox, and safe ESI resilience telemetry.
 - `GET /api/modules` returns enabled module identities and the resolved shared shell navigation order. Installed module routes also mount below this prefix.
 
 Application authentication and owned characters:

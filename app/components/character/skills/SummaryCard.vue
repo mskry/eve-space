@@ -17,11 +17,11 @@ const emit = defineEmits<{ retryAttributes: [] }>()
 const totalSpLabel = computed(() => props.skills.totalSp.toLocaleString('en-US'))
 
 const attributeDefinitions = [
-  { key: 'intelligence', label: 'INT' },
   { key: 'perception', label: 'PER' },
-  { key: 'charisma', label: 'CHA' },
-  { key: 'willpower', label: 'WIL' },
   { key: 'memory', label: 'MEM' },
+  { key: 'willpower', label: 'WIL' },
+  { key: 'intelligence', label: 'INT' },
+  { key: 'charisma', label: 'CHA' },
 ] as const
 const attributeCells = computed(() => {
   const profile = props.attributes

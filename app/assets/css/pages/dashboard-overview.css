@@ -2,7 +2,7 @@
   width: min(100%, 1500px);
   min-height: calc(100dvh - 76px);
   margin: 0 auto;
-  padding: 42px clamp(24px, 4vw, 58px) 64px;
+  padding: 20px clamp(24px, 4vw, 58px) 64px;
   display: flex;
   flex-direction: column;
 }

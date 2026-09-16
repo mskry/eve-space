@@ -75,15 +75,6 @@ const characterRosterQueryResult = useQuery(() => ({
 
 const pageTitle = computed(() => String(route.meta.title ?? 'Overview'))
 const systemStatusState = computed(() => systemStatus.value?.status ?? 'pending')
-const systemStatusLabel = computed(
-  () =>
-    ({
-      pending: 'STATUS',
-      operational: 'OPERATIONAL',
-      degraded: 'DEGRADED',
-      unavailable: 'UNAVAILABLE',
-    })[systemStatusState.value],
-)
 const authorizedCharacter = computed(() => {
   if (!authSession.value.authenticated) return undefined
   const mainCharacter = authSession.value.account.mainCharacter
@@ -214,60 +205,13 @@ function closeMobileNavigationForRoute(destinationPath: string) {
               </button>
             </template>
 
-            <section class="system-status-panel" aria-live="polite">
-              <header class="system-status-heading">
-                <strong>System status</strong>
-                <span :data-status="systemStatusState">{{ systemStatusLabel }}</span>
-              </header>
-
-              <div v-if="statusError" class="system-status-notice" data-status="unavailable">
-                {{ systemStatus ? 'LATEST CHECK FAILED' : 'STATUS UNAVAILABLE' }}
-                <button type="button" @click="statusQuery.refetch()">RETRY</button>
-              </div>
-
-              <div v-if="!systemStatus" class="system-status-empty">
-                <span :class="{ 'system-status-pulse': statusLoading }" aria-hidden="true" />
-                {{ statusLoading ? 'CHECKING STATUS' : 'NO STATUS AVAILABLE' }}
-              </div>
-
-              <template v-else>
-                <div class="system-status-services">
-                  <article :data-status="systemStatus.services.api.status">
-                    <div><i aria-hidden="true" /><strong>API</strong></div>
-                    <span>
-                      {{ stateLabel(systemStatus.services.api.status) }} / {{ apiLatencyMs }} MS
-                    </span>
-                  </article>
-                  <article :data-status="systemStatus.services.database.status">
-                    <div><i aria-hidden="true" /><strong>DATABASE</strong></div>
-                    <span>
-                      {{ stateLabel(systemStatus.services.database.status) }} /
-                      {{ systemStatus.services.database.latencyMs }} MS
-                    </span>
-                  </article>
-                  <article :data-status="systemStatus.services.esi.status">
-                    <div><i aria-hidden="true" /><strong>TRANQUILITY</strong></div>
-                    <span>
-                      {{ stateLabel(systemStatus.services.esi.status) }} /
-                      {{ systemStatus.services.esi.latencyMs }} MS
-                    </span>
-                  </article>
-                </div>
-
-                <div class="system-status-readout">
-                  <div>
-                    <span>PILOTS ONLINE</span
-                    ><strong>{{ formatNumber(systemStatus.services.esi.players) }}</strong>
-                  </div>
-                  <div>
-                    <span>CHECKED</span>
-                    <strong :class="{ 'system-status-refreshing': statusLoading }">
-                      {{ statusLoading ? 'REFRESHING' : formatCheckedAt(systemStatus.checkedAt) }}
-                    </strong>
-                  </div>
-                </div>
-              </template>
-            </section>
+            <ServiceStatus
+              :telemetry="systemStatus"
+              :api-latency-ms="apiLatencyMs"
+              :loading="statusLoading"
+              :error="statusError"
+              @retry="statusQuery.refetch()"
+            />
           </UiStatusPopover>
           <NuxtLink
             v-if="!authLoading && !authUnavailable && !authSession.authenticated"

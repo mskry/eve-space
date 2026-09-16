@@ -98,12 +98,12 @@ describe('Assets workspace resource states', () => {
       state(),
     )
 
-    const statuses = wrapper.findAll('.assets-location-security')
+    const statuses = wrapper.findAll('.system-security-status')
     expect(statuses).toHaveLength(2)
     const highSecurity = statuses.find((status) => status.text() === 'System security: 0.9')
     const nullSecurity = statuses.find((status) => status.text() === 'System security: -0.1')
-    expect(highSecurity?.classes()).toContain('assets-location-security--9')
-    expect(nullSecurity?.classes()).toContain('assets-location-security--0')
+    expect(highSecurity?.classes()).toContain('system-security-status--9')
+    expect(nullSecurity?.classes()).toContain('system-security-status--0')
   })
 
   it('renders zero, singular, and plural route jumps while omitting unavailable routes', async () => {
@@ -169,10 +169,8 @@ describe('Assets workspace resource states', () => {
     )
 
     expect(wrapper.text()).toContain('Jita IV - Moon 4')
-    expect(wrapper.get('.assets-location-security').text()).toBe('System security: 0.9')
-    expect(wrapper.get('.assets-location-security').classes()).toContain(
-      'assets-location-security--9',
-    )
+    expect(wrapper.get('.system-security-status').text()).toBe('System security: 0.9')
+    expect(wrapper.get('.system-security-status').classes()).toContain('system-security-status--9')
     expect(wrapper.get('.assets-location-count').text()).toBe('1 items - 1.5 m³')
     expect(wrapper.find('.assets-location-kind').exists()).toBe(false)
     expect(wrapper.get('[role="alert"]').text()).toContain('retained inventory shown')
@@ -541,6 +539,44 @@ describe('Assets workspace inventory interactions', () => {
     expect(document.activeElement).toBe(trigger.element)
     expect((search.element as HTMLInputElement).value).toBe('Named vault')
     expect(wrapper.get('.assets-location-toggle').attributes('aria-expanded')).toBe('true')
+  })
+
+  it('uses enriched asset identity when an unpublished type has no public detail', async () => {
+    queryServer.use(
+      http.get('*/api/universe/types/60', () =>
+        HttpResponse.json({ code: 'TYPE_NOT_FOUND', message: 'Type not found.' }, { status: 404 }),
+      ),
+    )
+    const wrapper = await mountWorkspace(
+      collection([
+        asset(1, {
+          typeId: 60,
+          typeName: 'Asset Safety Wrap',
+          groupId: 12,
+          groupName: 'Cargo Container',
+          categoryId: 65,
+          categoryName: 'Structure',
+        }),
+      ]),
+      state(),
+      true,
+    )
+
+    await wrapper
+      .get('button[aria-label="View item information for Asset Safety Wrap"]')
+      .trigger('click')
+    await vi.waitFor(() =>
+      expect(document.querySelector('[role="dialog"] h2')?.textContent).toBe('Asset Safety Wrap'),
+    )
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+      'Structure / Cargo Container',
+    )
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+      'No description is available for this item.',
+    )
+    expect(document.querySelector('[role="dialog"]')?.textContent).not.toContain(
+      'Item information unavailable',
+    )
   })
 })
 

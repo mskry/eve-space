@@ -283,8 +283,15 @@ a.affiliation-identity:focus-visible {
   gap: 10px;
 }
 
+.character-system-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .character-ship-detail img {
   flex: 0 0 auto;
+  border: 1px solid var(--ui-border);
 }
 
 .gender-symbol {

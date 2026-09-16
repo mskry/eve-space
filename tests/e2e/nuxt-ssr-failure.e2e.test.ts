@@ -494,6 +494,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
       '--ui-text-subtle',
       '--ui-text-faint',
       '--ui-primary',
+      '--ui-success',
       '--ui-warning',
       '--ui-danger',
     ]
@@ -773,6 +774,14 @@ function systemStatusResponse() {
     services: {
       api: { status: 'operational', uptimeSeconds: 100 },
       database: { status: 'operational', latencyMs: 1 },
+      sde: {
+        status: 'operational',
+        latencyMs: 1,
+        checkedAt: '2026-09-03T11:00:00.000Z',
+        buildNumber: 3_503_375,
+        ingestVersion: 4,
+        ingestedAt: '2026-09-03T10:00:00.000Z',
+      },
       esi: {
         status: 'operational',
         latencyMs: 2,

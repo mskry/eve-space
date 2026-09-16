@@ -17,6 +17,7 @@
   --ui-primary-hover: #89f6df;
   --ui-loader: #a3a52c;
   --ui-on-primary: #06110f;
+  --ui-success: #63d98b;
   --ui-warning: #ff8a44;
   --ui-danger: #ff5f66;
   --ui-system-security-10: #2c75e1;
@@ -77,6 +78,7 @@
   --ui-primary-hover: #204e62;
   --ui-loader: #71898f;
   --ui-on-primary: #fff;
+  --ui-success: #1b6b3b;
   --ui-warning: #8e4f0b;
   --ui-danger: #a53c42;
   --ui-system-security-10: #2c75e1;
@@ -114,6 +116,7 @@
   --ui-primary-hover: #f0d59b;
   --ui-loader: #b89a61;
   --ui-on-primary: #20170b;
+  --ui-success: #7fda8f;
   --ui-warning: #e59a4f;
   --ui-danger: #f27269;
   --ui-shadow: rgba(5, 3, 1, 0.56);
@@ -140,6 +143,7 @@
   --ui-primary-hover: #dfa09a;
   --ui-loader: #98534e;
   --ui-on-primary: #1c0b0c;
+  --ui-success: #78d591;
   --ui-warning: #efb254;
   --ui-danger: #ff6370;
   --ui-shadow: rgba(5, 2, 1, 0.6);
@@ -166,6 +170,7 @@
   --ui-primary-hover: #a7d7ed;
   --ui-loader: #5f8da4;
   --ui-on-primary: #081116;
+  --ui-success: #69d994;
   --ui-warning: #e3a85b;
   --ui-danger: #ef6a72;
   --ui-shadow: rgba(1, 5, 8, 0.6);

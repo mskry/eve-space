@@ -11,7 +11,6 @@ import {
   formatFinanceContractType,
   formatFinanceDate,
   formatFinanceIsk,
-  formatSignedFinanceIsk,
 } from '../../utils/finance'
 
 const props = defineProps<{
@@ -48,6 +47,16 @@ const countLabel = computed(() =>
     'loaded-page',
   ),
 )
+
+function amountClass(amount: number | null) {
+  if (amount === null) return undefined
+  return amount >= 0 ? 'is-income' : 'is-expense'
+}
+
+function formatJournalAmount(amount: number | null) {
+  if (amount === null) return 'UNAVAILABLE'
+  return `${amount > 0 ? '+' : ''}${formatFinanceIsk(amount, 2, 0)} ISK`
+}
 </script>
 
 <template>
@@ -91,17 +100,18 @@ const countLabel = computed(() =>
           </thead>
           <tbody>
             <tr v-for="entry in entries" :key="entry.journalId">
-              <td class="is-mono">{{ formatFinanceDate(entry.date) }}</td>
-              <td>{{ formatFinanceContractType(entry.referenceType) }}</td>
-              <td class="is-truncated">{{ entry.description }}</td>
-              <td
-                class="is-numeric is-mono"
-                :class="(entry.amount ?? 0) > 0 ? 'is-income' : 'is-expense'"
-              >
-                {{ formatSignedFinanceIsk(entry.amount) }}
+              <td class="is-mono is-subtle">{{ formatFinanceDate(entry.date) }}</td>
+              <td class="is-subtle">{{ formatFinanceContractType(entry.referenceType) }}</td>
+              <td class="is-truncated is-subtle" :title="entry.description">
+                {{ entry.description }}
               </td>
-              <td class="is-numeric is-mono is-subtle">
-                {{ entry.balance === null ? 'UNAVAILABLE' : formatFinanceIsk(entry.balance) }}
+              <td class="is-numeric is-mono" :class="amountClass(entry.amount)">
+                {{ formatJournalAmount(entry.amount) }}
+              </td>
+              <td class="is-numeric is-mono">
+                {{
+                  entry.balance === null ? 'UNAVAILABLE' : `${formatFinanceIsk(entry.balance)} ISK`
+                }}
               </td>
             </tr>
           </tbody>

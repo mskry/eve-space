@@ -22,6 +22,14 @@ describe('system status route', () => {
       services: {
         api: { status: 'operational', uptimeSeconds: 120 },
         database: { status: 'operational', latencyMs: 3 },
+        sde: {
+          status: 'operational',
+          latencyMs: 5,
+          checkedAt: '2026-08-20T12:00:00.000Z',
+          buildNumber: 3_503_375,
+          ingestVersion: 4,
+          ingestedAt: '2026-08-20T11:30:00.000Z',
+        },
         esi: {
           status: 'operational',
           latencyMs: 80,
@@ -102,6 +110,14 @@ describe('system status route', () => {
       services: {
         api: { status: 'operational', uptimeSeconds: 120 },
         database: { status: 'operational', latencyMs: 3 },
+        sde: {
+          status: 'operational',
+          latencyMs: 5,
+          checkedAt: '2026-08-20T12:00:00.000Z',
+          buildNumber: 3_503_375,
+          ingestVersion: 4,
+          ingestedAt: '2026-08-20T11:30:00.000Z',
+        },
         esi: {
           status: 'operational',
           latencyMs: 80,

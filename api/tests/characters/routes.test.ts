@@ -139,7 +139,12 @@ const profile = {
   alliance: { id: 99000001, name: 'Test Alliance', ticker: 'ALLY' },
   ...freshness,
 }
-const location = { solarSystemId: 30000142, solarSystemName: 'Jita', ...freshness }
+const location = {
+  solarSystemId: 30000142,
+  solarSystemName: 'Jita',
+  solarSystemSecurityStatus: 0.945,
+  ...freshness,
+}
 const ship = { typeId: 670, typeName: 'Capsule', name: 'My Pod', ...freshness }
 
 beforeEach(() => {
@@ -319,6 +324,44 @@ describe('character roster', () => {
     expect(body.characters).toHaveLength(2)
     expect(body.characters.every((character) => character.location === null)).toBe(true)
     expect(body.characters.every((character) => character.ship === null)).toBe(true)
+  })
+
+  test('returns the local roster when ESI enrichment stalls', async () => {
+    vi.useFakeTimers()
+    mocks.getCharacterProfile.mockImplementation(stalled)
+    mocks.getCharacterLocation.mockImplementation(stalled)
+    mocks.getCharacterShip.mockImplementation(stalled)
+    mocks.getWalletBalance.mockImplementation(stalled)
+    mocks.getCharacterSkillsSummary.mockImplementation(stalled)
+
+    try {
+      const responsePending = authorizedRequest('/')
+      await vi.advanceTimersByTimeAsync(2_000)
+      const response = await responsePending
+      const body = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(body.characters).toEqual([
+        expect.objectContaining({
+          characterId: mainCharacter.characterId,
+          name: mainCharacter.name,
+          location: null,
+          ship: null,
+          walletBalance: null,
+          totalSp: null,
+        }),
+        expect.objectContaining({
+          characterId: altCharacter.characterId,
+          name: altCharacter.name,
+          location: null,
+          ship: null,
+          walletBalance: null,
+          totalSp: null,
+        }),
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 
@@ -769,6 +812,10 @@ describe('character deletion', () => {
     expect(mocks.deleteCharacter).not.toHaveBeenCalled()
   })
 })
+
+function stalled() {
+  return new Promise<never>(() => {})
+}
 
 function authorizedRequest(path: string, method = 'GET') {
   return characterRoutes.request(path, {

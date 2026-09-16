@@ -70,6 +70,7 @@ export const shipScope = characterShipRead.requiredScope
 export interface CharacterLocation extends EsiReadResultMetadata {
   solarSystemId: number
   solarSystemName: string
+  solarSystemSecurityStatus: number
   stationId?: number
   stationName?: string
   structureId?: number
@@ -96,6 +97,7 @@ export async function getCharacterLocation(
   return {
     solarSystemId: position.solarSystemId,
     solarSystemName: system.data.name,
+    solarSystemSecurityStatus: system.data.security_status,
     ...(position.stationId
       ? { stationId: position.stationId, stationName: station?.data.name }
       : {}),

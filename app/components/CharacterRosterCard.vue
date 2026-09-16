@@ -111,6 +111,10 @@ function locationLabel(location: CharacterRosterEntry['location']) {
         <span class="roster-location-icon" aria-hidden="true">
           <AppIcon name="location" />
         </span>
+        <SystemSecurityStatus
+          v-if="typeof character.location?.solarSystemSecurityStatus === 'number'"
+          :value="character.location.solarSystemSecurityStatus"
+        />
         <span class="roster-stat-value" :title="locationLabel(character.location)">
           {{ locationLabel(character.location) }}
         </span>

@@ -222,7 +222,6 @@ useCharacterReauthorization(characterId, refreshRequestedFinance)
       balance-label="AUTHORIZED BALANCE / COMPLETE VALUE"
       eyebrow="CHARACTER WALLET"
       :metrics="summaryMetrics"
-      :now="currentTime"
       :presentation="balancePersistencePresentation"
       :state="balanceState"
       @refresh="refreshBalance"

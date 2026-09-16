@@ -33,7 +33,7 @@ beforeEach(() => {
       return Promise.resolve(result({ typeId: 670, name: 'My Pod' }))
     return Promise.resolve(result({ name: 'Capsule' }))
   })
-  mocks.getUniverseSolarSystem.mockResolvedValue(result({ name: 'Jita' }))
+  mocks.getUniverseSolarSystem.mockResolvedValue(result({ name: 'Jita', security_status: 0.945 }))
   mocks.getUniverseStation.mockResolvedValue({
     ...result({ name: 'Jita IV - Moon 4' }),
     stale: true,
@@ -50,6 +50,7 @@ describe('character overview resources', () => {
     await expect(getCharacterLocation(characterId, subjectLifecycleId)).resolves.toMatchObject({
       solarSystemId: 30_000_142,
       solarSystemName: 'Jita',
+      solarSystemSecurityStatus: 0.945,
       stationId: 60_003_768,
       stationName: 'Jita IV - Moon 4',
       stale: true,

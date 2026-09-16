@@ -21,6 +21,14 @@ const telemetry = {
   services: {
     api: { status: 'operational', uptimeSeconds: 100 },
     database: { status: 'operational', latencyMs: 8 },
+    sde: {
+      status: 'operational',
+      latencyMs: 4,
+      checkedAt: '2026-08-20T12:30:00.000Z',
+      buildNumber: 3_503_375,
+      ingestVersion: 4,
+      ingestedAt: '2026-08-20T12:00:00.000Z',
+    },
     esi: {
       status: 'operational',
       latencyMs: 210,
@@ -122,13 +130,13 @@ describe('DashboardShell system status', () => {
     mountedWrappers.push(wrapper)
 
     await vi.waitFor(() =>
-      expect(wrapper.get('.system-status-panel').text()).toContain('CHECKING STATUS'),
+      expect(wrapper.get('.service-status').text()).toContain('CHECKING STATUS'),
     )
 
     releaseInitial()
     await vi.waitFor(
       () => {
-        const text = wrapper.get('.system-status-panel').text()
+        const text = wrapper.get('.service-status').text()
         expect(text).toContain('STATUS UNAVAILABLE')
         expect(text).toContain('NO STATUS AVAILABLE')
       },
@@ -136,25 +144,23 @@ describe('DashboardShell system status', () => {
     )
 
     statusMode = 'success'
-    await wrapper.get('.system-status-notice button').trigger('click')
+    await wrapper.get('.service-status-notice button').trigger('click')
     await vi.waitFor(() => {
-      const text = wrapper.get('.system-status-panel').text()
-      expect(text).toContain('API')
-      expect(text).toMatch(/OPERATIONAL \/ \d+ MS/)
-      expect(text).toContain('DATABASEOPERATIONAL / 8 MS')
-      expect(text).toContain('TRANQUILITYOPERATIONAL / 210 MS')
-      expect(text).toContain('PILOTS ONLINE20,000')
+      const text = wrapper.get('.service-status').text()
+      expect(text).toMatch(/API\d+ ms/)
+      expect(text).toContain('Database8 ms')
+      expect(text).toContain('Tranquility210 ms')
+      expect(text).toContain('Pilots20,000')
+      expect(text).toContain('SDE3503375')
       expect(text).not.toContain('ERROR BUDGET')
     })
 
     statusMode = 'refresh-error'
     await wrapper.get('[data-invalidate-status]').trigger('click')
-    await vi.waitFor(() =>
-      expect(wrapper.get('.system-status-panel').text()).toContain('REFRESHING'),
-    )
+    await vi.waitFor(() => expect(wrapper.get('.service-status').text()).toContain('REFRESHING'))
     releaseRefresh()
     await vi.waitFor(
-      () => expect(wrapper.get('.system-status-panel').text()).toContain('LATEST CHECK FAILED'),
+      () => expect(wrapper.get('.service-status').text()).toContain('LATEST CHECK FAILED'),
       { timeout: 4_000 },
     )
   })
@@ -203,6 +209,6 @@ describe('DashboardShell system status', () => {
       expect(notice.text()).toContain('SERVER CACHE DEGRADED')
       expect(notice.get('time').attributes('datetime')).toBe(validatedAt)
     })
-    expect(wrapper.get('.system-status-heading').text()).toContain('OPERATIONAL')
+    expect(wrapper.get('.service-status-badge').text()).toContain('OPERATIONAL')
   })
 })

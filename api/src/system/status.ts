@@ -11,6 +11,7 @@ import {
   type EsiUpstreamObservation,
 } from '../esi-gateway/status-interface.js'
 import { probeQueueStatus, type QueueStatus } from '../queue/status.js'
+import { readStaticLocationRevision } from '../universe/static-location-store.js'
 
 const esiStatusCacheSchema = z.object({
   players: z.number(),
@@ -46,6 +47,15 @@ interface DatabaseStatus {
   checkedAt: string
 }
 
+interface SdeStatus {
+  status: 'operational' | 'unavailable'
+  latencyMs: number
+  checkedAt: string
+  buildNumber: number | null
+  ingestVersion: number | null
+  ingestedAt: string | null
+}
+
 interface EsiStatus {
   status: SystemStatusState
   latencyMs: number
@@ -75,6 +85,7 @@ export interface SystemStatus {
       checkedAt: string
     }
     database: DatabaseStatus
+    sde: SdeStatus
     esi: EsiStatus
     queue: QueueStatus & { checkedAt: string }
     eventRelay: DomainEventStatus & { checkedAt: string }
@@ -99,8 +110,9 @@ export function getSystemStatus() {
 async function probeSystemStatus(now: number): Promise<SystemStatus> {
   const esiPending = probeEsi()
   const esiResiliencePending = probeEsiStatus(esiPending.then(({ observation }) => observation))
-  const [database, esiProbe, queue, esiResilience] = await Promise.all([
+  const [database, sde, esiProbe, queue, esiResilience] = await Promise.all([
     probeDatabase(),
+    probeSde(),
     esiPending,
     probeQueueStatus(),
     esiResiliencePending,
@@ -113,6 +125,7 @@ async function probeSystemStatus(now: number): Promise<SystemStatus> {
   if (unavailableCount === 2) status = 'unavailable'
   else if (
     database.status === 'operational' &&
+    sde.status === 'operational' &&
     esi.status === 'operational' &&
     queue.status === 'operational' &&
     eventRelay.status === 'operational' &&
@@ -135,11 +148,35 @@ async function probeSystemStatus(now: number): Promise<SystemStatus> {
         checkedAt: new Date(now).toISOString(),
       },
       database,
+      sde,
       esi,
       queue: { ...queue, checkedAt: new Date(now).toISOString() },
       eventRelay: { ...eventRelay, checkedAt: new Date(now).toISOString() },
       esiResilience,
     },
+  }
+}
+
+async function probeSde(): Promise<SdeStatus> {
+  const startedAt = Date.now()
+  const checkedAt = new Date(startedAt).toISOString()
+  try {
+    const revision = await readStaticLocationRevision()
+    return {
+      status: 'operational',
+      latencyMs: Date.now() - startedAt,
+      checkedAt,
+      ...revision,
+    }
+  } catch {
+    return {
+      status: 'unavailable',
+      latencyMs: Date.now() - startedAt,
+      checkedAt,
+      buildNumber: null,
+      ingestVersion: null,
+      ingestedAt: null,
+    }
   }
 }
 

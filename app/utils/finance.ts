@@ -204,10 +204,14 @@ export function financeContractAwaitsEntity(contract: Pick<FinanceContract, 'rol
   )
 }
 
-export function formatFinanceIsk(value: number, fractionDigits = 2) {
+export function formatFinanceIsk(
+  value: number,
+  maximumFractionDigits = 2,
+  minimumFractionDigits = maximumFractionDigits,
+) {
   return new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: fractionDigits,
-    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits,
+    minimumFractionDigits,
   }).format(value)
 }
 

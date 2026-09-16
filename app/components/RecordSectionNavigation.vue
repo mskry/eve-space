@@ -29,6 +29,10 @@ function isCurrent(entry: RecordSectionNavigationEntry) {
     : currentPath === targetPath || currentPath.startsWith(`${targetPath}/`)
 }
 
+function preventHorizontalWheel(event: WheelEvent) {
+  if (event.deltaX !== 0 || event.shiftKey) event.preventDefault()
+}
+
 function updateIndicator() {
   const currentLink = navigation.value?.querySelector<HTMLElement>('a[aria-current="page"]')
   if (!currentLink) {
@@ -84,6 +88,7 @@ onBeforeUnmount(() => {
       { 'record-section-navigation--indicator-transition': indicatorTransitionEnabled },
     ]"
     :aria-label="label"
+    @wheel="preventHorizontalWheel"
   >
     <span
       class="record-section-navigation-indicator"

@@ -21,7 +21,9 @@ import {
   getCharacterSkillsSummary,
   type CharacterSkillsSummary,
 } from './skills.js'
-import { getWalletBalance, walletScope } from './wallet.js'
+import { getWalletBalance } from './wallet.js'
+
+const rosterEnrichmentTimeoutMs = 2_000
 
 type Section<Data> =
   | { status: 'ok'; data: Data }
@@ -38,42 +40,34 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
     const [profiles, locations, ships, wallets, skillSummaries] = await Promise.all([
       Promise.all(
         characters.map((character) =>
-          getCharacterProfile(character.characterId).catch(() => undefined),
+          loadRosterEnrichment(() => getCharacterProfile(character.characterId)),
         ),
       ),
       Promise.all(
         characters.map((character) =>
-          resolveSection<CharacterLocation>(
-            () => getCharacterLocation(character.characterId, character.subjectLifecycleId),
-            locationScope,
-            character.characterId,
+          loadRosterEnrichment(() =>
+            getCharacterLocation(character.characterId, character.subjectLifecycleId),
           ),
         ),
       ),
       Promise.all(
         characters.map((character) =>
-          resolveSection<CharacterShip>(
-            () => getCharacterShip(character.characterId, character.subjectLifecycleId),
-            shipScope,
-            character.characterId,
+          loadRosterEnrichment(() =>
+            getCharacterShip(character.characterId, character.subjectLifecycleId),
           ),
         ),
       ),
       Promise.all(
         characters.map((character) =>
-          resolveSection(
-            () => getWalletBalance(character.characterId, character.subjectLifecycleId),
-            walletScope,
-            character.characterId,
+          loadRosterEnrichment(() =>
+            getWalletBalance(character.characterId, character.subjectLifecycleId),
           ),
         ),
       ),
       Promise.all(
         characters.map((character) =>
-          resolveSection<CharacterSkillsSummary>(
-            () => getCharacterSkillsSummary(character.characterId, character.subjectLifecycleId),
-            characterSkillsScope,
-            character.characterId,
+          loadRosterEnrichment(() =>
+            getCharacterSkillsSummary(character.characterId, character.subjectLifecycleId),
           ),
         ),
       ),
@@ -88,11 +82,10 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
         birthday: profiles[index]?.birthday ?? null,
         securityStatus: profiles[index]?.securityStatus ?? null,
         raceFactionId: profiles[index]?.raceFactionId ?? null,
-        location:
-          locations[index]?.status === 'ok' ? toCharacterEsiResponse(locations[index].data) : null,
-        ship: ships[index]?.status === 'ok' ? toCharacterEsiResponse(ships[index].data) : null,
-        walletBalance: wallets[index]?.status === 'ok' ? wallets[index].data.balance : null,
-        totalSp: skillSummaries[index]?.status === 'ok' ? skillSummaries[index].data.totalSp : null,
+        location: locations[index] ? toCharacterEsiResponse(locations[index]) : null,
+        ship: ships[index] ? toCharacterEsiResponse(ships[index]) : null,
+        walletBalance: wallets[index]?.balance ?? null,
+        totalSp: skillSummaries[index]?.totalSp ?? null,
         corporation: {
           id: character.corporationId,
           name: profiles[index]?.corporation.name ?? 'Unknown corporation',
@@ -216,6 +209,20 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
       return context.body(null, 204)
     },
   )
+
+async function loadRosterEnrichment<Data>(load: () => Promise<Data>): Promise<Data | undefined> {
+  let cancelTimeout: (() => void) | undefined
+  const unavailable = new Promise<undefined>((resolve) => {
+    const timeout = setTimeout(resolve, rosterEnrichmentTimeoutMs)
+    cancelTimeout = () => clearTimeout(timeout)
+  })
+
+  try {
+    return await Promise.race([load().catch(() => undefined), unavailable])
+  } finally {
+    cancelTimeout?.()
+  }
+}
 
 async function resolveSection<Data>(
   load: () => Promise<Data>,

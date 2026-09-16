@@ -234,7 +234,7 @@ describe('character Assets production route', async () => {
     expect(
       await page.getByRole('table', { name: 'Personal inventory grouped by location' }).isVisible(),
     ).toBe(true)
-    expect(await page.locator('.assets-location-security').textContent()).toContain('0.9')
+    expect(await page.locator('.system-security-status').textContent()).toContain('0.9')
 
     const quantitySort = page.getByRole('button', { name: 'Quantity', exact: true })
     await quantitySort.click()

@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   probeDomainEventStatus: vi.fn(),
   probeEsiStatus: vi.fn(),
   probeQueueStatus: vi.fn(),
+  readStaticLocationRevision: vi.fn(),
   sql: vi.fn(),
 }))
 
@@ -24,6 +25,10 @@ vi.mock('../../src/domain-events/status.js', () => ({
 
 vi.mock('../../src/queue/status.js', () => ({ probeQueueStatus: mocks.probeQueueStatus }))
 
+vi.mock('../../src/universe/static-location-store.js', () => ({
+  readStaticLocationRevision: mocks.readStaticLocationRevision,
+}))
+
 beforeEach(() => {
   vi.resetModules()
   vi.useFakeTimers()
@@ -40,6 +45,11 @@ beforeEach(() => {
   mocks.probeQueueStatus.mockResolvedValue(queueStatus())
   mocks.probeDomainEventStatus.mockResolvedValue(eventRelayStatus())
   mocks.probeEsiStatus.mockResolvedValue(resilienceTelemetry())
+  mocks.readStaticLocationRevision.mockResolvedValue({
+    buildNumber: 3_503_375,
+    ingestVersion: 4,
+    ingestedAt: '2026-08-20T11:30:00.000Z',
+  })
 })
 
 describe('system status service', () => {
@@ -53,6 +63,13 @@ describe('system status service', () => {
       services: {
         api: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
         database: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
+        sde: {
+          status: 'operational',
+          checkedAt: '2026-08-20T12:00:00.000Z',
+          buildNumber: 3_503_375,
+          ingestVersion: 4,
+          ingestedAt: '2026-08-20T11:30:00.000Z',
+        },
         esi: { status: 'operational', players: 31_337 },
         queue: { checkedAt: '2026-08-20T12:00:00.000Z' },
         eventRelay: { checkedAt: '2026-08-20T12:00:00.000Z' },
@@ -169,6 +186,23 @@ describe('system status service', () => {
       services: {
         database: { status: 'unavailable' },
         esi: { status: 'unavailable', players: null },
+      },
+    })
+  })
+
+  test('degrades when the committed SDE projection is unavailable', async () => {
+    mocks.readStaticLocationRevision.mockRejectedValue(new Error('Revision missing'))
+    const { getSystemStatus } = await import('../../src/system/status.js')
+
+    await expect(getSystemStatus()).resolves.toMatchObject({
+      status: 'degraded',
+      services: {
+        sde: {
+          status: 'unavailable',
+          buildNumber: null,
+          ingestVersion: null,
+          ingestedAt: null,
+        },
       },
     })
   })
