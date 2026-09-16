@@ -372,6 +372,192 @@ describe('query persistence runtime', () => {
     runtime.dispose()
   })
 
+  it('invalidates live private data on focus when the renewed admission revision changed', async () => {
+    let currentTime = NOW
+    const privateQuery = vi.fn().mockResolvedValue({ name: 'Live private' })
+    const storage = new MemoryQueryPersistenceStorage()
+    const runtime = createRuntime(storage, undefined, () => currentTime, true, privateQuery)
+    await readyRuntime(runtime)
+    const loadAdmission = vi
+      .fn()
+      .mockResolvedValueOnce(admission())
+      .mockResolvedValue(admission({ characterRevision: 'character-revision-2' }))
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+    await runtime.activatePrivateQuery()
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledOnce())
+    const invalidateCharacterScope = vi.fn()
+    subscribePrivateQueryInvalidation(
+      runtime.queryCache,
+      { kind: 'character', characterId: 7 },
+      invalidateCharacterScope,
+    )
+    currentTime += 31_000
+
+    globalThis.dispatchEvent(new Event('focus'))
+
+    await vi.waitFor(() => expect(loadAdmission).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(invalidateCharacterScope).toHaveBeenCalled())
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledTimes(2))
+    expect(storage.invalidationCalls).toBe(1)
+    runtime.dispose()
+  })
+
+  it('invalidates a changed revision after a transient admission failure', async () => {
+    let currentTime = NOW
+    const privateQuery = vi.fn().mockResolvedValue({ name: 'Live private' })
+    const storage = new MemoryQueryPersistenceStorage()
+    const runtime = createRuntime(storage, undefined, () => currentTime, true, privateQuery)
+    await readyRuntime(runtime)
+    const loadAdmission = vi
+      .fn()
+      .mockResolvedValueOnce(admission())
+      .mockRejectedValueOnce(new TypeError('Admission is unreachable.'))
+      .mockResolvedValue(admission({ characterRevision: 'character-revision-2' }))
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+    await runtime.activatePrivateQuery()
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledOnce())
+
+    currentTime += 31_000
+    globalThis.dispatchEvent(new Event('focus'))
+    await vi.waitFor(() => expect(loadAdmission).toHaveBeenCalledTimes(2))
+
+    const invalidateCharacterScope = vi.fn()
+    subscribePrivateQueryInvalidation(
+      runtime.queryCache,
+      { kind: 'character', characterId: 7 },
+      invalidateCharacterScope,
+    )
+    currentTime += 31_000
+    globalThis.dispatchEvent(new Event('focus'))
+
+    await vi.waitFor(() => expect(loadAdmission).toHaveBeenCalledTimes(3))
+    await vi.waitFor(() => expect(invalidateCharacterScope).toHaveBeenCalled())
+    runtime.dispose()
+  })
+
+  it('joins an overlapping resume check instead of restarting admission', async () => {
+    let currentTime = NOW
+    const privateQuery = vi.fn().mockResolvedValue({ name: 'Live private' })
+    const storage = new MemoryQueryPersistenceStorage()
+    const runtime = createRuntime(storage, undefined, () => currentTime, true, privateQuery)
+    await readyRuntime(runtime)
+    const renewedAdmission = Promise.withResolvers<CacheAdmissionContext>()
+    const loadAdmission = vi
+      .fn()
+      .mockResolvedValueOnce(admission())
+      .mockReturnValueOnce(renewedAdmission.promise)
+      .mockResolvedValue(admission())
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+    await runtime.activatePrivateQuery()
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledOnce())
+    const invalidateCharacterScope = vi.fn()
+    subscribePrivateQueryInvalidation(
+      runtime.queryCache,
+      { kind: 'character', characterId: 7 },
+      invalidateCharacterScope,
+    )
+
+    currentTime += 31_000
+    globalThis.dispatchEvent(new Event('focus'))
+    await vi.waitFor(() => expect(loadAdmission).toHaveBeenCalledTimes(2))
+    globalThis.dispatchEvent(new Event('focus'))
+    renewedAdmission.resolve(admission({ characterRevision: 'character-revision-2' }))
+
+    await vi.waitFor(() => expect(invalidateCharacterScope).toHaveBeenCalled())
+    expect(loadAdmission).toHaveBeenCalledTimes(2)
+    runtime.dispose()
+  })
+
+  it('honors a re-driven private request after a queued lifecycle recheck', async () => {
+    let currentTime = NOW
+    const deniedRefetch = Promise.withResolvers<unknown>()
+    const privateQuery = vi
+      .fn()
+      .mockResolvedValueOnce({ name: 'Live private' })
+      .mockReturnValueOnce(deniedRefetch.promise)
+      .mockResolvedValue({ name: 'Live private' })
+    const storage = new MemoryQueryPersistenceStorage()
+    const runtime = createRuntime(storage, undefined, () => currentTime, true, privateQuery)
+    await readyRuntime(runtime)
+    const renewedAdmission = Promise.withResolvers<CacheAdmissionContext>()
+    const loadAdmission = vi
+      .fn()
+      .mockResolvedValueOnce(admission())
+      .mockReturnValueOnce(renewedAdmission.promise)
+      .mockResolvedValue(admission({ characterRevision: 'character-revision-2' }))
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+    await runtime.activatePrivateQuery()
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledOnce())
+
+    currentTime += 31_000
+    globalThis.dispatchEvent(new Event('focus'))
+    await vi.waitFor(() => expect(loadAdmission).toHaveBeenCalledTimes(2))
+    globalThis.dispatchEvent(new Event('focus'))
+    renewedAdmission.resolve(admission({ characterRevision: 'character-revision-2' }))
+
+    await vi.waitFor(() => expect(storage.invalidationCalls).toBe(1))
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledTimes(2))
+    deniedRefetch.reject(authorizationDenial('EVE_REAUTH_REQUIRED'))
+
+    await vi.waitFor(() => expect(storage.invalidationCalls).toBe(2))
+    runtime.dispose()
+  })
+
+  it('keeps live private data usable on focus when storage is unavailable', async () => {
+    let currentTime = NOW
+    const privateQuery = vi.fn().mockResolvedValue({ name: 'Live private' })
+    const runtime = createRuntime(
+      unavailableStorage,
+      undefined,
+      () => currentTime,
+      true,
+      privateQuery,
+    )
+    await readyRuntime(runtime)
+    const loadAdmission = vi.fn(async () => admission())
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+    await runtime.activatePrivateQuery()
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledOnce())
+    expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toEqual({ name: 'Live private' })
+
+    currentTime += 31_000
+    globalThis.dispatchEvent(new Event('focus'))
+
+    await vi.waitFor(() => expect(loadAdmission).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() =>
+      expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toEqual({
+        name: 'Live private',
+      }),
+    )
+    runtime.dispose()
+  })
+
+  it('keeps live private access when the durable generation becomes unverifiable', async () => {
+    let currentTime = NOW
+    const privateQuery = vi.fn().mockResolvedValue({ name: 'Live private' })
+    const storage = new FailingGenerationStorage()
+    const runtime = createRuntime(storage, undefined, () => currentTime, true, privateQuery)
+    await readyRuntime(runtime)
+    const loadAdmission = vi.fn(async () => admission())
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+    await runtime.activatePrivateQuery()
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledOnce())
+
+    storage.failGenerationReads()
+    const privateWritesBefore = storage.privateWritePermissions.length
+    currentTime += 31_000
+    globalThis.dispatchEvent(new Event('focus'))
+
+    await vi.waitFor(() => expect(loadAdmission).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledTimes(2))
+    expect(
+      readQueryPersistenceState(runtime.queryCache, CHARACTER_SIBLING_KEY).value
+        .retainedPrivateAccess,
+    ).toBe(false)
+    expect(storage.privateWritePermissions.slice(privateWritesBefore)).not.toContain(true)
+    runtime.dispose()
+  })
+
   it('invalidates retained data whose binding changed while admission was suspended', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(NOW)
@@ -1009,6 +1195,35 @@ describe('query persistence runtime', () => {
     expect(entry.state.value.data).toBeUndefined()
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
     expect(storage.snapshot()?.characters).toEqual({})
+    runtime.dispose()
+  })
+
+  it('re-drives a parked mounted private query when admission re-opens', async () => {
+    const privateQuery = vi.fn().mockResolvedValue({ name: 'Current private' })
+    const storage = new MemoryQueryPersistenceStorage(envelopeWithPrivatePartitions())
+    const runtime = createRuntime(storage, undefined, undefined, true, privateQuery)
+    await readyRuntime(runtime)
+    await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
+      admission(),
+    )
+    await runtime.activatePrivateQuery()
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledOnce())
+    const entry = runtime.queryCache.get(CHARACTER_SIBLING_KEY)!
+
+    await invalidatePrivateQueryScope(runtime.queryCache, { kind: 'character', characterId: 7 })
+    await nextTick()
+
+    expect(privateQuery).toHaveBeenCalledOnce()
+    expect(entry.state.value).toEqual({ status: 'pending', data: undefined, error: null })
+    expect(entry.when).toBe(0)
+
+    await refreshPrivateQueryAdmission(runtime.queryCache, { kind: 'character', characterId: 7 })
+    await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledTimes(2))
+    await nextTick()
+
+    expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toEqual({
+      name: 'Current private',
+    })
     runtime.dispose()
   })
 
@@ -1837,6 +2052,7 @@ function createRuntime(
   notifications = new NotificationHub().createAdapter(),
   now: () => number = () => NOW,
   mountImmediately = true,
+  mountedPrivateQuery?: () => Promise<unknown>,
 ) {
   const pinia = createPinia()
   const active = ref(false)
@@ -1856,6 +2072,15 @@ function createRuntime(
         query: async () => ({ name: 'Live public' }),
         meta: { esiPersistence: { kind: 'public-esi' } },
       })
+      if (mountedPrivateQuery) {
+        useQuery({
+          gcTime: 1_000,
+          key: CHARACTER_SIBLING_KEY,
+          query: mountedPrivateQuery,
+          staleTime: 0,
+          meta: { esiPersistence: { kind: 'character-esi', characterId: 7 } },
+        })
+      }
       return () => null
     },
   }
@@ -2039,6 +2264,19 @@ class DeferredResumeGenerationStorage extends MemoryQueryPersistenceStorage {
   releaseGeneration() {
     this.generationResult?.resolve(this.generation)
     this.generationResult = undefined
+  }
+}
+
+class FailingGenerationStorage extends MemoryQueryPersistenceStorage {
+  private failing = false
+
+  failGenerationReads() {
+    this.failing = true
+  }
+
+  override async readGeneration(): Promise<number | null> {
+    this.generationReads += 1
+    return this.failing ? null : this.generation
   }
 }
 

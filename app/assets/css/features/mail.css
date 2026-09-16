@@ -722,20 +722,6 @@
   height: 0.5rem;
 }
 
-.mail-reader-skeleton-actions {
-  align-self: flex-end;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.4rem;
-}
-
-.mail-reader-skeleton-actions > span {
-  width: 2rem;
-  height: 2rem;
-  border: 0.0625rem solid var(--ui-border);
-}
-
 .mail-reader-skeleton-content {
   display: grid;
   align-content: start;
@@ -1241,8 +1227,7 @@
     flex-basis: auto;
   }
 
-  .mail-reader-actions,
-  .mail-reader-skeleton-actions {
+  .mail-reader-actions {
     align-self: stretch;
     justify-content: flex-start;
   }

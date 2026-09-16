@@ -13,7 +13,7 @@ const OBJECT_STORE_NAME = 'query-cache'
 const PERSISTED_CACHE_KEY = 'eve-space-esi-query-cache'
 const INVALIDATION_CONTROL_KEY = 'eve-space-esi-query-cache-control'
 const PUBLIC_QUERY_KEY = ['public', 'e2e', 'query-persistence'] as const
-const PRIVATE_QUERY_KEY = ['private', 'characters', 7, 'overview'] as const
+const PRIVATE_QUERY_KEY = ['private', 'characters', 7, 'overview-v2'] as const
 const PUBLIC_FIXTURE_PATH = '/__e2e/query-persistence'
 
 let apiAvailable = false
@@ -1388,7 +1388,7 @@ function overviewResponse(bio = 'Cached capsuleer record.') {
       securityStatus: 1,
       achievementScore: 0,
       factionId: null,
-      bio,
+      bio: { plainText: bio, runs: [{ start: 0, text: bio }] },
       corporation: {
         id: 98_000_001,
         name: 'Persistence Corporation',

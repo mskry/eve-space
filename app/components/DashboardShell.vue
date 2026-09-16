@@ -66,7 +66,8 @@ const sidebarExpanded = useCookie<boolean>('eve-space-sidebar-expanded', {
   maxAge: 60 * 60 * 24 * 365,
   sameSite: 'lax',
 })
-const { authLoading, authSession, initializeAuth, logout } = useAuthSession(apiClient)
+const { authLoading, authSession, authUnavailable, initializeAuth, logout } =
+  useAuthSession(apiClient)
 const characterRosterQueryResult = useQuery(() => ({
   ...characterRosterQuery(apiClient),
   enabled: import.meta.client && !authLoading.value && authSession.value.authenticated,
@@ -153,6 +154,7 @@ function closeMobileNavigationForRoute(destinationPath: string) {
       :authenticated="authSession.authenticated"
       :admin-authenticated="adminAuthenticated"
       :auth-loading="authLoading"
+      :auth-unavailable="authUnavailable"
       :character-id="authorizedCharacter?.characterId"
       :character-name="authorizedCharacter?.name"
       :mail-unread-count="mailUnreadCount"
@@ -181,6 +183,7 @@ function closeMobileNavigationForRoute(destinationPath: string) {
               :authenticated="authSession.authenticated"
               :admin-authenticated="adminAuthenticated"
               :auth-loading="authLoading"
+              :auth-unavailable="authUnavailable"
               :character-id="authorizedCharacter?.characterId"
               :character-name="authorizedCharacter?.name"
               :mail-unread-count="mailUnreadCount"
@@ -266,7 +269,12 @@ function closeMobileNavigationForRoute(destinationPath: string) {
               </template>
             </section>
           </UiStatusPopover>
-          <NuxtLink v-if="!authLoading && !authSession.authenticated" to="/auth">SIGN IN</NuxtLink>
+          <NuxtLink
+            v-if="!authLoading && !authUnavailable && !authSession.authenticated"
+            to="/auth"
+          >
+            SIGN IN
+          </NuxtLink>
         </div>
       </header>
 
@@ -289,6 +297,7 @@ function closeMobileNavigationForRoute(destinationPath: string) {
           :authenticated="authSession.authenticated"
           :admin-authenticated="adminAuthenticated"
           :auth-loading="authLoading"
+          :auth-unavailable="authUnavailable"
           :character-id="authorizedCharacter?.characterId"
           :character-name="authorizedCharacter?.name"
           :mail-unread-count="mailUnreadCount"

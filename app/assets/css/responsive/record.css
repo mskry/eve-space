@@ -14,10 +14,6 @@
     grid-template-columns: 1fr 1fr;
     gap: 24px;
   }
-  .record-footer {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
 }
 
 @media (max-width: 760px) {
@@ -49,10 +45,6 @@
   }
   .character-detail-group--progression dl {
     display: block;
-  }
-  .record-footer a {
-    width: 100%;
-    margin: 4px 0 0;
   }
 }
 

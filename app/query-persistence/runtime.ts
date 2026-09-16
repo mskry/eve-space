@@ -301,6 +301,9 @@ function createQueryPersistenceRuntime(
       readPersistedPrivateOwner() {
         return persistedPrivateOwner(state.envelope)
       },
+      refetchParkedPrivateQueries() {
+        refetchParkedPrivateQueries(state)
+      },
       quarantineRetainedData() {
         quarantineRetainedPrivateData(state)
       },
@@ -785,6 +788,23 @@ function commitAdmittedPrivateCache(
   extendRestoredEntries(state.queryCache)
 }
 
+function refetchParkedPrivateQueries(state: QueryPersistenceRuntimeState) {
+  for (const entry of state.queryCache.getEntries({ key: PRIVATE_QUERY_KEYS.root })) {
+    const entryState = entry.state.value
+    if (
+      !entry.active ||
+      entry.options === null ||
+      !toValue(entry.options.enabled) ||
+      entry.pending !== null ||
+      entryState.status !== 'pending' ||
+      entryState.data !== undefined
+    ) {
+      continue
+    }
+    void state.queryCache.fetch(entry).catch(() => undefined)
+  }
+}
+
 function admissionInvalidationScope(
   state: QueryPersistenceRuntimeState,
   admission: CacheAdmissionContext,
@@ -1019,9 +1039,16 @@ function purgeQueryEntryData(
       data: undefined,
       error: entryState.error,
     })
-  } else if (entryState.data !== undefined || entryState.status !== 'pending') {
+    touchQueryPersistenceState(state)
+    return
+  }
+
+  if (entryState.data !== undefined || entryState.status !== 'pending') {
     state.queryCache.setEntryState(entry, { status: 'pending', data: undefined, error: null })
   }
+  // setEntryState stamps `when`, which would leave a cleared entry looking fresh and suppress every
+  // staleness-driven refetch, so a purged query would stay pending with no request in flight.
+  entry.when = 0
   touchQueryPersistenceState(state)
 }
 

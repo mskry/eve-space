@@ -65,7 +65,7 @@ describe('organization HR review', () => {
       ),
     )
     const initializeAuth = vi.fn().mockResolvedValue(true)
-    stubNuxtCompositionGlobals(initializeAuth)
+    const auth = stubNuxtCompositionGlobals(initializeAuth)
     const watchSpy = vi.fn(watch)
     vi.stubGlobal('watch', watchSpy)
     let review!: ReturnType<typeof useOrganizationHrReview>
@@ -95,6 +95,17 @@ describe('organization HR review', () => {
     expect(review.loading.value).toBe(false)
     expect(review.mutationPending.value).toBe(false)
     expect(review.errorMessage.value).toBe('')
+
+    auth.authSession.value = { authenticated: false }
+    auth.authUnavailable.value = true
+    expect(review.canReview.value).toBe(false)
+    expect(review.reviewCandidates.value).toEqual([])
+    expect(review.exceptions.value).toEqual([])
+    expect(review.auditEvents.value).toEqual([])
+    expect(review.hasOlderAuditEvents.value).toBe(false)
+    expect(review.errorMessage.value).toBe('Session verification is unavailable.')
+    auth.authSession.value = { authenticated: true }
+    auth.authUnavailable.value = false
 
     review.loadOlderAuditEvents()
     const observeAuditPage = watchSpy.mock.calls[0]?.[1] as unknown as (
@@ -306,7 +317,7 @@ describe('organization roster coverage', () => {
       ),
     )
     const initializeAuth = vi.fn().mockResolvedValue(true)
-    stubNuxtCompositionGlobals(initializeAuth)
+    const auth = stubNuxtCompositionGlobals(initializeAuth)
     let roster!: ReturnType<typeof useOrganizationRosterCoverage>
     const Root = defineComponent({
       setup() {
@@ -324,6 +335,11 @@ describe('organization roster coverage', () => {
     expect(roster.coverage.value).toEqual(coverage)
     expect(roster.loading.value).toBe(false)
     expect(roster.errorMessage.value).toBe('')
+
+    auth.authSession.value = { authenticated: false }
+    auth.authUnavailable.value = true
+    expect(roster.coverage.value).toBeUndefined()
+    expect(roster.errorMessage.value).toBe('Session verification is unavailable.')
     wrapper.unmount()
   })
 
@@ -429,13 +445,18 @@ describe('organization roster coverage', () => {
 })
 
 function stubNuxtCompositionGlobals(initializeAuth: () => Promise<boolean>) {
+  const authSession = ref({ authenticated: true })
+  const authUnavailable = ref(false)
   vi.stubGlobal('computed', computed)
   vi.stubGlobal('ref', ref)
   vi.stubGlobal('watch', watch)
   vi.stubGlobal('useAuthSession', () => ({
-    authSession: ref({ authenticated: true }),
+    authLoading: ref(false),
+    authSession,
+    authUnavailable,
     initializeAuth,
   }))
+  return { authSession, authUnavailable }
 }
 
 function organizationContext(canReview: boolean) {

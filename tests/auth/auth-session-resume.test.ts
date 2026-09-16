@@ -4,10 +4,16 @@ import { ref } from 'vue'
 
 const initializeAuth = vi.fn()
 const replace = vi.fn()
-const authLoading = ref(false)
 const authSession = ref({ authenticated: true })
-const authUnavailable = ref(false)
-const route = { path: '/characters/7', fullPath: '/characters/7?tab=wallet', meta: {} }
+const authVerificationInFlight = ref(false)
+const authVerificationStatus = ref<
+  'idle' | 'verifying' | 'refreshing' | 'verified' | 'unavailable'
+>('verified')
+const route: { fullPath: string; meta: Record<string, unknown>; path: string } = {
+  path: '/characters/7',
+  fullPath: '/characters/7?tab=wallet',
+  meta: {},
+}
 
 beforeAll(async () => {
   vi.stubGlobal('defineNuxtPlugin', (plugin: unknown) => plugin)
@@ -16,9 +22,9 @@ beforeAll(async () => {
   vi.stubGlobal('useRuntimeConfig', () => ({ public: { apiBase: 'http://localhost' } }))
   vi.stubGlobal('createApiClient', () => ({}))
   vi.stubGlobal('useAuthSession', () => ({
-    authLoading,
     authSession,
-    authUnavailable,
+    authVerificationInFlight,
+    authVerificationStatus,
     initializeAuth,
   }))
   const plugin = (await import('../../app/plugins/auth-session-resume.client')).default as unknown
@@ -28,9 +34,12 @@ beforeAll(async () => {
 beforeEach(() => {
   initializeAuth.mockReset().mockResolvedValue(true)
   replace.mockReset()
-  authLoading.value = false
   authSession.value = { authenticated: true }
-  authUnavailable.value = false
+  authVerificationInFlight.value = false
+  authVerificationStatus.value = 'verified'
+  route.path = '/characters/7'
+  route.fullPath = '/characters/7?tab=wallet'
+  route.meta = {}
 })
 
 afterAll(() => {
@@ -50,6 +59,7 @@ describe('auth session resume plugin', () => {
   it('redirects to login when the resumed session is no longer authenticated', async () => {
     initializeAuth.mockImplementation(async () => {
       authSession.value = { authenticated: false }
+      authVerificationStatus.value = 'verified'
       return false
     })
 
@@ -65,7 +75,7 @@ describe('auth session resume plugin', () => {
   it('keeps the current page when session verification has no verdict', async () => {
     initializeAuth.mockImplementation(async () => {
       authSession.value = { authenticated: false }
-      authUnavailable.value = true
+      authVerificationStatus.value = 'unavailable'
       return false
     })
 
@@ -73,6 +83,53 @@ describe('auth session resume plugin', () => {
     await flushPromises()
 
     expect(initializeAuth).toHaveBeenCalledOnce()
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('does not overlap a verification already in flight', async () => {
+    authVerificationInFlight.value = true
+    authVerificationStatus.value = 'verifying'
+
+    globalThis.dispatchEvent(new Event('focus'))
+    await flushPromises()
+
+    expect(initializeAuth).not.toHaveBeenCalled()
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('retries after an orphaned verification has settled as unavailable', async () => {
+    authSession.value = { authenticated: false }
+    authVerificationStatus.value = 'unavailable'
+    initializeAuth.mockImplementation(async () => {
+      authSession.value = { authenticated: true }
+      authVerificationStatus.value = 'verified'
+      return true
+    })
+
+    globalThis.dispatchEvent(new Event('focus'))
+    await flushPromises()
+
+    expect(initializeAuth).toHaveBeenCalledOnce()
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('does not redirect after navigation leaves the protected route during verification', async () => {
+    const verification = Promise.withResolvers<boolean>()
+    initializeAuth.mockImplementation(async () => {
+      const authenticated = await verification.promise
+      authSession.value = { authenticated }
+      authVerificationStatus.value = 'verified'
+      return authenticated
+    })
+
+    globalThis.dispatchEvent(new Event('focus'))
+    await vi.waitFor(() => expect(initializeAuth).toHaveBeenCalledOnce())
+    route.path = '/settings/integrations'
+    route.fullPath = '/settings/integrations'
+    route.meta = { platformAudience: 'public' }
+    verification.resolve(false)
+    await flushPromises()
+
     expect(replace).not.toHaveBeenCalled()
   })
 })

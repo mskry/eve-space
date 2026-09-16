@@ -2,7 +2,10 @@ import { useQuery } from '@pinia/colada'
 import { computed, shallowRef, watch, type ComputedRef, type Ref } from 'vue'
 import { characterAssetRoutesQuery } from '../queries/character-asset-routes'
 import { characterAssetsQuery } from '../queries/character-assets'
-import type { ProtectedCharacterQueryAccess } from '../queries/protected-character-query-access'
+import {
+  canRunProtectedCharacterQuery,
+  type ProtectedCharacterQueryAccess,
+} from '../queries/protected-character-query-access'
 import type { ApiClient } from '../utils/api-client'
 import { buildAssetHierarchy } from '../utils/assets-hierarchy'
 import {
@@ -81,14 +84,20 @@ export function useCharacterAssets(options: CharacterAssetsOptions) {
         ) ?? [],
       ),
   )
-  const loading = computed(
-    () => assetsQuery.status.value === 'pending' || assetsQuery.asyncStatus.value === 'loading',
+  const loading = computed(() => assetsQuery.asyncStatus.value === 'loading')
+  const parked = computed(
+    () =>
+      canRunProtectedCharacterQuery(access.value, options.characterId.value ?? 0) &&
+      assetsQuery.status.value === 'pending' &&
+      assetsQuery.asyncStatus.value === 'idle' &&
+      assetsQuery.data.value === undefined,
   )
   const state = computed(() =>
     mapCharacterAssetsResourceState({
       data: assets.value,
       error: refreshError.value ?? assetsQuery.error.value,
       loading: loading.value,
+      parked: parked.value,
     }),
   )
 

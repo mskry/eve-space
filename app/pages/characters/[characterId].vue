@@ -17,7 +17,7 @@ const router = useRouter()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const { authLoading, authSession, refreshAuthContext } = useAuthSession(apiClient)
-const { characters, refetchCharacterRoster, rosterMessage, rosterStatus } =
+const { characters, refetchCharacterRoster, rosterMessage, rosterRetryPanel, rosterStatus } =
   useCharacterRoster(apiClient)
 const callbackProcessing = ref(false)
 const reauthorizeFeedbackStatus = ref<ReauthorizeStatus>('')
@@ -129,7 +129,22 @@ useHead({
       <p>Resolving character authorization...</p>
     </UiStatePanel>
     <UiStatePanel
-      v-else-if="!characterId || (!selectedCharacter && rosterStatus !== 'loading')"
+      v-else-if="rosterRetryPanel && characterId && !selectedCharacter"
+      :code="rosterRetryPanel.code"
+      :title="rosterRetryPanel.title"
+      compact
+      role="alert"
+      tone="error"
+    >
+      <p>{{ rosterRetryPanel.message }}</p>
+      <template #action>
+        <button class="ui-action-secondary" type="button" @click="refetchCharacterRoster()">
+          RETRY UPLINK
+        </button>
+      </template>
+    </UiStatePanel>
+    <UiStatePanel
+      v-else-if="!characterId || (rosterStatus === 'idle' && !selectedCharacter)"
       code="404 / CHARACTER"
       title="Character not found"
       compact

@@ -207,6 +207,21 @@ describe('character Assets mapper', () => {
     })
     expect(
       mapCharacterAssetsResourceState({
+        data: null,
+        loading: false,
+        error: null,
+        parked: true,
+      }),
+    ).toMatchObject({
+      phase: 'unavailable',
+      message: 'Character assets are not loaded. Retry to request them again.',
+      statusLabel: 'IDLE / ASSETS',
+      canRetry: true,
+      initialLoading: false,
+      refreshing: false,
+    })
+    expect(
+      mapCharacterAssetsResourceState({
         data: {
           assets: [],
           enrichment: { types: 'complete', names: 'complete', locations: 'complete' },

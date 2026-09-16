@@ -31,7 +31,7 @@ beforeEach(() => {
             corporationId: 1_000_166,
             factionId: null,
             allianceId: 99_000_001,
-            description: String.raw`<font color="#ffffff">u'고생 끝에 낙이 온다'</font>`,
+            description: String.raw`<font color="#ffffffff">u'고생 끝에 낙이 온다'</font>`,
           }),
         )
       case 'public-corporation':
@@ -60,7 +60,10 @@ describe('character profile', () => {
     await expect(getCharacterProfile(90_000_001)).resolves.toMatchObject({
       id: 90_000_001,
       name: 'Bandera Primary',
-      bio: '고생 끝에 낙이 온다',
+      bio: {
+        plainText: '고생 끝에 낙이 온다',
+        runs: [{ color: '#ffffffff', start: 0, text: '고생 끝에 낙이 온다' }],
+      },
       race: 'Amarr',
       bloodline: 'Khanid',
       corporation: { id: 1_000_166, name: 'Imperial Academy', ticker: 'IAC', memberCount: 1 },

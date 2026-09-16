@@ -37,7 +37,7 @@ export const PRIVATE_QUERY_KEYS = {
   characterModuleResource: (characterId: number, moduleId: string, resourceId: string) =>
     platformModuleQueryKey(moduleId, { kind: 'character', characterId }, [resourceId]),
   characterOverview: (characterId: number) =>
-    [...PRIVATE_QUERY_KEYS.character(characterId), 'overview'] as const,
+    [...PRIVATE_QUERY_KEYS.character(characterId), 'overview-v2'] as const,
   characterAttributes: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.character(characterId), 'attributes'] as const,
   characterSkillQueue: (characterId: number) =>
