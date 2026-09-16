@@ -5,7 +5,7 @@ import type {
   GetCorporationsCorporationIdResponse,
 } from '@evespace/esi-client/types'
 import { z } from 'zod'
-import { eveDescriptionToPlainText } from '../text/eve-description.js'
+import { eveFormattedTextToPlainText } from '../text/eve-formatted-text.js'
 import { createPublicEsiRead, type EsiReadResult } from '../esi-gateway/feature-execution.js'
 import { resolveUniverseNames } from '../universe/names.js'
 
@@ -175,7 +175,7 @@ async function mapPublicCorporation(
     creatorName: creatorId ? (names.get(creatorId)?.name ?? null) : null,
     taxRate: corporation.tax_rates?.isk ?? null,
     dateFounded: corporation.date_founded ?? null,
-    description: eveDescriptionToPlainText(corporation.description) ?? null,
+    description: eveFormattedTextToPlainText(corporation.description) ?? null,
     url: corporation.url ?? null,
     factionId: corporation.enlisted_faction_id ?? null,
     homeStationId,

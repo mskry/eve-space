@@ -112,6 +112,17 @@ describe('AppSidebar mail entry', () => {
     currentRoute.path = '/'
   })
 
+  it('presents an unavailable identity without offering sign-in as an anonymous verdict', async () => {
+    const wrapper = await mountSidebar({
+      authenticated: false,
+      authUnavailable: true,
+      characterId: undefined,
+    })
+
+    expect(wrapper.text()).toContain('IDENTITY UNAVAILABLE')
+    expect(wrapper.find('.sidebar-auth-link').exists()).toBe(false)
+  })
+
   it('renders no badge without a positive unread count', async () => {
     for (const mailUnreadCount of [undefined, 0]) {
       const wrapper = await mountSidebar({ mailUnreadCount })

@@ -1,18 +1,15 @@
 <script setup lang="ts">
+import {
+  formatCharacterSecurityStatus,
+  getCharacterSecurityStatusTone,
+} from '../utils/character-security-status'
+
 const props = defineProps<{
   value: number
 }>()
 
-const roundedValue = computed(() => Number(props.value.toFixed(2)))
-const label = computed(() => {
-  if (roundedValue.value === 0) return '0.0'
-  return `${roundedValue.value > 0 ? '+' : ''}${roundedValue.value}`
-})
-const tone = computed(() => {
-  if (props.value >= 0) return 'positive'
-  if (props.value <= -5) return 'danger'
-  return 'warning'
-})
+const label = computed(() => formatCharacterSecurityStatus(props.value))
+const tone = computed(() => getCharacterSecurityStatusTone(props.value))
 </script>
 
 <template>

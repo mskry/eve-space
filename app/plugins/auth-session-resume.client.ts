@@ -9,13 +9,14 @@ export default defineNuxtPlugin({
     const router = useRouter()
     const runtimeConfig = useRuntimeConfig()
     const apiClient = createApiClient(runtimeConfig.public.apiBase)
-    const { authLoading, authSession, authUnavailable, initializeAuth } = useAuthSession(apiClient)
+    const { authSession, authVerificationInFlight, authVerificationStatus, initializeAuth } =
+      useAuthSession(apiClient, { autoLoad: false })
     let refreshing = false
 
     async function refreshSession() {
       if (
         refreshing ||
-        authLoading.value ||
+        authVerificationInFlight.value ||
         route.path === '/auth' ||
         resolveRouteAudience(route.path, route.meta.platformAudience) !== 'authenticated'
       ) {
@@ -25,7 +26,13 @@ export default defineNuxtPlugin({
       refreshing = true
       try {
         await initializeAuth()
-        if (!authSession.value.authenticated && !authUnavailable.value) {
+        if (
+          route.path === '/auth' ||
+          resolveRouteAudience(route.path, route.meta.platformAudience) !== 'authenticated'
+        ) {
+          return
+        }
+        if (authVerificationStatus.value === 'verified' && !authSession.value.authenticated) {
           const redirect = getLocalAuthRedirect(route.fullPath)
           await router.replace(redirect ? { path: '/auth', query: { redirect } } : '/auth')
         }

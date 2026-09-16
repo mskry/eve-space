@@ -22,7 +22,7 @@ interface GrantOrganizationRoleInput {
 
 export function useOrganizationAuthority(apiClient: ApiClient) {
   const queryCache = useQueryCache()
-  const { authSession, initializeAuth } = useAuthSession(apiClient)
+  const { authLoading, authSession, authUnavailable, initializeAuth } = useAuthSession(apiClient)
   const setupQuery = useQuery(() => ({
     ...adminSetupQuery(apiClient),
     enabled: import.meta.client,
@@ -35,12 +35,15 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
     enabled: () =>
       import.meta.client && authSession.value.authenticated && deploymentConfigured.value === true,
   })
+  const authorityContext = computed(() =>
+    authSession.value.authenticated ? contextQuery.data.value : undefined,
+  )
   const rolesQuery = useQuery({
     ...organizationRolesQuery(apiClient),
     enabled: () =>
       import.meta.client &&
       authSession.value.authenticated &&
-      contextQuery.data.value?.isOrganizationOwner === true,
+      authorityContext.value?.isOrganizationOwner === true,
   })
   const grantMutation = useMutation({
     mutation: async (input: GrantOrganizationRoleInput) => {
@@ -68,10 +71,12 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
 
   subscribePrivateQueryInvalidation(queryCache, { kind: 'organization' }, resetAuthorityState)
 
-  const authorityContext = computed(() => contextQuery.data.value)
-  const roleGrants = computed(() => rolesQuery.data.value?.grants ?? [])
+  const roleGrants = computed(() =>
+    authorityContext.value?.isOrganizationOwner ? (rolesQuery.data.value?.grants ?? []) : [],
+  )
   const loading = computed(
     () =>
+      authLoading.value ||
       setupQuery.asyncStatus.value === 'loading' ||
       (deploymentConfigured.value === true && contextQuery.asyncStatus.value === 'loading') ||
       (authorityContext.value?.isOrganizationOwner && rolesQuery.asyncStatus.value === 'loading'),
@@ -82,6 +87,7 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
       revokeMutation.asyncStatus.value === 'loading',
   )
   const errorMessage = computed(() => {
+    if (authUnavailable.value) return 'Session verification is unavailable.'
     const error =
       actionError.value ??
       grantMutation.error.value ??

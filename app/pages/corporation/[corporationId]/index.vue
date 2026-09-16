@@ -114,15 +114,6 @@ const formattedFounded = computed(() =>
           </section>
         </div>
       </div>
-      <footer class="record-footer">
-        <a
-          :href="`https://evewho.com/corporation/${corporation.corporationId}`"
-          target="_blank"
-          rel="noreferrer"
-        >
-          EXTERNAL RECORD ↗
-        </a>
-      </footer>
     </div>
   </article>
 </template>
@@ -225,15 +216,6 @@ const formattedFounded = computed(() =>
 .corporation-ceo img,
 .corporation-alliance img {
   border: 0.0625rem solid var(--ui-border);
-}
-
-.record-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  border-top: 0;
 }
 
 @media (max-width: 56.25rem) {

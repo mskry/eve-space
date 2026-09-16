@@ -170,7 +170,8 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
                 <span class="card-index">01</span>
                 <p>BIO</p>
                 <div ref="bioCopy" class="overview-bio-copy">
-                  {{ character.bio || 'No biography recorded.' }}
+                  <EveFormattedText v-if="character.bio" :value="character.bio" />
+                  <template v-else>No biography recorded.</template>
                 </div>
               </div>
               <section class="affiliation-card">
@@ -324,16 +325,6 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
           </div>
 
           <EsiResourceBoundary :state="sectionAuthorizationState" />
-
-          <footer class="record-footer">
-            <a
-              :href="`https://evewho.com/character/${character.id}`"
-              target="_blank"
-              rel="noreferrer"
-            >
-              EXTERNAL RECORD ↗
-            </a>
-          </footer>
         </div>
       </article>
     </EsiResourceBoundary>

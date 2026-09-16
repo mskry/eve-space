@@ -17,6 +17,7 @@ const {
   loadCharacterRoster,
   mainCharacterPending,
   rosterMessage,
+  rosterRetryPanel,
   rosterStatus,
   removeCharacter,
   refetchCharacterRoster,
@@ -111,7 +112,7 @@ watch(
       await Promise.allSettled([initializeAuth(true), refetchCharacterRoster()])
       return
     }
-    if (rosterStatus.value === 'idle' && characters.value.length === 0) {
+    if (rosterStatus.value === 'unavailable') {
       await loadCharacterRoster()
     }
   },
@@ -177,14 +178,14 @@ useHead({ title: 'Characters // EVE Space' })
       <p>Loading characters...</p>
     </UiStatePanel>
     <UiStatePanel
-      v-else-if="rosterStatus === 'error' && characters.length === 0"
-      code="ERR / CHARACTERS"
-      title="Characters unavailable"
+      v-else-if="rosterRetryPanel && characters.length === 0"
+      :code="rosterRetryPanel.code"
+      :title="rosterRetryPanel.title"
       compact
       role="alert"
       tone="error"
     >
-      <p>{{ rosterMessage }}</p>
+      <p>{{ rosterRetryPanel.message }}</p>
       <template #action>
         <button class="ui-action-secondary" type="button" @click="refetchCharacterRoster()">
           RETRY UPLINK

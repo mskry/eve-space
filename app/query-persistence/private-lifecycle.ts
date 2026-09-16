@@ -45,6 +45,7 @@ interface PrivateQueryLifecycleHost {
   readEnvelope(): EsiQueryCacheEnvelope
   readOriginalSuccessTime(keyHash: string): number | undefined
   readPersistedPrivateOwner(): string | null
+  refetchParkedPrivateQueries(): void
   quarantineRetainedData(): void
   reconcileRetainedData(): void
   resolveAdmissionInvalidationScope(
@@ -80,6 +81,7 @@ interface AdmissionAttempt {
   readonly ownerUserId: string
   readonly previousAdmission: CacheAdmissionContext | null
   readonly previousDeadline: number
+  readonly signal?: AbortSignal
   readonly startedAt: number
 }
 
@@ -87,6 +89,11 @@ interface PendingAdmissionRequest {
   readonly attempt: AdmissionAttempt
   readonly promise: Promise<boolean>
 }
+
+type DurableGenerationProbe =
+  | { readonly kind: 'verified'; readonly generation: number }
+  | { readonly kind: 'unusable' }
+  | { readonly kind: 'superseded' }
 
 interface LifecycleGuard {
   readonly epoch: number
@@ -107,7 +114,13 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   let identityAttempt = 0
   let identityCommitDepth = 0
   let invalidationGeneration = 0
+  // The comparison baseline for admission changes. It outlives suspension and purges, which clear
+  // activeAdmission, and is dropped only on logout, owner change, or an authoritative denial.
+  let lastAcceptedAdmission: CacheAdmissionContext | null = null
+  let lifecycleCheck: Promise<boolean> | undefined
+  let lifecycleRecheckRequested = false
   let listenersInstalled = false
+  let parkedRefetchPending = false
   let pendingAdmissionRequest: PendingAdmissionRequest | undefined
   let privateLifecycleEpoch = 0
   let privatePersistenceEnabled = true
@@ -171,6 +184,8 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       identityAttempt += 1
       privateLifecycleEpoch += 1
       durableInvalidationEpoch = null
+      lastAcceptedAdmission = null
+      parkedRefetchPending = false
       retainedPrivateAccessOpen = false
       clearAdmissionTimers()
       for (const dispose of cleanup) dispose()
@@ -199,13 +214,12 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       return invalidatePrivateCache(scope, preserveErrors, false, undefined, preserveFreshSuccesses)
     },
     async refreshAdmission(scope: PrivateQueryInvalidationScope) {
-      const previousAdmission = activeAdmission
       const expectedIdentityAttempt = identityAttempt
       const invalidated = await invalidatePrivateCache(scope, false)
       if (!invalidated || !identityAttemptIsCurrent(expectedIdentityAttempt) || !admissionLoader) {
         return false
       }
-      return requestAdmission(admissionLoader, scope, previousAdmission)
+      return requestAdmission(admissionLoader, scope)
     },
     refreshAdmissionTimers() {
       scheduleAdmissionExpiry()
@@ -295,7 +309,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       await rejectAdmission()
       return false
     }
-    return requestAdmission(() => loadAdmission(signal))
+    return requestAdmission(() => loadAdmission(signal), undefined, lastAcceptedAdmission, signal)
   }
 
   function commitVerifiedIdentity(session: AuthSession, nextOwner: string | null) {
@@ -306,6 +320,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       (persistedOwner ?? cachedOwner ?? (host.hasCharacterData() ? null : nextOwner)) === nextOwner
 
     verifiedUserId = nextOwner
+    if (!ownerMatches) lastAcceptedAdmission = null
     identityCommitDepth += 1
     try {
       if (!ownerMatches) closeAndPurgePrivateCache({ kind: 'all' }, false)
@@ -321,12 +336,14 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   function requestAdmission(
     loadAdmission: () => Promise<CacheAdmissionContext>,
     alreadyInvalidatedScope?: PrivateQueryInvalidationScope,
-    previousAdmission = activeAdmission,
+    previousAdmission = lastAcceptedAdmission,
+    signal?: AbortSignal,
   ): Promise<boolean> {
     const epoch = privateLifecycleEpoch
     if (
       pendingAdmissionRequest?.attempt.epoch === epoch &&
-      pendingAdmissionRequest.attempt.ownerUserId === verifiedUserId
+      pendingAdmissionRequest.attempt.ownerUserId === verifiedUserId &&
+      !pendingAdmissionRequest.attempt.signal?.aborted
     ) {
       return pendingAdmissionRequest.promise
     }
@@ -339,6 +356,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       ownerUserId: verifiedUserId,
       previousAdmission,
       previousDeadline: activeAdmissionDeadline,
+      signal,
       startedAt: now(),
     }
     let promise!: Promise<boolean>
@@ -387,9 +405,16 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     const durableGeneration = await verifyDurableGeneration(() =>
       admissionAttemptIsCurrent(attempt),
     )
-    if (!admissionAttemptIsCurrent(attempt) || durableGeneration === null || now() >= deadline) {
+    if (durableGeneration.kind === 'superseded' || now() >= deadline) return false
+    if (durableGeneration.kind === 'unusable') {
+      // Durable persistence is unusable rather than the admission invalid: it still authorizes live
+      // requests, while retained data stays closed and no cache is committed until a later probe
+      // verifies the generation. Disabling persistence advanced the epoch itself, so the attempt is
+      // deliberately not re-checked here.
+      applyAdmissionWithoutPersistence(admission, deadline)
       return false
     }
+    if (!admissionAttemptIsCurrent(attempt)) return false
 
     const currentTime = now()
     host.reconcileRetainedData()
@@ -407,6 +432,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     }
 
     activeAdmission = admission
+    lastAcceptedAdmission = admission
     activeAdmissionDeadline = deadline
     activeAdmissionMayRenew = admissionMayRenew(attempt.previousDeadline, deadline, admission)
     const admittedCache = host.collectAdmittedCache(admission, now())
@@ -425,21 +451,36 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     retainedPrivateAccessOpen = true
     scheduleAdmissionExpiry()
     host.touch()
+    scheduleParkedQueryRefetch()
     return true
   }
 
   function applyAdmissionWithoutPersistence(admission: CacheAdmissionContext, deadline: number) {
-    const scope = host.resolveAdmissionInvalidationScope(admission, activeAdmission, now())
+    const scope = host.resolveAdmissionInvalidationScope(admission, lastAcceptedAdmission, now())
     if (scope) closeAndPurgePrivateCache(scope, false)
     verifiedUserId = admission.userId
     activeAdmission = admission
+    lastAcceptedAdmission = admission
     activeAdmissionDeadline = deadline
     retainedPrivateAccessOpen = false
     clearAdmissionTimers()
     host.touch()
+    scheduleParkedQueryRefetch()
+  }
+
+  function scheduleParkedQueryRefetch() {
+    // Parked entries are re-driven only once admission is open and the lifecycle epoch has settled: a
+    // refetch issued while the gate is closed would commit data the invalidation just rejected, and one
+    // issued before a queued recheck would have its success or denial discarded by the epoch guard.
+    if (lifecycleCheck) {
+      parkedRefetchPending = true
+      return
+    }
+    host.refetchParkedPrivateQueries()
   }
 
   function rejectAdmission() {
+    lastAcceptedAdmission = null
     return invalidatePrivateCache({ kind: 'all' }, false)
   }
 
@@ -530,21 +571,24 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     return true
   }
 
-  async function verifyDurableGeneration(stillCurrent: () => boolean) {
-    if (durableInvalidationEpoch !== null) return null
+  async function verifyDurableGeneration(
+    stillCurrent: () => boolean,
+  ): Promise<DurableGenerationProbe> {
+    if (durableInvalidationEpoch !== null) return { kind: 'superseded' }
     const guard = lifecycleGuard()
     try {
       const generation = await storage.readGeneration()
-      if (!stillCurrent() || !guardIsCurrent(guard)) return null
+      if (!stillCurrent() || !guardIsCurrent(guard)) return { kind: 'superseded' }
       if (generation === null) {
         disablePrivatePersistence()
-        return null
+        return { kind: 'unusable' }
       }
       applyVerifiedGeneration(generation)
-      return generation
+      return { kind: 'verified', generation }
     } catch {
-      if (stillCurrent() && guardIsCurrent(guard)) disablePrivatePersistence()
-      return null
+      if (!stillCurrent() || !guardIsCurrent(guard)) return { kind: 'superseded' }
+      disablePrivatePersistence()
+      return { kind: 'unusable' }
     }
   }
 
@@ -621,7 +665,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   function initializeLifecycleListeners() {
     const check = () => {
       if (disposed) return
-      void checkLifecycle()
+      void requestLifecycleCheck()
     }
     const stopNotifications = notifications.subscribe((notification) => {
       if (disposed) return
@@ -638,7 +682,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       if (notification.generation > invalidationGeneration) {
         applyObservedInvalidation(notification.generation, notification.scope)
       }
-      void checkLifecycle()
+      void requestLifecycleCheck()
     })
     cleanup.add(stopNotifications)
 
@@ -658,31 +702,67 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     })
   }
 
+  // Resume events are coalesced: a second event must not advance the lifecycle epoch while an
+  // admission attempt is in flight, because that obsoletes the attempt and its comparison baseline.
+  function requestLifecycleCheck() {
+    if (lifecycleCheck) {
+      lifecycleRecheckRequested = true
+      return lifecycleCheck
+    }
+    lifecycleCheck = runLifecycleCheck()
+    return lifecycleCheck
+  }
+
+  async function runLifecycleCheck() {
+    try {
+      return await recheckWhileRequested(await checkLifecycle())
+    } finally {
+      lifecycleCheck = undefined
+      lifecycleRecheckRequested = false
+      flushParkedQueryRefetch()
+    }
+  }
+
+  async function recheckWhileRequested(checked: boolean): Promise<boolean> {
+    if (disposed || !lifecycleRecheckRequested) return checked
+    lifecycleRecheckRequested = false
+    return recheckWhileRequested(await checkLifecycle())
+  }
+
+  function flushParkedQueryRefetch() {
+    if (!parkedRefetchPending) return
+    parkedRefetchPending = false
+    if (!disposed) host.refetchParkedPrivateQueries()
+  }
+
   async function checkLifecycle() {
     if (disposed) return false
     suspendRetainedPrivateAccess()
     host.reconcileRetainedData()
-    const epoch = privateLifecycleEpoch
-    const previousGeneration = invalidationGeneration
-    const durableGeneration = await verifyDurableGeneration(
-      () => !disposed && epoch === privateLifecycleEpoch,
-    )
-    if (
-      disposed ||
-      epoch !== privateLifecycleEpoch ||
-      durableGeneration === null ||
-      durableGeneration !== previousGeneration ||
-      !durableGenerationVerified
-    ) {
-      return false
+    let persistenceUsable = true
+    if (storage.available) {
+      const epoch = privateLifecycleEpoch
+      const previousGeneration = invalidationGeneration
+      const durableGeneration = await verifyDurableGeneration(
+        () => !disposed && epoch === privateLifecycleEpoch,
+      )
+      if (disposed || durableGeneration.kind === 'superseded') return false
+      // An unreadable generation degrades to live-only access instead of ending the resume, so
+      // server-authorized queries recover while the persisted cache stays closed. Disabling
+      // persistence advances the epoch itself, so that bump must not abort the resume.
+      if (durableGeneration.kind === 'unusable') persistenceUsable = false
+      else if (durableGeneration.generation !== previousGeneration || !durableGenerationVerified) {
+        return false
+      }
     }
-    if (admissionIsCurrent(now())) {
+    if (persistenceUsable && admissionIsCurrent(now())) {
       const admission = activeAdmission
       if (!admission) return false
       retainedPrivateAccessOpen = true
       host.commitAdmittedCache(host.collectAdmittedCache(admission, now()), now())
       scheduleAdmissionExpiry()
       host.touch()
+      scheduleParkedQueryRefetch()
       return true
     }
     if (activeAdmission) suspendPrivateAdmission()

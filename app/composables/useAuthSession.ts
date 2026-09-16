@@ -11,20 +11,28 @@ import {
 } from '../queries/auth'
 import { useAuthVerification } from './useAuthVerification'
 
-export function useAuthSession(apiClient: ApiClient) {
+export function useAuthSession(apiClient: ApiClient, { autoLoad = true } = {}) {
   const route = useRoute()
   const queryCache = useQueryCache()
   const authVerification = useAuthVerification()
   const configQuery = useQuery({
     ...authConfigQuery(apiClient),
-    enabled: import.meta.client,
+    enabled: import.meta.client && autoLoad,
   })
   const sessionOptions = authSessionQuery(apiClient)
   const sessionQuery = useQuery({
     ...sessionOptions,
-    enabled: import.meta.client,
+    enabled: import.meta.client && autoLoad,
     query: async (context) => {
       const verificationGeneration = authVerification.beginVerification()
+      const settleCancellation = () => {
+        queueMicrotask(() => {
+          authVerification.markUnavailable(queryCache, verificationGeneration, {
+            retainPrivateData: true,
+          })
+        })
+      }
+      context.signal.addEventListener('abort', settleCancellation, { once: true })
       try {
         const session = await sessionOptions.query(context)
         const accepted = await authVerification.markVerified(
@@ -35,7 +43,9 @@ export function useAuthSession(apiClient: ApiClient) {
           context.signal,
         )
         if (!accepted) {
-          queryCache.cancel(context.entry, new Error('Session verification superseded.'))
+          if (context.entry.pending?.abortController.signal === context.signal) {
+            queryCache.cancel(context.entry, new Error('Session verification superseded.'))
+          }
         }
         return session
       } catch (error) {
@@ -45,6 +55,8 @@ export function useAuthSession(apiClient: ApiClient) {
           })
         }
         throw error
+      } finally {
+        context.signal.removeEventListener('abort', settleCancellation)
       }
     },
   })
@@ -56,13 +68,17 @@ export function useAuthSession(apiClient: ApiClient) {
   })
 
   const authConfig = computed(() => configQuery.data.value ?? unavailableAuthConfig)
-  const authUnavailable = computed(() => authVerification.unavailable.value)
+  const authVerificationStatus = computed(() => authVerification.state.value.status)
+  const authUnavailable = computed(() => authVerificationStatus.value === 'unavailable')
+  const authVerificationInFlight = computed(() => authVerification.inFlight.value)
   const authSession = computed(() =>
-    authUnavailable.value || !authVerification.verified.value
+    !authVerification.accepted.value
       ? unauthenticatedSession
       : (sessionQuery.data.value ?? unauthenticatedSession),
   )
-  const authLoading = computed(() => !authVerification.verified.value && !authUnavailable.value)
+  const authLoading = computed(
+    () => authVerificationStatus.value === 'idle' || authVerificationStatus.value === 'verifying',
+  )
   const authFeedback = computed(() => {
     if (route.query.auth === 'cancelled') return 'EVE login was cancelled.'
     if (route.query.auth === 'error') return 'EVE login could not be completed.'
@@ -74,9 +90,11 @@ export function useAuthSession(apiClient: ApiClient) {
   async function initializeAuth(force = false) {
     if (!import.meta.client) return false
     const loadConfig = force ? configQuery.refetch : configQuery.refresh
-    const loadSession = force ? sessionQuery.refetch : sessionQuery.refresh
-    const [, sessionState] = await Promise.all([loadConfig(), loadSession()])
-    return sessionState.data?.authenticated ?? false
+    const requiresVerification =
+      authVerificationStatus.value === 'idle' || authVerificationStatus.value === 'unavailable'
+    const loadSession = force || requiresVerification ? sessionQuery.refetch : sessionQuery.refresh
+    await Promise.all([loadConfig(), loadSession()])
+    return authSession.value.authenticated
   }
 
   async function refreshAuthContext() {
@@ -122,6 +140,8 @@ export function useAuthSession(apiClient: ApiClient) {
     authLoading,
     authSession,
     authUnavailable,
+    authVerificationInFlight,
+    authVerificationStatus,
     initializeAuth,
     logout,
     refreshAuthContext,

@@ -52,10 +52,14 @@ export function mapCharacterAssetsResourceState({
   data,
   error,
   loading,
+  parked = false,
 }: {
   data?: AssetCollection | null
   error: unknown
   loading: boolean
+  // An enabled query holding no data with no request in flight: no verdict was ever reached, so it
+  // must offer a retry rather than a spinner that nothing will ever resolve.
+  parked?: boolean
 }): AssetResourceState {
   const normalizedError = error instanceof Error ? error : null
   const apiError = normalizedError instanceof ApiQueryError ? normalizedError : null
@@ -76,17 +80,21 @@ export function mapCharacterAssetsResourceState({
       accessRequired,
       authorizationRejected,
       cooldown,
-      unavailable: normalizedError !== null,
+      unavailable: normalizedError !== null || parked,
     }),
     initialLoading: loading && !retained,
     refreshing: loading && retained,
     refreshFailed: retained && normalizedError !== null,
     stale: data?.stale ?? false,
-    message: resourceMessage(normalizedError, apiError, retainedFailureClass),
-    statusLabel: resourceStatusLabel(normalizedError, apiError, cooldown),
+    message: resourceMessage(normalizedError, apiError, retainedFailureClass, parked),
+    statusLabel: parked
+      ? 'IDLE / ASSETS'
+      : resourceStatusLabel(normalizedError, apiError, cooldown),
     canRetry:
       !cooldown &&
-      ((normalizedError !== null && !authorizationRequired) || retainedFailureClass !== null),
+      ((normalizedError !== null && !authorizationRequired) ||
+        retainedFailureClass !== null ||
+        parked),
     retryAt: apiError?.retryAt ?? data?.retryAt ?? null,
     action:
       authorizationRequired && apiError?.authorizeUrl
@@ -123,9 +131,11 @@ function resourceMessage(
   error: Error | null,
   apiError: ApiQueryError | null,
   retainedFailureClass: string | null,
+  parked: boolean,
 ) {
   if (error) return assetsErrorMessage(error, apiError)
   if (retainedFailureClass) return retainedFailureMessage(retainedFailureClass)
+  if (parked) return 'Character assets are not loaded. Retry to request them again.'
   return null
 }
 

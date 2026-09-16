@@ -4,7 +4,7 @@ import { organizationContextQuery, organizationRosterCoverageQuery } from '../qu
 import type { ApiClient } from '../utils/api-client'
 
 export function useOrganizationRosterCoverage(apiClient: ApiClient) {
-  const { authSession, initializeAuth } = useAuthSession(apiClient)
+  const { authLoading, authSession, authUnavailable, initializeAuth } = useAuthSession(apiClient)
   const setupQuery = useQuery({ ...adminSetupQuery(apiClient), enabled: import.meta.client })
   const contextQuery = useQuery({
     ...organizationContextQuery(apiClient),
@@ -22,14 +22,18 @@ export function useOrganizationRosterCoverage(apiClient: ApiClient) {
       contextQuery.data.value?.capabilities.viewRosterCoverage === true,
   })
 
-  const coverage = computed(() => coverageQuery.data.value)
+  const coverage = computed(() =>
+    authSession.value.authenticated ? coverageQuery.data.value : undefined,
+  )
   const loading = computed(
     () =>
+      authLoading.value ||
       setupQuery.asyncStatus.value === 'loading' ||
       contextQuery.asyncStatus.value === 'loading' ||
       coverageQuery.asyncStatus.value === 'loading',
   )
   const errorMessage = computed(() => {
+    if (authUnavailable.value) return 'Session verification is unavailable.'
     const error = contextQuery.error.value ?? coverageQuery.error.value
     return error instanceof Error ? error.message : ''
   })

@@ -17,7 +17,8 @@ describe('organization frontend source contracts', () => {
 
     expect(composable).toContain('adminSetupQuery(apiClient)')
     expect(composable).toContain('deploymentConfigured.value === true')
-    expect(composable).toContain('contextQuery.data.value?.isOrganizationOwner === true')
+    expect(composable).toContain('authSession.value.authenticated ? contextQuery.data.value')
+    expect(composable).toContain('authorityContext.value?.isOrganizationOwner === true')
     expect(composable).toContain('rolesQuery.error.value')
   })
 

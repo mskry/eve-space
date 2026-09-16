@@ -1,4 +1,5 @@
 import type { QueryCache } from '@pinia/colada'
+import { computed } from 'vue'
 import type { AuthSession, CacheAdmissionContext } from '../queries/auth'
 import { unauthenticatedSession } from '../queries/auth'
 import { clearAuthenticatedQueriesAfterSessionTransition } from '../queries/query-cache'
@@ -9,20 +10,34 @@ import {
   suspendPrivateQueryAdmission,
 } from '../query-persistence/runtime'
 
-const AUTH_VERIFICATION_UNAVAILABLE_STATE = 'auth-verification-unavailable'
-const AUTH_VERIFIED_STATE = 'auth-verified'
-const AUTH_VERIFICATION_GENERATION_STATE = 'auth-verification-generation'
+const AUTH_VERIFICATION_STATE = 'auth-verification-state'
+
+export type AuthVerificationStatus =
+  | 'idle'
+  | 'verifying'
+  | 'refreshing'
+  | 'verified'
+  | 'unavailable'
+
+interface AuthVerificationState {
+  generation: number
+  status: AuthVerificationStatus
+}
 
 export function useAuthVerification() {
-  const unavailable = useState<boolean>(AUTH_VERIFICATION_UNAVAILABLE_STATE, () => false)
-  const verified = useState<boolean>(AUTH_VERIFIED_STATE, () => false)
-  const generation = useState<number>(AUTH_VERIFICATION_GENERATION_STATE, () => 0)
+  const state = useState<AuthVerificationState>(AUTH_VERIFICATION_STATE, () => ({
+    generation: 0,
+    status: 'idle',
+  }))
+  const accepted = computed(() => hasAcceptedSession(state.value.status))
+  const inFlight = computed(() => isVerificationInFlight(state.value.status))
 
   function beginVerification({ resetIdentity = false } = {}) {
-    const currentGeneration = generation.value + 1
-    generation.value = currentGeneration
-    unavailable.value = false
-    if (resetIdentity) verified.value = false
+    const currentGeneration = state.value.generation + 1
+    state.value = {
+      generation: currentGeneration,
+      status: !resetIdentity && hasAcceptedSession(state.value.status) ? 'refreshing' : 'verifying',
+    }
     return currentGeneration
   }
 
@@ -31,10 +46,8 @@ export function useAuthVerification() {
     currentGeneration: number,
     { retainPrivateData }: { retainPrivateData: boolean },
   ) {
-    if (generation.value !== currentGeneration) return false
-    generation.value += 1
-    unavailable.value = true
-    verified.value = false
+    if (!ownsVerification(state.value, currentGeneration)) return false
+    state.value = { generation: currentGeneration, status: 'unavailable' }
     if (retainPrivateData) {
       suspendPrivateQueryAdmission(queryCache)
       return true
@@ -51,7 +64,7 @@ export function useAuthVerification() {
     loadAdmission: (signal?: AbortSignal) => Promise<CacheAdmissionContext>,
     signal?: AbortSignal,
   ) {
-    if (generation.value !== currentGeneration || signal?.aborted) return false
+    if (!ownsVerification(state.value, currentGeneration) || signal?.aborted) return false
     const previousSession = queryCache.getQueryData<AuthSession>(PRIVATE_QUERY_KEYS.session())
     if (
       previousSession?.authenticated !== session.authenticated ||
@@ -59,20 +72,32 @@ export function useAuthVerification() {
         previousSession?.authenticated &&
         previousSession.account.userId !== session.account.userId)
     ) {
-      verified.value = false
+      state.value = { generation: currentGeneration, status: 'verifying' }
     }
     await applyVerifiedQueryIdentity(queryCache, session, loadAdmission, signal)
-    if (generation.value !== currentGeneration || signal?.aborted) return false
-    unavailable.value = false
-    verified.value = true
+    if (!ownsVerification(state.value, currentGeneration) || signal?.aborted) return false
+    state.value = { generation: currentGeneration, status: 'verified' }
     return true
   }
 
   return {
+    accepted,
     beginVerification,
+    inFlight,
     markUnavailable,
     markVerified,
-    unavailable: readonly(unavailable),
-    verified: readonly(verified),
+    state: readonly(state),
   }
+}
+
+function hasAcceptedSession(status: AuthVerificationStatus) {
+  return status === 'verified' || status === 'refreshing'
+}
+
+function isVerificationInFlight(status: AuthVerificationStatus) {
+  return status === 'verifying' || status === 'refreshing'
+}
+
+function ownsVerification(state: AuthVerificationState, generation: number) {
+  return state.generation === generation && isVerificationInFlight(state.status)
 }

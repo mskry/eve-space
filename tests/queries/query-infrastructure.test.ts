@@ -207,7 +207,7 @@ describe('query infrastructure', () => {
       'private',
       'characters',
       7,
-      'overview',
+      'overview-v2',
     ])
     expect(PRIVATE_QUERY_KEYS.characterModuleResource(7, 'member-audit', 'records')).toEqual([
       'private',

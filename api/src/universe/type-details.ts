@@ -11,7 +11,7 @@ import {
   skillTrainingDogmaAttributeIds,
 } from '../skills/training.js'
 import type { SkillAttribute } from '../skills/training.js'
-import { eveDescriptionToPlainText } from '../text/eve-description.js'
+import { eveFormattedTextToPlainText } from '../text/eve-formatted-text.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import type { ImplantBonusAttribute } from './implant-attributes.js'
 import {
@@ -111,7 +111,7 @@ function mapUniverseTypeDetails(rows: readonly TypeDetailRow[]): UniverseTypeDet
   return {
     typeId: first.typeId,
     name: first.typeName,
-    description: eveDescriptionToPlainText(first.description) ?? null,
+    description: eveFormattedTextToPlainText(first.description) ?? null,
     group: { id: first.groupId, name: first.groupName },
     category: { id: first.categoryId, name: first.categoryName },
     detail,

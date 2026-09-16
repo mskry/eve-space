@@ -52,7 +52,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const nuxtApp = useNuxtApp()
   if (nuxtApp.isHydrating && nuxtApp.payload.serverRendered) {
-    onNuxtReady(() => void verifySession())
+    const currentRoute = useRouter().currentRoute
+    onNuxtReady(() => {
+      if (currentRoute.value.fullPath !== to.fullPath) return
+      void verifySession()
+    })
     return
   }
   return verifySession()

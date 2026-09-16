@@ -29,7 +29,9 @@ describe('organization authority', () => {
     const initializeAuth = vi.fn().mockResolvedValue(true)
     vi.stubGlobal('computed', computed)
     vi.stubGlobal('useAuthSession', () => ({
+      authLoading: ref(false),
       authSession: ref({ authenticated: true }),
+      authUnavailable: ref(false),
       initializeAuth,
     }))
     const Root = defineComponent({
@@ -71,9 +73,13 @@ describe('organization authority', () => {
       }),
     )
     const initializeAuth = vi.fn().mockResolvedValue(true)
+    const authSession = ref({ authenticated: true })
+    const authUnavailable = ref(false)
     vi.stubGlobal('computed', computed)
     vi.stubGlobal('useAuthSession', () => ({
-      authSession: ref({ authenticated: true }),
+      authLoading: ref(false),
+      authSession,
+      authUnavailable,
       initializeAuth,
     }))
     let authority!: ReturnType<typeof useOrganizationAuthority>
@@ -114,6 +120,12 @@ describe('organization authority', () => {
     expect(invalidateQueries).toHaveBeenCalledTimes(2)
     expect(authority.mutationPending.value).toBe(false)
     expect(authority.errorMessage.value).toBe('')
+
+    authSession.value = { authenticated: false }
+    authUnavailable.value = true
+    expect(authority.authorityContext.value).toBeUndefined()
+    expect(authority.roleGrants.value).toEqual([])
+    expect(authority.errorMessage.value).toBe('Session verification is unavailable.')
     wrapper.unmount()
   })
 
@@ -136,7 +148,9 @@ describe('organization authority', () => {
     )
     vi.stubGlobal('computed', computed)
     vi.stubGlobal('useAuthSession', () => ({
+      authLoading: ref(false),
       authSession: ref({ authenticated: true }),
+      authUnavailable: ref(false),
       initializeAuth: vi.fn().mockResolvedValue(true),
     }))
     let authority!: ReturnType<typeof useOrganizationAuthority>
@@ -183,7 +197,9 @@ describe('organization authority', () => {
     )
     vi.stubGlobal('computed', computed)
     vi.stubGlobal('useAuthSession', () => ({
+      authLoading: ref(false),
       authSession: ref({ authenticated: false }),
+      authUnavailable: ref(false),
       initializeAuth: vi.fn().mockResolvedValue(false),
     }))
     let authority!: ReturnType<typeof useOrganizationAuthority>

@@ -134,7 +134,10 @@ useHead({
             <div class="overview-bio-card">
               <span class="card-index">01</span>
               <p>BIO</p>
-              <div class="overview-bio-copy">{{ profile.bio || 'No biography recorded.' }}</div>
+              <div class="overview-bio-copy">
+                <EveFormattedText v-if="profile.bio" :value="profile.bio" />
+                <template v-else>No biography recorded.</template>
+              </div>
             </div>
             <section class="affiliation-card">
               <span class="card-index">02</span>
@@ -251,16 +254,6 @@ useHead({
               </dl>
             </section>
           </section>
-
-          <footer class="record-footer">
-            <a
-              :href="`https://evewho.com/character/${profile.id}`"
-              target="_blank"
-              rel="noreferrer"
-            >
-              EXTERNAL RECORD ↗
-            </a>
-          </footer>
         </div>
       </article>
     </template>

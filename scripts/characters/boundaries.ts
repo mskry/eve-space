@@ -139,7 +139,7 @@ const allowedCrossSubsystemImportsByModule: Readonly<Record<string, readonly str
     'api/src/alliances/public-data',
     'api/src/corporations/public-data',
     'api/src/esi-gateway/feature-execution',
-    'api/src/text/eve-description',
+    'api/src/text/eve-formatted-text',
   ],
   'progression-routes': [
     'api/src/http/private-response',

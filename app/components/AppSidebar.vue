@@ -8,6 +8,7 @@ const props = withDefaults(
     authenticated: boolean
     adminAuthenticated: boolean
     authLoading: boolean
+    authUnavailable?: boolean
     characterId?: number
     characterName?: string
     expanded?: boolean
@@ -15,6 +16,7 @@ const props = withDefaults(
     variant?: 'persistent' | 'drawer'
   }>(),
   {
+    authUnavailable: false,
     expanded: false,
     variant: 'persistent',
   },
@@ -181,7 +183,8 @@ onBeforeUnmount(() => {
     </UiTooltip>
 
     <div class="sidebar-session">
-      <span v-if="authLoading" class="session-pulse">CHECKING IDENTITY</span>
+      <span v-if="authUnavailable" class="session-pulse">IDENTITY UNAVAILABLE</span>
+      <span v-else-if="authLoading" class="session-pulse">CHECKING IDENTITY</span>
       <template v-else-if="authenticated">
         <UiActionMenubar
           :label="characterName || 'Authorized pilot'"

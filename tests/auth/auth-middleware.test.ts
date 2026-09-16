@@ -17,6 +17,7 @@ let admissionRequests = 0
 const navigateTo = vi.fn()
 const onNuxtReady = vi.fn()
 const nuxtApp = { isHydrating: false, payload: { serverRendered: true } }
+const currentRoute = { value: { fullPath: '/' } }
 const nuxtState = new Map<string, { value: unknown }>()
 const sessionEntry = { ext: retryExtensions(), key: ['private', 'session'] }
 const privateEntry = { ext: retryExtensions(), key: ['private', 'characters', 7, 'wallet'] }
@@ -42,6 +43,7 @@ beforeAll(async () => {
   vi.stubGlobal('$fetch', fetchSession)
   vi.stubGlobal('navigateTo', navigateTo)
   vi.stubGlobal('onNuxtReady', onNuxtReady)
+  vi.stubGlobal('useRouter', () => ({ currentRoute }))
   vi.stubGlobal('readonly', (value: unknown) => value)
   vi.stubGlobal('useNuxtApp', () => nuxtApp)
   vi.stubGlobal('useQueryCache', () => queryCache)
@@ -61,6 +63,7 @@ beforeEach(() => {
   navigateTo.mockReset()
   onNuxtReady.mockReset()
   nuxtApp.isHydrating = false
+  currentRoute.value = { fullPath: '/' }
   nuxtState.clear()
   persistenceMocks.applyVerifiedQueryIdentity
     .mockReset()
@@ -188,16 +191,24 @@ describe('authentication route middleware', () => {
   it('keeps the verified identity visible while a protected navigation rechecks the session', async () => {
     const verification = Promise.withResolvers<ReturnType<typeof authenticatedSession>>()
     queryCache.getQueryData.mockReturnValue(authenticatedSession())
-    nuxtState.set('auth-verified', { value: true })
+    nuxtState.set('auth-verification-state', {
+      value: { generation: 1, status: 'verified' },
+    })
     fetchSession.mockReturnValue(verification.promise)
 
     const navigation = authMiddleware(route('/characters/7/skills', '/characters/7/skills'))
 
-    expect(nuxtState.get('auth-verified')?.value).toBe(true)
+    expect(nuxtState.get('auth-verification-state')?.value).toEqual({
+      generation: 2,
+      status: 'refreshing',
+    })
     verification.resolve(authenticatedSession())
     await navigation
 
-    expect(nuxtState.get('auth-verified')?.value).toBe(true)
+    expect(nuxtState.get('auth-verification-state')?.value).toEqual({
+      generation: 2,
+      status: 'verified',
+    })
     expect(navigateTo).not.toHaveBeenCalled()
   })
 
@@ -227,8 +238,10 @@ describe('authentication route middleware', () => {
 
     expect(admissionRequests).toBe(1)
     expect(navigateTo).not.toHaveBeenCalled()
-    expect(nuxtState.get('auth-verified')?.value).toBe(true)
-    expect(nuxtState.get('auth-verification-unavailable')?.value).toBe(false)
+    expect(nuxtState.get('auth-verification-state')?.value).toEqual({
+      generation: 1,
+      status: 'verified',
+    })
     expect(queryCache.setQueryData).toHaveBeenCalledWith(
       ['private', 'session'],
       authenticatedSession(),
@@ -249,8 +262,10 @@ describe('authentication route middleware', () => {
     expect(queryCache.cancelQueries).not.toHaveBeenCalled()
     expect(queryCache.remove).not.toHaveBeenCalled()
     expect(queryCache.setQueryData).not.toHaveBeenCalled()
-    expect(nuxtState.get('auth-verified')?.value).toBe(false)
-    expect(nuxtState.get('auth-verification-unavailable')?.value).toBe(true)
+    expect(nuxtState.get('auth-verification-state')?.value).toEqual({
+      generation: 1,
+      status: 'unavailable',
+    })
   })
 
   it('clears private state before accepting a different session owner', async () => {
@@ -265,7 +280,10 @@ describe('authentication route middleware', () => {
       ['private', 'session'],
       authenticatedSession('user-2'),
     )
-    expect(nuxtState.get('auth-verification-unavailable')?.value).toBe(false)
+    expect(nuxtState.get('auth-verification-state')?.value).toEqual({
+      generation: 1,
+      status: 'verified',
+    })
   })
 
   it('retains restored character data after verifying the same session owner', async () => {
@@ -337,6 +355,18 @@ describe('authentication route middleware', () => {
     await vi.waitFor(() => {
       expect(navigateTo).toHaveBeenCalledWith({ path: '/auth', query: { redirect: '/' } })
     })
+  })
+
+  it('discards deferred verification after navigation leaves the original route', async () => {
+    nuxtApp.isHydrating = true
+
+    await authMiddleware(route('/characters', '/characters'))
+    currentRoute.value = { fullPath: '/settings/integrations' }
+    const verify = onNuxtReady.mock.calls[0]?.[0]
+    verify()
+
+    expect(fetchSession).not.toHaveBeenCalled()
+    expect(navigateTo).not.toHaveBeenCalled()
   })
 
   it('does not require an EVE session for the deployment administrator login', async () => {

@@ -37,11 +37,13 @@ export function useCharacterRoster(apiClient: ApiClient) {
   })
 
   const characters = computed(() => rosterQuery.data.value?.characters ?? [])
+  // `error` is a completed failed request, `loading` a request in flight, and `unavailable` a query
+  // holding no data with neither: no verdict was reached, so it must offer a retry.
   const rosterStatus = computed(() => {
-    if (rosterQuery.status.value === 'error' && !rosterQuery.data.value) return 'error'
-    if (rosterQuery.status.value === 'pending' && !rosterQuery.data.value) return 'loading'
-    if (rosterQuery.asyncStatus.value === 'loading' && !rosterQuery.data.value) return 'loading'
-    return 'idle'
+    if (rosterQuery.data.value) return 'idle'
+    if (rosterQuery.asyncStatus.value === 'loading') return 'loading'
+    if (rosterQuery.status.value === 'error') return 'error'
+    return 'unavailable'
   })
   const rosterMessage = computed(() => {
     const error =
@@ -49,6 +51,23 @@ export function useCharacterRoster(apiClient: ApiClient) {
       deleteCharacterMutation.error.value ??
       rosterQuery.error.value
     return error instanceof Error ? error.message : ''
+  })
+  const rosterRetryPanel = computed(() => {
+    if (rosterStatus.value === 'error') {
+      return {
+        code: 'ERR / CHARACTERS',
+        title: 'Characters unavailable',
+        message: rosterMessage.value || 'Character roster is unavailable.',
+      }
+    }
+    if (rosterStatus.value === 'unavailable') {
+      return {
+        code: 'IDLE / CHARACTERS',
+        title: 'Character list not loaded',
+        message: 'No character request is in flight. Retry to load your characters.',
+      }
+    }
+    return null
   })
   const mainCharacterPending = computed(() =>
     mainCharacterMutation.asyncStatus.value === 'loading'
@@ -149,6 +168,7 @@ export function useCharacterRoster(apiClient: ApiClient) {
     loadCharacterRoster,
     mainCharacterPending,
     rosterMessage,
+    rosterRetryPanel,
     rosterStatus,
     removeCharacter,
     refetchCharacterRoster,

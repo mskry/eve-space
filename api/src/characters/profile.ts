@@ -8,7 +8,7 @@ import {
   createPublicEsiRead,
   type EsiResultMetadata,
 } from '../esi-gateway/feature-execution.js'
-import { eveDescriptionToPlainText } from '../text/eve-description.js'
+import { parseEveFormattedText, type EveFormattedText } from '../text/eve-formatted-text.js'
 
 // Only the four empire races are playable. These are faction IDs, which the EVE image server
 // serves as empire emblems under its corporations category.
@@ -106,7 +106,7 @@ interface CharacterProfileData {
   securityStatus: number
   achievementScore: number
   corporationTitle?: string
-  bio?: string
+  bio?: EveFormattedText
   factionId: number | null
   corporation: {
     id: number
@@ -156,7 +156,7 @@ export async function getCharacterProfile(characterId: number) {
     securityStatus: character.securityStatus,
     achievementScore: character.achievementScore,
     corporationTitle: character.corporationTitle,
-    bio: eveDescriptionToPlainText(character.description),
+    bio: parseEveFormattedText(character.description),
     // Militia allegiance; unset for characters outside Faction Warfare.
     factionId: character.factionId,
     corporation: {

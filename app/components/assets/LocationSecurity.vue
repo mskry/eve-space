@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { formatSystemSecurityStatus, getSystemSecurityBand } from '../../utils/system-security'
+
 const props = defineProps<{
   value: number
 }>()
 
-const displayedValue = computed(() => Number(Math.min(1, Math.max(-1, props.value)).toFixed(1)))
-const label = computed(() => displayedValue.value.toFixed(1))
-const band = computed(() => Math.min(10, Math.max(0, Math.round(displayedValue.value * 10))))
+const label = computed(() => formatSystemSecurityStatus(props.value))
+const band = computed(() => getSystemSecurityBand(props.value))
 </script>
 
 <template>

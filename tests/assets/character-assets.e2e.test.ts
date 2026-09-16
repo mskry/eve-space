@@ -487,7 +487,10 @@ function overviewResponse() {
       securityStatus: 1.2,
       achievementScore: 0,
       factionId: null,
-      bio: 'Inventory specialist.',
+      bio: {
+        plainText: 'Inventory specialist.',
+        runs: [{ start: 0, text: 'Inventory specialist.' }],
+      },
       corporation: {
         id: 98_000_001,
         name: 'Manifest Corporation',

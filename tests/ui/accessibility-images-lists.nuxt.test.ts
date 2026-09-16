@@ -1,5 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { TooltipProvider } from 'reka-ui'
 import { afterEach, describe, expect, it } from 'vitest'
+import { defineComponent, h } from 'vue'
 import MailBodyText from '../../app/components/mail/MailBodyText.vue'
 import MailHeaderList from '../../app/components/mail/MailHeaderList.vue'
 import MailLabelSidebar from '../../app/components/mail/MailLabelSidebar.vue'
@@ -193,18 +195,26 @@ describe('accessible image and repeated-list behavior', () => {
     mountedWrappers.push(headers)
     expect(headers.findAll('.mail-header-skeleton')).toHaveLength(6)
 
-    const reader = await mountSuspended(MailReader, {
-      props: {
-        labels: [],
-        loading: true,
-        mutationPending: false,
-        canReply: false,
-        readState: null,
-        selected: true,
-      },
-      route: false,
+    const ReaderHost = defineComponent({
+      setup: () => () =>
+        h(TooltipProvider, null, {
+          default: () =>
+            h(MailReader, {
+              labels: [],
+              loading: true,
+              mutationPending: false,
+              canReply: false,
+              readState: null,
+              selected: true,
+            }),
+        }),
     })
+    const reader = await mountSuspended(ReaderHost, { route: false })
     mountedWrappers.push(reader)
-    expect(reader.findAll('.mail-reader-skeleton-actions .mail-skeleton-block')).toHaveLength(6)
+    const actionGroup = reader.get('.mail-reader-skeleton .mail-reader-actions')
+    expect(actionGroup.attributes('inert')).toBeDefined()
+    const actions = actionGroup.findAll('button')
+    expect(actions).toHaveLength(6)
+    expect(actions.some((action) => action.attributes('disabled') !== undefined)).toBe(false)
   })
 })

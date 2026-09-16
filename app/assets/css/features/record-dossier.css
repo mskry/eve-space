@@ -52,7 +52,7 @@
   color: var(--ui-text);
   font-size: 12px;
   line-height: 1.55;
-  white-space: pre-line;
+  white-space: pre-wrap;
 }
 
 .overview-bio-copy::-webkit-scrollbar {
@@ -290,20 +290,4 @@ a.affiliation-identity:focus-visible {
 .gender-symbol {
   color: var(--ui-primary);
   font: 400 20px/1 var(--ui-font-body);
-}
-
-.record-footer {
-  padding-top: 22px;
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  border-top: 1px solid var(--line);
-}
-
-.record-footer a {
-  margin-left: auto;
-  color: var(--accent);
-  font: 700 12px/1 monospace;
-  letter-spacing: 0.08em;
-  text-decoration: none;
 }

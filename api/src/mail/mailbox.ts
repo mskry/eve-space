@@ -5,7 +5,7 @@ import type {
   GetCharactersCharacterIdSearchResponse,
 } from '@evespace/esi-client/types'
 import { z } from 'zod'
-import { eveDescriptionToPlainText } from '../text/eve-description.js'
+import { eveFormattedTextToPlainText } from '../text/eve-formatted-text.js'
 import {
   EsiQuotaError,
   getEsiFailureStatus,
@@ -711,7 +711,7 @@ async function mapMailDetail(
     sentAt: response.timestamp ?? null,
     labelIds: response.labels ?? [],
     isRead: response.read ?? null,
-    body: eveDescriptionToPlainText(response.body) ?? null,
+    body: eveFormattedTextToPlainText(response.body) ?? null,
   }
 }
 

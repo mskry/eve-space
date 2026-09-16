@@ -32,6 +32,7 @@ beforeEach(() => {
   vi.stubGlobal('useRoute', () => ({ query: {} }))
   vi.stubGlobal('useAuthSession', () => ({
     authConfig: ref({ configured: false, loginUrl: '', attachUrl: '' }),
+    authLoading: ref(false),
     authSession: ref({ authenticated: false }),
     initializeAuth: vi.fn(),
   }))
@@ -126,6 +127,78 @@ describe('private query lifecycle', () => {
     await refreshing
     await flushPromises()
     expect(wrapper.text()).toBe('Verified pilot')
+    wrapper.unmount()
+  })
+
+  it('settles a canceled current verification instead of leaving authentication loading', async () => {
+    const requestStarted = Promise.withResolvers<void>()
+    const sessionRequest = vi.fn(
+      (_input?: unknown, request?: { init?: { signal?: AbortSignal } }): Promise<Response> =>
+        new Promise((_resolve, reject) => {
+          const signal = request?.init?.signal
+          signal?.addEventListener('abort', () => reject(signal.reason), { once: true })
+          requestStarted.resolve()
+        }),
+    )
+    let authState!: ReturnType<typeof useAuthSession>
+    const Host = defineComponent({
+      setup() {
+        authState = useAuthSession(sessionApiClient(sessionRequest))
+        return () => h('span')
+      },
+    })
+    const { queryCache, wrapper } = mountWithQueryPlugins(Host)
+    const sessionEntry = queryCache.get(PRIVATE_QUERY_KEYS.session())!
+
+    const verification = queryCache.fetch(sessionEntry)
+    await requestStarted.promise
+    expect(authState.authVerificationStatus.value).toBe('verifying')
+    expect(authState.authVerificationInFlight.value).toBe(true)
+
+    queryCache.cancel(sessionEntry, new Error('Last observer removed.'))
+    await Promise.allSettled([verification])
+    await flushPromises()
+
+    expect(authState.authVerificationStatus.value).toBe('unavailable')
+    expect(authState.authVerificationInFlight.value).toBe(false)
+    expect(authState.authLoading.value).toBe(false)
+    expect(authState.authSession.value).toEqual(unauthenticatedSession)
+    wrapper.unmount()
+  })
+
+  it('does not let a superseded admission cancel its replacement verification', async () => {
+    const sessionRequest = vi.fn(async () => HttpResponse.json(authenticatedSession()))
+    const admissionRequest = vi
+      .fn()
+      .mockImplementationOnce(
+        (_input?: unknown, request?: { init?: { signal?: AbortSignal } }): Promise<Response> =>
+          new Promise((_resolve, reject) => {
+            const signal = request?.init?.signal
+            signal?.addEventListener('abort', () => reject(signal.reason), { once: true })
+          }),
+      )
+      .mockImplementationOnce(async () => HttpResponse.json(cacheAdmission()))
+    let authState!: ReturnType<typeof useAuthSession>
+    const Host = defineComponent({
+      setup() {
+        authState = useAuthSession(sessionApiClient(sessionRequest, admissionRequest))
+        return () => h('span')
+      },
+    })
+    const { queryCache, wrapper } = mountWithQueryPlugins(Host)
+    const sessionEntry = queryCache.get(PRIVATE_QUERY_KEYS.session())!
+
+    const superseded = queryCache.fetch(sessionEntry)
+    await vi.waitFor(() => expect(admissionRequest).toHaveBeenCalledOnce())
+    const replacement = queryCache.fetch(sessionEntry)
+    await vi.waitFor(() => expect(sessionRequest).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(admissionRequest).toHaveBeenCalledTimes(2))
+    await Promise.allSettled([superseded, replacement])
+    await flushPromises()
+
+    expect(authState.authVerificationStatus.value).toBe('verified')
+    expect(authState.authVerificationInFlight.value).toBe(false)
+    expect(authState.authSession.value).toEqual(authenticatedSession())
     wrapper.unmount()
   })
 
@@ -492,24 +565,6 @@ describe('private query lifecycle', () => {
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.roster())).toBeUndefined()
     wrapper.unmount()
   })
-
-  it('keeps a cleared roster in its loading state while it is pending a refetch', () => {
-    let roster!: ReturnType<typeof useCharacterRoster>
-    const Host = defineComponent({
-      setup() {
-        roster = useCharacterRoster(createApiClient('http://localhost'))
-        return () => h('span')
-      },
-    })
-    const { queryCache, wrapper } = mountWithQueryPlugins(Host)
-    const entry = queryCache.get(PRIVATE_QUERY_KEYS.roster())
-
-    expect(entry).toBeDefined()
-    queryCache.setEntryState(entry!, { status: 'pending', data: undefined, error: null })
-
-    expect(roster.rosterStatus.value).toBe('loading')
-    wrapper.unmount()
-  })
 })
 
 function seedCharacterQuery(
@@ -554,8 +609,14 @@ function authenticatedSession(userId = 'user-1', characterId = 7) {
 }
 
 function sessionApiClient(
-  sessionRequest: () => Promise<Response>,
-  admissionRequest = async () => HttpResponse.json(cacheAdmission()),
+  sessionRequest: (
+    input?: unknown,
+    request?: { init?: { signal?: AbortSignal } },
+  ) => Promise<Response>,
+  admissionRequest: (
+    input?: unknown,
+    request?: { init?: { signal?: AbortSignal } },
+  ) => Promise<Response> = async () => HttpResponse.json(cacheAdmission()),
 ) {
   return {
     auth: {
