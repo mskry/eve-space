@@ -12,7 +12,10 @@ vi.mock('../../src/db/client.js', () => ({
   db: { select: vi.fn(() => query(mocks.grants)) },
 }))
 
-import { authorizeOrganizationContribution } from '../../src/organization/module-authorization.js'
+import {
+  authorizeOrganizationContribution,
+  authorizeOrganizationReviewerContribution,
+} from '../../src/organization/module-authorization.js'
 
 const now = new Date('2026-09-02T12:00:00.000Z')
 const organization = {
@@ -133,6 +136,184 @@ describe('organization module contribution authorization', () => {
         { audience: 'director', requiredPermission: 'alpha.view' },
         now,
       ),
+    ).resolves.toMatchObject({ authorized: true })
+  })
+})
+
+describe('organization reviewer contribution authorization', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.grants = []
+    mocks.getOrganizationGroupPermissions.mockResolvedValue({
+      modules: ['member-audit.skills.read'],
+      services: [],
+    })
+  })
+
+  test.each(['hr_auditor', 'director'] as const)(
+    'authorizes an explicit %s reviewer with the exact permission',
+    async (role) => {
+      mocks.grants = [{ role }]
+
+      await expect(
+        authorizeOrganizationReviewerContribution(
+          'user-1',
+          organization,
+          { audience: 'hr', requiredPermission: 'member-audit.skills.read' },
+          now,
+        ),
+      ).resolves.toEqual({
+        authorized: true,
+        context: {
+          organizationVersion: 7,
+          audience: 'hr',
+          requiredPermission: 'member-audit.skills.read',
+          entitlementScope: 'all',
+        },
+      })
+      expect(mocks.getOrganizationGroupPermissions).toHaveBeenCalledWith('user-1', now, 7)
+    },
+  )
+
+  test('does not treat organization-owner authority as a reviewer grant', async () => {
+    mocks.grants = [{ role: 'organization_owner' }]
+
+    await expect(
+      authorizeOrganizationReviewerContribution(
+        'user-1',
+        organization,
+        { audience: 'hr', requiredPermission: 'member-audit.skills.read' },
+        now,
+      ),
+    ).resolves.toEqual({ authorized: false, reason: 'audience' })
+    expect(mocks.getOrganizationGroupPermissions).not.toHaveBeenCalled()
+  })
+
+  test('does not let an HR reviewer enter a director-only contribution', async () => {
+    mocks.grants = [{ role: 'hr_auditor' }]
+
+    await expect(
+      authorizeOrganizationReviewerContribution(
+        'user-1',
+        organization,
+        { audience: 'director', requiredPermission: 'member-audit.skills.read' },
+        now,
+      ),
+    ).resolves.toEqual({ authorized: false, reason: 'audience' })
+    expect(mocks.getOrganizationGroupPermissions).not.toHaveBeenCalled()
+
+    mocks.grants = [{ role: 'director' }]
+    await expect(
+      authorizeOrganizationReviewerContribution(
+        'user-1',
+        organization,
+        { audience: 'director', requiredPermission: 'member-audit.skills.read' },
+        now,
+      ),
+    ).resolves.toMatchObject({ authorized: true })
+  })
+
+  test('requires current compliance and refuses review grace', async () => {
+    mocks.grants = [{ role: 'hr_auditor' }]
+
+    await expect(
+      authorizeOrganizationReviewerContribution(
+        'user-1',
+        {
+          ...organization,
+          state: 'review_required',
+          reviewDeadline: new Date('2026-09-02T12:30:00.000Z'),
+        },
+        { audience: 'hr', requiredPermission: 'member-audit.skills.read' },
+        now,
+      ),
+    ).resolves.toEqual({ authorized: false, reason: 'compliance' })
+    expect(mocks.getOrganizationGroupPermissions).not.toHaveBeenCalled()
+  })
+
+  test('refuses a blocked reviewer before role and permission reads', async () => {
+    mocks.grants = [{ role: 'director' }]
+
+    await expect(
+      authorizeOrganizationReviewerContribution(
+        'user-1',
+        { ...organization, blocked: true },
+        { audience: 'director', requiredPermission: 'member-audit.skills.read' },
+        now,
+      ),
+    ).resolves.toEqual({ authorized: false, reason: 'blocked' })
+    expect(mocks.getOrganizationGroupPermissions).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['skills', 'assets'],
+    ['assets', 'wallet'],
+    ['wallet', 'mail'],
+    ['mail', 'skills'],
+  ] as const)('does not let %s permission authorize the %s section', async (granted, requested) => {
+    mocks.grants = [{ role: 'director' }]
+    mocks.getOrganizationGroupPermissions.mockResolvedValue({
+      modules: [`member-audit.${granted}.read`],
+      services: [],
+    })
+
+    await expect(
+      authorizeOrganizationReviewerContribution(
+        'user-1',
+        organization,
+        { audience: 'director', requiredPermission: `member-audit.${requested}.read` },
+        now,
+      ),
+    ).resolves.toEqual({ authorized: false, reason: 'permission' })
+  })
+
+  test('requires the exact permission and a reviewer audience', async () => {
+    mocks.grants = [{ role: 'director' }]
+    mocks.getOrganizationGroupPermissions.mockResolvedValue({
+      modules: ['member-audit.assets.read'],
+      services: [],
+    })
+
+    await expect(
+      authorizeOrganizationReviewerContribution(
+        'user-1',
+        organization,
+        { audience: 'hr', requiredPermission: 'member-audit.skills.read' },
+        now,
+      ),
+    ).resolves.toEqual({ authorized: false, reason: 'permission' })
+    await expect(
+      authorizeOrganizationReviewerContribution(
+        'user-1',
+        organization,
+        { audience: 'member', requiredPermission: 'member-audit.assets.read' },
+        now,
+      ),
+    ).resolves.toEqual({ authorized: false, reason: 'audience' })
+  })
+
+  test('requires every permission declared by a reviewer contribution', async () => {
+    mocks.grants = [{ role: 'hr_auditor' }]
+    mocks.getOrganizationGroupPermissions.mockResolvedValue({
+      modules: ['member-audit.search'],
+      services: [],
+    })
+    const declaration = {
+      audience: 'hr' as const,
+      requiredPermission: 'member-audit.search',
+      additionalRequiredPermissions: ['member-audit.summary.read'],
+    }
+
+    await expect(
+      authorizeOrganizationReviewerContribution('user-1', organization, declaration, now),
+    ).resolves.toEqual({ authorized: false, reason: 'permission' })
+
+    mocks.getOrganizationGroupPermissions.mockResolvedValue({
+      modules: ['member-audit.search', 'member-audit.summary.read'],
+      services: [],
+    })
+    await expect(
+      authorizeOrganizationReviewerContribution('user-1', organization, declaration, now),
     ).resolves.toMatchObject({ authorized: true })
   })
 })

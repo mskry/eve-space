@@ -1,4 +1,4 @@
-import type { PlatformModuleManifest } from '@eve-space/platform-module-contract'
+import type { PlatformModuleManifest } from '@eve-space/platform-module-contract/manifest'
 
 const manifest = {
   id: 'organization-activity',

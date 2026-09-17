@@ -83,7 +83,12 @@ describe('protected query lifecycle', () => {
       routeId: 'mail-route',
       resource: ['headers'],
       subject: { kind: 'character' as const, characterId: 7 },
-      access: { authenticated: true, moduleEnabled: true, ownsCharacter: true },
+      access: {
+        authenticated: true,
+        moduleEnabled: true,
+        ownsCharacter: true,
+        sectionId: undefined as string | undefined,
+      },
       gcTime: 12_345,
       query: vi.fn(),
     })
@@ -174,5 +179,25 @@ describe('protected query lifecycle', () => {
     options.value.moduleId = ''
     expect(current().enabled).toBe(false)
     expect(current().key).toEqual(['private', 'inactive-module-query', '', 'headers'])
+  })
+  it('keys sectioned queries for immediate section cleanup', () => {
+    const { options, current } = setup()
+
+    options.value.access.sectionId = 'mail'
+
+    expect(current().key).toEqual([
+      'private',
+      'characters',
+      7,
+      'modules',
+      'mail',
+      'sections',
+      'mail',
+      'headers',
+    ])
+    expect(mocks.getEntries).toHaveBeenCalledWith({
+      key: ['private', 'characters', 7, 'modules', 'mail', 'headers'],
+      exact: true,
+    })
   })
 })

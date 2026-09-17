@@ -52,6 +52,14 @@ let repairOrganizationCompliance: typeof import('../../../src/organization/compl
 let getOrganizationAccountComplianceDetails: typeof import('../../../src/organization/compliance-details.js').getOrganizationAccountComplianceDetails
 let loadOrganizationSessionContext: typeof import('../../../src/middleware/organization-session.js').loadOrganizationSessionContext
 let listOrganizationRosterCoverage: typeof import('../../../src/organization/roster-coverage.js').listOrganizationRosterCoverage
+let searchManagedOrganizationAccounts: typeof import('../../../src/organization/reviewer-account-search.js').searchManagedOrganizationAccounts
+let resolveOrganizationReviewerTarget: typeof import('../../../src/organization/reviewer-target.js').resolveOrganizationReviewerTarget
+let assignOrganizationReviewerOrdinaryGroup: typeof import('../../../src/organization/reviewer-commands.js').assignOrganizationReviewerOrdinaryGroup
+let blockOrganizationReviewerMember: typeof import('../../../src/organization/reviewer-commands.js').blockOrganizationReviewerMember
+let revokeOrganizationReviewerOrdinaryGroup: typeof import('../../../src/organization/reviewer-commands.js').revokeOrganizationReviewerOrdinaryGroup
+let unblockOrganizationReviewerMember: typeof import('../../../src/organization/reviewer-commands.js').unblockOrganizationReviewerMember
+let appendOrganizationSensitiveAccessDecision: typeof import('../../../src/organization/sensitive-access-audit.js').appendOrganizationSensitiveAccessDecision
+let loadOrganizationRevisionFacts: typeof import('../../../src/cache-admission/store.js').loadOrganizationRevisionFacts
 let dbClient: typeof import('../../../src/db/client.js')
 const databasePassword = randomUUID()
 const adminId = randomUUID()
@@ -128,6 +136,19 @@ beforeAll(async () => {
     await import('../../../src/middleware/organization-session.js'))
   ;({ listOrganizationRosterCoverage } =
     await import('../../../src/organization/roster-coverage.js'))
+  ;({ searchManagedOrganizationAccounts } =
+    await import('../../../src/organization/reviewer-account-search.js'))
+  ;({ resolveOrganizationReviewerTarget } =
+    await import('../../../src/organization/reviewer-target.js'))
+  ;({
+    assignOrganizationReviewerOrdinaryGroup,
+    blockOrganizationReviewerMember,
+    revokeOrganizationReviewerOrdinaryGroup,
+    unblockOrganizationReviewerMember,
+  } = await import('../../../src/organization/reviewer-commands.js'))
+  ;({ appendOrganizationSensitiveAccessDecision } =
+    await import('../../../src/organization/sensitive-access-audit.js'))
+  ;({ loadOrganizationRevisionFacts } = await import('../../../src/cache-admission/store.js'))
   dbClient = await import('../../../src/db/client.js')
 })
 
@@ -166,6 +187,187 @@ afterAll(async () => {
 })
 
 describe('organization storage invariants', () => {
+  test('searches only current managed accounts with bounded opaque pagination', async () => {
+    const secondUserId = randomUUID()
+    const secondCharacterId = characterId + 1
+    await seedCharacter(secondUserId, secondCharacterId)
+    await connection`
+      insert into organization_managed_member_lifecycles (
+        deployment_id, organization_version, user_id
+      ) values (1, 1, ${secondUserId})
+    `
+    await connection`update characters set is_main = true where character_id = ${secondCharacterId}`
+    await connection`
+      insert into organization_member_blocks (
+        deployment_id, organization_version, user_id, blocked_by_user_id, reason
+      ) values (1, 1, ${secondUserId}, ${userId}, 'Review hold')
+    `
+
+    const firstPage = await searchManagedOrganizationAccounts({
+      organizationVersion: 1,
+      filters: { limit: 1 },
+    })
+    expect(firstPage.status).toBe('available')
+    expect(firstPage.items).toHaveLength(1)
+    expect(firstPage.nextCursor).toEqual(expect.any(String))
+    const decodedCursor = Buffer.from(firstPage.nextCursor!, 'base64url').toString('utf8')
+    expect(decodedCursor).not.toContain(firstPage.items[0]!.account.userId)
+    expect(decodedCursor).not.toContain(secondUserId)
+    expect(firstPage.items[0]).toEqual(
+      expect.objectContaining({
+        account: expect.objectContaining({ mainCharacter: expect.any(Object) }),
+        managedAffiliation: expect.objectContaining({ corporationId: 98_000_001 }),
+        compliance: expect.objectContaining({ state: 'pending' }),
+      }),
+    )
+    expect(firstPage.items[0]).not.toHaveProperty('groups')
+    expect(firstPage.items[0]).not.toHaveProperty('evidence')
+
+    const secondPage = await searchManagedOrganizationAccounts({
+      organizationVersion: 1,
+      filters: { limit: 1, cursor: firstPage.nextCursor! },
+    })
+    expect(secondPage.items).toHaveLength(1)
+    expect(secondPage.items[0]!.account.userId).not.toBe(firstPage.items[0]!.account.userId)
+    expect(secondPage.nextCursor).toBeNull()
+
+    await expect(
+      searchManagedOrganizationAccounts({
+        organizationVersion: 1,
+        filters: { query: 'different filter', cursor: firstPage.nextCursor! },
+      }),
+    ).rejects.toThrow('Invalid reviewer account search input')
+    const tamperedCursor = `${firstPage.nextCursor!.startsWith('A') ? 'B' : 'A'}${firstPage.nextCursor!.slice(1)}`
+    await expect(
+      searchManagedOrganizationAccounts({
+        organizationVersion: 1,
+        filters: { cursor: tamperedCursor },
+      }),
+    ).rejects.toThrow('Invalid reviewer account search input')
+
+    const blocked = await searchManagedOrganizationAccounts({
+      organizationVersion: 1,
+      filters: { blocked: true },
+    })
+    expect(blocked.items.map(({ account }) => account.userId)).toEqual([secondUserId])
+
+    await connection`
+      update characters
+      set corporation_id = 98000002
+      where character_id = ${secondCharacterId}
+    `
+    await expect(
+      searchManagedOrganizationAccounts({
+        organizationVersion: 1,
+        filters: { query: String(secondCharacterId) },
+      }),
+    ).resolves.toEqual({ status: 'available', items: [], nextCursor: null })
+    for (const query of ['%', '_', '\\'])
+      await expect(
+        searchManagedOrganizationAccounts({ organizationVersion: 1, filters: { query } }),
+      ).resolves.toEqual({ status: 'available', items: [], nextCursor: null })
+  })
+
+  test('does not expose or match an unclassified main character', async () => {
+    const managedCharacterId = characterId + 1
+    await connection`
+      update characters set corporation_id = 98000002 where character_id = ${characterId}
+    `
+    await connection`
+      insert into characters (
+        character_id, user_id, name, corporation_id, affiliation_checked_at,
+        next_affiliation_check, affiliation_resolution_state, is_main
+      ) values (
+        ${managedCharacterId}, ${userId}, 'Managed Alt', 98000001, now(),
+        now() + interval '1 hour', 'resolved', false
+      )
+    `
+    await connection`
+      insert into platform_subject_lifecycles (subject_kind, subject_id, character_id)
+      values ('character', ${String(managedCharacterId)}, ${managedCharacterId})
+    `
+
+    const visible = await searchManagedOrganizationAccounts({
+      organizationVersion: 1,
+      filters: { query: 'Managed Alt' },
+    })
+    expect(visible.items).toHaveLength(1)
+    expect(visible.items[0]!.account.mainCharacter).toBeNull()
+
+    await expect(
+      searchManagedOrganizationAccounts({
+        organizationVersion: 1,
+        filters: { query: 'Organization Pilot' },
+      }),
+    ).resolves.toEqual({ status: 'available', items: [], nextCursor: null })
+
+    await connection`
+      insert into organization_character_exceptions (
+        deployment_id, organization_version, user_id, character_id, approver_user_id, reason
+      ) values (1, 1, ${userId}, ${characterId}, ${userId}, 'Approved external main')
+    `
+    const withApprovedMain = await searchManagedOrganizationAccounts({
+      organizationVersion: 1,
+      filters: { query: 'Managed Alt' },
+    })
+    expect(withApprovedMain.items[0]!.account.mainCharacter).toEqual({
+      characterId,
+      name: 'Organization Pilot',
+    })
+  })
+
+  test('reports unavailable search when alliance managed-corporation evidence is not current', async () => {
+    await connection`
+      update deployment_settings
+      set organization_type = 'alliance', organization_id = 99000001
+      where id = 1
+    `
+    await connection`
+      insert into platform_subject_lifecycles (
+        subject_kind, subject_id, organization_deployment_id, organization_version
+      ) values ('alliance', '99000001', 1, 1)
+    `
+
+    await expect(
+      searchManagedOrganizationAccounts({ organizationVersion: 1, filters: {} }),
+    ).resolves.toEqual({ status: 'unavailable', items: [], nextCursor: null })
+  })
+
+  test('rejects malformed reviewer account search filters before querying', async () => {
+    await expect(
+      searchManagedOrganizationAccounts({ organizationVersion: 1, filters: { limit: 51 } }),
+    ).rejects.toThrow('Invalid reviewer account search input')
+    await expect(
+      searchManagedOrganizationAccounts({
+        organizationVersion: 1,
+        filters: { query: 'bad\nquery' },
+      }),
+    ).rejects.toThrow('Invalid reviewer account search input')
+    await expect(
+      searchManagedOrganizationAccounts({ organizationVersion: 1, filters: { corporationId: -1 } }),
+    ).rejects.toThrow('Invalid reviewer account search input')
+  })
+
+  test('resolves a reviewer target through a repeatable-read locked PostgreSQL snapshot', async () => {
+    await expect(
+      resolveOrganizationReviewerTarget({ organizationVersion: 1, targetUserId: userId }),
+    ).resolves.toMatchObject({
+      organizationVersion: 1,
+      selection: { kind: 'account' },
+      account: {
+        userId,
+        mainCharacter: { characterId, name: 'Organization Pilot' },
+      },
+      characters: [
+        {
+          characterId,
+          subjectLifecycleId,
+          affiliation: { membership: 'managed', freshness: 'fresh' },
+        },
+      ],
+    })
+  })
+
   test('blocks active source deletion but detaches historical source evidence safely', async () => {
     const sourceId = randomUUID()
     await connection`
@@ -204,6 +406,11 @@ describe('organization storage invariants', () => {
       where source_id = ${sourceId}
     `
     expect(historical).toEqual({ character_id: null, evidence_character_id: String(characterId) })
+    await expect(connection<{ ended_at: Date | null }[]>`
+      select ended_at
+      from organization_managed_member_lifecycles
+      where deployment_id = 1 and organization_version = 1 and user_id = ${userId}
+    `).resolves.toEqual([{ ended_at: expect.any(Date) }])
   })
 
   test('persists compliance changes idempotently with normalized issues and stable events', async () => {
@@ -728,6 +935,12 @@ describe('organization storage invariants', () => {
       userId,
       now: observedAt,
     })
+    const [initialLifecycle] = await connection<{ managed_member_lifecycle_id: string }[]>`
+      select managed_member_lifecycle_id
+      from organization_managed_member_lifecycles
+      where deployment_id = 1 and organization_version = 1 and user_id = ${userId}
+        and ended_at is null
+    `
     await connection`
       update organization_managed_corporations
       set is_current = false,
@@ -764,6 +977,41 @@ describe('organization storage invariants', () => {
         character_id: String(characterId),
       },
     ])
+    await expect(connection<{ ended_at: Date | null }[]>`
+      select ended_at
+      from organization_managed_member_lifecycles
+      where managed_member_lifecycle_id = ${initialLifecycle!.managed_member_lifecycle_id}
+    `).resolves.toEqual([{ ended_at: expect.any(Date) }])
+
+    await connection`
+      update organization_managed_corporations
+      set is_current = true, removed_at = null, updated_at = now()
+      where deployment_id = 1 and organization_version = 1 and corporation_id = 98000001
+    `
+    await recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId,
+    })
+    const lifecycles = await connection<
+      { managed_member_lifecycle_id: string; ended_at: Date | null }[]
+    >`
+      select managed_member_lifecycle_id, ended_at
+      from organization_managed_member_lifecycles
+      where deployment_id = 1 and organization_version = 1 and user_id = ${userId}
+      order by started_at, managed_member_lifecycle_id
+    `
+    expect(lifecycles).toHaveLength(2)
+    expect(lifecycles).toContainEqual({
+      managed_member_lifecycle_id: initialLifecycle!.managed_member_lifecycle_id,
+      ended_at: expect.any(Date),
+    })
+    expect(lifecycles).toContainEqual({
+      managed_member_lifecycle_id: expect.not.stringMatching(
+        initialLifecycle!.managed_member_lifecycle_id,
+      ),
+      ended_at: null,
+    })
   })
 
   test('registers a source and its scheduler lifecycle atomically for an eligible owner', async () => {
@@ -1066,6 +1314,7 @@ describe('organization storage invariants', () => {
     expect(ownerEvidenceMocks.observeAndPersistCharacterAffiliation).toHaveBeenCalledWith(
       characterId,
       undefined,
+      expect.any(Function),
     )
     await expect(selectDueOrganizationOwnerEvidence()).resolves.toEqual([])
   })
@@ -1948,6 +2197,279 @@ describe('organization storage invariants', () => {
     expect(audit).toEqual({ actor_type: 'system', actor_id: null, event_type: 'group.assigned' })
   })
 
+  test('executes reviewer ordinary-group commands against the exact managed-member binding', async () => {
+    const fixture = await establishReviewerCommandFixture()
+    const expiresAt = new Date(Date.now() + 60_000)
+    const assigned = await assignOrganizationReviewerOrdinaryGroup({
+      ...reviewerCommandBinding(fixture, 'member-audit.groups.manage'),
+      groupId: fixture.ordinaryGroupId,
+      reason: '  Temporary access after review.  ',
+      expiresAt,
+    })
+    expect(assigned).toEqual({
+      decision: 'assigned',
+      organizationVersion: 1,
+      targetUserId: fixture.targetUserId,
+      groupId: fixture.ordinaryGroupId,
+      assignmentId: expect.any(String),
+      expiresAt: expiresAt.toISOString(),
+    })
+
+    const otherTargetUserId = randomUUID()
+    await establishCompliantAccount(otherTargetUserId, 90_000_021)
+    await expect(
+      revokeOrganizationReviewerOrdinaryGroup({
+        ...reviewerCommandBinding(
+          {
+            ...fixture,
+            targetUserId: otherTargetUserId,
+            targetManagedMemberLifecycleId:
+              await loadActiveManagedMemberLifecycleId(otherTargetUserId),
+          },
+          'member-audit.groups.manage',
+        ),
+        groupId: fixture.ordinaryGroupId,
+        assignmentId: assigned.assignmentId,
+        reason: 'Attempt to substitute the selected target.',
+      }),
+    ).rejects.toMatchObject({ code: 'assignment-binding-invalid' })
+
+    await expect(
+      revokeOrganizationReviewerOrdinaryGroup({
+        ...reviewerCommandBinding(fixture, 'member-audit.groups.manage'),
+        groupId: fixture.ordinaryGroupId,
+        assignmentId: assigned.assignmentId,
+        reason: 'Review access ended.',
+      }),
+    ).resolves.toMatchObject({
+      decision: 'revoked',
+      targetUserId: fixture.targetUserId,
+      assignmentId: assigned.assignmentId,
+      revokedAt: expect.any(String),
+    })
+    const audits = await connection<
+      { event_type: string; actor_id: string; target_user_id: string; reason: string }[]
+    >`
+      select event_type, actor_id, target_user_id, reason
+      from organization_audit_events
+      where assignment_id = ${assigned.assignmentId}
+      order by audit_sequence
+    `
+    expect(audits).toEqual([
+      {
+        event_type: 'group.assigned',
+        actor_id: userId,
+        target_user_id: fixture.targetUserId,
+        reason: 'Temporary access after review.',
+      },
+      {
+        event_type: 'group.revoked',
+        actor_id: userId,
+        target_user_id: fixture.targetUserId,
+        reason: 'Review access ended.',
+      },
+    ])
+  })
+
+  test('refuses restricted, compliance-managed, reviewer-permission, self, and stale group bindings', async () => {
+    const fixture = await establishReviewerCommandFixture()
+    const base = reviewerCommandBinding(fixture, 'member-audit.groups.manage')
+    await expect(
+      assignOrganizationReviewerOrdinaryGroup({
+        ...base,
+        groupId: fixture.ordinaryGroupId,
+        reason: 'password=hunter2',
+      }),
+    ).rejects.toMatchObject({ code: 'invalid-reason' })
+    await expect(
+      assignOrganizationReviewerOrdinaryGroup({
+        ...base,
+        groupId: fixture.reviewerGroupId,
+        reason: 'Restricted mutation attempt.',
+      }),
+    ).rejects.toMatchObject({ code: 'restricted-group-not-allowed' })
+
+    const complianceGroup = await createOrganizationGroup({
+      actorUserId: userId,
+      name: 'Reviewer command compliance group',
+      restricted: false,
+      managementMode: 'compliance',
+      complianceSource: 'core.registration',
+      bundleIds: [fixture.ordinaryBundleId],
+    })
+    await expect(
+      assignOrganizationReviewerOrdinaryGroup({
+        ...base,
+        groupId: complianceGroup.groupId,
+        reason: 'Compliance mutation attempt.',
+      }),
+    ).rejects.toMatchObject({ code: 'compliance-group-not-allowed' })
+
+    const unsafeGroup = await createOrganizationGroup({
+      actorUserId: userId,
+      name: 'Unsafe ordinary reviewer group',
+      restricted: false,
+      managementMode: 'manual',
+      complianceSource: null,
+      bundleIds: [fixture.reviewerBundleId],
+    })
+    await expect(
+      assignOrganizationReviewerOrdinaryGroup({
+        ...base,
+        groupId: unsafeGroup.groupId,
+        reason: 'Reviewer permission escalation attempt.',
+      }),
+    ).rejects.toMatchObject({ code: 'reviewer-permission-group-not-allowed' })
+
+    await expect(
+      assignOrganizationReviewerOrdinaryGroup({
+        ...reviewerCommandBinding(
+          {
+            ...fixture,
+            targetUserId: userId,
+            targetManagedMemberLifecycleId: await loadActiveManagedMemberLifecycleId(userId),
+          },
+          'member-audit.groups.manage',
+        ),
+        groupId: fixture.ordinaryGroupId,
+        reason: 'Self escalation attempt.',
+      }),
+    ).rejects.toMatchObject({ code: 'self-target-not-allowed' })
+    await expect(
+      revokeOrganizationReviewerOrdinaryGroup({
+        ...reviewerCommandBinding(
+          {
+            ...fixture,
+            targetUserId: userId,
+            targetManagedMemberLifecycleId: await loadActiveManagedMemberLifecycleId(userId),
+          },
+          'member-audit.groups.manage',
+        ),
+        groupId: fixture.reviewerGroupId,
+        assignmentId: fixture.reviewerAssignmentId,
+        reason: 'Own reviewer grant revocation attempt.',
+      }),
+    ).rejects.toMatchObject({ code: 'self-target-not-allowed' })
+
+    await connection`
+      update organization_managed_member_lifecycles
+      set ended_at = now(), updated_at = now()
+      where managed_member_lifecycle_id = ${fixture.targetManagedMemberLifecycleId}
+    `
+    await expect(
+      assignOrganizationReviewerOrdinaryGroup({
+        ...base,
+        groupId: fixture.ordinaryGroupId,
+        reason: 'Stale target attempt.',
+      }),
+    ).rejects.toMatchObject({ code: 'invalid-binding' })
+  })
+
+  test('rechecks the current reviewer role and exact action permission in the command transaction', async () => {
+    const fixture = await establishReviewerCommandFixture()
+    const command = {
+      ...reviewerCommandBinding(fixture, 'member-audit.groups.manage'),
+      groupId: fixture.ordinaryGroupId,
+      reason: 'Current authorization required.',
+    } as const
+    await revokeOrganizationRole({
+      actorUserId: userId,
+      grantId: fixture.reviewerRoleGrantId,
+      reason: 'Reviewer role removed.',
+    })
+    await expect(assignOrganizationReviewerOrdinaryGroup(command)).rejects.toMatchObject({
+      code: 'reviewer-authority-required',
+    })
+
+    await grantOrganizationRole({
+      actorUserId: userId,
+      targetUserId: userId,
+      role: 'director',
+      reason: 'Reviewer role restored for permission check.',
+    })
+    await revokeOrganizationGroupAssignment({
+      actorUserId: userId,
+      groupId: fixture.reviewerGroupId,
+      assignmentId: fixture.reviewerAssignmentId,
+      reason: 'Reviewer action permission removed.',
+    })
+    await expect(assignOrganizationReviewerOrdinaryGroup(command)).rejects.toMatchObject({
+      code: 'reviewer-permission-required',
+    })
+
+    await updateDeploymentOrganization(
+      { type: 'corporation', id: 98_000_002, name: 'Second Corporation', ticker: 'TWO' },
+      adminId,
+    )
+    await expect(assignOrganizationReviewerOrdinaryGroup(command)).rejects.toMatchObject({
+      code: 'invalid-binding',
+    })
+  })
+
+  test('executes reviewer block commands with block precedence and rejects reviewer peers', async () => {
+    const fixture = await establishReviewerCommandFixture()
+    await assignOrganizationReviewerOrdinaryGroup({
+      ...reviewerCommandBinding(fixture, 'member-audit.groups.manage'),
+      groupId: fixture.ordinaryGroupId,
+      reason: 'Current service access.',
+    })
+    await expect(
+      blockOrganizationReviewerMember({
+        ...reviewerCommandBinding(fixture, 'member-audit.members.block'),
+        reason: 'Immediate review hold.',
+      }),
+    ).resolves.toMatchObject({
+      decision: 'blocked',
+      targetUserId: fixture.targetUserId,
+      blockId: expect.any(String),
+    })
+    await expect(getOrganizationGroupPermissions(fixture.targetUserId)).resolves.toEqual({
+      modules: [],
+      services: [],
+    })
+    await expect(
+      unblockOrganizationReviewerMember({
+        ...reviewerCommandBinding(fixture, 'member-audit.members.block'),
+        reason: 'Review hold cleared.',
+      }),
+    ).resolves.toMatchObject({
+      decision: 'unblocked',
+      targetUserId: fixture.targetUserId,
+      unblockedAt: expect.any(String),
+    })
+    await expect(getOrganizationGroupPermissions(fixture.targetUserId)).resolves.toEqual({
+      modules: [],
+      services: ['discord.reviewer-command'],
+    })
+
+    await grantOrganizationRole({
+      actorUserId: userId,
+      targetUserId: fixture.targetUserId,
+      role: 'hr_auditor',
+      reason: 'Peer reviewer assignment.',
+    })
+    await expect(
+      blockOrganizationReviewerMember({
+        ...reviewerCommandBinding(fixture, 'member-audit.members.block'),
+        reason: 'Peer lockout attempt.',
+      }),
+    ).rejects.toMatchObject({ code: 'reviewer-target-not-allowed' })
+
+    const [counts] = await connection<{ decisions: number; events: number; transitions: number }[]>`
+      select
+        (select count(*)::integer from organization_audit_events
+          where event_type in ('member.blocked', 'member.unblocked')
+            and subject_id = ${fixture.targetUserId}) as decisions,
+        (select count(*)::integer from domain_events
+          where event_type in ('organization.member-blocked', 'organization.member-unblocked')
+            and aggregate_id = ${fixture.targetUserId}) as events,
+        (select count(*)::integer from organization_audit_events
+          where event_type in ('entitlement.granted', 'entitlement.revoked')
+            and subject_id = 'discord.reviewer-command') as transitions
+    `
+    expect(counts).toEqual({ decisions: 2, events: 2, transitions: 2 })
+  })
+
   test('gives director-issued member blocks precedence and reevaluates only current grants on unblock', async () => {
     await claimOrganizationOwnership(
       ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
@@ -2387,6 +2909,7 @@ describe('organization storage invariants', () => {
         current_corporations: number
         authoritative_compliance: number
         roster_observations: number
+        active_managed_members: number
       }[]
     >`
       select
@@ -2404,7 +2927,12 @@ describe('organization storage invariants', () => {
           select count(*)::integer
           from organization_corporation_roster_observations
           where organization_version = 1
-        ) as roster_observations
+        ) as roster_observations,
+        (
+          select count(*)::integer
+          from organization_managed_member_lifecycles
+          where organization_version = 1 and ended_at is null
+        ) as active_managed_members
     `
     const newProjections = await connection<
       { user_id: string; state: string; authoritative: boolean }[]
@@ -2419,6 +2947,7 @@ describe('organization storage invariants', () => {
       current_corporations: 0,
       authoritative_compliance: 0,
       roster_observations: 1,
+      active_managed_members: 0,
     })
     expect(newProjections).toHaveLength(2)
     expect(newProjections.every(({ authoritative }) => authoritative)).toBe(true)
@@ -2427,6 +2956,162 @@ describe('organization storage invariants', () => {
       state: 'suspended',
       accessValidUntil: null,
     })
+  })
+
+  test('stores bounded sensitive access decisions without retaining account rows', async () => {
+    const targetUserId = randomUUID()
+    const occurredAt = new Date('2026-09-18T12:00:00.000Z')
+    await connection`insert into users (id) values (${targetUserId})`
+    const revisionsBefore = await loadOrganizationRevisionFacts(userId, 1, occurredAt)
+
+    await dbClient.db.transaction((transaction) =>
+      appendOrganizationSensitiveAccessDecision(transaction, {
+        actorUserId: userId,
+        targetUserId,
+        targetCharacterId: 90_000_001,
+        sectionId: 'wallet',
+        decision: 'allowed',
+        reason: 'authorized',
+        organizationVersion: 1,
+        policyVersion: 1,
+        disclosureVersion: 3,
+        occurredAt,
+      }),
+    )
+
+    const [stored] = await connection<
+      {
+        event_type: string
+        actor_id: string
+        subject_id: string
+        target_user_id: string
+        target_character_id: string
+        section_id: string
+        reason: string
+        outcome: string
+        policy_version: string
+        disclosure_version: string
+        occurred_at: Date
+      }[]
+    >`
+      select event_type, actor_id, subject_id, target_user_id, target_character_id,
+        section_id, reason, outcome, policy_version, disclosure_version, occurred_at
+      from organization_audit_events
+      where event_type = 'sensitive-access.decided'
+    `
+    expect(stored).toEqual({
+      event_type: 'sensitive-access.decided',
+      actor_id: userId,
+      subject_id: targetUserId,
+      target_user_id: targetUserId,
+      target_character_id: '90000001',
+      section_id: 'wallet',
+      reason: 'authorized',
+      outcome: 'granted',
+      policy_version: '1',
+      disclosure_version: '3',
+      occurred_at: occurredAt,
+    })
+    const revisionsAfter = await loadOrganizationRevisionFacts(userId, 1, occurredAt)
+    expect(revisionsAfter.latestAuditSequence).toBe(revisionsBefore.latestAuditSequence)
+    await dbClient.db.transaction((transaction) =>
+      appendOrganizationSensitiveAccessDecision(transaction, {
+        actorUserId: userId,
+        targetUserId: null,
+        targetCharacterId: null,
+        sectionId: 'skills',
+        decision: 'denied',
+        reason: 'target-not-authorized',
+        organizationVersion: 1,
+        policyVersion: 2,
+        disclosureVersion: 4,
+        occurredAt: new Date('2026-09-18T12:01:00.000Z'),
+      }),
+    )
+    const [denied] = await connection<
+      {
+        subject_type: string
+        subject_id: string
+        target_user_id: string | null
+        target_character_id: string | null
+        reason: string
+        outcome: string
+        policy_version: string
+      }[]
+    >`
+      select subject_type, subject_id, target_user_id, target_character_id,
+        reason, outcome, policy_version
+      from organization_audit_events
+      where event_type = 'sensitive-access.decided' and reason = 'target-not-authorized'
+    `
+    expect(denied).toEqual({
+      subject_type: 'deployment',
+      subject_id: '1',
+      target_user_id: null,
+      target_character_id: null,
+      reason: 'target-not-authorized',
+      outcome: 'denied',
+      policy_version: '2',
+    })
+    await connection`delete from users where id = ${targetUserId}`
+    await expect(
+      connection`select audit_id from organization_audit_events where event_type = 'sensitive-access.decided'`,
+    ).resolves.toHaveLength(2)
+    await expect(connection`
+      insert into organization_audit_events (
+        deployment_id, organization_version, policy_version, event_type,
+        actor_type, actor_id, subject_type, subject_id, reason, outcome,
+        target_user_id, section_id, disclosure_version
+      ) values (
+        1, 1, 1, 'sensitive-access.decided',
+        'user', ${userId}, 'user', ${userId}, 'authorized', 'granted',
+        ${userId}, 'overview', 1
+      )
+    `).rejects.toThrow('organization_audit_events_context_check')
+    await expect(connection`
+      insert into organization_audit_events (
+        deployment_id, organization_version, policy_version, event_type,
+        actor_type, actor_id, subject_type, subject_id, reason, outcome,
+        target_user_id, section_id, disclosure_version
+      ) values (
+        1, 1, 1, 'sensitive-access.decided',
+        'user', ${userId}, 'user', ${userId}, 'authorized', 'granted',
+        ${userId}, null, 1
+      )
+    `).rejects.toThrow('organization_audit_events_context_check')
+    await expect(connection`
+      insert into organization_audit_events (
+        deployment_id, organization_version, policy_version, event_type,
+        actor_type, actor_id, subject_type, subject_id, reason, outcome,
+        target_user_id, section_id, disclosure_version
+      ) values (
+        1, 1, 1, 'sensitive-access.decided',
+        'user', ${userId}, 'user', ${userId}, 'target-not-authorized', 'denied',
+        ${userId}, 'mail', 1
+      )
+    `).rejects.toThrow('organization_audit_events_context_check')
+    await expect(connection`
+      insert into organization_audit_events (
+        deployment_id, organization_version, policy_version, event_type,
+        actor_type, actor_id, subject_type, subject_id, reason, outcome,
+        target_user_id, section_id, disclosure_version
+      ) values (
+        1, 1, 1, 'sensitive-access.decided',
+        'user', ${userId}, 'user', ${userId}, 'authorized', 'granted',
+        ${userId}, 'mail', null
+      )
+    `).rejects.toThrow('organization_audit_events_context_check')
+    await expect(connection`
+      insert into organization_audit_events (
+        deployment_id, organization_version, policy_version, event_type,
+        actor_type, actor_id, subject_type, subject_id, reason, outcome,
+        target_user_id, section_id, disclosure_version
+      ) values (
+        1, 1, 1, 'sensitive-access.decided',
+        'user', ${userId}, 'user', ${userId}, 'authorized', 'granted',
+        ${userId}, 'mail', 0
+      )
+    `).rejects.toThrow('organization_audit_events_context_check')
   })
 
   test('rejects updates and deletes from the append-only audit ledger', async () => {
@@ -2626,6 +3311,11 @@ async function seedDeployment() {
     ) values (1, 1, 98000001, now(), now())
   `
   await seedCharacter(userId, characterId)
+  await connection`
+    insert into organization_managed_member_lifecycles (
+      deployment_id, organization_version, user_id
+    ) values (1, 1, ${userId})
+  `
 }
 
 async function ensureManagedCorporation() {
@@ -2656,6 +3346,97 @@ async function establishCompliantAccount(targetUserId: string, targetCharacterId
     organizationVersion: 1,
     userId: targetUserId,
   })
+}
+
+async function establishReviewerCommandFixture() {
+  await claimOrganizationOwnership(
+    ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
+  )
+  const reviewerRoleGrant = await grantOrganizationRole({
+    actorUserId: userId,
+    targetUserId: userId,
+    role: 'director',
+    reason: 'Independent reviewer grant.',
+  })
+  const reviewerBundle = await createOrganizationPermissionBundle({
+    actorUserId: userId,
+    name: 'Reviewer command permissions',
+    permissions: [
+      { type: 'module', key: 'member-audit.groups.manage' },
+      { type: 'module', key: 'member-audit.members.block' },
+    ],
+  })
+  const reviewerGroup = await createOrganizationGroup({
+    actorUserId: userId,
+    name: 'Reviewer command grants',
+    restricted: true,
+    managementMode: 'manual',
+    complianceSource: null,
+    bundleIds: [reviewerBundle.bundleId],
+  })
+  const reviewerAssignment = await assignOrganizationGroup({
+    actorUserId: userId,
+    targetUserId: userId,
+    groupId: reviewerGroup.groupId,
+    reason: 'Grant reviewer command permissions.',
+    expiresAt: null,
+  })
+  const ordinaryBundle = await createOrganizationPermissionBundle({
+    actorUserId: userId,
+    name: 'Reviewer command ordinary access',
+    permissions: [{ type: 'service', key: 'discord.reviewer-command' }],
+  })
+  const ordinaryGroup = await createOrganizationGroup({
+    actorUserId: userId,
+    name: 'Reviewer command ordinary group',
+    restricted: false,
+    managementMode: 'manual',
+    complianceSource: null,
+    bundleIds: [ordinaryBundle.bundleId],
+  })
+  const targetUserId = randomUUID()
+  await establishCompliantAccount(targetUserId, 90_000_020)
+  return {
+    targetUserId,
+    targetManagedMemberLifecycleId: await loadActiveManagedMemberLifecycleId(targetUserId),
+    reviewerRoleGrantId: reviewerRoleGrant.grantId,
+    reviewerBundleId: reviewerBundle.bundleId,
+    reviewerGroupId: reviewerGroup.groupId,
+    reviewerAssignmentId: reviewerAssignment.assignmentId,
+    ordinaryBundleId: ordinaryBundle.bundleId,
+    ordinaryGroupId: ordinaryGroup.groupId,
+  }
+}
+
+function reviewerCommandBinding<
+  const Permission extends 'member-audit.groups.manage' | 'member-audit.members.block',
+>(
+  fixture: {
+    targetUserId: string
+    targetManagedMemberLifecycleId: string
+  },
+  requiredPermission: Permission,
+) {
+  return {
+    organizationDeploymentId: 1 as const,
+    organizationVersion: 1,
+    actorUserId: userId,
+    targetUserId: fixture.targetUserId,
+    managedMemberLifecycleId: fixture.targetManagedMemberLifecycleId,
+    requiredPermission,
+    reason: '',
+  }
+}
+
+async function loadActiveManagedMemberLifecycleId(targetUserId: string) {
+  const [lifecycle] = await connection<{ managed_member_lifecycle_id: string }[]>`
+    select managed_member_lifecycle_id
+    from organization_managed_member_lifecycles
+    where deployment_id = 1 and organization_version = 1 and user_id = ${targetUserId}
+      and ended_at is null
+  `
+  if (!lifecycle) throw new Error('Active managed-member lifecycle is missing')
+  return lifecycle.managed_member_lifecycle_id
 }
 
 async function seedCharacter(seedUserId: string, seedCharacterId: number) {

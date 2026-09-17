@@ -3,20 +3,56 @@ import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path
 import ts from 'typescript'
 import { parse as parseVue } from 'vue/compiler-sfc'
 import { CORE_DATA_PRODUCT_CONTRACTS } from '../../packages/core-data-contract/src/index.js'
-import type { PlatformModuleManifest } from '../../packages/platform-module-contract/src/index.js'
+import type { PlatformModuleManifest } from '@eve-space/platform-module-contract/manifest'
 import { forbiddenGlobalReferences } from './forbidden-global-references.js'
 import { unwrapExpression } from './typescript-expressions.js'
 
-const sourceExtensions = new Set(['.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx', '.vue'])
+const sourceExtensions = new Set([
+  '.cjs',
+  '.cts',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.mts',
+  '.ts',
+  '.tsx',
+  '.vue',
+])
 const forbiddenServerGlobals = new Set([
+  'Function',
+  'EventSource',
+  'SharedWorker',
+  'WebSocket',
+  'Worker',
+  'eval',
   'fetch',
+  'module',
+  'navigator',
+  'process',
   'queueMicrotask',
+  'require',
   'setImmediate',
   'setInterval',
   'setTimeout',
 ])
 
+const forbiddenNuxtGlobals = new Set([
+  'Function',
+  'EventSource',
+  'SharedWorker',
+  'WebSocket',
+  'Worker',
+  'XMLHttpRequest',
+  'eval',
+  'fetch',
+  'module',
+  'navigator',
+  'process',
+  'require',
+])
+
 const serverRuntimePackages = new Set([
+  '@eve-space/core-eve-projections',
   '@eve-space/platform-module-contract',
   '@eve-space/platform-module-server',
   'hono',
@@ -27,6 +63,34 @@ const serverRuntimePackages = new Set([
 const nuxtRuntimePackages = new Set([
   '@eve-space/platform-module-contract',
   '@eve-space/platform-module-nuxt',
+  '@nuxt/kit',
+  '@nuxt/schema',
+  '@pinia/colada',
+  'vue',
+])
+
+const exactServerRuntimeImports = new Set([
+  '@eve-space/core-eve-projections/assets',
+  '@eve-space/core-eve-projections/mail',
+  '@eve-space/core-eve-projections/skill-queue',
+  '@eve-space/core-eve-projections/trained-skills',
+  '@eve-space/core-eve-projections/wallet',
+  '@eve-space/platform-module-contract/activity',
+  '@eve-space/platform-module-contract/esi',
+  '@eve-space/platform-module-contract/identifiers',
+  '@eve-space/platform-module-contract/persistence',
+  '@eve-space/platform-module-contract/resources',
+  '@eve-space/platform-module-contract/server',
+  '@eve-space/platform-module-server',
+  'drizzle-orm/pg-core',
+  'hono',
+  'zod',
+])
+
+const exactNuxtRuntimeImports = new Set([
+  '@eve-space/platform-module-contract/nuxt',
+  '@eve-space/platform-module-nuxt',
+  '@eve-space/platform-module-nuxt/runtime',
   '@nuxt/kit',
   '@nuxt/schema',
   '@pinia/colada',
@@ -86,21 +150,6 @@ const definitionCalls = new Set([
   'definePlatformExecutableEsiOperation',
   'definePlatformPersistenceOperation',
   'definePlatformResourceOperation',
-])
-
-const nuxtSetupCalls = new Set([
-  'addComponent',
-  'addComponentsDir',
-  'addImports',
-  'addImportsDir',
-  'addPlugin',
-  'addRouteMiddleware',
-  'addTemplate',
-  'addTypeTemplate',
-  'createResolver',
-  'extendPages',
-  'resolve',
-  'resolvePath',
 ])
 
 const routeCompositionMethods = new Set([
@@ -297,6 +346,8 @@ export function descriptorBoundaryViolations(source: FeatureBoundarySource) {
 
 export function serverSourceBoundaryViolations(source: FeatureBoundarySource) {
   const violations: string[] = []
+  if (source.path.endsWith('.cjs') || source.path.endsWith('.cts'))
+    violations.push(`${source.path}: feature packages must use ESM source files`)
   const packageRoot = `features/${source.moduleId}/server`
   const sourceFiles = parseSourceFiles(source, violations)
   for (const sourceFile of sourceFiles) {
@@ -310,6 +361,8 @@ export function serverSourceBoundaryViolations(source: FeatureBoundarySource) {
 
 export function nuxtSourceBoundaryViolations(source: FeatureBoundarySource) {
   const violations: string[] = []
+  if (source.path.endsWith('.cjs') || source.path.endsWith('.cts'))
+    violations.push(`${source.path}: feature packages must use ESM source files`)
   const packageRoot = `features/${source.moduleId}/nuxt`
   const runtimePath = `/nuxt/src/runtime/app/`
   const isModuleSetup = /\/nuxt\/src\/module\.(?:[cm]?[jt]s)$/.test(source.path)
@@ -349,6 +402,10 @@ export function serverFactoryBoundaryViolations(
     return violations
   }
   const match = matches[0]!
+  if (!isPackageRootExport(sources, match.source, exportName))
+    violations.push(
+      `features/${match.source.moduleId}/server: ${kind} export ${exportName} must be exported from the package root`,
+    )
   validateFactory(match.source.path, match.functionNode, kind, violations)
   return violations
 }
@@ -381,12 +438,19 @@ export async function manifestCompositionBoundaryViolations(
   for (const contribution of [...manifest.server.resources, ...manifest.server.esiOperations]) {
     const matches = sources.flatMap((source) =>
       parseSourceFiles(source, violations).flatMap((sourceFile) =>
-        findNamedDeclarations(sourceFile, contribution.exportName),
+        findNamedDeclarations(sourceFile, contribution.exportName).map((declaration) => ({
+          source,
+          declaration,
+        })),
       ),
     )
     if (matches.length !== 1)
       violations.push(
         `features/${manifest.id}/server: definition export ${contribution.exportName} must resolve to one local declaration`,
+      )
+    else if (!isPackageRootExport(sources, matches[0]!.source, contribution.exportName))
+      violations.push(
+        `features/${manifest.id}/server: definition export ${contribution.exportName} must be exported from the package root`,
       )
   }
   for (const operation of manifest.server.persistenceOperations)
@@ -524,11 +588,11 @@ function validateDescriptorStatement(
   if (ts.isImportDeclaration(statement)) {
     const specifier = stringModuleSpecifier(statement.moduleSpecifier)
     if (
-      specifier !== '@eve-space/platform-module-contract' ||
+      specifier !== '@eve-space/platform-module-contract/manifest' ||
       !isTypeOnlyImport(statement.importClause)
     )
       violations.push(
-        `${path}: module descriptor may only type-import @eve-space/platform-module-contract`,
+        `${path}: module descriptor may only type-import @eve-space/platform-module-contract/manifest`,
       )
     return defaultExpression
   }
@@ -726,6 +790,20 @@ function validatePackageExports(
     violations.push(`${path}: feature package must export its root entry`)
     return
   }
+  const expectedRoot =
+    environment === 'server'
+      ? { types: './dist/index.d.ts', import: './dist/index.js' }
+      : { types: './dist/module.d.ts', import: './dist/module.js' }
+  const rootExport = value['.']
+  if (
+    !isRecord(rootExport) ||
+    rootExport.types !== expectedRoot.types ||
+    rootExport.import !== expectedRoot.import ||
+    Object.keys(rootExport).some((key) => key !== 'types' && key !== 'import')
+  )
+    violations.push(
+      `${path}: feature package root export must use ${expectedRoot.types} and ${expectedRoot.import}`,
+    )
   for (const target of exportTargets(value)) {
     const normalized = target.replaceAll('\\', '/')
     if (!normalized.startsWith('./') || normalized.split('/').includes('..'))
@@ -757,6 +835,13 @@ function undeclaredSourceDependencyViolations(
         ts.isStringLiteral(node.moduleSpecifier)
       )
         registerBarePackage(node.moduleSpecifier.text, imported)
+      if (
+        ts.isImportEqualsDeclaration(node) &&
+        ts.isExternalModuleReference(node.moduleReference) &&
+        node.moduleReference.expression &&
+        ts.isStringLiteralLike(node.moduleReference.expression)
+      )
+        registerBarePackage(node.moduleReference.expression.text, imported)
       if (
         ts.isCallExpression(node) &&
         node.expression.kind === ts.SyntaxKind.ImportKeyword &&
@@ -823,6 +908,25 @@ function validateImportNode(
     if (ts.isImportDeclaration(node) && !node.importClause)
       violations.push(`${source.path}: side-effect imports are not allowed in feature packages`)
   }
+  if (ts.isImportEqualsDeclaration(node)) {
+    const reference = node.moduleReference
+    if (
+      ts.isExternalModuleReference(reference) &&
+      reference.expression &&
+      ts.isStringLiteralLike(reference.expression)
+    )
+      validateSpecifier(
+        source,
+        reference.expression.text,
+        packageRoot,
+        environment,
+        undefined,
+        violations,
+      )
+    violations.push(
+      `${source.path}: import-equals declarations are not allowed in feature packages`,
+    )
+  }
   if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
     const argument = node.arguments[0]
     if (!argument || !ts.isStringLiteral(argument)) {
@@ -855,7 +959,7 @@ function validateSpecifier(
   }
   if (normalized.startsWith('.')) {
     const target = resolve('/', dirname(source.path), normalized)
-    const root = resolve('/', packageRoot)
+    const root = resolve('/', packageRoot, 'src')
     const relativeTarget = relative(root, target)
     if (relativeTarget === '..' || relativeTarget.startsWith('../') || isAbsolute(relativeTarget))
       violations.push(
@@ -880,12 +984,46 @@ function validateSpecifier(
     return
   }
   const packageName = packageNameFromSpecifier(normalized)
-  if (packageName === 'drizzle-orm' && normalized !== 'drizzle-orm/pg-core')
-    violations.push(`${source.path}: only pure Drizzle schema declarations are allowed in features`)
-  const allowed = environment === 'server' ? serverRuntimePackages : nuxtRuntimePackages
-  if (!allowed.has(packageName))
+  const allowedPackages = environment === 'server' ? serverRuntimePackages : nuxtRuntimePackages
+  const allowedImports =
+    environment === 'server' ? exactServerRuntimeImports : exactNuxtRuntimeImports
+  if (!allowedPackages.has(packageName) || !allowedImports.has(normalized))
     violations.push(
       `${source.path}: import ${specifier} is not allowed for ${environment} feature code`,
+    )
+  if (normalized === '@eve-space/platform-module-server')
+    rejectHostOnlyImports(
+      source.path,
+      importClause,
+      new Set([
+        'PlatformInstalledPersistenceOperationDescriptor',
+        'PlatformPersistenceOperationInvoker',
+        'bindPlatformPersistenceOperation',
+      ]),
+      violations,
+    )
+  if (normalized === '@eve-space/platform-module-nuxt/runtime')
+    rejectHostOnlyImports(
+      source.path,
+      importClause,
+      new Set(['PlatformApiClient', 'PlatformApiHost', 'createPlatformApiClient']),
+      violations,
+    )
+}
+
+function rejectHostOnlyImports(
+  path: string,
+  importClause: ts.ImportClause | undefined,
+  rejectedNames: ReadonlySet<string>,
+  violations: string[],
+) {
+  const names = importedNames(importClause)
+  const rejected = names.filter((name) => rejectedNames.has(name))
+  if (!importClause?.namedBindings || ts.isNamespaceImport(importClause.namedBindings))
+    violations.push(`${path}: feature packages must use named feature-facing platform imports`)
+  if (rejected.length > 0)
+    violations.push(
+      `${path}: feature package imports host-only platform symbols ${rejected.join(', ')}`,
     )
 }
 
@@ -1151,6 +1289,9 @@ function validateNuxtRuntimeBoundaries(
   sourceFile: ts.SourceFile,
   violations: string[],
 ) {
+  for (const name of forbiddenGlobalReferences(sourceFile, forbiddenNuxtGlobals))
+    violations.push(`${path}: feature Nuxt code must not reference ${name}`)
+  validatePlatformApiAccess(path, sourceFile, violations)
   visit(sourceFile, (node) => {
     if (ts.isNewExpression(node)) {
       const name = identifierText(node.expression)
@@ -1169,6 +1310,106 @@ function validateNuxtRuntimeBoundaries(
     )
       violations.push(`${path}: Nuxt module setup must not call ${name}`)
   })
+}
+
+function validatePlatformApiAccess(path: string, sourceFile: ts.SourceFile, violations: string[]) {
+  const clientNames = new Set<string>()
+  visit(sourceFile, (node) => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      node.initializer &&
+      isNamedCall(node.initializer, 'usePlatformApi')
+    ) {
+      if (ts.isIdentifier(node.name)) clientNames.add(node.name.text)
+      else
+        violations.push(`${path}: usePlatformApi must remain an opaque module-scoped client value`)
+    }
+  })
+  visit(sourceFile, (node) => {
+    if (ts.isIdentifier(node) && node.text === 'usePlatformApi' && !isDirectCallTarget(node))
+      violations.push(`${path}: usePlatformApi must be invoked directly`)
+    if (ts.isIdentifier(node) && clientNames.has(node.text) && !isPermittedClientReference(node))
+      violations.push(`${path}: platform API clients must not be aliased or exposed`)
+    if (
+      ts.isCallExpression(node) &&
+      isNamedCall(node, 'usePlatformApi') &&
+      !isPermittedClientCall(node)
+    )
+      violations.push(`${path}: usePlatformApi must remain an opaque module-scoped client value`)
+    if (!isOutermostAccess(node)) return
+    const access = platformApiAccess(node, clientNames)
+    if (!access) return
+    const moduleRoute =
+      access[0] === 'api' && access[1] === 'modules' && access[2] === sourceModuleId(path)
+    const ownedCharacterReauthorization =
+      access[0] === 'auth' && access[1] === 'eve' && access[2] === 'reauthorize'
+    if (!moduleRoute && !ownedCharacterReauthorization)
+      violations.push(
+        `${path}: feature Nuxt API access must remain under api.modules[${JSON.stringify(sourceModuleId(path))}]`,
+      )
+  })
+}
+
+function isPermittedClientReference(node: ts.Identifier) {
+  const parent = node.parent
+  if (ts.isVariableDeclaration(parent) && parent.name === node) return true
+  if (ts.isPropertyAccessExpression(parent) && parent.name === node) return true
+  return (
+    (ts.isPropertyAccessExpression(parent) || ts.isElementAccessExpression(parent)) &&
+    parent.expression === node
+  )
+}
+
+function isPermittedClientCall(node: ts.CallExpression) {
+  const parent = node.parent
+  return (
+    (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) ||
+    ((ts.isPropertyAccessExpression(parent) || ts.isElementAccessExpression(parent)) &&
+      parent.expression === node)
+  )
+}
+
+function isNamedCall(expression: ts.Expression, name: string) {
+  expression = unwrapExpression(expression)
+  return ts.isCallExpression(expression) && identifierText(expression.expression) === name
+}
+
+function isDirectCallTarget(node: ts.Identifier) {
+  const parent = node.parent
+  return ts.isCallExpression(parent) && unwrapExpression(parent.expression) === node
+}
+
+function isOutermostAccess(
+  node: ts.Node,
+): node is ts.PropertyAccessExpression | ts.ElementAccessExpression {
+  if (!ts.isPropertyAccessExpression(node) && !ts.isElementAccessExpression(node)) return false
+  const parent = node.parent
+  return !(
+    (ts.isPropertyAccessExpression(parent) || ts.isElementAccessExpression(parent)) &&
+    parent.expression === node
+  )
+}
+
+function platformApiAccess(
+  expression: ts.PropertyAccessExpression | ts.ElementAccessExpression,
+  clientNames: ReadonlySet<string>,
+) {
+  const segments: string[] = []
+  let current: ts.Expression = expression
+  while (ts.isPropertyAccessExpression(current) || ts.isElementAccessExpression(current)) {
+    if (ts.isPropertyAccessExpression(current)) segments.unshift(current.name.text)
+    else if (current.argumentExpression && ts.isStringLiteralLike(current.argumentExpression))
+      segments.unshift(current.argumentExpression.text)
+    else return undefined
+    current = unwrapExpression(current.expression)
+  }
+  if (ts.isIdentifier(current) && clientNames.has(current.text)) return segments
+  if (isNamedCall(current, 'usePlatformApi')) return segments
+  return undefined
+}
+
+function sourceModuleId(path: string) {
+  return path.replaceAll('\\', '/').split('/')[1] ?? 'unknown'
 }
 
 function validateCompositionTopLevel(
@@ -1280,32 +1521,11 @@ function validateNuxtModuleDefinition(
     const name = propertyName(property.name)
     if (name === 'hooks' || name === 'onInstall' || name === 'onUpgrade')
       violations.push(`${path}: feature Nuxt modules must not register startup or deployment hooks`)
-    if (name !== 'setup') continue
-    const setup = functionLikeFromProperty(property)
-    if (!setup) {
-      violations.push(`${path}: feature Nuxt setup must be an inline function`)
-      continue
-    }
-    validateNuxtSetup(path, setup, violations)
-  }
-}
-
-function validateNuxtSetup(path: string, setup: ts.FunctionLikeDeclaration, violations: string[]) {
-  if (!setup.body) return
-  visitImmediate(setup.body, (node) => {
-    if (isEnvironmentReference(node))
-      violations.push(`${path}: feature Nuxt setup must not read environment-derived configuration`)
-    if (ts.isNewExpression(node))
-      violations.push(`${path}: feature Nuxt setup must not construct runtime clients`)
-    if (!ts.isCallExpression(node)) return
-    const name = calledName(node.expression)
-    if (name && forbiddenCompositionCalls.has(name))
-      violations.push(`${path}: feature Nuxt setup must not call ${name}`)
-    else if (!name || !nuxtSetupCalls.has(name))
+    if (name === 'setup')
       violations.push(
-        `${path}: feature Nuxt setup may only perform deterministic Nuxt Kit registration`,
+        `${path}: feature Nuxt modules must not define setup; runtime contributions use generated registries`,
       )
-  })
+  }
 }
 
 function validateFactory(
@@ -1319,11 +1539,15 @@ function validateFactory(
     return
   }
   if (isFunctionLike(factory.body)) return
-  visitImmediate(factory.body, (node) => validateFactoryNode(path, node, kind, violations))
+  const sourceFile = factory.getSourceFile()
+  visitImmediate(factory.body, (node) =>
+    validateFactoryNode(path, sourceFile, node, kind, violations),
+  )
 }
 
 function validateFactoryNode(
   path: string,
+  sourceFile: ts.SourceFile,
   node: ts.Node,
   kind: 'route' | 'provider',
   violations: string[],
@@ -1331,8 +1555,7 @@ function validateFactoryNode(
   if (isEnvironmentReference(node))
     violations.push(`${path}: ${kind} factory must not read environment-derived configuration`)
   if (ts.isNewExpression(node)) {
-    const name = identifierText(node.expression)
-    if (kind !== 'route' || name !== 'Hono')
+    if (kind !== 'route' || !isImportedHonoConstructor(node.expression, sourceFile))
       violations.push(`${path}: ${kind} factory must not construct runtime clients`)
     return
   }
@@ -1342,10 +1565,51 @@ function validateFactoryNode(
     violations.push(`${path}: ${kind} factory must not call ${name}`)
     return
   }
-  if (kind === 'route' && name && routeCompositionMethods.has(name)) return
+  if (
+    kind === 'route' &&
+    name &&
+    routeCompositionMethods.has(name) &&
+    isHonoCompositionCall(node, sourceFile)
+  )
+    return
   if (kind === 'route' && name === 'zValidator') return
   if (isZodCall(node)) return
   violations.push(`${path}: ${kind} factory must not perform work during composition`)
+}
+
+function isHonoCompositionCall(call: ts.CallExpression, sourceFile: ts.SourceFile) {
+  let expression: ts.Expression = call
+  while (true) {
+    if (ts.isCallExpression(expression)) {
+      expression = unwrapExpression(expression.expression)
+      continue
+    }
+    if (ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)) {
+      expression = unwrapExpression(expression.expression)
+      continue
+    }
+    break
+  }
+  return (
+    ts.isNewExpression(expression) && isImportedHonoConstructor(expression.expression, sourceFile)
+  )
+}
+
+function isImportedHonoConstructor(expression: ts.Expression, sourceFile: ts.SourceFile) {
+  if (identifierText(expression) !== 'Hono') return false
+  return sourceFile.statements.some(
+    (statement) =>
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text === 'hono' &&
+      statement.importClause?.namedBindings &&
+      ts.isNamedImports(statement.importClause.namedBindings) &&
+      statement.importClause.namedBindings.elements.some(
+        (element) =>
+          (element.propertyName?.text ?? element.name.text) === 'Hono' &&
+          element.name.text === 'Hono',
+      ),
+  )
 }
 
 function isPureCompositionExpression(expression: ts.Expression): boolean {
@@ -1557,15 +1821,6 @@ function isZodCall(call: ts.CallExpression) {
   return ts.isIdentifier(expression) && expression.text === 'z'
 }
 
-function functionLikeFromProperty(property: ts.ObjectLiteralElementLike) {
-  if (ts.isMethodDeclaration(property)) return property
-  if (!ts.isPropertyAssignment(property)) return undefined
-  const initializer = unwrapExpression(property.initializer)
-  return ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer)
-    ? initializer
-    : undefined
-}
-
 function calledName(expression: ts.Expression) {
   const value = unwrapExpression(expression)
   if (ts.isIdentifier(value)) return value.text
@@ -1636,7 +1891,8 @@ function isEmptyExport(statement: ts.Statement) {
 function scriptKind(path: string) {
   if (path.endsWith('.tsx')) return ts.ScriptKind.TSX
   if (path.endsWith('.jsx')) return ts.ScriptKind.JSX
-  if (path.endsWith('.js') || path.endsWith('.mjs')) return ts.ScriptKind.JS
+  if (path.endsWith('.js') || path.endsWith('.mjs') || path.endsWith('.cjs'))
+    return ts.ScriptKind.JS
   return ts.ScriptKind.TS
 }
 

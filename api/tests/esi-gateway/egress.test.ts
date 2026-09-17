@@ -146,7 +146,7 @@ describe('ESI egress verification', () => {
         'export function createEsiTransport() { return async () => new Response() }',
       'features/alpha/server/src/cache.js': 'export const esiCache = new Map()',
       'features/alpha/server/src/raw-capabilities.ts': `
-        import { definePlatformResourceOperation } from '@eve-space/platform-module-contract'
+        import { definePlatformResourceOperation } from '@eve-space/platform-module-contract/resources'
         import { createEsiExecutionRuntime } from '../../../../api/src/esi-gateway/internal/execution-runtime.js'
         export const resource = definePlatformResourceOperation({
           operation: 'alpha-operation', request: () => ({
@@ -186,7 +186,7 @@ describe('ESI egress verification', () => {
       'features/alpha/server/src/resource.ts': `
         import type { EsiResponseMetadata } from '@evespace/esi-client'
         export type { EsiResponse } from '@evespace/esi-client'
-        import { definePlatformResourceOperation } from '@eve-space/platform-module-contract'
+        import { definePlatformResourceOperation } from '@eve-space/platform-module-contract/resources'
         export const resource = definePlatformResourceOperation({
           operation: 'alpha-operation', request: ({ characterId }) => ({
             path: { character_id: characterId },

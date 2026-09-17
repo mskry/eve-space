@@ -1,7 +1,7 @@
 import type {
   PlatformAuthenticatedSessionRouteEnv,
   PlatformOwnedCharacterRouteEnv,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/server'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => {
@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => {
     findOwnedCharacter: vi.fn(),
     findSession: vi.fn(),
     hasOrganizationContext: true,
-    isInstalledModuleEnabled: vi.fn(),
+    isInstalledModuleContributionEnabled: vi.fn(),
     loadModuleRuntimeState: vi.fn(),
     saveInstalledShellNavigationOrder: vi.fn(),
     sessionHandler: vi.fn(),
@@ -87,12 +87,13 @@ vi.mock('../../src/admin/store.js', () => ({
 }))
 
 vi.mock('../../src/platform/module-settings.js', () => ({
-  isInstalledModuleEnabled: mocks.isInstalledModuleEnabled,
+  isInstalledModuleContributionEnabled: mocks.isInstalledModuleContributionEnabled,
   listInstalledModuleSettings: vi.fn(),
   loadInstalledShellNavigationOrder: vi.fn(),
   loadModuleRuntimeState: mocks.loadModuleRuntimeState,
   saveInstalledShellNavigationOrder: mocks.saveInstalledShellNavigationOrder,
   setInstalledModuleEnabled: vi.fn(),
+  setInstalledModuleSectionEnabled: vi.fn(),
 }))
 vi.mock('../../src/platform/module-navigation.js', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -219,7 +220,7 @@ beforeEach(() => {
   mocks.unexpectedError = new Error('refresh-token private-host')
   mocks.hasOrganizationContext = true
   mocks.findAdminSession.mockResolvedValue(null)
-  mocks.isInstalledModuleEnabled.mockImplementation(async () => {
+  mocks.isInstalledModuleContributionEnabled.mockImplementation(async () => {
     mocks.events.push('enablement')
     return mocks.enabled
   })
@@ -526,6 +527,7 @@ describe('full-root platform shell boundaries', () => {
     )
     mocks.loadModuleRuntimeState.mockResolvedValue({
       enabledModuleIds: ['alpha'],
+      enabledSections: [],
       shellNavigationOrder,
     })
 
@@ -534,6 +536,7 @@ describe('full-root platform shell boundaries', () => {
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual({
       enabledModuleIds: ['alpha'],
+      enabledSections: [],
       shellNavigationOrder: {
         dashboard: [
           { ownerId: 'alpha', navigationId: 'saved' },

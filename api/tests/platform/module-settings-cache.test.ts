@@ -25,6 +25,7 @@ vi.mock('../../src/db/client.js', () => ({ sql: mocks.sql }))
 vi.mock('../../src/env.js', () => ({ env: { MODULE_RUNTIME_CACHE_TTL_MS: 5_000 } }))
 vi.mock('../../src/generated/platform/installed-module-runtime.js', () => ({
   installedModuleDefinitions: mocks.definitions,
+  installedModuleSectionDefinitions: [],
   platformNavigationDefaults: mocks.defaults,
 }))
 
@@ -45,6 +46,14 @@ beforeEach(() => {
 
   mocks.sql.mockImplementation((strings: TemplateStringsArray, ...values: unknown[]) => {
     const query = strings.join(' ')
+    if (query.includes('update deployment_modules')) {
+      const [enabled, moduleId] = values as [boolean, string]
+      const row = mocks.moduleRows.find((candidate) => candidate.module_id === moduleId)
+      if (!row) return Promise.resolve([])
+      row.enabled = enabled
+      row.updated_at = new Date()
+      return Promise.resolve([{ ...row }])
+    }
     if (query.includes('select module_id, enabled')) {
       mocks.moduleReads += 1
       if (mocks.failNextModuleRead) {
@@ -59,14 +68,6 @@ beforeEach(() => {
     if (query.includes('select owner_id, navigation_id, position')) {
       mocks.navigationReads += 1
       return Promise.resolve(mocks.navigationRows.map((row) => ({ ...row })))
-    }
-    if (query.includes('update deployment_modules')) {
-      const [enabled, moduleId] = values as [boolean, string]
-      const row = mocks.moduleRows.find((candidate) => candidate.module_id === moduleId)
-      if (!row) return Promise.resolve([])
-      row.enabled = enabled
-      row.updated_at = new Date()
-      return Promise.resolve([{ ...row }])
     }
     throw new Error(`Unexpected SQL: ${query}`)
   })

@@ -17,6 +17,7 @@ import { hashToken } from '../auth/security.js'
 import { appendDomainEvent } from '../domain-events/store.js'
 import { appendOrganizationAuditEvent } from '../organization/audit.js'
 import { recomputeAllOrganizationAccountsInTransaction } from '../organization/compliance.js'
+import { endManagedMemberLifecyclesForOrganizationVersionInTransaction } from '../organization/managed-member-lifecycle.js'
 import { initializeManagedOrganization } from '../organization/managed-corporations.js'
 
 export interface DeploymentSettingsRecord {
@@ -201,6 +202,11 @@ export async function updateDeploymentOrganization(
     }
 
     const organizationVersion = current.organizationVersion + 1
+    await endManagedMemberLifecyclesForOrganizationVersionInTransaction(transaction, {
+      deploymentId: 1,
+      organizationVersion: current.organizationVersion,
+      now,
+    })
     await transaction.insert(organizationEpochs).values({
       deploymentId: current.id,
       organizationVersion,

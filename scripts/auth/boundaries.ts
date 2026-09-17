@@ -6,6 +6,7 @@ const modulesByTier = {
   policy: ['sso-errors', 'token-errors'],
   primitive: ['security'],
   persistence: [
+    'character-disclosure-store',
     'character-lock',
     'character-token-store',
     'character-transfer-store',
@@ -51,6 +52,12 @@ const allowedExternalImportsByTier: Partial<Record<AuthTier, ReadonlySet<string>
 }
 
 const persistenceImports: Record<string, ReadonlySet<string>> = {
+  'character-disclosure-store': new Set([
+    'drizzle-orm',
+    'api/src/db/client.js',
+    'api/src/db/schema.js',
+    'api/src/reviewer-use-disclosure.js',
+  ]),
   'character-lock': new Set([
     'drizzle-orm',
     'api/src/db/client.js',
@@ -59,6 +66,7 @@ const persistenceImports: Record<string, ReadonlySet<string>> = {
   ]),
   'character-token-store': new Set([
     'drizzle-orm',
+    'api/src/auth/character-disclosure-store.js',
     'api/src/db/client.js',
     'api/src/db/schema.js',
     'api/src/env.js',
@@ -74,6 +82,7 @@ const persistenceImports: Record<string, ReadonlySet<string>> = {
     'drizzle-orm',
     'api/src/db/client.js',
     'api/src/db/schema.js',
+    'api/src/reviewer-use-disclosure.js',
     'api/src/auth/security.js',
   ]),
   'session-store': new Set([

@@ -3,13 +3,13 @@
   "type": "module",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "packageManager": "pnpm@11.22.0",
+  "packageManager": "pnpm@11.27.0+sha512.ad12821463bb143295f1fa3ecde77a6b9b97a7990386da800ff57bffc3964dc64b7b1c7559d5dbe5c337aea659ed9c8937d4370bd198ca2009bc6fa0249808e7",
   "engines": {
     "node": ">=24.20.0"
   },
   "scripts": {
     "build": "pnpm build:nuxt:dependencies && nuxt build",
-    "build:nuxt:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/core-data-contract build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts server build && tsx scripts/run-installed-module-package-script.ts nuxt build",
+    "build:nuxt:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/core-data-contract build && pnpm --filter @eve-space/core-eve-projections build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts server build && tsx scripts/run-installed-module-package-script.ts nuxt build",
     "dev": "nuxt dev",
     "dev:api": "pnpm --filter @eve-space/api dev",
     "dev:fixture:organization": "pnpm --filter @eve-space/api dev:fixture:organization",
@@ -36,7 +36,7 @@
     "quality:sonar:esi-client": "pnpm --filter @evespace/esi-client test:coverage && pnpm sonar:esi-client",
     "sde:ingest": "cargo run --release --manifest-path sde-ingest/Cargo.toml --",
     "lint": "pnpm lint:workspace && pnpm --filter @evespace/esi-client lint",
-    "lint:workspace": "oxlint . --ignore-pattern 'packages/esi-client/**' && pnpm registry:check && pnpm core-data:coverage:check && tsx scripts/verify-core-migrations.ts && node scripts/verify-esi-egress.mjs && tsx scripts/verify-module-boundaries.ts && tsx scripts/verify-nuxt-module-boundaries.ts && tsx scripts/verify-esi-gateway-boundaries.ts && tsx scripts/verify-esi-query-persistence.ts && tsx scripts/verify-query-persistence-boundaries.ts && tsx scripts/verify-universe-cache-boundaries.ts && tsx scripts/verify-core-data-boundaries.ts && tsx scripts/verify-auth-boundaries.ts && tsx scripts/verify-character-boundaries.ts && tsx scripts/verify-organization-boundaries.ts && tsx scripts/verify-platform-boundaries.ts && tsx scripts/verify-queue-boundaries.ts && tsx scripts/verify-organization-activity-boundaries.ts && tsx scripts/verify-mail-composition-boundaries.ts",
+    "lint:workspace": "oxlint . --ignore-pattern 'packages/esi-client/**' && pnpm registry:check && pnpm core-data:coverage:check && tsx scripts/verify-core-migrations.ts && node scripts/verify-esi-egress.mjs && tsx scripts/verify-module-boundaries.ts && tsx scripts/verify-platform-module-contract-boundaries.ts && tsx scripts/verify-nuxt-module-boundaries.ts && tsx scripts/verify-esi-gateway-boundaries.ts && tsx scripts/verify-esi-query-persistence.ts && tsx scripts/verify-query-persistence-boundaries.ts && tsx scripts/verify-universe-cache-boundaries.ts && tsx scripts/verify-core-data-boundaries.ts && tsx scripts/verify-auth-boundaries.ts && tsx scripts/verify-character-boundaries.ts && tsx scripts/verify-organization-boundaries.ts && tsx scripts/verify-platform-boundaries.ts && tsx scripts/verify-queue-boundaries.ts && tsx scripts/verify-organization-activity-boundaries.ts && tsx scripts/verify-mail-composition-boundaries.ts",
     "lint:fix": "oxlint --fix .",
     "knip": "DATABASE_URL=postgres://localhost:5432/eve_space knip",
     "stack:up": "docker compose up --build -d",
@@ -47,11 +47,12 @@
     "test:module-conformance": "tsx scripts/verify-module-conformance.ts",
     "test:modules:coverage": "pnpm --filter @eve-space/core-data-contract test:coverage && pnpm --filter @eve-space/platform-module-server test:coverage && pnpm --filter @eve-space/platform-module-nuxt test:coverage && tsx scripts/run-installed-module-package-script.ts server test:coverage && tsx scripts/run-installed-module-package-script.ts nuxt test:coverage",
     "test:nuxt:fixtures": "pnpm --filter @eve-space/platform-module-nuxt test:fixtures && tsx scripts/run-installed-module-package-script.ts nuxt test:fixtures",
-    "test:registry": "vitest run --config vitest.registry.config.ts",
-    "test:registry:coverage": "vitest run --config vitest.registry.config.ts --coverage",
+    "test:registry": "pnpm test:registry:types && vitest run --config vitest.registry.config.ts",
+    "test:registry:coverage": "pnpm test:registry:types && vitest run --config vitest.registry.config.ts --coverage",
+    "test:registry:types": "pnpm --filter @eve-space/platform-module-contract exec tsc --project ../../tests/fixtures/platform-module-registry-types/tsconfig.json",
     "test:api": "pnpm --filter @eve-space/api test",
     "test:api:coverage": "pnpm --filter @eve-space/api test:coverage",
-    "test:postgres": "pnpm --filter @eve-space/api test:postgres && tsx scripts/run-installed-module-package-script.ts server test:postgres",
+    "test:postgres": "pnpm --filter @eve-space/api test:postgres && tsx scripts/run-installed-module-package-script.ts server test:postgres --if-present",
     "test:packaging": "pnpm --filter @eve-space/core-data-contract test:package && pnpm --filter @eve-space/api test:packaging && pnpm build",
     "test:redis": "pnpm --filter @eve-space/api test:redis",
     "test:redis:no-coverage": "pnpm --filter @eve-space/api test:redis:no-coverage",
@@ -65,6 +66,7 @@
     "postinstall": "pnpm build:nuxt:dependencies && nuxt prepare && lefthook install"
   },
   "dependencies": {
+    "@eve-space/member-audit-nuxt": "workspace:*",
     "@eve-space/organization-activity-nuxt": "workspace:*",
     "@eve-space/platform-module-contract": "workspace:*",
     "@eve-space/platform-module-nuxt": "workspace:*",

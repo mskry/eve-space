@@ -2,7 +2,7 @@ import type {
   PlatformAuthenticatedSessionRouteEnv,
   PlatformModuleRouteCapabilities,
   PlatformOwnedCharacterRouteEnv,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/server'
 import { Hono } from 'hono'
 
 export interface SyntheticModulePersistence {

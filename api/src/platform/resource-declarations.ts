@@ -2,7 +2,7 @@ import type {
   PlatformInstalledResourceDescriptor,
   PlatformResourceBatchOperationImplementation,
   PlatformResourceOperationImplementation,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/resources'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import { assertCoreDataProductDeclarations } from '../core-data/capabilities.js'
 import {
@@ -31,11 +31,12 @@ export function assertInstalledResourceDeclarations(
       assertResourceDefinition(resource, operationId, definitions)
       assertRegisteredEsiOperation(operationId)
       const dependent = getEsiOperationAuthorization(operationId)
+      if (dependent.kind === 'character' && primary.kind !== 'character')
+        throw new Error('Dependent operations must retain the resource authorization contract')
       if (
-        dependent.kind !== primary.kind ||
-        (dependent.kind === 'character' &&
-          primary.kind === 'character' &&
-          dependent.requiredScope !== primary.requiredScope)
+        dependent.kind === 'character' &&
+        primary.kind === 'character' &&
+        dependent.requiredScope !== primary.requiredScope
       )
         throw new Error('Dependent operations must retain the resource authorization contract')
     }

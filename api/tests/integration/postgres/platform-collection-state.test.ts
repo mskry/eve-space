@@ -1,9 +1,11 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
+import type { PlatformInstalledModuleSectionDefinition } from '@eve-space/platform-module-contract/installed'
+import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import { randomUUID } from 'node:crypto'
 import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
-import { runMigrations } from '../../../src/db/migration-runner.js'
+import { loadMigrations, runMigrations } from '../../../src/db/migration-runner.js'
 import * as schema from '../../../src/db/schema.js'
 import { findCharacterTokenForLifecycle } from '../../../src/auth/character-token-store.js'
 import {
@@ -22,6 +24,11 @@ import {
 import { guardInstalledResourceExecution } from '../../../src/platform/resource-execution-guard.js'
 import { coreResources } from '../../../src/platform/core-resources.js'
 import { materializeCoreResourceObservation } from '../../../src/platform/core-resource-materialization.js'
+import {
+  reconcileInstalledModuleSections,
+  setInstalledModuleEnabled,
+  setInstalledModuleSectionEnabled,
+} from '../../../src/platform/module-settings.js'
 
 let container: StartedTestContainer
 let databaseUrl: string
@@ -56,6 +63,131 @@ beforeEach(async () => {
 })
 
 describe('platform collection state PostgreSQL persistence', () => {
+  test('backfills fresh existing managed accounts during the lifecycle migration', async () => {
+    const connection = postgres(databaseUrl)
+    const userId = randomUUID()
+    const migrations = await loadMigrations()
+    try {
+      await connection.unsafe('drop schema public cascade; create schema public;').simple()
+      await runMigrations(connection, migrations.slice(0, 3))
+      await connection`
+        insert into organization_epochs (
+          deployment_id, organization_version, organization_type, organization_id,
+          organization_name, organization_ticker
+        ) values (1, 1, 'corporation', 98000001, 'Managed Corporation', 'CORP')
+      `
+      await connection`
+        insert into deployment_settings (
+          id, organization_type, organization_id,
+          organization_name, organization_ticker, organization_version
+        ) values (1, 'corporation', 98000001, 'Managed Corporation', 'CORP', 1)
+      `
+      await connection`insert into users (id) values (${userId})`
+      await connection`
+        insert into characters (
+          character_id, user_id, name, corporation_id, is_main,
+          affiliation_checked_at, next_affiliation_check, affiliation_resolution_state
+        ) values (
+          1404328069, ${userId}, 'Existing Pilot', 98000001, true,
+          now(), now() + interval '1 hour', 'resolved'
+        )
+      `
+      await connection`
+        insert into organization_managed_corporations (
+          deployment_id, organization_version, corporation_id, is_current,
+          first_observed_at, last_observed_at
+        ) values (1, 1, 98000001, true, now(), now())
+      `
+
+      await runMigrations(connection, migrations.slice(3))
+
+      await expect(connection<{ user_id: string; ended_at: Date | null }[]>`
+        select user_id, ended_at from organization_managed_member_lifecycles
+      `).resolves.toEqual([{ user_id: userId, ended_at: null }])
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('reconciles disabled section defaults and advances only material disclosure policy', async () => {
+    const connection = postgres(databaseUrl)
+    const moduleId = 'section-policy-test'
+    const definitions = [
+      {
+        moduleId,
+        id: 'overview',
+        kind: 'workspace' as const,
+        defaultEnabled: false as const,
+      },
+      {
+        moduleId,
+        id: 'skills',
+        kind: 'sensitive-evidence' as const,
+        defaultEnabled: false as const,
+        disclosureRevision: 1,
+      },
+    ] as const satisfies readonly PlatformInstalledModuleSectionDefinition[]
+    try {
+      await connection`
+        insert into deployment_modules (module_id, enabled) values (${moduleId}, true)
+      `
+      await reconcileInstalledModuleSections(connection, definitions)
+      await expect(
+        connection`
+          select section_id as "sectionId", enabled,
+            disclosure_version as "disclosureVersion",
+            activation_version as "activationVersion"
+          from deployment_module_sections
+          order by section_id
+        `,
+      ).resolves.toEqual([
+        { sectionId: 'overview', enabled: false, disclosureVersion: 0, activationVersion: 0 },
+        { sectionId: 'skills', enabled: false, disclosureVersion: 0, activationVersion: 0 },
+      ])
+
+      await expect(
+        setInstalledModuleSectionEnabled(moduleId, 'skills', true, connection, definitions),
+      ).resolves.toMatchObject({ disclosureVersion: 1, activationVersion: 1 })
+      await setInstalledModuleSectionEnabled(moduleId, 'skills', false, connection, definitions)
+      await expect(
+        setInstalledModuleSectionEnabled(moduleId, 'skills', true, connection, definitions),
+      ).resolves.toMatchObject({ disclosureVersion: 1, activationVersion: 2 })
+
+      const revisedDefinitions = [definitions[0]!, { ...definitions[1]!, disclosureRevision: 2 }]
+      await reconcileInstalledModuleSections(connection, revisedDefinitions)
+      await reconcileInstalledModuleSections(connection, revisedDefinitions)
+      await expect(
+        connection`
+          select enabled, disclosure_version as "disclosureVersion",
+            activation_version as "activationVersion"
+          from deployment_module_sections
+          where module_id = ${moduleId} and section_id = 'skills'
+        `,
+      ).resolves.toEqual([{ enabled: true, disclosureVersion: 2, activationVersion: 2 }])
+
+      await expect(
+        setInstalledModuleSectionEnabled(moduleId, 'overview', true, connection, definitions),
+      ).resolves.toMatchObject({ disclosureVersion: 0, activationVersion: 1 })
+      await setInstalledModuleEnabled(moduleId, false, connection, [
+        { moduleId, defaultEnabled: false },
+      ])
+      await setInstalledModuleEnabled(moduleId, true, connection, [
+        { moduleId, defaultEnabled: false },
+      ])
+      await expect(connection<{ section_id: string; activation_version: number }[]>`
+        select section_id, activation_version
+        from deployment_module_sections
+        where module_id = ${moduleId}
+        order by section_id
+      `).resolves.toEqual([
+        { section_id: 'overview', activation_version: 2 },
+        { section_id: 'skills', activation_version: 3 },
+      ])
+    } finally {
+      await connection.end()
+    }
+  })
+
   test('creates the constrained composite identity and deterministic due index', async () => {
     const connection = postgres(databaseUrl)
     try {
@@ -395,6 +527,89 @@ describe('platform collection state PostgreSQL persistence', () => {
     }
   })
 
+  test('enforces module and section state across classification, planning, status, and execution', async () => {
+    const connection = postgres(databaseUrl)
+    const characterId = 1_404_328_060
+    const lifecycle = '00000000-0000-4000-8000-000000000010'
+    const resource = {
+      moduleId: 'member-audit',
+      sectionId: 'skills',
+      resourceId: 'character-skills',
+      subjectKind: 'character',
+      operationId: 'skills',
+      materializationIntervalSeconds: 900,
+      eligibility: { kind: 'current-owned-character' },
+      implementation: {},
+    } as const
+    const identity = {
+      moduleId: resource.moduleId,
+      resourceId: resource.resourceId,
+      subjectKind: resource.subjectKind,
+      subjectLifecycleId: lifecycle,
+      subjectId: String(characterId),
+    }
+    try {
+      await connection`
+        insert into deployment_modules (module_id, enabled) values (${resource.moduleId}, true)
+      `
+      await connection`
+        insert into deployment_module_sections (
+          module_id, section_id, kind, enabled, declaration_revision, disclosure_version
+        ) values
+          (${resource.moduleId}, 'skills', 'sensitive-evidence', false, 1, 1),
+          (${resource.moduleId}, 'assets', 'sensitive-evidence', true, 1, 1)
+      `
+      await createCharacterLifecycle(connection, characterId, lifecycle)
+      await connection`
+        insert into eve_tokens (
+          character_id, encrypted_tokens, access_token_expires_at, scopes, token_version
+        ) values (
+          ${characterId}, 'test ciphertext', now() + interval '1 hour',
+          ${connection.json(['esi-skills.read_skills.v1'])}, 1
+        )
+      `
+      const eligibilityOptions = { connection, resources: [resource] }
+      const resolveEligibility = () =>
+        resolveInstalledResourceEligibility(identity, eligibilityOptions)
+
+      await expect(resolveEligibility()).resolves.toMatchObject({ status: 'disabled' })
+      await expect(
+        selectDueInstalledResources({ ...eligibilityOptions, limit: 10 }),
+      ).resolves.toEqual([])
+      await expect(
+        getInstalledResourceCollectionStatus(identity, {
+          resources: [resource],
+          resolveEligibility,
+        }),
+      ).resolves.toMatchObject({ status: 'unavailable' })
+      const loadAuthorization = vi.fn()
+      await expect(
+        guardInstalledResourceExecution(identity, {
+          resources: [resource],
+          resolveEligibility,
+          loadCharacterCacheAuthorization: loadAuthorization,
+        }),
+      ).resolves.toEqual({ outcome: 'noop', reason: 'disabled' })
+      expect(loadAuthorization).not.toHaveBeenCalled()
+
+      await connection`
+        update deployment_module_sections set enabled = true
+        where module_id = ${resource.moduleId} and section_id = ${resource.sectionId}
+      `
+      await expect(resolveEligibility()).resolves.toMatchObject({
+        status: 'eligible',
+        due: true,
+      })
+
+      await connection`
+        update deployment_modules set enabled = false where module_id = ${resource.moduleId}
+      `
+      await expect(resolveEligibility()).resolves.toMatchObject({ status: 'disabled' })
+    } finally {
+      await connection.end()
+    }
+  })
+
   test('selects deterministic bounded due prefixes including absent state rows', async () => {
     const connection = postgres(databaseUrl)
     const requiredScope = 'esi-skills.read_skills.v1'
@@ -667,6 +882,258 @@ describe('platform collection state PostgreSQL persistence', () => {
           operationId: 'status',
         },
       ])
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('binds managed-member eligibility and state to current account authority', async () => {
+    const connection = postgres(databaseUrl)
+    const userId = randomUUID()
+    const memberLifecycleId = randomUUID()
+    const characterLifecycleId = randomUUID()
+    const characterId = 1_404_328_068
+    const resource = {
+      moduleId: 'member-audit',
+      sectionId: 'skills',
+      resourceId: 'trained-skills',
+      subjectKind: 'character',
+      operationId: 'skills',
+      materializationIntervalSeconds: 900,
+      eligibility: { kind: 'current-managed-member-character' },
+      implementation: {},
+    } as PlatformInstalledResourceDescriptor
+    const identity = {
+      moduleId: resource.moduleId,
+      resourceId: resource.resourceId,
+      subjectKind: 'character' as const,
+      subjectLifecycleId: characterLifecycleId,
+      subjectId: String(characterId),
+    }
+    try {
+      await connection`
+        insert into organization_epochs (
+          deployment_id, organization_version, organization_type, organization_id,
+          organization_name, organization_ticker
+        ) values (1, 1, 'corporation', 98000001, 'Managed Corporation', 'CORP')
+      `
+      await connection`
+        insert into deployment_settings (
+          id, organization_type, organization_id,
+          organization_name, organization_ticker, organization_version
+        ) values (1, 'corporation', 98000001, 'Managed Corporation', 'CORP', 1)
+      `
+      await connection`insert into users (id) values (${userId})`
+      await connection`
+        insert into characters (
+          character_id, user_id, name, corporation_id, is_main,
+          affiliation_checked_at, next_affiliation_check, affiliation_resolution_state
+        ) values (
+          ${characterId}, ${userId}, 'Managed Pilot', 98000001, true,
+          '2026-09-01T11:00:00Z', '2026-09-01T13:00:00Z', 'resolved'
+        )
+      `
+      await connection`
+        insert into platform_subject_lifecycles (
+          subject_lifecycle_id, subject_kind, subject_id, character_id
+        ) values (${characterLifecycleId}, 'character', ${String(characterId)}, ${characterId})
+      `
+      await connection`
+        insert into organization_managed_corporations (
+          deployment_id, organization_version, corporation_id, is_current,
+          first_observed_at, last_observed_at
+        ) values (1, 1, 98000001, true, '2026-09-01T11:00:00Z', '2026-09-01T11:00:00Z')
+      `
+      await connection`
+        insert into organization_managed_member_lifecycles (
+          managed_member_lifecycle_id, deployment_id, organization_version, user_id, started_at
+        ) values (${memberLifecycleId}, 1, 1, ${userId}, '2026-09-01T11:00:00Z')
+      `
+      await connection`
+        insert into deployment_modules (module_id, enabled) values (${resource.moduleId}, true)
+      `
+      await connection`
+        insert into deployment_module_sections (
+          module_id, section_id, kind, enabled, declaration_revision,
+          disclosure_version, activation_version
+        ) values (${resource.moduleId}, 'skills', 'sensitive-evidence', true, 1, 1, 1)
+      `
+      await connection`
+        insert into eve_tokens (
+          character_id, encrypted_tokens, access_token_expires_at, scopes, token_version
+        ) values (
+          ${characterId}, 'test ciphertext', now() + interval '1 hour',
+          '["esi-skills.read_skills.v1"]'::jsonb, 3
+        )
+      `
+      await connection`
+        insert into character_reviewer_disclosure_acceptances (
+          character_id, module_id, section_id, disclosure_version, authorization_generation
+        ) values (${characterId}, ${resource.moduleId}, 'skills', 1, 3)
+      `
+
+      const externalCharacterId = 1_404_328_070
+      const externalLifecycleId = randomUUID()
+      await connection`
+        insert into characters (
+          character_id, user_id, name, corporation_id, is_main,
+          affiliation_checked_at, next_affiliation_check, affiliation_resolution_state
+        ) values (
+          ${externalCharacterId}, ${userId}, 'External Pilot', 98000002, false,
+          '2026-09-01T11:00:00Z', '2026-09-01T13:00:00Z', 'resolved'
+        )
+      `
+      await connection`
+        insert into platform_subject_lifecycles (
+          subject_lifecycle_id, subject_kind, subject_id, character_id
+        ) values (
+          ${externalLifecycleId}, 'character', ${String(externalCharacterId)}, ${externalCharacterId}
+        )
+      `
+      await connection`
+        insert into eve_tokens (
+          character_id, encrypted_tokens, access_token_expires_at, scopes, token_version
+        ) values (
+          ${externalCharacterId}, 'external ciphertext', now() + interval '1 hour',
+          '["esi-skills.read_skills.v1"]'::jsonb, 3
+        )
+      `
+      await connection`
+        insert into character_reviewer_disclosure_acceptances (
+          character_id, module_id, section_id, disclosure_version, authorization_generation
+        ) values (${externalCharacterId}, ${resource.moduleId}, 'skills', 1, 3)
+      `
+      await connection`
+        insert into organization_character_exceptions (
+          deployment_id, organization_version, user_id, character_id,
+          approver_user_id, reason
+        ) values (1, 1, ${userId}, ${externalCharacterId}, ${userId}, 'Approved external pilot')
+      `
+
+      const now = new Date('2026-09-01T12:00:00Z')
+      const eligible = await resolveInstalledResourceEligibility(identity, {
+        connection,
+        now,
+        resources: [resource],
+      })
+      expect(eligible).toMatchObject({
+        status: 'eligible',
+        due: true,
+        dueReason: 'never-collected',
+        authorizationGeneration: 3,
+        managedAuthority: {
+          organizationDeploymentId: 1,
+          organizationVersion: 1,
+          targetUserId: userId,
+          managedMemberLifecycleId: memberLifecycleId,
+          sectionId: 'skills',
+          disclosureVersion: 1,
+          sectionActivationVersion: 1,
+        },
+      })
+      const due = await selectDueInstalledResources({
+        connection,
+        limit: 10,
+        now,
+        resources: [resource],
+      })
+      expect(due).toHaveLength(2)
+      expect(due).toEqual(
+        expect.arrayContaining([
+          { identity, operationId: 'skills' },
+          {
+            identity: {
+              ...identity,
+              subjectLifecycleId: externalLifecycleId,
+              subjectId: String(externalCharacterId),
+            },
+            operationId: 'skills',
+          },
+        ]),
+      )
+      await expect(
+        resolveInstalledResourceEligibility(
+          {
+            ...identity,
+            subjectLifecycleId: externalLifecycleId,
+            subjectId: String(externalCharacterId),
+          },
+          { connection, now, resources: [resource] },
+        ),
+      ).resolves.toMatchObject({
+        status: 'eligible',
+        managedAuthority: { managedMemberLifecycleId: memberLifecycleId, targetUserId: userId },
+      })
+      if (eligible.status !== 'eligible' || !eligible.managedAuthority)
+        throw new Error('Managed resource did not resolve its authority')
+      await upsertPlatformCollectionState(
+        {
+          ...identity,
+          ...eligible.managedAuthority,
+          authorizationGeneration: eligible.authorizationGeneration,
+          nextEligibleAt: new Date('2026-09-01T12:15:00Z'),
+          validatedAt: now,
+          lastFailureClass: null,
+        },
+        drizzle(connection, { schema }),
+      )
+      await expect(
+        resolveInstalledResourceEligibility(identity, { connection, now, resources: [resource] }),
+      ).resolves.toMatchObject({ status: 'eligible', due: false, dueReason: 'future' })
+
+      await connection`
+        update eve_tokens set token_version = 4 where character_id = ${characterId}
+      `
+      await connection`
+        update character_reviewer_disclosure_acceptances
+        set authorization_generation = 4
+        where character_id = ${characterId}
+          and module_id = ${resource.moduleId}
+          and section_id = 'skills'
+      `
+      await expect(
+        resolveInstalledResourceEligibility(identity, { connection, now, resources: [resource] }),
+      ).resolves.toMatchObject({
+        status: 'eligible',
+        due: true,
+        dueReason: 'never-collected',
+        authorizationGeneration: 4,
+        validatedAt: null,
+      })
+
+      await connection`
+        update organization_managed_member_lifecycles
+        set ended_at = '2026-09-01T12:05:00Z'
+        where managed_member_lifecycle_id = ${memberLifecycleId}
+      `
+      await expect(
+        resolveInstalledResourceEligibility(identity, { connection, now, resources: [resource] }),
+      ).resolves.toEqual({ status: 'obsolete' })
+
+      const replacementLifecycleId = randomUUID()
+      await connection`
+        insert into organization_managed_member_lifecycles (
+          managed_member_lifecycle_id, deployment_id, organization_version, user_id,
+          started_at
+        ) values (${replacementLifecycleId}, 1, 1, ${userId}, '2026-09-01T12:05:00Z')
+      `
+      await expect(
+        resolveInstalledResourceEligibility(identity, { connection, now, resources: [resource] }),
+      ).resolves.toMatchObject({
+        status: 'eligible',
+        due: true,
+        dueReason: 'never-collected',
+        managedAuthority: { managedMemberLifecycleId: replacementLifecycleId },
+      })
+
+      await connection`
+        update deployment_module_sections
+        set disclosure_version = 2
+        where module_id = ${resource.moduleId} and section_id = 'skills'
+      `
+      await expect(
+        resolveInstalledResourceEligibility(identity, { connection, now, resources: [resource] }),
+      ).resolves.toMatchObject({ status: 'authorization-required' })
     } finally {
       await connection.end()
     }

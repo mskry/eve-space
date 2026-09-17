@@ -1,4 +1,4 @@
-import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import type postgres from 'postgres'
 import { sql } from '../db/client.js'
 import {
@@ -37,6 +37,7 @@ export type PlatformResourceEligibility =
       readonly nextEligibleAt: Date | null
       readonly validatedAt: Date | null
       readonly lastFailureClass: PlatformCollectionFailureClass | null
+      readonly managedAuthority: PlatformManagedCollectionAuthority | null
     }
   | {
       readonly status: 'authorization-required'
@@ -49,6 +50,7 @@ export type PlatformResourceEligibility =
       readonly nextEligibleAt: Date | null
       readonly validatedAt: Date | null
       readonly lastFailureClass: PlatformCollectionFailureClass | null
+      readonly managedAuthority: PlatformManagedCollectionAuthority | null
     }
   | {
       readonly status: 'disabled' | 'suppressed'
@@ -60,8 +62,35 @@ export type PlatformResourceEligibility =
       readonly nextEligibleAt: Date | null
       readonly validatedAt: Date | null
       readonly lastFailureClass: PlatformCollectionFailureClass | null
+      readonly managedAuthority: PlatformManagedCollectionAuthority | null
     }
   | { readonly status: 'obsolete' | 'resource-unavailable' }
+
+export interface PlatformManagedCollectionAuthority {
+  readonly organizationDeploymentId: 1
+  readonly organizationVersion: number
+  readonly targetUserId: string
+  readonly managedMemberLifecycleId: string
+  readonly sectionId: string
+  readonly disclosureVersion: number
+  readonly sectionActivationVersion: number
+}
+
+export function managedCollectionAuthorityEquals(
+  left: PlatformManagedCollectionAuthority | null | undefined,
+  right: PlatformManagedCollectionAuthority | null | undefined,
+) {
+  if (!left || !right) return left == null && right == null
+  return (
+    left.organizationDeploymentId === right.organizationDeploymentId &&
+    left.organizationVersion === right.organizationVersion &&
+    left.targetUserId === right.targetUserId &&
+    left.managedMemberLifecycleId === right.managedMemberLifecycleId &&
+    left.sectionId === right.sectionId &&
+    left.disclosureVersion === right.disclosureVersion &&
+    left.sectionActivationVersion === right.sectionActivationVersion
+  )
+}
 
 export type PlatformResourceIneligibleStatus = Exclude<
   PlatformResourceEligibility['status'],
@@ -80,6 +109,13 @@ interface ClassificationRow {
   readonly authorizationCharacterId: number | string | null
   readonly authorizationCharacterLifecycleId: string | null
   readonly requiredScope: string | null
+  readonly organizationDeploymentId: number | null
+  readonly organizationVersion: number | string | null
+  readonly targetUserId: string | null
+  readonly managedMemberLifecycleId: string | null
+  readonly authoritySectionId: string | null
+  readonly disclosureVersion: number | null
+  readonly sectionActivationVersion: number | null
   readonly dueReason: string | null
   readonly schedulingKey: DatabaseTimestamp
   readonly nextEligibleAt: DatabaseTimestamp
@@ -132,6 +168,13 @@ export async function resolveInstalledResourceEligibility(
       authorization_character_id as "authorizationCharacterId",
       authorization_character_lifecycle_id as "authorizationCharacterLifecycleId",
       required_scope as "requiredScope",
+      organization_deployment_id as "organizationDeploymentId",
+      organization_version as "organizationVersion",
+      target_user_id as "targetUserId",
+      managed_member_lifecycle_id as "managedMemberLifecycleId",
+      authority_section_id as "authoritySectionId",
+      disclosure_version as "disclosureVersion",
+      section_activation_version as "sectionActivationVersion",
       due_reason as "dueReason",
       scheduling_key as "schedulingKey",
       next_eligible_at as "nextEligibleAt",
@@ -174,6 +217,13 @@ export async function selectDueInstalledResources(
       authorization_character_id as "authorizationCharacterId",
       authorization_character_lifecycle_id as "authorizationCharacterLifecycleId",
       required_scope as "requiredScope",
+      organization_deployment_id as "organizationDeploymentId",
+      organization_version as "organizationVersion",
+      target_user_id as "targetUserId",
+      managed_member_lifecycle_id as "managedMemberLifecycleId",
+      authority_section_id as "authoritySectionId",
+      disclosure_version as "disclosureVersion",
+      section_activation_version as "sectionActivationVersion",
       due_reason as "dueReason",
       scheduling_key as "schedulingKey",
       next_eligible_at as "nextEligibleAt",
@@ -226,6 +276,7 @@ function toPlanningResources(resources: readonly PlatformInstalledResourceDescri
     assertRegisteredEsiOperation(resource.operationId)
     return {
       module_id: resource.moduleId,
+      section_id: resource.sectionId,
       resource_id: resource.resourceId,
       subject_kind: resource.subjectKind,
       operation_id: resource.operationId,
@@ -247,6 +298,7 @@ function parseClassification(row: ClassificationRow): PlatformResourceEligibilit
     nextEligibleAt: toDate(row.nextEligibleAt),
     validatedAt: toDate(row.validatedAt),
     lastFailureClass: parseFailureClass(row.lastFailureClass),
+    managedAuthority: parseManagedAuthority(row),
   }
   if (row.eligibilityStatus === 'disabled' || row.eligibilityStatus === 'suppressed')
     return { status: row.eligibilityStatus, dueReason: null, schedulingKey: null, ...state }
@@ -273,6 +325,41 @@ function parseClassification(row: ClassificationRow): PlatformResourceEligibilit
     dueReason: row.dueReason as PlatformResourceDueReason,
     schedulingKey,
     ...state,
+  }
+}
+
+function parseManagedAuthority(row: ClassificationRow): PlatformManagedCollectionAuthority | null {
+  const values = [
+    row.organizationDeploymentId,
+    row.organizationVersion,
+    row.targetUserId,
+    row.managedMemberLifecycleId,
+    row.authoritySectionId,
+    row.disclosureVersion,
+    row.sectionActivationVersion,
+  ]
+  if (values.every((value) => value === null)) return null
+  if (values.includes(null))
+    throw new Error('Resource classifier returned incomplete managed authority')
+  const organizationVersion = Number(row.organizationVersion)
+  if (
+    row.organizationDeploymentId !== 1 ||
+    !isPositiveSafeInteger(organizationVersion) ||
+    !row.targetUserId ||
+    !row.managedMemberLifecycleId ||
+    !row.authoritySectionId ||
+    !isPositiveSafeInteger(row.disclosureVersion!) ||
+    !isPositiveSafeInteger(row.sectionActivationVersion!)
+  )
+    throw new Error('Resource classifier returned invalid managed authority')
+  return {
+    organizationDeploymentId: 1,
+    organizationVersion,
+    targetUserId: row.targetUserId,
+    managedMemberLifecycleId: row.managedMemberLifecycleId,
+    sectionId: row.authoritySectionId,
+    disclosureVersion: row.disclosureVersion!,
+    sectionActivationVersion: row.sectionActivationVersion!,
   }
 }
 

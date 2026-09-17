@@ -1,3 +1,12 @@
+import {
+  isUniverseMailPartyType as isUniversePartyType,
+  projectMailRecipients as recipientParties,
+  projectMailSender as senderParty,
+  sanitizeMailBody,
+  type MailParty,
+  type MailRecipientSource,
+  type MailRecipientType,
+} from '@eve-space/core-eve-projections/mail'
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type {
   GetCharactersCharacterIdMailMailIdResponse,
@@ -5,7 +14,6 @@ import type {
   GetCharactersCharacterIdSearchResponse,
 } from '@evespace/esi-client/types'
 import { z } from 'zod'
-import { eveFormattedTextToPlainText } from '../text/eve-formatted-text.js'
 import {
   EsiQuotaError,
   getEsiFailureStatus,
@@ -19,16 +27,8 @@ import {
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/token-errors.js'
 import { resolveUniverseIds, resolveUniverseNames, type UniverseName } from '../universe/names.js'
 
-type MailRecipientType = 'alliance' | 'character' | 'corporation' | 'mailing_list'
-type MailPartyType = MailRecipientType | 'unknown'
 const maximumMailRecipientSearchResults = 50
 const mailSearchCategories = ['alliance', 'character', 'corporation'] as const
-
-interface MailParty {
-  id: number
-  type: MailPartyType
-  name: string | null
-}
 
 interface MailRecipient {
   id: number
@@ -173,14 +173,9 @@ export interface MailCspaChargeResult {
 
 type MailReadMetadata = EsiReadResultMetadata
 
-interface EsiMailRecipient {
-  recipient_id: number
-  recipient_type: MailRecipientType
-}
-
 interface EsiMailParties {
   from?: number
-  recipients?: EsiMailRecipient[]
+  recipients?: MailRecipientSource[]
 }
 
 const mailPartyCacheSchema = z.object({
@@ -711,7 +706,7 @@ async function mapMailDetail(
     sentAt: response.timestamp ?? null,
     labelIds: response.labels ?? [],
     isRead: response.read ?? null,
-    body: eveFormattedTextToPlainText(response.body) ?? null,
+    body: sanitizeMailBody(response.body),
   }
 }
 
@@ -797,35 +792,6 @@ async function resolveMailingListNamesBestEffort(
   } catch {
     return new Map<number, string>()
   }
-}
-
-function senderParty(
-  id: number | undefined,
-  parties: Awaited<ReturnType<typeof enrichParties>>,
-): MailParty | null {
-  if (id === undefined) return null
-  const resolved = parties.universeNames.get(id)
-  if (resolved && isUniversePartyType(resolved.category))
-    return { id, type: resolved.category, name: resolved.name }
-  return { id, type: 'unknown', name: null }
-}
-
-function recipientParties(
-  recipients: readonly EsiMailRecipient[] | undefined,
-  parties: Awaited<ReturnType<typeof enrichParties>>,
-): MailParty[] {
-  return (recipients ?? []).map((recipient) => {
-    let name = parties.mailingListNames.get(recipient.recipient_id) ?? null
-    if (recipient.recipient_type !== 'mailing_list') {
-      const universeParty = parties.universeNames.get(recipient.recipient_id)
-      name = universeParty?.category === recipient.recipient_type ? universeParty.name : null
-    }
-    return { id: recipient.recipient_id, type: recipient.recipient_type, name }
-  })
-}
-
-function isUniversePartyType(value: string): value is Exclude<MailRecipientType, 'mailing_list'> {
-  return value === 'alliance' || value === 'character' || value === 'corporation'
 }
 
 function throwMailReadError(error: unknown, detail = false): never {

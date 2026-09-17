@@ -3,7 +3,7 @@ FROM node:24.20-alpine AS build
 ENV PNPM_HOME=/pnpm
 ENV COREPACK_HOME=/corepack
 ENV PATH=$PNPM_HOME:$PATH
-RUN corepack enable && corepack prepare pnpm@11.22.0 --activate
+RUN corepack enable && corepack prepare pnpm@11.27.0 --activate
 WORKDIR /workspace
 
 COPY . .

@@ -10,6 +10,9 @@ let oauthStateStore: typeof import('../../../src/auth/oauth-state-store.js')
 let dbClient: typeof import('../../../src/db/client.js')
 const databasePassword = randomUUID()
 const characterId = 1404328063
+const reviewerUseDisclosures = [
+  { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 3 },
+] as const
 
 beforeAll(async () => {
   container = await new GenericContainer('postgres:17-alpine')
@@ -124,18 +127,26 @@ describe('OAuth state return path persistence', () => {
       userId,
       characterId,
       returnPath,
+      reviewerUseDisclosures,
     })
-    const [stored] = await connection<{ state_hash: string; return_path: string | null }[]>`
-      select state_hash, return_path from oauth_states
+    const [stored] = await connection<
+      { state_hash: string; return_path: string | null; reviewer_use_disclosures: unknown }[]
+    >`
+      select state_hash, return_path, reviewer_use_disclosures from oauth_states
     `
 
-    expect(stored).toEqual({ state_hash: hashState(state), return_path: returnPath })
+    expect(stored).toEqual({
+      state_hash: hashState(state),
+      return_path: returnPath,
+      reviewer_use_disclosures: reviewerUseDisclosures,
+    })
     expect(stored?.state_hash).not.toBe(state)
     await expect(oauthStateStore.consumeOAuthState(state)).resolves.toEqual({
       intent: 'reauthorize',
       userId,
       characterId,
       returnPath,
+      reviewerUseDisclosures,
     })
     await expect(oauthStateStore.consumeOAuthState(state)).resolves.toBeNull()
     const [remaining] = await connection<{ count: number }[]>`
@@ -148,13 +159,30 @@ describe('OAuth state return path persistence', () => {
     const state = 'login-oauth-state'
     const returnPath = `/characters/${characterId}?tab=wallet#activity`
 
-    await oauthStateStore.storeOAuthState(state, { intent: 'login', returnPath })
+    await oauthStateStore.storeOAuthState(state, {
+      intent: 'login',
+      returnPath,
+      reviewerUseDisclosures: [],
+    })
 
     await expect(oauthStateStore.consumeOAuthState(state)).resolves.toEqual({
       intent: 'login',
       returnPath,
+      reviewerUseDisclosures: [],
     })
     await expect(oauthStateStore.consumeOAuthState(state)).resolves.toBeNull()
+  })
+
+  test('finds an unexpired state without consuming it', async () => {
+    const context = {
+      intent: 'login' as const,
+      returnPath: `/characters/${characterId}`,
+      reviewerUseDisclosures: [],
+    }
+    await oauthStateStore.storeOAuthState('inspectable-state', context)
+
+    await expect(oauthStateStore.findOAuthState('inspectable-state')).resolves.toEqual(context)
+    await expect(oauthStateStore.findOAuthState('inspectable-state')).resolves.toEqual(context)
   })
 
   test('preserves legacy omitted paths and stores null for other intents', async () => {
@@ -163,8 +191,12 @@ describe('OAuth state return path persistence', () => {
       intent: 'reauthorize',
       userId,
       characterId,
+      reviewerUseDisclosures: [],
     })
-    await oauthStateStore.storeOAuthState('login-state', { intent: 'login' })
+    await oauthStateStore.storeOAuthState('login-state', {
+      intent: 'login',
+      reviewerUseDisclosures: [],
+    })
     const rows = await connection<{ intent: string; return_path: string | null }[]>`
       select intent, return_path from oauth_states order by intent
     `
@@ -177,6 +209,7 @@ describe('OAuth state return path persistence', () => {
       intent: 'reauthorize',
       userId,
       characterId,
+      reviewerUseDisclosures: [],
     })
   })
 
@@ -187,6 +220,7 @@ describe('OAuth state return path persistence', () => {
       userId,
       characterId,
       returnPath: `/characters/${characterId}/mail`,
+      reviewerUseDisclosures: [],
     }
     await oauthStateStore.storeOAuthState('concurrent-state', context)
 
@@ -218,6 +252,7 @@ describe('OAuth state return path persistence', () => {
       characterId,
       organizationId: 1_000_166,
       organizationVersion: 1,
+      reviewerUseDisclosures: [],
     }
     await oauthStateStore.storeOAuthState('owner-claim-state', context)
 
@@ -273,6 +308,7 @@ describe('OAuth state return path persistence', () => {
       sourceSubjectLifecycleId: sourceLifecycle!.subject_lifecycle_id,
       userId: destinationUserId,
       characterId,
+      reviewerUseDisclosures: [],
     }
 
     await oauthStateStore.storeOAuthState('transfer-state', context)

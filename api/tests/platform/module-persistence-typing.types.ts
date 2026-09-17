@@ -5,7 +5,7 @@ import type {
   PlatformPersistenceOperationIdentity,
   PlatformPersistenceOperationInput,
   PlatformPersistenceOperationOutput,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/persistence'
 import { definePlatformPersistenceOperation } from '@eve-space/platform-module-server'
 import { z } from 'zod'
 

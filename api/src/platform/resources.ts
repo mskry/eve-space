@@ -1,4 +1,4 @@
-import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 import { coreResources } from './core-resources.js'
 

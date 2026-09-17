@@ -4,6 +4,7 @@ import { DomainEventNotFoundError, dispatchDomainEvent } from '../domain-events/
 import { deletePublishedDomainEvents } from '../domain-events/store.js'
 import { env } from '../env.js'
 import { refreshOrganizationOwnerEvidence } from '../organization/owner-evidence.js'
+import { convergeCurrentManagedMemberLifecyclesInTransaction } from '../organization/managed-member-lifecycle.js'
 import { processInstalledResourceRefresh } from '../platform/resource-refresh.js'
 import { processAffiliationBatch } from '../characters/affiliation-sync.js'
 import {
@@ -85,7 +86,15 @@ const jobHandlers = {
     name: 'affiliation',
     classifyError: delayedOr(retryable),
     async process({ characterIds }, context) {
-      await processAffiliationBatch(characterIds, context.signal)
+      await processAffiliationBatch(
+        characterIds,
+        context.signal,
+        (transaction, userIds, observedAt) =>
+          convergeCurrentManagedMemberLifecyclesInTransaction(transaction, {
+            userIds,
+            now: observedAt,
+          }),
+      )
     },
   }),
   'organization-owner-evidence': handler({

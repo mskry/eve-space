@@ -1,7 +1,7 @@
 import type {
   PlatformInstalledResourceDescriptor,
   PlatformResourceSubject,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/resources'
 import { CharacterTokenNotFoundError } from '../auth/character-token-store.js'
 import { ScopeRequiredError } from '../auth/token-errors.js'
 import {
@@ -14,7 +14,9 @@ import {
 } from '../esi-gateway/catalog-interface.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import {
+  managedCollectionAuthorityEquals,
   resolveInstalledResourceEligibility,
+  type PlatformManagedCollectionAuthority,
   type PlatformResourceEligibility,
   type PlatformResourceIneligibleStatus,
 } from './resource-eligibility.js'
@@ -43,6 +45,7 @@ export type PlatformResourceExecutionGuard =
       readonly authorization: CharacterAuthorization | null
       readonly authorizationCharacterId?: number | null
       readonly authorizationCharacterLifecycleId?: string | null
+      readonly managedAuthority: PlatformManagedCollectionAuthority | null
     }
 
 interface ResourceExecutionGuardOptions {
@@ -75,7 +78,15 @@ export async function guardInstalledResourceExecution(
   if (!subject) return { outcome: 'noop', reason: 'obsolete' }
 
   const operation = getEsiOperationAuthorization(resource.operationId as EsiOperation)
-  if (operation.kind === 'public') return createReadyResourceExecution(resource, subject, null)
+  if (operation.kind === 'public')
+    return createReadyResourceExecution(
+      resource,
+      subject,
+      null,
+      null,
+      null,
+      eligibility.managedAuthority,
+    )
 
   const { authorizationCharacterId, authorizationCharacterLifecycleId } =
     resolveAuthorizationIdentity(eligibility, subject)
@@ -112,6 +123,7 @@ export async function guardInstalledResourceExecution(
     authorization,
     authorizationCharacterId,
     authorizationCharacterLifecycleId,
+    eligibility.managedAuthority,
   )
   if (authorization.tokenVersion === eligibility.authorizationGeneration) return ready
 
@@ -125,7 +137,9 @@ export async function guardInstalledResourceExecution(
   if (
     authorization.tokenVersion !== refreshed.authorizationGeneration ||
     authorizationCharacterId !== refreshedAuthorization.authorizationCharacterId ||
-    authorizationCharacterLifecycleId !== refreshedAuthorization.authorizationCharacterLifecycleId
+    authorizationCharacterLifecycleId !==
+      refreshedAuthorization.authorizationCharacterLifecycleId ||
+    !managedCollectionAuthorityEquals(eligibility.managedAuthority, refreshed.managedAuthority)
   )
     return { outcome: 'noop', reason: 'obsolete' }
 
@@ -166,6 +180,7 @@ function createReadyResourceExecution(
   authorization: CharacterAuthorization | null,
   authorizationCharacterId: number | null = null,
   authorizationCharacterLifecycleId: string | null = null,
+  managedAuthority: PlatformManagedCollectionAuthority | null = null,
 ): PlatformResourceExecutionGuard {
   return {
     outcome: 'ready',
@@ -175,6 +190,7 @@ function createReadyResourceExecution(
     authorization,
     authorizationCharacterId,
     authorizationCharacterLifecycleId,
+    managedAuthority,
   }
 }
 

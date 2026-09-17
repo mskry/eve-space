@@ -1,4 +1,4 @@
-import type { PlatformResourceOperationImplementation } from '@eve-space/platform-module-contract'
+import type { PlatformResourceOperationImplementation } from '@eve-space/platform-module-contract/resources'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -34,6 +34,8 @@ vi.mock('../../src/platform/core-resource-materialization.js', () => ({
   materializeCoreResourceObservation: mocks.materializeCoreResourceObservation,
 }))
 vi.mock('../../src/platform/resource-eligibility.js', () => ({
+  managedCollectionAuthorityEquals: (left: unknown, right: unknown) =>
+    JSON.stringify(left ?? null) === JSON.stringify(right ?? null),
   resolveInstalledResourceEligibility: mocks.resolveEligibility,
 }))
 vi.mock('../../src/platform/collection-state-store.js', () => ({
@@ -58,6 +60,15 @@ const identity = {
   subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
   subjectId: '1404328063',
 } as const
+const managedAuthority = {
+  organizationDeploymentId: 1 as const,
+  organizationVersion: 7,
+  targetUserId: '00000000-0000-4000-8000-000000000002',
+  managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+  sectionId: 'skills',
+  disclosureVersion: 1,
+  sectionActivationVersion: 1,
+}
 
 describe('local resource observations', () => {
   beforeEach(() => {
@@ -72,6 +83,7 @@ describe('local resource observations', () => {
       status: 'eligible',
       due: true,
       authorizationGeneration: 4,
+      managedAuthority: null,
       nextEligibleAt: null,
     })
     mocks.recordSuccess.mockResolvedValue(undefined)
@@ -99,6 +111,30 @@ describe('local resource observations', () => {
       data: {},
       organizationVersion: 2,
     })
+    expect(materialize).not.toHaveBeenCalled()
+    expect(mocks.recordSuccess).not.toHaveBeenCalled()
+  })
+
+  test('rejects an in-flight observation after its managed authority changes', async () => {
+    const materialize = vi.fn(async () => undefined)
+    mocks.resolveEligibility.mockResolvedValue({
+      status: 'eligible',
+      due: true,
+      authorizationGeneration: 4,
+      managedAuthority: {
+        ...managedAuthority,
+        managedMemberLifecycleId: '00000000-0000-4000-8000-000000000099',
+      },
+      nextEligibleAt: null,
+    })
+
+    await applyInstalledResourceObservation({
+      ...observation(materialize),
+      managedAuthority,
+      outcome: 'complete',
+      data: {},
+    })
+
     expect(materialize).not.toHaveBeenCalled()
     expect(mocks.recordSuccess).not.toHaveBeenCalled()
   })
@@ -151,6 +187,28 @@ describe('local resource observations', () => {
     ])
     expect(scopedRoutinePersistenceValue.close).toHaveBeenCalledOnce()
     expect(mocks.recordSuccess).toHaveBeenCalledOnce()
+  })
+
+  test('locks the declared section before rechecking eligibility and writing', async () => {
+    await applyInstalledResourceObservation({
+      ...observation(vi.fn().mockResolvedValue(undefined)),
+      resource: {
+        ...observation(vi.fn()).resource,
+        sectionId: 'skills',
+      },
+      outcome: 'complete',
+      data: {},
+    })
+
+    const sectionLockIndex = mocks.transaction.mock.calls.findIndex(([strings]) =>
+      (strings as TemplateStringsArray).join(' ').includes('from deployment_module_sections'),
+    )
+    const sectionLock = mocks.transaction.mock.calls[sectionLockIndex]
+    expect(sectionLock?.[1]).toBe(identity.moduleId)
+    expect(sectionLock?.[2]).toBe('skills')
+    expect(mocks.transaction.mock.invocationCallOrder[sectionLockIndex]).toBeLessThan(
+      mocks.resolveEligibility.mock.invocationCallOrder[0]!,
+    )
   })
 
   test('provides only generated methods to declared resource materialization', async () => {
@@ -217,7 +275,24 @@ describe('local resource observations', () => {
         recordFailure,
       }),
     ).rejects.toBe(failure)
-    expect(recordFailure).toHaveBeenCalledWith(identity, failure)
+    expect(recordFailure).toHaveBeenCalledWith(identity, failure, {})
+  })
+
+  test('carries the initial managed authority into failure recording', async () => {
+    const failure = new PlatformResourceMappingError(new Error('mapper'))
+    const recordFailure = vi.fn().mockResolvedValue(undefined)
+    const executeOperation = vi.fn().mockImplementation(async (_identity, options) => {
+      options.onAuthorityResolved({ authorizationGeneration: 4, managedAuthority })
+      throw failure
+    })
+
+    await expect(
+      processInstalledResourceRefresh(identity, { executeOperation, recordFailure }),
+    ).rejects.toBe(failure)
+    expect(recordFailure).toHaveBeenCalledWith(identity, failure, {
+      expectedAuthorizationGeneration: 4,
+      expectedManagedAuthority: managedAuthority,
+    })
   })
 
   test('does not record collection failure when execution is cancelled', async () => {
@@ -249,6 +324,7 @@ describe('local resource observations', () => {
           resource: input.resource,
           subject: input.subject,
           authorizationGeneration: input.authorizationGeneration,
+          managedAuthority: input.managedAuthority,
           result: {
             data: { score: 10 },
             cachedUntil: input.validatedAt,
@@ -265,6 +341,10 @@ describe('local resource observations', () => {
     expect(recordFailure).toHaveBeenCalledWith(
       identity,
       expect.any(PlatformResourcePersistenceError),
+      {
+        expectedAuthorizationGeneration: 4,
+        expectedManagedAuthority: null,
+      },
     )
   })
 
@@ -282,8 +362,31 @@ describe('local resource observations', () => {
       deploymentId: 1,
       organizationVersion: 8,
       now: expect.any(Date),
+      rotateManagedMemberLifecycles: false,
     })
     expect(mocks.recomputeManagedCorporations).not.toHaveBeenCalled()
+  })
+
+  test('rotates managed-member intervals when alliance authority recovers after a gap', async () => {
+    mocks.loadState.mockResolvedValue({
+      validatedAt: new Date('2026-08-26T13:00:00.000Z'),
+      nextEligibleAt: new Date('2026-08-26T14:00:00.000Z'),
+      lastFailureClass: null,
+    })
+    mocks.materializeCoreResourceObservation.mockResolvedValue({
+      organizationVersion: 8,
+      affectedCorporationIds: [],
+      recomputeAllAccounts: true,
+    })
+
+    await applyInstalledResourceObservation(coreObservation())
+
+    expect(mocks.recomputeAllAccounts).toHaveBeenCalledWith(expect.anything(), {
+      deploymentId: 1,
+      organizationVersion: 8,
+      now: expect.any(Date),
+      rotateManagedMemberLifecycles: true,
+    })
   })
 
   test('recomputes only accounts affected by a core corporation observation', async () => {
@@ -372,6 +475,7 @@ function observation(materialize: PlatformResourceOperationImplementation['mater
       lifecycleId: identity.subjectLifecycleId,
     },
     authorizationGeneration: 4,
+    managedAuthority: null,
     validatedAt: '2026-08-26T14:58:00.000Z',
   }
 }

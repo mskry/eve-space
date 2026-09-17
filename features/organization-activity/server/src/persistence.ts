@@ -1,4 +1,4 @@
-import type { PlatformPersistenceMethodsFor } from '@eve-space/platform-module-contract'
+import type { PlatformPersistenceMethodsFor } from '@eve-space/platform-module-contract/persistence'
 import {
   definePlatformPersistenceOperation,
   platformPersistencePayloadMaximumBytes,

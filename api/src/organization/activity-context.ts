@@ -1,4 +1,4 @@
-import type { PlatformActivityProviderCharacter } from '@eve-space/platform-module-contract'
+import type { PlatformActivityProviderCharacter } from '@eve-space/platform-module-contract/activity'
 import { and, asc, desc, eq, gt, isNull, or } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import {

@@ -1,8 +1,6 @@
 import { createHash } from 'node:crypto'
-import {
-  coreOrganizationAdmissionScopes,
-  type PlatformInstalledOrganizationAdmissionScopeDescriptor,
-} from '@eve-space/platform-module-contract'
+import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-contract/server'
+import { type PlatformInstalledOrganizationAdmissionScopeDescriptor } from '@eve-space/platform-module-contract/installed'
 import { installedModuleOrganizationAdmissionScopes } from '../generated/platform/installed-module-runtime.js'
 import {
   resolveOrganizationEntitlementScope,

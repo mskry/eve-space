@@ -1,4 +1,4 @@
-import type { PlatformCollectionStatus } from '@eve-space/platform-module-contract'
+import type { PlatformCollectionStatus } from '@eve-space/platform-module-contract/server'
 import type { ActivitySnapshot } from './snapshot.js'
 
 export interface ActivitySourceRead {

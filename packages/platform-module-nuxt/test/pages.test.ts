@@ -12,6 +12,7 @@ const contribution: ResolvedContributionPage = {
     file: 'src/runtime/app/pages/RecordPage.vue',
     extensionPoint: 'character-shell',
     audience: 'authenticated',
+    sectionId: 'skills',
   },
 }
 
@@ -26,7 +27,11 @@ describe('platform page composition', () => {
         name: 'alpha-record',
         path: 'alpha',
         file: contribution.file,
-        meta: { platformModuleId: 'alpha', platformAudience: 'authenticated' },
+        meta: {
+          platformModuleId: 'alpha',
+          platformModuleSectionId: 'skills',
+          platformAudience: 'authenticated',
+        },
       },
     ])
   })

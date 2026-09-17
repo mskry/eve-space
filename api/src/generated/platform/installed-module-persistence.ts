@@ -6,13 +6,37 @@ import {
   type PlatformPersistenceOperationDefinition,
   type PlatformPersistenceOperationInvoker,
 } from '@eve-space/platform-module-server'
+import { writeSkillSnapshotOperation as module0PersistenceOperation0 } from '@eve-space/member-audit-server'
 import {
-  readActivityCheckpointOperation as module0PersistenceOperation0,
-  readActivitySnapshotsOperation as module0PersistenceOperation1,
-  materializeActivityObservationOperation as module0PersistenceOperation2,
+  readActivityCheckpointOperation as module1PersistenceOperation0,
+  readActivitySnapshotsOperation as module1PersistenceOperation1,
+  materializeActivityObservationOperation as module1PersistenceOperation2,
 } from '@eve-space/organization-activity-server'
 
 export const installedModulePersistenceOperations = [
+  {
+    moduleId: 'member-audit',
+    operationId: 'write-skill-snapshot',
+    method: 'writeSkillSnapshot',
+    revision: 1,
+    mode: 'write',
+    migration: 'member-audit-001-baseline.sql',
+    schemaName: 'eve_module_member_audit',
+    routineName: 'persist_write_skill_snapshot',
+    definitionFingerprint: 'e22b7473c007972d37583e922547d8cd7547e5760a591b3d0ba6a5d14b5a2c35',
+    definition: module0PersistenceOperation0 satisfies PlatformPersistenceOperationDefinition<
+      'write-skill-snapshot',
+      'writeSkillSnapshot',
+      1,
+      'write'
+    >,
+    grants: {
+      routes: [],
+      activityProviders: [],
+      resourceProjections: [],
+      resourceMaterializations: ['trained-skills', 'skill-queue'],
+    },
+  },
   {
     moduleId: 'organization-activity',
     operationId: 'read-activity-checkpoint',
@@ -23,7 +47,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_organization_activity',
     routineName: 'persist_read_activity_checkpoint',
     definitionFingerprint: 'fb46c61a833bd17111d2cca44325467c728e82d114c0494d24e2a96a8a2238ff',
-    definition: module0PersistenceOperation0 satisfies PlatformPersistenceOperationDefinition<
+    definition: module1PersistenceOperation0 satisfies PlatformPersistenceOperationDefinition<
       'read-activity-checkpoint',
       'readActivityCheckpoint',
       1,
@@ -54,7 +78,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_organization_activity',
     routineName: 'persist_read_activity_snapshots',
     definitionFingerprint: '505ebd357ceade137f2fbac0d7a8743897961815136f2149ce48b7b5f946232f',
-    definition: module0PersistenceOperation1 satisfies PlatformPersistenceOperationDefinition<
+    definition: module1PersistenceOperation1 satisfies PlatformPersistenceOperationDefinition<
       'read-activity-snapshots',
       'readActivitySnapshots',
       1,
@@ -77,7 +101,7 @@ export const installedModulePersistenceOperations = [
     schemaName: 'eve_module_organization_activity',
     routineName: 'persist_materialize_activity_observation',
     definitionFingerprint: '1970f15288caa92cf0484a247d18e1acb5d4069717542045801bf2bd6690d4fa',
-    definition: module0PersistenceOperation2 satisfies PlatformPersistenceOperationDefinition<
+    definition: module1PersistenceOperation2 satisfies PlatformPersistenceOperationDefinition<
       'materialize-activity-observation',
       'materializeActivityObservation',
       1,
@@ -101,193 +125,236 @@ export const installedModulePersistenceOperations = [
 ] as const satisfies readonly PlatformInstalledPersistenceOperationDescriptor[]
 
 export const installedModulePersistenceContractFingerprint =
-  'a1594e03c0e3489836334184392c19b258c4a3ddc0e2c122c6a07a4c69e8b57c'
+  'a5b979f09215f956615a7af512bf0b1cb8482ec4328134c4a384dff252da28c2'
 
 export const installedModulePersistenceOperationCatalog = {
-  'organization-activity/read-activity-checkpoint': installedModulePersistenceOperations[0]!,
-  'organization-activity/read-activity-snapshots': installedModulePersistenceOperations[1]!,
+  'member-audit/write-skill-snapshot': installedModulePersistenceOperations[0]!,
+  'organization-activity/read-activity-checkpoint': installedModulePersistenceOperations[1]!,
+  'organization-activity/read-activity-snapshots': installedModulePersistenceOperations[2]!,
   'organization-activity/materialize-activity-observation':
-    installedModulePersistenceOperations[2]!,
+    installedModulePersistenceOperations[3]!,
 } as const
 
-export function createModule0Route0Persistence(invoke: PlatformPersistenceOperationInvoker) {
-  return {
-    readActivitySnapshots: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[1]!,
-      invoke,
-    ),
-  }
+export function createModule0Route0Persistence(_invoke: PlatformPersistenceOperationInvoker) {
+  return {}
 }
 
-export function createModule0Route1Persistence(invoke: PlatformPersistenceOperationInvoker) {
-  return {
-    readActivitySnapshots: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[1]!,
-      invoke,
-    ),
-  }
-}
-
-export function createModule0ActivityProvider0Persistence(
-  invoke: PlatformPersistenceOperationInvoker,
-) {
-  return {
-    readActivitySnapshots: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[1]!,
-      invoke,
-    ),
-  }
+export function createModule0Route1Persistence(_invoke: PlatformPersistenceOperationInvoker) {
+  return {}
 }
 
 export function createModule0Resource0ProjectionPersistence(
-  invoke: PlatformPersistenceOperationInvoker,
+  _invoke: PlatformPersistenceOperationInvoker,
 ) {
-  return {
-    readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[0]!,
-      invoke,
-    ),
-  }
+  return {}
 }
 
 export function createModule0Resource0MaterializationPersistence(
   invoke: PlatformPersistenceOperationInvoker,
 ) {
   return {
-    materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[2]!,
+    writeSkillSnapshot: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[0]!,
       invoke,
     ),
   }
 }
 
 export function createModule0Resource1ProjectionPersistence(
-  invoke: PlatformPersistenceOperationInvoker,
+  _invoke: PlatformPersistenceOperationInvoker,
 ) {
-  return {
-    readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[0]!,
-      invoke,
-    ),
-  }
+  return {}
 }
 
 export function createModule0Resource1MaterializationPersistence(
   invoke: PlatformPersistenceOperationInvoker,
 ) {
   return {
-    materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[2]!,
-      invoke,
-    ),
-  }
-}
-
-export function createModule0Resource2ProjectionPersistence(
-  invoke: PlatformPersistenceOperationInvoker,
-) {
-  return {
-    readActivityCheckpoint: bindPlatformPersistenceOperation(
+    writeSkillSnapshot: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[0]!,
       invoke,
     ),
   }
 }
 
-export function createModule0Resource2MaterializationPersistence(
-  invoke: PlatformPersistenceOperationInvoker,
-) {
+export function createModule1Route0Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
-    materializeActivityObservation: bindPlatformPersistenceOperation(
+    readActivitySnapshots: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[2]!,
       invoke,
     ),
   }
 }
 
-export function createModule0Resource3ProjectionPersistence(
+export function createModule1Route1Persistence(invoke: PlatformPersistenceOperationInvoker) {
+  return {
+    readActivitySnapshots: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[2]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule1ActivityProvider0Persistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    readActivitySnapshots: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[2]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule1Resource0ProjectionPersistence(
   invoke: PlatformPersistenceOperationInvoker,
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[0]!,
+      installedModulePersistenceOperations[1]!,
       invoke,
     ),
   }
 }
 
-export function createModule0Resource3MaterializationPersistence(
+export function createModule1Resource0MaterializationPersistence(
   invoke: PlatformPersistenceOperationInvoker,
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[2]!,
+      installedModulePersistenceOperations[3]!,
       invoke,
     ),
   }
 }
 
-export function createModule0Resource4ProjectionPersistence(
+export function createModule1Resource1ProjectionPersistence(
   invoke: PlatformPersistenceOperationInvoker,
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[0]!,
+      installedModulePersistenceOperations[1]!,
       invoke,
     ),
   }
 }
 
-export function createModule0Resource4MaterializationPersistence(
+export function createModule1Resource1MaterializationPersistence(
   invoke: PlatformPersistenceOperationInvoker,
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[2]!,
+      installedModulePersistenceOperations[3]!,
       invoke,
     ),
   }
 }
 
-export function createModule0Resource5ProjectionPersistence(
+export function createModule1Resource2ProjectionPersistence(
   invoke: PlatformPersistenceOperationInvoker,
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[0]!,
+      installedModulePersistenceOperations[1]!,
       invoke,
     ),
   }
 }
 
-export function createModule0Resource5MaterializationPersistence(
+export function createModule1Resource2MaterializationPersistence(
   invoke: PlatformPersistenceOperationInvoker,
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[2]!,
+      installedModulePersistenceOperations[3]!,
       invoke,
     ),
   }
 }
 
-export function createModule0Resource6ProjectionPersistence(
+export function createModule1Resource3ProjectionPersistence(
   invoke: PlatformPersistenceOperationInvoker,
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[0]!,
+      installedModulePersistenceOperations[1]!,
       invoke,
     ),
   }
 }
 
-export function createModule0Resource6MaterializationPersistence(
+export function createModule1Resource3MaterializationPersistence(
   invoke: PlatformPersistenceOperationInvoker,
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[2]!,
+      installedModulePersistenceOperations[3]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule1Resource4ProjectionPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    readActivityCheckpoint: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[1]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule1Resource4MaterializationPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    materializeActivityObservation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[3]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule1Resource5ProjectionPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    readActivityCheckpoint: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[1]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule1Resource5MaterializationPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    materializeActivityObservation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[3]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule1Resource6ProjectionPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    readActivityCheckpoint: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[1]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule1Resource6MaterializationPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    materializeActivityObservation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[3]!,
       invoke,
     ),
   }
@@ -295,28 +362,34 @@ export function createModule0Resource6MaterializationPersistence(
 
 export const installedModulePersistenceCapabilityFactories = {
   routes: {
-    'organization-activity/activity-details': createModule0Route0Persistence,
-    'organization-activity/activity-participation': createModule0Route1Persistence,
+    'member-audit/member-search': createModule0Route0Persistence,
+    'member-audit/member-summary': createModule0Route1Persistence,
+    'organization-activity/activity-details': createModule1Route0Persistence,
+    'organization-activity/activity-participation': createModule1Route1Persistence,
   },
   activityProviders: {
-    'organization-activity/organization-activity': createModule0ActivityProvider0Persistence,
+    'organization-activity/organization-activity': createModule1ActivityProvider0Persistence,
   },
   resourceProjections: {
-    'organization-activity/campaigns': createModule0Resource0ProjectionPersistence,
-    'organization-activity/public-jobs': createModule0Resource1ProjectionPersistence,
-    'organization-activity/corporation-jobs': createModule0Resource2ProjectionPersistence,
-    'organization-activity/corporation-projects': createModule0Resource3ProjectionPersistence,
-    'organization-activity/character-jobs': createModule0Resource4ProjectionPersistence,
-    'organization-activity/character-campaigns': createModule0Resource5ProjectionPersistence,
-    'organization-activity/character-projects': createModule0Resource6ProjectionPersistence,
+    'member-audit/trained-skills': createModule0Resource0ProjectionPersistence,
+    'member-audit/skill-queue': createModule0Resource1ProjectionPersistence,
+    'organization-activity/campaigns': createModule1Resource0ProjectionPersistence,
+    'organization-activity/public-jobs': createModule1Resource1ProjectionPersistence,
+    'organization-activity/corporation-jobs': createModule1Resource2ProjectionPersistence,
+    'organization-activity/corporation-projects': createModule1Resource3ProjectionPersistence,
+    'organization-activity/character-jobs': createModule1Resource4ProjectionPersistence,
+    'organization-activity/character-campaigns': createModule1Resource5ProjectionPersistence,
+    'organization-activity/character-projects': createModule1Resource6ProjectionPersistence,
   },
   resourceMaterializations: {
-    'organization-activity/campaigns': createModule0Resource0MaterializationPersistence,
-    'organization-activity/public-jobs': createModule0Resource1MaterializationPersistence,
-    'organization-activity/corporation-jobs': createModule0Resource2MaterializationPersistence,
-    'organization-activity/corporation-projects': createModule0Resource3MaterializationPersistence,
-    'organization-activity/character-jobs': createModule0Resource4MaterializationPersistence,
-    'organization-activity/character-campaigns': createModule0Resource5MaterializationPersistence,
-    'organization-activity/character-projects': createModule0Resource6MaterializationPersistence,
+    'member-audit/trained-skills': createModule0Resource0MaterializationPersistence,
+    'member-audit/skill-queue': createModule0Resource1MaterializationPersistence,
+    'organization-activity/campaigns': createModule1Resource0MaterializationPersistence,
+    'organization-activity/public-jobs': createModule1Resource1MaterializationPersistence,
+    'organization-activity/corporation-jobs': createModule1Resource2MaterializationPersistence,
+    'organization-activity/corporation-projects': createModule1Resource3MaterializationPersistence,
+    'organization-activity/character-jobs': createModule1Resource4MaterializationPersistence,
+    'organization-activity/character-campaigns': createModule1Resource5MaterializationPersistence,
+    'organization-activity/character-projects': createModule1Resource6MaterializationPersistence,
   },
 } as const

@@ -1,4 +1,4 @@
-import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import { EsiHttpError, EsiResponseParseError, EsiTransportError } from '@evespace/esi-client'
 import { describe, expect, test, vi } from 'vitest'
 import { EveSsoTokenRefreshError } from '../../src/auth/sso.js'
@@ -115,6 +115,7 @@ describe('platform resource failure transitions', () => {
           dueReason: 'elapsed',
           schedulingKey: now,
           authorizationGeneration: 7,
+          managedAuthority: null,
           nextEligibleAt: now,
           validatedAt: new Date('2026-08-25T12:00:00.000Z'),
           lastFailureClass: null,
@@ -130,5 +131,73 @@ describe('platform resource failure transitions', () => {
       validatedAt: new Date('2026-08-25T12:00:00.000Z'),
       lastFailureClass: 'mapping-failed',
     })
+  })
+
+  test('does not attach an old attempt failure to a replacement managed lifecycle', async () => {
+    const upsertState = vi.fn()
+    const expectedManagedAuthority = {
+      organizationDeploymentId: 1 as const,
+      organizationVersion: 7,
+      targetUserId: '00000000-0000-4000-8000-000000000002',
+      managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+      sectionId: 'skills',
+      disclosureVersion: 1,
+      sectionActivationVersion: 1,
+    }
+
+    await recordInstalledResourceCollectionFailure(identity, new Error('old attempt'), {
+      resources: [
+        {
+          ...resource,
+          sectionId: 'skills',
+          eligibility: { kind: 'current-managed-member-character' },
+        },
+      ],
+      now,
+      expectedAuthorizationGeneration: 7,
+      expectedManagedAuthority,
+      resolveEligibility: vi.fn().mockResolvedValue({
+        status: 'eligible',
+        due: true,
+        dueReason: 'never-collected',
+        schedulingKey: now,
+        authorizationGeneration: 7,
+        nextEligibleAt: null,
+        validatedAt: null,
+        lastFailureClass: null,
+        managedAuthority: {
+          ...expectedManagedAuthority,
+          managedMemberLifecycleId: '00000000-0000-4000-8000-000000000021',
+        },
+      }),
+      upsertState,
+    })
+
+    expect(upsertState).not.toHaveBeenCalled()
+  })
+
+  test('does not overwrite a success that made the resource current before failure persistence', async () => {
+    const upsertState = vi.fn()
+
+    await recordInstalledResourceCollectionFailure(identity, new Error('late failure'), {
+      resources: [resource],
+      now,
+      expectedAuthorizationGeneration: 7,
+      expectedManagedAuthority: null,
+      resolveEligibility: vi.fn().mockResolvedValue({
+        status: 'eligible',
+        due: false,
+        dueReason: 'future',
+        schedulingKey: new Date('2026-08-26T12:15:00.000Z'),
+        authorizationGeneration: 7,
+        nextEligibleAt: new Date('2026-08-26T12:15:00.000Z'),
+        validatedAt: now,
+        lastFailureClass: null,
+        managedAuthority: null,
+      }),
+      upsertState,
+    })
+
+    expect(upsertState).not.toHaveBeenCalled()
   })
 })

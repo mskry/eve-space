@@ -7,8 +7,11 @@ import {
   type CoreDataMethodsFor,
   type CoreDataProductRequest,
   type CoreDataProductResult,
+  type PublishedSkillCatalogueResult,
+  type PublishedTypeDetailsRequest,
   type PublishedTypeGroupsRequest,
   type PublishedTypeGroupsResult,
+  type StaticLocationLabelsRequest,
 } from '../src/index.js'
 
 describe('core-data contract', () => {
@@ -42,6 +45,24 @@ describe('core-data contract', () => {
     expectTypeOf<CoreDataMethodsFor<readonly ['published-type-groups']>>().toHaveProperty(
       'publishedTypeGroups',
     )
+    expectTypeOf<
+      CoreDataProductResult<'published-skill-catalogue'>
+    >().toEqualTypeOf<PublishedSkillCatalogueResult>()
+    expectTypeOf<
+      CoreDataProductRequest<'published-type-details'>
+    >().toEqualTypeOf<PublishedTypeDetailsRequest>()
+    expectTypeOf<
+      CoreDataProductRequest<'static-location-labels'>
+    >().toEqualTypeOf<StaticLocationLabelsRequest>()
+    expectTypeOf<
+      CoreDataMethodsFor<
+        readonly ['published-skill-catalogue', 'published-type-details', 'static-location-labels']
+      >
+    >().toMatchObjectType<{
+      publishedSkillCatalogue: unknown
+      publishedTypeDetails: unknown
+      staticLocationLabels: unknown
+    }>()
   })
 
   it('versions the complete omission result DTO', () => {

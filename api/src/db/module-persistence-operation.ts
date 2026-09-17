@@ -1,4 +1,4 @@
-import type { PlatformPersistenceOperationMode } from '@eve-space/platform-module-contract'
+import type { PlatformPersistenceOperationMode } from '@eve-space/platform-module-contract/persistence'
 import type {
   PlatformInstalledPersistenceOperationDescriptor,
   PlatformPersistenceOperationInvoker,

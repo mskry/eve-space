@@ -1,8 +1,8 @@
 import {
-  platformContributionIdPattern,
-  platformExportNamePattern,
-  type PlatformEsiOperationContract,
-} from '@eve-space/platform-module-contract'
+  isPlatformContributionId,
+  isPlatformExportName,
+} from '@eve-space/platform-module-contract/identifiers'
+import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract/esi'
 import type { StableOperationId } from '@evespace/esi-client/operations'
 import { z } from 'zod'
 
@@ -15,7 +15,7 @@ const positiveSafeIntegerSchema = z.int().positive()
 const nonnegativeSafeIntegerSchema = z.int().nonnegative()
 const isoCalendarDateSchema = z.iso.date()
 const scopeSchema = z.union([z.string().regex(scopePattern), z.literal('esi.activity.char:read')])
-const contributionIdSchema = z.string().regex(platformContributionIdPattern)
+const contributionIdSchema = z.string().refine(isPlatformContributionId)
 
 const freshnessSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('relative'), seconds: positiveSafeIntegerSchema }),
@@ -33,14 +33,16 @@ const rateGroupSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('legacy-only') }),
   z.object({
     kind: z.literal('declared'),
-    group: contributionIdSchema,
+    group: z.string().refine(isPlatformContributionId, {
+      message: 'has invalid declared rate-group metadata',
+    }),
     maximumTokens: positiveSafeIntegerSchema,
     window: z.string().regex(rateWindowPattern),
   }),
 ])
 
 const esiOperationMetadataEntrySchema = z.strictObject({
-  esiOperationId: z.string().regex(platformExportNamePattern),
+  esiOperationId: z.string().refine(isPlatformExportName),
   minimumCompatibilityDate: isoCalendarDateSchema,
   cache: freshnessSchema,
 })
@@ -159,7 +161,7 @@ const responseValidationSchema = z.discriminatedUnion('kind', [
 
 const esiOperationContractSchema = z.object({
   audit: z.object({
-    esiOperationId: z.string().regex(platformExportNamePattern),
+    esiOperationId: z.string().refine(isPlatformExportName),
     reviewedDate: isoCalendarDateSchema,
   }),
   representationVersion: z.string().regex(representationVersionPattern),
@@ -236,7 +238,7 @@ function validateEsiOperationContract(
   value: unknown,
   state: EsiOperationContractValidationState,
 ) {
-  if (!platformContributionIdPattern.test(operation))
+  if (!isPlatformContributionId(operation))
     state.issues.push(`operation ${operation} must use a lowercase kebab-case identity`)
 
   const result = esiOperationContractSchema.safeParse(value)

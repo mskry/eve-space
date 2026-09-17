@@ -1,7 +1,7 @@
 import type {
   PlatformResourceOperationImplementation,
   PlatformResourceSubject,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/resources'
 import { collectActivityResource } from './collection.js'
 import {
   materializeActivityResource,

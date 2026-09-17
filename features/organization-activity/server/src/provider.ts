@@ -1,8 +1,8 @@
+import type { PlatformActivityProviderContext } from '@eve-space/platform-module-contract/activity'
 import type {
-  PlatformActivityProviderContext,
   PlatformCollectionStatusSubject,
   PlatformModuleCollectionStatusReads,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/server'
 import { readActivitySnapshots } from './snapshot-reads.js'
 import type { ActivitySourceRead } from './activity-source.js'
 import { combineActivitySources } from './provider-activities.js'

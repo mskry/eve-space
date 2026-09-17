@@ -8,14 +8,15 @@ import {
   type CoreDataProductResult,
 } from '@eve-space/core-data-contract'
 import { loadPublishedTypeGroupsProduct } from './published-type-groups-adapter.js'
+import { loadPublishedSkillCatalogueProduct } from './published-skill-catalogue-adapter.js'
+import { loadPublishedTypeDetailsProduct } from './published-type-details-adapter.js'
+import { loadStaticLocationLabelsProduct } from './static-location-labels-adapter.js'
 
 type CoreDataProductAdapter<ProductId extends CoreDataProductId> = (
   request: CoreDataProductRequest<ProductId>,
 ) => Promise<CoreDataProductResult<ProductId>>
 
-export interface ExecutableCoreDataProduct<
-  ProductId extends CoreDataProductId = CoreDataProductId,
-> {
+interface ExecutableCoreDataProduct<ProductId extends CoreDataProductId = CoreDataProductId> {
   id: ProductId
   method: (typeof CORE_DATA_PRODUCT_CONTRACTS)[ProductId]['method']
   adapter: CoreDataProductAdapter<ProductId>
@@ -29,6 +30,10 @@ export interface ExecutableCoreDataProduct<
   permittedContexts: readonly CoreDataContributionContext[]
   networkAllowed: false
 }
+
+type AnyExecutableCoreDataProduct = {
+  [ProductId in CoreDataProductId]: ExecutableCoreDataProduct<ProductId>
+}[CoreDataProductId]
 
 export const coreDataProductCatalog = [
   {
@@ -45,7 +50,49 @@ export const coreDataProductCatalog = [
     permittedContexts: ['route', 'resource-projection'],
     networkAllowed: false,
   },
-] as const satisfies readonly ExecutableCoreDataProduct[]
+  {
+    id: 'published-skill-catalogue',
+    method: 'publishedSkillCatalogue',
+    adapter: loadPublishedSkillCatalogueProduct,
+    sourceAuthority: 'official-sde',
+    audience: 'installed-module',
+    sensitivity: 'public',
+    dtoVersion: 1,
+    requestBound: 10_000,
+    revisionStrategy: 'committed-sde-projection',
+    availabilityBehavior: 'fail-closed',
+    permittedContexts: ['route', 'resource-projection'],
+    networkAllowed: false,
+  },
+  {
+    id: 'published-type-details',
+    method: 'publishedTypeDetails',
+    adapter: loadPublishedTypeDetailsProduct,
+    sourceAuthority: 'official-sde',
+    audience: 'installed-module',
+    sensitivity: 'public',
+    dtoVersion: 1,
+    requestBound: 500,
+    revisionStrategy: 'committed-sde-projection',
+    availabilityBehavior: 'fail-closed',
+    permittedContexts: ['route', 'resource-projection'],
+    networkAllowed: false,
+  },
+  {
+    id: 'static-location-labels',
+    method: 'staticLocationLabels',
+    adapter: loadStaticLocationLabelsProduct,
+    sourceAuthority: 'official-sde',
+    audience: 'installed-module',
+    sensitivity: 'public',
+    dtoVersion: 1,
+    requestBound: 500,
+    revisionStrategy: 'committed-sde-projection',
+    availabilityBehavior: 'fail-closed',
+    permittedContexts: ['route', 'resource-projection'],
+    networkAllowed: false,
+  },
+] as const satisfies readonly AnyExecutableCoreDataProduct[]
 
 export function assertCoreDataProductCatalogConfiguration(
   catalog: readonly unknown[] = coreDataProductCatalog,

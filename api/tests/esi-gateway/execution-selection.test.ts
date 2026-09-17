@@ -15,6 +15,7 @@ import {
   assertCoreEsiOperation,
   assertEsiPlatformExecutionConfiguration,
   assertPlatformEsiOperation,
+  getPlatformEsiOperationDefinition,
 } from '../../src/esi-gateway/catalog-interface.js'
 import { createPublicEsiRead } from '../../src/esi-gateway/feature-execution.js'
 import { executePlatformEsiOperation } from '../../src/esi-gateway/platform-execution.js'
@@ -34,6 +35,28 @@ describe('ESI execution path selection', () => {
     expect(() => assertPlatformEsiOperation('status')).toThrow(
       'not registered for platform execution',
     )
+  })
+
+  test('registers the reviewed Member Audit core operations without aliases', () => {
+    const expected = {
+      'character-asset-names': 'PostCharactersCharacterIdAssetsNames',
+      'character-assets-page': 'GetCharactersCharacterIdAssets',
+      'mail-headers': 'GetCharactersCharacterIdMail',
+      'mail-lists': 'GetCharactersCharacterIdMailLists',
+      'mail-message': 'GetCharactersCharacterIdMailMailId',
+      skills: 'GetCharactersCharacterIdSkills',
+      'skill-queue': 'GetCharactersCharacterIdSkillqueue',
+      'universe-resolve-names': 'PostUniverseNames',
+      'wallet-balance': 'GetCharactersCharacterIdWallet',
+      'wallet-journal': 'GetCharactersCharacterIdWalletJournal',
+      'wallet-transactions': 'GetCharactersCharacterIdWalletTransactions',
+    } as const
+
+    for (const [operation, sdkOperationId] of Object.entries(expected)) {
+      assertPlatformEsiOperation(operation)
+      expect(() => assertCoreEsiOperation(operation)).toThrow('registered for platform execution')
+      expect(getPlatformEsiOperationDefinition(operation)).toMatchObject({ sdkOperationId })
+    }
   })
 
   test('routes a callable core read only through representation execution', async () => {

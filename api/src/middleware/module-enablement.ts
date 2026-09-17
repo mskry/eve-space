@@ -1,10 +1,14 @@
 import type { MiddlewareHandler } from 'hono'
 import { routeNotFoundBody } from '../http/contracts.js'
-import { isInstalledModuleEnabled } from '../platform/module-settings.js'
+import { isInstalledModuleContributionEnabled } from '../platform/module-settings.js'
 
-export function requireInstalledModuleEnabled(moduleId: string): MiddlewareHandler {
+export function requireInstalledModuleEnabled(
+  moduleId: string,
+  sectionId?: string,
+): MiddlewareHandler {
   return async (context, next) => {
-    if (!(await isInstalledModuleEnabled(moduleId))) return context.json(routeNotFoundBody, 404)
+    if (!(await isInstalledModuleContributionEnabled(moduleId, sectionId)))
+      return context.json(routeNotFoundBody, 404)
     await next()
   }
 }

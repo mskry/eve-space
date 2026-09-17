@@ -5,7 +5,13 @@ import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
   declaration: ['coverage-manifest'],
-  adapter: ['published-type-groups-adapter'],
+  adapter: [
+    'published-skill-catalogue-adapter',
+    'published-type-details-adapter',
+    'published-type-groups-adapter',
+    'static-location-labels-adapter',
+  ],
+  'adapter-support': ['sde-product-adapter'],
   catalog: ['product-catalog'],
   validation: ['coverage-validation'],
   reporting: ['coverage-report'],
@@ -22,7 +28,8 @@ const tierByModule = new Map<string, CoreDataTier>(
 
 const allowedImportTiers: Record<CoreDataTier, readonly CoreDataTier[]> = {
   declaration: [],
-  adapter: [],
+  adapter: ['adapter-support'],
+  'adapter-support': [],
   catalog: ['adapter'],
   validation: ['declaration', 'catalog'],
   reporting: ['declaration'],
@@ -31,7 +38,12 @@ const allowedImportTiers: Record<CoreDataTier, readonly CoreDataTier[]> = {
 
 const allowedPackages: Record<CoreDataTier, ReadonlySet<string>> = {
   declaration: new Set(['@eve-space/core-data-contract']),
-  adapter: new Set(['@eve-space/core-data-contract', 'postgres']),
+  adapter: new Set([
+    '@eve-space/core-data-contract',
+    '@eve-space/core-eve-projections/skill-training',
+    'postgres',
+  ]),
+  'adapter-support': new Set(['@eve-space/core-data-contract', 'postgres']),
   catalog: new Set(['@eve-space/core-data-contract']),
   validation: new Set(['@eve-space/core-data-contract']),
   reporting: new Set(),
@@ -118,7 +130,10 @@ function implementationViolations(source: CoreDataBoundarySource) {
       ]
     }
     if (importedPath) {
-      if (sourceTier === 'adapter' && allowedAdapterSources.has(stripExtension(importedPath)))
+      if (
+        (sourceTier === 'adapter' || sourceTier === 'adapter-support') &&
+        allowedAdapterSources.has(stripExtension(importedPath))
+      )
         return []
       return [
         `${source.path}: ${sourceTier} module ${module} cannot import source implementation ${specifier}`,

@@ -1,5 +1,13 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdSkillqueueResponse } from '@evespace/esi-client/types'
+import {
+  projectSkillQueueDefinitions,
+  projectSkillQueueEntries,
+  resolveSkillQueueState,
+  type ProjectedSkillQueueEntry,
+  type SkillQueueSourceEntry,
+  type SkillQueueState,
+} from '@eve-space/core-eve-projections/skill-queue'
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db/client.js'
@@ -9,12 +17,7 @@ import {
   toEsiReadResultMetadata,
   type EsiReadResultMetadata,
 } from '../esi-gateway/feature-execution.js'
-import {
-  skillAttributeFromDogmaValue,
-  skillPrimaryAttributeId,
-  skillSecondaryAttributeId,
-} from '../skills/training.js'
-import type { SkillAttribute } from '../skills/training.js'
+import { skillPrimaryAttributeId, skillSecondaryAttributeId } from '../skills/training.js'
 
 interface CharacterSkillQueueRepresentationInput {
   characterId: number
@@ -61,26 +64,8 @@ const characterSkillQueueRead = createCharacterEsiRead({
 
 export const characterSkillQueueScope = characterSkillQueueRead.requiredScope
 
-type SkillQueueState = 'training' | 'paused' | 'empty' | 'lapsed'
-
-interface CharacterSkillQueueEntry {
-  queuePosition: number
-  typeId: number
-  name: string
-  groupId: number | null
-  groupName: string
-  finishedLevel: number
-  levelStartSp: number | null
-  levelEndSp: number | null
-  trainingStartSp: number | null
-  startDate: string | null
-  finishDate: string | null
-  primaryAttribute: SkillAttribute | null
-  secondaryAttribute: SkillAttribute | null
-}
-
 interface CharacterSkillQueueEntries {
-  entries: CharacterSkillQueueEntry[]
+  entries: ProjectedSkillQueueEntry[]
 }
 
 interface CharacterSkillQueueData extends CharacterSkillQueueEntries {
@@ -89,26 +74,6 @@ interface CharacterSkillQueueData extends CharacterSkillQueueEntries {
 }
 
 type CharacterSkillQueue = CharacterSkillQueueData & EsiReadResultMetadata
-
-/**
- * Classification depends on the current time, so it is resolved per response rather than stored in
- * the cached representation, which must stay time-independent for conditional revalidation.
- */
-function resolveSkillQueueState(
-  entries: readonly CharacterSkillQueueEntry[],
-  now: number,
-): Pick<CharacterSkillQueue, 'activeQueuePosition' | 'state'> {
-  if (entries.length === 0) return { state: 'empty', activeQueuePosition: null }
-  if (entries.every((entry) => entry.startDate === null))
-    return { state: 'paused', activeQueuePosition: null }
-
-  const unfinished = entries.find(
-    (entry) => entry.finishDate === null || Date.parse(entry.finishDate) > now,
-  )
-  if (!unfinished) return { state: 'lapsed', activeQueuePosition: null }
-  if (unfinished.finishDate === null) return { state: 'paused', activeQueuePosition: null }
-  return { state: 'training', activeQueuePosition: unfinished.queuePosition }
-}
 
 export async function getCharacterSkillQueue(
   characterId: number,
@@ -158,55 +123,19 @@ async function mapCharacterSkillQueue(
       ),
     )
 
-  const staticByType = new Map<
-    number,
-    {
-      typeName: string
-      groupId: number
-      groupName: string
-      primaryAttribute: SkillAttribute | null
-      secondaryAttribute: SkillAttribute | null
-    }
-  >()
-  for (const row of staticRows) {
-    let skill = staticByType.get(row.typeId)
-    if (!skill) {
-      skill = {
-        typeName: row.typeName,
-        groupId: row.groupId,
-        groupName: row.groupName,
-        primaryAttribute: null,
-        secondaryAttribute: null,
-      }
-      staticByType.set(row.typeId, skill)
-    }
-    const attribute = skillAttributeFromDogmaValue(row.attributeValue)
-    if (row.attributeId === skillPrimaryAttributeId) skill.primaryAttribute = attribute
-    if (row.attributeId === skillSecondaryAttributeId) skill.secondaryAttribute = attribute
-  }
-
   return {
-    entries: result
-      .map((entry) => {
-        const staticSkill = staticByType.get(entry.skill_id)
-        return {
-          queuePosition: entry.queue_position,
-          typeId: entry.skill_id,
-          name: staticSkill?.typeName ?? `Unknown skill ${entry.skill_id}`,
-          groupId: staticSkill?.groupId ?? null,
-          groupName: staticSkill?.groupName ?? 'Unknown',
-          finishedLevel: entry.finished_level,
-          levelStartSp: entry.level_start_sp ?? null,
-          levelEndSp: entry.level_end_sp ?? null,
-          trainingStartSp: entry.training_start_sp ?? null,
-          startDate: entry.start_date ?? null,
-          finishDate: entry.finish_date ?? null,
-          primaryAttribute: staticSkill?.primaryAttribute ?? null,
-          secondaryAttribute: staticSkill?.secondaryAttribute ?? null,
-        }
-      })
-      .toSorted(
-        (left, right) => left.queuePosition - right.queuePosition || left.typeId - right.typeId,
-      ),
+    entries: projectSkillQueueEntries(
+      result.map((entry): SkillQueueSourceEntry => ({
+        queuePosition: entry.queue_position,
+        typeId: entry.skill_id,
+        finishedLevel: entry.finished_level,
+        levelStartSp: entry.level_start_sp ?? null,
+        levelEndSp: entry.level_end_sp ?? null,
+        trainingStartSp: entry.training_start_sp ?? null,
+        startDate: entry.start_date ?? null,
+        finishDate: entry.finish_date ?? null,
+      })),
+      projectSkillQueueDefinitions(staticRows),
+    ),
   }
 }

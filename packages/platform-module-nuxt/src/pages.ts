@@ -1,5 +1,5 @@
 import type { NuxtPage } from '@nuxt/schema'
-import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract/nuxt'
 
 export interface ResolvedContributionPage {
   readonly moduleId: string
@@ -34,6 +34,7 @@ export function composePlatformPages(
       file: contribution.file,
       meta: {
         platformModuleId: contribution.moduleId,
+        platformModuleSectionId: contribution.page.sectionId,
         platformAudience: contribution.page.audience,
       },
     }

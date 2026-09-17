@@ -2,8 +2,8 @@ import type {
   PlatformActivityFreshness,
   PlatformActivityProvider,
   PlatformActivityProviderCapabilities,
-  PlatformCollectionStatus,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/activity'
+import type { PlatformCollectionStatus } from '@eve-space/platform-module-contract/server'
 import type { ConformanceSnapshotReadPersistence } from './persistence.js'
 
 type ConformanceActivityProviderCapabilities =

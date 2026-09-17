@@ -1,4 +1,4 @@
-import type { PlatformNavigationAudience } from '@eve-space/platform-module-contract'
+import type { PlatformNavigationAudience } from '@eve-space/platform-module-contract/nuxt'
 
 export function resolveRouteAudience(
   path: string,

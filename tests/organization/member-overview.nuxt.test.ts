@@ -1,6 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { useQueryCache } from '@pinia/colada'
-import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-contract'
+import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-contract/server'
 import { flushPromises, RouterLinkStub } from '@vue/test-utils'
 import { http, HttpResponse } from 'msw'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'

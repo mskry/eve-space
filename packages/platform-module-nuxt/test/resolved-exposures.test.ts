@@ -1,4 +1,4 @@
-import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract/nuxt'
 import { describe, expect, it } from 'vitest'
 import { validateResolvedExposures } from '../src/resolved-exposures.js'
 

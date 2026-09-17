@@ -1,4 +1,4 @@
-import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import type postgres from 'postgres'
 import { z } from 'zod'
 import { sql } from '../db/client.js'
@@ -22,7 +22,11 @@ export async function repairPlatformCollectionState(options: CollectionStateRepa
       ? null
       : String(z.number().int().positive().parse(options.characterId))
   const repairs = (options.resources ?? installedModuleResources).flatMap((resource) => {
-    if (resource.subjectKind !== 'character') return []
+    if (
+      resource.subjectKind !== 'character' ||
+      resource.eligibility.kind !== 'current-owned-character'
+    )
+      return []
     const requiredScope = getOptionalCharacterEsiScope(resource.operationId as EsiOperation)
     return requiredScope
       ? [

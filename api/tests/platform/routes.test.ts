@@ -12,6 +12,15 @@ import { moduleRuntimeRoutes } from '../../src/platform/routes.js'
 
 const runtimeState = {
   enabledModuleIds: ['alpha'],
+  enabledSections: [
+    {
+      moduleId: 'alpha',
+      sectionId: 'skills',
+      kind: 'sensitive-evidence',
+      disclosureVersion: 2,
+      activationVersion: 1,
+    },
+  ],
   shellNavigationOrder: {
     dashboard: [{ ownerId: 'core', navigationId: 'core-overview' }],
     character: [{ ownerId: 'alpha', navigationId: 'alpha-character' }],

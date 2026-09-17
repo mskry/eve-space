@@ -4,7 +4,7 @@ import type {
   PlatformEsiOperationContract,
   PlatformEsiResponseValidationContract,
   PlatformEsiRetryContract,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/esi'
 import {
   esiMetadataReview,
   esiOperationMetadata,

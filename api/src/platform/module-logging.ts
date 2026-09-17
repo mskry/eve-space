@@ -1,10 +1,8 @@
-import {
-  isReservedPlatformModuleId,
-  platformModuleIdMaxLength,
-  platformModuleIdPattern,
-  type PlatformModuleLogFields,
-  type PlatformModuleLogger,
-} from '@eve-space/platform-module-contract'
+import { isPlatformModuleId } from '@eve-space/platform-module-contract/identifiers'
+import type {
+  PlatformModuleLogFields,
+  PlatformModuleLogger,
+} from '@eve-space/platform-module-contract/server'
 import { recordDiagnostic } from '../logging.js'
 import { containsSensitiveText } from '../sensitive-data.js'
 
@@ -24,11 +22,7 @@ export function createPlatformModuleLogger(
   moduleId: string,
   sink?: PlatformModuleLogSink,
 ): PlatformModuleLogger {
-  if (
-    !platformModuleIdPattern.test(moduleId) ||
-    moduleId.length > platformModuleIdMaxLength ||
-    isReservedPlatformModuleId(moduleId)
-  )
+  if (!isPlatformModuleId(moduleId))
     throw new Error('Platform module logger requires an installed module identity')
 
   return {

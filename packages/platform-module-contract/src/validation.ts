@@ -1,31 +1,52 @@
 import type { CoreDataContributionContext } from '@eve-space/core-data-contract'
 import {
-  platformAuthorizationStrategies,
-  platformContributionIdPattern,
-  platformExportNamePattern,
-  platformIconTokens,
-  platformMigrationFilenamePattern,
-  platformModuleIdMaxLength,
-  platformModuleIdPattern,
+  isPlatformContributionId,
+  isPlatformExportName,
+  isPlatformMigrationFilename,
+  isPlatformPermissionKey,
+  platformModuleIdIssues,
+  platformPersistenceOperationIdIssues,
+} from './identifiers.js'
+import type { PlatformModuleManifest } from './manifest.js'
+import {
   platformNavigationAudiences,
   platformNavigationPlacements,
-  platformOrganizationAudiences,
   platformPageExtensionPoints,
-  platformPermissionKeyMaxLength,
-  platformPermissionKeyPattern,
-  platformResourceBatchModes,
-  resolvePlatformModuleRoutePath,
-  type PlatformModuleManifest,
-  type PlatformResourceContribution,
-} from './contract.js'
+  platformIconTokens,
+} from './nuxt.js'
 import {
-  platformPersistenceOperationIdMaxLength,
-  platformPersistenceOperationIdPattern,
   platformPersistenceOperationModes,
   type PlatformPersistenceOperationContribution,
   type PlatformPersistenceOperationMode,
   type PlatformPersistenceOperationReference,
 } from './persistence.js'
+import { platformResourceBatchModes, type PlatformResourceContribution } from './resources.js'
+import {
+  platformAuthorizationStrategies,
+  platformModuleSectionKinds,
+  platformOrganizationAudiences,
+  platformOrganizationCommandIds,
+  platformRouteExposures,
+  platformRouteTargets,
+  resolvePlatformModuleRoutePath,
+  type PlatformModuleSectionContribution,
+} from './server.js'
+
+const resourceEligibilityBySubject = {
+  deployment: 'current-deployment',
+  corporation: 'current-managed-corporation-source',
+  alliance: 'current-managed-alliance',
+} as const
+const characterResourceEligibilityKinds = new Set([
+  'current-owned-character',
+  'current-managed-member-character',
+] as const)
+const resourceEligibilityKinds = new Set([
+  ...Object.values(resourceEligibilityBySubject),
+  ...characterResourceEligibilityKinds,
+])
+
+type PlatformRouteContribution = PlatformModuleManifest['server']['routes'][number]
 
 export interface PlatformModuleValidationAuthorities {
   reservedModuleIds: readonly string[]
@@ -69,12 +90,17 @@ export class PlatformModuleValidationError extends Error {
   }
 }
 
-export function validatePlatformModuleManifests(
-  manifests: readonly PlatformModuleManifest[],
+export function validatePlatformModuleCandidates<
+  Candidate extends { readonly manifest: PlatformModuleManifest },
+>(
+  candidates: readonly Candidate[],
   authorities: PlatformModuleValidationAuthorities,
-): readonly PlatformModuleManifest[] {
+): readonly Candidate[] {
   const issues: string[] = []
-  const sorted = manifests.toSorted((left, right) => compareStable(left.id, right.id))
+  const sortedCandidates = candidates.toSorted((left, right) =>
+    compareStable(left.manifest.id, right.manifest.id),
+  )
+  const sorted = sortedCandidates.map(({ manifest }) => manifest)
 
   const moduleIds = new Map<string, string>()
   const reservedModuleIds = new Set(authorities.reservedModuleIds.map((id) => id.toLowerCase()))
@@ -97,6 +123,7 @@ export function validatePlatformModuleManifests(
   for (const manifest of sorted) {
     validateManifestIdentity(manifest, reservedModuleIds, issues)
     validatePackageNames(manifest, issues)
+    const sections = validateSections(manifest, issues)
     validateMember(
       manifest.icon,
       platformIconTokens,
@@ -104,12 +131,19 @@ export function validatePlatformModuleManifests(
       issues,
     )
     validateRouteNamespaceIntersections(manifest, issues)
-    validateRoutes(manifest, routeCoordinates, authorities.coreDataProductContracts, issues)
+    validateRoutes(
+      manifest,
+      sections,
+      routeCoordinates,
+      authorities.coreDataProductContracts,
+      issues,
+    )
     validateMigrations(manifest, migrationIds, issues)
     const persistenceOperations = validatePersistenceOperations(manifest, issues)
     validateEsiOperations(manifest, issues)
     validateResources(
       manifest,
+      sections,
       esiOperationIds,
       resourceIds,
       authorities.coreDataProductContracts,
@@ -117,18 +151,19 @@ export function validatePlatformModuleManifests(
     )
     validateActivityProviders(
       manifest,
+      sections,
       activityProviderIds,
       authorities.coreDataProductContracts,
       issues,
     )
     validatePersistenceGrants(manifest, persistenceOperations, persistenceOperationOwners, issues)
-    validatePages(manifest, issues)
-    validateNavigation(manifest, navigationIds, issues)
+    validatePages(manifest, sections, issues)
+    validateNavigation(manifest, sections, navigationIds, issues)
     validateExposedContributions(manifest, issues)
   }
 
   if (issues.length > 0) throw new PlatformModuleValidationError(issues)
-  return sorted
+  return sortedCandidates
 }
 
 function indexPersistenceOperationOwners(manifests: readonly PlatformModuleManifest[]) {
@@ -193,8 +228,7 @@ function validatePersistenceOperationId(
 ) {
   if (
     typeof operation.id !== 'string' ||
-    !platformPersistenceOperationIdPattern.test(operation.id) ||
-    operation.id.length > platformPersistenceOperationIdMaxLength
+    platformPersistenceOperationIdIssues(operation.id).length > 0
   ) {
     issues.push(`persistence operation ${identity} must use a bounded lowercase kebab-case ID`)
     return
@@ -260,7 +294,7 @@ function validatePersistenceReferences(
   expectedMode: PlatformPersistenceOperationMode | undefined,
   context: PersistenceReferenceValidationContext,
 ) {
-  const { moduleId, operations, owners, referenced, issues } = context
+  const { operations, referenced, issues } = context
   if (!Array.isArray(value)) {
     issues.push(`${identity} persistence operations must be an array`)
     return
@@ -279,12 +313,7 @@ function validatePersistenceReferences(
     seen.add(key)
     const operation = operations.get(key)
     if (!operation) {
-      const foreignOwners = [...(owners.get(key) ?? [])].filter((owner) => owner !== moduleId)
-      issues.push(
-        foreignOwners.length > 0
-          ? `${identity} references cross-module persistence operation ${reference.operationId} owned by ${foreignOwners.toSorted(compareStable).join(', ')}`
-          : `${identity} references unknown persistence operation ${reference.operationId}`,
-      )
+      reportMissingPersistenceOperation(reference.operationId, key, identity, context)
       continue
     }
     referenced.add(key)
@@ -295,48 +324,288 @@ function validatePersistenceReferences(
   }
 }
 
+function reportMissingPersistenceOperation(
+  operationId: string,
+  key: string,
+  identity: string,
+  context: PersistenceReferenceValidationContext,
+) {
+  const foreignOwners = [...(context.owners.get(key) ?? [])].filter(
+    (owner) => owner !== context.moduleId,
+  )
+  if (foreignOwners.length > 0) {
+    context.issues.push(
+      `${identity} references cross-module persistence operation ${operationId} owned by ${foreignOwners.toSorted(compareStable).join(', ')}`,
+    )
+    return
+  }
+  context.issues.push(`${identity} references unknown persistence operation ${operationId}`)
+}
+
 function validateRoutes(
   manifest: PlatformModuleManifest,
+  sections: ReadonlyMap<string, PlatformModuleSectionContribution>,
   routeCoordinates: Map<string, string>,
   productContracts: PlatformModuleValidationAuthorities['coreDataProductContracts'],
   issues: string[],
 ) {
-  const moduleNamespace = `/${manifest.id}`
-  for (const route of manifest.server.routes) {
-    const identity = `${manifest.id}/${route.id}`
-    validateContributionId(route.id, manifest.id, 'route', issues)
-    validateExportName(route.exportName, manifest.id, 'route', issues)
-    if (route.namespace !== moduleNamespace && !route.namespace.startsWith(`${moduleNamespace}/`))
-      issues.push(
-        `route ${identity} namespace must be ${moduleNamespace} or begin with ${moduleNamespace}/`,
-      )
-    if (!isNormalizedPath(route.namespace))
-      issues.push(`route ${identity} has invalid namespace ${route.namespace}`)
-    claimValue(
-      routeCoordinates,
-      canonicalizePath(resolvePlatformModuleRoutePath(route.namespace)),
-      manifest.id,
-      'module route coordinate',
-      issues,
+  for (const route of manifest.server.routes)
+    validateRoute(manifest, sections, route, routeCoordinates, productContracts, issues)
+}
+
+function validateRoute(
+  manifest: PlatformModuleManifest,
+  sections: ReadonlyMap<string, PlatformModuleSectionContribution>,
+  route: PlatformRouteContribution,
+  routeCoordinates: Map<string, string>,
+  productContracts: PlatformModuleValidationAuthorities['coreDataProductContracts'],
+  issues: string[],
+) {
+  const identity = `${manifest.id}/${route.id}`
+  validateContributionId(route.id, manifest.id, 'route', issues)
+  validateExportName(route.exportName, manifest.id, 'route', issues)
+  validateRouteNamespace(manifest.id, route, identity, routeCoordinates, issues)
+  validateMember(
+    route.authorization,
+    platformAuthorizationStrategies,
+    `route ${identity} uses unsupported authorization ${String(route.authorization)}`,
+    issues,
+  )
+  validateOrganizationAuthorization(route, `route ${identity}`, issues)
+  const section = validateContributionSection(
+    manifest,
+    sections,
+    route,
+    `route ${identity}`,
+    issues,
+  )
+  validateClassification(
+    route.target,
+    platformRouteTargets,
+    `route ${identity} uses unsupported target classification ${String(route.target)}`,
+    manifest.sections === undefined,
+    issues,
+  )
+  validateClassification(
+    route.exposure,
+    platformRouteExposures,
+    `route ${identity} uses unsupported exposure classification ${String(route.exposure)}`,
+    manifest.sections === undefined,
+    issues,
+  )
+  validateManagedReviewerRoute(route, manifest.id, identity, issues)
+  validateRouteExposure(route, section, manifest.id, identity, issues)
+  validateOrganizationCommands(
+    route.organizationCommands,
+    manifest.id,
+    route.target,
+    section,
+    route.requiredPermission,
+    identity,
+    issues,
+  )
+  validateCoreDataProducts(route, `route ${identity}`, 'route', productContracts, issues)
+  validateOwnedCharacterRoute(route, identity, issues)
+}
+
+function validateRouteNamespace(
+  moduleId: string,
+  route: PlatformRouteContribution,
+  identity: string,
+  routeCoordinates: Map<string, string>,
+  issues: string[],
+) {
+  const moduleNamespace = `/${moduleId}`
+  if (route.namespace !== moduleNamespace && !route.namespace.startsWith(`${moduleNamespace}/`))
+    issues.push(
+      `route ${identity} namespace must be ${moduleNamespace} or begin with ${moduleNamespace}/`,
     )
-    validateMember(
-      route.authorization,
-      platformAuthorizationStrategies,
-      `route ${identity} uses unsupported authorization ${String(route.authorization)}`,
-      issues,
+  if (!isNormalizedPath(route.namespace))
+    issues.push(`route ${identity} has invalid namespace ${route.namespace}`)
+  claimValue(
+    routeCoordinates,
+    canonicalizePath(resolvePlatformModuleRoutePath(route.namespace)),
+    moduleId,
+    'module route coordinate',
+    issues,
+  )
+}
+
+function validateManagedReviewerRoute(
+  route: PlatformRouteContribution,
+  moduleId: string,
+  identity: string,
+  issues: string[],
+) {
+  const managedReviewerTarget = route.target !== undefined && route.target !== 'caller'
+  if (managedReviewerTarget && route.authorization !== 'authenticated-session')
+    issues.push(`managed reviewer route ${identity} must use authenticated-session authorization`)
+  if (managedReviewerTarget && route.audience === 'member')
+    issues.push(`managed reviewer route ${identity} must require an HR or director audience`)
+  validateManagedReviewerSearchRoute(route, moduleId, identity, issues)
+  if (managedReviewerTarget && (route.persistenceOperations?.length ?? 0) > 0)
+    issues.push(
+      `managed reviewer route ${identity} cannot receive generic route persistence; use a target-bound platform capability`,
     )
-    validateOrganizationAuthorization(route, `route ${identity}`, issues)
-    validateCoreDataProducts(route, `route ${identity}`, 'route', productContracts, issues)
+  validateManagedReviewerRouteParameters(route, identity, issues)
+}
+
+function validateManagedReviewerSearchRoute(
+  route: PlatformRouteContribution,
+  moduleId: string,
+  identity: string,
+  issues: string[],
+) {
+  if (route.target !== 'managed-organization-account-search') return
+  if ((route.additionalRequiredPermissions?.length ?? 0) === 0)
+    issues.push(`managed reviewer search route ${identity} must require a summary permission`)
+  if (route.requiredPermission !== `${moduleId}.search`)
+    issues.push(`managed reviewer search route ${identity} must require ${moduleId}.search`)
+  if (!route.additionalRequiredPermissions?.includes(`${moduleId}.summary.read`))
+    issues.push(
+      `managed reviewer search route ${identity} must additionally require ${moduleId}.summary.read`,
+    )
+}
+
+function validateManagedReviewerRouteParameters(
+  route: PlatformRouteContribution,
+  identity: string,
+  issues: string[],
+) {
+  const namespaceSegments = new Set(route.namespace.split('/'))
+  if (
+    (route.target === 'managed-organization-account' ||
+      route.target === 'managed-organization-character') &&
+    !namespaceSegments.has(':userId')
+  )
+    issues.push(`managed reviewer route ${identity} must include :userId in its namespace`)
+  if (route.target === 'managed-organization-character' && !namespaceSegments.has(':characterId'))
+    issues.push(
+      `managed reviewer character route ${identity} must include :characterId in its namespace`,
+    )
+}
+
+function validateRouteExposure(
+  route: PlatformRouteContribution,
+  section: PlatformModuleSectionContribution | undefined,
+  moduleId: string,
+  identity: string,
+  issues: string[],
+) {
+  if (route.exposure === 'sensitive-evidence') {
+    validateSensitiveRouteExposure(route, section, moduleId, identity, issues)
+    return
+  }
+  if (section?.kind === 'sensitive-evidence')
+    issues.push(`route ${identity} in a sensitive-evidence section must declare sensitive exposure`)
+}
+
+function validateSensitiveRouteExposure(
+  route: PlatformRouteContribution,
+  section: PlatformModuleSectionContribution | undefined,
+  moduleId: string,
+  identity: string,
+  issues: string[],
+) {
+  if (section?.kind !== 'sensitive-evidence')
+    issues.push(`sensitive route ${identity} must use a sensitive-evidence section`)
+  if (
+    route.target !== 'managed-organization-account' &&
+    route.target !== 'managed-organization-character'
+  )
+    issues.push(`sensitive route ${identity} must declare a managed reviewer target`)
+  if (section && route.requiredPermission !== `${moduleId}.${section.id}.read`)
+    issues.push(`sensitive route ${identity} must require ${moduleId}.${section.id}.read`)
+}
+
+function validateOwnedCharacterRoute(
+  route: PlatformRouteContribution,
+  identity: string,
+  issues: string[],
+) {
+  if (
+    route.authorization === 'owned-character' &&
+    !route.namespace.split('/').includes(':characterId')
+  )
+    issues.push(`owned-character route ${identity} must include :characterId in its namespace`)
+}
+
+function validateOrganizationCommands(
+  value: unknown,
+  moduleId: string,
+  target: unknown,
+  section: PlatformModuleSectionContribution | undefined,
+  requiredPermission: string,
+  identity: string,
+  issues: string[],
+) {
+  if (value === undefined) return
+  if (!Array.isArray(value) || value.length === 0) {
+    issues.push(`route ${identity} organization commands must be a non-empty array`)
+    return
+  }
+  if (moduleId !== 'member-audit')
+    issues.push(`route ${identity} organization commands are reserved for module member-audit`)
+  const commandIds = collectOrganizationCommandIds(value, identity, issues)
+  if (target !== 'managed-organization-account' && target !== 'managed-organization-character')
+    issues.push(`route ${identity} organization commands require a managed reviewer target`)
+  if (section?.kind !== 'access-management')
+    issues.push(`route ${identity} organization commands require an access-management section`)
+  validateOrganizationCommandPermissions(commandIds, requiredPermission, identity, issues)
+}
+
+function collectOrganizationCommandIds(
+  value: readonly unknown[],
+  identity: string,
+  issues: string[],
+) {
+  const commandIds = new Set<string>()
+  for (const commandId of value) {
     if (
-      route.authorization === 'owned-character' &&
-      !route.namespace.split('/').includes(':characterId')
-    )
-      issues.push(`owned-character route ${identity} must include :characterId in its namespace`)
+      typeof commandId !== 'string' ||
+      !(platformOrganizationCommandIds as readonly string[]).includes(commandId)
+    ) {
+      issues.push(
+        `route ${identity} declares unsupported organization command ${String(commandId)}`,
+      )
+      continue
+    }
+    if (commandIds.has(commandId))
+      issues.push(`route ${identity} declares duplicate organization command ${commandId}`)
+    else commandIds.add(commandId)
+  }
+  return commandIds
+}
+
+function validateOrganizationCommandPermissions(
+  commandIds: ReadonlySet<string>,
+  requiredPermission: string,
+  identity: string,
+  issues: string[],
+) {
+  const requiredPermissions = new Set([...commandIds].map(organizationCommandPermission))
+  if (requiredPermissions.size > 1)
+    issues.push(`route ${identity} cannot mix organization commands with different permissions`)
+  else {
+    const [commandPermission] = requiredPermissions
+    if (commandPermission && commandPermission !== requiredPermission)
+      issues.push(`route ${identity} organization commands require permission ${commandPermission}`)
+  }
+}
+
+function organizationCommandPermission(commandId: string) {
+  switch (commandId) {
+    case 'assign-ordinary-group':
+    case 'revoke-ordinary-group':
+      return 'member-audit.groups.manage'
+    default:
+      return 'member-audit.members.block'
   }
 }
 
 function validateActivityProviders(
   manifest: PlatformModuleManifest,
+  sections: ReadonlyMap<string, PlatformModuleSectionContribution>,
   providerIds: Map<string, string>,
   productContracts: PlatformModuleValidationAuthorities['coreDataProductContracts'],
   issues: string[],
@@ -346,6 +615,17 @@ function validateActivityProviders(
     validateContributionId(provider.id, manifest.id, 'activity provider', issues)
     validateExportName(provider.exportName, manifest.id, 'activity provider', issues)
     validateOrganizationAuthorization(provider, `activity provider ${identity}`, issues)
+    const section = validateContributionSection(
+      manifest,
+      sections,
+      provider,
+      `activity provider ${identity}`,
+      issues,
+    )
+    if (section?.kind === 'sensitive-evidence')
+      issues.push(
+        `activity provider ${identity} cannot expose a sensitive-evidence section outside an audited reviewer route`,
+      )
     validateCoreDataProducts(
       provider,
       `activity provider ${identity}`,
@@ -371,7 +651,7 @@ function validateMigrations(
     const identity = `${manifest.id}/${migration.name}`
     if (!migration.name.startsWith(`${manifest.id}-`) || !migration.name.endsWith('.sql'))
       issues.push(`migration ${identity} must use ${manifest.id}-*.sql`)
-    if (!platformMigrationFilenamePattern.test(migration.name))
+    if (!isPlatformMigrationFilename(migration.name))
       issues.push(`migration ${identity} must be a package-local filename`)
     claimValue(migrationIds, identity, manifest.id, 'migration identity', issues)
   }
@@ -386,54 +666,126 @@ function validateEsiOperations(manifest: PlatformModuleManifest, issues: string[
 
 function validateResources(
   manifest: PlatformModuleManifest,
+  sections: ReadonlyMap<string, PlatformModuleSectionContribution>,
   esiOperationIds: ReadonlyMap<string, string>,
   resourceIds: Map<string, string>,
   productContracts: PlatformModuleValidationAuthorities['coreDataProductContracts'],
   issues: string[],
 ) {
-  const eligibilityBySubject = {
-    deployment: 'current-deployment',
-    character: 'current-owned-character',
-    corporation: 'current-managed-corporation-source',
-    alliance: 'current-managed-alliance',
-  } as const
-  const eligibilityKinds = Object.values(eligibilityBySubject)
-  for (const resource of manifest.server.resources) {
-    const identity = `${manifest.id}/${resource.id}`
-    validateContributionId(resource.id, manifest.id, 'resource', issues)
-    validateExportName(resource.exportName, manifest.id, 'resource', issues)
-    claimValue(resourceIds, resource.id, manifest.id, 'resource ID', issues)
-    const expectedEligibility = Object.hasOwn(eligibilityBySubject, resource.subjectKind)
-      ? eligibilityBySubject[resource.subjectKind]
-      : undefined
-    if (!expectedEligibility)
-      issues.push(
-        `resource ${identity} uses unsupported subject kind ${String(resource.subjectKind)}`,
-      )
-    if (
-      !Number.isSafeInteger(resource.materializationIntervalSeconds) ||
-      resource.materializationIntervalSeconds <= 0
-    )
-      issues.push(`resource ${identity} must use a positive whole interval`)
-    const eligibilityKind = resource.eligibility?.kind
-    if (!eligibilityKinds.includes(eligibilityKind as never))
-      issues.push(`resource ${identity} uses unsupported eligibility ${String(eligibilityKind)}`)
-    else if (expectedEligibility && eligibilityKind !== expectedEligibility)
-      issues.push(
-        `resource ${identity} eligibility ${String(eligibilityKind)} is incompatible with subject kind ${String(resource.subjectKind)}; expected ${expectedEligibility}`,
-      )
-    if (!esiOperationIds.has(normalizeIdentity(resource.operationId)))
-      issues.push(`resource ${identity} references unknown ESI operation ${resource.operationId}`)
-    validateDependentEsiOperations(manifest, resource, identity, issues)
-    validateResourceBatch(resource, identity, esiOperationIds, issues)
-    validateCoreDataProducts(
+  for (const resource of manifest.server.resources)
+    validateResource(
+      manifest,
+      sections,
       resource,
-      `resource ${identity}`,
-      'resource-projection',
+      esiOperationIds,
+      resourceIds,
       productContracts,
       issues,
     )
-  }
+}
+
+function validateResource(
+  manifest: PlatformModuleManifest,
+  sections: ReadonlyMap<string, PlatformModuleSectionContribution>,
+  resource: PlatformResourceContribution,
+  esiOperationIds: ReadonlyMap<string, string>,
+  resourceIds: Map<string, string>,
+  productContracts: PlatformModuleValidationAuthorities['coreDataProductContracts'],
+  issues: string[],
+) {
+  const identity = `${manifest.id}/${resource.id}`
+  validateContributionId(resource.id, manifest.id, 'resource', issues)
+  validateExportName(resource.exportName, manifest.id, 'resource', issues)
+  const section = validateContributionSection(
+    manifest,
+    sections,
+    resource,
+    `resource ${identity}`,
+    issues,
+  )
+  if (manifest.sections !== undefined && section?.kind !== 'sensitive-evidence')
+    issues.push(`resource ${identity} must use a sensitive-evidence section`)
+  claimValue(resourceIds, resource.id, manifest.id, 'resource ID', issues)
+  const expectedEligibility = validateResourceSubjectKind(resource, identity, issues)
+  validateResourceMaterializationInterval(resource, identity, issues)
+  validateResourceEligibility(resource, section, expectedEligibility, identity, issues)
+  if (!esiOperationIds.has(normalizeIdentity(resource.operationId)))
+    issues.push(`resource ${identity} references unknown ESI operation ${resource.operationId}`)
+  validateDependentEsiOperations(resource, identity, esiOperationIds, issues)
+  validateResourceBatch(resource, identity, esiOperationIds, issues)
+  validateCoreDataProducts(
+    resource,
+    `resource ${identity}`,
+    'resource-projection',
+    productContracts,
+    issues,
+  )
+}
+
+function validateResourceSubjectKind(
+  resource: PlatformResourceContribution,
+  identity: string,
+  issues: string[],
+) {
+  if (resource.subjectKind === 'character') return undefined
+  const expectedEligibility = resourceEligibilityBySubject[resource.subjectKind]
+  if (!expectedEligibility)
+    issues.push(
+      `resource ${identity} uses unsupported subject kind ${String(resource.subjectKind)}`,
+    )
+  return expectedEligibility
+}
+
+function validateResourceMaterializationInterval(
+  resource: PlatformResourceContribution,
+  identity: string,
+  issues: string[],
+) {
+  if (
+    !Number.isSafeInteger(resource.materializationIntervalSeconds) ||
+    resource.materializationIntervalSeconds <= 0
+  )
+    issues.push(`resource ${identity} must use a positive whole interval`)
+}
+
+function validateResourceEligibility(
+  resource: PlatformResourceContribution,
+  section: PlatformModuleSectionContribution | undefined,
+  expectedEligibility:
+    | (typeof resourceEligibilityBySubject)[keyof typeof resourceEligibilityBySubject]
+    | undefined,
+  identity: string,
+  issues: string[],
+) {
+  const eligibilityKind = resource.eligibility?.kind
+  if (!resourceEligibilityKinds.has(eligibilityKind as never))
+    issues.push(`resource ${identity} uses unsupported eligibility ${String(eligibilityKind)}`)
+  else if (
+    resource.subjectKind === 'character' &&
+    !characterResourceEligibilityKinds.has(eligibilityKind as never)
+  )
+    issues.push(
+      `resource ${identity} eligibility ${String(eligibilityKind)} is incompatible with subject kind character`,
+    )
+  else if (expectedEligibility && eligibilityKind !== expectedEligibility)
+    issues.push(
+      `resource ${identity} eligibility ${String(eligibilityKind)} is incompatible with subject kind ${String(resource.subjectKind)}; expected ${expectedEligibility}`,
+    )
+  if (
+    eligibilityKind === 'current-managed-member-character' &&
+    section?.kind !== 'sensitive-evidence'
+  )
+    issues.push(
+      `resource ${identity} managed-member eligibility requires a sensitive-evidence section`,
+    )
+  if (
+    resource.subjectKind === 'character' &&
+    section?.kind === 'sensitive-evidence' &&
+    eligibilityKind !== 'current-managed-member-character'
+  )
+    issues.push(
+      `resource ${identity} in a sensitive-evidence section must use current-managed-member-character eligibility`,
+    )
 }
 
 function validateCoreDataProducts(
@@ -471,13 +823,13 @@ function validateCoreDataProducts(
 }
 
 function validateDependentEsiOperations(
-  manifest: PlatformModuleManifest,
   resource: PlatformResourceContribution,
   identity: string,
+  esiOperationIds: ReadonlyMap<string, string>,
   issues: string[],
 ) {
   for (const operationId of resource.dependentOperationIds ?? [])
-    if (!manifest.server.esiOperations.some((operation) => operation.id === operationId))
+    if (!esiOperationIds.has(normalizeIdentity(operationId)))
       issues.push(
         `resource ${identity} references undeclared dependent ESI operation ${operationId}`,
       )
@@ -506,10 +858,15 @@ function validateResourceBatch(
     )
 }
 
-function validatePages(manifest: PlatformModuleManifest, issues: string[]) {
+function validatePages(
+  manifest: PlatformModuleManifest,
+  sections: ReadonlyMap<string, PlatformModuleSectionContribution>,
+  issues: string[],
+) {
   for (const page of manifest.nuxt.pages) {
     const identity = `${manifest.id}/${page.id}`
     validateContributionId(page.id, manifest.id, 'page', issues)
+    validateContributionSection(manifest, sections, page, `page ${identity}`, issues)
     if (!page.name.startsWith(`eve-${manifest.id}-`))
       issues.push(`page ${identity} name must begin with eve-${manifest.id}-`)
     if (!isNormalizedPath(page.path)) issues.push(`page ${identity} has invalid path ${page.path}`)
@@ -536,12 +893,14 @@ function validatePages(manifest: PlatformModuleManifest, issues: string[]) {
 
 function validateNavigation(
   manifest: PlatformModuleManifest,
+  sections: ReadonlyMap<string, PlatformModuleSectionContribution>,
   navigationIds: Map<string, string>,
   issues: string[],
 ) {
   for (const navigation of manifest.nuxt.navigation) {
     const identity = `${manifest.id}/${navigation.id}`
     validateContributionId(navigation.id, manifest.id, 'navigation', issues)
+    validateContributionSection(manifest, sections, navigation, `navigation ${identity}`, issues)
     if (navigation.icon !== undefined)
       validateMember(
         navigation.icon,
@@ -607,14 +966,88 @@ function validateManifestIdentity(
   reservedModuleIds: ReadonlySet<string>,
   issues: string[],
 ) {
-  if (!platformModuleIdPattern.test(manifest.id))
+  const identifierIssues = platformModuleIdIssues(manifest.id)
+  if (identifierIssues.includes('syntax'))
     issues.push(`module ID ${manifest.id} must be lowercase kebab-case`)
-  if (manifest.id.length > platformModuleIdMaxLength)
-    issues.push(`module ID ${manifest.id} must be at most ${platformModuleIdMaxLength} characters`)
+  if (identifierIssues.includes('too-long'))
+    issues.push(`module ID ${manifest.id} must be at most 44 characters`)
   if (reservedModuleIds.has(manifest.id.toLowerCase()))
     issues.push(`module ID ${manifest.id} is reserved`)
   if (typeof manifest.defaultEnabled !== 'boolean')
     issues.push(`module ${manifest.id} must declare a boolean defaultEnabled value`)
+}
+
+function validateSections(manifest: PlatformModuleManifest, issues: string[]) {
+  const sections = new Map<string, PlatformModuleSectionContribution>()
+  if (manifest.sections === undefined) return sections
+  if (!Array.isArray(manifest.sections) || manifest.sections.length === 0) {
+    issues.push(`module ${manifest.id} sections must be a non-empty array when declared`)
+    return sections
+  }
+  for (const section of manifest.sections) validateSection(manifest.id, section, sections, issues)
+  return sections
+}
+
+function validateSection(
+  moduleId: string,
+  section: PlatformModuleSectionContribution | null | undefined,
+  sections: Map<string, PlatformModuleSectionContribution>,
+  issues: string[],
+) {
+  const identity = `${moduleId}/${String(section?.id)}`
+  if (!section || typeof section.id !== 'string') {
+    issues.push(`module ${moduleId} contains an invalid section declaration`)
+    return
+  }
+  validateContributionId(section.id, moduleId, 'section', issues)
+  const normalizedId = normalizeIdentity(section.id)
+  if (sections.has(normalizedId))
+    issues.push(`section ID ${section.id} is duplicated in ${moduleId}`)
+  else sections.set(normalizedId, section)
+  validateMember(
+    section.kind,
+    platformModuleSectionKinds,
+    `section ${identity} uses unsupported kind ${String(section.kind)}`,
+    issues,
+  )
+  if (section.defaultEnabled !== false) issues.push(`section ${identity} must default disabled`)
+  if (section.kind === 'sensitive-evidence') {
+    if (!Number.isSafeInteger(section.disclosureRevision) || section.disclosureRevision < 1)
+      issues.push(`sensitive section ${identity} must declare a positive disclosure revision`)
+  } else if (section.disclosureRevision !== undefined)
+    issues.push(`non-evidence section ${identity} cannot declare a disclosure revision`)
+}
+
+function validateContributionSection(
+  manifest: PlatformModuleManifest,
+  sections: ReadonlyMap<string, PlatformModuleSectionContribution>,
+  contribution: { readonly sectionId?: unknown },
+  identity: string,
+  issues: string[],
+) {
+  if (manifest.sections === undefined) {
+    if (contribution.sectionId !== undefined)
+      issues.push(`${identity} cannot declare a section when module ${manifest.id} has none`)
+    return undefined
+  }
+  if (typeof contribution.sectionId !== 'string') {
+    issues.push(`${identity} must declare exactly one section`)
+    return undefined
+  }
+  const section = sections.get(normalizeIdentity(contribution.sectionId))
+  if (!section) issues.push(`${identity} references unknown section ${contribution.sectionId}`)
+  return section
+}
+
+function validateClassification(
+  value: unknown,
+  allowed: readonly string[],
+  message: string,
+  optional: boolean,
+  issues: string[],
+) {
+  if (optional && value === undefined) return
+  if (typeof value !== 'string' || !allowed.includes(value)) issues.push(message)
 }
 
 function validatePackageNames(manifest: PlatformModuleManifest, issues: string[]) {
@@ -627,17 +1060,21 @@ function validatePackageNames(manifest: PlatformModuleManifest, issues: string[]
 }
 
 function validateContributionId(value: string, moduleId: string, kind: string, issues: string[]) {
-  if (!platformContributionIdPattern.test(value))
+  if (!isPlatformContributionId(value))
     issues.push(`${kind} ${moduleId}/${value} must use a lowercase kebab-case ID`)
 }
 
 function validateExportName(value: string, moduleId: string, kind: string, issues: string[]) {
-  if (!platformExportNamePattern.test(value))
+  if (!isPlatformExportName(value))
     issues.push(`${kind} ${moduleId} export ${value} is not a valid JavaScript export name`)
 }
 
 function validateOrganizationAuthorization(
-  contribution: { readonly audience: unknown; readonly requiredPermission: unknown },
+  contribution: {
+    readonly audience: unknown
+    readonly requiredPermission: unknown
+    readonly additionalRequiredPermissions?: unknown
+  },
   identity: string,
   issues: string[],
 ) {
@@ -647,15 +1084,24 @@ function validateOrganizationAuthorization(
     )
   if (!isValidPermissionKey(contribution.requiredPermission))
     issues.push(`${identity} must declare a valid required permission`)
+  if (contribution.additionalRequiredPermissions !== undefined) {
+    if (
+      !Array.isArray(contribution.additionalRequiredPermissions) ||
+      contribution.additionalRequiredPermissions.length === 0 ||
+      !contribution.additionalRequiredPermissions.every(isValidPermissionKey)
+    )
+      issues.push(`${identity} must declare valid additional required permissions`)
+    else if (
+      new Set([contribution.requiredPermission, ...contribution.additionalRequiredPermissions])
+        .size !==
+      contribution.additionalRequiredPermissions.length + 1
+    )
+      issues.push(`${identity} must not declare duplicate required permissions`)
+  }
 }
 
 function isValidPermissionKey(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    value.length <= platformPermissionKeyMaxLength &&
-    platformPermissionKeyPattern.test(value) &&
-    value.split(/[.:]/).every((segment) => segment.length > 0 && !segment.endsWith('-'))
-  )
+  return typeof value === 'string' && isPlatformPermissionKey(value)
 }
 
 function validateMember(

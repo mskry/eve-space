@@ -198,7 +198,12 @@ async function seedFixtureResources(validatedAt: Date) {
   const due = await selectDueInstalledResources({ limit: 100 })
   const fixtureResources = [
     coreResources.find(({ resourceId }) => resourceId === 'corporation-roster')!,
-    ...installedModuleResources,
+    ...installedModuleResources.filter((resource) =>
+      due.some(
+        ({ identity }) =>
+          identity.moduleId === resource.moduleId && identity.resourceId === resource.resourceId,
+      ),
+    ),
   ]
   await Promise.all(
     fixtureResources.map(async (resource) => {
@@ -221,6 +226,7 @@ async function seedFixtureResources(validatedAt: Date) {
           resource: installed,
           subject,
           authorizationGeneration: eligibility.authorizationGeneration,
+          managedAuthority: eligibility.managedAuthority,
           validatedAt: validatedAt.toISOString(),
           organizationVersion,
           complete: true,

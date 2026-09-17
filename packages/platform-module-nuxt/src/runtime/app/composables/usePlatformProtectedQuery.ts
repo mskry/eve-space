@@ -82,7 +82,7 @@ export function usePlatformProtectedQuery<
       })
     const key =
       moduleId && isPlatformQuerySubjectValid(subject)
-        ? platformModuleQueryKey(moduleId, subject, resource)
+        ? platformModuleQueryKey(moduleId, subject, resource, access.sectionId)
         : [...PLATFORM_PRIVATE_QUERY_ROOT, 'inactive-module-query', moduleId, ...resource]
     return {
       enabled,

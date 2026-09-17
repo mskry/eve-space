@@ -13,6 +13,7 @@ const buildModules = new Map([
   ['pages.ts', 'pure'],
   ['path-containment.ts', 'pure'],
   ['resolved-exposures.ts', 'pure'],
+  ['stable-order.ts', 'pure'],
 ])
 
 export interface PlatformNuxtSource {

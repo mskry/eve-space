@@ -5,16 +5,27 @@ const mocks = vi.hoisted(() => ({
   delete: vi.fn(),
   insert: vi.fn(),
   insertValues: [] as unknown[],
+  select: vi.fn(),
+  selectResults: [] as unknown[][],
 }))
 
 vi.mock('../../src/db/client.js', () => ({
   db: {
     delete: mocks.delete,
     insert: mocks.insert,
+    select: mocks.select,
   },
 }))
 
-import { consumeOAuthState, storeOAuthState } from '../../src/auth/oauth-state-store.js'
+import {
+  consumeOAuthState,
+  findOAuthState,
+  storeOAuthState,
+} from '../../src/auth/oauth-state-store.js'
+
+const reviewerUseDisclosures = [
+  { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 3 },
+] as const
 
 describe('OAuth state store', () => {
   beforeEach(() => {
@@ -23,8 +34,10 @@ describe('OAuth state store', () => {
     vi.setSystemTime(new Date('2026-09-11T12:00:00.000Z'))
     mocks.deleteResults.length = 0
     mocks.insertValues.length = 0
+    mocks.selectResults.length = 0
     mocks.delete.mockImplementation(() => deleteQuery(mocks.deleteResults.shift() ?? []))
     mocks.insert.mockImplementation(() => insertQuery())
+    mocks.select.mockImplementation(() => selectQuery(mocks.selectResults.shift() ?? []))
   })
 
   afterEach(() => {
@@ -33,7 +46,7 @@ describe('OAuth state store', () => {
 
   test.each([
     {
-      context: { intent: 'login', returnPath: '/dashboard' } as const,
+      context: { intent: 'login', returnPath: '/dashboard', reviewerUseDisclosures } as const,
       expected: {
         intent: 'login',
         userId: null,
@@ -45,10 +58,11 @@ describe('OAuth state store', () => {
         transferApprovalId: null,
         transferSourceUserId: null,
         transferSourceSubjectLifecycleId: null,
+        reviewerUseDisclosures,
       },
     },
     {
-      context: { intent: 'attach', userId: 'user-1' } as const,
+      context: { intent: 'attach', userId: 'user-1', reviewerUseDisclosures } as const,
       expected: {
         intent: 'attach',
         userId: 'user-1',
@@ -60,10 +74,16 @@ describe('OAuth state store', () => {
         transferApprovalId: null,
         transferSourceUserId: null,
         transferSourceSubjectLifecycleId: null,
+        reviewerUseDisclosures,
       },
     },
     {
-      context: { intent: 'reauthorize', userId: 'user-1', characterId: 90_000_001 } as const,
+      context: {
+        intent: 'reauthorize',
+        userId: 'user-1',
+        characterId: 90_000_001,
+        reviewerUseDisclosures,
+      } as const,
       expected: {
         intent: 'reauthorize',
         userId: 'user-1',
@@ -75,6 +95,7 @@ describe('OAuth state store', () => {
         transferApprovalId: null,
         transferSourceUserId: null,
         transferSourceSubjectLifecycleId: null,
+        reviewerUseDisclosures,
       },
     },
     {
@@ -84,6 +105,7 @@ describe('OAuth state store', () => {
         characterId: 90_000_001,
         organizationId: 98_000_001,
         organizationVersion: 8,
+        reviewerUseDisclosures,
       } as const,
       expected: {
         intent: 'claim-organization-owner',
@@ -96,6 +118,7 @@ describe('OAuth state store', () => {
         transferApprovalId: null,
         transferSourceUserId: null,
         transferSourceSubjectLifecycleId: null,
+        reviewerUseDisclosures,
       },
     },
     {
@@ -106,6 +129,7 @@ describe('OAuth state store', () => {
         sourceSubjectLifecycleId: 'lifecycle-1',
         userId: 'user-1',
         characterId: 90_000_001,
+        reviewerUseDisclosures,
       } as const,
       expected: {
         intent: 'transfer',
@@ -118,6 +142,7 @@ describe('OAuth state store', () => {
         transferApprovalId: 'approval-1',
         transferSourceUserId: 'source-user-1',
         transferSourceSubjectLifecycleId: 'lifecycle-1',
+        reviewerUseDisclosures,
       },
     },
   ])(
@@ -138,16 +163,20 @@ describe('OAuth state store', () => {
 
   test.each([
     {
-      record: record({ intent: 'login', returnPath: '/dashboard' }),
-      expected: { intent: 'login', returnPath: '/dashboard' },
+      record: record({
+        intent: 'login',
+        returnPath: '/dashboard',
+        reviewerUseDisclosures,
+      }),
+      expected: { intent: 'login', returnPath: '/dashboard', reviewerUseDisclosures },
     },
     {
       record: record({ intent: 'login', returnPath: null }),
-      expected: { intent: 'login' },
+      expected: { intent: 'login', reviewerUseDisclosures: [] },
     },
     {
       record: record({ intent: 'attach', userId: 'user-1' }),
-      expected: { intent: 'attach', userId: 'user-1' },
+      expected: { intent: 'attach', userId: 'user-1', reviewerUseDisclosures: [] },
     },
     {
       record: record({
@@ -155,11 +184,13 @@ describe('OAuth state store', () => {
         userId: 'user-1',
         characterId: 90_000_001,
         returnPath: '/characters/90000001',
+        reviewerUseDisclosures: [],
       }),
       expected: {
         intent: 'reauthorize',
         userId: 'user-1',
         characterId: 90_000_001,
+        reviewerUseDisclosures: [],
         returnPath: '/characters/90000001',
       },
     },
@@ -173,6 +204,7 @@ describe('OAuth state store', () => {
         intent: 'reauthorize',
         userId: 'user-1',
         characterId: 90_000_001,
+        reviewerUseDisclosures: [],
       },
     },
     {
@@ -182,11 +214,13 @@ describe('OAuth state store', () => {
         characterId: 90_000_001,
         organizationId: 98_000_001,
         organizationVersion: 8,
+        reviewerUseDisclosures: [],
       }),
       expected: {
         intent: 'claim-organization-owner',
         userId: 'user-1',
         characterId: 90_000_001,
+        reviewerUseDisclosures: [],
         organizationId: 98_000_001,
         organizationVersion: 8,
       },
@@ -207,6 +241,7 @@ describe('OAuth state store', () => {
         sourceSubjectLifecycleId: 'lifecycle-1',
         userId: 'user-1',
         characterId: 90_000_001,
+        reviewerUseDisclosures: [],
       },
     },
   ])(
@@ -222,6 +257,21 @@ describe('OAuth state store', () => {
     mocks.deleteResults.push([])
 
     await expect(consumeOAuthState('state-1')).resolves.toBeNull()
+  })
+
+  test.each([
+    null,
+    {},
+    [{ moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 0 }],
+    [
+      { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 1 },
+      { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 2 },
+    ],
+    [{ moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 1, extra: true }],
+  ])('rejects malformed or duplicate reviewer-use disclosures', async (value) => {
+    mocks.deleteResults.push([record({ reviewerUseDisclosures: value })])
+
+    await expect(consumeOAuthState('state-1')).rejects.toThrow('reviewer-use disclosures')
   })
 
   test.each([
@@ -303,6 +353,19 @@ describe('OAuth state store', () => {
       'Stored OAuth state has invalid authorization context',
     )
   })
+
+  test('loads pending state without consuming it', async () => {
+    mocks.selectResults.push([
+      record({ intent: 'login', returnPath: '/dashboard', reviewerUseDisclosures }),
+    ])
+
+    await expect(findOAuthState('state-1')).resolves.toEqual({
+      intent: 'login',
+      returnPath: '/dashboard',
+      reviewerUseDisclosures,
+    })
+    expect(mocks.delete).not.toHaveBeenCalled()
+  })
 })
 
 function deleteQuery(result: unknown[]) {
@@ -318,6 +381,13 @@ function insertQuery() {
     mocks.insertValues.push(value)
     return builder
   }
+  return builder
+}
+
+function selectQuery(result: unknown[]) {
+  const builder = query(result)
+  builder.from = () => builder
+  builder.where = () => builder
   return builder
 }
 
@@ -340,6 +410,7 @@ function record(overrides: Record<string, unknown>) {
     transferApprovalId: null,
     transferSourceUserId: null,
     transferSourceSubjectLifecycleId: null,
+    reviewerUseDisclosures: [],
     ...overrides,
   }
 }

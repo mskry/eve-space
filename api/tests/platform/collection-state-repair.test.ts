@@ -54,6 +54,22 @@ describe('platform collection-state repair', () => {
     expect(connection).not.toHaveBeenCalled()
   })
 
+  test('leaves managed-member authorization repair to the relational classifier', async () => {
+    const connection = vi.fn()
+    const resources = [
+      {
+        ...resource,
+        sectionId: 'wallet',
+        eligibility: { kind: 'current-managed-member-character' as const },
+      },
+    ]
+
+    await expect(
+      repairPlatformCollectionState({ connection: connection as never, resources }),
+    ).resolves.toEqual({ repairedResources: 0 })
+    expect(connection).not.toHaveBeenCalled()
+  })
+
   test('stops between set-based transitions when the planner lease is lost', async () => {
     const lease = new AbortController()
     const connection = vi.fn().mockImplementation(() => {

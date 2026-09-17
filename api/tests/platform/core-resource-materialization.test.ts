@@ -83,6 +83,40 @@ describe('core resource materialization', () => {
     expect(mocks.managedCorporations).toHaveBeenCalledOnce()
   })
 
+  test.each([
+    [new Date('2026-09-01T11:59:00.000Z'), true],
+    [new Date('2026-09-01T12:01:00.000Z'), false],
+  ] as const)(
+    'marks full convergence as %s when alliance authority crosses its freshness boundary',
+    async (nextEligibleAt, recomputeAllAccounts) => {
+      const database = databaseWithResults([
+        [
+          {
+            validatedAt: new Date('2026-09-01T11:00:00.000Z'),
+            nextEligibleAt,
+            lastFailureClass: null,
+          },
+        ],
+        [{ organizationVersion: 8 }],
+      ])
+      mocks.managedCorporations.mockResolvedValue({
+        outcome: 'refreshed',
+        addedIds: [],
+        removedIds: [],
+      })
+
+      await expect(
+        materializeCoreResourceObservation(database, {
+          resourceId: 'managed-corporations',
+          subject: allianceSubject(),
+          data: [98_000_001],
+          validatedAt,
+          authorizationGeneration: null,
+        }),
+      ).resolves.toMatchObject({ recomputeAllAccounts })
+    },
+  )
+
   test('materializes an authorized corporation roster', async () => {
     const database = databaseWithResults([
       [{ sourceId: 'source-1', organizationVersion: 8, characterId: 90_000_001 }],

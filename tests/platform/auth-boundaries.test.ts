@@ -9,6 +9,7 @@ import {
 describe('authentication module boundaries', () => {
   test('declares every focused authentication module', () => {
     expect(declaredAuthModules).toEqual([
+      'character-disclosure-store',
       'character-lifecycle',
       'character-lock',
       'character-token-store',

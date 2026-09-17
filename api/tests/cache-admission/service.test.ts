@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import {
   coreOrganizationAdmissionScopes,
   platformOrganizationAdmissionScope,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/server'
 import {
   loadCacheAdmissionContext,
   type CacheAdmissionServiceOptions,

@@ -3,6 +3,7 @@ import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { runMigrations } from '../../../src/db/migration-runner.js'
+import type { ReviewerUseDisclosure } from '../../../src/reviewer-use-disclosure.js'
 
 const ssoMocks = vi.hoisted(() => {
   class EveSsoTokenRefreshError extends Error {
@@ -30,6 +31,7 @@ let container: StartedTestContainer
 let databaseUrl: string
 let characterLifecycle: typeof import('../../../src/auth/character-lifecycle.js')
 let characterTokenStore: typeof import('../../../src/auth/character-token-store.js')
+let characterDisclosureStore: typeof import('../../../src/auth/character-disclosure-store.js')
 let tokenService: typeof import('../../../src/auth/tokens.js')
 let sessionStore: typeof import('../../../src/auth/session-store.js')
 let dbClient: typeof import('../../../src/db/client.js')
@@ -63,6 +65,7 @@ beforeAll(async () => {
 
   characterLifecycle = await import('../../../src/auth/character-lifecycle.js')
   characterTokenStore = await import('../../../src/auth/character-token-store.js')
+  characterDisclosureStore = await import('../../../src/auth/character-disclosure-store.js')
   tokenService = await import('../../../src/auth/tokens.js')
   sessionStore = await import('../../../src/auth/session-store.js')
   dbClient = await import('../../../src/db/client.js')
@@ -144,6 +147,12 @@ describe('transactional domain event producers', () => {
     const character = await characterLifecycle.findOwnedCharacter(userId, mainCharacterId)
     if (!character) throw new Error('Expected owned character')
 
+    await expect(characterTokenStore.findCharacterToken(mainCharacterId)).resolves.toMatchObject({
+      userId,
+      scopes,
+      tokenVersion: 0,
+    })
+    await expect(characterTokenStore.findCharacterToken(otherCharacterId)).resolves.toBeNull()
     await expect(
       characterTokenStore.findCharacterCacheAuthorization(mainCharacterId),
     ).resolves.toEqual({
@@ -460,6 +469,114 @@ describe('transactional domain event producers', () => {
       )
     }
   })
+
+  test('binds only callback disclosures to the resulting interactive authorization generation', async () => {
+    await installEvidenceSection(1)
+    const disclosure = reviewerUseDisclosure(1)
+    await saveLogin(
+      { ...authorizationInput(mainCharacterId, []), reviewerUseDisclosures: [disclosure] },
+      'main-session',
+    )
+    const userId = await findCharacterUserId(mainCharacterId)
+
+    await expect(resolveDisclosure()).resolves.toEqual({
+      status: 'eligible',
+      authorizationGeneration: 0,
+      disclosureVersion: 1,
+    })
+
+    await setEvidenceDisclosureVersion(2)
+    await expect(resolveDisclosure()).resolves.toEqual({
+      status: 'authorization-required',
+      authorizationGeneration: 0,
+      disclosureVersion: 2,
+    })
+
+    await characterLifecycle.reauthorizeCharacter({
+      ...authorizationInput(mainCharacterId, []),
+      userId,
+      expectedCharacterId: mainCharacterId,
+      reviewerUseDisclosures: [disclosure],
+    })
+    await expect(readDisclosureAcceptances(mainCharacterId)).resolves.toEqual([
+      {
+        module_id: 'member-audit',
+        section_id: 'wallet',
+        disclosure_version: 1,
+        authorization_generation: 1,
+      },
+    ])
+    await expect(resolveDisclosure()).resolves.toMatchObject({
+      status: 'authorization-required',
+      authorizationGeneration: 1,
+      disclosureVersion: 2,
+    })
+
+    await characterLifecycle.reauthorizeCharacter({
+      ...authorizationInput(mainCharacterId, []),
+      userId,
+      expectedCharacterId: mainCharacterId,
+      reviewerUseDisclosures: [reviewerUseDisclosure(2)],
+    })
+    await expect(resolveDisclosure()).resolves.toEqual({
+      status: 'eligible',
+      authorizationGeneration: 2,
+      disclosureVersion: 2,
+    })
+
+    await characterLifecycle.reauthorizeCharacter({
+      ...authorizationInput(mainCharacterId, []),
+      userId,
+      expectedCharacterId: mainCharacterId,
+      reviewerUseDisclosures: [],
+    })
+    await expect(readDisclosureAcceptances(mainCharacterId)).resolves.toEqual([])
+    await expect(resolveDisclosure()).resolves.toMatchObject({
+      status: 'authorization-required',
+      authorizationGeneration: 3,
+      disclosureVersion: 2,
+    })
+  })
+
+  test('advances accepted disclosures only with a winning refresh generation and deletes them on revocation', async () => {
+    const requiredScope = 'esi-wallet.read_character_wallet.v1'
+    await installEvidenceSection(1)
+    await saveLogin(
+      {
+        ...authorizationInput(mainCharacterId, [requiredScope]),
+        reviewerUseDisclosures: [reviewerUseDisclosure(1)],
+      },
+      'main-session',
+    )
+    const subjectLifecycleId = await findSubjectLifecycleId(mainCharacterId)
+    await expireToken(mainCharacterId)
+    ssoMocks.refreshAccessToken.mockResolvedValue({
+      access_token: 'refreshed-access',
+      refresh_token: 'refreshed-refresh',
+      expires_in: 1200,
+      token_type: 'Bearer',
+    })
+    ssoMocks.verifyAccessToken.mockResolvedValue({
+      characterId: mainCharacterId,
+      characterName: `Character ${mainCharacterId}`,
+      scopes: [requiredScope],
+    })
+
+    await tokenService.getCharacterAccessToken(mainCharacterId, subjectLifecycleId, requiredScope)
+
+    await expect(resolveDisclosure()).resolves.toEqual({
+      status: 'eligible',
+      authorizationGeneration: 1,
+      disclosureVersion: 1,
+    })
+    await dbClient.sql`delete from eve_tokens where character_id = ${mainCharacterId}`
+    await expect(readDisclosureAcceptances(mainCharacterId)).resolves.toEqual([])
+    await expect(resolveDisclosure()).resolves.toEqual({
+      status: 'authorization-required',
+      authorizationGeneration: null,
+      disclosureVersion: 1,
+    })
+  })
 })
 
 const mainCharacterId = 1404328063
@@ -479,12 +596,76 @@ function authorizationInput(characterId: number, scopes: string[]) {
   }
 }
 
-function saveLogin(input: ReturnType<typeof authorizationInput>, sessionToken: string) {
+function saveLogin(
+  input: ReturnType<typeof authorizationInput> & {
+    reviewerUseDisclosures?: readonly ReviewerUseDisclosure[]
+  },
+  sessionToken: string,
+) {
   return characterLifecycle.saveLogin({
     ...input,
     sessionToken,
     sessionExpiresAt: new Date(Date.now() + 60_000),
   })
+}
+
+function reviewerUseDisclosure(disclosureVersion: number): ReviewerUseDisclosure {
+  return { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion }
+}
+
+async function installEvidenceSection(disclosureVersion: number) {
+  await dbClient.sql`
+    insert into deployment_modules (module_id, enabled)
+    values ('member-audit', true)
+    on conflict (module_id) do update set enabled = true
+  `
+  await dbClient.sql`
+    insert into deployment_module_sections (
+      module_id, section_id, kind, enabled, declaration_revision,
+      disclosure_version, activation_version
+    ) values (
+      'member-audit', 'wallet', 'sensitive-evidence', true, 1,
+      ${disclosureVersion}, 1
+    )
+    on conflict (module_id, section_id) do update set
+      kind = excluded.kind,
+      enabled = excluded.enabled,
+      declaration_revision = excluded.declaration_revision,
+      disclosure_version = excluded.disclosure_version,
+      activation_version = excluded.activation_version
+  `
+}
+
+function setEvidenceDisclosureVersion(disclosureVersion: number) {
+  return dbClient.sql`
+    update deployment_module_sections
+    set disclosure_version = ${disclosureVersion}
+    where module_id = 'member-audit' and section_id = 'wallet'
+  `
+}
+
+function resolveDisclosure() {
+  return characterDisclosureStore.resolveCharacterReviewerDisclosureEligibility(
+    mainCharacterId,
+    'member-audit',
+    'wallet',
+  )
+}
+
+function readDisclosureAcceptances(characterId: number) {
+  return dbClient.sql<
+    {
+      module_id: string
+      section_id: string
+      disclosure_version: number
+      authorization_generation: number
+    }[]
+  >`
+    select module_id, section_id, disclosure_version, authorization_generation
+    from character_reviewer_disclosure_acceptances
+    where character_id = ${characterId}
+    order by module_id, section_id
+  `
 }
 
 function characterSnapshot(userId: string, characterId: number, isMain: boolean, scopes: string[]) {

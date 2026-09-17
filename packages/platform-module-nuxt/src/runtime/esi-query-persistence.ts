@@ -5,10 +5,8 @@ import {
   type EntryKey,
   type QueryMeta,
 } from '@pinia/colada'
-import type {
-  PlatformAuthorizationStrategy,
-  PlatformQueryAdmissionScopeDescriptor,
-} from '@eve-space/platform-module-contract'
+import type { PlatformAuthorizationStrategy } from '@eve-space/platform-module-contract/server'
+import type { PlatformQueryAdmissionScopeDescriptor } from '@eve-space/platform-module-contract/nuxt'
 
 export const ESI_QUERY_RETENTION_MS = 24 * 60 * 60_000
 

@@ -1,4 +1,4 @@
-import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import { Worker } from 'bullmq'
 import { Redis } from 'ioredis'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'

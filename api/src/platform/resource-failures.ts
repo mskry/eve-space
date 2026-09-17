@@ -1,14 +1,24 @@
-import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import { EveSsoTokenRefreshError } from '../auth/sso.js'
 import { TokenRefreshUnavailableError } from '../auth/token-errors.js'
+import { sql } from '../db/client.js'
+import { resourceRefreshLockKey, resourceRefreshLockNamespace } from '../db/locks.js'
 import { classifyEsiRefreshFailure, EsiQuotaError } from '../esi-gateway/failures.js'
 import type { PlatformEsiExecution } from '../esi-gateway/platform-execution.js'
 import type {
   PlatformCollectionFailureClass,
   PlatformCollectionStateIdentity,
+  PlatformCollectionStateWrite,
 } from './collection-state.js'
-import { upsertPlatformCollectionState } from './collection-state-store.js'
-import { resolveInstalledResourceEligibility } from './resource-eligibility.js'
+import {
+  upsertPlatformCollectionState,
+  upsertPlatformCollectionStateInTransaction,
+} from './collection-state-store.js'
+import {
+  managedCollectionAuthorityEquals,
+  resolveInstalledResourceEligibility,
+  type PlatformManagedCollectionAuthority,
+} from './resource-eligibility.js'
 import { findInstalledResource } from './resource-identity.js'
 import { platformResources } from './resources.js'
 
@@ -70,6 +80,8 @@ interface ResourceFailureOptions {
   readonly now?: Date
   readonly resolveEligibility?: typeof resolveInstalledResourceEligibility
   readonly upsertState?: typeof upsertPlatformCollectionState
+  readonly expectedAuthorizationGeneration?: number | null
+  readonly expectedManagedAuthority?: PlatformManagedCollectionAuthority | null
 }
 
 export async function recordInstalledResourceCollectionFailure(
@@ -82,20 +94,67 @@ export async function recordInstalledResourceCollectionFailure(
   if (!resource) return null
   const now = options.now ?? new Date()
   const transition = classifyPlatformResourceFailure(error, now)
-  const eligibility = await (options.resolveEligibility ?? resolveInstalledResourceEligibility)(
-    identity,
-    { resources: [resource], now },
-  )
+  if (options.resolveEligibility || options.upsertState)
+    return persistFailureTransition(
+      identity,
+      transition,
+      options,
+      () =>
+        (options.resolveEligibility ?? resolveInstalledResourceEligibility)(identity, {
+          resources: [resource],
+          now,
+        }),
+      options.upsertState ?? upsertPlatformCollectionState,
+    )
+
+  return sql.begin(async (transaction) => {
+    await transaction`
+      select pg_advisory_xact_lock(
+        ${resourceRefreshLockNamespace},
+        ${resourceRefreshLockKey(identity)}
+      )
+    `
+    return persistFailureTransition(
+      identity,
+      transition,
+      options,
+      () =>
+        resolveInstalledResourceEligibility(identity, {
+          connection: transaction,
+          resources: [resource],
+          now,
+        }),
+      (input) => upsertPlatformCollectionStateInTransaction(input, transaction),
+    )
+  })
+}
+
+async function persistFailureTransition(
+  identity: PlatformCollectionStateIdentity,
+  transition: ReturnType<typeof classifyPlatformResourceFailure>,
+  options: ResourceFailureOptions,
+  resolveEligibility: () => ReturnType<typeof resolveInstalledResourceEligibility>,
+  upsertState: (input: PlatformCollectionStateWrite) => Promise<unknown>,
+) {
+  const eligibility = await resolveEligibility()
+  if (eligibility.status !== 'eligible' || !eligibility.due) return transition
   if (
-    !('authorizationGeneration' in eligibility) ||
-    eligibility.status === 'authorization-required'
+    ((eligibility.managedAuthority !== null || options.expectedManagedAuthority != null) &&
+      (!('expectedManagedAuthority' in options) ||
+        !managedCollectionAuthorityEquals(
+          eligibility.managedAuthority,
+          options.expectedManagedAuthority,
+        ))) ||
+    ('expectedAuthorizationGeneration' in options &&
+      eligibility.authorizationGeneration !== options.expectedAuthorizationGeneration)
   )
     return transition
 
-  await (options.upsertState ?? upsertPlatformCollectionState)({
+  await upsertState({
     ...identity,
     nextEligibleAt: transition.nextEligibleAt,
     authorizationGeneration: eligibility.authorizationGeneration,
+    ...eligibility.managedAuthority,
     validatedAt: eligibility.validatedAt,
     lastFailureClass: transition.failureClass,
   })

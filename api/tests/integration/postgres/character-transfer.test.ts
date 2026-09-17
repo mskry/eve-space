@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type {
   PlatformInstalledResourceDescriptor,
   PlatformResourceOperationImplementation,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/resources'
 import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -1013,6 +1013,72 @@ describe('approved character transfer', () => {
       where approval_id = ${staleApproval.approvalId}
     `
     expect(stale?.consumed_at).toBeNull()
+  })
+
+  test('replaces source disclosure acceptance with the transfer intent snapshot', async () => {
+    const transfer = await prepareNonMainTransfer()
+    await connection`
+      insert into deployment_modules (module_id, enabled)
+      values ('member-audit', true)
+      on conflict (module_id) do update set enabled = true
+    `
+    await connection`
+      insert into deployment_module_sections (
+        module_id, section_id, kind, enabled, declaration_revision,
+        disclosure_version, activation_version
+      ) values ('member-audit', 'wallet', 'sensitive-evidence', true, 1, 1, 1)
+      on conflict (module_id, section_id) do update set
+        enabled = true,
+        disclosure_version = 1
+    `
+    await characterLifecycle.reauthorizeCharacter({
+      ...authorization(sourceAlternateCharacterId, 'Source Alt', ['scope.old']),
+      userId: transfer.sourceUserId,
+      expectedCharacterId: sourceAlternateCharacterId,
+      sessionToken: transfer.sourceSession,
+      reviewerUseDisclosures: [
+        { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 1 },
+      ],
+    })
+    await connection`
+      update deployment_module_sections
+      set disclosure_version = 2
+      where module_id = 'member-audit' and section_id = 'wallet'
+    `
+
+    const result = await characterTransfer.transferCharacter({
+      approvalId: transfer.approvalId,
+      sourceUserId: transfer.sourceUserId,
+      sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
+      destinationUserId: transfer.destinationUserId,
+      characterId: sourceAlternateCharacterId,
+      destinationSessionToken: transfer.destinationSession,
+      authorization: {
+        ...authorization(sourceAlternateCharacterId, 'Transferred Alt', ['scope.new']),
+        reviewerUseDisclosures: [
+          { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 2 },
+        ],
+      },
+    })
+    const token = await characterTokenStore.findCharacterTokenForLifecycle(
+      sourceAlternateCharacterId,
+      result.subjectLifecycleId,
+    )
+    const acceptances = await connection<
+      { disclosure_version: number; authorization_generation: number }[]
+    >`
+      select disclosure_version, authorization_generation
+      from character_reviewer_disclosure_acceptances
+      where character_id = ${sourceAlternateCharacterId}
+    `
+
+    expect(acceptances).toEqual([
+      {
+        disclosure_version: 2,
+        authorization_generation: token!.tokenVersion,
+      },
+    ])
+    expect(token?.tokenVersion).toBe(2)
   })
 
   test('creates fresh lifecycle-qualified authorization when the former token is missing', async () => {
@@ -2529,11 +2595,13 @@ async function storeSourceOAuthStates(userId: string, characterId: number) {
   await oauthStateStore.storeOAuthState('pending-source-attachment-state', {
     intent: 'attach',
     userId,
+    reviewerUseDisclosures: [],
   })
   await oauthStateStore.storeOAuthState('pending-source-reauthorization-state', {
     intent: 'reauthorize',
     userId,
     characterId,
+    reviewerUseDisclosures: [],
   })
   await oauthStateStore.storeOAuthState('pending-source-owner-claim-state', {
     intent: 'claim-organization-owner',
@@ -2541,6 +2609,7 @@ async function storeSourceOAuthStates(userId: string, characterId: number) {
     characterId,
     organizationId: 1_000_166,
     organizationVersion: 1,
+    reviewerUseDisclosures: [],
   })
 }
 
@@ -2592,6 +2661,7 @@ async function prepareSoleTransferFailure() {
     sourceSubjectLifecycleId: source!.subjectLifecycleId,
     userId: destinationUserId,
     characterId: sourceCharacterId,
+    reviewerUseDisclosures: [],
   })
   await expect(oauthStateStore.consumeOAuthState(oauthState)).resolves.toMatchObject({
     intent: 'transfer',
@@ -3149,6 +3219,7 @@ async function prepareCharacterResourceObservation(
       lifecycleId: transfer.sourceSubjectLifecycleId,
     },
     authorizationGeneration: token!.tokenVersion,
+    managedAuthority: null,
     validatedAt: new Date().toISOString(),
     outcome: 'complete' as const,
     data: { source: 'old-lifecycle' },

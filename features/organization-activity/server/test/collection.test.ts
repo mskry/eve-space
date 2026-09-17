@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from 'vitest'
 import type {
   PlatformResourceCollectionContext,
   PlatformResourceSubject,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/resources'
 import { collectActivityResource } from '../src/collection.js'
 import { materializeActivityResource } from '../src/collection-store.js'
 import { summarySnapshot } from '../src/snapshot.js'

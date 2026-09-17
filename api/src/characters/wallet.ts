@@ -1,3 +1,9 @@
+import {
+  projectWalletJournalEntry,
+  projectWalletTransactions,
+  safeWalletJournalContextTypes,
+  type WalletJournalContextType,
+} from '@eve-space/core-eve-projections/wallet'
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdWalletJournalResponse } from '@evespace/esi-client/types'
 import { z } from 'zod'
@@ -6,10 +12,9 @@ import {
   toEsiReadResultMetadata,
   type EsiReadResultMetadata,
 } from '../esi-gateway/feature-execution.js'
-import { isPositiveSafeInteger } from '../type-guards.js'
-import { financeLocationName, loadFinanceLocationNames } from './finance-location-names.js'
+import { loadFinanceLocationNames } from './finance-location-names.js'
 import { assertFinancePositiveSafeInteger, resolveFinanceTotalPages } from './finance-pagination.js'
-import { financeTypeName, loadFinanceTypeNames } from './finance-type-names.js'
+import { loadFinanceTypeNames } from './finance-type-names.js'
 
 interface WalletBalanceRepresentationInput {
   characterId: number
@@ -41,20 +46,6 @@ interface WalletJournalRepresentationInput {
   subjectLifecycleId: string
 }
 
-const safeJournalContextTypes = [
-  'structure_id',
-  'station_id',
-  'market_transaction_id',
-  'eve_system',
-  'industry_job_id',
-  'contract_id',
-  'planet_id',
-  'system_id',
-  'type_id',
-] as const
-
-type WalletJournalContextType = (typeof safeJournalContextTypes)[number]
-const safeJournalContextTypeSet = new Set<string>(safeJournalContextTypes)
 type EsiWalletJournalEntry = GetCharactersCharacterIdWalletJournalResponse[number]
 
 interface WalletJournalData {
@@ -87,7 +78,9 @@ const walletJournalCacheSchema = z
         description: z.string(),
         reason: z.string().nullable(),
         taxAmount: z.number().nullable(),
-        context: z.object({ id: z.number(), type: z.enum(safeJournalContextTypes) }).nullable(),
+        context: z
+          .object({ id: z.number(), type: z.enum(safeWalletJournalContextTypes) })
+          .nullable(),
       }),
     ),
     page: z.number(),
@@ -126,17 +119,7 @@ const walletJournalRead = createCharacterEsiRead({
     query: { page: input.page },
   }),
   map: (response, input): WalletJournalData => ({
-    entries: response.data.map((entry) => ({
-      journalId: entry.id,
-      date: entry.date,
-      amount: entry.amount ?? null,
-      balance: entry.balance ?? null,
-      referenceType: entry.ref_type,
-      description: entry.description,
-      reason: entry.reason ?? null,
-      taxAmount: entry.tax ?? null,
-      context: walletJournalContext(entry),
-    })),
+    entries: response.data.map(projectWalletJournalEntry),
     page: input.page,
     totalPages: resolveFinanceTotalPages(response.meta.pagination?.pages, input.page),
   }),
@@ -207,25 +190,7 @@ const walletTransactionsRead = createCharacterEsiRead({
     ])
 
     return {
-      transactions: personalTransactions
-        .map((transaction) => ({
-          transactionId: transaction.transaction_id,
-          journalRefId: transaction.journal_ref_id,
-          date: transaction.date,
-          typeId: transaction.type_id,
-          typeName: financeTypeName(transaction.type_id, namesByType),
-          quantity: transaction.quantity,
-          unitPrice: transaction.unit_price,
-          totalPrice: transaction.quantity * transaction.unit_price,
-          isBuy: transaction.is_buy,
-          locationId: transaction.location_id,
-          locationName: financeLocationName(transaction.location_id, namesByLocation),
-        }))
-        .toSorted(
-          (left, right) =>
-            Date.parse(right.date) - Date.parse(left.date) ||
-            right.transactionId - left.transactionId,
-        ),
+      transactions: projectWalletTransactions(response.data, namesByType, namesByLocation),
       fromId: input.fromId,
       nextFromId:
         response.data.length < walletTransactionPageSize
@@ -261,19 +226,4 @@ export async function getWalletTransactions(
   if (fromId !== null) assertFinancePositiveSafeInteger(fromId, 'Wallet transaction continuation')
   const result = await walletTransactionsRead.execute({ characterId, fromId, subjectLifecycleId })
   return { ...result.data, ...toEsiReadResultMetadata(result) }
-}
-
-function walletJournalContext(entry: EsiWalletJournalEntry) {
-  if (
-    entry.context_id === undefined ||
-    entry.context_id_type === undefined ||
-    !isPositiveSafeInteger(entry.context_id) ||
-    !isSafeJournalContextType(entry.context_id_type)
-  )
-    return null
-  return { id: entry.context_id, type: entry.context_id_type }
-}
-
-function isSafeJournalContextType(value: string): value is WalletJournalContextType {
-  return safeJournalContextTypeSet.has(value)
 }

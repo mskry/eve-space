@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdSkillsResponse } from '@evespace/esi-client/types'
+import { projectTrainedSkills } from '@eve-space/core-eve-projections/trained-skills'
 import { z } from 'zod'
 import {
   createCharacterEsiRead,
@@ -133,68 +134,33 @@ function composeCharacterSkills(
   snapshot: CharacterSkillsSnapshot,
   catalogue: SkillCatalogue,
 ): CharacterSkillsData {
-  const progressByType = new Map(snapshot.skills.map((skill) => [skill.typeId, skill]))
-  const catalogueTypeIds = new Set<number>()
-  const groups: CharacterSkillsData['groups'] = catalogue.groups.map((catalogueGroup) => {
-    let trainedSp = 0
-    const skills = catalogueGroup.skills
-      .map((catalogueSkill) => {
-        catalogueTypeIds.add(catalogueSkill.typeId)
-        const progress = progressByType.get(catalogueSkill.typeId)
-        trainedSp += progress?.skillpoints ?? 0
-        return {
-          typeId: catalogueSkill.typeId,
-          name: catalogueSkill.name,
-          injected: progress !== undefined,
-          activeLevel: progress?.activeLevel ?? 0,
-          trainedLevel: progress?.trainedLevel ?? 0,
-          skillpoints: progress?.skillpoints ?? 0,
-        }
-      })
-      .toSorted((left, right) => compareNameAndId(left.name, left.typeId, right.name, right.typeId))
-    return {
-      groupId: catalogueGroup.groupId,
-      name: catalogueGroup.name,
-      trainedSp,
-      skills,
-    }
+  const projected = projectTrainedSkills(snapshot, {
+    groups: catalogue.groups.map((group) => ({
+      ...group,
+      skills: group.skills.map((skill) => ({
+        ...skill,
+        rank: null,
+        primaryAttribute: null,
+        secondaryAttribute: null,
+      })),
+    })),
   })
-
-  const unmatchedSkills = snapshot.skills.filter((skill) => !catalogueTypeIds.has(skill.typeId))
-  if (unmatchedSkills.length > 0) {
-    groups.push({
-      groupId: null,
-      name: 'Unknown',
-      trainedSp: unmatchedSkills.reduce((total, skill) => total + skill.skillpoints, 0),
-      skills: unmatchedSkills
-        .map((skill) => ({
-          typeId: skill.typeId,
-          name: `Unknown skill ${skill.typeId}`,
-          injected: true,
-          activeLevel: skill.activeLevel,
-          trainedLevel: skill.trainedLevel,
-          skillpoints: skill.skillpoints,
-        }))
-        .toSorted((left, right) =>
-          compareNameAndId(left.name, left.typeId, right.name, right.typeId),
-        ),
-    })
-  }
-
-  groups.sort((left, right) =>
-    compareNameAndId(left.name, left.groupId ?? -1, right.name, right.groupId ?? -1),
-  )
-
   return {
-    totalSp: snapshot.totalSp,
-    unallocatedSp: snapshot.unallocatedSp,
-    injectedSkillCount: snapshot.skills.length,
-    groups,
+    totalSp: projected.totalSp,
+    unallocatedSp: projected.unallocatedSp,
+    injectedSkillCount: projected.injectedSkillCount,
+    groups: projected.groups.map((group) => ({
+      groupId: group.groupId,
+      name: group.name,
+      trainedSp: group.trainedSp,
+      skills: group.skills.map((skill) => ({
+        typeId: skill.typeId,
+        name: skill.name,
+        injected: skill.injected,
+        activeLevel: skill.activeLevel,
+        trainedLevel: skill.trainedLevel,
+        skillpoints: skill.skillpoints,
+      })),
+    })),
   }
-}
-
-function compareNameAndId(leftName: string, leftId: number, rightName: string, rightId: number) {
-  if (leftName < rightName) return -1
-  if (leftName > rightName) return 1
-  return leftId - rightId
 }

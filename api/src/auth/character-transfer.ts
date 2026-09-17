@@ -21,6 +21,7 @@ import {
 import { normalizeScopeSet } from '../scopes.js'
 import { lockCharacter, setAuthTransactionLockTimeout } from './character-lock.js'
 import { insertCharacterToken } from './character-token-store.js'
+import { replaceCharacterReviewerDisclosureAcceptances } from './character-disclosure-store.js'
 import {
   deleteEmptyTransferSourceUser,
   loadDatabaseWallClock,
@@ -139,6 +140,27 @@ export async function transferCharacter(input: {
     if (source.isMain && sourceRoster.value > 1) throw new CharacterTransferError('main-character')
     const blocker = await findCharacterDetachmentBlocker(transaction, input.characterId)
     if (blocker) throw new CharacterTransferError(blocker)
+    const affiliationObservedAt = input.authorization.affiliationCheckedAt ?? now
+    if (organizationVersion) {
+      await recomputeOrganizationAccountCompliance(
+        {
+          deploymentId: 1,
+          organizationVersion,
+          userId: input.sourceUserId,
+          now: affiliationObservedAt,
+        },
+        transaction,
+      )
+      await recomputeOrganizationAccountCompliance(
+        {
+          deploymentId: 1,
+          organizationVersion,
+          userId: input.destinationUserId,
+          now: affiliationObservedAt,
+        },
+        transaction,
+      )
+    }
 
     const scopes = normalizeScopeSet(input.authorization.scopes)
     const sourceEvent = await appendDomainEvent(transaction, {
@@ -157,7 +179,6 @@ export async function transferCharacter(input: {
       occurredAt: now,
     })
     await transaction.delete(characters).where(eq(characters.characterId, input.characterId))
-    const affiliationObservedAt = input.authorization.affiliationCheckedAt ?? now
     await transaction.insert(characters).values({
       characterId: input.characterId,
       userId: input.destinationUserId,
@@ -180,7 +201,7 @@ export async function transferCharacter(input: {
       })
       .returning({ subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId })
     if (!lifecycle) throw new Error('Failed to create transferred character lifecycle')
-    await insertCharacterToken(transaction, {
+    const authorizationGeneration = await insertCharacterToken(transaction, {
       characterId: input.characterId,
       encryptedTokens: encryptTokens({
         accessToken: input.authorization.accessToken,
@@ -189,6 +210,11 @@ export async function transferCharacter(input: {
       accessTokenExpiresAt: new Date(now.getTime() + input.authorization.expiresIn * 1_000),
       scopes,
       tokenVersion: source.tokenVersion === null ? 0 : source.tokenVersion + 1,
+    })
+    await replaceCharacterReviewerDisclosureAcceptances(transaction, {
+      characterId: input.characterId,
+      authorizationGeneration,
+      disclosures: input.authorization.reviewerUseDisclosures ?? [],
     })
     const destinationEvent = await appendDomainEvent(transaction, {
       type: 'character.attached',

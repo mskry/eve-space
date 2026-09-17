@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "pnpm build:dependencies && tsc",
-    "build:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/core-data-contract build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && tsx ../scripts/run-installed-module-package-script.ts server build",
+    "build:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/core-eve-projections build && pnpm --filter @eve-space/core-data-contract build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && tsx ../scripts/run-installed-module-package-script.ts server build",
     "dev": "tsx src/db/migrate.ts && tsx watch src/server.ts",
     "dev:fixture:organization": "pnpm build:dependencies && tsx --env-file=../.env src/commands/seed-local-organization-fixture.ts",
     "migrate": "tsx src/db/migrate.ts",
@@ -32,6 +32,7 @@
     "typecheck:local": "tsx ../scripts/run-installed-module-package-script.ts server typecheck && tsc --noEmit && tsc --project tsconfig.test.json --noEmit"
   },
   "dependencies": {
+    "@eve-space/core-eve-projections": "workspace:*",
     "@eve-space/core-data-contract": "workspace:*",
     "@eve-space/platform-module-contract": "workspace:*",
     "@eve-space/platform-module-server": "workspace:*",
@@ -49,6 +50,7 @@
     "loglayer": "catalog:",
     "postgres": "catalog:",
     "zod": "catalog:",
+    "@eve-space/member-audit-server": "workspace:*",
     "@eve-space/organization-activity-server": "workspace:*"
   },
   "devDependencies": {

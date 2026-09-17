@@ -1,11 +1,12 @@
 import {
-  platformExportNamePattern,
-  platformPersistenceOperationIdMaxLength,
-  platformPersistenceOperationIdPattern,
+  isPlatformExportName,
+  isPlatformPersistenceOperationId,
+} from '@eve-space/platform-module-contract/identifiers'
+import {
   platformPersistenceOperationModes,
   type PlatformPersistenceOperationContract,
   type PlatformPersistenceOperationMode,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/persistence'
 import { z } from 'zod'
 
 export const platformPersistencePayloadMaximumBytes = 16 * 1024 * 1024
@@ -88,12 +89,9 @@ export function definePlatformPersistenceOperation<
   InputSchema,
   OutputSchema
 > {
-  if (
-    !platformPersistenceOperationIdPattern.test(definition.id) ||
-    definition.id.length > platformPersistenceOperationIdMaxLength
-  )
+  if (!isPlatformPersistenceOperationId(definition.id))
     throw new Error(`Invalid persistence operation identity: ${definition.id}`)
-  if (!platformExportNamePattern.test(definition.method))
+  if (!isPlatformExportName(definition.method))
     throw new Error(`Invalid persistence operation method: ${definition.method}`)
   if (!Number.isSafeInteger(definition.revision) || definition.revision < 1)
     throw new Error(`Invalid persistence operation revision: ${definition.id}`)

@@ -1,9 +1,9 @@
 import {
-  compareStable,
   platformCoreNavigation,
   type PlatformNuxtContributionDescriptor,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/nuxt'
 import type { PlatformNavigationEntry, PlatformPageMetadata } from './runtime/navigation.js'
+import { compareStable } from './stable-order.js'
 
 export function createPlatformNavigation(
   contributions: readonly PlatformNuxtContributionDescriptor[],
@@ -31,6 +31,7 @@ export function createPlatformNavigation(
         audience: entry.audience,
         placement: entry.placement,
         order: entry.order,
+        sectionId: entry.sectionId,
       })),
     ),
   ].toSorted(compareNavigation)
@@ -41,6 +42,7 @@ export function createPlatformNavigation(
         pageId: page.id,
         pageName: page.name,
         audience: page.audience,
+        sectionId: page.sectionId,
       })),
     )
     .toSorted(

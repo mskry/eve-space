@@ -24,6 +24,7 @@ import {
   assertOrganizationOwnerDirectorRole,
   OrganizationAuthorityError,
 } from './authority-policy.js'
+import { convergeCurrentManagedMemberLifecyclesInTransaction } from './managed-member-lifecycle.js'
 
 const evidenceRefreshIntervalMilliseconds = 60 * 60 * 1_000
 const failedEvidenceRetryIntervalMilliseconds = 5 * 60 * 1_000
@@ -106,6 +107,11 @@ export async function refreshOrganizationOwnerEvidence(
     const affiliation = await observeAndPersistCharacterAffiliation(
       snapshot.characterId,
       options.signal,
+      (transaction, userIds, observedAt) =>
+        convergeCurrentManagedMemberLifecyclesInTransaction(transaction, {
+          userIds,
+          now: observedAt,
+        }),
     )
     if (!affiliation || affiliation.stale) throw new OrganizationAuthorityError('stale-affiliation')
     options.signal?.throwIfAborted()

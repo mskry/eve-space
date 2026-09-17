@@ -1,7 +1,5 @@
-import type {
-  PlatformCollectionStatus,
-  PlatformInstalledResourceDescriptor,
-} from '@eve-space/platform-module-contract'
+import type { PlatformCollectionStatus } from '@eve-space/platform-module-contract/server'
+import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import type { PlatformEsiExecution } from '../esi-gateway/platform-execution.js'
 import { platformResources } from './resources.js'
 import { findInstalledResource } from './resource-identity.js'
@@ -9,6 +7,7 @@ import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import { upsertPlatformCollectionState } from './collection-state-store.js'
 import {
   resolveInstalledResourceEligibility,
+  type PlatformManagedCollectionAuthority,
   type PlatformResourceEligibility,
 } from './resource-eligibility.js'
 
@@ -20,6 +19,7 @@ interface CollectionStatusOptions {
 interface CollectionSuccessOptions {
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly upsertState?: typeof upsertPlatformCollectionState
+  readonly managedAuthority?: PlatformManagedCollectionAuthority | null
 }
 
 export async function getInstalledResourceCollectionStatus(
@@ -53,6 +53,7 @@ export async function recordInstalledResourceCollectionSuccess(
     ...identity,
     nextEligibleAt,
     authorizationGeneration,
+    ...options.managedAuthority,
     validatedAt,
     lastFailureClass: null,
   })

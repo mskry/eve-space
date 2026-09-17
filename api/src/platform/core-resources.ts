@@ -3,7 +3,7 @@ import type {
   PlatformCorporationResourceSubject,
   PlatformInstalledResourceDescriptor,
   PlatformResourceOperationImplementation,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/resources'
 import { normalizePositiveSafeIntegerIds } from './resource-id-list.js'
 
 const managedCorporationsImplementation: PlatformResourceOperationImplementation<

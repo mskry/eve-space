@@ -4,12 +4,12 @@ import {
   platformActivityProviderMaximumActivities,
   platformActivityProviderTimeoutMilliseconds,
   platformActivityRequiredActionKinds,
-  platformContributionIdPattern,
   type PlatformActivity,
   type PlatformActivityFreshness,
   type PlatformActivityProviderCharacter,
   type PlatformInstalledActivityProviderDescriptor,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/activity'
+import { isPlatformContributionId } from '@eve-space/platform-module-contract/identifiers'
 import { z } from 'zod'
 import { installedModuleActivityProviders } from '../generated/platform/installed-module-activity-providers.js'
 import { loadModuleRuntimeState } from '../platform/module-settings.js'
@@ -66,7 +66,7 @@ const providerActivitySchema = z
       .max(100),
     linkTarget: z
       .object({
-        pageId: z.string().regex(platformContributionIdPattern),
+        pageId: z.string().refine(isPlatformContributionId),
         activityId: z.uuid().optional(),
         corporationId: positiveCharacterIdSchema.nullable().optional(),
         characterId: positiveCharacterIdSchema.nullable(),
@@ -107,6 +107,7 @@ export interface AggregateOrganizationActivitiesOptions {
   readonly timeoutMilliseconds?: number
   readonly now?: Date
   readonly loadEnabledModuleIds?: () => Promise<readonly string[]>
+  readonly loadEnabledSectionKeys?: () => Promise<ReadonlySet<string>>
   readonly authorize?: typeof authorizeOrganizationContribution
   readonly loadCharacters?: typeof loadOrganizationActivityCharacters
 }
@@ -117,11 +118,19 @@ export async function aggregateOrganizationActivities(
   options: AggregateOrganizationActivitiesOptions = {},
 ) {
   const now = options.now ?? new Date()
-  const providers = options.providers ?? installedModuleActivityProviders
+  const providers: readonly PlatformInstalledActivityProviderDescriptor[] =
+    options.providers ?? installedModuleActivityProviders
   const enabledModuleIds = new Set(
     await (options.loadEnabledModuleIds ?? defaultLoadEnabledModuleIds)(),
   )
-  const enabledProviders = providers.filter(({ moduleId }) => enabledModuleIds.has(moduleId))
+  const enabledSectionKeys = providers.some(({ sectionId }) => sectionId)
+    ? await (options.loadEnabledSectionKeys ?? defaultLoadEnabledSectionKeys)()
+    : new Set<string>()
+  const enabledProviders = providers.filter(
+    ({ moduleId, sectionId }) =>
+      enabledModuleIds.has(moduleId) &&
+      (!sectionId || enabledSectionKeys.has(`${moduleId}/${sectionId}`)),
+  )
   const authorize = options.authorize ?? authorizeOrganizationContribution
   const authorizationResults = await Promise.all(
     enabledProviders.map(async (provider) => ({
@@ -198,6 +207,14 @@ function unavailableSource(
 
 async function defaultLoadEnabledModuleIds() {
   return (await loadModuleRuntimeState()).enabledModuleIds
+}
+
+async function defaultLoadEnabledSectionKeys() {
+  return new Set(
+    (await loadModuleRuntimeState()).enabledSections.map(
+      ({ moduleId, sectionId }) => `${moduleId}/${sectionId}`,
+    ),
+  )
 }
 
 async function collectProviderActivities(

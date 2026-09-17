@@ -113,7 +113,7 @@ The generated domain indexes link focused references for every supported operati
 
 ## Development
 
-Development uses Node.js 24.20+ and pnpm 11.22.0 from the EVE Space monorepo root. The package is owned and released independently but uses the root runtime pins, lockfile, and workspace configuration.
+Development uses Node.js 24.20+ and the pnpm version pinned by the EVE Space monorepo root. The package is owned and released independently but uses the root runtime pins, lockfile, and workspace configuration.
 
 Run `pnpm esi:validate` from the repository root for generation reproducibility, documentation and example checks, formatting, linting, TypeScript 7 type checking, tests, build and package validation, installed-package smoke tests, and artifact inspection. Focused commands include `pnpm esi:generate:check`, `pnpm esi:package:check`, and `pnpm esi:smoke:package`.
 

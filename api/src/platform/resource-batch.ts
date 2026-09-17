@@ -5,7 +5,7 @@ import type {
   PlatformResourceBatchMode,
   PlatformResourceBatchOperationImplementation,
   PlatformResourceOperationImplementation,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/resources'
 import {
   assertRegisteredEsiOperation,
   getEsiOperationAuthorization,
@@ -22,7 +22,10 @@ import {
   platformResourceBatchPayloadSchema,
   type PlatformResourceBatchPayload,
 } from './resource-batch-contract.js'
-import { resolveInstalledResourceEligibility } from './resource-eligibility.js'
+import {
+  resolveInstalledResourceEligibility,
+  type PlatformManagedCollectionAuthority,
+} from './resource-eligibility.js'
 import { findInstalledResource } from './resource-identity.js'
 import {
   assertPlatformResourceRefreshSucceeded,
@@ -46,6 +49,7 @@ export interface EligibleBatchSubject {
   }
   readonly subject: PlatformCharacterResourceSubject
   readonly authorizationGeneration: number | null
+  readonly managedAuthority: PlatformManagedCollectionAuthority | null
 }
 
 export type BatchExecution =
@@ -118,7 +122,13 @@ export async function executeInstalledResourceBatchOperation(
   const eligible = candidates.flatMap((candidate, index) => {
     const resolved = eligibility[index]
     return resolved?.status === 'eligible' && resolved.due
-      ? [{ ...candidate, authorizationGeneration: resolved.authorizationGeneration }]
+      ? [
+          {
+            ...candidate,
+            authorizationGeneration: resolved.authorizationGeneration,
+            managedAuthority: resolved.managedAuthority,
+          },
+        ]
       : []
   })
   if (eligible.length === 0) return { outcome: 'noop', reason: 'no-due-subjects' }
@@ -240,7 +250,7 @@ function assertBatchClassificationOutcome(
 function toEligibleBatchSubject(
   payload: PlatformResourceBatchPayload,
   subjectIdentity: PlatformResourceBatchPayload['subjects'][number],
-): Omit<EligibleBatchSubject, 'authorizationGeneration'> {
+): Omit<EligibleBatchSubject, 'authorizationGeneration' | 'managedAuthority'> {
   const characterId = Number(subjectIdentity.subjectId)
   if (!isPositiveSafeInteger(characterId))
     throw new Error('Resource batch subject character identity is invalid')

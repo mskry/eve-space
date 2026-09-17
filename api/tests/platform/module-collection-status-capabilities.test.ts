@@ -1,7 +1,5 @@
-import type {
-  PlatformCollectionStatus,
-  PlatformInstalledResourceDescriptor,
-} from '@eve-space/platform-module-contract'
+import type { PlatformCollectionStatus } from '@eve-space/platform-module-contract/server'
+import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -61,6 +59,34 @@ describe('platform module collection-status capabilities', () => {
       },
       { resources: [resources[0]] },
     )
+  })
+
+  test('refuses disabled and cross-section collection-status reads before storage', async () => {
+    const readStatus = vi.fn()
+    const isContributionEnabled = vi.fn().mockResolvedValue(false)
+    const sectionResources = [
+      { ...resources[0]!, sectionId: 'skills' },
+      { ...resources[1]!, sectionId: 'assets' },
+    ]
+    const reads = createPlatformModuleCollectionStatusReads(
+      {
+        moduleId: 'alpha',
+        sectionId: 'skills',
+        organizationVersion: 7,
+        characters: [{ characterId: 9001, subjectLifecycleId: characterLifecycleId }],
+      },
+      { resources: sectionResources, readStatus, isContributionEnabled },
+    )
+
+    await expect(
+      reads.read('character-activity', { kind: 'character', characterId: 9001 }),
+    ).rejects.toThrow('resource is unavailable')
+    await expect(
+      reads.read('corporation-activity', { kind: 'corporation', corporationId: 98_000_001 }),
+    ).rejects.toThrow('resource is unavailable')
+    expect(isContributionEnabled).toHaveBeenCalledWith('alpha', 'skills')
+    expect(readStatus).not.toHaveBeenCalled()
+    expect(mocks.select).not.toHaveBeenCalled()
   })
 
   test('refuses undeclared, cross-module, and unauthorized character reads', async () => {

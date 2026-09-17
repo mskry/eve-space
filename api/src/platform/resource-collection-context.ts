@@ -1,4 +1,4 @@
-import type { PlatformResourceSubject } from '@eve-space/platform-module-contract'
+import type { PlatformResourceSubject } from '@eve-space/platform-module-contract/resources'
 import { sql } from '../db/client.js'
 
 export async function loadResourceCollectionContext(

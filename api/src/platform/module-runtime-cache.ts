@@ -2,6 +2,13 @@ import type { ShellNavigationOrder } from './module-navigation.js'
 
 export interface ModuleRuntimeState {
   readonly enabledModuleIds: readonly string[]
+  readonly enabledSections: readonly {
+    readonly moduleId: string
+    readonly sectionId: string
+    readonly kind: 'workspace' | 'sensitive-evidence' | 'access-management'
+    readonly disclosureVersion: number
+    readonly activationVersion: number
+  }[]
   readonly shellNavigationOrder: ShellNavigationOrder
 }
 

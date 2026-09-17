@@ -5,6 +5,10 @@ import {
   moduleNuxtBoundaryViolations,
 } from './module-registry/nuxt-boundaries.js'
 import {
+  loadPlatformHostSources,
+  platformFeatureImportViolations,
+} from './module-registry/host-boundaries.js'
+import {
   loadPlatformNuxtSources,
   platformNuxtBoundaryViolations,
 } from './platform-nuxt-boundaries.js'
@@ -14,6 +18,7 @@ await assertInstalledFeatureBoundaries(root)
 const sources = await loadFeatureNuxtSources(root)
 const violations = [
   ...moduleNuxtBoundaryViolations(sources),
+  ...platformFeatureImportViolations(await loadPlatformHostSources(root)),
   ...platformNuxtBoundaryViolations(await loadPlatformNuxtSources(root)),
 ]
 

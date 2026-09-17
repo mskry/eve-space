@@ -12,6 +12,13 @@ export function typescriptModuleSpecifiers(path: string, source: string) {
     )
       specifiers.push(node.moduleSpecifier.text)
     if (
+      ts.isImportEqualsDeclaration(node) &&
+      ts.isExternalModuleReference(node.moduleReference) &&
+      node.moduleReference.expression &&
+      ts.isStringLiteralLike(node.moduleReference.expression)
+    )
+      specifiers.push(node.moduleReference.expression.text)
+    if (
       ts.isCallExpression(node) &&
       node.expression.kind === ts.SyntaxKind.ImportKeyword &&
       node.arguments[0] &&

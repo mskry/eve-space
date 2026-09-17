@@ -21,9 +21,17 @@ export function platformModuleQueryKey(
   moduleId: string,
   subject: PlatformQuerySubject,
   resource: EntryKey = [],
+  sectionId?: string,
 ): EntryKey {
   const moduleKey = platformModuleSubjectQueryKey(moduleId, subject)
-  return [...moduleKey, ...resource]
+  return sectionId
+    ? [
+        ...moduleKey,
+        'sections',
+        requiredIdentity(sectionId, 'Platform module section ID'),
+        ...resource,
+      ]
+    : [...moduleKey, ...resource]
 }
 
 export function platformModuleSubjectQueryKey(
@@ -70,6 +78,20 @@ export function isPlatformModuleQueryKey(key: EntryKey, moduleId: string) {
   return key.some((part, index) => part === 'modules' && key[index + 1] === moduleId)
 }
 
+export function isPlatformModuleSectionQueryKey(
+  key: EntryKey,
+  moduleId: string,
+  sectionId: string,
+) {
+  return key.some((part, index) => {
+    if (part !== 'modules' || key[index + 1] !== moduleId) return false
+    const accountSubject =
+      index === PLATFORM_PRIVATE_QUERY_ROOT.length && key[index + 2] === 'account'
+    const sectionIndex = index + (accountSubject ? 3 : 2)
+    return key[sectionIndex] === 'sections' && key[sectionIndex + 1] === sectionId
+  })
+}
+
 export function isPlatformQuerySubjectValid(subject: PlatformQuerySubject) {
   if (subject.kind === 'account') return true
   if (subject.kind === 'character') return isPositiveInteger(subject.characterId)
@@ -82,6 +104,11 @@ export function isPlatformQuerySubjectValid(subject: PlatformQuerySubject) {
 
 function positiveInteger(value: number, name: string) {
   if (!isPositiveInteger(value)) throw new TypeError(`Invalid ${name}: ${value}`)
+  return value
+}
+
+function requiredIdentity(value: string, name: string) {
+  if (!value) throw new TypeError(`${name} is required.`)
   return value
 }
 

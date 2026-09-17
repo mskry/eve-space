@@ -3,6 +3,7 @@ import { db, type DatabaseTransaction } from '../db/client.js'
 import { characters, eveTokens, platformSubjectLifecycles } from '../db/schema.js'
 import { normalizeScopeSet } from '../scopes.js'
 import { lockCharacter, setAuthTransactionLockTimeout } from './character-lock.js'
+import { advanceCharacterReviewerDisclosureAcceptances } from './character-disclosure-store.js'
 
 type TokenReader = Pick<DatabaseTransaction, 'select'>
 type TokenWriter = Pick<DatabaseTransaction, 'update'>
@@ -144,6 +145,12 @@ export async function updateCharacterToken(
       ),
     )
     .returning({ tokenVersion: eveTokens.tokenVersion })
+  if (updated)
+    await advanceCharacterReviewerDisclosureAcceptances(
+      connection,
+      input.characterId,
+      input.tokenVersion,
+    )
   return Boolean(updated)
 }
 
@@ -191,7 +198,7 @@ export async function saveCharacterToken(
     accessTokenExpiresAt: Date
   },
 ) {
-  await transaction
+  const [saved] = await transaction
     .insert(eveTokens)
     .values(input)
     .onConflictDoUpdate({
@@ -204,6 +211,9 @@ export async function saveCharacterToken(
         updatedAt: new Date(),
       },
     })
+    .returning({ tokenVersion: eveTokens.tokenVersion })
+  if (!saved) throw new Error('Failed to save character token')
+  return saved.tokenVersion
 }
 
 export async function insertCharacterToken(
@@ -216,10 +226,15 @@ export async function insertCharacterToken(
     tokenVersion: number
   },
 ) {
-  await transaction.insert(eveTokens).values({
-    ...input,
-    scopes: normalizeScopeSet(input.scopes),
-  })
+  const [inserted] = await transaction
+    .insert(eveTokens)
+    .values({
+      ...input,
+      scopes: normalizeScopeSet(input.scopes),
+    })
+    .returning({ tokenVersion: eveTokens.tokenVersion })
+  if (!inserted) throw new Error('Failed to insert character token')
+  return inserted.tokenVersion
 }
 
 async function withCharacterTokenLock<T>(

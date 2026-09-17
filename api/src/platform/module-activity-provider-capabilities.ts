@@ -1,6 +1,6 @@
 import type { CoreDataProductId } from '@eve-space/core-data-contract'
-import type { PlatformActivityProviderContext } from '@eve-space/platform-module-contract'
-import { platformActivityProviderTimeoutMilliseconds } from '@eve-space/platform-module-contract'
+import type { PlatformActivityProviderContext } from '@eve-space/platform-module-contract/activity'
+import { platformActivityProviderTimeoutMilliseconds } from '@eve-space/platform-module-contract/activity'
 import { createCoreDataCapability } from '../core-data/capabilities.js'
 import { createPlatformModuleCollectionStatusReads } from './module-collection-status-capabilities.js'
 import { createPlatformModuleLogger } from './module-logging.js'
@@ -15,10 +15,12 @@ export function createPlatformModuleActivityProviderCapabilities<
   providerId: ProviderId,
   context: PlatformActivityProviderContext,
   productIds: ProductIds = [] as unknown as ProductIds,
+  sectionId?: string,
 ) {
   return {
     collectionStatus: createPlatformModuleCollectionStatusReads({
       moduleId,
+      sectionId,
       organizationVersion: context.organizationVersion,
       characters: context.characters,
       signal: context.signal,

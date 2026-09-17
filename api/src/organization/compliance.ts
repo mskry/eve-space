@@ -25,6 +25,11 @@ import {
 } from './compliance-evaluator.js'
 import { appendExternalServiceEntitlementTransitions } from './entitlement-transitions.js'
 import { convergeRegistrationComplianceGroupsInTransaction } from './group-compliance.js'
+import { projectManagedCorporationEvidence } from './managed-corporation-evidence.js'
+import {
+  convergeManagedMemberLifecycleInTransaction,
+  endManagedMemberLifecyclesForOrganizationVersionInTransaction,
+} from './managed-member-lifecycle.js'
 
 interface RecomputeAccountComplianceInput {
   deploymentId: 1
@@ -201,6 +206,27 @@ export function recomputeOrganizationAccountCompliance(
         : null,
       now,
     })
+    const managedCorporationIds = new Set(managedRows.map(({ corporationId }) => corporationId))
+    const managedCorporationEvidence =
+      organization.organizationType === 'corporation'
+        ? { freshness: 'fresh' as const }
+        : projectManagedCorporationEvidence(managedCollectionRows[0], now)
+    await convergeManagedMemberLifecycleInTransaction(transaction, {
+      deploymentId: input.deploymentId,
+      organizationVersion: input.organizationVersion,
+      userId: input.userId,
+      eligible:
+        managedCorporationEvidence.freshness === 'fresh' &&
+        characterRows.some(
+          (character) =>
+            character.affiliationResolutionState === 'resolved' &&
+            character.affiliationCheckedAt !== null &&
+            character.nextAffiliationCheck !== null &&
+            character.nextAffiliationCheck > now &&
+            managedCorporationIds.has(character.corporationId),
+        ),
+      now,
+    })
     const changed = materiallyChanged(previous, previousIssues, evaluation)
 
     await transaction
@@ -371,7 +397,12 @@ export function recomputeCurrentOrganizationAccountCompliance(userId: string, no
 
 export async function recomputeAllOrganizationAccountsInTransaction(
   transaction: ComplianceTransaction,
-  input: { deploymentId: 1; organizationVersion: number; now?: Date },
+  input: {
+    deploymentId: 1
+    organizationVersion: number
+    now?: Date
+    rotateManagedMemberLifecycles?: boolean
+  },
 ) {
   const accounts = await transaction.select({ userId: users.id }).from(users).orderBy(asc(users.id))
   return recomputeAccountsInTransaction(
@@ -434,7 +465,12 @@ function changedPermissionScope(
 
 async function recomputeAccountsInTransaction(
   transaction: ComplianceTransaction,
-  input: { deploymentId: 1; organizationVersion: number; now?: Date },
+  input: {
+    deploymentId: 1
+    organizationVersion: number
+    now?: Date
+    rotateManagedMemberLifecycles?: boolean
+  },
   userIds: readonly string[],
 ) {
   const orderedUserIds = [...new Set(userIds)].toSorted((left, right) => left.localeCompare(right))
@@ -445,50 +481,28 @@ async function recomputeAccountsInTransaction(
     .where(inArray(users.id, orderedUserIds))
     .orderBy(asc(users.id))
     .for('update')
+  const now = input.now ?? new Date()
+  if (input.rotateManagedMemberLifecycles)
+    await endManagedMemberLifecyclesForOrganizationVersionInTransaction(transaction, {
+      deploymentId: input.deploymentId,
+      organizationVersion: input.organizationVersion,
+      now,
+    })
   const results = []
-  for (const userId of orderedUserIds)
+  for (const userId of orderedUserIds) {
     // oxlint-disable-next-line no-await-in-loop -- Accounts are recomputed after all user locks are acquired.
-    results.push(await recomputeOrganizationAccountCompliance({ ...input, userId }, transaction))
-  return results
-}
-
-function projectManagedCorporationEvidence(
-  state:
-    | {
-        validatedAt: Date | null
-        nextEligibleAt: Date | null
-        lastFailureClass: string | null
-        failureStartedAt: Date | null
-      }
-    | undefined,
-  now: Date,
-) {
-  if (!state?.validatedAt)
-    return {
-      freshness: 'unavailable' as const,
-      evidenceAt: null,
-      freshUntil: null,
-      staleSince: state?.failureStartedAt ?? null,
-    }
-  if (
-    state.lastFailureClass ||
-    !state.nextEligibleAt ||
-    state.nextEligibleAt.getTime() <= now.getTime()
-  )
-    return {
-      freshness: 'stale' as const,
-      evidenceAt: state.validatedAt,
-      freshUntil: null,
-      staleSince: state.lastFailureClass
-        ? (state.failureStartedAt ?? state.validatedAt)
-        : (state.nextEligibleAt ?? state.validatedAt),
-    }
-  return {
-    freshness: 'fresh' as const,
-    evidenceAt: state.validatedAt,
-    freshUntil: state.nextEligibleAt,
-    staleSince: null,
+    const result = await recomputeOrganizationAccountCompliance(
+      {
+        deploymentId: input.deploymentId,
+        organizationVersion: input.organizationVersion,
+        userId,
+        now,
+      },
+      transaction,
+    )
+    results.push(result)
   }
+  return results
 }
 
 async function reconcileIssues(

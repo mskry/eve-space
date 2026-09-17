@@ -1,4 +1,4 @@
-import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { derivedResourcePriorityBand, resourceRefreshPriority } from '../../src/queue/policy.js'
 import { createInMemoryQueueProducer } from '../../src/queue/producer.js'

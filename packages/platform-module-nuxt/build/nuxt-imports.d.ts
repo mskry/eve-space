@@ -15,7 +15,7 @@ declare module '#build/eve-space-platform/navigation' {
 }
 
 declare module '#build/eve-space-platform/query-admission-scopes' {
-  export const platformQueryAdmissionScopes: readonly (import('@eve-space/platform-module-contract').PlatformQueryAdmissionScopeDescriptor & {
+  export const platformQueryAdmissionScopes: readonly (import('@eve-space/platform-module-contract/nuxt').PlatformQueryAdmissionScopeDescriptor & {
     readonly moduleId: string
   })[]
 }

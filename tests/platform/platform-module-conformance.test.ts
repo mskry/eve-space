@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url'
-import type { PlatformActivityProviderContext } from '@eve-space/platform-module-contract'
+import type { PlatformActivityProviderContext } from '@eve-space/platform-module-contract/activity'
+import { readCompiledPlatformModules } from '@eve-space/platform-module-contract/compiler'
 import { PlatformModuleHttpError } from '@eve-space/platform-module-server'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
@@ -12,12 +13,14 @@ import {
 
 const mocks = vi.hoisted(() => ({
   authorize: vi.fn(),
+  authorizeReviewer: vi.fn(),
   collectionStatus: { read: vi.fn() },
   createCollectionStatus: vi.fn(),
   createCoreReads: vi.fn(),
   findOwnedCharacter: vi.fn(),
   findSession: vi.fn(),
   moduleEnabled: vi.fn(),
+  resolveReviewerTarget: vi.fn(),
 }))
 
 vi.mock('../../api/src/auth/character-lifecycle.js', () => ({
@@ -27,7 +30,7 @@ vi.mock('../../api/src/auth/session-store.js', () => ({
   findSession: mocks.findSession,
 }))
 vi.mock('../../api/src/platform/module-settings.js', () => ({
-  isInstalledModuleEnabled: mocks.moduleEnabled,
+  isInstalledModuleContributionEnabled: mocks.moduleEnabled,
 }))
 vi.mock('../../api/src/platform/core-read-capabilities.js', () => ({
   createOwnedCharacterCoreReads: mocks.createCoreReads,
@@ -46,6 +49,10 @@ vi.mock('../../api/src/middleware/organization-session.js', () => ({
 }))
 vi.mock('../../api/src/organization/module-authorization.js', () => ({
   authorizeOrganizationContribution: mocks.authorize,
+  authorizeOrganizationReviewerContribution: mocks.authorizeReviewer,
+}))
+vi.mock('../../api/src/organization/reviewer-target.js', () => ({
+  resolveOrganizationReviewerTarget: mocks.resolveReviewerTarget,
 }))
 
 const fixtureRoot = fileURLToPath(
@@ -109,8 +116,8 @@ beforeEach(() => {
 describe('production-shaped module conformance', () => {
   it('loads the real fixture root and generates every declared contribution', async () => {
     const registry = await loadInstalledModuleManifests(fixtureRoot)
-    const files = generateRegistryFiles(registry)
-    const { manifests } = registry
+    const files = generateRegistryFiles(registry.compiled, registry.persistenceRoutines)
+    const manifests = readCompiledPlatformModules(registry.compiled)
 
     expect(manifests).toHaveLength(1)
     expect(manifests[0]).toMatchObject({

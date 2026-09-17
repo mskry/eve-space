@@ -1,5 +1,3 @@
-export const platformPersistenceOperationIdPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
-export const platformPersistenceOperationIdMaxLength = 54
 export const platformPersistenceOperationModes = ['read', 'write'] as const
 
 export type PlatformPersistenceOperationMode = (typeof platformPersistenceOperationModes)[number]

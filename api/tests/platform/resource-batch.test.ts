@@ -3,7 +3,7 @@ import {
   type PlatformCharacterResourceSubject,
   type PlatformInstalledResourceDescriptor,
   type PlatformResourceOperationImplementation,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/resources'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { PlatformEsiRequestError } from '../../src/esi-gateway/platform-execution.js'
 import {
@@ -204,6 +204,7 @@ describe('platform resource batch processing', () => {
             status: 'eligible',
             due: true,
             authorizationGeneration: 4,
+            managedAuthority: null,
             nextEligibleAt: null,
           })
           .mockResolvedValueOnce({ status: 'eligible', due: false }),
@@ -214,6 +215,8 @@ describe('platform resource batch processing', () => {
     expect(processorMocks.recordFailure).toHaveBeenCalledOnce()
     expect(processorMocks.recordFailure).toHaveBeenCalledWith(identity(payload, 0), failure, {
       resources: expect.any(Array),
+      expectedAuthorizationGeneration: 4,
+      expectedManagedAuthority: null,
     })
   })
 

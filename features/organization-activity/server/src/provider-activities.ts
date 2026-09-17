@@ -2,7 +2,7 @@ import type {
   PlatformActivity,
   PlatformActivityParticipation,
   PlatformActivityProviderCharacter,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/activity'
 import type { ActivitySourceRead } from './activity-source.js'
 import type { ActivitySnapshot } from './snapshot.js'
 

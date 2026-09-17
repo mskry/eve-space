@@ -1,4 +1,7 @@
-import { platformCoreNavigation, type PlatformIconToken } from '@eve-space/platform-module-contract'
+import {
+  platformCoreNavigation,
+  type PlatformIconToken,
+} from '@eve-space/platform-module-contract/nuxt'
 
 export type DashboardIcon = PlatformIconToken
 

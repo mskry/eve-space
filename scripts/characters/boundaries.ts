@@ -63,7 +63,14 @@ const allowedImportTiersBySourceTier: Record<CharacterTier, readonly CharacterTi
 
 const allowedPackagesByTier: Record<CharacterTier, ReadonlySet<string>> = {
   'pure-leaf': new Set(),
-  'read-projection': new Set(['drizzle-orm', 'zod']),
+  'read-projection': new Set([
+    '@eve-space/core-eve-projections/assets',
+    '@eve-space/core-eve-projections/skill-queue',
+    '@eve-space/core-eve-projections/trained-skills',
+    '@eve-space/core-eve-projections/wallet',
+    'drizzle-orm',
+    'zod',
+  ]),
   'affiliation-use-case': new Set(['drizzle-orm', 'zod']),
   'route-adapter': new Set(['hono', 'zod']),
 }
@@ -72,6 +79,7 @@ const allowedCrossSubsystemImportsByModule: Readonly<Record<string, readonly str
   'affiliation-planning': ['api/src/esi-gateway/failures'],
   'affiliation-sync': [
     'api/src/db/client',
+    'api/src/db/locks',
     'api/src/db/schema',
     'api/src/domain-events/store',
     'api/src/env',

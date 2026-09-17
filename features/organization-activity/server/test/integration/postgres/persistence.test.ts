@@ -37,6 +37,9 @@ const materializationFactory =
 let checkpointPersistence: ReturnType<typeof checkpointFactory>
 let snapshotPersistence: ReturnType<typeof snapshotFactory>
 const moduleId = 'organization-activity'
+const modulePersistenceOperations = installedModulePersistenceOperations.filter(
+  (operation) => operation.moduleId === moduleId,
+)
 const migrationNames = ['organization-activity-001-baseline.sql'] as const
 const lifecycleId = randomUUID()
 const activityId = randomUUID()
@@ -70,7 +73,7 @@ beforeAll(async () => {
   const migrationSet = {
     moduleId,
     migrations,
-    persistenceOperations: installedModulePersistenceOperations,
+    persistenceOperations: modulePersistenceOperations,
   }
   await runModuleMigrationSets(connection, [migrationSet])
   await runModuleMigrationSets(connection, [migrationSet])

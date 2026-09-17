@@ -18,16 +18,19 @@ const modulesByTier = {
     'core-read-capabilities',
     'core-resource-materialization',
     'module-logging',
+    'module-organization-command-capabilities',
     'module-persistence-capabilities',
     'module-route-capabilities',
     'module-settings',
     'resource-eligibility',
     'resource-collection-context',
+    'reviewer-search-capabilities',
   ],
   service: [
     'collection-status',
     'module-activity-provider-capabilities',
     'module-collection-status-capabilities',
+    'module-reviewer-collection-status-capabilities',
     'resource-execution-guard',
     'resource-failures',
     'resource-operation-executor',
@@ -65,7 +68,13 @@ const allowedImportTiersBySourceTier: Record<PlatformTier, readonly PlatformTier
   ],
 }
 
-const allowedRepresentationPackages = new Set(['@eve-space/platform-module-contract', 'zod'])
+const allowedRepresentationPackages = new Set([
+  '@eve-space/platform-module-contract/identifiers',
+  '@eve-space/platform-module-contract/nuxt',
+  '@eve-space/platform-module-contract/resources',
+  '@eve-space/platform-module-contract/server',
+  'zod',
+])
 
 export interface PlatformSource {
   readonly path: string

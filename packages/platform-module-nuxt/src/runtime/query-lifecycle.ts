@@ -2,6 +2,7 @@ import type { EntryKey, QueryCache, UseQueryEntry, UseQueryOptions } from '@pini
 import type { PlatformQuerySubject } from './query-keys.js'
 import {
   isPlatformModuleQueryKey,
+  isPlatformModuleSectionQueryKey,
   isPlatformQuerySubjectValid,
   PLATFORM_PRIVATE_QUERY_ROOT,
   platformModuleQueryKey,
@@ -12,6 +13,7 @@ export interface PlatformProtectedQueryAccess {
   readonly authorized?: boolean
   readonly isClient: boolean
   readonly moduleEnabled: boolean
+  readonly sectionId?: string
   readonly ownsCharacter?: boolean
   readonly subject: PlatformQuerySubject
 }
@@ -81,6 +83,17 @@ export function removePlatformModuleQueries(queryCache: QueryCache, moduleId: st
   }
 }
 
+export function removePlatformModuleSectionQueries(
+  queryCache: QueryCache,
+  moduleId: string,
+  sectionId: string,
+) {
+  for (const entry of queryCache.getEntries({ key: PLATFORM_PRIVATE_QUERY_ROOT })) {
+    if (isPlatformModuleSectionQueryKey(entry.key, moduleId, sectionId))
+      removeQueryEntry(queryCache, entry)
+  }
+}
+
 export function removePlatformQueryScope(queryCache: QueryCache, key: EntryKey) {
   const filter = { key }
   queryCache.cancelQueries(filter, new Error('Protected query state cleared.'))
@@ -116,7 +129,7 @@ export function prefetchPlatformProtectedQuery<
   if (!canRunPlatformProtectedQuery(access)) return Promise.resolve()
   return prefetchQuery(queryCache, {
     ...options,
-    key: platformModuleQueryKey(moduleId, access.subject, resource),
+    key: platformModuleQueryKey(moduleId, access.subject, resource, access.sectionId),
   })
 }
 

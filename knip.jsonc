@@ -11,10 +11,12 @@
         "layers/*/nuxt.config.ts",
         "layers/*/app/components/**/*.vue",
         "layers/*/app/{composables,plugins,utils}/**/*.ts",
-        "features/organization-activity/module.config.ts",
+        "features/{member-audit,organization-activity}/module.config.ts",
         "generated/platform/*.ts",
         "scripts/copy-platform-nuxt-runtime-assets.mjs",
         "scripts/module-registry/source-extensions.d.mts",
+        // Standalone negative type fixture invoked through test:registry:types.
+        "tests/fixtures/platform-module-registry-types/registry-input.ts",
         "tests/fixtures/platform-module-conformance/{nuxt.config.ts,api/src/index.ts,app/**/*.{ts,vue}}",
         "tests/fixtures/platform-module-conformance/features/conformance/module.config.ts",
         "tests/fixtures/platform-module-conformance/features/conformance/server/src/index.ts",
@@ -54,6 +56,12 @@
         "src/runtime/app/pages/OrganizationActivityCampaignPage.vue",
         "src/runtime/app/pages/OrganizationActivityJobPage.vue",
         "src/runtime/app/pages/OrganizationActivityProjectPage.vue",
+        "test/fixtures/basic/nuxt.config.ts",
+      ],
+    },
+    "features/member-audit/nuxt": {
+      "entry": [
+        "src/runtime/app/components/MemberAuditModuleUnavailable.vue",
         "test/fixtures/basic/nuxt.config.ts",
       ],
     },
