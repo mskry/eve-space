@@ -1,7 +1,7 @@
 import type {
   PlatformModuleRouteCapabilities,
   PlatformOwnedCharacterRouteEnv,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/server'
 import { platformModuleError, zValidator } from '@eve-space/platform-module-server'
 import { Hono } from 'hono'
 import { z } from 'zod'

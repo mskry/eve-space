@@ -1,4 +1,7 @@
-import type { PlatformInstalledModuleDefinition } from '@eve-space/platform-module-contract'
+import type {
+  PlatformInstalledModuleDefinition,
+  PlatformInstalledModuleSectionDefinition,
+} from '@eve-space/platform-module-contract/installed'
 import type postgres from 'postgres'
 import {
   installedModuleIds,
@@ -21,12 +24,16 @@ import {
   type ModuleMigrationSqlLoader,
 } from './module-migration-runner.js'
 import { runMigrations } from './migration-runner.js'
-import { reconcileInstalledModules } from '../platform/module-settings.js'
+import {
+  reconcileInstalledModules,
+  reconcileInstalledModuleSections,
+} from '../platform/module-settings.js'
 
 interface StartupMigrationOptions {
   installed?: readonly InstalledModuleMigrationDescriptor[]
   moduleIds?: readonly string[]
   moduleDefinitions?: readonly PlatformInstalledModuleDefinition[]
+  moduleSectionDefinitions?: readonly PlatformInstalledModuleSectionDefinition[]
   persistenceOperations?: NonNullable<ModuleMigrationSet['persistenceOperations']>
   persistenceContractFingerprint?: string
   loadModuleSql?: ModuleMigrationSqlLoader
@@ -75,4 +82,5 @@ export async function runStartupMigrations(
     moduleIds,
   )
   await reconcileInstalledModules(connection, options.moduleDefinitions)
+  await reconcileInstalledModuleSections(connection, options.moduleSectionDefinitions)
 }

@@ -2,7 +2,7 @@ import {
   definePlatformResourceOperation,
   type PlatformCharacterResourceSubject,
   type PlatformResourceMaterializationContext,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/resources'
 import type { ConformanceSnapshotWritePersistence } from './persistence.js'
 
 interface ConformanceStatusData {

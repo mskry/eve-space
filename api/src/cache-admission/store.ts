@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, isNull, or } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, inArray, isNull, ne, or } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import {
   characters,
@@ -164,6 +164,7 @@ export async function loadOrganizationRevisionFacts(
         and(
           eq(organizationAuditEvents.deploymentId, 1),
           eq(organizationAuditEvents.organizationVersion, organizationVersion),
+          ne(organizationAuditEvents.eventType, 'sensitive-access.decided'),
         ),
       )
       .orderBy(desc(organizationAuditEvents.auditSequence))

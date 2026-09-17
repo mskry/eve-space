@@ -242,7 +242,7 @@
 }
 
 .finance-table .is-expense {
-  color: var(--ui-warning);
+  color: var(--ui-danger);
 }
 
 .finance-table .is-urgent {

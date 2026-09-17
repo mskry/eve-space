@@ -2,7 +2,7 @@ import type {
   PlatformInstalledResourceDescriptor,
   PlatformResourceOperationImplementation,
   PlatformResourceSubject,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/resources'
 import { sql as drizzleSql } from 'drizzle-orm'
 import type postgres from 'postgres'
 import { db, sql } from '../db/client.js'
@@ -26,7 +26,11 @@ import {
   upsertPlatformCollectionStateInTransaction,
 } from './collection-state-store.js'
 import { recordInstalledResourceCollectionSuccess } from './collection-status.js'
-import { resolveInstalledResourceEligibility } from './resource-eligibility.js'
+import {
+  managedCollectionAuthorityEquals,
+  resolveInstalledResourceEligibility,
+  type PlatformManagedCollectionAuthority,
+} from './resource-eligibility.js'
 import { executeInstalledResourceOperation } from './resource-operation-executor.js'
 import {
   PlatformResourcePersistenceError,
@@ -46,13 +50,31 @@ export async function processInstalledResourceRefresh(
 ) {
   options.signal?.throwIfAborted()
   let execution: Awaited<ReturnType<typeof executeInstalledResourceOperation>>
+  let attemptAuthority:
+    | {
+        readonly authorizationGeneration: number | null
+        readonly managedAuthority: PlatformManagedCollectionAuthority | null
+      }
+    | undefined
   try {
     execution = await (options.executeOperation ?? executeInstalledResourceOperation)(identity, {
       signal: options.signal,
+      onAuthorityResolved(authority) {
+        attemptAuthority = authority
+      },
     })
   } catch (error) {
     options.signal?.throwIfAborted()
-    await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(identity, error)
+    await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(
+      identity,
+      error,
+      attemptAuthority
+        ? {
+            expectedAuthorizationGeneration: attemptAuthority.authorizationGeneration,
+            expectedManagedAuthority: attemptAuthority.managedAuthority,
+          }
+        : {},
+    )
     throw error
   }
   if (execution.outcome === 'noop') return
@@ -64,6 +86,7 @@ export async function processInstalledResourceRefresh(
       resource: execution.resource,
       subject: execution.subject,
       authorizationGeneration: execution.authorizationGeneration,
+      managedAuthority: execution.managedAuthority,
       validatedAt: execution.result.validatedAt,
       organizationVersion: execution.organizationVersion,
       complete: execution.complete,
@@ -74,7 +97,10 @@ export async function processInstalledResourceRefresh(
   } catch (error) {
     options.signal?.throwIfAborted()
     const failure = new PlatformResourcePersistenceError(error)
-    await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(identity, failure)
+    await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(identity, failure, {
+      expectedAuthorizationGeneration: execution.authorizationGeneration,
+      expectedManagedAuthority: execution.managedAuthority,
+    })
     throw failure
   }
 }
@@ -84,6 +110,7 @@ type PlatformResourceObservation = {
   readonly resource: PlatformInstalledResourceDescriptor
   readonly subject: PlatformResourceSubject
   readonly authorizationGeneration: number | null
+  readonly managedAuthority: PlatformManagedCollectionAuthority | null
   readonly validatedAt: string
   readonly organizationVersion?: number
   readonly complete?: boolean
@@ -119,6 +146,14 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
       where module_id = ${observation.identity.moduleId}
       for share
     `
+    if (observation.resource.sectionId)
+      await transaction`
+        select module_id, section_id
+        from deployment_module_sections
+        where module_id = ${observation.identity.moduleId}
+          and section_id = ${observation.resource.sectionId}
+        for share
+      `
     observation.signal?.throwIfAborted()
     if (observation.subject.kind === 'character')
       await transaction`
@@ -136,7 +171,8 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
     if (
       eligibility.status !== 'eligible' ||
       !eligibility.due ||
-      eligibility.authorizationGeneration !== observation.authorizationGeneration
+      eligibility.authorizationGeneration !== observation.authorizationGeneration ||
+      !managedCollectionAuthorityEquals(eligibility.managedAuthority, observation.managedAuthority)
     )
       return
 
@@ -173,6 +209,7 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
           ...observation.identity,
           nextEligibleAt: new Date(0),
           authorizationGeneration: observation.authorizationGeneration,
+          ...eligibility.managedAuthority,
           validatedAt: previous[0]?.validatedAt ?? null,
           lastFailureClass: null,
         },
@@ -187,6 +224,7 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
       observation.authorizationGeneration,
       {
         resources: [observation.resource],
+        managedAuthority: eligibility.managedAuthority,
         upsertState: (input) => upsertPlatformCollectionStateInTransaction(input, transaction),
       },
     )
@@ -236,6 +274,9 @@ function materializationContext(
     data: observation.data,
     validatedAt: observation.validatedAt,
     authorizationGeneration: observation.authorizationGeneration,
+    organizationVersion:
+      observation.organizationVersion ?? observation.managedAuthority?.organizationVersion ?? null,
+    managedAuthority: observation.managedAuthority,
   }
 }
 
@@ -267,6 +308,14 @@ async function applyCoreResourceObservation(observation: PlatformResourceObserva
     observation.signal?.throwIfAborted()
     if (!applied) return
 
+    const rotateManagedMemberLifecycles = Boolean(
+      applied.recomputeAllAccounts &&
+      currentState &&
+      (currentState.lastFailureClass !== null ||
+        !currentState.nextEligibleAt ||
+        currentState.nextEligibleAt <= validatedAt),
+    )
+
     await recordInstalledResourceCollectionSuccess(
       observation.identity,
       { validatedAt: observation.validatedAt },
@@ -282,6 +331,7 @@ async function applyCoreResourceObservation(observation: PlatformResourceObserva
         deploymentId: 1,
         organizationVersion: applied.organizationVersion,
         now: new Date(),
+        rotateManagedMemberLifecycles,
       })
     else if (applied.affectedCorporationIds.length > 0)
       await recomputeComplianceForManagedCorporationsInTransaction(transaction, {

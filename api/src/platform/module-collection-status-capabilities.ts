@@ -1,9 +1,9 @@
+import type { PlatformActivityProviderCharacter } from '@eve-space/platform-module-contract/activity'
 import type {
-  PlatformActivityProviderCharacter,
   PlatformCollectionStatusSubject,
-  PlatformInstalledResourceDescriptor,
   PlatformModuleCollectionStatusReads,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/server'
+import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import { and, eq, isNull } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import {
@@ -14,9 +14,11 @@ import {
 import { getInstalledResourceCollectionStatus } from './collection-status.js'
 import { findInstalledResource } from './resource-identity.js'
 import { platformResources } from './resources.js'
+import { isInstalledModuleContributionEnabled } from './module-settings.js'
 
 interface ModuleCollectionStatusBinding {
   readonly moduleId: string
+  readonly sectionId?: string
   readonly organizationVersion: number
   readonly characters?: readonly Pick<
     PlatformActivityProviderCharacter,
@@ -29,6 +31,7 @@ interface ModuleCollectionStatusOptions {
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly loadOrganizationLifecycle?: typeof loadOrganizationSubjectLifecycle
   readonly readStatus?: typeof getInstalledResourceCollectionStatus
+  readonly isContributionEnabled?: typeof isInstalledModuleContributionEnabled
 }
 
 export function createPlatformModuleCollectionStatusReads(
@@ -52,6 +55,16 @@ export function createPlatformModuleCollectionStatusReads(
         resources,
       )
       if (!resource) throw new Error('Module collection resource is unavailable')
+      if (binding.sectionId && resource.sectionId !== binding.sectionId)
+        throw new Error('Module collection resource is unavailable')
+      if (
+        binding.sectionId &&
+        !(await (options.isContributionEnabled ?? isInstalledModuleContributionEnabled)(
+          binding.moduleId,
+          binding.sectionId,
+        ))
+      )
+        throw new Error('Module collection resource is unavailable')
 
       const lifecycle =
         subject.kind === 'character'

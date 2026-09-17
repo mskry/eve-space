@@ -16,6 +16,7 @@ let databaseUrl: string
 let connection: postgres.Sql
 let affiliation: typeof import('../../../src/characters/affiliation-sync.js')
 let characterLifecycle: typeof import('../../../src/auth/character-lifecycle.js')
+let managedMemberLifecycle: typeof import('../../../src/organization/managed-member-lifecycle.js')
 let dbClient: typeof import('../../../src/db/client.js')
 const databasePassword = randomUUID()
 
@@ -42,6 +43,7 @@ beforeAll(async () => {
   await runMigrations(connection)
   affiliation = await import('../../../src/characters/affiliation-sync.js')
   characterLifecycle = await import('../../../src/auth/character-lifecycle.js')
+  managedMemberLifecycle = await import('../../../src/organization/managed-member-lifecycle.js')
   dbClient = await import('../../../src/db/client.js')
 })
 
@@ -59,6 +61,140 @@ afterAll(async () => {
 })
 
 describe('affiliation persistence', () => {
+  test('records departure and re-entry as separate managed-member intervals before events run', async () => {
+    const id = userId(10)
+    await ensureCorporationOrganization()
+    await insertCharacter(1, 10)
+    const converge: NonNullable<Parameters<typeof affiliation.processAffiliationBatch>[2]> = (
+      transaction,
+      userIds,
+      observedAt,
+    ) =>
+      managedMemberLifecycle.convergeCurrentManagedMemberLifecyclesInTransaction(transaction, {
+        userIds,
+        now: observedAt,
+      })
+
+    await processBatch(
+      [1],
+      [{ characterId: 1, corporationId: 98_000_001, allianceId: null }],
+      new Date('2026-09-16T12:00:00.000Z'),
+      converge,
+    )
+    await processBatch(
+      [1],
+      [{ characterId: 1, corporationId: 98_000_002, allianceId: null }],
+      new Date('2026-09-16T12:01:00.000Z'),
+      converge,
+    )
+    await processBatch(
+      [1],
+      [{ characterId: 1, corporationId: 98_000_001, allianceId: null }],
+      new Date('2026-09-16T12:02:00.000Z'),
+      converge,
+    )
+    await processBatch(
+      [1],
+      [{ characterId: 1, corporationId: 98_000_001, allianceId: null }],
+      new Date('2026-09-17T12:03:00.000Z'),
+      converge,
+    )
+
+    const lifecycles = await connection<
+      { managed_member_lifecycle_id: string; started_at: Date; ended_at: Date | null }[]
+    >`
+      select managed_member_lifecycle_id, started_at, ended_at
+      from organization_managed_member_lifecycles
+      where user_id = ${id}
+      order by started_at
+    `
+    expect(lifecycles).toHaveLength(3)
+    expect(lifecycles[0]).toMatchObject({
+      managed_member_lifecycle_id: expect.any(String),
+      ended_at: new Date('2026-09-16T12:01:00.000Z'),
+    })
+    expect(lifecycles[1]).toMatchObject({
+      managed_member_lifecycle_id: expect.any(String),
+      started_at: new Date('2026-09-16T12:02:00.000Z'),
+      ended_at: new Date('2026-09-17T12:03:00.000Z'),
+    })
+    expect(lifecycles[1]!.managed_member_lifecycle_id).not.toBe(
+      lifecycles[0]!.managed_member_lifecycle_id,
+    )
+    expect(lifecycles[2]).toMatchObject({
+      managed_member_lifecycle_id: expect.any(String),
+      started_at: new Date('2026-09-17T12:03:00.000Z'),
+      ended_at: null,
+    })
+    expect(lifecycles[2]!.managed_member_lifecycle_id).not.toBe(
+      lifecycles[1]!.managed_member_lifecycle_id,
+    )
+  })
+
+  test('starts a new managed-member interval when SSO refreshes expired affiliation evidence', async () => {
+    await ensureCorporationOrganization()
+    const firstObservedAt = new Date('2026-09-18T10:00:00.000Z')
+    const secondObservedAt = new Date('2026-09-18T12:00:00.000Z')
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(firstObservedAt)
+      await characterLifecycle.saveLogin({
+        characterId: 1,
+        characterName: 'Login Pilot',
+        corporationId: 98_000_001,
+        allianceId: null,
+        affiliationCheckedAt: firstObservedAt,
+        accessToken: 'first-access-token',
+        refreshToken: 'first-refresh-token',
+        expiresIn: 1_200,
+        scopes: [],
+        sessionToken: 'first-session-token',
+        sessionExpiresAt: new Date('2026-09-19T10:00:00.000Z'),
+      })
+
+      vi.setSystemTime(secondObservedAt)
+      await characterLifecycle.saveLogin({
+        characterId: 1,
+        characterName: 'Login Pilot',
+        corporationId: 98_000_001,
+        allianceId: null,
+        affiliationCheckedAt: secondObservedAt,
+        accessToken: 'second-access-token',
+        refreshToken: 'second-refresh-token',
+        expiresIn: 1_200,
+        scopes: [],
+        sessionToken: 'second-session-token',
+        sessionExpiresAt: new Date('2026-09-19T12:00:00.000Z'),
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+
+    const lifecycles = await connection<
+      { managed_member_lifecycle_id: string; started_at: Date; ended_at: Date | null }[]
+    >`
+      select managed_member_lifecycle_id, started_at, ended_at
+      from organization_managed_member_lifecycles
+      where user_id = (select user_id from characters where character_id = 1)
+      order by started_at
+    `
+    expect(lifecycles).toEqual([
+      {
+        managed_member_lifecycle_id: expect.any(String),
+        started_at: firstObservedAt,
+        ended_at: secondObservedAt,
+      },
+      {
+        managed_member_lifecycle_id: expect.any(String),
+        started_at: secondObservedAt,
+        ended_at: null,
+      },
+    ])
+    expect(lifecycles[1]!.managed_member_lifecycle_id).not.toBe(
+      lifecycles[0]!.managed_member_lifecycle_id,
+    )
+  })
+
   test('derives active sessions at persistence time and treats other scheduled characters as inactive', async () => {
     const observedAt = new Date('2026-08-24T12:00:00.000Z')
     await insertCharacter(1, 10)
@@ -358,6 +494,30 @@ describe('affiliation persistence', () => {
   })
 })
 
+async function ensureCorporationOrganization() {
+  await connection`
+    insert into organization_epochs (
+      deployment_id, organization_version, organization_type, organization_id,
+      organization_name, organization_ticker
+    ) values (1, 1, 'corporation', 98000001, 'Managed Corporation', 'CORP')
+    on conflict do nothing
+  `
+  await connection`
+    insert into deployment_settings (
+      id, organization_type, organization_id,
+      organization_name, organization_ticker, organization_version
+    ) values (1, 'corporation', 98000001, 'Managed Corporation', 'CORP', 1)
+    on conflict do nothing
+  `
+  await connection`
+    insert into organization_managed_corporations (
+      deployment_id, organization_version, corporation_id, is_current,
+      first_observed_at, last_observed_at
+    ) values (1, 1, 98000001, true, now(), now())
+    on conflict do nothing
+  `
+}
+
 async function insertCharacter(
   characterId: number,
   user: number,
@@ -389,12 +549,13 @@ async function processBatch(
     allianceId: number | null
   }[],
   observedAt: Date,
+  afterPersist?: Parameters<typeof affiliation.processAffiliationBatch>[2],
 ) {
   esiMocks.executeRepresentation.mockResolvedValueOnce(affiliationResult(observations, observedAt))
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(observedAt)
   try {
-    await affiliation.processAffiliationBatch(characterIds)
+    await affiliation.processAffiliationBatch(characterIds, undefined, afterPersist)
   } finally {
     vi.useRealTimers()
   }

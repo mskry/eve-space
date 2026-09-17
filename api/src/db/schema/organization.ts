@@ -61,6 +61,47 @@ export const organizationManagedCorporations = pgTable(
   ],
 )
 
+export const organizationManagedMemberLifecycles = pgTable(
+  'organization_managed_member_lifecycles',
+  {
+    managedMemberLifecycleId: uuid('managed_member_lifecycle_id')
+      .defaultRandom()
+      .primaryKey()
+      .notNull(),
+    deploymentId: smallint('deployment_id').default(1).notNull(),
+    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
+    userId: uuid('user_id').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    endedAt: timestamp('ended_at', { withTimezone: true, mode: 'date' }),
+    ...auditTimestamps(),
+  },
+  (table) => [
+    unique('organization_managed_member_lifecycles_binding_key').on(
+      table.managedMemberLifecycleId,
+      table.deploymentId,
+      table.organizationVersion,
+      table.userId,
+    ),
+    uniqueIndex('organization_managed_member_lifecycles_active_key')
+      .on(table.deploymentId, table.organizationVersion, table.userId)
+      .where(sql`ended_at is null`),
+    foreignKey({
+      columns: [table.deploymentId, table.organizationVersion],
+      foreignColumns: [organizationEpochs.deploymentId, organizationEpochs.organizationVersion],
+      name: 'organization_managed_member_lifecycles_epoch_fkey',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'organization_managed_member_lifecycles_user_id_fkey',
+    }).onDelete('cascade'),
+    check(
+      'organization_managed_member_lifecycles_interval_check',
+      sql`ended_at is null or ended_at >= started_at`,
+    ),
+  ],
+)
+
 export const organizationCorporationSources = pgTable(
   'organization_corporation_sources',
   {
@@ -631,6 +672,17 @@ export const organizationAuditEventTypes = [
   'group.revoked',
   'member.blocked',
   'member.unblocked',
+  'sensitive-access.decided',
+] as const
+
+export const organizationSensitiveAccessSections = ['skills', 'assets', 'wallet', 'mail'] as const
+export const organizationSensitiveAccessReasons = [
+  'authorized',
+  'reviewer-blocked',
+  'reviewer-compliance-required',
+  'reviewer-authority-required',
+  'reviewer-permission-required',
+  'target-not-authorized',
 ] as const
 
 export const organizationAuditActorTypes = ['user', 'deployment_admin', 'system'] as const
@@ -658,6 +710,9 @@ export type OrganizationAuditEventType = (typeof organizationAuditEventTypes)[nu
 export type OrganizationAuditActorType = (typeof organizationAuditActorTypes)[number]
 export type OrganizationAuditSubjectType = (typeof organizationAuditSubjectTypes)[number]
 export type OrganizationAuditOutcome = (typeof organizationAuditOutcomes)[number]
+export type OrganizationSensitiveAccessSection =
+  (typeof organizationSensitiveAccessSections)[number]
+export type OrganizationSensitiveAccessReason = (typeof organizationSensitiveAccessReasons)[number]
 
 export const organizationAuditEvents = pgTable(
   'organization_audit_events',
@@ -679,6 +734,9 @@ export const organizationAuditEvents = pgTable(
     groupId: uuid('group_id'),
     assignmentId: uuid('assignment_id'),
     targetUserId: uuid('target_user_id'),
+    sectionId: text('section_id').$type<OrganizationSensitiveAccessSection>(),
+    targetCharacterId: bigint('target_character_id', { mode: 'number' }),
+    disclosureVersion: bigint('disclosure_version', { mode: 'number' }),
     assignmentSource: text('assignment_source').$type<'manual' | 'compliance'>(),
     complianceSource: text('compliance_source'),
     entitlementExpiresAt: timestamp('entitlement_expires_at', {
@@ -722,7 +780,8 @@ export const organizationAuditEvents = pgTable(
         'group.assigned',
         'group.revoked',
         'member.blocked',
-        'member.unblocked'
+        'member.unblocked',
+        'sensitive-access.decided'
       )`,
     ),
     check(
@@ -758,7 +817,7 @@ export const organizationAuditEvents = pgTable(
       sql`outcome in ('granted', 'revoked', 'transitioned', 'denied', 'unchanged')`,
     ),
     check(
-      'organization_audit_events_group_assignment_check',
+      'organization_audit_events_context_check',
       sql`(
           event_type in ('group.assigned', 'group.revoked')
           and group_id is not null
@@ -769,14 +828,76 @@ export const organizationAuditEvents = pgTable(
             (assignment_source = 'manual' and compliance_source is null)
             or (assignment_source = 'compliance' and compliance_source is not null)
           )
+          and section_id is null
+          and target_character_id is null
+          and disclosure_version is null
         ) or (
-          event_type not in ('group.assigned', 'group.revoked')
+          event_type = 'sensitive-access.decided'
+          and actor_type = 'user'
+          and outcome in ('granted', 'denied')
+          and section_id is not null
+          and section_id in ('skills', 'assets', 'wallet', 'mail')
+          and disclosure_version is not null
+          and disclosure_version > 0
+          and (
+            target_character_id is null
+            or (target_character_id > 0 and target_user_id is not null)
+          )
+          and group_id is null
+          and assignment_id is null
+          and assignment_source is null
+          and compliance_source is null
+          and entitlement_expires_at is null
+          and causation_audit_id is null
+          and (
+            (
+              outcome = 'granted'
+              and reason = 'authorized'
+              and target_user_id is not null
+              and subject_type = 'user'
+              and subject_id = target_user_id::text
+            ) or (
+              outcome = 'denied'
+              and reason in (
+                'reviewer-blocked',
+                'reviewer-compliance-required',
+                'reviewer-authority-required',
+                'reviewer-permission-required',
+                'target-not-authorized'
+              )
+              and (
+                (
+                  reason = 'target-not-authorized'
+                  and target_user_id is null
+                  and target_character_id is null
+                  and subject_type = 'deployment'
+                  and subject_id = '1'
+                ) or (
+                  reason <> 'target-not-authorized'
+                  and target_user_id is not null
+                  and subject_type = 'user'
+                  and subject_id = target_user_id::text
+                ) or (
+                  reason <> 'target-not-authorized'
+                  and target_user_id is null
+                  and target_character_id is null
+                  and subject_type = 'deployment'
+                  and subject_id = '1'
+                )
+              )
+            )
+          )
+        ) or (
+          event_type not in ('group.assigned', 'group.revoked', 'sensitive-access.decided')
           and group_id is null
           and assignment_id is null
           and target_user_id is null
           and assignment_source is null
           and compliance_source is null
           and entitlement_expires_at is null
+          and section_id is null
+          and target_character_id is null
+          and disclosure_version is null
         )`,
     ),
     index('organization_audit_events_version_sequence_idx').on(

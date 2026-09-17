@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  platformOrganizationAdmissionScope,
-  type PlatformQueryAdmissionScopeDescriptor,
-} from '../../packages/platform-module-contract/src'
+import { platformOrganizationAdmissionScope } from '@eve-space/platform-module-contract/server'
+import type { PlatformQueryAdmissionScopeDescriptor } from '@eve-space/platform-module-contract/nuxt'
 import {
   ESI_QUERY_RETENTION_MS,
   characterEsiPersistence,

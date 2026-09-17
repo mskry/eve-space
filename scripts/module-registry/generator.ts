@@ -2,19 +2,26 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
-  compareStable,
+  compilePlatformModules,
+  readCompiledPlatformModules,
+  type CompiledPlatformModules,
+  type PlatformModuleCandidate,
+} from '@eve-space/platform-module-contract/compiler'
+import type { PlatformModuleManifest } from '@eve-space/platform-module-contract/manifest'
+import type {
+  PlatformInstalledModuleDefinition,
+  PlatformInstalledModuleMigrationDescriptor,
+  PlatformInstalledModuleSectionDefinition,
+  PlatformInstalledOrganizationAdmissionScopeDescriptor,
+} from '@eve-space/platform-module-contract/installed'
+import type { PlatformInstalledActivityProviderDescriptor } from '@eve-space/platform-module-contract/activity'
+import {
   platformNavigationPlacements,
-  validatePlatformModuleManifests,
-  type PlatformInstalledModuleMigrationDescriptor,
-  type PlatformInstalledActivityProviderDescriptor,
-  type PlatformInstalledModuleDefinition,
-  type PlatformInstalledOrganizationAdmissionScopeDescriptor,
   type PlatformInstalledNavigation,
-  type PlatformModuleManifest,
   type PlatformNavigationDefault,
   type PlatformNuxtContributionDescriptor,
-  platformOrganizationAdmissionScope,
-} from '../../packages/platform-module-contract/src/index.js'
+} from '@eve-space/platform-module-contract/nuxt'
+import { platformOrganizationAdmissionScope } from '@eve-space/platform-module-contract/server'
 import {
   canonicalizePersistenceRoutineSql,
   type CanonicalPersistenceRoutine,
@@ -25,6 +32,7 @@ import {
   assertInstalledFeatureBoundaries,
   assertManifestCompositionBoundaries,
 } from './feature-boundaries.js'
+import type { PlatformRegistryRenderer } from './renderer-interface.js'
 
 export const generatedRegistryPaths = [
   'api/src/generated/platform/installed-module-routes.ts',
@@ -44,7 +52,7 @@ interface ReviewedPersistenceRoutine extends CanonicalPersistenceRoutine {
 }
 
 export interface InstalledModuleRegistryInput {
-  readonly manifests: readonly PlatformModuleManifest[]
+  readonly compiled: CompiledPlatformModules
   readonly persistenceRoutines: readonly ReviewedPersistenceRoutine[]
 }
 
@@ -61,7 +69,7 @@ export async function loadInstalledModuleManifests(root: string) {
 
   const ids = installed.modules
   await assertInstalledFeatureBoundaries(root)
-  const manifests = await Promise.all(
+  const candidates: readonly PlatformModuleCandidate[] = await Promise.all(
     ids.map(async (id) => {
       const featureDirectory = join(root, 'features', id)
       const descriptorPath = join(featureDirectory, 'module.config.ts')
@@ -69,12 +77,18 @@ export async function loadInstalledModuleManifests(root: string) {
         throw new Error(`Installed module ${id} is missing ${relative(root, descriptorPath)}`)
 
       const imported: unknown = await import(`${pathToFileURL(descriptorPath).href}?registry`)
-      if (!isRecord(imported))
-        throw new Error(`Installed module ${id} must default-export its manifest`)
-      const manifest = parsePlatformModuleManifest(imported.default, id)
-      if (manifest.id !== id)
-        throw new Error(`Installed module ${id} descriptor declares mismatched ID ${manifest.id}`)
+      return {
+        expectedModuleId: id,
+        declaration: isRecord(imported) ? imported.default : undefined,
+      }
+    }),
+  )
 
+  const compiled = compilePlatformModules(candidates, coreModuleValidationAuthorities)
+  const manifests = readCompiledPlatformModules(compiled)
+  await Promise.all(
+    manifests.map(async (manifest) => {
+      const featureDirectory = join(root, 'features', manifest.id)
       validatePackageManifest(
         featureDirectory,
         'server',
@@ -83,14 +97,11 @@ export async function loadInstalledModuleManifests(root: string) {
       )
       validatePackageManifest(featureDirectory, 'nuxt', manifest.nuxt.package)
       await assertManifestCompositionBoundaries(root, manifest)
-      return manifest
     }),
   )
-
-  const validated = validatePlatformModuleManifests(manifests, coreModuleValidationAuthorities)
-  validateDeploymentDependencies(root, validated)
+  validateDeploymentDependencies(root, manifests)
   const persistenceRoutines = await Promise.all(
-    validated.flatMap((manifest) =>
+    manifests.flatMap((manifest) =>
       manifest.server.persistenceOperations.map(async (operation) => {
         const sql = readFileSync(
           join(root, 'features', manifest.id, 'server', 'migrations', operation.migration),
@@ -109,28 +120,26 @@ export async function loadInstalledModuleManifests(root: string) {
       }),
     ),
   )
-  return { manifests: validated, persistenceRoutines } satisfies InstalledModuleRegistryInput
+  return { compiled, persistenceRoutines } satisfies InstalledModuleRegistryInput
 }
 
-export function generateRegistryFiles(
-  input: readonly PlatformModuleManifest[] | InstalledModuleRegistryInput,
+export const generateRegistryFiles = function generateRegistryFiles(
+  compiled: CompiledPlatformModules,
+  persistenceRoutines: InstalledModuleRegistryInput['persistenceRoutines'] = [],
 ) {
-  const manifests = Array.isArray(input) ? input : input.manifests
-  const persistenceRoutines = Array.isArray(input) ? [] : input.persistenceRoutines
-  const sorted = validatePlatformModuleManifests(manifests, coreModuleValidationAuthorities)
   return new Map<string, string>([
-    [generatedRegistryPaths[0], renderApiRoutes(sorted)],
-    [generatedRegistryPaths[1], renderActivityProviders(sorted)],
-    [generatedRegistryPaths[2], renderWorkerResources(sorted)],
-    [generatedRegistryPaths[3], renderMigrations(sorted)],
-    [generatedRegistryPaths[4], renderEsiOperations(sorted)],
-    [generatedRegistryPaths[5], renderPersistenceOperations(sorted, persistenceRoutines)],
-    [generatedRegistryPaths[6], renderModuleRuntime(sorted)],
-    [generatedRegistryPaths[7], renderNuxtModules(sorted)],
-    [generatedRegistryPaths[8], renderNuxtContributions(sorted)],
-    [generatedRegistryPaths[9], renderNavigation(sorted)],
+    [generatedRegistryPaths[0], renderApiRoutes(compiled)],
+    [generatedRegistryPaths[1], renderActivityProviders(compiled)],
+    [generatedRegistryPaths[2], renderWorkerResources(compiled)],
+    [generatedRegistryPaths[3], renderMigrations(compiled)],
+    [generatedRegistryPaths[4], renderEsiOperations(compiled)],
+    [generatedRegistryPaths[5], renderPersistenceOperations(compiled, persistenceRoutines)],
+    [generatedRegistryPaths[6], renderModuleRuntime(compiled)],
+    [generatedRegistryPaths[7], renderNuxtModules(compiled)],
+    [generatedRegistryPaths[8], renderNuxtContributions(compiled)],
+    [generatedRegistryPaths[9], renderNavigation(compiled)],
   ])
-}
+} satisfies PlatformRegistryRenderer
 
 function validatePackageManifest(
   featureDirectory: string,
@@ -211,7 +220,8 @@ function assertExactDependencies(label: string, actual: Set<string>, expected: S
     )
 }
 
-function renderApiRoutes(manifests: readonly PlatformModuleManifest[]) {
+function renderApiRoutes(compiled: CompiledPlatformModules) {
+  const manifests = readCompiledPlatformModules(compiled)
   const routes = manifests.flatMap((manifest, moduleIndex) =>
     manifest.server.routes.map((route, routeIndex) => ({
       manifest,
@@ -238,15 +248,26 @@ function renderApiRoutes(manifests: readonly PlatformModuleManifest[]) {
     ({ manifest, route, binding }) =>
       `const ${binding} = ${binding}Factory(createPlatformModuleRouteCapabilities(${quote(manifest.id)}, ${quote(route.id)}, ${JSON.stringify(route.coreDataProducts ?? [])} as const))\n`,
   )
-  const chain = routes.map(
-    ({ manifest, route, binding }) =>
-      `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote(route.authorization)}](\n      ${quote(manifest.id)},\n      { audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)} },\n      ${binding},\n    ),\n  )`,
-  )
+  const chain = routes.map(({ manifest, route, binding }) => {
+    const composer =
+      route.target !== undefined && route.target !== 'caller' ? route.target : route.authorization
+    const section = route.sectionId ? `, sectionId: ${quote(route.sectionId)}` : ''
+    const additionalPermissions = route.additionalRequiredPermissions
+      ? `, additionalRequiredPermissions: ${JSON.stringify(route.additionalRequiredPermissions)} as const`
+      : ''
+    const target = route.target ? `, target: ${quote(route.target)}` : ''
+    const exposure = route.exposure ? `, exposure: ${quote(route.exposure)}` : ''
+    const organizationCommands = route.organizationCommands
+      ? `, organizationCommands: ${JSON.stringify(route.organizationCommands)} as const`
+      : ''
+    return `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote(composer)}](\n      ${quote(manifest.id)},\n      { audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)}${additionalPermissions}${section}${target}${exposure}${organizationCommands} },\n      ${binding},\n    ),\n  )`
+  })
   const composition = routes.length ? `${platformImports}${imports}\n${factories.join('')}\n` : '\n'
   return `${generatedHeader}import { Hono } from 'hono'\n${composition}export const installedModuleRoutes = new Hono()${chain.join('')}\n`
 }
 
-function renderActivityProviders(manifests: readonly PlatformModuleManifest[]) {
+function renderActivityProviders(compiled: CompiledPlatformModules) {
+  const manifests = readCompiledPlatformModules(compiled)
   const providers = manifests.flatMap((manifest, moduleIndex) =>
     manifest.server.activityProviders.map((provider, providerIndex) => ({
       manifest,
@@ -268,6 +289,7 @@ function renderActivityProviders(manifests: readonly PlatformModuleManifest[]) {
     ({ manifest, provider }) => ({
       moduleId: manifest.id,
       providerId: provider.id,
+      sectionId: provider.sectionId,
       coreDataProducts: provider.coreDataProducts ?? [],
       audience: provider.audience,
       requiredPermission: provider.requiredPermission,
@@ -281,14 +303,18 @@ function renderActivityProviders(manifests: readonly PlatformModuleManifest[]) {
     ? `[${descriptors
         .map((descriptor, index) => {
           const binding = providers[index]!.binding
-          return `\n  { moduleId: ${quote(descriptor.moduleId)}, providerId: ${quote(descriptor.providerId)}, coreDataProducts: ${JSON.stringify(descriptor.coreDataProducts)} as const, audience: ${quote(descriptor.audience)}, requiredPermission: ${quote(descriptor.requiredPermission)}, freshness: { staleAfterSeconds: ${descriptor.freshness.staleAfterSeconds} }, pageIds: [${descriptor.pageIds.map(quote).join(', ')}], persistenceOperations: ${JSON.stringify(descriptor.persistenceOperations)} as const, invoke: (context) => ${binding}Factory(createPlatformModuleActivityProviderCapabilities(${quote(descriptor.moduleId)}, ${quote(descriptor.providerId)}, context, ${JSON.stringify(descriptor.coreDataProducts)} as const))(context) },`
+          const sectionId = descriptor.sectionId
+            ? ` sectionId: ${quote(descriptor.sectionId)},`
+            : ''
+          return `\n  { moduleId: ${quote(descriptor.moduleId)}, providerId: ${quote(descriptor.providerId)},${sectionId} coreDataProducts: ${JSON.stringify(descriptor.coreDataProducts)} as const, audience: ${quote(descriptor.audience)}, requiredPermission: ${quote(descriptor.requiredPermission)}, freshness: { staleAfterSeconds: ${descriptor.freshness.staleAfterSeconds} }, pageIds: [${descriptor.pageIds.map(quote).join(', ')}], persistenceOperations: ${JSON.stringify(descriptor.persistenceOperations)} as const, invoke: (context) => ${binding}Factory(createPlatformModuleActivityProviderCapabilities(${quote(descriptor.moduleId)}, ${quote(descriptor.providerId)}, context, ${JSON.stringify(descriptor.coreDataProducts)} as const, ${descriptor.sectionId ? quote(descriptor.sectionId) : 'undefined'}))(context) },`
         })
         .join('')}\n]`
     : '[]'
-  return `${generatedHeader}import type { PlatformInstalledActivityProviderDescriptor } from '@eve-space/platform-module-contract'\n${platformImport}${imports}\nexport const installedModuleActivityProviders =\n  ${rendered} as const satisfies readonly PlatformInstalledActivityProviderDescriptor[]\n`
+  return `${generatedHeader}import type { PlatformInstalledActivityProviderDescriptor } from '@eve-space/platform-module-contract/activity'\n${platformImport}${imports}\nexport const installedModuleActivityProviders =\n  ${rendered} as const satisfies readonly PlatformInstalledActivityProviderDescriptor[]\n`
 }
 
-function renderWorkerResources(manifests: readonly PlatformModuleManifest[]) {
+function renderWorkerResources(compiled: CompiledPlatformModules) {
+  const manifests = readCompiledPlatformModules(compiled)
   const resources = manifests.flatMap((manifest, moduleIndex) =>
     manifest.server.resources.map((resource, resourceIndex) => ({
       manifest,
@@ -311,16 +337,18 @@ function renderWorkerResources(manifests: readonly PlatformModuleManifest[]) {
     const dependent = resource.dependentOperationIds?.length
       ? ` dependentOperationIds: ${JSON.stringify(resource.dependentOperationIds)},`
       : ''
-    return `({ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)}, coreDataProducts: ${coreDataProducts} as const,${dependent}${batch} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, persistence: ${JSON.stringify(resource.persistence)} as const, implementation: ${binding} satisfies PlatformResourceImplementationForProducts<typeof ${binding}, readonly ${coreDataProducts}> } as const)`
+    const sectionId = resource.sectionId ? ` sectionId: ${quote(resource.sectionId)},` : ''
+    return `({ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId} coreDataProducts: ${coreDataProducts} as const,${dependent}${batch} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, persistence: ${JSON.stringify(resource.persistence)} as const, implementation: ${binding} satisfies PlatformResourceImplementationForProducts<typeof ${binding}, readonly ${coreDataProducts}> } as const)`
   })
   const rendered = descriptors.length ? `[${descriptors.join(', ')}]` : '[]'
   const importedTypes = resources.length
     ? 'PlatformInstalledResourceDescriptor, PlatformResourceImplementationForProducts'
     : 'PlatformInstalledResourceDescriptor'
-  return `${generatedHeader}import type { ${importedTypes} } from '@eve-space/platform-module-contract'\n${imports}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor[]\n`
+  return `${generatedHeader}import type { ${importedTypes} } from '@eve-space/platform-module-contract/resources'\n${imports}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor[]\n`
 }
 
-function renderMigrations(manifests: readonly PlatformModuleManifest[]) {
+function renderMigrations(compiled: CompiledPlatformModules) {
+  const manifests = readCompiledPlatformModules(compiled)
   const moduleIds = manifests.map(({ id }) => id)
   const migrations: PlatformInstalledModuleMigrationDescriptor[] = manifests.flatMap((manifest) =>
     manifest.server.migrations.map((migration) => ({ moduleId: manifest.id, ...migration })),
@@ -339,10 +367,11 @@ function renderMigrations(manifests: readonly PlatformModuleManifest[]) {
   const migrationAssignment = migrations.length
     ? `${renderedMigrations} satisfies readonly PlatformInstalledModuleMigrationDescriptor[]`
     : `\n  ${renderedMigrations} satisfies readonly PlatformInstalledModuleMigrationDescriptor[]`
-  return `${generatedHeader}import type { PlatformInstalledModuleMigrationDescriptor } from '@eve-space/platform-module-contract'\n\nexport const installedModuleIds = ${renderedModuleIds}\nexport const installedModuleMigrations =${migrationAssignment}\n`
+  return `${generatedHeader}import type { PlatformInstalledModuleMigrationDescriptor } from '@eve-space/platform-module-contract/installed'\n\nexport const installedModuleIds = ${renderedModuleIds}\nexport const installedModuleMigrations =${migrationAssignment}\n`
 }
 
-function renderEsiOperations(manifests: readonly PlatformModuleManifest[]) {
+function renderEsiOperations(compiled: CompiledPlatformModules) {
+  const manifests = readCompiledPlatformModules(compiled)
   const operations = manifests.flatMap((manifest, moduleIndex) =>
     manifest.server.esiOperations.map((operation, operationIndex) => ({
       manifest,
@@ -367,15 +396,16 @@ function renderEsiOperations(manifests: readonly PlatformModuleManifest[]) {
         .map(({ operation, binding }) => `\n  ${quote(operation.id)}: ${binding},`)
         .join('')}\n}`
     : '{}'
-  return `${generatedHeader}import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract'\nimport type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'\n${imports}\nexport const installedModuleEsiOperationDefinitions = ${definitions} as const satisfies Record<\n  string,\n  PlatformExecutableEsiOperationDefinition\n>\n\nexport const installedModuleEsiOperationCatalog = ${catalog.replaceAll(/(module\d+EsiOperation\d+)/g, '$1.contract')} as const satisfies Record<\n  string,\n  PlatformEsiOperationContract\n>\n\nexport const installedModuleEsiSdkOperationIds = {${operations
+  return `${generatedHeader}import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract/esi'\nimport type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'\n${imports}\nexport const installedModuleEsiOperationDefinitions = ${definitions} as const satisfies Record<\n  string,\n  PlatformExecutableEsiOperationDefinition\n>\n\nexport const installedModuleEsiOperationCatalog = ${catalog.replaceAll(/(module\d+EsiOperation\d+)/g, '$1.contract')} as const satisfies Record<\n  string,\n  PlatformEsiOperationContract\n>\n\nexport const installedModuleEsiSdkOperationIds = {${operations
     .map(({ operation, binding }) => `\n  ${quote(operation.id)}: ${binding}.sdkOperationId,`)
     .join('')}${operations.length ? '\n' : ''}} as const satisfies Record<string, string>\n`
 }
 
 function renderPersistenceOperations(
-  manifests: readonly PlatformModuleManifest[],
+  compiled: CompiledPlatformModules,
   routines: readonly ReviewedPersistenceRoutine[],
 ) {
+  const manifests = readCompiledPlatformModules(compiled)
   const operations = manifests.flatMap((manifest, moduleIndex) =>
     manifest.server.persistenceOperations.map((operation, operationIndex) => ({
       manifest,
@@ -532,22 +562,42 @@ function persistenceOperationGrants(manifest: PlatformModuleManifest, operationI
   }
 }
 
-function renderModuleRuntime(manifests: readonly PlatformModuleManifest[]) {
+function renderModuleRuntime(compiled: CompiledPlatformModules) {
+  const manifests = readCompiledPlatformModules(compiled)
   const definitions: PlatformInstalledModuleDefinition[] = manifests.map(
     ({ id, defaultEnabled }) => ({
       moduleId: id,
       defaultEnabled,
     }),
   )
+  const sections: PlatformInstalledModuleSectionDefinition[] = manifests.flatMap((manifest) =>
+    (manifest.sections ?? []).map((section) =>
+      section.kind === 'sensitive-evidence'
+        ? {
+            moduleId: manifest.id,
+            id: section.id,
+            kind: section.kind,
+            defaultEnabled: section.defaultEnabled,
+            disclosureRevision: section.disclosureRevision,
+          }
+        : {
+            moduleId: manifest.id,
+            id: section.id,
+            kind: section.kind,
+            defaultEnabled: section.defaultEnabled,
+          },
+    ),
+  )
   const admissionScopes = installedOrganizationAdmissionScopes(manifests)
   const navigation: PlatformNavigationDefault[] = [
     ...coreNavigationDefaults,
     ...manifests.flatMap((manifest) =>
-      manifest.nuxt.navigation.map(({ id, placement, order }) => ({
+      manifest.nuxt.navigation.map(({ id, placement, order, sectionId }) => ({
         ownerId: manifest.id,
         navigationId: id,
         placement,
         order,
+        sectionId,
       })),
     ),
   ].toSorted(compareRuntimeNavigation)
@@ -561,10 +611,10 @@ function renderModuleRuntime(manifests: readonly PlatformModuleManifest[]) {
     : '[] as const'
   const renderedNavigation = navigation.length
     ? `[${navigation
-        .map(
-          ({ ownerId, navigationId, placement, order }) =>
-            `\n  { ownerId: ${quote(ownerId)}, navigationId: ${quote(navigationId)}, placement: ${quote(placement)}, order: ${order} },`,
-        )
+        .map(({ ownerId, navigationId, placement, order, sectionId }) => {
+          const renderedSectionId = sectionId ? `, sectionId: ${quote(sectionId)}` : ''
+          return `\n  { ownerId: ${quote(ownerId)}, navigationId: ${quote(navigationId)}, placement: ${quote(placement)}, order: ${order}${renderedSectionId} },`
+        })
         .join('')}\n] as const`
     : '[] as const'
   const definitionAssignment = definitions.length
@@ -573,12 +623,33 @@ function renderModuleRuntime(manifests: readonly PlatformModuleManifest[]) {
   const renderedAdmissionScopes = admissionScopes.length
     ? `[${admissionScopes
         .map(
-          ({ moduleId, admissionScope, audience, requiredPermission }) =>
-            `\n  { moduleId: ${quote(moduleId)}, admissionScope: ${quote(admissionScope)}, audience: ${quote(audience)}, requiredPermission: ${quote(requiredPermission)} },`,
+          ({
+            moduleId,
+            admissionScope,
+            audience,
+            requiredPermission,
+            additionalRequiredPermissions,
+          }) => {
+            const renderedAdditionalPermissions = additionalRequiredPermissions
+              ? `, additionalRequiredPermissions: ${JSON.stringify(additionalRequiredPermissions)} as const`
+              : ''
+            return `\n  { moduleId: ${quote(moduleId)}, admissionScope: ${quote(admissionScope)}, audience: ${quote(audience)}, requiredPermission: ${quote(requiredPermission)}${renderedAdditionalPermissions} },`
+          },
         )
         .join('')}\n] as const`
     : '[] as const'
-  return `${generatedHeader}import type {\n  PlatformInstalledModuleDefinition,\n  PlatformInstalledOrganizationAdmissionScopeDescriptor,\n  PlatformNavigationDefault,\n} from '@eve-space/platform-module-contract'\n\nexport const installedModuleDefinitions =${definitionAssignment}\nexport const installedModuleOrganizationAdmissionScopes = ${renderedAdmissionScopes} satisfies readonly PlatformInstalledOrganizationAdmissionScopeDescriptor[]\nexport const platformNavigationDefaults = ${renderedNavigation} satisfies readonly PlatformNavigationDefault[]\n`
+  const renderedSections = sections.length
+    ? `[${sections
+        .map((section) => {
+          const disclosureRevision =
+            section.kind === 'sensitive-evidence'
+              ? `, disclosureRevision: ${section.disclosureRevision}`
+              : ''
+          return `\n  { moduleId: ${quote(section.moduleId)}, id: ${quote(section.id)}, kind: ${quote(section.kind)}, defaultEnabled: false${disclosureRevision} },`
+        })
+        .join('')}\n] as const`
+    : '[] as const'
+  return `${generatedHeader}import type {\n  PlatformInstalledModuleDefinition,\n  PlatformInstalledModuleSectionDefinition,\n  PlatformInstalledOrganizationAdmissionScopeDescriptor,\n} from '@eve-space/platform-module-contract/installed'\nimport type { PlatformNavigationDefault } from '@eve-space/platform-module-contract/nuxt'\n\nexport const installedModuleDefinitions =${definitionAssignment}\nexport const installedModuleSectionDefinitions = ${renderedSections} satisfies readonly PlatformInstalledModuleSectionDefinition[]\nexport const installedModuleOrganizationAdmissionScopes = ${renderedAdmissionScopes} satisfies readonly PlatformInstalledOrganizationAdmissionScopeDescriptor[]\nexport const platformNavigationDefaults = ${renderedNavigation} satisfies readonly PlatformNavigationDefault[]\n`
 }
 
 function installedOrganizationAdmissionScopes(
@@ -593,6 +664,7 @@ function installedOrganizationAdmissionScopes(
         admissionScope,
         audience: authorization.audience,
         requiredPermission: authorization.requiredPermission,
+        additionalRequiredPermissions: authorization.additionalRequiredPermissions,
       })
     }
   return [...scopes.values()].toSorted((left, right) =>
@@ -600,7 +672,8 @@ function installedOrganizationAdmissionScopes(
   )
 }
 
-function renderNuxtModules(manifests: readonly PlatformModuleManifest[]) {
+function renderNuxtModules(compiled: CompiledPlatformModules) {
+  const manifests = readCompiledPlatformModules(compiled)
   const imports = manifests.map(
     (manifest, index) => `import module${index} from ${quote(manifest.nuxt.package)}\n`,
   )
@@ -608,26 +681,33 @@ function renderNuxtModules(manifests: readonly PlatformModuleManifest[]) {
   return `${generatedHeader}${imports.join('')}export const installedNuxtModules = [${moduleBindings}] as const\n`
 }
 
-function renderNuxtContributions(manifests: readonly PlatformModuleManifest[]) {
+function renderNuxtContributions(compiled: CompiledPlatformModules) {
+  const manifests = readCompiledPlatformModules(compiled)
   const contributions: PlatformNuxtContributionDescriptor[] = manifests.map((manifest) => ({
     moduleId: manifest.id,
     defaultIcon: manifest.icon,
+    sections: manifest.sections ?? [],
     queryAdmissionScopes: manifest.server.routes.map((route) => ({
       routeId: route.id,
       authorization: route.authorization,
       audience: route.audience,
       requiredPermission: route.requiredPermission,
+      additionalRequiredPermissions: route.additionalRequiredPermissions,
+      sectionId: route.sectionId,
+      target: route.target,
+      exposure: route.exposure,
       admissionScope: platformOrganizationAdmissionScope(manifest.id, route),
     })),
     pages: manifest.nuxt.pages,
     navigation: manifest.nuxt.navigation,
-    ...(manifest.nuxt.exposed ? { exposed: manifest.nuxt.exposed } : {}),
+    exposed: manifest.nuxt.exposed,
   }))
   const rendered = contributions.length ? JSON.stringify(contributions, undefined, 2) : '[]'
-  return `${generatedHeader}import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract'\n\nexport const installedNuxtContributions =\n  ${rendered} as const satisfies readonly PlatformNuxtContributionDescriptor[]\n`
+  return `${generatedHeader}import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract/nuxt'\n\nexport const installedNuxtContributions =\n  ${rendered} as const satisfies readonly PlatformNuxtContributionDescriptor[]\n`
 }
 
-function renderNavigation(manifests: readonly PlatformModuleManifest[]) {
+function renderNavigation(compiled: CompiledPlatformModules) {
+  const manifests = readCompiledPlatformModules(compiled)
   const navigation: PlatformInstalledNavigation[] = manifests
     .flatMap((manifest) =>
       manifest.nuxt.navigation.map((entry) => ({
@@ -638,12 +718,13 @@ function renderNavigation(manifests: readonly PlatformModuleManifest[]) {
     )
     .toSorted(compareNavigation)
   if (navigation.length === 0)
-    return `${generatedHeader}import type { PlatformInstalledNavigation } from '@eve-space/platform-module-contract'\n\nexport const installedModuleNavigation =\n  [] as const satisfies readonly PlatformInstalledNavigation[]\n`
-  return `${generatedHeader}import type { PlatformInstalledNavigation } from '@eve-space/platform-module-contract'\n\nexport const installedModuleNavigation = [${navigation.map(renderNavigationEntry).join('')}\n] as const satisfies readonly PlatformInstalledNavigation[]\n`
+    return `${generatedHeader}import type { PlatformInstalledNavigation } from '@eve-space/platform-module-contract/nuxt'\n\nexport const installedModuleNavigation =\n  [] as const satisfies readonly PlatformInstalledNavigation[]\n`
+  return `${generatedHeader}import type { PlatformInstalledNavigation } from '@eve-space/platform-module-contract/nuxt'\n\nexport const installedModuleNavigation = [${navigation.map(renderNavigationEntry).join('')}\n] as const satisfies readonly PlatformInstalledNavigation[]\n`
 }
 
 function renderNavigationEntry(entry: PlatformInstalledNavigation) {
-  return `\n  {\n    moduleId: ${quote(entry.moduleId)},\n    id: ${quote(entry.id)},\n    label: ${quote(entry.label)},\n    description: ${quote(entry.description)},\n    to: ${quote(entry.to)},\n    icon: ${quote(entry.icon)},\n    audience: ${quote(entry.audience)},\n    placement: ${quote(entry.placement)},\n    order: ${entry.order},\n    pageName: ${quote(entry.pageName)},\n  },`
+  const sectionId = entry.sectionId ? `    sectionId: ${quote(entry.sectionId)},\n` : ''
+  return `\n  {\n    moduleId: ${quote(entry.moduleId)},\n${sectionId}    id: ${quote(entry.id)},\n    label: ${quote(entry.label)},\n    description: ${quote(entry.description)},\n    to: ${quote(entry.to)},\n    icon: ${quote(entry.icon)},\n    audience: ${quote(entry.audience)},\n    placement: ${quote(entry.placement)},\n    order: ${entry.order},\n    pageName: ${quote(entry.pageName)},\n  },`
 }
 
 function compareNavigation(left: PlatformInstalledNavigation, right: PlatformInstalledNavigation) {
@@ -696,32 +777,14 @@ function quote(value: string) {
   return "'" + escaped + "'"
 }
 
-function parsePlatformModuleManifest(value: unknown, moduleId: string): PlatformModuleManifest {
-  if (
-    !isRecord(value) ||
-    typeof value.id !== 'string' ||
-    typeof value.icon !== 'string' ||
-    typeof value.defaultEnabled !== 'boolean' ||
-    !isRecord(value.server) ||
-    typeof value.server.package !== 'string' ||
-    !Array.isArray(value.server.routes) ||
-    !Array.isArray(value.server.migrations) ||
-    !Array.isArray(value.server.persistenceOperations) ||
-    !Array.isArray(value.server.resources) ||
-    !Array.isArray(value.server.esiOperations) ||
-    !Array.isArray(value.server.activityProviders) ||
-    !isRecord(value.nuxt) ||
-    typeof value.nuxt.package !== 'string' ||
-    !Array.isArray(value.nuxt.pages) ||
-    !Array.isArray(value.nuxt.navigation) ||
-    (value.nuxt.exposed !== undefined && !isRecord(value.nuxt.exposed))
-  )
-    throw new Error(`Installed module ${moduleId} must default-export its manifest`)
-  return value as unknown as PlatformModuleManifest
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function compareStable(left: string, right: string) {
+  if (left < right) return -1
+  if (left > right) return 1
+  return 0
 }
 
 export function assertOutputPath(root: string, path: string) {

@@ -410,9 +410,12 @@ describe('character mail reading', async () => {
       const skeleton = page.locator('.mail-skeleton-block').first()
       await skeleton.waitFor()
 
-      expect(
-        await skeleton.evaluate((element) => getComputedStyle(element, '::after').animationName),
-      ).toBe('none')
+      await expect
+        .poll(
+          () => skeleton.evaluate((element) => getComputedStyle(element, '::after').animationName),
+          { timeout: 5_000 },
+        )
+        .toBe('none')
     } finally {
       releaseHeaders()
       await pendingHeaders

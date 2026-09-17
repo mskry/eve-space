@@ -139,6 +139,17 @@ describe('character module boundaries', () => {
   })
 
   it.each([
+    ['assets', '@eve-space/core-eve-projections/assets'],
+    ['skill-queue', '@eve-space/core-eve-projections/skill-queue'],
+    ['skills', '@eve-space/core-eve-projections/trained-skills'],
+    ['wallet', '@eve-space/core-eve-projections/wallet'],
+  ])('allows the pure shared projection from %s to %s', (module, specifier) => {
+    expect(
+      characterBoundaryViolations(characterSources({ [module]: `import '${specifier}'` })),
+    ).toEqual([])
+  })
+
+  it.each([
     ['../alliances/public-data.js', 'skills'],
     ['../corporations/public-data.js', 'assets'],
     ['../universe/names.js', 'skills'],

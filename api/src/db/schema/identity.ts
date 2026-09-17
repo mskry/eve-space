@@ -110,6 +110,16 @@ export const oauthStates = pgTable(
     transferSourceUserId: uuid('transfer_source_user_id'),
     transferSourceSubjectLifecycleId: uuid('transfer_source_subject_lifecycle_id'),
     returnPath: varchar('return_path', { length: 512 }),
+    reviewerUseDisclosures: jsonb('reviewer_use_disclosures')
+      .$type<
+        readonly {
+          readonly moduleId: string
+          readonly sectionId: string
+          readonly disclosureVersion: number
+        }[]
+      >()
+      .default([])
+      .notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
   },
@@ -222,6 +232,10 @@ export const oauthStates = pgTable(
     check(
       'oauth_states_return_path_context_check',
       sql`return_path is null or intent in ('login', 'reauthorize')`,
+    ),
+    check(
+      'oauth_states_reviewer_use_disclosures_check',
+      sql`jsonb_typeof(reviewer_use_disclosures) = 'array' and jsonb_array_length(reviewer_use_disclosures) <= 64`,
     ),
   ],
 )

@@ -1,10 +1,8 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { extname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import {
-  platformOrganizationAdmissionScope,
-  type PlatformQueryAdmissionScopeDescriptor,
-} from '../packages/platform-module-contract/src/index.js'
+import type { PlatformQueryAdmissionScopeDescriptor } from '@eve-space/platform-module-contract/nuxt'
+import { platformOrganizationAdmissionScope } from '@eve-space/platform-module-contract/server'
 import { installedNuxtContributions } from '../generated/platform/installed-nuxt-contributions.js'
 import ts from 'typescript'
 

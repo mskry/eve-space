@@ -10,6 +10,7 @@ const apiServer = await startCorsJsonApi((request) => ({
     ? { characterId: 7, name: 'Alpha Seven' }
     : {
         enabledModuleIds: alphaEnabled ? ['alpha'] : [],
+        enabledSections: [],
         shellNavigationOrder: {
           dashboard:
             alphaEnabled && dashboardOrderComplete

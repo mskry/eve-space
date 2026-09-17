@@ -2,7 +2,7 @@ import type {
   PlatformActivity,
   PlatformActivityProviderCharacter,
   PlatformInstalledActivityProviderDescriptor,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/activity'
 import { describe, expect, test, vi } from 'vitest'
 import { aggregateOrganizationActivities } from '../../src/organization/activity.js'
 
@@ -44,6 +44,23 @@ describe('organization activity aggregation', () => {
     expect(result.activities).toEqual([])
     expect(result.sources).toEqual([])
     expect(result.stale).toBe(false)
+    expect(authorize).not.toHaveBeenCalled()
+    expect(invoke).not.toHaveBeenCalled()
+  })
+
+  test('does not authorize a provider from a disabled section', async () => {
+    const invoke = vi.fn()
+    const authorize = vi.fn()
+
+    await aggregateOrganizationActivities('user-1', organization, {
+      providers: [provider('alpha', invoke, 'skills')],
+      loadEnabledModuleIds: async () => ['alpha'],
+      loadEnabledSectionKeys: async () => new Set(['alpha/assets']),
+      authorize,
+      loadCharacters: vi.fn(),
+      now,
+    })
+
     expect(authorize).not.toHaveBeenCalled()
     expect(invoke).not.toHaveBeenCalled()
   })
@@ -313,10 +330,12 @@ describe('organization activity aggregation', () => {
 function provider(
   moduleId: string,
   invoke: PlatformInstalledActivityProviderDescriptor['invoke'],
+  sectionId?: string,
 ): PlatformInstalledActivityProviderDescriptor {
   return {
     moduleId,
     providerId: 'activity',
+    sectionId,
     coreDataProducts: [],
     audience: 'member',
     requiredPermission: `${moduleId}.view`,

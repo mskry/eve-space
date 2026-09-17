@@ -1,4 +1,4 @@
-import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract'
+import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract/esi'
 import {
   operationRegistry,
   type ExecutableOperationRegistryEntry,

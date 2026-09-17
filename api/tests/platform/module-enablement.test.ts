@@ -4,11 +4,11 @@ import { testClient } from 'hono/testing'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  isInstalledModuleEnabled: vi.fn(),
+  isInstalledModuleContributionEnabled: vi.fn(),
 }))
 
 vi.mock('../../src/platform/module-settings.js', () => ({
-  isInstalledModuleEnabled: mocks.isInstalledModuleEnabled,
+  isInstalledModuleContributionEnabled: mocks.isInstalledModuleContributionEnabled,
 }))
 
 import { requireInstalledModuleEnabled } from '../../src/middleware/module-enablement.js'
@@ -25,26 +25,26 @@ const installedRoutes = new Hono().route(
 const app = new Hono().route('/api/modules', installedRoutes)
 
 beforeEach(() => {
-  mocks.isInstalledModuleEnabled.mockReset()
+  mocks.isInstalledModuleContributionEnabled.mockReset()
   authenticate.mockClear()
   moduleHandler.mockClear()
 })
 
 describe('module enablement middleware', () => {
   test('returns the root 404 contract before downstream authentication or module code', async () => {
-    mocks.isInstalledModuleEnabled.mockResolvedValue(false)
+    mocks.isInstalledModuleContributionEnabled.mockResolvedValue(false)
 
     const response = await app.request('/api/modules/alpha/characters/90000001')
 
     expect(response.status).toBe(404)
     await expect(response.json()).resolves.toEqual({ message: 'Route not found' })
-    expect(mocks.isInstalledModuleEnabled).toHaveBeenCalledWith('alpha')
+    expect(mocks.isInstalledModuleContributionEnabled).toHaveBeenCalledWith('alpha', undefined)
     expect(authenticate).not.toHaveBeenCalled()
     expect(moduleHandler).not.toHaveBeenCalled()
   })
 
   test('preserves literal route inference and invokes contributed code only when enabled', async () => {
-    mocks.isInstalledModuleEnabled.mockResolvedValue(true)
+    mocks.isInstalledModuleContributionEnabled.mockResolvedValue(true)
     const client = testClient(app)
 
     const response = await client.api.modules.alpha.characters[':characterId'].$get({
@@ -55,5 +55,18 @@ describe('module enablement middleware', () => {
     await expect(response.json()).resolves.toEqual({ ok: true })
     expect(authenticate).toHaveBeenCalledOnce()
     expect(moduleHandler).toHaveBeenCalledOnce()
+  })
+
+  test('binds section identity before downstream code executes', async () => {
+    mocks.isInstalledModuleContributionEnabled.mockResolvedValue(false)
+    const sectionApp = new Hono()
+      .use('*', requireInstalledModuleEnabled('alpha', 'skills'))
+      .get('/', moduleHandler)
+
+    const response = await sectionApp.request('/')
+
+    expect(response.status).toBe(404)
+    expect(mocks.isInstalledModuleContributionEnabled).toHaveBeenCalledWith('alpha', 'skills')
+    expect(moduleHandler).not.toHaveBeenCalled()
   })
 })

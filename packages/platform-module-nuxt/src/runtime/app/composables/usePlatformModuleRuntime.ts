@@ -3,12 +3,22 @@ import { platformQueryAdmissionScopes } from '#build/eve-space-platform/query-ad
 import { computed, useRuntimeConfig } from '#imports'
 import { watch } from 'vue'
 import type { PlatformNavigationIdentity } from '../../navigation.js'
-import { removePlatformModuleQueries } from '../../query-lifecycle.js'
+import {
+  removePlatformModuleQueries,
+  removePlatformModuleSectionQueries,
+} from '../../query-lifecycle.js'
 import { toApiQueryError } from '../../query-error.js'
 import type { PlatformQueryPersistenceInvalidator } from '../../query-persistence-invalidation.js'
 
 export interface PlatformModuleRuntimeState {
   readonly enabledModuleIds: readonly string[]
+  readonly enabledSections: readonly {
+    readonly moduleId: string
+    readonly sectionId: string
+    readonly kind: 'workspace' | 'sensitive-evidence' | 'access-management'
+    readonly disclosureVersion: number
+    readonly activationVersion: number
+  }[]
   readonly shellNavigationOrder: {
     readonly dashboard: readonly PlatformNavigationIdentity[]
     readonly character: readonly PlatformNavigationIdentity[]
@@ -26,20 +36,29 @@ export function usePlatformModuleRuntime() {
     query: ({ signal }) => loadPlatformModuleRuntimeState(runtimeConfig.public.apiBase, signal),
   })
   const enabledModuleIds = computed(() => new Set(runtimeQuery.data.value?.enabledModuleIds ?? []))
+  const enabledSectionKeys = computed(
+    () =>
+      new Set(
+        (runtimeQuery.data.value?.enabledSections ?? []).map(({ moduleId, sectionId }) =>
+          sectionKey(moduleId, sectionId),
+        ),
+      ),
+  )
 
   async function ensureRuntimeState() {
     await runtimeQuery.refresh(true)
   }
 
-  return { enabledModuleIds, ensureRuntimeState, runtimeQuery }
+  return { enabledModuleIds, enabledSectionKeys, ensureRuntimeState, runtimeQuery }
 }
 
 export function usePlatformModulePersistenceLifecycle(
   invalidateQueryPersistence: PlatformQueryPersistenceInvalidator,
 ) {
   const queryCache = useQueryCache()
-  const { enabledModuleIds } = usePlatformModuleRuntime()
+  const { enabledModuleIds, enabledSectionKeys } = usePlatformModuleRuntime()
   let previousEnabledModuleIds = new Set(enabledModuleIds.value)
+  let previousEnabledSectionKeys = new Set(enabledSectionKeys.value)
 
   watch(
     enabledModuleIds,
@@ -60,6 +79,27 @@ export function usePlatformModulePersistenceLifecycle(
     },
     { flush: 'sync' },
   )
+  watch(
+    enabledSectionKeys,
+    (currentEnabledSectionKeys) => {
+      for (const key of previousEnabledSectionKeys) {
+        if (currentEnabledSectionKeys.has(key)) continue
+        const [moduleId, sectionId] = key.split('/')
+        if (!moduleId || !sectionId || !enabledModuleIds.value.has(moduleId)) continue
+        const admissionScopes = [
+          ...new Set(
+            platformQueryAdmissionScopes
+              .filter((scope) => scope.moduleId === moduleId && scope.sectionId === sectionId)
+              .map((scope) => scope.admissionScope),
+          ),
+        ]
+        invalidateQueryPersistence({ admissionScopes, moduleId })
+        removePlatformModuleSectionQueries(queryCache, moduleId, sectionId)
+      }
+      previousEnabledSectionKeys = new Set(currentEnabledSectionKeys)
+    },
+    { flush: 'sync' },
+  )
 }
 
 export async function loadPlatformModuleRuntimeState(apiBase: string, signal?: AbortSignal) {
@@ -69,4 +109,8 @@ export async function loadPlatformModuleRuntimeState(apiBase: string, signal?: A
   })
   if (!response.ok) throw await toApiQueryError(response, 'Module runtime state is unavailable.')
   return (await response.json()) as PlatformModuleRuntimeState
+}
+
+function sectionKey(moduleId: string, sectionId: string) {
+  return `${moduleId}/${sectionId}`
 }

@@ -205,6 +205,9 @@ importers:
 
   .:
     dependencies:
+      '@eve-space/member-audit-nuxt':
+        specifier: workspace:*
+        version: link:features/member-audit/nuxt
       '@eve-space/organization-activity-nuxt':
         specifier: workspace:*
         version: link:features/organization-activity/nuxt
@@ -326,9 +329,15 @@ importers:
 
   api:
     dependencies:
+      '@eve-space/core-eve-projections':
+        specifier: workspace:*
+        version: link:../packages/core-eve-projections
       '@eve-space/core-data-contract':
         specifier: workspace:*
         version: link:../packages/core-data-contract
+      '@eve-space/member-audit-server':
+        specifier: workspace:*
+        version: link:../features/member-audit/server
       '@eve-space/organization-activity-server':
         specifier: workspace:*
         version: link:../features/organization-activity/server
@@ -471,7 +480,81 @@ importers:
         specifier: catalog:vitest4
         version: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.2)(msw@2.15.0(@types/node@24.13.3)(typescript@7.0.2))(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0))
 
+  features/member-audit/nuxt:
+    dependencies:
+      '@eve-space/platform-module-nuxt':
+        specifier: workspace:*
+        version: link:../../../packages/platform-module-nuxt
+      '@nuxt/kit':
+        specifier: 'catalog:'
+        version: 4.5.2(magic-string@1.2.3)(magicast@0.5.4)(oxc-parser@0.143.0)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.28.2)(rolldown@1.2.7)(rollup@4.62.4)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0)))
+      '@nuxt/schema':
+        specifier: 'catalog:'
+        version: 4.5.2
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: catalog:vitest4
+        version: 4.1.11(vitest@4.1.11)
+      nuxt:
+        specifier: 'catalog:'
+        version: 4.5.2(2c64fe4139fb569fd82117a1f0d95f68)
+      typescript:
+        specifier: catalog:tsapi
+        version: '@typescript/typescript6@6.0.2'
+      vitest:
+        specifier: catalog:vitest4
+        version: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.2)(msw@2.15.0(@types/node@24.13.3)(@typescript/typescript6@6.0.2))(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0))
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.11(@typescript/typescript6@6.0.2)
+
+  features/member-audit/server:
+    dependencies:
+      '@eve-space/core-eve-projections':
+        specifier: workspace:*
+        version: link:../../../packages/core-eve-projections
+      '@eve-space/platform-module-contract':
+        specifier: workspace:*
+        version: link:../../../packages/platform-module-contract
+      '@eve-space/platform-module-server':
+        specifier: workspace:*
+        version: link:../../../packages/platform-module-server
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.3
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      '@vitest/coverage-v8':
+        specifier: catalog:vitest4
+        version: 4.1.11(vitest@4.1.11)
+      typescript:
+        specifier: catalog:tsgo
+        version: 7.0.2
+      vitest:
+        specifier: catalog:vitest4
+        version: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.2)(msw@2.15.0(@types/node@24.13.3)(typescript@7.0.2))(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0))
+
   packages/core-data-contract:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      '@vitest/coverage-v8':
+        specifier: catalog:vitest4
+        version: 4.1.11(vitest@4.1.11)
+      typescript:
+        specifier: catalog:tsgo
+        version: 7.0.2
+      vitest:
+        specifier: catalog:vitest4
+        version: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.2)(msw@2.15.0(@types/node@24.13.3)(typescript@7.0.2))(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0))
+
+  packages/core-eve-projections:
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

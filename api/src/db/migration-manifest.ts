@@ -9,8 +9,8 @@ const sha256Pattern = /^[0-9a-f]{64}$/
 const initialManifestLength = 1
 const initialTailSequence = 1
 const initialManifestSha256 = '8ea247ed3f0f99633c9778959dd56b38b219adb6bb2f7f2be0876ce01d6d73b1'
-const acceptedManifestLength = 1
-const acceptedManifestSha256 = '8ea247ed3f0f99633c9778959dd56b38b219adb6bb2f7f2be0876ce01d6d73b1'
+const acceptedManifestLength = 5
+const acceptedManifestSha256 = '15a337b32fe4d60667ada3adb009469d5e5afa5eeea8e0333a3f97e9ed02a3e2'
 
 export interface CoreMigrationIdentity {
   readonly name: string
@@ -23,6 +23,10 @@ export interface LoadedCoreMigration extends Migration {
 
 export const activeCoreMigrationManifest = defineManifest(`
 001_baseline.sql 7338ed545fe1c01087091667ae378e682405f673a9a30503165dfa7239b36c35
+002_module_sections.sql 2ef3153d0b0b9fb528bddb79846e671f1dca0a2e1c611e0fd5530f1958866a06
+003_reviewer_disclosure_acceptance.sql ec92c55f34ef0736269b00e2b9bbc77633f92760443b6c740f5102c116b94e71
+004_managed_member_lifecycles.sql 12677ea8e410d43f731be1528eff0f72f0db4804c5ee14d8e18a94eea2a39955
+005_sensitive_access_audit.sql 7b9f010c388a0d156a866ecc5920d9916d4722ff21f59c6e8d9c321cc4b05c19
 `)
 
 export const latestCoreMigrationName = activeCoreMigrationManifest.at(-1)!.name

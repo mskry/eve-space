@@ -1,4 +1,4 @@
-import type { PlatformModuleErrorBody } from '@eve-space/platform-module-contract'
+import type { PlatformModuleErrorBody } from '@eve-space/platform-module-contract/server'
 import { hc, type InferResponseType } from 'hono/client'
 import { describe, expectTypeOf, test } from 'vitest'
 import type { AppType } from '../../src/index.js'

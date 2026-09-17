@@ -3,7 +3,12 @@ import {
   isCompleteShellNavigationOrder,
   resolveShellNavigationOrder,
 } from '../../src/platform/module-navigation.js'
-import { reconcileInstalledModules } from '../../src/platform/module-settings.js'
+import {
+  loadEnabledReviewerUseDisclosures,
+  loadModuleRuntimeState,
+  reconcileInstalledModules,
+  reconcileInstalledModuleSections,
+} from '../../src/platform/module-settings.js'
 import { platformNavigationDefaults } from '../../src/generated/platform/installed-module-runtime.js'
 
 describe('installed module reconciliation', () => {
@@ -35,6 +40,113 @@ describe('installed module reconciliation', () => {
       'enabled',
     )
     expect(connection).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('installed module section reconciliation', () => {
+  const definitions = [
+    {
+      moduleId: 'alpha',
+      id: 'overview',
+      kind: 'workspace' as const,
+      defaultEnabled: false as const,
+    },
+    {
+      moduleId: 'alpha',
+      id: 'skills',
+      kind: 'sensitive-evidence' as const,
+      defaultEnabled: false as const,
+      disclosureRevision: 2,
+    },
+  ]
+
+  test('does nothing when no sections are installed', async () => {
+    const connection = vi.fn()
+
+    await expect(reconcileInstalledModuleSections(connection as never, [])).resolves.toBeUndefined()
+    expect(connection).not.toHaveBeenCalled()
+  })
+
+  test('inserts every section disabled with disclosure policy metadata', async () => {
+    const connection = vi.fn((value) => {
+      if (Array.isArray(value) && !('raw' in value)) return 'section-default-values'
+      return Promise.resolve([])
+    })
+
+    await reconcileInstalledModuleSections(connection as never, definitions)
+
+    expect(connection).toHaveBeenNthCalledWith(
+      1,
+      [
+        {
+          module_id: 'alpha',
+          section_id: 'overview',
+          kind: 'workspace',
+          enabled: false,
+          declaration_revision: null,
+        },
+        {
+          module_id: 'alpha',
+          section_id: 'skills',
+          kind: 'sensitive-evidence',
+          enabled: false,
+          declaration_revision: 2,
+        },
+      ],
+      'module_id',
+      'section_id',
+      'kind',
+      'enabled',
+      'declaration_revision',
+    )
+    expect(connection).toHaveBeenCalledTimes(2)
+  })
+
+  test('applies module override while retaining independently enabled sections', async () => {
+    const connection = vi.fn((strings: TemplateStringsArray) => {
+      const query = strings.join(' ')
+      if (query.includes('from deployment_modules'))
+        return Promise.resolve([
+          { module_id: 'alpha', enabled: false, updated_at: new Date('2026-09-16T00:00:00Z') },
+        ])
+      if (query.includes('from deployment_module_sections'))
+        return Promise.resolve([
+          {
+            module_id: 'alpha',
+            section_id: 'skills',
+            kind: 'sensitive-evidence',
+            enabled: true,
+            declaration_revision: 2,
+            disclosure_version: 1,
+            activation_version: 1,
+            updated_at: new Date('2026-09-16T00:00:00Z'),
+          },
+        ])
+      return Promise.resolve([])
+    })
+
+    await expect(
+      loadModuleRuntimeState(
+        connection as never,
+        [{ moduleId: 'alpha', defaultEnabled: false }],
+        [],
+        definitions,
+      ),
+    ).resolves.toMatchObject({ enabledModuleIds: [], enabledSections: [] })
+  })
+
+  test('loads an uncached canonical snapshot of enabled declared evidence sections', async () => {
+    const connection = vi.fn(() =>
+      Promise.resolve([
+        { module_id: 'alpha', section_id: 'skills', disclosure_version: 4 },
+        { module_id: 'removed', section_id: 'wallet', disclosure_version: 9 },
+      ]),
+    )
+
+    await expect(
+      loadEnabledReviewerUseDisclosures(connection as never, definitions),
+    ).resolves.toEqual([{ moduleId: 'alpha', sectionId: 'skills', disclosureVersion: 4 }])
+    expect(connection).toHaveBeenCalledOnce()
   })
 })
 
@@ -75,6 +187,35 @@ describe('shell navigation order resolution', () => {
       ],
       character: [],
     })
+  })
+
+  test('filters section navigation without hiding unrelated enabled sections', () => {
+    const sectionDefaults = [
+      ...defaults,
+      {
+        ownerId: 'alpha',
+        navigationId: 'alpha-skills',
+        placement: 'dashboard' as const,
+        order: 40,
+        sectionId: 'skills',
+      },
+      {
+        ownerId: 'alpha',
+        navigationId: 'alpha-assets',
+        placement: 'dashboard' as const,
+        order: 50,
+        sectionId: 'assets',
+      },
+    ]
+
+    expect(
+      resolveShellNavigationOrder(
+        sectionDefaults,
+        [],
+        new Set(['core', 'alpha']),
+        new Set(['alpha/skills']),
+      ).dashboard.map(({ navigationId }) => navigationId),
+    ).toEqual(['core-overview', 'core-settings', 'alpha-audit', 'alpha-skills'])
   })
 
   test('requires one current identity in its declared placement', () => {

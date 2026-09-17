@@ -12,6 +12,18 @@ const runtimeSdkOwnerPaths = new Set([
 ])
 const genericMutationPropertyNames = new Set(['allowGenericMutations', 'confirmMutation'])
 const rawResourcePropertyNames = new Set(['revalidation', 'transport'])
+const sharedOwnerAndPlatformOperations = new Set([
+  'character-asset-names',
+  'character-assets-page',
+  'mail-headers',
+  'mail-lists',
+  'mail-message',
+  'skill-queue',
+  'universe-resolve-names',
+  'wallet-balance',
+  'wallet-journal',
+  'wallet-transactions',
+])
 
 const root = resolveRoot(process.argv.slice(2))
 const apiSourceRoot = join(root, 'api', 'src')
@@ -67,11 +79,19 @@ function executionPathCompletenessViolations(
   for (const operation of catalogOperations) {
     const callable = callableOperations.has(operation)
     const platform = platformOperations.has(operation)
-    if (callable && platform)
+    if (callable && platform && !sharedOwnerAndPlatformOperations.has(operation))
       findings.push(`ESI operation ${operation} has duplicate callable and platform registrations`)
     if (!callable && !platform)
       findings.push(`ESI operation ${operation} has no callable or platform registration`)
   }
+  for (const operation of sharedOwnerAndPlatformOperations)
+    if (
+      catalogOperations.has(operation) &&
+      (!callableOperations.has(operation) || !platformOperations.has(operation))
+    )
+      findings.push(
+        `Shared owner and platform ESI operation ${operation} must retain both registrations`,
+      )
   return findings
 }
 

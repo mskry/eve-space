@@ -35,6 +35,7 @@ const apiServer = await startCorsJsonApi((request) => {
   return {
     body: {
       enabledModuleIds: moduleEnabled ? ['conformance'] : [],
+      enabledSections: [],
       shellNavigationOrder: {
         dashboard: moduleEnabled
           ? [{ ownerId: 'conformance', navigationId: 'conformance-activity-navigation' }]

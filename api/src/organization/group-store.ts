@@ -14,6 +14,7 @@ import {
 } from '../db/schema.js'
 import {
   loadCurrentGroupForUpdate,
+  loadUnrevokedGroupAssignmentByIdForUpdate,
   loadUnrevokedGroupAssignmentForUpdate,
   revokeGroupAssignmentRecord,
   toOrganizationGroupAssignment,
@@ -198,73 +199,87 @@ export async function assignOrganizationGroup(input: {
       input.actorUserId,
     )
     requireGroupManagementAuthority(group, authority)
-    if (group.managementMode === 'compliance')
-      throw new OrganizationGroupMutationError('compliance-group-manual-change')
-
-    const [target] = await transaction
-      .select({ userId: users.id })
-      .from(users)
-      .where(eq(users.id, input.targetUserId))
-    if (!target) throw new OrganizationGroupMutationError('target-not-found')
-
-    const now = new Date()
-    if (input.expiresAt && input.expiresAt <= now)
-      throw new OrganizationGroupMutationError('invalid-expiry')
-    const existing = await loadUnrevokedGroupAssignmentForUpdate(
-      transaction,
-      organization.organizationVersion,
-      group.groupId,
-      input.targetUserId,
-    )
-    if (existing && (!existing.expiresAt || existing.expiresAt > now))
-      throw new OrganizationGroupMutationError('assignment-already-active')
-    if (existing) {
-      const expiredAt = existing.expiresAt!
-      const expired = await revokeGroupAssignmentRecord(transaction, existing.assignmentId, {
-        actorType: 'system',
-        actorUserId: null,
-        reason: expiredGroupAssignmentReason,
-        now: expiredAt,
-      })
-      await appendGroupAudit(transaction, organization, {
-        eventType: 'group.revoked',
-        actorType: 'system',
-        actorId: null,
-        assignment: expired,
-        reason: expiredGroupAssignmentReason,
-        outcome: 'revoked',
-        now: expiredAt,
-      })
-    }
-
-    const [assignment] = await transaction
-      .insert(organizationGroupAssignments)
-      .values({
-        groupId: group.groupId,
-        deploymentId: 1,
-        organizationVersion: organization.organizationVersion,
-        userId: input.targetUserId,
-        assignmentSource: 'manual',
-        complianceSource: null,
-        assignedActorType: 'user',
-        assignedByUserId: input.actorUserId,
-        reason: input.reason,
-        assignedAt: now,
-        expiresAt: input.expiresAt,
-      })
-      .returning()
-    if (!assignment) throw new Error('Failed to assign organization group')
-    await appendGroupAudit(transaction, organization, {
-      eventType: 'group.assigned',
-      actorType: 'user',
-      actorId: input.actorUserId,
-      assignment,
-      reason: input.reason,
-      outcome: 'granted',
-      now,
-    })
-    return toOrganizationGroupAssignment(assignment)
+    return assignManualOrganizationGroupInTransaction(transaction, organization, group, input)
   })
+}
+
+export async function assignManualOrganizationGroupInTransaction(
+  transaction: Transaction,
+  organization: { organizationVersion: number; policyVersion: number },
+  group: typeof organizationGroups.$inferSelect,
+  input: {
+    actorUserId: string
+    targetUserId: string
+    reason: string
+    expiresAt: Date | null
+  },
+) {
+  if (group.managementMode === 'compliance')
+    throw new OrganizationGroupMutationError('compliance-group-manual-change')
+
+  const [target] = await transaction
+    .select({ userId: users.id })
+    .from(users)
+    .where(eq(users.id, input.targetUserId))
+  if (!target) throw new OrganizationGroupMutationError('target-not-found')
+
+  const now = new Date()
+  if (input.expiresAt && input.expiresAt <= now)
+    throw new OrganizationGroupMutationError('invalid-expiry')
+  const existing = await loadUnrevokedGroupAssignmentForUpdate(
+    transaction,
+    organization.organizationVersion,
+    group.groupId,
+    input.targetUserId,
+  )
+  if (existing && (!existing.expiresAt || existing.expiresAt > now))
+    throw new OrganizationGroupMutationError('assignment-already-active')
+  if (existing) {
+    const expiredAt = existing.expiresAt!
+    const expired = await revokeGroupAssignmentRecord(transaction, existing.assignmentId, {
+      actorType: 'system',
+      actorUserId: null,
+      reason: expiredGroupAssignmentReason,
+      now: expiredAt,
+    })
+    await appendGroupAudit(transaction, organization, {
+      eventType: 'group.revoked',
+      actorType: 'system',
+      actorId: null,
+      assignment: expired,
+      reason: expiredGroupAssignmentReason,
+      outcome: 'revoked',
+      now: expiredAt,
+    })
+  }
+
+  const [assignment] = await transaction
+    .insert(organizationGroupAssignments)
+    .values({
+      groupId: group.groupId,
+      deploymentId: 1,
+      organizationVersion: organization.organizationVersion,
+      userId: input.targetUserId,
+      assignmentSource: 'manual',
+      complianceSource: null,
+      assignedActorType: 'user',
+      assignedByUserId: input.actorUserId,
+      reason: input.reason,
+      assignedAt: now,
+      expiresAt: input.expiresAt,
+    })
+    .returning()
+  if (!assignment) throw new Error('Failed to assign organization group')
+  await appendGroupAudit(transaction, organization, {
+    eventType: 'group.assigned',
+    actorType: 'user',
+    actorId: input.actorUserId,
+    assignment,
+    reason: input.reason,
+    outcome: 'granted',
+    now,
+  })
+  return toOrganizationGroupAssignment(assignment)
 }
 
 export async function listCurrentOrganizationGroups() {
@@ -333,39 +348,49 @@ export async function revokeOrganizationGroupAssignment(input: {
     if (group.managementMode === 'compliance')
       throw new OrganizationGroupMutationError('compliance-group-manual-change')
 
-    const [assignment] = await transaction
-      .select({ assignmentId: organizationGroupAssignments.assignmentId })
-      .from(organizationGroupAssignments)
-      .where(
-        and(
-          eq(organizationGroupAssignments.assignmentId, input.assignmentId),
-          eq(organizationGroupAssignments.groupId, group.groupId),
-          eq(organizationGroupAssignments.deploymentId, 1),
-          eq(organizationGroupAssignments.organizationVersion, organization.organizationVersion),
-          isNull(organizationGroupAssignments.revokedAt),
-        ),
-      )
-      .for('update')
+    const assignment = await loadUnrevokedGroupAssignmentByIdForUpdate(
+      transaction,
+      organization.organizationVersion,
+      group.groupId,
+      input.assignmentId,
+    )
     if (!assignment) throw new OrganizationGroupMutationError('assignment-not-found')
-
-    const now = new Date()
-    const revoked = await revokeGroupAssignmentRecord(transaction, assignment.assignmentId, {
-      actorType: 'user',
-      actorUserId: input.actorUserId,
-      reason: input.reason,
-      now,
-    })
-    await appendGroupAudit(transaction, organization, {
-      eventType: 'group.revoked',
-      actorType: 'user',
-      actorId: input.actorUserId,
-      assignment: revoked,
-      reason: input.reason,
-      outcome: 'revoked',
-      now,
-    })
-    return toOrganizationGroupAssignment(revoked)
+    return revokeManualOrganizationGroupAssignmentInTransaction(
+      transaction,
+      organization,
+      group,
+      assignment,
+      input,
+    )
   })
+}
+
+export async function revokeManualOrganizationGroupAssignmentInTransaction(
+  transaction: Transaction,
+  organization: { organizationVersion: number; policyVersion: number },
+  group: typeof organizationGroups.$inferSelect,
+  assignment: typeof organizationGroupAssignments.$inferSelect,
+  input: { actorUserId: string; reason: string },
+) {
+  if (group.managementMode === 'compliance')
+    throw new OrganizationGroupMutationError('compliance-group-manual-change')
+  const now = new Date()
+  const revoked = await revokeGroupAssignmentRecord(transaction, assignment.assignmentId, {
+    actorType: 'user',
+    actorUserId: input.actorUserId,
+    reason: input.reason,
+    now,
+  })
+  await appendGroupAudit(transaction, organization, {
+    eventType: 'group.revoked',
+    actorType: 'user',
+    actorId: input.actorUserId,
+    assignment: revoked,
+    reason: input.reason,
+    outcome: 'revoked',
+    now,
+  })
+  return toOrganizationGroupAssignment(revoked)
 }
 
 async function requireManager(

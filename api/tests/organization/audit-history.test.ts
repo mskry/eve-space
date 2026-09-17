@@ -50,6 +50,28 @@ describe('organization audit history', () => {
       listCurrentOrganizationAuditHistory({ limit: 10, beforeAuditSequence: 8n }),
     ).resolves.toMatchObject({ nextBeforeAuditSequence: null })
   })
+
+  test('projects bounded sensitive access context without content', async () => {
+    mocks.rows = [
+      {
+        ...event(7n),
+        eventType: 'sensitive-access.decided',
+        sectionId: 'mail',
+        targetCharacterId: 90_000_001,
+        disclosureVersion: 3,
+      },
+    ]
+
+    const result = await listCurrentOrganizationAuditHistory({ limit: 10 })
+
+    expect(result.events[0]).toMatchObject({
+      sectionId: 'mail',
+      targetCharacterId: 90_000_001,
+      disclosureVersion: 3,
+    })
+    expect(result.events[0]).not.toHaveProperty('query')
+    expect(result.events[0]).not.toHaveProperty('evidence')
+  })
 })
 
 function event(auditSequence: bigint) {
@@ -68,6 +90,9 @@ function event(auditSequence: bigint) {
     groupId: null,
     assignmentId: null,
     targetUserId: null,
+    targetCharacterId: null,
+    sectionId: null,
+    disclosureVersion: null,
     assignmentSource: null,
     complianceSource: null,
     entitlementExpiresAt: new Date('2026-09-10T12:00:00.000Z'),

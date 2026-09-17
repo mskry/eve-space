@@ -59,95 +59,103 @@ export async function blockOrganizationMember(input: {
   return db.transaction(async (transaction) => {
     const organization = await lockCurrentOrganization(transaction)
     await requireManager(transaction, organization.organizationVersion, input.actorUserId)
-    if (input.actorUserId === input.targetUserId)
-      throw new OrganizationMemberBlockMutationError('self-block-not-allowed')
-    await requireTarget(transaction, input.targetUserId)
-    const [owner] = await transaction
-      .select({ grantId: organizationRoleGrants.grantId })
-      .from(organizationRoleGrants)
-      .where(
-        and(
-          eq(organizationRoleGrants.deploymentId, 1),
-          eq(organizationRoleGrants.organizationVersion, organization.organizationVersion),
-          eq(organizationRoleGrants.userId, input.targetUserId),
-          eq(organizationRoleGrants.role, 'organization_owner'),
-          isNull(organizationRoleGrants.revokedAt),
-        ),
-      )
-      .limit(1)
-    if (owner) throw new OrganizationMemberBlockMutationError('owner-block-not-allowed')
+    return blockOrganizationMemberInTransaction(transaction, organization, input)
+  })
+}
 
-    const [existing] = await transaction
-      .select({ blockId: organizationMemberBlocks.blockId })
-      .from(organizationMemberBlocks)
-      .where(
-        and(
-          eq(organizationMemberBlocks.deploymentId, 1),
-          eq(organizationMemberBlocks.organizationVersion, organization.organizationVersion),
-          eq(organizationMemberBlocks.userId, input.targetUserId),
-          isNull(organizationMemberBlocks.unblockedAt),
-        ),
-      )
-      .for('update')
-    if (existing) throw new OrganizationMemberBlockMutationError('block-already-active')
-
-    const now = new Date()
-    const targetEntitlementScope = await loadCurrentEntitlementScope(
-      transaction,
-      organization.organizationVersion,
-      input.targetUserId,
-      now,
+export async function blockOrganizationMemberInTransaction(
+  transaction: Transaction,
+  organization: { organizationVersion: number; policyVersion: number },
+  input: { actorUserId: string; targetUserId: string; reason: string },
+) {
+  if (input.actorUserId === input.targetUserId)
+    throw new OrganizationMemberBlockMutationError('self-block-not-allowed')
+  await requireTarget(transaction, input.targetUserId)
+  const [owner] = await transaction
+    .select({ grantId: organizationRoleGrants.grantId })
+    .from(organizationRoleGrants)
+    .where(
+      and(
+        eq(organizationRoleGrants.deploymentId, 1),
+        eq(organizationRoleGrants.organizationVersion, organization.organizationVersion),
+        eq(organizationRoleGrants.userId, input.targetUserId),
+        eq(organizationRoleGrants.role, 'organization_owner'),
+        isNull(organizationRoleGrants.revokedAt),
+      ),
     )
-    const [block] = await transaction
-      .insert(organizationMemberBlocks)
-      .values({
-        deploymentId: 1,
-        organizationVersion: organization.organizationVersion,
-        userId: input.targetUserId,
-        blockedByUserId: input.actorUserId,
-        reason: input.reason,
-        blockedAt: now,
-      })
-      .returning()
-    if (!block) throw new Error('Failed to block organization member')
-    const blockAudit = await appendOrganizationAuditEvent(transaction, {
+    .limit(1)
+  if (owner) throw new OrganizationMemberBlockMutationError('owner-block-not-allowed')
+
+  const [existing] = await transaction
+    .select({ blockId: organizationMemberBlocks.blockId })
+    .from(organizationMemberBlocks)
+    .where(
+      and(
+        eq(organizationMemberBlocks.deploymentId, 1),
+        eq(organizationMemberBlocks.organizationVersion, organization.organizationVersion),
+        eq(organizationMemberBlocks.userId, input.targetUserId),
+        isNull(organizationMemberBlocks.unblockedAt),
+      ),
+    )
+    .for('update')
+  if (existing) throw new OrganizationMemberBlockMutationError('block-already-active')
+
+  const now = new Date()
+  const targetEntitlementScope = await loadCurrentEntitlementScope(
+    transaction,
+    organization.organizationVersion,
+    input.targetUserId,
+    now,
+  )
+  const [block] = await transaction
+    .insert(organizationMemberBlocks)
+    .values({
       deploymentId: 1,
       organizationVersion: organization.organizationVersion,
-      policyVersion: organization.policyVersion,
-      eventType: 'member.blocked',
-      actorType: 'user',
-      actorId: input.actorUserId,
-      subjectType: 'user',
-      subjectId: input.targetUserId,
+      userId: input.targetUserId,
+      blockedByUserId: input.actorUserId,
       reason: input.reason,
-      outcome: 'denied',
-      occurredAt: now,
+      blockedAt: now,
     })
-    if (targetEntitlementScope !== 'none')
-      await appendExternalServiceEntitlementTransitions(transaction, {
-        organizationVersion: organization.organizationVersion,
-        policyVersion: organization.policyVersion,
-        userId: input.targetUserId,
-        granted: false,
-        causationAuditId: blockAudit.auditId,
-        now,
-        reason: 'A member block revoked this external-service entitlement.',
-        permissionScope: targetEntitlementScope,
-        ignoreBlock: true,
-      })
-    await appendDomainEvent(transaction, {
-      type: 'organization.member-blocked',
-      payloadVersion: 1,
-      aggregateId: input.targetUserId,
-      payload: {
-        organizationVersion: organization.organizationVersion,
-        userId: input.targetUserId,
-        blockId: block.blockId,
-      },
-      occurredAt: now,
-    })
-    return toMemberBlock(block)
+    .returning()
+  if (!block) throw new Error('Failed to block organization member')
+  const blockAudit = await appendOrganizationAuditEvent(transaction, {
+    deploymentId: 1,
+    organizationVersion: organization.organizationVersion,
+    policyVersion: organization.policyVersion,
+    eventType: 'member.blocked',
+    actorType: 'user',
+    actorId: input.actorUserId,
+    subjectType: 'user',
+    subjectId: input.targetUserId,
+    reason: input.reason,
+    outcome: 'denied',
+    occurredAt: now,
   })
+  if (targetEntitlementScope !== 'none')
+    await appendExternalServiceEntitlementTransitions(transaction, {
+      organizationVersion: organization.organizationVersion,
+      policyVersion: organization.policyVersion,
+      userId: input.targetUserId,
+      granted: false,
+      causationAuditId: blockAudit.auditId,
+      now,
+      reason: 'A member block revoked this external-service entitlement.',
+      permissionScope: targetEntitlementScope,
+      ignoreBlock: true,
+    })
+  await appendDomainEvent(transaction, {
+    type: 'organization.member-blocked',
+    payloadVersion: 1,
+    aggregateId: input.targetUserId,
+    payload: {
+      organizationVersion: organization.organizationVersion,
+      userId: input.targetUserId,
+      blockId: block.blockId,
+    },
+    occurredAt: now,
+  })
+  return toMemberBlock(block)
 }
 
 export async function unblockOrganizationMember(input: {
@@ -158,75 +166,83 @@ export async function unblockOrganizationMember(input: {
   return db.transaction(async (transaction) => {
     const organization = await lockCurrentOrganization(transaction)
     await requireManager(transaction, organization.organizationVersion, input.actorUserId)
-    const [block] = await transaction
-      .select()
-      .from(organizationMemberBlocks)
-      .where(
-        and(
-          eq(organizationMemberBlocks.deploymentId, 1),
-          eq(organizationMemberBlocks.organizationVersion, organization.organizationVersion),
-          eq(organizationMemberBlocks.userId, input.targetUserId),
-          isNull(organizationMemberBlocks.unblockedAt),
-        ),
-      )
-      .for('update')
-    if (!block) throw new OrganizationMemberBlockMutationError('block-not-found')
+    return unblockOrganizationMemberInTransaction(transaction, organization, input)
+  })
+}
 
-    const now = new Date()
-    const [unblocked] = await transaction
-      .update(organizationMemberBlocks)
-      .set({
-        unblockedAt: now,
-        unblockedByUserId: input.actorUserId,
-        unblockReason: input.reason,
-        updatedAt: now,
-      })
-      .where(eq(organizationMemberBlocks.blockId, block.blockId))
-      .returning()
-    if (!unblocked) throw new Error('Failed to unblock organization member')
-    const unblockAudit = await appendOrganizationAuditEvent(transaction, {
-      deploymentId: 1,
+export async function unblockOrganizationMemberInTransaction(
+  transaction: Transaction,
+  organization: { organizationVersion: number; policyVersion: number },
+  input: { actorUserId: string; targetUserId: string; reason: string },
+) {
+  const [block] = await transaction
+    .select()
+    .from(organizationMemberBlocks)
+    .where(
+      and(
+        eq(organizationMemberBlocks.deploymentId, 1),
+        eq(organizationMemberBlocks.organizationVersion, organization.organizationVersion),
+        eq(organizationMemberBlocks.userId, input.targetUserId),
+        isNull(organizationMemberBlocks.unblockedAt),
+      ),
+    )
+    .for('update')
+  if (!block) throw new OrganizationMemberBlockMutationError('block-not-found')
+
+  const now = new Date()
+  const [unblocked] = await transaction
+    .update(organizationMemberBlocks)
+    .set({
+      unblockedAt: now,
+      unblockedByUserId: input.actorUserId,
+      unblockReason: input.reason,
+      updatedAt: now,
+    })
+    .where(eq(organizationMemberBlocks.blockId, block.blockId))
+    .returning()
+  if (!unblocked) throw new Error('Failed to unblock organization member')
+  const unblockAudit = await appendOrganizationAuditEvent(transaction, {
+    deploymentId: 1,
+    organizationVersion: organization.organizationVersion,
+    policyVersion: organization.policyVersion,
+    eventType: 'member.unblocked',
+    actorType: 'user',
+    actorId: input.actorUserId,
+    subjectType: 'user',
+    subjectId: input.targetUserId,
+    reason: input.reason,
+    outcome: 'transitioned',
+    occurredAt: now,
+  })
+  const targetEntitlementScope = await loadCurrentEntitlementScope(
+    transaction,
+    organization.organizationVersion,
+    input.targetUserId,
+    now,
+  )
+  if (targetEntitlementScope !== 'none')
+    await appendExternalServiceEntitlementTransitions(transaction, {
       organizationVersion: organization.organizationVersion,
       policyVersion: organization.policyVersion,
-      eventType: 'member.unblocked',
-      actorType: 'user',
-      actorId: input.actorUserId,
-      subjectType: 'user',
-      subjectId: input.targetUserId,
-      reason: input.reason,
-      outcome: 'transitioned',
-      occurredAt: now,
-    })
-    const targetEntitlementScope = await loadCurrentEntitlementScope(
-      transaction,
-      organization.organizationVersion,
-      input.targetUserId,
+      userId: input.targetUserId,
+      granted: true,
+      causationAuditId: unblockAudit.auditId,
       now,
-    )
-    if (targetEntitlementScope !== 'none')
-      await appendExternalServiceEntitlementTransitions(transaction, {
-        organizationVersion: organization.organizationVersion,
-        policyVersion: organization.policyVersion,
-        userId: input.targetUserId,
-        granted: true,
-        causationAuditId: unblockAudit.auditId,
-        now,
-        reason: 'Removing the member block restored this external-service entitlement.',
-        permissionScope: targetEntitlementScope,
-      })
-    await appendDomainEvent(transaction, {
-      type: 'organization.member-unblocked',
-      payloadVersion: 1,
-      aggregateId: input.targetUserId,
-      payload: {
-        organizationVersion: organization.organizationVersion,
-        userId: input.targetUserId,
-        blockId: unblocked.blockId,
-      },
-      occurredAt: now,
+      reason: 'Removing the member block restored this external-service entitlement.',
+      permissionScope: targetEntitlementScope,
     })
-    return toMemberBlock(unblocked)
+  await appendDomainEvent(transaction, {
+    type: 'organization.member-unblocked',
+    payloadVersion: 1,
+    aggregateId: input.targetUserId,
+    payload: {
+      organizationVersion: organization.organizationVersion,
+      userId: input.targetUserId,
+      blockId: unblocked.blockId,
+    },
+    occurredAt: now,
   })
+  return toMemberBlock(unblocked)
 }
 
 export async function listCurrentOrganizationMemberBlocks() {

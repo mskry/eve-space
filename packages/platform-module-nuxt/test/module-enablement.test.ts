@@ -14,7 +14,16 @@ const mocks = vi.hoisted(() => ({
   invalidateQueryPersistence: vi.fn(),
   dispose: vi.fn(),
 }))
-const data = ref<{ enabledModuleIds: string[] }>()
+const data = ref<{
+  enabledModuleIds: string[]
+  enabledSections: {
+    moduleId: string
+    sectionId: string
+    kind: 'workspace' | 'sensitive-evidence' | 'access-management'
+    disclosureVersion: number
+    activationVersion: number
+  }[]
+}>()
 
 vi.mock('#imports', async () => ({
   computed: (await import('vue')).computed,
@@ -42,7 +51,7 @@ beforeEach(() => {
   vi.stubGlobal('window', {})
   data.value = undefined
   mocks.refresh.mockImplementation(async () => {
-    data.value = { enabledModuleIds: ['alpha'] }
+    data.value = { enabledModuleIds: ['alpha'], enabledSections: [] }
     await nextTick()
   })
 })
@@ -55,7 +64,7 @@ describe('module enablement middleware scope', () => {
       await middleware({ meta: { platformModuleId: 'alpha' } } as never, {} as never)
     }
     expect(mocks.dispose).toHaveBeenCalledTimes(5)
-    data.value = { enabledModuleIds: [] }
+    data.value = { enabledModuleIds: [], enabledSections: [] }
     await nextTick()
     expect(mocks.getEntries).not.toHaveBeenCalled()
   })
@@ -64,13 +73,42 @@ describe('module enablement middleware scope', () => {
     if (statusCode === 503) mocks.refresh.mockRejectedValueOnce(new Error('Unavailable'))
     else
       mocks.refresh.mockImplementationOnce(async () => {
-        data.value = { enabledModuleIds: [] }
+        data.value = { enabledModuleIds: [], enabledSections: [] }
       })
 
     await expect(
       middleware({ meta: { platformModuleId: 'alpha' } } as never, {} as never),
     ).rejects.toMatchObject({ statusCode })
     expect(mocks.dispose).toHaveBeenCalledOnce()
+  })
+
+  it('requires the route section without exposing sibling sections', async () => {
+    mocks.refresh.mockImplementation(async () => {
+      data.value = {
+        enabledModuleIds: ['alpha'],
+        enabledSections: [enabledSection('assets')],
+      }
+    })
+
+    await expect(
+      middleware(
+        { meta: { platformModuleId: 'alpha', platformModuleSectionId: 'skills' } } as never,
+        {} as never,
+      ),
+    ).rejects.toMatchObject({ statusCode: 404 })
+
+    mocks.refresh.mockImplementation(async () => {
+      data.value = {
+        enabledModuleIds: ['alpha'],
+        enabledSections: [enabledSection('skills')],
+      }
+    })
+    await expect(
+      middleware(
+        { meta: { platformModuleId: 'alpha', platformModuleSectionId: 'skills' } } as never,
+        {} as never,
+      ),
+    ).resolves.toBeUndefined()
   })
 
   it('keeps the app-owned persistence lifecycle active until its scope is stopped', async () => {
@@ -82,15 +120,15 @@ describe('module enablement middleware scope', () => {
         return value
       })!
       await runtime.ensureRuntimeState()
-      data.value = { enabledModuleIds: [] }
+      data.value = { enabledModuleIds: [], enabledSections: [] }
       await nextTick()
       expect(mocks.getEntries).toHaveBeenCalledOnce()
     } finally {
       scope.stop()
     }
-    data.value = { enabledModuleIds: ['alpha'] }
+    data.value = { enabledModuleIds: ['alpha'], enabledSections: [] }
     await nextTick()
-    data.value = { enabledModuleIds: [] }
+    data.value = { enabledModuleIds: [], enabledSections: [] }
     await nextTick()
     expect(mocks.getEntries).toHaveBeenCalledOnce()
   })
@@ -106,9 +144,9 @@ describe('module enablement middleware scope', () => {
     const scope = effectScope()
     try {
       scope.run(() => usePlatformModulePersistenceLifecycle(mocks.invalidateQueryPersistence))
-      data.value = { enabledModuleIds: ['alpha'] }
+      data.value = { enabledModuleIds: ['alpha'], enabledSections: [] }
 
-      data.value = { enabledModuleIds: [] }
+      data.value = { enabledModuleIds: [], enabledSections: [] }
 
       expect(mocks.invalidateQueryPersistence).toHaveBeenCalledOnce()
       expect(mocks.invalidateQueryPersistence).toHaveBeenCalledWith({
@@ -130,18 +168,51 @@ describe('module enablement middleware scope', () => {
   })
 
   it('invalidates a module that was enabled before the lifecycle watcher was installed', () => {
-    data.value = { enabledModuleIds: ['alpha'] }
+    data.value = { enabledModuleIds: ['alpha'], enabledSections: [] }
     const scope = effectScope()
     try {
       scope.run(() => usePlatformModulePersistenceLifecycle(mocks.invalidateQueryPersistence))
 
-      data.value = { enabledModuleIds: [] }
+      data.value = { enabledModuleIds: [], enabledSections: [] }
 
       expect(mocks.invalidateQueryPersistence).toHaveBeenCalledWith({
         admissionScopes: ['organization:v1:alpha:member:alpha.view'],
         moduleId: 'alpha',
       })
       expect(mocks.getEntries).toHaveBeenCalledOnce()
+    } finally {
+      scope.stop()
+    }
+  })
+
+  it('invalidates only disabled section scopes and section-keyed queries', () => {
+    const skillsEntry = {
+      key: ['private', 'organization', 3, 'modules', 'alpha', 'sections', 'skills', 'detail'],
+    }
+    const assetsEntry = {
+      key: ['private', 'organization', 3, 'modules', 'alpha', 'sections', 'assets', 'detail'],
+    }
+    mocks.getEntries.mockReturnValue([skillsEntry, assetsEntry])
+    data.value = {
+      enabledModuleIds: ['alpha'],
+      enabledSections: [enabledSection('skills'), enabledSection('assets')],
+    }
+    const scope = effectScope()
+    try {
+      scope.run(() => usePlatformModulePersistenceLifecycle(mocks.invalidateQueryPersistence))
+
+      data.value = {
+        enabledModuleIds: ['alpha'],
+        enabledSections: [enabledSection('assets')],
+      }
+
+      expect(mocks.invalidateQueryPersistence).toHaveBeenCalledOnce()
+      expect(mocks.invalidateQueryPersistence).toHaveBeenCalledWith({
+        admissionScopes: ['organization:v1:alpha:member:alpha.view'],
+        moduleId: 'alpha',
+      })
+      expect(mocks.remove).toHaveBeenCalledWith(skillsEntry)
+      expect(mocks.remove).not.toHaveBeenCalledWith(assetsEntry)
     } finally {
       scope.stop()
     }
@@ -164,7 +235,9 @@ describe('module enablement server navigation', () => {
     async (enabled) => {
       const fetch = vi
         .fn()
-        .mockResolvedValue(Response.json({ enabledModuleIds: enabled ? ['alpha'] : [] }))
+        .mockResolvedValue(
+          Response.json({ enabledModuleIds: enabled ? ['alpha'] : [], enabledSections: [] }),
+        )
       vi.stubGlobal('fetch', fetch)
       const navigation = middleware({ meta: { platformModuleId: 'alpha' } } as never, {} as never)
       const outcome = await Promise.resolve(navigation).then(
@@ -191,3 +264,13 @@ describe('module enablement server navigation', () => {
     ).rejects.toMatchObject({ statusCode: 503 })
   })
 })
+
+function enabledSection(sectionId: string) {
+  return {
+    moduleId: 'alpha',
+    sectionId,
+    kind: 'sensitive-evidence' as const,
+    disclosureVersion: 1,
+    activationVersion: 1,
+  }
+}

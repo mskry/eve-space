@@ -1,12 +1,13 @@
 import { addTemplate, addTypeTemplate, createResolver } from '@nuxt/kit'
-import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract/nuxt'
 import { createPlatformNavigation } from './navigation.js'
 
-const pageMetaTypes = `import type { PlatformNavigationAudience } from '@eve-space/platform-module-contract'
+const pageMetaTypes = `import type { PlatformNavigationAudience } from '@eve-space/platform-module-contract/nuxt'
 
 declare module '@nuxt/schema' {
   interface NuxtPageMeta {
     platformModuleId?: string
+    platformModuleSectionId?: string
     platformAudience?: PlatformNavigationAudience
   }
 }
@@ -14,6 +15,7 @@ declare module '@nuxt/schema' {
 declare module 'vue-router' {
   interface RouteMeta {
     platformModuleId?: string
+    platformModuleSectionId?: string
     platformAudience?: PlatformNavigationAudience
   }
 }
@@ -36,7 +38,7 @@ export function registerPlatformTemplates(
     filename: 'eve-space-platform/query-admission-scopes.ts',
     write: true,
     getContents: () =>
-      `import type { PlatformQueryAdmissionScopeDescriptor } from '@eve-space/platform-module-contract'\n\nexport const platformQueryAdmissionScopes: readonly (PlatformQueryAdmissionScopeDescriptor & { readonly moduleId: string })[] = ${JSON.stringify(
+      `import type { PlatformQueryAdmissionScopeDescriptor } from '@eve-space/platform-module-contract/nuxt'\n\nexport const platformQueryAdmissionScopes: readonly (PlatformQueryAdmissionScopeDescriptor & { readonly moduleId: string })[] = ${JSON.stringify(
         contributions.flatMap((contribution) =>
           contribution.queryAdmissionScopes.map((scope) => ({
             moduleId: contribution.moduleId,

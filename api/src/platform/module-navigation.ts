@@ -2,7 +2,7 @@ import {
   platformNavigationPlacements,
   type PlatformNavigationDefault,
   type PlatformNavigationPlacement,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/nuxt'
 
 type NavigationIdentity = Pick<PlatformNavigationDefault, 'ownerId' | 'navigationId'>
 
@@ -21,6 +21,7 @@ export function resolveShellNavigationOrder(
   defaults: readonly PlatformNavigationDefault[],
   rows: readonly NavigationOrderRow[],
   availableOwners: ReadonlySet<string>,
+  enabledSectionKeys: ReadonlySet<string> = new Set(),
 ): ShellNavigationOrder {
   const positions = new Map(
     rows.map((row) => [navigationKey(row.owner_id, row.navigation_id), row.position]),
@@ -30,7 +31,12 @@ export function resolveShellNavigationOrder(
   )
   const resolvePlacement = (placement: PlatformNavigationPlacement) =>
     defaults
-      .filter((entry) => entry.placement === placement && availableOwners.has(entry.ownerId))
+      .filter(
+        (entry) =>
+          entry.placement === placement &&
+          availableOwners.has(entry.ownerId) &&
+          (!entry.sectionId || enabledSectionKeys.has(sectionKey(entry.ownerId, entry.sectionId))),
+      )
       .toSorted((left, right) => {
         const leftPosition = positions.get(navigationKey(left.ownerId, left.navigationId))
         const rightPosition = positions.get(navigationKey(right.ownerId, right.navigationId))
@@ -77,4 +83,8 @@ function defaultRank(entry: NavigationIdentity, ranks: ReadonlyMap<string, numbe
 
 function navigationKey(ownerId: string, navigationId: string) {
   return `${ownerId}\0${navigationId}`
+}
+
+function sectionKey(ownerId: string, sectionId: string) {
+  return `${ownerId}/${sectionId}`
 }

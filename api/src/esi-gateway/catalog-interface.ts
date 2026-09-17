@@ -1,4 +1,4 @@
-import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract'
+import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract/esi'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import { operationRegistry } from '@evespace/esi-client/operations'
 import {
@@ -31,10 +31,65 @@ const corePlatformEsiOperationDefinitions = {
     descriptor: operationRegistry.GetAlliancesAllianceIdCorporations!,
     contract: esiOperationCatalog['alliance-corporations'],
   },
+  'character-asset-names': {
+    sdkOperationId: 'PostCharactersCharacterIdAssetsNames',
+    descriptor: operationRegistry.PostCharactersCharacterIdAssetsNames!,
+    contract: esiOperationCatalog['character-asset-names'],
+  },
+  'character-assets-page': {
+    sdkOperationId: 'GetCharactersCharacterIdAssets',
+    descriptor: operationRegistry.GetCharactersCharacterIdAssets!,
+    contract: esiOperationCatalog['character-assets-page'],
+  },
   'corporation-members': {
     sdkOperationId: 'GetCorporationsCorporationIdMembers',
     descriptor: operationRegistry.GetCorporationsCorporationIdMembers!,
     contract: esiOperationCatalog['corporation-members'],
+  },
+  'mail-headers': {
+    sdkOperationId: 'GetCharactersCharacterIdMail',
+    descriptor: operationRegistry.GetCharactersCharacterIdMail!,
+    contract: esiOperationCatalog['mail-headers'],
+  },
+  'mail-lists': {
+    sdkOperationId: 'GetCharactersCharacterIdMailLists',
+    descriptor: operationRegistry.GetCharactersCharacterIdMailLists!,
+    contract: esiOperationCatalog['mail-lists'],
+  },
+  'mail-message': {
+    sdkOperationId: 'GetCharactersCharacterIdMailMailId',
+    descriptor: operationRegistry.GetCharactersCharacterIdMailMailId!,
+    contract: esiOperationCatalog['mail-message'],
+  },
+  skills: {
+    sdkOperationId: 'GetCharactersCharacterIdSkills',
+    descriptor: operationRegistry.GetCharactersCharacterIdSkills!,
+    contract: esiOperationCatalog.skills,
+  },
+  'skill-queue': {
+    sdkOperationId: 'GetCharactersCharacterIdSkillqueue',
+    descriptor: operationRegistry.GetCharactersCharacterIdSkillqueue!,
+    contract: esiOperationCatalog['skill-queue'],
+  },
+  'universe-resolve-names': {
+    sdkOperationId: 'PostUniverseNames',
+    descriptor: operationRegistry.PostUniverseNames!,
+    contract: esiOperationCatalog['universe-resolve-names'],
+  },
+  'wallet-balance': {
+    sdkOperationId: 'GetCharactersCharacterIdWallet',
+    descriptor: operationRegistry.GetCharactersCharacterIdWallet!,
+    contract: esiOperationCatalog['wallet-balance'],
+  },
+  'wallet-journal': {
+    sdkOperationId: 'GetCharactersCharacterIdWalletJournal',
+    descriptor: operationRegistry.GetCharactersCharacterIdWalletJournal!,
+    contract: esiOperationCatalog['wallet-journal'],
+  },
+  'wallet-transactions': {
+    sdkOperationId: 'GetCharactersCharacterIdWalletTransactions',
+    descriptor: operationRegistry.GetCharactersCharacterIdWalletTransactions!,
+    contract: esiOperationCatalog['wallet-transactions'],
   },
 } as const satisfies Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>
 

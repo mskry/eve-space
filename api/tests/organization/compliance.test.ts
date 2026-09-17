@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   appendAudits: vi.fn(),
   appendEvent: vi.fn(),
   convergeGroups: vi.fn(),
+  convergeManagedMemberLifecycle: vi.fn(),
 }))
 
 vi.mock('../../src/db/client.js', () => ({
@@ -27,6 +28,9 @@ vi.mock('../../src/organization/audit.js', () => ({
 vi.mock('../../src/domain-events/store.js', () => ({ appendDomainEvent: mocks.appendEvent }))
 vi.mock('../../src/organization/group-compliance.js', () => ({
   convergeRegistrationComplianceGroupsInTransaction: mocks.convergeGroups,
+}))
+vi.mock('../../src/organization/managed-member-lifecycle.js', () => ({
+  convergeManagedMemberLifecycleInTransaction: mocks.convergeManagedMemberLifecycle,
 }))
 
 import {
@@ -49,6 +53,7 @@ describe('organization compliance persistence', () => {
     mocks.appendAudits.mockReset().mockResolvedValue([])
     mocks.appendEvent.mockReset().mockResolvedValue(undefined)
     mocks.convergeGroups.mockReset().mockResolvedValue(undefined)
+    mocks.convergeManagedMemberLifecycle.mockReset().mockResolvedValue(undefined)
   })
 
   test('ignores users or organization versions that are no longer current', async () => {
@@ -68,6 +73,10 @@ describe('organization compliance persistence', () => {
     })
     expect(mocks.inserts).toHaveLength(1)
     expect(mocks.deletes).toBe(1)
+    expect(mocks.convergeManagedMemberLifecycle).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ eligible: true, userId }),
+    )
     expect(mocks.appendAudit).toHaveBeenCalledOnce()
     expect(mocks.appendEvent).toHaveBeenCalledWith(
       expect.anything(),
@@ -264,6 +273,28 @@ describe('organization compliance persistence', () => {
     ).resolves.toBeUndefined()
     expect(mocks.inserts).toHaveLength(1)
   })
+
+  test('ends managed-member eligibility when alliance authority is stale', async () => {
+    givenEvaluationState({
+      organizationType: 'alliance',
+      managedCollectionRows: [
+        {
+          validatedAt: evidenceAt,
+          nextEligibleAt: new Date('2026-09-01T11:59:00.000Z'),
+          lastFailureClass: null,
+          failureStartedAt: null,
+        },
+      ],
+      previous: [],
+    })
+
+    await recompute()
+
+    expect(mocks.convergeManagedMemberLifecycle).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ eligible: false, userId }),
+    )
+  })
 })
 
 function recompute() {
@@ -277,6 +308,8 @@ function recompute() {
 
 function givenEvaluationState(input: {
   corporationId?: number
+  organizationType?: 'alliance' | 'corporation'
+  managedCollectionRows?: unknown[]
   previous: unknown[]
   previousIssues?: unknown[]
   strictRemediationDurationSeconds?: number
@@ -285,7 +318,7 @@ function givenEvaluationState(input: {
     [
       {
         organizationVersion: 4,
-        organizationType: 'corporation',
+        organizationType: input.organizationType ?? 'corporation',
         policyVersion: 2,
         requiredScopes: [],
         strictRemediationDurationSeconds: input.strictRemediationDurationSeconds ?? 0,
@@ -304,7 +337,7 @@ function givenEvaluationState(input: {
       },
     ],
     [{ corporationId: 98000001 }],
-    [],
+    input.managedCollectionRows ?? [],
     [],
     input.previous,
     input.previousIssues ?? [],

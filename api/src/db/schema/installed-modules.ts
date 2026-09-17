@@ -19,7 +19,10 @@ import type {
 } from '../../platform/collection-state.js'
 import { characters } from './identity.js'
 import { organizationEpochs } from './organization-epochs.js'
-import { organizationCorporationSources } from './organization.js'
+import {
+  organizationCorporationSources,
+  organizationManagedMemberLifecycles,
+} from './organization.js'
 import { auditTimestamps } from './shared.js'
 
 // The deployment_* tables here are module-scoped despite the prefix: installed
@@ -47,6 +50,51 @@ export const deploymentModules = pgTable(
       sql`module_id = 'core' or is_valid_module_id(module_id)`,
     ),
     check('deployment_modules_core_enabled_check', sql`module_id <> 'core' or enabled`),
+  ],
+)
+
+export const deploymentModuleSections = pgTable(
+  'deployment_module_sections',
+  {
+    moduleId: text('module_id').notNull(),
+    sectionId: text('section_id').notNull(),
+    kind: text().$type<'workspace' | 'sensitive-evidence' | 'access-management'>().notNull(),
+    enabled: boolean().default(false).notNull(),
+    declarationRevision: integer('declaration_revision'),
+    disclosureVersion: integer('disclosure_version').default(0).notNull(),
+    activationVersion: integer('activation_version').default(0).notNull(),
+    ...auditTimestamps(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.moduleId, table.sectionId],
+      name: 'deployment_module_sections_pkey',
+    }),
+    foreignKey({
+      columns: [table.moduleId],
+      foreignColumns: [deploymentModules.moduleId],
+      name: 'deployment_module_sections_module_id_fkey',
+    }).onDelete('cascade'),
+    check(
+      'deployment_module_sections_module_id_check',
+      sql`is_valid_module_id(module_id) and module_id <> 'core'`,
+    ),
+    check(
+      'deployment_module_sections_section_id_check',
+      sql`is_valid_platform_identifier(section_id)`,
+    ),
+    check(
+      'deployment_module_sections_kind_check',
+      sql`kind in ('workspace', 'sensitive-evidence', 'access-management')`,
+    ),
+    check(
+      'deployment_module_sections_versions_check',
+      sql`disclosure_version >= 0 and activation_version >= 0`,
+    ),
+    check(
+      'deployment_module_sections_disclosure_check',
+      sql`(kind = 'sensitive-evidence' and declaration_revision is not null and declaration_revision > 0) or (kind <> 'sensitive-evidence' and declaration_revision is null and disclosure_version = 0)`,
+    ),
   ],
 )
 
@@ -140,6 +188,13 @@ export const platformCollectionState = pgTable(
     subjectId: text('subject_id').notNull(),
     nextEligibleAt: timestamp('next_eligible_at', { withTimezone: true, mode: 'date' }),
     authorizationGeneration: integer('authorization_generation'),
+    organizationDeploymentId: integer('organization_deployment_id'),
+    organizationVersion: bigint('organization_version', { mode: 'number' }),
+    targetUserId: uuid('target_user_id'),
+    managedMemberLifecycleId: uuid('managed_member_lifecycle_id'),
+    sectionId: text('section_id'),
+    disclosureVersion: integer('disclosure_version'),
+    sectionActivationVersion: integer('section_activation_version'),
     validatedAt: timestamp('validated_at', { withTimezone: true, mode: 'date' }),
     lastFailureClass: text('last_failure_class').$type<PlatformCollectionFailureClass>(),
     failureStartedAt: timestamp('failure_started_at', { withTimezone: true, mode: 'date' }),
@@ -170,6 +225,26 @@ export const platformCollectionState = pgTable(
       ],
       name: 'platform_collection_state_subject_lifecycle_fkey',
     }).onDelete('cascade'),
+    foreignKey({
+      columns: [
+        table.managedMemberLifecycleId,
+        table.organizationDeploymentId,
+        table.organizationVersion,
+        table.targetUserId,
+      ],
+      foreignColumns: [
+        organizationManagedMemberLifecycles.managedMemberLifecycleId,
+        organizationManagedMemberLifecycles.deploymentId,
+        organizationManagedMemberLifecycles.organizationVersion,
+        organizationManagedMemberLifecycles.userId,
+      ],
+      name: 'platform_collection_state_managed_member_lifecycle_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.moduleId, table.sectionId],
+      foreignColumns: [deploymentModuleSections.moduleId, deploymentModuleSections.sectionId],
+      name: 'platform_collection_state_section_fkey',
+    }).onDelete('restrict'),
     index('platform_collection_state_due_idx')
       .on(
         table.nextEligibleAt,
@@ -198,6 +273,21 @@ export const platformCollectionState = pgTable(
     check(
       'platform_collection_state_authorization_generation_check',
       sql`authorization_generation is null or authorization_generation >= 0`,
+    ),
+    check(
+      'platform_collection_state_managed_authority_check',
+      sql`(
+        organization_deployment_id is null and organization_version is null
+        and target_user_id is null and managed_member_lifecycle_id is null
+        and section_id is null and disclosure_version is null
+        and section_activation_version is null
+      ) or (
+        organization_deployment_id is not null and organization_version is not null
+        and target_user_id is not null and managed_member_lifecycle_id is not null
+        and section_id is not null and disclosure_version is not null
+        and disclosure_version > 0 and section_activation_version is not null
+        and section_activation_version > 0 and authorization_generation is not null
+      )`,
     ),
     check(
       'platform_collection_state_last_failure_class_check',

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import type { PlatformActivityProviderCharacter } from '@eve-space/platform-module-contract'
+import type { PlatformActivityProviderCharacter } from '@eve-space/platform-module-contract/activity'
 import { combineActivitySources } from '../src/provider-activities.js'
 import { summarySnapshot } from '../src/snapshot.js'
 import type { ActivitySourceRead } from '../src/activity-source.js'

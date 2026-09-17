@@ -1,4 +1,4 @@
-import type { PlatformResourceSubject } from '@eve-space/platform-module-contract'
+import type { PlatformResourceSubject } from '@eve-space/platform-module-contract/resources'
 import { and, eq } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import {
@@ -27,6 +27,7 @@ export async function materializeCoreResourceObservation(
     const [previousCollection] = await database
       .select({
         validatedAt: platformCollectionState.validatedAt,
+        nextEligibleAt: platformCollectionState.nextEligibleAt,
         lastFailureClass: platformCollectionState.lastFailureClass,
       })
       .from(platformCollectionState)
@@ -71,7 +72,10 @@ export async function materializeCoreResourceObservation(
           organizationVersion: organization.organizationVersion,
           affectedCorporationIds: [...result.addedIds, ...result.removedIds],
           recomputeAllAccounts:
-            !previousCollection?.validatedAt || previousCollection.lastFailureClass !== null,
+            !previousCollection?.validatedAt ||
+            previousCollection.lastFailureClass !== null ||
+            !previousCollection.nextEligibleAt ||
+            previousCollection.nextEligibleAt <= input.validatedAt,
         }
       : null
   }

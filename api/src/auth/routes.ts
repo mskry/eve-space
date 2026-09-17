@@ -8,7 +8,13 @@ import {
   reauthorizeCharacter,
   saveLogin,
 } from './character-lifecycle.js'
-import { consumeOAuthState, storeOAuthState, type OAuthStateContext } from './oauth-state-store.js'
+import {
+  consumeOAuthState,
+  findOAuthState,
+  storeOAuthState,
+  type OAuthStateContext,
+  type OAuthStateIntentContext,
+} from './oauth-state-store.js'
 import { deleteSession, findSession, renewSession } from './session-store.js'
 import { getCharacterAffiliation } from '../characters/profile.js'
 import { observeCharacterAffiliation } from '../characters/affiliation-sync.js'
@@ -41,8 +47,12 @@ import {
 } from '../organization/owner-claim.js'
 import { loadTransferApprovalForStart } from './character-transfer-approvals.js'
 import { CharacterTransferError, transferCharacter } from './character-transfer.js'
+import { loadEnabledReviewerUseDisclosures } from '../platform/module-settings.js'
+import { presentReviewerUseDisclosures } from '../reviewer-use-disclosure.js'
 
 const oauthStateCookie = 'eve_space_oauth_state'
+const reviewerDisclosureCookie = 'eve_space_reviewer_disclosure'
+const reviewerDisclosurePath = '/auth/eve/disclosure'
 const sessionLifetime = {
   idleSeconds: 14 * 24 * 60 * 60,
   absoluteSeconds: 30 * 24 * 60 * 60,
@@ -193,6 +203,38 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       })
     },
   )
+  .get('/eve/disclosure', privateNoStore, async (context) => {
+    const token = readAuthCookie(context, reviewerDisclosureCookie, reviewerDisclosurePath)
+    const stateContext = token ? await findOAuthState(token) : null
+    if (!stateContext)
+      return context.json(
+        { code: 'DISCLOSURE_EXPIRED', message: 'The authorization disclosure has expired.' },
+        400,
+      )
+    if (!(await hasBoundSession(context, stateContext))) return context.json(authRequiredBody, 401)
+    return context.json({
+      disclosures: presentReviewerUseDisclosures(stateContext.reviewerUseDisclosures),
+      undisclosedCharacterWarning:
+        'EVE SSO authorizes only the selected character. EVE Space cannot discover undisclosed characters or prove that every character on an account has been disclosed.',
+    })
+  })
+  .post('/eve/disclosure', privateNoStore, async (context) => {
+    const token = readAuthCookie(context, reviewerDisclosureCookie, reviewerDisclosurePath)
+    const stateContext = token ? await consumeOAuthState(token) : null
+    deleteAuthCookie(context, reviewerDisclosureCookie, reviewerDisclosurePath)
+    if (!stateContext)
+      return context.json(
+        { code: 'DISCLOSURE_EXPIRED', message: 'The authorization disclosure has expired.' },
+        400,
+      )
+    if (!(await hasBoundSession(context, stateContext))) return context.json(authRequiredBody, 401)
+    const { authorizationUrl } = await prepareEveAuthorization(
+      context,
+      stateContext,
+      stateContext.reviewerUseDisclosures,
+    )
+    return context.json({ authorizationUrl: authorizationUrl.toString() })
+  })
   .get('/eve/callback', zValidator('query', callbackQuery), async (context) => {
     const { error: authorizationError, code, state } = context.req.valid('query')
     const cookieState = readAuthCookie(context, oauthStateCookie, '/auth/eve/callback')
@@ -301,18 +343,42 @@ function redirectForCallbackError(
   return redirectForIntent(context, stateContext, 'error')
 }
 
-async function startAuthorization(context: Context, stateContext: OAuthStateContext) {
+async function startAuthorization(context: Context, stateContext: OAuthStateIntentContext) {
   const { authorizationUrl } = await prepareAuthorization(context, stateContext)
   return context.redirect(authorizationUrl.toString())
 }
 
-async function prepareAuthorization(context: Context, stateContext: OAuthStateContext) {
+async function prepareAuthorization(context: Context, stateContext: OAuthStateIntentContext) {
   if (!isSsoConfigured()) {
     throw new HTTPException(503, { message: 'EVE SSO credentials have not been configured.' })
   }
 
+  const reviewerUseDisclosures = await loadEnabledReviewerUseDisclosures()
+  if (reviewerUseDisclosures.length > 0) {
+    presentReviewerUseDisclosures(reviewerUseDisclosures)
+    const disclosureToken = createOpaqueToken()
+    await storeOAuthState(disclosureToken, { ...stateContext, reviewerUseDisclosures })
+    setAuthCookie(
+      context,
+      reviewerDisclosureCookie,
+      disclosureToken,
+      10 * 60,
+      reviewerDisclosurePath,
+    )
+    return {
+      authorizationUrl: new URL('/auth/reviewer-disclosure', env.WEB_ORIGIN),
+    }
+  }
+  return prepareEveAuthorization(context, stateContext, reviewerUseDisclosures)
+}
+
+async function prepareEveAuthorization(
+  context: Context,
+  stateContext: OAuthStateIntentContext,
+  reviewerUseDisclosures: OAuthStateContext['reviewerUseDisclosures'],
+) {
   const state = createOpaqueToken()
-  await storeOAuthState(state, stateContext)
+  await storeOAuthState(state, { ...stateContext, reviewerUseDisclosures })
   setAuthCookie(context, oauthStateCookie, state, 10 * 60, '/auth/eve/callback')
   return { authorizationUrl: await createAuthorizationUrl(state, context.req.raw.signal) }
 }
@@ -337,11 +403,15 @@ async function saveAuthorizationForIntent(
   stateContext: OAuthStateContext,
   authorization: CharacterAuthorization,
 ) {
+  const disclosedAuthorization = {
+    ...authorization,
+    reviewerUseDisclosures: stateContext.reviewerUseDisclosures ?? [],
+  }
   switch (stateContext.intent) {
     case 'login': {
       const sessionToken = createOpaqueToken()
       await saveLogin({
-        ...authorization,
+        ...disclosedAuthorization,
         sessionToken,
         sessionExpiresAt: new Date(Date.now() + sessionLifetime.idleSeconds * 1000),
       })
@@ -350,14 +420,14 @@ async function saveAuthorizationForIntent(
     }
     case 'attach':
       await attachCharacter({
-        ...authorization,
+        ...disclosedAuthorization,
         userId: stateContext.userId,
         sessionToken: readAuthCookie(context, sessionCookie)!,
       })
       return
     case 'reauthorize':
       await reauthorizeCharacter({
-        ...authorization,
+        ...disclosedAuthorization,
         userId: stateContext.userId,
         expectedCharacterId: stateContext.characterId,
         sessionToken: readAuthCookie(context, sessionCookie)!,
@@ -366,7 +436,7 @@ async function saveAuthorizationForIntent(
     case 'claim-organization-owner':
       await saveOrganizationOwnerClaim(
         stateContext,
-        authorization,
+        disclosedAuthorization,
         readAuthCookie(context, sessionCookie)!,
       )
       return
@@ -378,7 +448,7 @@ async function saveAuthorizationForIntent(
         destinationUserId: stateContext.userId,
         characterId: stateContext.characterId,
         destinationSessionToken: readAuthCookie(context, sessionCookie)!,
-        authorization,
+        authorization: disclosedAuthorization,
       })
       return
   }
@@ -425,7 +495,7 @@ async function saveOrganizationOwnerClaim(
 
 function redirectForIntent(
   context: Context,
-  state: OAuthStateContext,
+  state: OAuthStateIntentContext,
   status:
     | 'success'
     | 'cancelled'

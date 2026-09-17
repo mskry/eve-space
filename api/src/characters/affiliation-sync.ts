@@ -1,7 +1,8 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import { and, asc, inArray, lte, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import { db } from '../db/client.js'
+import { db, type DatabaseTransaction } from '../db/client.js'
+import { characterLockKey, characterLockNamespace } from '../db/locks.js'
 import { characters } from '../db/schema.js'
 import { env } from '../env.js'
 import { appendDomainEvent } from '../domain-events/store.js'
@@ -41,6 +42,12 @@ interface AffiliationObservation {
   allianceId: number | null
 }
 
+export type AffiliationPersistenceHook = (
+  transaction: DatabaseTransaction,
+  userIds: readonly string[],
+  observedAt: Date,
+) => Promise<void>
+
 export async function observeCharacterAffiliation(characterId: number, signal?: AbortSignal) {
   const result = await lookupAffiliationResult([characterId], signal)
   const observation = result.data.find((entry) => entry.characterId === characterId)
@@ -55,6 +62,7 @@ export async function observeCharacterAffiliation(characterId: number, signal?: 
 export async function observeAndPersistCharacterAffiliation(
   characterId: number,
   signal?: AbortSignal,
+  afterPersist?: AffiliationPersistenceHook,
 ) {
   const observation = await observeCharacterAffiliation(characterId, signal)
   signal?.throwIfAborted()
@@ -64,6 +72,7 @@ export async function observeAndPersistCharacterAffiliation(
       [observation],
       observation.affiliationCheckedAt,
       signal,
+      afterPersist,
     )
   return observation
 }
@@ -82,13 +91,14 @@ export async function selectDueAffiliationBatches(now = new Date()) {
 export async function processAffiliationBatch(
   characterIds: readonly number[],
   signal?: AbortSignal,
+  afterPersist?: AffiliationPersistenceHook,
 ) {
   const batch = validateAffiliationBatch(characterIds)
   signal?.throwIfAborted()
   const observedAt = new Date()
   const result = await lookupAffiliationResult(batch, signal)
   signal?.throwIfAborted()
-  await persistAffiliationObservations(batch, result.data, observedAt, signal)
+  await persistAffiliationObservations(batch, result.data, observedAt, signal, afterPersist)
 }
 
 async function persistAffiliationObservations(
@@ -96,6 +106,7 @@ async function persistAffiliationObservations(
   observations: readonly AffiliationObservation[],
   observedAt: Date,
   signal?: AbortSignal,
+  afterPersist?: AffiliationPersistenceHook,
 ) {
   signal?.throwIfAborted()
   const requested = new Set(requestedCharacterIds)
@@ -108,6 +119,28 @@ async function persistAffiliationObservations(
   const nextCheck = nextAffiliationCheckSql(observedAtValue)
 
   await db.transaction(async (transaction) => {
+    const lockKeys = JSON.stringify(
+      [...new Set([...requested].map((characterId) => characterLockKey(characterId)))].toSorted(
+        (left, right) => left - right,
+      ),
+    )
+    await transaction.execute(sql`
+      select pg_advisory_xact_lock_shared(${characterLockNamespace}, lock_key)
+      from (
+        select value::integer as lock_key
+        from jsonb_array_elements_text(${lockKeys}::jsonb)
+        order by lock_key
+      ) locks
+    `)
+    const affectedCharacters = await transaction
+      .select({ userId: characters.userId, characterId: characters.characterId })
+      .from(characters)
+      .where(inArray(characters.characterId, [...requested]))
+      .orderBy(asc(characters.userId), asc(characters.characterId))
+    const affectedUserIds = [...new Set(affectedCharacters.map(({ userId }) => userId))]
+    await afterPersist?.(transaction, affectedUserIds, observedAt)
+    signal?.throwIfAborted()
+
     if (returned.size > 0) {
       const records = JSON.stringify(
         Array.from(returned.values(), (observation) => ({
@@ -160,11 +193,7 @@ async function persistAffiliationObservations(
         )
       signal?.throwIfAborted()
     }
-    const affectedCharacters = await transaction
-      .select({ userId: characters.userId, characterId: characters.characterId })
-      .from(characters)
-      .where(inArray(characters.characterId, [...requested]))
-      .orderBy(asc(characters.userId), asc(characters.characterId))
+    await afterPersist?.(transaction, affectedUserIds, observedAt)
     signal?.throwIfAborted()
     for (const character of affectedCharacters)
       // oxlint-disable-next-line no-await-in-loop -- Event sequence follows stable character order.

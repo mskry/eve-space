@@ -1,4 +1,4 @@
-import type { PlatformModuleErrorBody } from '@eve-space/platform-module-contract'
+import type { PlatformModuleErrorBody } from '@eve-space/platform-module-contract/server'
 import { HTTPException } from 'hono/http-exception'
 
 export const platformModuleErrorStatuses = [400, 403, 404, 409, 422, 429, 502, 503] as const

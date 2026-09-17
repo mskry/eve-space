@@ -1,4 +1,4 @@
-import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-contract'
+import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-contract/server'
 import {
   defineEsiQueryOptions,
   organizationEsiPersistence,

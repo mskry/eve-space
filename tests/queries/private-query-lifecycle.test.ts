@@ -1,5 +1,5 @@
 import { useQueryCache } from '@pinia/colada'
-import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-contract'
+import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-contract/server'
 import { http, HttpResponse } from 'msw'
 import { flushPromises } from '@vue/test-utils'
 import { computed, defineComponent, h, nextTick, ref, watch } from 'vue'

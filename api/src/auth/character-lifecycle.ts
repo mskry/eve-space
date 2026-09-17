@@ -9,6 +9,8 @@ import {
 } from '../organization/compliance.js'
 import { normalizeScopeSet } from '../scopes.js'
 import { findCharacterDetachmentBlocker } from '../organization/character-detachment-guards.js'
+import type { ReviewerUseDisclosure } from '../reviewer-use-disclosure.js'
+import { replaceCharacterReviewerDisclosureAcceptances } from './character-disclosure-store.js'
 import { lockCharacter, setAuthTransactionLockTimeout } from './character-lock.js'
 import { saveCharacterToken } from './character-token-store.js'
 import { encryptTokens } from './security.js'
@@ -71,11 +73,30 @@ export async function saveLogin(
       await createCharacterSubjectLifecycle(transaction, input.characterId)
     } else {
       if (!(await lockUserRow(transaction, userId))) throw new Error('User is missing')
+      if (organizationVersion)
+        await recomputeOrganizationAccountCompliance(
+          {
+            deploymentId: 1,
+            organizationVersion,
+            userId,
+            now: input.affiliationCheckedAt ?? new Date(),
+          },
+          transaction,
+        )
       await updateCharacterIdentity(transaction, input)
     }
 
     const scopes = normalizeScopeSet(input.scopes)
-    await saveCharacterToken(transaction, { characterId: input.characterId, scopes, ...token })
+    const authorizationGeneration = await saveCharacterToken(transaction, {
+      characterId: input.characterId,
+      scopes,
+      ...token,
+    })
+    await replaceCharacterReviewerDisclosureAcceptances(transaction, {
+      characterId: input.characterId,
+      authorizationGeneration,
+      disclosures: input.reviewerUseDisclosures ?? [],
+    })
     if (existingCharacter) {
       await appendScopeChangeEvent(
         transaction,
@@ -129,6 +150,16 @@ export async function attachCharacter(
     if (existingCharacter && existingCharacter.userId !== input.userId)
       throw new CharacterTransferApprovalRequiredError()
 
+    if (organizationVersion)
+      await recomputeOrganizationAccountCompliance(
+        {
+          deploymentId: 1,
+          organizationVersion,
+          userId: input.userId,
+          now: input.affiliationCheckedAt ?? new Date(),
+        },
+        transaction,
+      )
     if (existingCharacter) await updateCharacterIdentity(transaction, input)
     else {
       await transaction.insert(characters).values(characterValues(input, input.userId, false))
@@ -136,7 +167,16 @@ export async function attachCharacter(
     }
 
     const scopes = normalizeScopeSet(input.scopes)
-    await saveCharacterToken(transaction, { characterId: input.characterId, scopes, ...token })
+    const authorizationGeneration = await saveCharacterToken(transaction, {
+      characterId: input.characterId,
+      scopes,
+      ...token,
+    })
+    await replaceCharacterReviewerDisclosureAcceptances(transaction, {
+      characterId: input.characterId,
+      authorizationGeneration,
+      disclosures: input.reviewerUseDisclosures ?? [],
+    })
     if (existingCharacter) {
       await appendScopeChangeEvent(
         transaction,
@@ -198,9 +238,28 @@ export async function reauthorizeCharacter(
       )
 
     if (!ownedCharacter) throw new CharacterOwnershipError()
+    if (organizationVersion)
+      await recomputeOrganizationAccountCompliance(
+        {
+          deploymentId: 1,
+          organizationVersion,
+          userId: input.userId,
+          now: input.affiliationCheckedAt ?? new Date(),
+        },
+        transaction,
+      )
     const affiliationCheckedAt = await updateCharacterIdentity(transaction, input)
     const scopes = normalizeScopeSet(input.scopes)
-    await saveCharacterToken(transaction, { characterId: input.characterId, scopes, ...token })
+    const authorizationGeneration = await saveCharacterToken(transaction, {
+      characterId: input.characterId,
+      scopes,
+      ...token,
+    })
+    await replaceCharacterReviewerDisclosureAcceptances(transaction, {
+      characterId: input.characterId,
+      authorizationGeneration,
+      disclosures: input.reviewerUseDisclosures ?? [],
+    })
     await appendScopeChangeEvent(
       transaction,
       input.userId,
@@ -348,6 +407,7 @@ export interface CharacterAuthorizationInput {
   refreshToken: string
   expiresIn: number
   scopes: string[]
+  reviewerUseDisclosures?: readonly ReviewerUseDisclosure[]
 }
 
 class ReauthorizationCharacterMismatchError extends Error {

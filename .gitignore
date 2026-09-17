@@ -33,6 +33,7 @@ logs
 
 # Local AI and specification tooling
 .claude/
+.codebase-memory/
 .opencode/
 .agents/
 openspec/

@@ -1,4 +1,4 @@
-import type { PlatformResourceSubject } from '@eve-space/platform-module-contract'
+import type { PlatformResourceSubject } from '@eve-space/platform-module-contract/resources'
 
 export function toPlatformResourceSubject(input: {
   subjectKind: 'deployment' | 'character' | 'corporation' | 'alliance'

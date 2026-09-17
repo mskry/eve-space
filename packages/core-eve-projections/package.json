@@ -1,0 +1,56 @@
+{
+  "name": "@eve-space/core-eve-projections",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=24.20.0"
+  },
+  "exports": {
+    "./assets": {
+      "types": "./dist/assets.d.ts",
+      "import": "./dist/assets.js"
+    },
+    "./eve-formatted-text": {
+      "types": "./dist/eve-formatted-text.d.ts",
+      "import": "./dist/eve-formatted-text.js"
+    },
+    "./mail": {
+      "types": "./dist/mail.d.ts",
+      "import": "./dist/mail.js"
+    },
+    "./skill-queue": {
+      "types": "./dist/skill-queue.d.ts",
+      "import": "./dist/skill-queue.js"
+    },
+    "./skill-training": {
+      "types": "./dist/skill-training.d.ts",
+      "import": "./dist/skill-training.js"
+    },
+    "./trained-skills": {
+      "types": "./dist/trained-skills.d.ts",
+      "import": "./dist/trained-skills.js"
+    },
+    "./wallet": {
+      "types": "./dist/wallet.d.ts",
+      "import": "./dist/wallet.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:vitest4",
+    "typescript": "catalog:tsgo",
+    "vitest": "catalog:vitest4"
+  }
+}

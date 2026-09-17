@@ -1863,6 +1863,7 @@ describe('multi-process safety', () => {
           { moduleId: 'alpha', defaultEnabled: true },
           { moduleId: 'beta', defaultEnabled: false },
         ],
+        moduleSectionDefinitions: [],
       })
       await connection`
         update deployment_modules
@@ -1888,6 +1889,7 @@ describe('multi-process safety', () => {
           { moduleId: 'beta', defaultEnabled: true },
           { moduleId: 'delta', defaultEnabled: true },
         ],
+        moduleSectionDefinitions: [],
       })
 
       const modules = await connection<{ module_id: string; enabled: boolean; updated_at: Date }[]>`
@@ -1977,6 +1979,7 @@ describe('multi-process safety', () => {
       ).resolves.toMatchObject({ moduleId: 'beta', enabled: true, defaultEnabled: true })
       await expect(loadModuleRuntimeState(connection, definitions, defaults)).resolves.toEqual({
         enabledModuleIds: ['beta', 'delta'],
+        enabledSections: [],
         shellNavigationOrder: {
           dashboard: [
             { ownerId: 'core', navigationId: 'core-overview' },

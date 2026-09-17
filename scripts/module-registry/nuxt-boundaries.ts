@@ -8,7 +8,17 @@ export interface ModuleNuxtSource {
   readonly source: string
 }
 
-const sourceExtensions = new Set(['.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx', '.vue'])
+const sourceExtensions = new Set([
+  '.cjs',
+  '.cts',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.mts',
+  '.ts',
+  '.tsx',
+  '.vue',
+])
 
 export async function loadFeatureNuxtSources(root: string): Promise<readonly ModuleNuxtSource[]> {
   const modules = await loadInstalledModuleIds(root)

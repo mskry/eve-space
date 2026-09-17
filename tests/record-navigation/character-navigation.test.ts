@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { platformCoreNavigation } from '../../packages/platform-module-contract/src/contract'
+import { platformCoreNavigation } from '@eve-space/platform-module-contract/nuxt'
 import {
   CORE_CHARACTER_DATA_PREFETCH_IDS,
   findActiveCharacterNavigationEntry,

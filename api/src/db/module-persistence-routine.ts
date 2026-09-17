@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import type { PlatformPersistenceOperationMode } from '@eve-space/platform-module-contract'
+import type { PlatformPersistenceOperationMode } from '@eve-space/platform-module-contract/persistence'
 import {
   parsePostgres17Migration,
   type PostgresAstObject,

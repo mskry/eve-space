@@ -1,4 +1,4 @@
-import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-contract'
+import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-contract/server'
 
 export function cacheAdmissionForCharacter(userId: string, characterId: number) {
   return {

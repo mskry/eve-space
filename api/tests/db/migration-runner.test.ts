@@ -17,7 +17,13 @@ describe('core migration manifest', () => {
     expect(migrations.map(({ name }) => name)).toEqual(
       activeCoreMigrationManifest.map(({ name }) => name),
     )
-    expect(migrations.map(({ name }) => name)).toEqual(['001_baseline.sql'])
+    expect(migrations.map(({ name }) => name)).toEqual([
+      '001_baseline.sql',
+      '002_module_sections.sql',
+      '003_reviewer_disclosure_acceptance.sql',
+      '004_managed_member_lifecycles.sql',
+      '005_sensitive_access_audit.sql',
+    ])
   })
 
   test('rejects missing, extra, changed, and non-tail inventory entries', () => {
@@ -40,7 +46,7 @@ describe('core migration manifest', () => {
     expect(() =>
       assertCoreMigrationManifest([
         ...activeCoreMigrationManifest,
-        { name: '002_next.sql', sha256: migrationSha256('select 1;') },
+        { name: '006_next.sql', sha256: migrationSha256('select 1;') },
       ]),
     ).toThrow('match the accepted frozen inventory')
     expect(() =>
@@ -48,7 +54,7 @@ describe('core migration manifest', () => {
         ...activeCoreMigrationManifest,
         { name: '001_reused.sql', sha256: migrationSha256('select 1;') },
       ]),
-    ).toThrow('append a unique sequence after 1')
+    ).toThrow('append a unique sequence after 5')
   })
 })
 

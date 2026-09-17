@@ -5,6 +5,7 @@ import {
   canRunPlatformProtectedQuery,
   clearAuthenticatedQueriesAfterSessionTransition,
   removePlatformModuleQueries,
+  removePlatformModuleSectionQueries,
   removePlatformQuery,
   removePlatformQueryScope,
 } from '../src/runtime/query-lifecycle.js'
@@ -126,6 +127,35 @@ describe('platform module runtime surface', () => {
     expect(queryCache.cancel).toHaveBeenCalledOnce()
     expect(queryCache.remove).toHaveBeenCalledWith(activityEntry)
     expect(queryCache.remove).not.toHaveBeenCalledWith(otherEntry)
+  })
+
+  it('cancels and removes account queries for only the disabled module section', () => {
+    const skillsEntry = queryEntry(
+      platformModuleQueryKey('member-audit', { kind: 'account' }, ['summary'], 'skills'),
+    )
+    const assetsEntry = queryEntry(
+      platformModuleQueryKey('member-audit', { kind: 'account' }, ['summary'], 'assets'),
+    )
+    const unrelatedEntry = queryEntry(
+      platformModuleQueryKey('member-audit', { kind: 'character', characterId: 7 }, [
+        'account',
+        'sections',
+        'skills',
+      ]),
+    )
+    const queryCache = {
+      getEntries: vi.fn(() => [skillsEntry, assetsEntry, unrelatedEntry]),
+      cancel: vi.fn(),
+      remove: vi.fn(),
+    } as unknown as QueryCache
+
+    removePlatformModuleSectionQueries(queryCache, 'member-audit', 'skills')
+
+    expect(queryCache.cancel).toHaveBeenCalledOnce()
+    expect(queryCache.cancel).toHaveBeenCalledWith(skillsEntry, expect.any(Error))
+    expect(queryCache.remove).toHaveBeenCalledWith(skillsEntry)
+    expect(queryCache.remove).not.toHaveBeenCalledWith(assetsEntry)
+    expect(queryCache.remove).not.toHaveBeenCalledWith(unrelatedEntry)
   })
 
   it('retains a settled anonymous session while clearing private descendants', () => {

@@ -57,6 +57,16 @@ describe('organization module boundaries', () => {
     ])
   })
 
+  it('keeps the sensitive access recorder as an observability leaf', () => {
+    expect(
+      organizationImportViolations([
+        source('sensitive-access-audit', "import './reviewer-commands.js'"),
+      ]),
+    ).toEqual([
+      'api/src/organization/sensitive-access-audit.ts: observability module sensitive-access-audit cannot import application module reviewer-commands',
+    ])
+  })
+
   it.each(['postgres', 'drizzle-orm', 'node:fs'])(
     'rejects pure policy importing runtime package %s',
     (specifier) => {

@@ -1,6 +1,6 @@
 import { dirname, resolve } from 'node:path'
 import { resolvePath } from '@nuxt/kit'
-import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract/nuxt'
 import type { ResolvedContributionPage } from './pages.js'
 import { resolveFeaturePage } from './page-resolution.js'
 

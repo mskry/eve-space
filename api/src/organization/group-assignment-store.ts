@@ -45,6 +45,28 @@ export async function loadUnrevokedGroupAssignmentForUpdate(
   return assignment
 }
 
+export async function loadUnrevokedGroupAssignmentByIdForUpdate(
+  transaction: DatabaseTransaction,
+  organizationVersion: number,
+  groupId: string,
+  assignmentId: string,
+) {
+  const [assignment] = await transaction
+    .select()
+    .from(organizationGroupAssignments)
+    .where(
+      and(
+        eq(organizationGroupAssignments.assignmentId, assignmentId),
+        eq(organizationGroupAssignments.groupId, groupId),
+        eq(organizationGroupAssignments.deploymentId, 1),
+        eq(organizationGroupAssignments.organizationVersion, organizationVersion),
+        isNull(organizationGroupAssignments.revokedAt),
+      ),
+    )
+    .for('update')
+  return assignment
+}
+
 export async function revokeGroupAssignmentRecord(
   transaction: DatabaseTransaction,
   assignmentId: string,

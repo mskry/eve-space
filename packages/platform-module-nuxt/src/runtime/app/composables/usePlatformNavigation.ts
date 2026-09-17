@@ -1,16 +1,17 @@
 import { computed } from '#imports'
-import type { PlatformNavigationPlacement } from '@eve-space/platform-module-contract'
+import type { PlatformNavigationPlacement } from '@eve-space/platform-module-contract/nuxt'
 import { platformNavigation } from '#build/eve-space-platform/navigation'
 import { usePlatformModuleRuntime } from './usePlatformModuleRuntime.js'
 import type { PlatformNavigationEntry, PlatformNavigationIdentity } from '../../navigation.js'
 
 export function usePlatformNavigation(placement: PlatformNavigationPlacement) {
-  const { enabledModuleIds, runtimeQuery } = usePlatformModuleRuntime()
+  const { enabledModuleIds, enabledSectionKeys, runtimeQuery } = usePlatformModuleRuntime()
   const navigation = computed(() => {
     const entries = platformNavigation.filter(
       (entry) =>
         entry.placement === placement &&
-        (entry.ownerId === 'core' || enabledModuleIds.value.has(entry.ownerId)),
+        (entry.ownerId === 'core' || enabledModuleIds.value.has(entry.ownerId)) &&
+        (!entry.sectionId || enabledSectionKeys.value.has(`${entry.ownerId}/${entry.sectionId}`)),
     )
     const order: readonly PlatformNavigationIdentity[] | undefined =
       runtimeQuery.data.value?.shellNavigationOrder[placement]

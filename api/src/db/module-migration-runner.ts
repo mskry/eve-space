@@ -1,12 +1,9 @@
 import { readFile } from 'node:fs/promises'
 import {
-  compareStable,
-  isReservedPlatformModuleId,
-  platformMigrationFilenamePattern,
-  platformModuleIdMaxLength,
-  platformModuleIdPattern,
-  type PlatformInstalledModuleMigrationDescriptor,
-} from '@eve-space/platform-module-contract'
+  isPlatformMigrationFilename,
+  isPlatformModuleId,
+} from '@eve-space/platform-module-contract/identifiers'
+import type { PlatformInstalledModuleMigrationDescriptor } from '@eve-space/platform-module-contract/installed'
 import type postgres from 'postgres'
 import {
   assertDistinctModuleMigrationLockKeys,
@@ -299,7 +296,7 @@ function validateDescriptors(
   const identities = new Set<string>()
   for (const { moduleId, name } of descriptors) {
     validateModuleId(moduleId)
-    if (!name.startsWith(`${moduleId}-`) || !platformMigrationFilenamePattern.test(name))
+    if (!name.startsWith(`${moduleId}-`) || !isPlatformMigrationFilename(name))
       throw new Error(`Migration ${moduleId}/${name} must use package-local ${moduleId}-*.sql`)
 
     const identity = `${moduleId}/${name}`
@@ -331,10 +328,12 @@ function validatePersistenceOperations(
 }
 
 function validateModuleId(moduleId: string) {
-  if (
-    !platformModuleIdPattern.test(moduleId) ||
-    moduleId.length > platformModuleIdMaxLength ||
-    isReservedPlatformModuleId(moduleId)
-  )
+  if (!isPlatformModuleId(moduleId))
     throw new Error(`Invalid installed module migration owner ${moduleId}`)
+}
+
+function compareStable(left: string, right: string) {
+  if (left < right) return -1
+  if (left > right) return 1
+  return 0
 }

@@ -19,11 +19,13 @@ const manifests = await loadInstalledModuleManifests(root)
 const formatOptions: FormatConfig = JSON.parse(readFileSync(resolve(root, '.oxfmtrc.json'), 'utf8'))
 const files = new Map(
   await Promise.all(
-    [...generateRegistryFiles(manifests)].map(async ([path, source]) => {
-      const result = await format(path, source, formatOptions)
-      if (result.errors.length) throw new Error(`Could not format generated registry ${path}`)
-      return [path, result.code] as const
-    }),
+    [...generateRegistryFiles(manifests.compiled, manifests.persistenceRoutines)].map(
+      async ([path, source]) => {
+        const result = await format(path, source, formatOptions)
+        if (result.errors.length) throw new Error(`Could not format generated registry ${path}`)
+        return [path, result.code] as const
+      },
+    ),
   ),
 )
 

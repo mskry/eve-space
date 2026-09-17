@@ -7,8 +7,12 @@ import {
   organizationAuditEventTypes,
   organizationAuditOutcomes,
   organizationAuditSubjectTypes,
+  organizationSensitiveAccessReasons,
+  organizationSensitiveAccessSections,
   type OrganizationAuditEventRow,
 } from '../db/schema.js'
+
+export const organizationAuditReasonSchema = safeAuditText(2000)
 
 export const organizationAuditInputSchema = z
   .object({
@@ -20,11 +24,14 @@ export const organizationAuditInputSchema = z
     actorId: z.uuid().nullable(),
     subjectType: z.enum(organizationAuditSubjectTypes),
     subjectId: safeAuditText(255),
-    reason: safeAuditText(2000),
+    reason: organizationAuditReasonSchema,
     outcome: z.enum(organizationAuditOutcomes),
     groupId: z.uuid().nullable().optional(),
     assignmentId: z.uuid().nullable().optional(),
     targetUserId: z.uuid().nullable().optional(),
+    sectionId: z.enum(organizationSensitiveAccessSections).nullable().optional(),
+    targetCharacterId: z.number().int().positive().nullable().optional(),
+    disclosureVersion: z.number().int().positive().nullable().optional(),
     assignmentSource: z.enum(['manual', 'compliance']).nullable().optional(),
     complianceSource: safeAuditText(200).nullable().optional(),
     entitlementExpiresAt: z.date().nullable().optional(),
@@ -60,21 +67,35 @@ export const organizationAuditInputSchema = z
         path: ['complianceSource'],
         message: 'Manual assignment has no compliance source',
       })
+    const sensitiveAccessEvent = event.eventType === 'sensitive-access.decided'
     if (
+      groupAssignmentEvent &&
+      hasValue(event.sectionId, event.targetCharacterId, event.disclosureVersion)
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['sectionId'],
+        message: 'Sensitive access context is not allowed for group events',
+      })
+    if (sensitiveAccessEvent) validateSensitiveAccessEvent(event, context)
+    else if (
       !groupAssignmentEvent &&
-      [
+      hasValue(
         event.groupId,
         event.assignmentId,
         event.targetUserId,
         event.assignmentSource,
         event.complianceSource,
         event.entitlementExpiresAt,
-      ].some((value) => value !== undefined && value !== null)
+        event.sectionId,
+        event.targetCharacterId,
+        event.disclosureVersion,
+      )
     )
       context.addIssue({
         code: 'custom',
-        path: ['groupId'],
-        message: 'Group assignment context is not allowed for this event',
+        path: ['eventType'],
+        message: 'Event-specific audit context is not allowed for this event',
       })
   })
 
@@ -90,11 +111,14 @@ const organizationAuditEventSchema = z
     actorId: z.uuid().nullable(),
     subjectType: z.enum(organizationAuditSubjectTypes),
     subjectId: safeAuditText(255),
-    reason: safeAuditText(2000),
+    reason: organizationAuditReasonSchema,
     outcome: z.enum(organizationAuditOutcomes),
     groupId: z.uuid().nullable(),
     assignmentId: z.uuid().nullable(),
     targetUserId: z.uuid().nullable(),
+    sectionId: z.enum(organizationSensitiveAccessSections).nullable(),
+    targetCharacterId: z.number().int().positive().nullable(),
+    disclosureVersion: z.number().int().positive().nullable(),
     assignmentSource: z.enum(['manual', 'compliance']).nullable(),
     complianceSource: safeAuditText(200).nullable(),
     entitlementExpiresAt: z.date().nullable(),
@@ -104,6 +128,51 @@ const organizationAuditEventSchema = z
   .strict()
 
 export type OrganizationAuditInput = z.input<typeof organizationAuditInputSchema>
+
+function validateSensitiveAccessEvent(
+  event: z.infer<typeof organizationAuditInputSchema>,
+  context: z.RefinementCtx,
+) {
+  const accessContextInvalid =
+    event.actorType !== 'user' ||
+    !event.sectionId ||
+    !event.disclosureVersion ||
+    hasValue(
+      event.groupId,
+      event.assignmentId,
+      event.assignmentSource,
+      event.complianceSource,
+      event.entitlementExpiresAt,
+      event.causationAuditId,
+    ) ||
+    (event.targetCharacterId !== null &&
+      event.targetCharacterId !== undefined &&
+      !event.targetUserId)
+  const targetMatches = event.targetUserId
+    ? event.subjectType === 'user' && event.subjectId === event.targetUserId
+    : event.subjectType === 'deployment' && event.subjectId === '1' && !event.targetCharacterId
+  const decisionMatches =
+    (event.outcome === 'granted' &&
+      event.reason === 'authorized' &&
+      event.targetUserId !== null &&
+      event.targetUserId !== undefined) ||
+    (event.outcome === 'denied' &&
+      event.reason !== 'authorized' &&
+      (organizationSensitiveAccessReasons as readonly string[]).includes(event.reason))
+  const retainsUnauthorizedTarget =
+    event.reason === 'target-not-authorized' &&
+    (event.targetUserId !== null || event.targetCharacterId !== null)
+  if (accessContextInvalid || !targetMatches || !decisionMatches || retainsUnauthorizedTarget)
+    context.addIssue({
+      code: 'custom',
+      path: ['eventType'],
+      message: 'Sensitive access audit context is invalid',
+    })
+}
+
+function hasValue(...values: unknown[]) {
+  return values.some((value) => value !== undefined && value !== null)
+}
 
 export async function appendOrganizationAuditEvent(
   transaction: DatabaseTransaction,

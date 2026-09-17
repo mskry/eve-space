@@ -2,6 +2,7 @@
 // drizzle.config.ts resolves the schema graph through this file.
 
 export * from './schema/deployment.js'
+export * from './schema/authorization-disclosures.js'
 export * from './schema/character-transfer-approvals.js'
 export * from './schema/character-transfer-previews.js'
 export * from './schema/events.js'

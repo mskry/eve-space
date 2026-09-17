@@ -1,5 +1,5 @@
 import type { CoreDataProductId } from '@eve-space/core-data-contract'
-import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import { createCoreDataCapability } from '../core-data/capabilities.js'
 import { createPlatformModuleLogger } from './module-logging.js'
 import {
@@ -28,6 +28,15 @@ export function createPlatformResourceReadCapabilities<
     coreData: createCoreDataCapability(productIds, 'resource-projection'),
     logger: createPlatformModuleLogger(moduleId),
     persistence: createPlatformResourceProjectionPersistence(moduleId, resource.resourceId, signal),
+  }
+}
+
+export function createPlatformResourceMappingCapabilities<
+  const Resource extends PlatformInstalledResourceDescriptor,
+>(resource: Resource) {
+  const productIds = (resource.coreDataProducts ?? []) as ResourceProductIds<Resource>
+  return {
+    coreData: createCoreDataCapability(productIds, 'resource-projection'),
   }
 }
 

@@ -3,11 +3,12 @@ import type {
   PlatformCharacterResourceSubject,
   PlatformInstalledResourceDescriptor,
   PlatformResourceOperationImplementation,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/resources'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import type { StableOperationId } from '@evespace/esi-client/operations'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { PlatformEsiRequestError } from '../../src/esi-gateway/platform-execution.js'
+import { getPlatformEsiOperationDefinition } from '../../src/esi-gateway/catalog-interface.js'
 
 const mocks = vi.hoisted(() => ({
   getCharacterAuthorizationForLifecycle: vi.fn(),
@@ -104,14 +105,71 @@ describe('installed resource operation policy', () => {
         generation: 4,
       },
     })
-    expect(implementation.map).toHaveBeenCalledWith({
-      subject: {
-        kind: 'character',
-        characterId: 1404328063,
-        lifecycleId: identity.subjectLifecycleId,
-      },
-      data: '123.45',
+    expect(implementation.map).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subject: {
+          kind: 'character',
+          characterId: 1404328063,
+          lifecycleId: identity.subjectLifecycleId,
+        },
+        data: '123.45',
+        capabilities: { coreData: {} },
+      }),
+    )
+  })
+
+  test('awaits mapping with only declared core-data capabilities', async () => {
+    const publishedTypeGroups = vi.fn().mockResolvedValue({ rows: [], complete: true })
+    const map = vi.fn(async ({ data, capabilities }) => {
+      await capabilities.coreData.publishedTypeGroups({ typeIds: [34] })
+      return Number(data)
     })
+    const mappedResource = {
+      ...resource,
+      coreDataProducts: ['published-type-groups'] as const,
+      implementation: { ...implementation, map },
+    }
+    const guardExecution = vi.fn().mockResolvedValue({
+      outcome: 'ready',
+      resource: mappedResource,
+      characterId: 1404328063,
+      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
+    })
+    const createMappingCapabilities = vi.fn().mockReturnValue({
+      coreData: { publishedTypeGroups },
+    })
+
+    await expect(
+      executeInstalledResourceOperation(identity, {
+        resources: [mappedResource],
+        guardExecution,
+        createMappingCapabilities,
+        executeEsiOperation: vi.fn().mockResolvedValue(platformExecution('123.45', 4)),
+      }),
+    ).resolves.toMatchObject({ result: { data: 123.45 } })
+    expect(createMappingCapabilities).toHaveBeenCalledWith(mappedResource)
+    expect(map.mock.calls[0]![0].capabilities).toEqual({
+      coreData: { publishedTypeGroups },
+    })
+  })
+
+  test('sanitizes asynchronous mapping rejection as a mapping failure', async () => {
+    const map = vi.fn().mockRejectedValue(new Error('published product timed out with SQL detail'))
+    const mappedResource = { ...resource, implementation: { ...implementation, map } }
+    const guardExecution = vi.fn().mockResolvedValue({
+      outcome: 'ready',
+      resource: mappedResource,
+      characterId: 1404328063,
+      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
+    })
+
+    await expect(
+      executeInstalledResourceOperation(identity, {
+        resources: [mappedResource],
+        guardExecution,
+        executeEsiOperation: vi.fn().mockResolvedValue(platformExecution('123.45', 4)),
+      }),
+    ).rejects.toThrow('Platform resource mapping failed')
   })
 
   test('does not resolve lifecycle token material for a fresh cached result', async () => {
@@ -186,6 +244,25 @@ describe('installed resource operation policy', () => {
     expect(() => assertInstalledResourceDeclarations([resource], definitions)).not.toThrow()
     expect(() =>
       assertInstalledResourceDeclarations(
+        [{ ...resource, dependentOperationIds: ['universe-resolve-names'] }],
+        definitions,
+      ),
+    ).not.toThrow()
+    expect(() =>
+      assertInstalledResourceDeclarations(
+        [
+          {
+            ...resource,
+            operationId: 'universe-resolve-names',
+            dependentOperationIds: ['wallet-balance'],
+            implementation: { ...implementation, operation: 'universe-resolve-names' },
+          },
+        ],
+        definitions,
+      ),
+    ).toThrow('authorization contract')
+    expect(() =>
+      assertInstalledResourceDeclarations(
         [{ ...resource, operationId: 'unregistered-module-operation' }],
         definitions,
       ),
@@ -209,14 +286,43 @@ describe('installed resource operation policy', () => {
         definitions,
       ),
     ).toThrow('implements wallet-transactions instead of wallet-balance')
+
+    expect(() => assertInstalledResourceDeclarations([resource])).not.toThrow()
+    expect(() =>
+      assertInstalledResourceDeclarations(
+        [
+          {
+            ...resource,
+            subjectKind: 'deployment',
+          } as unknown as PlatformInstalledResourceDescriptor,
+        ],
+        definitions,
+      ),
+    ).toThrow('Deployment resources require public operations')
+    expect(() => assertInstalledResourceDeclarations([resource], {})).toThrow(
+      'ESI operation wallet-balance has no executable definition',
+    )
+
+    const scopedDefinitions = Object.fromEntries(
+      ['wallet-balance', 'skill-queue'].map((operationId) => [
+        operationId,
+        getPlatformEsiOperationDefinition(operationId),
+      ]),
+    )
+    expect(() =>
+      assertInstalledResourceDeclarations(
+        [{ ...resource, dependentOperationIds: ['skill-queue'] }],
+        scopedDefinitions,
+      ),
+    ).toThrow('authorization contract')
   })
 
   test('executes bounded dependent requests with the same lifecycle authorization', async () => {
     const collect = vi.fn(
       async (
-        context: import('@eve-space/platform-module-contract').PlatformResourceCollectionContext<PlatformCharacterResourceSubject>,
+        context: import('@eve-space/platform-module-contract/resources').PlatformResourceCollectionContext<PlatformCharacterResourceSubject>,
       ): Promise<
-        import('@eve-space/platform-module-contract').PlatformResourceCollectionResult<unknown>
+        import('@eve-space/platform-module-contract/resources').PlatformResourceCollectionResult<unknown>
       > => ({
         complete: false,
         data: await context.execute('wallet-balance', { characterId: 1404328063 }),
@@ -291,6 +397,86 @@ describe('installed resource operation policy', () => {
     )
   })
 
+  test('executes declared public enrichment without forwarding character authority', async () => {
+    const collect = vi.fn(async (context) => ({
+      complete: true,
+      data: await context.execute('universe-resolve-names', { body: [1404328063] }),
+    }))
+    const collectingResource = {
+      ...resource,
+      dependentOperationIds: ['universe-resolve-names'],
+      implementation: { ...implementation, collect },
+    }
+    const guardExecution = vi.fn().mockResolvedValue({
+      outcome: 'ready',
+      resource: collectingResource,
+      characterId: 1404328063,
+      authorization: { tokenVersion: 4 },
+    })
+    const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution([], null))
+
+    await expect(
+      executeInstalledResourceOperation(identity, {
+        resources: [collectingResource],
+        guardExecution,
+        executeEsiOperation,
+        loadCollectionContext: vi
+          .fn()
+          .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
+        createCapabilities: vi.fn().mockReturnValue({}),
+      }),
+    ).resolves.toMatchObject({ authorizationGeneration: 4, complete: true })
+    expect(executeEsiOperation).toHaveBeenCalledWith({
+      operation: 'universe-resolve-names',
+      inputs: { body: [1404328063] },
+      authorization: { kind: 'public' },
+    })
+  })
+
+  test('accepts asset and mail enrichment only as declared collection operations', () => {
+    const operationIds = [
+      'character-assets-page',
+      'character-asset-names',
+      'mail-headers',
+      'mail-message',
+      'mail-lists',
+      'universe-resolve-names',
+    ] as const
+    const definitions = Object.fromEntries(
+      operationIds.map((operationId) => [
+        operationId,
+        getPlatformEsiOperationDefinition(operationId),
+      ]),
+    )
+    const assetResource = {
+      ...resource,
+      resourceId: 'assets',
+      operationId: 'character-assets-page',
+      dependentOperationIds: ['character-asset-names', 'universe-resolve-names'],
+      implementation: { ...implementation, operation: 'character-assets-page' },
+    } as const satisfies PlatformInstalledResourceDescriptor<PlatformResourceOperationImplementation>
+    const mailResource = {
+      ...resource,
+      resourceId: 'mail',
+      operationId: 'mail-headers',
+      dependentOperationIds: ['mail-message', 'mail-lists', 'universe-resolve-names'],
+      implementation: { ...implementation, operation: 'mail-headers' },
+    } as const satisfies PlatformInstalledResourceDescriptor<PlatformResourceOperationImplementation>
+
+    expect(() =>
+      assertInstalledResourceDeclarations([assetResource, mailResource], definitions),
+    ).not.toThrow()
+    expect(assetResource.dependentOperationIds).toEqual([
+      'character-asset-names',
+      'universe-resolve-names',
+    ])
+    expect(mailResource.dependentOperationIds).toEqual([
+      'mail-message',
+      'mail-lists',
+      'universe-resolve-names',
+    ])
+  })
+
   test('requires batch descriptors and implementations to match a public set operation', () => {
     const definitions = {
       'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet'),
@@ -348,6 +534,54 @@ describe('installed resource operation policy', () => {
         definitions,
       ),
     ).toThrow('must declare matching batch descriptor and implementation')
+    expect(() =>
+      assertInstalledResourceDeclarations(
+        [{ ...resource, implementation: batchImplementation }],
+        definitions,
+      ),
+    ).toThrow('must declare matching batch descriptor and implementation')
+    expect(() =>
+      assertInstalledResourceDeclarations(
+        [
+          {
+            ...batchResource,
+            implementation: {
+              ...batchImplementation,
+              batch: { ...batchImplementation.batch, request: undefined },
+            },
+          } as unknown as PlatformInstalledResourceDescriptor,
+        ],
+        definitions,
+      ),
+    ).toThrow('must provide request and classify functions')
+    expect(() =>
+      assertInstalledResourceDeclarations(
+        [
+          {
+            ...batchResource,
+            implementation: {
+              ...batchImplementation,
+              batch: { ...batchImplementation.batch, classify: undefined },
+            },
+          } as unknown as PlatformInstalledResourceDescriptor,
+        ],
+        definitions,
+      ),
+    ).toThrow('must provide request and classify functions')
+    expect(() =>
+      assertInstalledResourceDeclarations(
+        [
+          {
+            ...batchResource,
+            implementation: {
+              ...batchImplementation,
+              batch: { ...batchImplementation.batch, operation: 'public-character' },
+            },
+          },
+        ],
+        definitions,
+      ),
+    ).toThrow('implements batch operation public-character instead of universe-resolve-names')
   })
 })
 
@@ -391,7 +625,7 @@ function cached(data: unknown) {
 
 function platformExecution(
   data: unknown,
-  authorizationGeneration: number,
+  authorizationGeneration: number | null,
   source: 'esi' | 'cache' = 'esi',
 ) {
   return {

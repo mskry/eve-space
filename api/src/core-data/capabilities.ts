@@ -14,8 +14,16 @@ export function createCoreDataCapability<const ProductIds extends readonly CoreD
   assertCoreDataProductDeclarations(productIds, context)
   const methods: Partial<CoreDataMethods> = {}
   for (const productId of productIds) {
-    const definition = getCoreDataProductDefinition(productId)
-    if (productId === 'published-type-groups') methods.publishedTypeGroups = definition.adapter
+    if (productId === 'published-type-groups')
+      methods.publishedTypeGroups = getCoreDataProductDefinition('published-type-groups').adapter
+    if (productId === 'published-skill-catalogue')
+      methods.publishedSkillCatalogue = getCoreDataProductDefinition(
+        'published-skill-catalogue',
+      ).adapter
+    if (productId === 'published-type-details')
+      methods.publishedTypeDetails = getCoreDataProductDefinition('published-type-details').adapter
+    if (productId === 'static-location-labels')
+      methods.staticLocationLabels = getCoreDataProductDefinition('static-location-labels').adapter
   }
   return methods as CoreDataMethodsFor<ProductIds>
 }

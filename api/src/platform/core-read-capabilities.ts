@@ -1,7 +1,7 @@
 import type {
   OwnedCharacterCoreReads,
   PlatformOwnedCharacterRouteContext,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/server'
 import { and, eq } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { characters, platformSubjectLifecycles } from '../db/schema.js'

@@ -1,12 +1,12 @@
+import type { PlatformActivityProviderCapabilities } from '@eve-space/platform-module-contract/activity'
 import type {
-  PlatformActivityProviderCapabilities,
   PlatformModuleResourceMaterializationCapabilities,
-  PlatformModuleRouteCapabilities,
   PlatformResourceImplementationForProducts,
   PlatformResourceOperationImplementation,
   PlatformResourceCollectionContext,
   PlatformCharacterResourceSubject,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/resources'
+import type { PlatformModuleRouteCapabilities } from '@eve-space/platform-module-contract/server'
 
 interface RoutePersistence {
   readSnapshot(): Promise<unknown>
@@ -18,7 +18,7 @@ declare const routeWithProduct: PlatformModuleRouteCapabilities<
 >
 declare const routeWithoutProducts: PlatformModuleRouteCapabilities<RoutePersistence>
 declare const resourceWithProduct: PlatformResourceCollectionContext<
-  import('@eve-space/platform-module-contract').PlatformCharacterResourceSubject,
+  import('@eve-space/platform-module-contract/resources').PlatformCharacterResourceSubject,
   readonly ['published-type-groups']
 >
 declare const providerWithoutProducts: PlatformActivityProviderCapabilities<RoutePersistence>

@@ -1,5 +1,12 @@
+import {
+  projectAsset,
+  projectAssetSnapshot,
+  type AssetLocationProjection,
+  type AssetSnapshot,
+  type AssetTypeProjection,
+  type ProjectedAsset,
+} from '@eve-space/core-eve-projections/assets'
 import { operationRegistry } from '@evespace/esi-client/operations'
-import type { GetCharactersCharacterIdAssetsResponse } from '@evespace/esi-client/types'
 import { eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db/client.js'
@@ -21,21 +28,8 @@ const maximumCharacterAssetPages = 1_000
 const characterAssetNameBatchSize = 1_000
 const characterAssetWorkerConcurrency = 4
 
-type AssetLocationType = 'station' | 'solar_system' | 'item' | 'other'
 type EnrichmentStatus = 'complete' | 'partial' | 'unavailable'
-type EsiAsset = GetCharactersCharacterIdAssetsResponse[number]
-
-interface CharacterAssetSnapshot {
-  itemId: number
-  typeId: number
-  quantity: number
-  isSingleton: boolean
-  isBlueprintCopy: boolean | null
-  locationId: number
-  locationType: AssetLocationType
-  locationFlag: string
-  parentItemId: number | null
-}
+type CharacterAssetSnapshot = AssetSnapshot
 
 interface CharacterAssetPageSnapshot {
   page: number
@@ -43,20 +37,9 @@ interface CharacterAssetPageSnapshot {
   assets: CharacterAssetSnapshot[]
 }
 
-interface CharacterAssetTypeData {
-  typeName: string
-  groupId: number | null
-  groupName: string | null
-  categoryId: number | null
-  categoryName: string | null
-  unitVolume: number | null
-}
+type CharacterAssetTypeData = AssetTypeProjection
 
-interface CharacterAssetLocationData {
-  name: string | null
-  solarSystemId: number | null
-  solarSystemSecurityStatus: number | null
-}
+type CharacterAssetLocationData = AssetLocationProjection
 
 interface CharacterAssetNameSnapshot {
   itemId: number
@@ -99,7 +82,7 @@ const characterAssetsPageRead = createCharacterEsiRead({
   map: (response, input): CharacterAssetPageSnapshot => ({
     page: input.page,
     totalPages: validatePageCount(response.meta.pagination?.pages),
-    assets: response.data.map(mapAssetSnapshot),
+    assets: response.data.map(projectAssetSnapshot),
   }),
 })
 
@@ -119,13 +102,7 @@ const characterAssetNamesRead = createCharacterEsiRead({
 
 export const characterAssetsScope = characterAssetsPageRead.requiredScope
 
-interface CharacterAssetDto extends CharacterAssetSnapshot, CharacterAssetTypeData {
-  totalVolume: number | null
-  customName: string | null
-  locationName: string | null
-  solarSystemId: number | null
-  solarSystemSecurityStatus: number | null
-}
+type CharacterAssetDto = ProjectedAsset
 
 interface CharacterAssetsResult extends EsiReadResultMetadata {
   characterId: number
@@ -176,17 +153,14 @@ export async function getCharacterAssets(
       : undefined
   const enrichedAssets: CharacterAssetDto[] = []
   for (const asset of assets) {
-    const type = types.values.get(asset.typeId) ?? unknownType(asset.typeId)
-    const location = locations.values.get(asset.locationId)
-    enrichedAssets.push({
-      ...asset,
-      ...type,
-      totalVolume: totalVolume(type.unitVolume, asset.quantity),
-      customName: names.values.get(asset.itemId) ?? null,
-      locationName: location?.name ?? null,
-      solarSystemId: location?.solarSystemId ?? null,
-      solarSystemSecurityStatus: location?.solarSystemSecurityStatus ?? null,
-    })
+    enrichedAssets.push(
+      projectAsset(
+        asset,
+        types.values.get(asset.typeId),
+        names.values.get(asset.itemId),
+        locations.values.get(asset.locationId),
+      ),
+    )
   }
 
   return {
@@ -214,20 +188,6 @@ function validatePageCount(value: unknown) {
   if (!isPositiveSafeInteger(value) || Number(value) > maximumCharacterAssetPages)
     throw new CharacterAssetsPaginationError()
   return Number(value)
-}
-
-function mapAssetSnapshot(asset: EsiAsset): CharacterAssetSnapshot {
-  return {
-    itemId: asset.item_id,
-    typeId: asset.type_id,
-    quantity: asset.quantity,
-    isSingleton: asset.is_singleton,
-    isBlueprintCopy: asset.is_blueprint_copy ?? null,
-    locationId: asset.location_id,
-    locationType: asset.location_type,
-    locationFlag: asset.location_flag,
-    parentItemId: asset.location_type === 'item' ? asset.location_id : null,
-  }
 }
 
 function deduplicateAssets(pages: readonly EsiReadResult<CharacterAssetPageSnapshot>[]) {
@@ -424,23 +384,6 @@ function enrichmentStatus(complete: boolean, partial: boolean): EnrichmentStatus
   if (complete) return 'complete'
   if (partial) return 'partial'
   return 'unavailable'
-}
-
-function unknownType(typeId: number): CharacterAssetTypeData {
-  return {
-    typeName: `Unknown type ${typeId}`,
-    groupId: null,
-    groupName: null,
-    categoryId: null,
-    categoryName: null,
-    unitVolume: null,
-  }
-}
-
-function totalVolume(unitVolume: number | null, quantity: number) {
-  if (unitVolume === null || !Number.isFinite(quantity) || quantity <= 0) return null
-  const total = unitVolume * quantity
-  return Number.isFinite(total) ? total : null
 }
 
 async function mapBounded<Item, Result>(

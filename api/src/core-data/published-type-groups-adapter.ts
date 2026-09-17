@@ -2,19 +2,19 @@ import type {
   PublishedTypeGroup,
   PublishedTypeGroupsRequest,
   PublishedTypeGroupsResult,
-  SdeProjectionRevision,
 } from '@eve-space/core-data-contract'
 import type postgres from 'postgres'
 import { sql } from '../db/client.js'
 import { executeUniverseQuery, runBoundedReadTransaction } from '../universe/database-read.js'
+import {
+  boundedPositiveIds,
+  CoreDataProductUnavailableError,
+  nonemptyString,
+  positiveSafeInteger,
+  selectCoreDataRevision,
+} from './sde-product-adapter.js'
 
 const maximumTypeIds = 500
-
-interface RevisionRow extends postgres.Row {
-  build_number: string
-  ingest_version: number
-  ingested_at: string
-}
 
 interface PublishedTypeGroupRow extends postgres.Row {
   type_id: string
@@ -23,27 +23,16 @@ interface PublishedTypeGroupRow extends postgres.Row {
   group_name: string
 }
 
-class CoreDataProductUnavailableError extends Error {
-  constructor(message = 'Core data product is unavailable') {
-    super(message)
-    this.name = 'CoreDataProductUnavailableError'
-  }
-}
-
 export function loadPublishedTypeGroupsProduct(
   request: PublishedTypeGroupsRequest,
   database: postgres.Sql = sql,
 ): Promise<PublishedTypeGroupsResult> {
-  const typeIds = request?.typeIds
-  if (!Array.isArray(typeIds))
-    throw new TypeError('Published type-group request must contain a typeIds array')
-  if (typeIds.length > maximumTypeIds)
-    throw new RangeError(`Published type-group lookup cannot exceed ${maximumTypeIds} IDs`)
-  for (const index of typeIds.keys())
-    if (!isPositiveSafeInteger(typeIds[index]))
-      throw new TypeError('Published type-group IDs must be positive safe integers')
-
-  const uniqueTypeIds = [...new Set(typeIds)]
+  const uniqueTypeIds = boundedPositiveIds(
+    request,
+    'typeIds',
+    'Published type-group',
+    maximumTypeIds,
+  )
   return runBoundedReadTransaction(
     database,
     'ISOLATION LEVEL REPEATABLE READ READ ONLY',
@@ -55,7 +44,7 @@ export function loadPublishedTypeGroupsProduct(
         `,
         signal,
       )
-      const revision = await selectLatestRevision(transaction, signal)
+      const revision = await selectCoreDataRevision(transaction, signal)
       const rows =
         uniqueTypeIds.length === 0
           ? []
@@ -63,30 +52,6 @@ export function loadPublishedTypeGroupsProduct(
       return { rows, revision, complete: true }
     },
   )
-}
-
-async function selectLatestRevision(
-  transaction: postgres.TransactionSql,
-  signal: AbortSignal,
-): Promise<SdeProjectionRevision> {
-  const [row] = await executeUniverseQuery(
-    transaction<RevisionRow[]>`
-      select
-        builds.build_number::text as build_number,
-        builds.ingest_version,
-        builds.ingested_at::text as ingested_at
-      from sde_projection_state as state
-      inner join sde_builds as builds on builds.build_number = state.active_build_number
-      where state.singleton = true
-    `,
-    signal,
-  )
-  if (!row) throw new CoreDataProductUnavailableError('Committed SDE revision is missing')
-  return {
-    buildNumber: positiveSafeInteger(row.build_number, 'build number'),
-    ingestVersion: positiveSafeInteger(row.ingest_version, 'ingest version'),
-    ingestedAt: nonemptyString(row.ingested_at, 'ingestion timestamp'),
-  }
 }
 
 async function selectPublishedTypeGroups(
@@ -117,23 +82,4 @@ async function selectPublishedTypeGroups(
     groupId: positiveSafeInteger(row.group_id, 'group ID'),
     groupName: nonemptyString(row.group_name, 'group name'),
   }))
-}
-
-function isPositiveSafeInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0
-}
-
-function positiveSafeInteger(value: unknown, label: string) {
-  let parsed = Number.NaN
-  if (isPositiveSafeInteger(value)) parsed = value
-  else if (typeof value === 'string' && /^[1-9]\d*$/.test(value)) parsed = Number(value)
-  if (!Number.isSafeInteger(parsed) || parsed <= 0)
-    throw new CoreDataProductUnavailableError(`Published type-group ${label} is invalid`)
-  return parsed
-}
-
-function nonemptyString(value: unknown, label: string) {
-  if (typeof value !== 'string' || value.trim().length === 0)
-    throw new CoreDataProductUnavailableError(`Published type-group ${label} is invalid`)
-  return value
 }

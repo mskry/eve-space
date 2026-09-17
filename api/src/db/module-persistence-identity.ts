@@ -1,13 +1,10 @@
 import {
-  platformModuleIdMaxLength,
-  platformModuleIdPattern,
-  platformPersistenceOperationIdMaxLength,
-  platformPersistenceOperationIdPattern,
-} from '@eve-space/platform-module-contract'
+  isPlatformModuleId,
+  isPlatformPersistenceOperationId,
+} from '@eve-space/platform-module-contract/identifiers'
 
 export function modulePersistenceNames(moduleId: string) {
-  if (!platformModuleIdPattern.test(moduleId) || moduleId.length > platformModuleIdMaxLength)
-    throw new Error(`Invalid module persistence owner ${moduleId}`)
+  if (!isPlatformModuleId(moduleId)) throw new Error(`Invalid module persistence owner ${moduleId}`)
 
   const identity = moduleId.replaceAll('-', '_')
   return {
@@ -18,10 +15,7 @@ export function modulePersistenceNames(moduleId: string) {
 }
 
 export function modulePersistenceRoutineName(operationId: string) {
-  if (
-    !platformPersistenceOperationIdPattern.test(operationId) ||
-    operationId.length > platformPersistenceOperationIdMaxLength
-  )
+  if (!isPlatformPersistenceOperationId(operationId))
     throw new Error(`Invalid persistence operation identity ${operationId}`)
   return `persist_${operationId.replaceAll('-', '_')}`
 }

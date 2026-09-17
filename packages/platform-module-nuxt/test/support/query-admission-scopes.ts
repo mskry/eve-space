@@ -2,6 +2,7 @@ export const platformQueryAdmissionScopes = [
   {
     moduleId: 'alpha',
     routeId: 'alpha-summary',
+    sectionId: 'skills',
     admissionScope: 'organization:v1:alpha:member:alpha.view',
     authorization: 'authenticated-session',
     audience: 'member',
@@ -10,6 +11,7 @@ export const platformQueryAdmissionScopes = [
   {
     moduleId: 'alpha',
     routeId: 'alpha-record',
+    sectionId: 'skills',
     admissionScope: 'organization:v1:alpha:member:alpha.view',
     authorization: 'owned-character',
     audience: 'member',

@@ -3,17 +3,24 @@ import { ref } from 'vue'
 import { usePlatformNavigation } from '../src/runtime/app/composables/usePlatformNavigation.js'
 
 const enabledModuleIds = ref(new Set<string>())
+const enabledSectionKeys = ref(new Set<string>())
 const data = ref<{
   shellNavigationOrder: { dashboard: { ownerId: string; navigationId: string }[] }
 }>()
 vi.mock('#imports', async () => ({ computed: (await import('vue')).computed }))
 vi.mock('../src/runtime/app/composables/usePlatformModuleRuntime.js', () => ({
-  usePlatformModuleRuntime: () => ({ enabledModuleIds, runtimeQuery: { data } }),
+  usePlatformModuleRuntime: () => ({
+    enabledModuleIds,
+    enabledSectionKeys,
+    runtimeQuery: { data },
+  }),
 }))
 vi.mock('#build/eve-space-platform/navigation', () => ({
   platformNavigation: [
     { ownerId: 'core', navigationId: 'home', placement: 'dashboard' },
     { ownerId: 'alpha', navigationId: 'feed', placement: 'dashboard' },
+    { ownerId: 'alpha', navigationId: 'skills', placement: 'dashboard', sectionId: 'skills' },
+    { ownerId: 'alpha', navigationId: 'assets', placement: 'dashboard', sectionId: 'assets' },
     { ownerId: 'core', navigationId: 'settings', placement: 'dashboard' },
     { ownerId: 'beta', navigationId: 'feed', placement: 'dashboard' },
     { ownerId: 'alpha', navigationId: 'character', placement: 'character' },
@@ -32,12 +39,20 @@ describe('runtime navigation', () => {
       'feed',
       'settings',
     ])
+    enabledSectionKeys.value = new Set(['alpha/skills'])
+    expect(navigation.value.map((entry) => entry.navigationId)).toEqual([
+      'home',
+      'feed',
+      'skills',
+      'settings',
+    ])
     expect(
       usePlatformNavigation('character').navigation.value.map((entry) => entry.navigationId),
     ).toEqual(['character'])
   })
   it('uses owner-qualified server order and inserts missing entries beside their predecessors', () => {
     enabledModuleIds.value = new Set(['alpha', 'beta'])
+    enabledSectionKeys.value = new Set(['alpha/skills', 'alpha/assets'])
     data.value = {
       shellNavigationOrder: {
         dashboard: [
@@ -52,6 +67,8 @@ describe('runtime navigation', () => {
       'core/home',
       'beta/feed',
       'alpha/feed',
+      'alpha/skills',
+      'alpha/assets',
       'core/settings',
     ])
     enabledModuleIds.value = new Set()

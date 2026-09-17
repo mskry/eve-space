@@ -2,14 +2,66 @@
 
 import type {
   PlatformInstalledModuleDefinition,
+  PlatformInstalledModuleSectionDefinition,
   PlatformInstalledOrganizationAdmissionScopeDescriptor,
-  PlatformNavigationDefault,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/installed'
+import type { PlatformNavigationDefault } from '@eve-space/platform-module-contract/nuxt'
 
 export const installedModuleDefinitions = [
+  { moduleId: 'member-audit', defaultEnabled: false },
   { moduleId: 'organization-activity', defaultEnabled: true },
 ] as const satisfies readonly PlatformInstalledModuleDefinition[]
+export const installedModuleSectionDefinitions = [
+  { moduleId: 'member-audit', id: 'overview', kind: 'workspace', defaultEnabled: false },
+  {
+    moduleId: 'member-audit',
+    id: 'skills',
+    kind: 'sensitive-evidence',
+    defaultEnabled: false,
+    disclosureRevision: 1,
+  },
+  {
+    moduleId: 'member-audit',
+    id: 'assets',
+    kind: 'sensitive-evidence',
+    defaultEnabled: false,
+    disclosureRevision: 1,
+  },
+  {
+    moduleId: 'member-audit',
+    id: 'wallet',
+    kind: 'sensitive-evidence',
+    defaultEnabled: false,
+    disclosureRevision: 1,
+  },
+  {
+    moduleId: 'member-audit',
+    id: 'mail',
+    kind: 'sensitive-evidence',
+    defaultEnabled: false,
+    disclosureRevision: 1,
+  },
+  {
+    moduleId: 'member-audit',
+    id: 'access-management',
+    kind: 'access-management',
+    defaultEnabled: false,
+  },
+] as const satisfies readonly PlatformInstalledModuleSectionDefinition[]
 export const installedModuleOrganizationAdmissionScopes = [
+  {
+    moduleId: 'member-audit',
+    admissionScope: 'organization:v1:member-audit:hr:member-audit.search,member-audit.summary.read',
+    audience: 'hr',
+    requiredPermission: 'member-audit.search',
+    additionalRequiredPermissions: ['member-audit.summary.read'] as const,
+  },
+  {
+    moduleId: 'member-audit',
+    admissionScope: 'organization:v1:member-audit:hr:member-audit.summary.read',
+    audience: 'hr',
+    requiredPermission: 'member-audit.summary.read',
+  },
   {
     moduleId: 'organization-activity',
     admissionScope: 'organization:v1:organization-activity:member:organization-activity.view',

@@ -62,7 +62,7 @@ describe('platform module boundaries', () => {
         source('collection-state', "import { z } from 'zod'"),
         source(
           'resource-subject',
-          "import type { PlatformResourceSubject } from '@eve-space/platform-module-contract'",
+          "import type { PlatformResourceSubject } from '@eve-space/platform-module-contract/resources'",
         ),
       ]),
     ).toEqual([])

@@ -33,9 +33,11 @@ export async function processInstalledResourceBatch(
     const failure = error instanceof PlatformResourceBatchExecutionError ? error.cause : error
     const attempted = error instanceof PlatformResourceBatchExecutionError ? error.attempted : []
     await Promise.all(
-      attempted.map(({ identity }) =>
+      attempted.map(({ identity, authorizationGeneration, managedAuthority }) =>
         recordInstalledResourceCollectionFailure(identity, failure, {
           resources: options.resources,
+          expectedAuthorizationGeneration: authorizationGeneration,
+          ...(managedAuthority === undefined ? {} : { expectedManagedAuthority: managedAuthority }),
         }),
       ),
     )
@@ -77,6 +79,7 @@ async function applyBatchClassifications(
         resource: execution.resource,
         subject: classification.subject,
         authorizationGeneration: classification.authorizationGeneration,
+        managedAuthority: classification.managedAuthority,
         validatedAt: execution.validatedAt,
         ...(classification.outcome === 'complete'
           ? { outcome: 'complete', data: classification.data }
@@ -89,6 +92,10 @@ async function applyBatchClassifications(
       // oxlint-disable-next-line no-await-in-loop
       await recordInstalledResourceCollectionFailure(classification.identity, failure, {
         resources: options.resources,
+        expectedAuthorizationGeneration: classification.authorizationGeneration,
+        ...(classification.managedAuthority === undefined
+          ? {}
+          : { expectedManagedAuthority: classification.managedAuthority }),
       })
       throw failure
     }

@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => {
     revokeCharacterTransferApproval: vi.fn(),
     saveInstalledShellNavigationOrder: vi.fn(),
     setInstalledModuleEnabled: vi.fn(),
+    setInstalledModuleSectionEnabled: vi.fn(),
     updateOrganization: vi.fn(),
   }
 })
@@ -62,6 +63,7 @@ vi.mock('../../src/platform/module-settings.js', async (importOriginal) => ({
   loadInstalledShellNavigationOrder: mocks.loadInstalledShellNavigationOrder,
   saveInstalledShellNavigationOrder: mocks.saveInstalledShellNavigationOrder,
   setInstalledModuleEnabled: mocks.setInstalledModuleEnabled,
+  setInstalledModuleSectionEnabled: mocks.setInstalledModuleSectionEnabled,
 }))
 
 import { adminRoutes } from '../../src/admin/routes.js'
@@ -83,7 +85,18 @@ const moduleSetting = {
   moduleId: 'alpha',
   enabled: true,
   defaultEnabled: false,
+  sections: [],
   updatedAt: '2026-08-25T12:00:00.000Z',
+}
+const moduleSectionSetting = {
+  moduleId: 'alpha',
+  id: 'skills',
+  kind: 'sensitive-evidence' as const,
+  disclosureRevision: 1,
+  enabled: true,
+  disclosureVersion: 1,
+  activationVersion: 1,
+  updatedAt: '2026-09-16T12:00:00.000Z',
 }
 const previewId = '688e2f93-b245-40af-807a-798550540e47'
 const approvalId = '66503848-72b8-4fa3-8af5-de056001a37e'
@@ -137,6 +150,7 @@ beforeEach(() => {
   mocks.loadInstalledShellNavigationOrder.mockResolvedValue(shellNavigationOrder)
   mocks.saveInstalledShellNavigationOrder.mockResolvedValue(shellNavigationOrder)
   mocks.setInstalledModuleEnabled.mockResolvedValue(moduleSetting)
+  mocks.setInstalledModuleSectionEnabled.mockResolvedValue(moduleSectionSetting)
   mocks.previewCharacterTransfer.mockResolvedValue(transferPreview)
   mocks.createCharacterTransferApproval.mockResolvedValue({
     approval: transferApproval,
@@ -498,6 +512,34 @@ describe('deployment administration routes', () => {
     expect(mocks.setInstalledModuleEnabled).toHaveBeenCalledWith('alpha', true)
   })
 
+  test('sets an installed module section to the requested state', async () => {
+    const response = await moduleSectionEnablementRequest('alpha', 'skills', { enabled: true })
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ section: moduleSectionSetting })
+    expect(mocks.setInstalledModuleSectionEnabled).toHaveBeenCalledWith('alpha', 'skills', true)
+  })
+
+  test('returns not found for an undeclared module section', async () => {
+    mocks.setInstalledModuleSectionEnabled.mockResolvedValue(null)
+
+    const response = await moduleSectionEnablementRequest('alpha', 'removed', { enabled: false })
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toMatchObject({ code: 'MODULE_SECTION_NOT_FOUND' })
+  })
+
+  test('validates section identity and enablement before mutation', async () => {
+    const [invalidId, invalidBody] = await Promise.all([
+      moduleSectionEnablementRequest('alpha', 'NOT VALID', { enabled: true }),
+      moduleSectionEnablementRequest('alpha', 'skills', { enabled: 'true' }),
+    ])
+
+    expect(invalidId.status).toBe(400)
+    expect(invalidBody.status).toBe(400)
+    expect(mocks.setInstalledModuleSectionEnabled).not.toHaveBeenCalled()
+  })
+
   test('rejects module state changes from an untrusted origin', async () => {
     const response = await moduleEnablementRequest(
       'alpha',
@@ -593,6 +635,14 @@ function moduleEnablementRequest(
       Cookie: 'eve_space_admin_session=session-token',
       Origin: origin,
     },
+    body: JSON.stringify(body),
+  })
+}
+
+function moduleSectionEnablementRequest(moduleId: string, sectionId: string, body: unknown) {
+  return adminRoutes.request(`/modules/${moduleId}/sections/${sectionId}`, {
+    method: 'PUT',
+    headers: adminMutationHeaders(),
     body: JSON.stringify(body),
   })
 }

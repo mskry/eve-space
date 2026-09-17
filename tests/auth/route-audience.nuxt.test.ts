@@ -1,6 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { useRouter } from '#app'
-import { platformCoreNavigation } from '@eve-space/platform-module-contract'
+import { platformCoreNavigation } from '@eve-space/platform-module-contract/nuxt'
 import { defineComponent, h } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { resolveRouteAudience } from '../../app/utils/route-audience'

@@ -1,13 +1,11 @@
 import { defineNuxtModule, extendPages } from '@nuxt/kit'
-import {
-  compareStable,
-  type PlatformNuxtContributionDescriptor,
-} from '@eve-space/platform-module-contract'
+import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract/nuxt'
 import { resolveContributionPackages, resolveContributionPages } from './contribution-resolution.js'
 import { composePlatformPages } from './pages.js'
 import { validateResolvedExposures } from './resolved-exposures.js'
 import { registerPlatformRuntime } from './runtime-registration.js'
 import { registerPlatformTemplates } from './templates.js'
+import { compareStable } from './stable-order.js'
 
 export interface PlatformNuxtModuleOptions {
   readonly contributions?: readonly PlatformNuxtContributionDescriptor[]

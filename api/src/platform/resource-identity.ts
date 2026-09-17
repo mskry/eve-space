@@ -1,4 +1,4 @@
-import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 
 interface InstalledResourceIdentity {
   readonly moduleId: string

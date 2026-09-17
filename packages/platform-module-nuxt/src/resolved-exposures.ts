@@ -1,4 +1,4 @@
-import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract'
+import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract/nuxt'
 import { isPathInside } from './path-containment.js'
 
 export function validateResolvedExposures(

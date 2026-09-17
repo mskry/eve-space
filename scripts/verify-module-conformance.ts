@@ -34,7 +34,10 @@ const outputs = [
 try {
   cleanOutputs()
   const registry = await loadInstalledModuleManifests(fixtureRoot)
-  for (const [path, content] of generateRegistryFiles(registry)) {
+  for (const [path, content] of generateRegistryFiles(
+    registry.compiled,
+    registry.persistenceRoutines,
+  )) {
     const output = join(fixtureRoot, path)
     mkdirSync(dirname(output), { recursive: true })
     writeFileSync(output, content, 'utf8')

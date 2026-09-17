@@ -2,7 +2,7 @@ import type {
   PlatformIconToken,
   PlatformNavigationAudience,
   PlatformNavigationPlacement,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/nuxt'
 
 export interface PlatformNavigationIdentity {
   readonly ownerId: string
@@ -17,6 +17,7 @@ export interface PlatformNavigationEntry extends PlatformNavigationIdentity {
   readonly audience: PlatformNavigationAudience
   readonly placement: PlatformNavigationPlacement
   readonly order: number
+  readonly sectionId?: string
 }
 
 export interface PlatformPageMetadata {
@@ -24,4 +25,5 @@ export interface PlatformPageMetadata {
   readonly pageId: string
   readonly pageName: string
   readonly audience: PlatformNavigationAudience
+  readonly sectionId?: string
 }

@@ -1,8 +1,7 @@
 import {
-  isReservedPlatformModuleId,
-  platformModuleIdMaxLength,
-  platformModuleIdPattern,
-} from '@eve-space/platform-module-contract'
+  isPlatformContributionId,
+  isPlatformModuleId,
+} from '@eve-space/platform-module-contract/identifiers'
 import { Hono } from 'hono'
 import type { Context, MiddlewareHandler } from 'hono'
 import { z } from 'zod'
@@ -33,6 +32,7 @@ import {
   loadInstalledShellNavigationOrder,
   saveInstalledShellNavigationOrder,
   setInstalledModuleEnabled,
+  setInstalledModuleSectionEnabled,
 } from '../platform/module-settings.js'
 import { createOpaqueToken, hashPassword, tokensMatch, verifyPassword } from '../auth/security.js'
 import { privateNoStore, setPrivateHeaders } from '../http/private-response.js'
@@ -61,14 +61,11 @@ const loginSchema = z.object({
   email: adminEmailSchema,
   password: z.string().min(1, 'Enter the administrator password.').max(256),
 })
-const moduleIdSchema = z
-  .string()
-  .regex(platformModuleIdPattern, 'Enter a valid installed module ID.')
-  .max(platformModuleIdMaxLength, 'Enter a valid installed module ID.')
-  .refine((moduleId) => !isReservedPlatformModuleId(moduleId), {
-    message: 'Enter a valid installed module ID.',
-  })
+const moduleIdSchema = z.string().refine(isPlatformModuleId, 'Enter a valid installed module ID.')
 const moduleParamsSchema = z.object({ moduleId: moduleIdSchema })
+const moduleSectionParamsSchema = moduleParamsSchema.extend({
+  sectionId: z.string().refine(isPlatformContributionId).max(100),
+})
 const moduleEnablementSchema = z.object({ enabled: z.boolean() }).strict()
 const navigationIdentitySchema = z
   .object({ ownerId: z.string(), navigationId: z.string() })
@@ -236,6 +233,24 @@ export const adminRoutes = new Hono<AdminEnv>()
           404,
         )
       return context.json({ module }, 200)
+    },
+  )
+  .put(
+    '/modules/:moduleId/sections/:sectionId',
+    loadAdminSession,
+    requireAdminSession,
+    zValidator('param', moduleSectionParamsSchema),
+    zValidator('json', moduleEnablementSchema),
+    async (context) => {
+      const { moduleId, sectionId } = context.req.valid('param')
+      const { enabled } = context.req.valid('json')
+      const section = await setInstalledModuleSectionEnabled(moduleId, sectionId, enabled)
+      if (!section)
+        return context.json(
+          { code: 'MODULE_SECTION_NOT_FOUND', message: 'Installed module section not found.' },
+          404,
+        )
+      return context.json({ section }, 200)
     },
   )
   .get('/shell-navigation-order', loadAdminSession, requireAdminSession, async (context) =>

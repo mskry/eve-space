@@ -97,7 +97,8 @@ const allowedImportTiersBySourceTier: Record<EsiGatewayTier, readonly EsiGateway
 
 const sharedExternalDependencies = new Set([
   'api/src/type-guards',
-  '@eve-space/platform-module-contract',
+  '@eve-space/platform-module-contract/esi',
+  '@eve-space/platform-module-contract/identifiers',
   '@eve-space/platform-module-server',
   '@evespace/esi-client',
   '@evespace/esi-client/operations',

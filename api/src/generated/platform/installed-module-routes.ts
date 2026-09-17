@@ -4,14 +4,24 @@ import { Hono } from 'hono'
 import { platformModuleRouteComposers } from '../../platform/module-route-composition.js'
 import { createPlatformModuleRouteCapabilities } from '../../platform/module-route-capabilities.js'
 import {
-  activityRoutes as module0Route0Factory,
-  participationRoutes as module0Route1Factory,
+  memberSearchRoutes as module0Route0Factory,
+  memberSummaryRoutes as module0Route1Factory,
+} from '@eve-space/member-audit-server'
+import {
+  activityRoutes as module1Route0Factory,
+  participationRoutes as module1Route1Factory,
 } from '@eve-space/organization-activity-server'
 
 const module0Route0 = module0Route0Factory(
-  createPlatformModuleRouteCapabilities('organization-activity', 'activity-details', [] as const),
+  createPlatformModuleRouteCapabilities('member-audit', 'member-search', [] as const),
 )
 const module0Route1 = module0Route1Factory(
+  createPlatformModuleRouteCapabilities('member-audit', 'member-summary', [] as const),
+)
+const module1Route0 = module1Route0Factory(
+  createPlatformModuleRouteCapabilities('organization-activity', 'activity-details', [] as const),
+)
+const module1Route1 = module1Route1Factory(
   createPlatformModuleRouteCapabilities(
     'organization-activity',
     'activity-participation',
@@ -21,11 +31,40 @@ const module0Route1 = module0Route1Factory(
 
 export const installedModuleRoutes = new Hono()
   .route(
+    '/member-audit/search',
+    platformModuleRouteComposers['managed-organization-account-search'](
+      'member-audit',
+      {
+        audience: 'hr',
+        requiredPermission: 'member-audit.search',
+        additionalRequiredPermissions: ['member-audit.summary.read'] as const,
+        sectionId: 'overview',
+        target: 'managed-organization-account-search',
+        exposure: 'standard',
+      },
+      module0Route0,
+    ),
+  )
+  .route(
+    '/member-audit/accounts/:userId',
+    platformModuleRouteComposers['managed-organization-account'](
+      'member-audit',
+      {
+        audience: 'hr',
+        requiredPermission: 'member-audit.summary.read',
+        sectionId: 'overview',
+        target: 'managed-organization-account',
+        exposure: 'standard',
+      },
+      module0Route1,
+    ),
+  )
+  .route(
     '/organization-activity/details',
     platformModuleRouteComposers['authenticated-session'](
       'organization-activity',
       { audience: 'member', requiredPermission: 'organization-activity.view' },
-      module0Route0,
+      module1Route0,
     ),
   )
   .route(
@@ -33,6 +72,6 @@ export const installedModuleRoutes = new Hono()
     platformModuleRouteComposers['owned-character'](
       'organization-activity',
       { audience: 'member', requiredPermission: 'organization-activity.view' },
-      module0Route1,
+      module1Route1,
     ),
   )

@@ -2,7 +2,7 @@ import type {
   PlatformCollectionStatus,
   PlatformCollectionStatusSubject,
   PlatformModuleCollectionStatusReads,
-} from '@eve-space/platform-module-contract'
+} from '@eve-space/platform-module-contract/server'
 import type { ActivitySnapshot } from './snapshot.js'
 import type { ActivitySourceRead } from './activity-source.js'
 import type { ActivitySnapshotPersistence } from './persistence.js'

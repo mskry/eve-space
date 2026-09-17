@@ -11,6 +11,10 @@ import {
   serverSourceBoundaryViolations,
 } from '../../scripts/module-registry/feature-boundaries'
 import { loadInstalledModuleManifests } from '../../scripts/module-registry/generator'
+import {
+  loadPlatformHostSources,
+  platformFeatureImportViolations,
+} from '../../scripts/module-registry/host-boundaries'
 
 const temporaryRoots: string[] = []
 
@@ -61,6 +65,25 @@ describe('feature package dependency allowlists', () => {
     )
 
     expect(violations).toContainEqual(expect.stringContaining('only Vue files as side-effectful'))
+  })
+
+  it('requires package roots to resolve to the verified canonical build entries', () => {
+    const violations = featurePackageManifestViolations(
+      'alpha',
+      'server',
+      'features/alpha/server/package.json',
+      {
+        ...packageManifest('alpha', 'server'),
+        exports: {
+          '.': { types: './dist/index.d.ts', import: './dist/alternate.js' },
+          './migrations/*': './migrations/*',
+        },
+      },
+    )
+
+    expect(violations).toContainEqual(
+      expect.stringContaining('feature package root export must use'),
+    )
   })
 
   it.each([
@@ -135,7 +158,7 @@ describe('feature source import allowlists', () => {
     expect(
       serverSourceBoundaryViolations(
         serverSource(`
-          import type { PlatformModuleRouteCapabilities } from '@eve-space/platform-module-contract'
+          import type { PlatformModuleRouteCapabilities } from '@eve-space/platform-module-contract/server'
           import { Hono } from 'hono'
           export { localValue } from './local.js'
           export function alphaRoutes() {
@@ -166,6 +189,71 @@ describe('feature source import allowlists', () => {
   })
 
   it.each([
+    '@eve-space/platform-module-contract/internal',
+    '@eve-space/platform-module-contract/compiler',
+    '@eve-space/platform-module-contract/installed',
+    '@eve-space/platform-module-contract/manifest',
+    '@eve-space/platform-module-contract/nuxt',
+    '@eve-space/platform-module-server/persistence',
+    'hono/client',
+    'zod/v4/core',
+  ])('rejects unreviewed server package subpath %s', (specifier) => {
+    expect(serverSourceBoundaryViolations(serverSource(`import '${specifier}'`))).not.toEqual([])
+  })
+
+  it('rejects TypeScript import-equals declarations before resolving their target', () => {
+    expect(
+      nuxtSourceBoundaryViolations(
+        nuxtRuntimeSource(
+          'import platformApi = require("../../../../../../../packages/platform-module-nuxt/src/runtime/platform-api")',
+        ),
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('escapes the feature package root'),
+        expect.stringContaining('import-equals declarations are not allowed'),
+      ]),
+    )
+  })
+
+  it.each([
+    ['@eve-space/platform-module-server', 'bindPlatformPersistenceOperation'],
+    ['@eve-space/platform-module-nuxt/runtime', 'createPlatformApiClient'],
+  ])('rejects host-only %s export %s', (specifier, name) => {
+    const source = `import { ${name} } from '${specifier}'`
+    const violations = specifier.includes('-nuxt')
+      ? nuxtSourceBoundaryViolations(nuxtRuntimeSource(source))
+      : serverSourceBoundaryViolations(serverSource(source))
+    expect(violations).toContainEqual(expect.stringContaining('host-only platform symbols'))
+  })
+
+  it.each([
+    '../../../../api/src/platform/module-settings.js',
+    '../../../../api/src/auth/character-disclosure-store.js',
+    '../../../../api/src/organization/reviewer-target.js',
+    '../../../../api/src/organization/reviewer-commands.js',
+    '../../../../api/src/organization/sensitive-access-audit.js',
+    '../../../../api/src/organization/group-store.js',
+  ])('rejects protected core bypass import %s', (specifier) => {
+    expect(
+      serverSourceBoundaryViolations(serverSource(`import { bypass } from '${specifier}'`)),
+    ).toContainEqual(expect.stringContaining('cannot import core API source'))
+  })
+
+  it.each([
+    'process.getBuiltinModule("node:fs")',
+    'eval("import(\\"postgres\\")")',
+    'Function("return process")()',
+    'require("postgres")',
+    'module.require("postgres")',
+    'new globalThis.WebSocket("wss://example.test")',
+  ])('rejects server module-loader bypass %s', (expression) => {
+    expect(
+      serverSourceBoundaryViolations(serverSource(`export const bypass = ${expression}`)),
+    ).not.toEqual([])
+  })
+
+  it.each([
     '../../../../app/composables/useAuth.js',
     '../../../bravo/server/src/index.js',
     '..\\\\..\\\\..\\\\..\\\\secrets\\\\client.js',
@@ -175,7 +263,19 @@ describe('feature source import allowlists', () => {
     ).toContainEqual(expect.stringContaining('escapes the feature package root'))
   })
 
+  it('rejects package-local runtime imports outside the scanned source tree', () => {
+    expect(
+      serverSourceBoundaryViolations(serverSource("import { start } from '../bootstrap.js'")),
+    ).toContainEqual(expect.stringContaining('escapes the feature package root'))
+  })
+
   it.each([
+    '@eve-space/platform-module-contract',
+    '@eve-space/platform-module-contract/compiler',
+    '@eve-space/platform-module-contract/internal',
+    '@eve-space/platform-module-contract/manifest',
+    '@eve-space/platform-module-contract/resources',
+    '@eve-space/platform-module-contract/server',
     'reka-ui',
     '@eve-space/alpha-server',
     '@eve-space/bravo-nuxt',
@@ -209,6 +309,72 @@ describe('feature source import allowlists', () => {
         nuxtRuntimeSource("import { $fetch, useCharacterQuery } from '#imports'"),
       ),
     ).toContainEqual(expect.stringContaining('rejected $fetch, useCharacterQuery'))
+  })
+
+  it('restricts feature API access to the calling module route tree', () => {
+    expect(
+      nuxtSourceBoundaryViolations(
+        nuxtRuntimeSource(`
+          export function load() {
+            const api = usePlatformApi()
+            return api.api.modules.alpha.summary.$get()
+          }
+        `),
+      ),
+    ).toEqual([])
+    expect(
+      nuxtSourceBoundaryViolations(
+        nuxtRuntimeSource(`
+          export function bypass() {
+            const api = usePlatformApi()
+            return api.api.organization.groups.$get()
+          }
+        `),
+      ),
+    ).toContainEqual(expect.stringContaining('must remain under api.modules["alpha"]'))
+    expect(
+      nuxtSourceBoundaryViolations(
+        nuxtRuntimeSource(`
+          export function leak() {
+            const api = usePlatformApi()
+            return api.api
+          }
+        `),
+      ),
+    ).toContainEqual(expect.stringContaining('must remain under api.modules["alpha"]'))
+    expect(
+      nuxtSourceBoundaryViolations(
+        nuxtRuntimeSource(`
+          export function alias() {
+            const api = usePlatformApi()
+            const bypass = api
+            return bypass
+          }
+        `),
+      ),
+    ).toContainEqual(expect.stringContaining('must not be aliased or exposed'))
+    expect(
+      nuxtSourceBoundaryViolations(
+        nuxtRuntimeSource(`
+          export function destructure() {
+            const { api } = usePlatformApi()
+            return api.organization
+          }
+        `),
+      ),
+    ).toContainEqual(expect.stringContaining('must remain an opaque module-scoped client value'))
+  })
+
+  it.each([
+    'const request = fetch',
+    'new XMLHttpRequest()',
+    'process.getBuiltinModule("node:http")',
+    'eval("fetch(\\"/api/private\\")")',
+    'Function("return fetch")()',
+    'new globalThis.WebSocket("wss://example.test")',
+    'navigator.sendBeacon("https://example.test", "private")',
+  ])('rejects Nuxt client bypass %s', (statement) => {
+    expect(nuxtSourceBoundaryViolations(nuxtRuntimeSource(statement))).not.toEqual([])
   })
 
   it('extracts and checks both Vue script blocks', () => {
@@ -368,7 +534,7 @@ describe('descriptor and composition purity', () => {
         }),
       ).toEqual(
         [
-          'module descriptor may only type-import @eve-space/platform-module-contract',
+          'module descriptor may only type-import @eve-space/platform-module-contract/manifest',
           'module descriptor declarations must be const',
           'module descriptor declarations must be initialized names',
           'module descriptor must have one default export',
@@ -471,13 +637,59 @@ describe('descriptor and composition purity', () => {
     )
   })
 
+  it('requires resource and ESI definitions to be exported from the package root', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'eve-space-definition-exports-'))
+    temporaryRoots.push(root)
+    const sourceRoot = join(root, 'features/alpha/server/src')
+    await mkdir(sourceRoot, { recursive: true })
+    await writeFile(
+      join(sourceRoot, 'definitions.ts'),
+      'export const alphaResource = {}; export const alphaOperation = {}',
+      'utf8',
+    )
+    await writeFile(
+      join(sourceRoot, 'alternate.ts'),
+      'export const alternateResource = {}; export const alternateOperation = {}',
+      'utf8',
+    )
+    await writeFile(
+      join(sourceRoot, 'index.ts'),
+      'export { alternateResource as alphaResource, alternateOperation as alphaOperation } from "./alternate.js"',
+      'utf8',
+    )
+    const declaration = persistenceManifest('unused') as unknown as {
+      server: {
+        routes: unknown[]
+        persistenceOperations: unknown[]
+        resources: unknown[]
+        esiOperations: unknown[]
+        activityProviders: unknown[]
+      }
+    }
+    declaration.server.persistenceOperations = []
+    declaration.server.resources = [{ exportName: 'alphaResource' }]
+    declaration.server.esiOperations = [{ exportName: 'alphaOperation' }]
+
+    const violations = await manifestCompositionBoundaryViolations(root, declaration as never)
+    expect(violations).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          'definition export alphaResource must be exported from the package root',
+        ),
+        expect.stringContaining(
+          'definition export alphaOperation must be exported from the package root',
+        ),
+      ]),
+    )
+  })
+
   it('accepts a static serializable descriptor with a type-only contract import', () => {
     expect(
       descriptorBoundaryViolations({
         moduleId: 'alpha',
         path: 'features/alpha/module.config.ts',
         source: `
-          import type { PlatformModuleManifest } from '@eve-space/platform-module-contract'
+          import type { PlatformModuleManifest } from '@eve-space/platform-module-contract/manifest'
           const manifest = {
             id: 'alpha', icon: 'character', defaultEnabled: false,
             server: { package: '@eve-space/alpha-server', routes: [], migrations: [], persistenceOperations: [], resources: [], esiOperations: [], activityProviders: [] },
@@ -615,24 +827,64 @@ describe('descriptor and composition purity', () => {
     expect(serverFactoryBoundaryViolations(eager, 'alphaProvider', 'provider')).not.toEqual([])
   })
 
-  it('allows deterministic Nuxt Kit registration and rejects setup side effects', () => {
-    const clean = nuxtModuleSource(`
-      import { addComponentsDir, createResolver, defineNuxtModule } from '@nuxt/kit'
-      export default defineNuxtModule({
-        setup() {
-          const resolver = createResolver(import.meta.url)
-          addComponentsDir({ path: resolver.resolve('./runtime/app/components') })
-        },
-      })
-    `)
-    expect(nuxtSourceBoundaryViolations(clean)).toEqual([])
+  it('rejects spoofed route-composition method receivers', () => {
+    const sources = [
+      serverSource(`
+        import { Hono } from 'hono'
+        export function alphaRoutes(capabilities) {
+          const facade = { get() { return capabilities.persistence.readSnapshot({ id: 'alpha' }) } }
+          facade.get()
+          return new Hono().get('/', () => new Response())
+        }
+      `),
+    ]
+
+    expect(serverFactoryBoundaryViolations(sources, 'alphaRoutes', 'route')).toContainEqual(
+      expect.stringContaining('must not perform work during composition'),
+    )
+  })
+
+  it('rejects a shadowed Hono constructor and a decoy package export', () => {
+    const shadowed = [
+      serverSource(`
+        import { Hono as RealHono } from 'hono'
+        class Hono extends RealHono { constructor(capabilities) { super(); capabilities.run() } }
+        export function alphaRoutes(capabilities) { return new Hono(capabilities).get('/', () => new Response()) }
+      `),
+    ]
+    const decoy = [
+      {
+        ...serverSource('export function alphaRoutes() { return new Hono() }'),
+        path: 'features/alpha/server/src/routes.ts',
+      },
+      serverSource('export { evilRoutes as alphaRoutes } from "./evil.js"'),
+      {
+        ...serverSource('export function evilRoutes() { connect(); return {} }'),
+        path: 'features/alpha/server/src/evil.ts',
+      },
+    ]
+
+    expect(serverFactoryBoundaryViolations(shadowed, 'alphaRoutes', 'route')).not.toEqual([])
+    expect(serverFactoryBoundaryViolations(decoy, 'alphaRoutes', 'route')).toContainEqual(
+      expect.stringContaining('must be exported from the package root'),
+    )
+  })
+
+  it('requires feature Nuxt runtime contributions to use generated registries', () => {
+    expect(
+      nuxtSourceBoundaryViolations(
+        nuxtModuleSource(`
+          import { defineNuxtModule } from '@nuxt/kit'
+          export default defineNuxtModule({})
+        `),
+      ),
+    ).toEqual([])
 
     for (const setup of [
-      "fetch('https://example.test')",
-      'setInterval(() => {}, 1000)',
-      'connect()',
-      'persistence.transaction(async () => {})',
-      'const enabled = process.env.ALPHA',
+      'extendPages(() => {})',
+      'addPlugin("./runtime/plugin")',
+      'addRouteMiddleware({ name: "bypass", path: "./middleware" })',
+      'addComponentsDir({ path: "./runtime/components" })',
     ])
       expect(
         nuxtSourceBoundaryViolations(
@@ -641,7 +893,7 @@ describe('descriptor and composition purity', () => {
             export default defineNuxtModule({ setup() { ${setup} } })
           `),
         ),
-      ).not.toEqual([])
+      ).toContainEqual(expect.stringContaining('must not define setup'))
   })
 
   it('rejects Nuxt deployment hooks and indirect module entries', () => {
@@ -665,6 +917,79 @@ describe('descriptor and composition purity', () => {
       'Feature module boundary verification failed',
     )
     expect(globalThis.unsafeDescriptorImported).toBeUndefined()
+  })
+})
+
+describe('host feature package composition', () => {
+  it('allows feature packages only through generated registries', () => {
+    expect(
+      platformFeatureImportViolations([
+        {
+          path: 'api/src/generated/platform/installed-module-routes.ts',
+          source: "import { routes } from '@eve-space/alpha-server'",
+        },
+        {
+          path: 'generated/platform/installed-nuxt-modules.ts',
+          source: "import alpha from '@eve-space/alpha-nuxt'",
+        },
+      ]),
+    ).toEqual([])
+  })
+
+  it('rejects fabricated generated registry entry points and normalized path escapes', () => {
+    const violations = platformFeatureImportViolations([
+      {
+        path: 'api/src/generated/platform/installed-module-backdoor.ts',
+        source: "import { routes } from '@eve-space/alpha-server'",
+      },
+      {
+        path: 'api/src/index.ts',
+        source: "import routes from '../features/ignored/../alpha/server/src/index.js'",
+      },
+    ])
+
+    expect(violations).toHaveLength(2)
+    expect(violations[0]).toContain('installed-module-backdoor.ts')
+    expect(violations[1]).toContain('api/src/index.ts')
+  })
+
+  it('detects import-equals bypasses and loads Nitro server sources', async () => {
+    expect(
+      platformFeatureImportViolations([
+        {
+          path: 'api/src/index.ts',
+          source: "import alpha = require('@eve-space/alpha-server')",
+        },
+      ]),
+    ).toHaveLength(1)
+
+    const root = await mkdtemp(join(tmpdir(), 'eve-space-host-sources-'))
+    temporaryRoots.push(root)
+    await mkdir(join(root, 'server', 'routes'), { recursive: true })
+    await writeFile(
+      join(root, 'server', 'routes', 'bypass.get.ts'),
+      "import alpha from '@eve-space/alpha-server'",
+      'utf8',
+    )
+    const sources = await loadPlatformHostSources(root)
+
+    expect(platformFeatureImportViolations(sources)).toHaveLength(1)
+  })
+
+  it.each([
+    ['api/src/index.ts', '@eve-space/alpha-server'],
+    ['api/src/platform/routes.ts', '../../../features/alpha/server/src/index.js'],
+    ['nuxt.config.ts', '@eve-space/alpha-nuxt'],
+    ['app/app.vue', '../features/alpha/nuxt/src/runtime/app/pages/AlphaPage.vue'],
+  ])('rejects direct host import from %s', (path, specifier) => {
+    const source = `import feature from '${specifier}'`
+    expect(
+      platformFeatureImportViolations([
+        { path, source: path.endsWith('.vue') ? `<script setup>${source}</script>` : source },
+      ]),
+    ).toEqual([
+      `${path}: feature ${specifier.includes('nuxt') ? 'nuxt' : 'server'} packages may only enter the host through generated registries: ${specifier}`,
+    ])
   })
 })
 
