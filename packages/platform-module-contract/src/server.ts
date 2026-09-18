@@ -57,6 +57,21 @@ export const platformRouteTargets = [
 ] as const
 export type PlatformRouteTarget = (typeof platformRouteTargets)[number]
 
+export const platformReviewerTargetKinds = [
+  'managed-organization-account',
+  'managed-organization-character',
+] as const
+export type PlatformReviewerTargetKind = (typeof platformReviewerTargetKinds)[number]
+
+export interface PlatformReviewerRouteLink extends PlatformOrganizationContributionAuthorization {
+  readonly routeId: string
+  readonly target: PlatformReviewerTargetKind
+}
+
+export interface PlatformReviewerServerContribution extends PlatformReviewerRouteLink {
+  readonly contributionId: string
+}
+
 export const platformRouteExposures = ['standard', 'sensitive-evidence'] as const
 export type PlatformRouteExposure = (typeof platformRouteExposures)[number]
 

@@ -188,6 +188,41 @@ describe('platform reviewer collection-status capabilities', () => {
     expect(resolveEligibility).not.toHaveBeenCalled()
   })
 
+  test('refuses another resource in the same module section when the contribution did not declare it', async () => {
+    const reads = createPlatformReviewerCollectionStatusReads(
+      {
+        moduleId: 'member-audit',
+        sectionId: 'skills',
+        resourceIds: ['trained-skills'],
+        target,
+      },
+      {
+        resources: [
+          ...resources,
+          {
+            ...resources[0]!,
+            resourceId: 'private-skill-history',
+          } as PlatformInstalledResourceDescriptor,
+          {
+            ...resources[0]!,
+            moduleId: 'other-module',
+            resourceId: 'other-private-data',
+          } as PlatformInstalledResourceDescriptor,
+        ],
+        now: () => now,
+        resolveEligibility,
+      },
+    )
+
+    await expect(reads.read('private-skill-history', characterId)).rejects.toThrow(
+      'Reviewer collection resource is unavailable',
+    )
+    await expect(reads.read('other-private-data', characterId)).rejects.toThrow(
+      'Reviewer collection resource is unavailable',
+    )
+    expect(resolveEligibility).not.toHaveBeenCalled()
+  })
+
   test('preserves sanitized stale failure state for the exact authority binding', async () => {
     resolveEligibility.mockResolvedValue({
       ...eligible(true),

@@ -38,11 +38,12 @@ const modulesByTier = {
     'resource-failures',
     'resource-operation-executor',
     'resource-planning',
+    'reviewer-contributions',
     'reviewer-search-capabilities',
   ],
   application: ['resource-batch', 'resource-maintenance', 'resource-refresh'],
   entry: ['collection-state-repair'],
-  transport: ['module-route-composition', 'routes'],
+  transport: ['module-route-composition', 'organization-review-routes', 'routes'],
 } as const
 
 type PlatformTier = keyof typeof modulesByTier

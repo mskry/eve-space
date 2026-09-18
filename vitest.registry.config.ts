@@ -26,6 +26,7 @@ export default defineConfig({
       'tests/platform/module-composition-side-effects.test.ts',
       'tests/platform/module-package-boundaries.test.ts',
       'tests/platform/platform-module-conformance.test.ts',
+      'tests/platform/external-module-archives.test.ts',
       'tests/platform/platform-module-registry.test.ts',
     ],
     coverage: {

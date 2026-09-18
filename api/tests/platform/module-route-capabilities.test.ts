@@ -31,6 +31,7 @@ vi.mock('../../src/platform/module-persistence-capabilities.js', () => ({
 
 import {
   createPlatformModuleRouteCapabilities,
+  createPlatformReviewerContributionRouteCapabilities,
   createPlatformResourceReadCapabilities,
 } from '../../src/platform/module-route-capabilities.js'
 import { createPlatformModuleActivityProviderCapabilities } from '../../src/platform/module-activity-provider-capabilities.js'
@@ -59,6 +60,33 @@ describe('platform module route capabilities', () => {
     expect(Object.keys(capabilities)).toEqual(['coreData', 'logger', 'persistence'])
     expect(mocks.createCoreDataCapability).toHaveBeenCalledWith(['published-type-groups'], 'route')
     expect(mocks.createPlatformModuleRoutePersistence).toHaveBeenCalledWith('alpha', 'alpha-route')
+  })
+
+  test('provides reviewer contributions only declared core reads and logging', () => {
+    const capabilities = createPlatformReviewerContributionRouteCapabilities(
+      {
+        publisherPackage: '@example/alpha-manifest',
+        moduleId: 'alpha',
+        contributionId: 'overview',
+        routeId: 'alpha-route',
+        routePath: '/api/modules/alpha/accounts/:userId',
+        audience: 'hr',
+        requiredPermission: 'alpha.review',
+        target: 'managed-organization-account',
+        panelPackage: '@example/alpha-nuxt',
+        panelExport: './reviewer/overview',
+        label: 'Alpha',
+        description: 'Review alpha.',
+        icon: 'overview',
+        order: 10,
+      },
+      ['published-type-groups'] as const,
+    )
+
+    expect(capabilities).toEqual({ coreData: mocks.coreData, logger: mocks.logger })
+    expect(capabilities).not.toHaveProperty('persistence')
+    expect(mocks.createCoreDataCapability).toHaveBeenCalledWith(['published-type-groups'], 'route')
+    expect(mocks.createPlatformModuleRoutePersistence).not.toHaveBeenCalled()
   })
 
   test('provides resource collectors read-only bounded persistence', () => {

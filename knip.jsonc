@@ -1,7 +1,12 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  // The conformance archive test invokes the host utility to create a special-entry fixture.
+  "ignoreBinaries": ["mkfifo"],
   "workspaces": {
     ".": {
+      "ignore": [
+        "tests/fixtures/platform-module-conformance/features/conformance/{server,nuxt}/dist/*.{js,d.ts}",
+      ],
       "entry": [
         // Resolved by path at build time by @pinia/colada-nuxt, never imported.
         "colada.options.ts",
@@ -20,7 +25,9 @@
         "tests/fixtures/platform-module-conformance/{nuxt.config.ts,api/src/index.ts,app/**/*.{ts,vue}}",
         "tests/fixtures/platform-module-conformance/features/conformance/module.config.ts",
         "tests/fixtures/platform-module-conformance/features/conformance/server/src/index.ts",
+        "tests/fixtures/platform-module-conformance/features/conformance/server/dist/index.{js,d.ts}",
         "tests/fixtures/platform-module-conformance/features/conformance/nuxt/src/{module.ts,runtime/app/pages/**/*.vue}",
+        "tests/fixtures/platform-module-conformance/features/conformance/nuxt/dist/module.{js,d.ts}",
         "vitest.conformance.config.ts",
       ],
       // vue-tsc is invoked by Nuxt; Pinia modules are selected through generated registries.
@@ -31,6 +38,8 @@
         "@pinia/nuxt",
         "@hono/zod-validator",
         "@nuxt/schema",
+        "@eve-space/member-audit-manifest",
+        "@eve-space/organization-activity-manifest",
         "zod",
       ],
     },
@@ -47,6 +56,8 @@
         "tests/**/*.types.ts",
       ],
       "project": ["src/**/*.ts", "tests/**/*.ts"],
+      // Required directly so pnpm deploy places the dynamically loaded WASM at the image root.
+      "ignoreDependencies": ["@pgsql/parser"],
     },
     "features/organization-activity/server": {
       "entry": ["src/schema.ts"],
@@ -75,6 +86,18 @@
       "project": ["src/**/*.ts", "test/**/*.ts"],
     },
     "packages/platform-module-contract": {
+      "project": ["src/**/*.ts"],
+    },
+    "packages/platform-module-conformance": {
+      "entry": [
+        "test/**/*.test.ts",
+        // Packed release fixtures are resolved from manifests and package export metadata.
+        "test/fixtures/release/{nuxt/dist/module,server/dist/index}.d.ts",
+        "test/fixtures/release/nuxt/src/**/*.vue",
+      ],
+      "project": ["src/**/*.ts", "test/**/*.{ts,vue}"],
+    },
+    "packages/platform-module-persistence-policy": {
       "project": ["src/**/*.ts"],
     },
     "packages/platform-module-server": {

@@ -3,6 +3,7 @@ import type {
   PlatformPersistenceContributionReferences,
   PlatformPersistenceOperationReference,
 } from './persistence.js'
+import type { PlatformInstalledOrganizationContributionAuthorization } from './installed.js'
 import type {
   PlatformModuleCollectionStatusReads,
   PlatformModuleContributionCapabilities,
@@ -140,7 +141,7 @@ export interface PlatformActivityProviderContribution
   }
 }
 
-export interface PlatformInstalledActivityProviderDescriptor extends PlatformOrganizationContributionAuthorization {
+export interface PlatformInstalledActivityProviderDescriptor extends PlatformInstalledOrganizationContributionAuthorization {
   readonly coreDataProducts: readonly CoreDataProductId[]
   readonly moduleId: string
   readonly providerId: string

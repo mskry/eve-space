@@ -9,8 +9,8 @@ const sha256Pattern = /^[0-9a-f]{64}$/
 const initialManifestLength = 1
 const initialTailSequence = 1
 const initialManifestSha256 = '8ea247ed3f0f99633c9778959dd56b38b219adb6bb2f7f2be0876ce01d6d73b1'
-const acceptedManifestLength = 6
-const acceptedManifestSha256 = 'fdbe6d1a2dacd57d9d70c999b4eb6dbcb3ef3e04af4795c2e61a772a70c560c8'
+const acceptedManifestLength = 7
+const acceptedManifestSha256 = '6633beb8cf4bf0394b70289d7168570d5619b43fd97593d6a91017d65b191bb9'
 
 export interface CoreMigrationIdentity {
   readonly name: string
@@ -28,6 +28,7 @@ export const activeCoreMigrationManifest = defineManifest(`
 004_managed_member_lifecycles.sql 12677ea8e410d43f731be1528eff0f72f0db4804c5ee14d8e18a94eea2a39955
 005_sensitive_access_audit.sql 7b9f010c388a0d156a866ecc5920d9916d4722ff21f59c6e8d9c321cc4b05c19
 006_platform_resource_purge_work.sql 9db7150e5368513816fc000937b62245fc753968cdf1d5674ac462dd3688c761
+007_permission_bundle_ownership.sql 4b5bb72428043fafeeb002a94646eb2689d92c8572a975e91356588787b79f3b
 `)
 
 export const latestCoreMigrationName = activeCoreMigrationManifest.at(-1)!.name

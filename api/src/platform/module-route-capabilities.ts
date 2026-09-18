@@ -1,4 +1,5 @@
 import type { CoreDataProductId } from '@eve-space/core-data-contract'
+import type { PlatformInstalledReviewerContributionDescriptor } from '@eve-space/platform-module-contract/installed'
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract/resources'
 import { createCoreDataCapability } from '../core-data/capabilities.js'
 import { createPlatformModuleLogger } from './module-logging.js'
@@ -26,6 +27,16 @@ export function createPlatformReviewerRouteCapabilities<
   return {
     coreData: createCoreDataCapability(productIds, 'route'),
     logger: createPlatformModuleLogger(moduleId),
+  }
+}
+
+export function createPlatformReviewerContributionRouteCapabilities<
+  const Descriptor extends PlatformInstalledReviewerContributionDescriptor,
+  const ProductIds extends readonly CoreDataProductId[] = readonly [],
+>(descriptor: Descriptor, productIds: ProductIds = [] as unknown as ProductIds) {
+  return {
+    coreData: createCoreDataCapability(productIds, 'route'),
+    logger: createPlatformModuleLogger(descriptor.moduleId),
   }
 }
 

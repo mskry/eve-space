@@ -178,6 +178,8 @@ test('seeds one guarded production-shaped organization fixture', async () => {
   for (const audience of ['member', 'hr', 'director'] as const)
     await expect(
       authorizeOrganizationContribution(summary.userId, session, {
+        publisherPackage: '@eve-space/organization-activity-manifest',
+        moduleId: 'organization-activity',
         audience,
         requiredPermission: 'organization-activity.view',
       }),

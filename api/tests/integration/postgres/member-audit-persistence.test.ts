@@ -75,7 +75,12 @@ test('migrates migration 001 skill evidence to RFC UUID observations accepted by
   upgradeUrl.pathname = `/${databaseName}`
   const upgradeConnection = postgres(upgradeUrl.toString())
   const migration001 = [
-    { moduleId: 'member-audit', name: 'member-audit-001-baseline.sql' },
+    {
+      moduleId: 'member-audit',
+      name: 'member-audit-001-baseline.sql',
+      packageName: '@eve-space/member-audit-server',
+      exportPath: './migrations/member-audit-001-baseline.sql',
+    },
   ] as const
   const migration001Operations = installedModulePersistenceOperations.filter(
     ({ moduleId, migration }) =>

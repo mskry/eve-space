@@ -3,11 +3,19 @@ import {
   isPlatformContributionId,
   isPlatformExportName,
   isPlatformMigrationFilename,
+  isPlatformPackageExport,
+  isPlatformPackageName,
   isPlatformPermissionKey,
+  isPlatformSemanticVersion,
+  isPlatformSemanticVersionRange,
   platformModuleIdIssues,
   platformPersistenceOperationIdIssues,
 } from './identifiers.js'
-import type { PlatformModuleManifest } from './manifest.js'
+import type { PlatformModuleManifest, PlatformReviewerContribution } from './manifest.js'
+import {
+  platformPermissionSensitivities,
+  type PlatformPermissionDeclaration,
+} from './permissions.js'
 import {
   platformNavigationAudiences,
   platformNavigationPlacements,
@@ -28,6 +36,7 @@ import {
   platformOrganizationCommandIds,
   platformRouteExposures,
   platformRouteTargets,
+  platformReviewerTargetKinds,
   resolvePlatformModuleRoutePath,
   type PlatformModuleSectionContribution,
 } from './server.js'
@@ -71,6 +80,16 @@ interface PersistenceReferenceValidationContext {
   readonly issues: string[]
 }
 
+interface ReviewerContributionValidationContext {
+  readonly manifest: PlatformModuleManifest
+  readonly permissions: ReadonlyMap<string, PlatformPermissionDeclaration>
+  readonly contributionIds: Map<string, string>
+  readonly routeLinks: Map<string, string>
+  readonly panelExports: Map<string, string>
+  readonly orderPositions: Map<string, string>
+  readonly issues: string[]
+}
+
 export function compareStable(left: string, right: string) {
   if (left < right) return -1
   if (left > right) return 1
@@ -109,6 +128,10 @@ export function validatePlatformModuleCandidates<
   const migrationIds = new Map<string, string>()
   const resourceIds = new Map<string, string>()
   const activityProviderIds = new Map<string, string>()
+  const reviewerContributionIds = new Map<string, string>()
+  const reviewerRouteLinks = new Map<string, string>()
+  const reviewerPanelExports = new Map<string, string>()
+  const reviewerOrderPositions = new Map<string, string>()
   const persistenceOperationOwners = indexPersistenceOperationOwners(sorted)
 
   for (const manifest of sorted)
@@ -121,7 +144,7 @@ export function validatePlatformModuleCandidates<
 
   for (const manifest of sorted) {
     validateManifestIdentity(manifest, reservedModuleIds, issues)
-    validatePackageNames(manifest, issues)
+    validateRelease(manifest, issues)
     const sections = validateSections(manifest, issues)
     validateMember(
       manifest.icon,
@@ -159,6 +182,18 @@ export function validatePlatformModuleCandidates<
     validatePages(manifest, sections, issues)
     validateNavigation(manifest, sections, navigationIds, issues)
     validateExposedContributions(manifest, issues)
+    const permissions = validatePermissions(manifest, issues)
+    validatePermissionProfiles(manifest, permissions, issues)
+    validateCatalogedContributionPermissions(manifest, permissions, issues)
+    validateReviewerContributions(
+      manifest,
+      permissions,
+      reviewerContributionIds,
+      reviewerRouteLinks,
+      reviewerPanelExports,
+      reviewerOrderPositions,
+      issues,
+    )
   }
 
   if (issues.length > 0) throw new PlatformModuleValidationError(issues)
@@ -340,8 +375,11 @@ function validateRoutes(
   productContracts: PlatformModuleValidationAuthorities['coreDataProductContracts'],
   issues: string[],
 ) {
-  for (const route of manifest.server.routes)
+  const routeIds = new Map<string, string>()
+  for (const route of manifest.server.routes) {
+    claimValue(routeIds, route.id, route.namespace, `route ID in module ${manifest.id}`, issues)
     validateRoute(manifest, sections, route, routeCoordinates, productContracts, issues)
+  }
 }
 
 function validateRoute(
@@ -386,15 +424,7 @@ function validateRoute(
   )
   validateManagedReviewerRoute(route, manifest, identity, issues)
   validateRouteExposure(route, section, manifest.id, identity, issues)
-  validateOrganizationCommands(
-    route.organizationCommands,
-    manifest.id,
-    route.target,
-    section,
-    route.requiredPermission,
-    identity,
-    issues,
-  )
+  validateOrganizationCommands(route.organizationCommands, route.target, section, identity, issues)
   validateCoreDataProducts(route, `route ${identity}`, 'route', productContracts, issues)
   validateOwnedCharacterRoute(route, identity, issues)
 }
@@ -563,10 +593,8 @@ function validateOwnedCharacterRoute(
 
 function validateOrganizationCommands(
   value: unknown,
-  moduleId: string,
   target: unknown,
   section: PlatformModuleSectionContribution | undefined,
-  requiredPermission: string,
   identity: string,
   issues: string[],
 ) {
@@ -575,14 +603,11 @@ function validateOrganizationCommands(
     issues.push(`route ${identity} organization commands must be a non-empty array`)
     return
   }
-  if (moduleId !== 'member-audit')
-    issues.push(`route ${identity} organization commands are reserved for module member-audit`)
-  const commandIds = collectOrganizationCommandIds(value, identity, issues)
+  collectOrganizationCommandIds(value, identity, issues)
   if (target !== 'managed-organization-account' && target !== 'managed-organization-character')
     issues.push(`route ${identity} organization commands require a managed reviewer target`)
   if (section?.kind !== 'access-management')
     issues.push(`route ${identity} organization commands require an access-management section`)
-  validateOrganizationCommandPermissions(commandIds, requiredPermission, identity, issues)
 }
 
 function collectOrganizationCommandIds(
@@ -604,33 +629,6 @@ function collectOrganizationCommandIds(
     if (commandIds.has(commandId))
       issues.push(`route ${identity} declares duplicate organization command ${commandId}`)
     else commandIds.add(commandId)
-  }
-  return commandIds
-}
-
-function validateOrganizationCommandPermissions(
-  commandIds: ReadonlySet<string>,
-  requiredPermission: string,
-  identity: string,
-  issues: string[],
-) {
-  const requiredPermissions = new Set([...commandIds].map(organizationCommandPermission))
-  if (requiredPermissions.size > 1)
-    issues.push(`route ${identity} cannot mix organization commands with different permissions`)
-  else {
-    const [commandPermission] = requiredPermissions
-    if (commandPermission && commandPermission !== requiredPermission)
-      issues.push(`route ${identity} organization commands require permission ${commandPermission}`)
-  }
-}
-
-function organizationCommandPermission(commandId: string) {
-  switch (commandId) {
-    case 'assign-ordinary-group':
-    case 'revoke-ordinary-group':
-      return 'member-audit.groups.manage'
-    default:
-      return 'member-audit.members.block'
   }
 }
 
@@ -1081,13 +1079,266 @@ function validateClassification(
   if (typeof value !== 'string' || !allowed.includes(value)) issues.push(message)
 }
 
-function validatePackageNames(manifest: PlatformModuleManifest, issues: string[]) {
-  const expectedServerPackage = `@eve-space/${manifest.id}-server`
-  const expectedNuxtPackage = `@eve-space/${manifest.id}-nuxt`
-  if (manifest.server.package !== expectedServerPackage)
-    issues.push(`module ${manifest.id} server package must be ${expectedServerPackage}`)
-  if (manifest.nuxt.package !== expectedNuxtPackage)
-    issues.push(`module ${manifest.id} Nuxt package must be ${expectedNuxtPackage}`)
+function validateRelease(manifest: PlatformModuleManifest, issues: string[]) {
+  const { release } = manifest
+  if (!isPlatformPackageName(release.publisherPackage))
+    issues.push(`module ${manifest.id} publisher package must be a valid npm package name`)
+  if (!isPlatformPackageName(manifest.server.package))
+    issues.push(`module ${manifest.id} server package must be a valid npm package name`)
+  if (!isPlatformPackageName(manifest.nuxt.package))
+    issues.push(`module ${manifest.id} Nuxt package must be a valid npm package name`)
+  if (!isPlatformSemanticVersion(release.version))
+    issues.push(`module ${manifest.id} release version must be a semantic version`)
+  if (!isPlatformSemanticVersionRange(release.hostContractRange))
+    issues.push(`module ${manifest.id} host contract range must be a semantic version range`)
+  const packageNames = [release.publisherPackage, manifest.server.package, manifest.nuxt.package]
+  if (new Set(packageNames).size !== packageNames.length)
+    issues.push(`module ${manifest.id} manifest, server, and Nuxt packages must be distinct`)
+}
+
+function validatePermissions(manifest: PlatformModuleManifest, issues: string[]) {
+  const permissions = new Map<string, PlatformPermissionDeclaration>()
+  if (manifest.permissions === undefined) return permissions
+  if (manifest.permissions.length === 0)
+    issues.push(`module ${manifest.id} permissions must be a non-empty array when declared`)
+  for (const permission of manifest.permissions) {
+    const identity = `permission ${permission.key}`
+    if (!isPlatformPermissionKey(permission.key) || !permission.key.startsWith(`${manifest.id}.`))
+      issues.push(`${identity} must belong to module namespace ${manifest.id}.`)
+    const key = normalizeIdentity(permission.key)
+    if (permissions.has(key)) issues.push(`${identity} is duplicated in ${manifest.id}`)
+    else permissions.set(key, permission)
+    validateDisplayText(permission.label, `${identity} label`, 80, issues)
+    validateDisplayText(permission.purpose, `${identity} purpose`, 500, issues)
+    validateAudienceList(permission.audiences, identity, issues)
+    validateMember(
+      permission.sensitivity,
+      platformPermissionSensitivities,
+      `${identity} uses unsupported sensitivity ${String(permission.sensitivity)}`,
+      issues,
+    )
+    if (typeof permission.reviewAllowed !== 'boolean')
+      issues.push(`${identity} must declare a boolean reviewAllowed policy`)
+  }
+  return permissions
+}
+
+function validatePermissionProfiles(
+  manifest: PlatformModuleManifest,
+  permissions: ReadonlyMap<string, PlatformPermissionDeclaration>,
+  issues: string[],
+) {
+  if (manifest.permissionProfiles === undefined) return
+  if (manifest.permissionProfiles.length === 0)
+    issues.push(`module ${manifest.id} permission profiles must be a non-empty array when declared`)
+  const profileIds = new Map<string, string>()
+  for (const profile of manifest.permissionProfiles) {
+    const identity = `permission profile ${manifest.id}/${profile.id}`
+    validateContributionId(profile.id, manifest.id, 'permission profile', issues)
+    claimValue(profileIds, profile.id, manifest.id, 'permission profile ID', issues)
+    validateDisplayText(profile.label, `${identity} label`, 80, issues)
+    validateDisplayText(profile.description, `${identity} description`, 500, issues)
+    validateAudienceList(profile.audiences, identity, issues)
+    validatePermissionReferences(profile.permissions, identity, permissions, undefined, issues)
+  }
+}
+
+function validateCatalogedContributionPermissions(
+  manifest: PlatformModuleManifest,
+  permissions: ReadonlyMap<string, PlatformPermissionDeclaration>,
+  issues: string[],
+) {
+  for (const route of manifest.server.routes)
+    validatePermissionReferences(
+      [route.requiredPermission, ...(route.additionalRequiredPermissions ?? [])],
+      `route ${manifest.id}/${route.id}`,
+      permissions,
+      route.audience,
+      issues,
+    )
+  for (const provider of manifest.server.activityProviders)
+    validatePermissionReferences(
+      [provider.requiredPermission, ...(provider.additionalRequiredPermissions ?? [])],
+      `activity provider ${manifest.id}/${provider.id}`,
+      permissions,
+      provider.audience,
+      issues,
+    )
+}
+
+function validateReviewerContributions(
+  manifest: PlatformModuleManifest,
+  permissions: ReadonlyMap<string, PlatformPermissionDeclaration>,
+  contributionIds: Map<string, string>,
+  routeLinks: Map<string, string>,
+  panelExports: Map<string, string>,
+  orderPositions: Map<string, string>,
+  issues: string[],
+) {
+  const context: ReviewerContributionValidationContext = {
+    manifest,
+    permissions,
+    contributionIds,
+    routeLinks,
+    panelExports,
+    orderPositions,
+    issues,
+  }
+  for (const contribution of manifest.reviewerContributions ?? [])
+    validateReviewerContribution(contribution, context)
+}
+
+function validateReviewerContribution(
+  contribution: PlatformReviewerContribution,
+  context: ReviewerContributionValidationContext,
+) {
+  const {
+    manifest,
+    permissions,
+    contributionIds,
+    routeLinks,
+    panelExports,
+    orderPositions,
+    issues,
+  } = context
+  const identity = `reviewer contribution ${manifest.id}/${contribution.id}`
+  validateContributionId(contribution.id, manifest.id, 'reviewer contribution', issues)
+  claimValue(contributionIds, contribution.id, manifest.id, 'reviewer contribution ID', issues)
+  claimValue(
+    routeLinks,
+    `${manifest.id}/${contribution.routeId}`,
+    identity,
+    'reviewer route link',
+    issues,
+  )
+  claimValue(
+    panelExports,
+    `${manifest.nuxt.package}:${contribution.panelExport}`,
+    identity,
+    'reviewer panel export',
+    issues,
+  )
+  validateMember(
+    contribution.target,
+    platformReviewerTargetKinds,
+    `${identity} uses unsupported target ${String(contribution.target)}`,
+    issues,
+  )
+  if (contribution.audience !== 'hr' && contribution.audience !== 'director')
+    issues.push(`${identity} must require an HR or director audience`)
+  validatePermissionReferences(
+    [contribution.requiredPermission],
+    identity,
+    permissions,
+    contribution.audience,
+    issues,
+  )
+  const route = manifest.server.routes.find(({ id }) => id === contribution.routeId)
+  validateReviewerContributionRoute(contribution, route, identity, issues)
+  if (!isPlatformPackageExport(contribution.panelExport))
+    issues.push(`${identity} panel export must be a package subpath export`)
+  validateDisplayText(contribution.label, `${identity} label`, 80, issues)
+  validateDisplayText(contribution.description, `${identity} description`, 500, issues)
+  validateMember(
+    contribution.icon,
+    platformIconTokens,
+    `${identity} uses invalid icon ${String(contribution.icon)}`,
+    issues,
+  )
+  validateReviewerContributionOrder(contribution, manifest.id, orderPositions, identity, issues)
+}
+
+function validateReviewerContributionRoute(
+  contribution: PlatformReviewerContribution,
+  route: PlatformRouteContribution | undefined,
+  identity: string,
+  issues: string[],
+) {
+  if (!route) {
+    issues.push(`${identity} references unknown route ${contribution.routeId}`)
+    return
+  }
+  if (route.target !== contribution.target)
+    issues.push(`${identity} target must match route ${contribution.routeId}`)
+  if (route.audience !== contribution.audience)
+    issues.push(`${identity} audience must match route ${contribution.routeId}`)
+  if (route.requiredPermission !== contribution.requiredPermission)
+    issues.push(`${identity} permission must match route ${contribution.routeId}`)
+  if ((route.additionalRequiredPermissions?.length ?? 0) > 0)
+    issues.push(
+      `${identity} route ${contribution.routeId} cannot require additional permissions not represented by the contribution`,
+    )
+}
+
+function validateReviewerContributionOrder(
+  contribution: PlatformReviewerContribution,
+  moduleId: string,
+  orderPositions: Map<string, string>,
+  identity: string,
+  issues: string[],
+) {
+  if (!Number.isSafeInteger(contribution.order) || contribution.order < 0) {
+    issues.push(`${identity} order must be a non-negative safe integer`)
+    return
+  }
+  claimValue(
+    orderPositions,
+    String(contribution.order),
+    `${moduleId}/${contribution.id}`,
+    'reviewer contribution order',
+    issues,
+  )
+}
+
+function validatePermissionReferences(
+  permissionKeys: readonly string[],
+  identity: string,
+  permissions: ReadonlyMap<string, PlatformPermissionDeclaration>,
+  audience: string | undefined,
+  issues: string[],
+) {
+  if (permissionKeys.length === 0) {
+    issues.push(`${identity} must reference at least one cataloged permission`)
+    return
+  }
+  const seen = new Set<string>()
+  for (const permissionKey of permissionKeys) {
+    const key = normalizeIdentity(permissionKey)
+    if (seen.has(key)) {
+      issues.push(`${identity} references duplicate permission ${permissionKey}`)
+      continue
+    }
+    seen.add(key)
+    const permission = permissions.get(key)
+    if (!permission) {
+      issues.push(`${identity} references unknown catalog permission ${permissionKey}`)
+      continue
+    }
+    if (audience !== undefined && !permission.audiences.includes(audience as never))
+      issues.push(
+        `${identity} audience ${audience} is not eligible for permission ${permissionKey}`,
+      )
+  }
+}
+
+function validateAudienceList(value: readonly string[], identity: string, issues: string[]) {
+  if (value.length === 0) issues.push(`${identity} audiences must be non-empty`)
+  const seen = new Set<string>()
+  for (const audience of value) {
+    validateMember(
+      audience,
+      platformOrganizationAudiences,
+      `${identity} uses unsupported audience ${String(audience)}`,
+      issues,
+    )
+    if (seen.has(audience)) issues.push(`${identity} declares duplicate audience ${audience}`)
+    else seen.add(audience)
+  }
+}
+
+function validateDisplayText(value: string, identity: string, maxLength: number, issues: string[]) {
+  if (value.trim().length === 0 || value !== value.trim() || value.length > maxLength)
+    issues.push(`${identity} must be non-empty, trimmed, and at most ${maxLength} characters`)
 }
 
 function validateContributionId(value: string, moduleId: string, kind: string, issues: string[]) {

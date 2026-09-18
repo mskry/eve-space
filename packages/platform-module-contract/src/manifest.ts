@@ -6,17 +6,36 @@ import type {
 } from './persistence.js'
 import type { PlatformResourceContribution } from './resources.js'
 import type {
+  PlatformPermissionDeclaration,
+  PlatformPermissionProfileDeclaration,
+} from './permissions.js'
+import type {
   PlatformAuthorizationStrategy,
   PlatformModuleSectionContribution,
   PlatformOrganizationContributionAuthorization,
   PlatformRouteSecurityClassification,
+  PlatformReviewerRouteLink,
 } from './server.js'
 import type {
   PlatformIconToken,
   PlatformNavigationContribution,
   PlatformNuxtExposedContributions,
   PlatformPageContribution,
+  PlatformReviewerPanelDeclaration,
 } from './nuxt.js'
+
+export const platformModuleHostContractVersion = '1.0.0'
+
+export interface PlatformModuleRelease {
+  readonly publisherPackage: string
+  readonly version: string
+  readonly hostContractRange: string
+}
+
+export interface PlatformReviewerContribution
+  extends PlatformReviewerRouteLink, PlatformReviewerPanelDeclaration {
+  readonly id: string
+}
 
 export interface PlatformRouteContribution
   extends
@@ -41,8 +60,12 @@ export interface PlatformEsiOperationContribution {
 
 export interface PlatformModuleManifest {
   readonly id: string
+  readonly release: PlatformModuleRelease
   readonly icon: PlatformIconToken
   readonly defaultEnabled: boolean
+  readonly permissions?: readonly PlatformPermissionDeclaration[]
+  readonly permissionProfiles?: readonly PlatformPermissionProfileDeclaration[]
+  readonly reviewerContributions?: readonly PlatformReviewerContribution[]
   readonly sections?: readonly PlatformModuleSectionContribution[]
   readonly server: {
     readonly package: string
@@ -59,4 +82,10 @@ export interface PlatformModuleManifest {
     readonly navigation: readonly PlatformNavigationContribution[]
     readonly exposed?: PlatformNuxtExposedContributions
   }
+}
+
+export function definePlatformModuleManifest<const Manifest extends PlatformModuleManifest>(
+  manifest: Manifest,
+) {
+  return manifest
 }

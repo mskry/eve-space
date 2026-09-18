@@ -50,30 +50,35 @@ export const installedModuleSectionDefinitions = [
 ] as const satisfies readonly PlatformInstalledModuleSectionDefinition[]
 export const installedModuleOrganizationAdmissionScopes = [
   {
+    publisherPackage: '@eve-space/member-audit-manifest',
     moduleId: 'member-audit',
     admissionScope: 'organization:v1:member-audit:hr:member-audit.assets.read',
     audience: 'hr',
     requiredPermission: 'member-audit.assets.read',
   },
   {
+    publisherPackage: '@eve-space/member-audit-manifest',
     moduleId: 'member-audit',
     admissionScope: 'organization:v1:member-audit:hr:member-audit.groups.manage',
     audience: 'hr',
     requiredPermission: 'member-audit.groups.manage',
   },
   {
+    publisherPackage: '@eve-space/member-audit-manifest',
     moduleId: 'member-audit',
     admissionScope: 'organization:v1:member-audit:hr:member-audit.mail.read',
     audience: 'hr',
     requiredPermission: 'member-audit.mail.read',
   },
   {
+    publisherPackage: '@eve-space/member-audit-manifest',
     moduleId: 'member-audit',
     admissionScope: 'organization:v1:member-audit:hr:member-audit.members.block',
     audience: 'hr',
     requiredPermission: 'member-audit.members.block',
   },
   {
+    publisherPackage: '@eve-space/member-audit-manifest',
     moduleId: 'member-audit',
     admissionScope: 'organization:v1:member-audit:hr:member-audit.search,member-audit.summary.read',
     audience: 'hr',
@@ -81,24 +86,28 @@ export const installedModuleOrganizationAdmissionScopes = [
     additionalRequiredPermissions: ['member-audit.summary.read'] as const,
   },
   {
+    publisherPackage: '@eve-space/member-audit-manifest',
     moduleId: 'member-audit',
     admissionScope: 'organization:v1:member-audit:hr:member-audit.skills.read',
     audience: 'hr',
     requiredPermission: 'member-audit.skills.read',
   },
   {
+    publisherPackage: '@eve-space/member-audit-manifest',
     moduleId: 'member-audit',
     admissionScope: 'organization:v1:member-audit:hr:member-audit.summary.read',
     audience: 'hr',
     requiredPermission: 'member-audit.summary.read',
   },
   {
+    publisherPackage: '@eve-space/member-audit-manifest',
     moduleId: 'member-audit',
     admissionScope: 'organization:v1:member-audit:hr:member-audit.wallet.read',
     audience: 'hr',
     requiredPermission: 'member-audit.wallet.read',
   },
   {
+    publisherPackage: '@eve-space/organization-activity-manifest',
     moduleId: 'organization-activity',
     admissionScope: 'organization:v1:organization-activity:member:organization-activity.view',
     audience: 'member',

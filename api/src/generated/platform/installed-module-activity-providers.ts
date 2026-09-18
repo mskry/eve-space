@@ -6,6 +6,7 @@ import { organizationActivityProvider as module1ActivityProvider0Factory } from 
 
 export const installedModuleActivityProviders = [
   {
+    publisherPackage: '@eve-space/organization-activity-manifest',
     moduleId: 'organization-activity',
     providerId: 'organization-activity',
     coreDataProducts: [] as const,

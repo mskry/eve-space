@@ -58,6 +58,19 @@ const pendingCompliance: PlatformReviewerTargetCompliance = {
   evaluatedAt: null,
 }
 
+export interface OrganizationReviewerDirectoryItem {
+  readonly managedMemberLifecycleId: string
+  readonly account: PlatformReviewerAccountSearchItem['account']
+  readonly managedAffiliation: PlatformReviewerAccountSearchItem['managedAffiliation']
+}
+
+export interface OrganizationReviewerDirectoryPage {
+  readonly organizationVersion: number
+  readonly status: PlatformReviewerAccountSearchPage['status']
+  readonly items: readonly OrganizationReviewerDirectoryItem[]
+  readonly nextCursor: string | null
+}
+
 export async function searchManagedOrganizationAccounts(input: {
   readonly organizationVersion: number
   readonly filters: PlatformReviewerAccountSearchInput
@@ -75,6 +88,27 @@ export async function searchManagedOrganizationAccounts(input: {
       ),
     { isolationLevel: 'repeatable read' },
   )
+}
+
+export async function searchManagedOrganizationDirectory(input: {
+  readonly organizationVersion: number
+  readonly filters: Pick<
+    PlatformReviewerAccountSearchInput,
+    'query' | 'corporationId' | 'cursor' | 'limit'
+  >
+  readonly now?: Date
+}): Promise<OrganizationReviewerDirectoryPage> {
+  const page = await searchManagedOrganizationAccounts(input)
+  return {
+    organizationVersion: page.organizationVersion,
+    status: page.status,
+    items: page.items.map(({ managedMemberLifecycleId, account, managedAffiliation }) => ({
+      managedMemberLifecycleId,
+      account,
+      managedAffiliation,
+    })),
+    nextCursor: page.nextCursor,
+  }
 }
 
 export class ReviewerAccountSearchInputError extends TypeError {

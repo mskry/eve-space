@@ -17,12 +17,16 @@ import {
 
 interface OrganizationCommandBinding {
   readonly actorUserId: string
+  readonly publisherPackage: string
+  readonly moduleId: string
   readonly organization: PlatformAuthorizedOrganizationContext
   readonly target: PlatformReviewerTargetContext
 }
 
 interface BoundOrganizationCommand {
   readonly actorUserId: string
+  readonly publisherPackage: string
+  readonly moduleId: string
   readonly organizationVersion: number
   readonly requiredPermission: string
   readonly targetUserId: string
@@ -37,6 +41,8 @@ export function createPlatformOrganizationCommandCapabilities<
 ): PlatformOrganizationCommandCapabilities<CommandIds> {
   const bound = Object.freeze({
     actorUserId: binding.actorUserId,
+    publisherPackage: binding.publisherPackage,
+    moduleId: binding.moduleId,
     organizationVersion: binding.organization.organizationVersion,
     requiredPermission: binding.organization.requiredPermission,
     targetUserId: binding.target.account.userId,
@@ -53,7 +59,6 @@ function addCommandCapability(
   binding: BoundOrganizationCommand,
 ) {
   if (commandId === 'assign-ordinary-group') {
-    requirePermission(binding, 'member-audit.groups.manage')
     capabilities.assignOrdinaryGroup = async (input: {
       groupId: string
       reason: string
@@ -62,7 +67,7 @@ function addCommandCapability(
       const expiresAt = parseOptionalDate(input.expiresAt)
       const result = await translateCommandError(() =>
         assignOrganizationReviewerOrdinaryGroup({
-          ...commandBinding(binding, 'member-audit.groups.manage'),
+          ...commandBinding(binding),
           groupId: input.groupId,
           reason: input.reason,
           expiresAt,
@@ -78,7 +83,6 @@ function addCommandCapability(
     return
   }
   if (commandId === 'revoke-ordinary-group') {
-    requirePermission(binding, 'member-audit.groups.manage')
     capabilities.revokeOrdinaryGroup = async (input: {
       groupId: string
       assignmentId: string
@@ -86,7 +90,7 @@ function addCommandCapability(
     }) => {
       const result = await translateCommandError(() =>
         revokeOrganizationReviewerOrdinaryGroup({
-          ...commandBinding(binding, 'member-audit.groups.manage'),
+          ...commandBinding(binding),
           groupId: input.groupId,
           assignmentId: input.assignmentId,
           reason: input.reason,
@@ -102,11 +106,10 @@ function addCommandCapability(
     return
   }
   if (commandId === 'block-member') {
-    requirePermission(binding, 'member-audit.members.block')
     capabilities.blockMember = async (input: { reason: string }) => {
       const result = await translateCommandError(() =>
         blockOrganizationReviewerMember({
-          ...commandBinding(binding, 'member-audit.members.block'),
+          ...commandBinding(binding),
           reason: input.reason,
         }),
       )
@@ -118,11 +121,10 @@ function addCommandCapability(
     }
     return
   }
-  requirePermission(binding, 'member-audit.members.block')
   capabilities.unblockMember = async (input: { reason: string }) => {
     const result = await translateCommandError(() =>
       unblockOrganizationReviewerMember({
-        ...commandBinding(binding, 'member-audit.members.block'),
+        ...commandBinding(binding),
         reason: input.reason,
       }),
     )
@@ -134,22 +136,17 @@ function addCommandCapability(
   }
 }
 
-function commandBinding<
-  Permission extends 'member-audit.groups.manage' | 'member-audit.members.block',
->(binding: BoundOrganizationCommand, requiredPermission: Permission) {
+function commandBinding(binding: BoundOrganizationCommand) {
   return {
     organizationDeploymentId: 1 as const,
     organizationVersion: binding.organizationVersion,
     actorUserId: binding.actorUserId,
+    publisherPackage: binding.publisherPackage,
+    moduleId: binding.moduleId,
     targetUserId: binding.targetUserId,
     managedMemberLifecycleId: binding.managedMemberLifecycleId,
-    requiredPermission,
+    requiredPermission: binding.requiredPermission,
   }
-}
-
-function requirePermission(binding: BoundOrganizationCommand, requiredPermission: string) {
-  if (binding.requiredPermission !== requiredPermission)
-    throw new Error(`Organization command requires route permission ${requiredPermission}`)
 }
 
 function parseOptionalDate(value: string | null | undefined) {

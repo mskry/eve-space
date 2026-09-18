@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "pnpm build:nuxt:dependencies && nuxt build",
-    "build:nuxt:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/core-data-contract build && pnpm --filter @eve-space/core-eve-projections build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts server build && tsx scripts/run-installed-module-package-script.ts nuxt build",
+    "build:nuxt:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/core-data-contract build && pnpm --filter @eve-space/core-eve-projections build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-persistence-policy build && pnpm --filter @eve-space/platform-module-conformance build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts server build && tsx scripts/run-installed-module-package-script.ts nuxt build",
     "dev": "nuxt dev",
     "dev:api": "pnpm --filter @eve-space/api dev",
     "dev:fixture:organization": "pnpm --filter @eve-space/api dev:fixture:organization",
@@ -43,8 +43,9 @@
     "stack:down": "docker compose down",
     "test:frontend": "vitest run --config vitest.config.ts && vitest run --config vitest.ui.config.ts",
     "test:frontend:coverage": "node -e \"require('node:fs').rmSync('coverage', { recursive: true, force: true })\" && vitest run --config vitest.config.ts --coverage && vitest run --config vitest.ui.config.ts --coverage",
-    "test:modules": "pnpm --filter @eve-space/core-data-contract test && pnpm --filter @eve-space/platform-module-server test && pnpm --filter @eve-space/platform-module-nuxt test && tsx scripts/run-installed-module-package-script.ts server test && tsx scripts/run-installed-module-package-script.ts nuxt test && pnpm test:module-conformance",
+    "test:modules": "pnpm --filter @eve-space/core-data-contract test && pnpm --filter @eve-space/platform-module-conformance test && pnpm --filter @eve-space/platform-module-server test && pnpm --filter @eve-space/platform-module-nuxt test && tsx scripts/run-installed-module-package-script.ts server test && tsx scripts/run-installed-module-package-script.ts nuxt test && pnpm test:module-conformance && pnpm test:platform-public-packages",
     "test:module-conformance": "tsx scripts/verify-module-conformance.ts",
+    "test:platform-public-packages": "pnpm --filter @eve-space/platform-module-conformance test:package",
     "test:modules:coverage": "pnpm --filter @eve-space/core-data-contract test:coverage && pnpm --filter @eve-space/platform-module-server test:coverage && pnpm --filter @eve-space/platform-module-nuxt test:coverage && tsx scripts/run-installed-module-package-script.ts server test:coverage && tsx scripts/run-installed-module-package-script.ts nuxt test:coverage",
     "test:nuxt:fixtures": "pnpm --filter @eve-space/platform-module-nuxt test:fixtures && tsx scripts/run-installed-module-package-script.ts nuxt test:fixtures",
     "test:registry": "pnpm test:registry:types && vitest run --config vitest.registry.config.ts",
@@ -66,7 +67,9 @@
     "postinstall": "pnpm build:nuxt:dependencies && nuxt prepare && lefthook install"
   },
   "dependencies": {
+    "@eve-space/member-audit-manifest": "workspace:*",
     "@eve-space/member-audit-nuxt": "workspace:*",
+    "@eve-space/organization-activity-manifest": "workspace:*",
     "@eve-space/organization-activity-nuxt": "workspace:*",
     "@eve-space/platform-module-contract": "workspace:*",
     "@eve-space/platform-module-nuxt": "workspace:*",
@@ -84,6 +87,8 @@
     "vue": "catalog:"
   },
   "devDependencies": {
+    "@eve-space/platform-module-conformance": "workspace:*",
+    "@eve-space/platform-module-persistence-policy": "workspace:*",
     "@hono/node-server": "catalog:",
     "@nuxt/kit": "catalog:",
     "@nuxt/test-utils": "catalog:",

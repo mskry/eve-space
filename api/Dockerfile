@@ -14,6 +14,7 @@ COPY packages/core-eve-projections/package.json ./packages/core-eve-projections/
 COPY packages/core-data-contract/package.json ./packages/core-data-contract/package.json
 COPY packages/esi-client/package.json ./packages/esi-client/package.json
 COPY packages/platform-module-contract/package.json ./packages/platform-module-contract/package.json
+COPY packages/platform-module-persistence-policy/package.json ./packages/platform-module-persistence-policy/package.json
 COPY packages/platform-module-server/package.json ./packages/platform-module-server/package.json
 COPY features ./features
 RUN pnpm install --frozen-lockfile --ignore-scripts --filter @eve-space/api...
@@ -30,9 +31,13 @@ COPY packages/esi-client/src ./packages/esi-client/src
 COPY packages/esi-client/scripts/check-runtime-imports.ts ./packages/esi-client/scripts/check-runtime-imports.ts
 COPY packages/platform-module-contract/tsconfig.json ./packages/platform-module-contract/tsconfig.json
 COPY packages/platform-module-contract/src ./packages/platform-module-contract/src
+COPY packages/platform-module-contract/bin ./packages/platform-module-contract/bin
+COPY packages/platform-module-persistence-policy/tsconfig.json ./packages/platform-module-persistence-policy/tsconfig.json
+COPY packages/platform-module-persistence-policy/src ./packages/platform-module-persistence-policy/src
 COPY packages/platform-module-server/tsconfig.json ./packages/platform-module-server/tsconfig.json
 COPY packages/platform-module-server/src ./packages/platform-module-server/src
 COPY scripts/run-installed-module-package-script.ts ./scripts/run-installed-module-package-script.ts
+COPY scripts/module-registry ./scripts/module-registry
 RUN pnpm --filter @eve-space/api build
 RUN pnpm --filter @eve-space/api --prod deploy /prod/api
 

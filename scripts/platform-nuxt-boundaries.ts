@@ -7,6 +7,7 @@ const buildModules = new Map([
   ['module.ts', 'entry'],
   ['contribution-resolution.ts', 'adapter'],
   ['page-resolution.ts', 'adapter'],
+  ['reviewer-panel-resolution.ts', 'adapter'],
   ['runtime-registration.ts', 'adapter'],
   ['templates.ts', 'adapter'],
   ['navigation.ts', 'pure'],

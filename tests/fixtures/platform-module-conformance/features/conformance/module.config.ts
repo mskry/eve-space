@@ -2,6 +2,11 @@ import type { PlatformModuleManifest } from '@eve-space/platform-module-contract
 
 const manifest = {
   id: 'conformance',
+  release: {
+    publisherPackage: '@eve-space/conformance-manifest',
+    version: '0.1.0',
+    hostContractRange: '^1.0.0',
+  },
   icon: 'corporation',
   defaultEnabled: true,
   server: {

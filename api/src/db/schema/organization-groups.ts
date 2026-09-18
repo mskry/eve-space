@@ -66,16 +66,19 @@ export const organizationPermissionBundles = pgTable(
 export const organizationPermissionBundleEntries = pgTable(
   'organization_permission_bundle_entries',
   {
+    entryId: uuid('entry_id').defaultRandom().notNull(),
     bundleId: uuid('bundle_id').notNull(),
     deploymentId: smallint('deployment_id').default(1).notNull(),
     organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
     permissionType: text('permission_type').$type<OrganizationPermissionType>().notNull(),
     permissionKey: text('permission_key').notNull(),
+    publisherPackage: text('publisher_package'),
+    moduleId: text('module_id'),
     reviewAllowed: boolean('review_allowed').default(false).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
   },
   (table) => [
-    primaryKey({ columns: [table.bundleId, table.permissionType, table.permissionKey] }),
+    primaryKey({ columns: [table.entryId] }),
     foreignKey({
       columns: [table.bundleId, table.deploymentId, table.organizationVersion],
       foreignColumns: [
@@ -94,6 +97,34 @@ export const organizationPermissionBundleEntries = pgTable(
       sql`length(permission_key) between 1 and 200
         and permission_key ~ '^[a-z][a-z0-9-]*([.:-][a-z0-9-]+)*$'`,
     ),
+    check(
+      'organization_permission_bundle_entries_ownership_check',
+      sql`(
+        permission_type = 'service'
+        and publisher_package is null
+        and module_id is null
+      ) or (
+        permission_type = 'module'
+        and (
+          (publisher_package is null and module_id is null)
+          or (
+            publisher_package = trim(publisher_package)
+            and length(publisher_package) between 1 and 214
+            and module_id is not null
+            and is_valid_module_id(module_id)
+          )
+        )
+      )`,
+    ),
+    uniqueIndex('organization_permission_bundle_entries_service_key')
+      .on(table.bundleId, table.permissionKey)
+      .where(sql`permission_type = 'service'`),
+    uniqueIndex('organization_permission_bundle_entries_module_key')
+      .on(table.bundleId, table.publisherPackage, table.moduleId, table.permissionKey)
+      .where(sql`permission_type = 'module' and publisher_package is not null`),
+    uniqueIndex('organization_permission_bundle_entries_legacy_module_key')
+      .on(table.bundleId, table.permissionKey)
+      .where(sql`permission_type = 'module' and publisher_package is null`),
   ],
 )
 

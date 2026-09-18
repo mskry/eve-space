@@ -1,0 +1,736 @@
+import { spawnSync } from 'node:child_process'
+import {
+  access,
+  copyFile,
+  cp,
+  mkdtemp,
+  mkdir,
+  readFile,
+  readdir,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { verifyInstalledModuleArtifacts } from '@eve-space/platform-module-conformance'
+import {
+  generateRegistryFiles,
+  loadInstalledModuleManifests,
+} from '../../scripts/module-registry/generator'
+
+const packageManager = 'pnpm@11.27.0'
+const moduleId = 'synthetic'
+const version = '1.2.3'
+const packageNames = {
+  manifest: '@example/synthetic-manifest',
+  server: '@example/synthetic-server',
+  nuxt: '@example/synthetic-nuxt',
+} as const
+const packageRoles = ['manifest', 'server', 'nuxt'] as const
+
+type PackageRole = (typeof packageRoles)[number]
+type JsonRecord = Record<string, unknown>
+
+interface PackedRelease {
+  readonly archives: Readonly<Record<PackageRole, string>>
+  readonly lifecycleMarker: string
+  readonly roots: Readonly<Record<PackageRole, string>>
+}
+
+interface InstalledHost {
+  readonly root: string
+  readonly lifecycleMarker: string
+  readonly packages: Readonly<Record<PackageRole, string>>
+}
+
+let suiteRoot = ''
+let baseRelease: PackedRelease
+
+beforeAll(async () => {
+  suiteRoot = await mkdtemp(join(tmpdir(), 'eve-space-external-archives-'))
+  baseRelease = await createPackedRelease(join(suiteRoot, 'base-release'))
+}, 120_000)
+
+afterAll(async () => {
+  if (suiteRoot) await rm(suiteRoot, { recursive: true, force: true })
+})
+
+describe.sequential('external module archives', () => {
+  it('installs three non-workspace archives and composes path-free server and Nuxt registries', async () => {
+    const host = await installHost(baseRelease, 'success')
+    const registry = await loadInstalledModuleManifests(host.root)
+    const files = generateRegistryFiles(
+      registry.compiled,
+      registry.persistenceRoutines,
+      registry.releases,
+    )
+    const release = registry.releases[0]!
+    const inventory = files.get('api/src/generated/platform/installed-module-inventory.ts') ?? ''
+    const reviewerCatalog =
+      files.get('api/src/generated/platform/installed-reviewer-contributions.ts') ?? ''
+    const serverModule = (await import(pathToFileURL(release.packages.server.entryPath).href)) as {
+      syntheticRoutes(): { readonly source: string }
+    }
+    const nuxtModule = (await import(pathToFileURL(release.packages.nuxt.entryPath).href)) as {
+      readonly default: { readonly source: string }
+    }
+
+    expect(release).toMatchObject({
+      moduleId,
+      publisherPackage: packageNames.manifest,
+      version,
+      packages: {
+        manifest: { name: packageNames.manifest, version, workspace: false },
+        server: { name: packageNames.server, version, workspace: false },
+        nuxt: { name: packageNames.nuxt, version, workspace: false },
+      },
+    })
+    for (const artifact of Object.values(release.packages))
+      expect(artifact.integrity).toMatch(/^sha512-/)
+    expect(serverModule.syntheticRoutes()).toEqual({ source: 'external-server' })
+    expect(nuxtModule.default).toEqual({ source: 'external-nuxt' })
+    expect(files.get('api/src/generated/platform/installed-module-routes.ts')).toContain(
+      `from '${packageNames.server}'`,
+    )
+    expect(files.get('generated/platform/installed-nuxt-modules.ts')).toContain(
+      `from '${packageNames.nuxt}'`,
+    )
+    expect(files.get('generated/platform/installed-nuxt-contributions.ts')).toContain(
+      `"packageName": "${packageNames.nuxt}"`,
+    )
+    expect(reviewerCatalog).toContain(
+      JSON.stringify(
+        [
+          {
+            publisherPackage: packageNames.manifest,
+            moduleId,
+            contributionId: 'overview',
+            routeId: 'synthetic-route',
+            routePath: '/api/modules/synthetic/accounts/:userId',
+            audience: 'hr',
+            requiredPermission: 'synthetic.review',
+            target: 'managed-organization-account',
+            panelPackage: packageNames.nuxt,
+            panelExport: './reviewer/overview',
+            label: 'Synthetic overview',
+            description: 'Review a synthetic managed member.',
+            icon: 'overview',
+            order: 10,
+          },
+        ],
+        undefined,
+        2,
+      ),
+    )
+    expect(inventory).toContain(`"publisherPackage": "${packageNames.manifest}"`)
+    expect(inventory).toContain('"integrity": "sha512-')
+    expect(inventory).not.toContain(host.root)
+    expect(inventory).not.toContain(suiteRoot)
+    expect(inventory).not.toContain('.tgz')
+    expect(reviewerCatalog).not.toContain(host.root)
+    expect(reviewerCatalog).not.toContain(suiteRoot)
+    expect(reviewerCatalog).not.toContain('.tgz')
+    await expect(access(baseRelease.lifecycleMarker)).rejects.toThrow('ENOENT')
+    await expect(access(host.lifecycleMarker)).rejects.toThrow('ENOENT')
+  }, 120_000)
+
+  it('rejects forbidden dependencies and imports from every inspectable orphan artifact', async () => {
+    const host = await installHost(baseRelease, 'forbidden-imports')
+    await updateJson(join(host.packages.server, 'package.json'), (packageJson) => {
+      packageJson.devDependencies = { postgres: '^3.4.9' }
+    })
+    await updateJson(join(host.packages.nuxt, 'package.json'), (packageJson) => {
+      packageJson.devDependencies = { postgres: '^3.4.9' }
+    })
+    await writeFile(
+      join(host.packages.server, 'dist/orphan.js'),
+      "import postgres from 'postgres'\nimport { missing } from './missing.js'\nexport const orphan = postgres(missing)\n",
+    )
+    await writeFile(
+      join(host.packages.nuxt, 'dist/orphan.js'),
+      "import postgres from 'postgres'\nexport const orphan = postgres\n",
+    )
+
+    const message = await rejectedHostMessage(host.root)
+    expect(message).toContain('DEPENDENCY_NOT_ALLOWED')
+    expect(message).toContain('IMPORT_NOT_ALLOWED')
+    expect(message).toContain('RUNTIME_DEPENDENCY_UNDECLARED')
+    expect(message).toContain('IMPORT_TARGET_MISSING')
+    expect(message).toContain('server/dist/orphan.js')
+    expect(message).toContain('nuxt/dist/orphan.js')
+  }, 120_000)
+
+  it.each([
+    [
+      'selection identity',
+      async (host: InstalledHost) => {
+        await writeInstalledSelection(host.root, 'forged-selection', packageNames.manifest)
+      },
+      'installed module forged-selection descriptor declares mismatched ID synthetic',
+    ],
+    [
+      'module identity',
+      async (host: InstalledHost) => {
+        await updateManifest(host, (manifest) => {
+          manifest.id = 'forged-module'
+        })
+      },
+      'installed module synthetic descriptor declares mismatched ID forged-module',
+    ],
+    [
+      'publisher identity',
+      async (host: InstalledHost) => {
+        await updateManifest(host, (manifest) => {
+          objectField(manifest, 'release').publisherPackage = '@example/forged-manifest'
+        })
+      },
+      'declares mismatched publisher package @example/forged-manifest',
+    ],
+    [
+      'server identity',
+      async (host: InstalledHost) => {
+        await updateJson(join(host.packages.server, 'package.json'), (packageJson) => {
+          packageJson.name = '@example/forged-server'
+        })
+      },
+      'declares changed ownership @example/forged-server',
+    ],
+    [
+      'Nuxt identity',
+      async (host: InstalledHost) => {
+        await updateJson(join(host.packages.nuxt, 'package.json'), (packageJson) => {
+          packageJson.name = '@example/forged-nuxt'
+        })
+      },
+      'declares changed ownership @example/forged-nuxt',
+    ],
+  ] as const)(
+    'rejects forged %s from installed archive contents',
+    async (label, mutate, expected) => {
+      const host = await installHost(baseRelease, `forged-${label.replaceAll(' ', '-')}`)
+      await mutate(host)
+
+      expect(await rejectedHostMessage(host.root)).toContain(expected)
+    },
+    120_000,
+  )
+
+  it.each([
+    [
+      'manifest release version',
+      async (host: InstalledHost) => {
+        await updateManifest(host, (manifest) => {
+          objectField(manifest, 'release').version = '1.2.4'
+        })
+      },
+      `release 1.2.4 does not match ${packageNames.manifest}@${version}`,
+    ],
+    [
+      'package version',
+      async (host: InstalledHost) => {
+        await updateJson(join(host.packages.server, 'package.json'), (packageJson) => {
+          packageJson.version = '1.2.4'
+        })
+      },
+      `Lockfile archive version for ${packageNames.server} does not match package version 1.2.4`,
+    ],
+  ] as const)(
+    'rejects %s skew',
+    async (label, mutate, expected) => {
+      const host = await installHost(baseRelease, `version-${label.replaceAll(' ', '-')}`)
+      await mutate(host)
+
+      expect(await rejectedHostMessage(host.root)).toContain(expected)
+    },
+    120_000,
+  )
+
+  it.each([
+    [
+      'manifest export',
+      async (host: InstalledHost) => {
+        await updateJson(join(host.packages.manifest, 'package.json'), (packageJson) => {
+          packageJson.exports = {}
+        })
+      },
+      `does not export ./manifest`,
+    ],
+    [
+      'server runtime',
+      async (host: InstalledHost) => rm(join(host.packages.server, 'dist/index.js')),
+      `Package ${packageNames.server} is missing root export`,
+    ],
+    [
+      'Nuxt runtime',
+      async (host: InstalledHost) => rm(join(host.packages.nuxt, 'dist/module.js')),
+      `Package ${packageNames.nuxt} is missing root export`,
+    ],
+    [
+      'migration',
+      async (host: InstalledHost) => {
+        await updateManifest(host, (manifest) => {
+          objectField(manifest, 'server').migrations = [{ name: 'synthetic-001.sql' }]
+        })
+      },
+      `is missing migration synthetic-001.sql`,
+    ],
+    [
+      'Nuxt page',
+      async (host: InstalledHost) =>
+        rm(join(host.packages.nuxt, 'src/runtime/app/pages/SyntheticPage.vue')),
+      `is missing Nuxt page synthetic-page`,
+    ],
+    [
+      'reviewer panel',
+      async (host: InstalledHost) => rm(join(host.packages.nuxt, 'dist/reviewer/overview.js')),
+      'REVIEWER_PANEL_MISSING',
+    ],
+  ] as const)(
+    'rejects a missing %s file',
+    async (label, mutate, expected) => {
+      const host = await installHost(baseRelease, `missing-${label.replaceAll(' ', '-')}`)
+      await mutate(host)
+
+      expect(await rejectedHostMessage(host.root)).toContain(expected)
+    },
+    120_000,
+  )
+
+  it('rejects conflicting reviewer declarations from an installed archive', async () => {
+    const host = await installHost(baseRelease, 'conflicting-reviewer-declarations')
+    await updateManifest(host, (manifest) => {
+      const contributions = manifest.reviewerContributions
+      if (!Array.isArray(contributions) || !isRecord(contributions[0]))
+        throw new Error('reviewerContributions must contain a declaration')
+      manifest.reviewerContributions = [contributions[0], { ...contributions[0], id: 'details' }]
+    })
+
+    const message = await rejectedHostMessage(host.root)
+    expect(message).toContain('reviewer route link synthetic/synthetic-route conflicts')
+    expect(message).toContain(
+      'reviewer panel export @example/synthetic-nuxt:./reviewer/overview conflicts',
+    )
+    expect(message).toContain('reviewer contribution order 10 conflicts')
+  }, 120_000)
+
+  it('rejects a reviewer panel without a default component export', async () => {
+    const host = await installHost(baseRelease, 'missing-reviewer-default-export')
+    await writeFile(
+      join(host.packages.nuxt, 'dist/reviewer/overview.js'),
+      "export const syntheticPanel = { contributionId: 'overview' }\n",
+    )
+
+    expect(await rejectedHostMessage(host.root)).toContain('REVIEWER_PANEL_DEFAULT_EXPORT_MISSING')
+  }, 120_000)
+
+  it('rejects extra migration and executable inventory', async () => {
+    const migrationHost = await installHost(baseRelease, 'extra-migration')
+    await mkdir(join(migrationHost.packages.server, 'migrations'), { recursive: true })
+    await writeFile(
+      join(migrationHost.packages.server, 'migrations/synthetic-999.sql'),
+      'select 1;\n',
+    )
+
+    expect(await rejectedHostMessage(migrationHost.root)).toContain(
+      'migration artifacts differ from its manifest',
+    )
+
+    const executableHost = await installHost(baseRelease, 'extra-executable')
+    await writeFile(
+      join(executableHost.packages.server, 'dist/index.js'),
+      "export function syntheticRoutes() { return { source: 'external-server' } }\nexport const undeclaredExecutable = true\n",
+    )
+
+    expect(await rejectedHostMessage(executableHost.root)).toContain(
+      'server exports differ from its executable inventory',
+    )
+  }, 120_000)
+
+  it('treats a stale publisher conformance report as inert after a defective artifact is repacked', async () => {
+    const variantRoot = join(suiteRoot, 'stale-report-release')
+    await cp(dirname(baseRelease.roots.manifest), variantRoot, { recursive: true })
+    const roots = packageRoots(variantRoot)
+    const priorReport = await verifyInstalledModuleArtifacts({
+      manifest: { packageRoot: roots.manifest, export: './manifest' },
+      server: { packageRoot: roots.server },
+      nuxt: { packageRoot: roots.nuxt },
+    })
+    expect(priorReport.ok).toBe(true)
+    await writeFile(
+      join(roots.server, 'dist/orphan.js'),
+      "import postgres from 'postgres'\nexport const staleArtifactDefect = postgres\n",
+    )
+    const release = await packRelease(variantRoot, roots)
+    const host = await installHost(release, 'stale-report')
+    await writeFile(
+      join(host.root, 'publisher-conformance-report.json'),
+      `${JSON.stringify(priorReport, null, 2)}\n`,
+    )
+
+    const message = await rejectedHostMessage(host.root)
+    expect(message).toContain('IMPORT_NOT_ALLOWED')
+    expect(message).toContain('RUNTIME_DEPENDENCY_UNDECLARED')
+    expect(message).not.toContain('publisher-conformance-report.json')
+  }, 120_000)
+
+  it('rejects server and Nuxt contamination in dependencies, imports, and inspectable files', async () => {
+    const host = await installHost(baseRelease, 'role-contamination')
+    await updateJson(join(host.packages.server, 'package.json'), (packageJson) => {
+      packageJson.dependencies = { [packageNames.nuxt]: version }
+    })
+    await updateJson(join(host.packages.nuxt, 'package.json'), (packageJson) => {
+      packageJson.dependencies = { [packageNames.server]: version }
+      packageJson.files = ['dist', 'src/runtime/app', 'server', 'migrations']
+    })
+    await writeFile(
+      join(host.packages.server, 'dist/orphan.js'),
+      `import nuxtModule from '${packageNames.nuxt}'\nexport const serverContamination = nuxtModule\n`,
+    )
+    await writeFile(
+      join(host.packages.server, 'dist/Contaminated.vue'),
+      '<template>server</template>\n',
+    )
+    await writeFile(
+      join(host.packages.nuxt, 'dist/orphan.js'),
+      `import { syntheticRoutes } from '${packageNames.server}'\nexport const nuxtContamination = syntheticRoutes\n`,
+    )
+    await mkdir(join(host.packages.nuxt, 'server'), { recursive: true })
+    await mkdir(join(host.packages.nuxt, 'migrations'), { recursive: true })
+    await writeFile(join(host.packages.nuxt, 'server/handler.js'), 'export const handler = true\n')
+    await writeFile(join(host.packages.nuxt, 'migrations/contaminated.sql'), 'select 1;\n')
+
+    const message = await rejectedHostMessage(host.root)
+    expect(message).toContain('PACKAGE_ROLE_DEPENDENCY_CONTAMINATION')
+    expect(message.match(/PACKAGE_ROLE_DEPENDENCY_CONTAMINATION/g)).toHaveLength(2)
+    expect(message.match(/PACKAGE_ROLE_FILE_CONTAMINATION/g)).toHaveLength(3)
+    expect(message).toContain(`Import ${packageNames.nuxt} is not allowed for server module code.`)
+    expect(message).toContain(`Import ${packageNames.server} is not allowed for nuxt module code.`)
+    expect(message).toContain('server/dist/Contaminated.vue')
+    expect(message).toContain('nuxt/server/handler.js')
+    expect(message).toContain('nuxt/migrations/contaminated.sql')
+  }, 120_000)
+})
+
+async function createPackedRelease(root: string) {
+  const roots = packageRoots(root)
+  const lifecycleScript =
+    "node -e \"require('node:fs').writeFileSync(process.env.SYNTHETIC_LIFECYCLE_MARKER, 'ran')\""
+  const scripts = {
+    prepack: lifecycleScript,
+    prepare: lifecycleScript,
+    postpack: lifecycleScript,
+    install: lifecycleScript,
+  }
+  const manifest = {
+    id: moduleId,
+    release: {
+      publisherPackage: packageNames.manifest,
+      version,
+      hostContractRange: '^1.0.0',
+    },
+    icon: 'overview',
+    defaultEnabled: false,
+    permissions: [
+      {
+        key: 'synthetic.review',
+        label: 'Review synthetic records',
+        purpose: 'Review one synthetic managed member.',
+        audiences: ['hr'],
+        sensitivity: 'sensitive',
+        reviewAllowed: false,
+      },
+    ],
+    reviewerContributions: [
+      {
+        id: 'overview',
+        routeId: 'synthetic-route',
+        audience: 'hr',
+        requiredPermission: 'synthetic.review',
+        target: 'managed-organization-account',
+        panelExport: './reviewer/overview',
+        label: 'Synthetic overview',
+        description: 'Review a synthetic managed member.',
+        icon: 'overview',
+        order: 10,
+      },
+    ],
+    server: {
+      package: packageNames.server,
+      routes: [
+        {
+          id: 'synthetic-route',
+          namespace: '/synthetic/accounts/:userId',
+          exportName: 'syntheticRoutes',
+          authorization: 'authenticated-session',
+          audience: 'hr',
+          requiredPermission: 'synthetic.review',
+          target: 'managed-organization-account',
+          exposure: 'standard',
+          persistenceOperations: [],
+        },
+      ],
+      migrations: [],
+      persistenceOperations: [],
+      resources: [],
+      esiOperations: [],
+      activityProviders: [],
+    },
+    nuxt: {
+      package: packageNames.nuxt,
+      pages: [
+        {
+          id: 'synthetic-page',
+          name: 'eve-synthetic-page',
+          path: '/synthetic',
+          file: 'src/runtime/app/pages/SyntheticPage.vue',
+          extensionPoint: 'root',
+          audience: 'authenticated',
+        },
+      ],
+      navigation: [
+        {
+          id: 'synthetic-navigation',
+          label: 'Synthetic',
+          description: 'Synthetic external module',
+          to: '/synthetic',
+          audience: 'authenticated',
+          placement: 'dashboard',
+          order: 90,
+          pageName: 'eve-synthetic-page',
+        },
+      ],
+    },
+  }
+
+  await writeFiles(roots.manifest, {
+    'package.json': json({
+      name: packageNames.manifest,
+      version,
+      packageManager,
+      type: 'module',
+      sideEffects: false,
+      exports: { './manifest': './manifest.json' },
+      files: ['manifest.json'],
+      scripts,
+    }),
+    'manifest.json': json(manifest),
+  })
+  await writeFiles(roots.server, {
+    'package.json': json({
+      name: packageNames.server,
+      version,
+      packageManager,
+      type: 'module',
+      sideEffects: false,
+      exports: {
+        '.': { types: './dist/index.d.ts', import: './dist/index.js' },
+        './migrations/*': './migrations/*',
+      },
+      files: ['dist', 'migrations'],
+      scripts,
+    }),
+    'dist/index.js': "export function syntheticRoutes() { return { source: 'external-server' } }\n",
+    'dist/index.d.ts':
+      "export declare function syntheticRoutes(): { readonly source: 'external-server' }\n",
+  })
+  await writeFiles(roots.nuxt, {
+    'package.json': json({
+      name: packageNames.nuxt,
+      version,
+      packageManager,
+      type: 'module',
+      sideEffects: ['**/*.vue'],
+      exports: {
+        '.': { types: './dist/module.d.ts', import: './dist/module.js' },
+        './reviewer/overview': './dist/reviewer/overview.js',
+      },
+      files: ['dist', 'src/runtime/app'],
+      scripts,
+    }),
+    'dist/module.js': "export default { source: 'external-nuxt' }\n",
+    'dist/module.d.ts':
+      "declare const module: { readonly source: 'external-nuxt' }\nexport default module\n",
+    'dist/reviewer/overview.js':
+      "export default { name: 'SyntheticReviewerPanel' }\nexport const syntheticPanel = { contributionId: 'overview' }\n",
+    'src/runtime/app/pages/SyntheticPage.vue':
+      '<template><main><h1>Synthetic external module</h1></main></template>\n',
+  })
+  return packRelease(root, roots)
+}
+
+async function packRelease(
+  root: string,
+  roots: Readonly<Record<PackageRole, string>>,
+): Promise<PackedRelease> {
+  const archiveRoot = join(root, 'archives')
+  const lifecycleMarker = join(root, 'pack-lifecycle-ran')
+  await mkdir(archiveRoot, { recursive: true })
+  const archives = {} as Record<PackageRole, string>
+  for (const role of packageRoles) {
+    const destination = join(archiveRoot, role)
+    await mkdir(destination, { recursive: true })
+    runPnpm(
+      roots[role],
+      [
+        '--config.ignore-scripts=true',
+        'pack',
+        '--skip-manifest-obfuscation',
+        '--pack-destination',
+        destination,
+      ],
+      lifecycleMarker,
+    )
+    const packed = (await readdir(destination)).filter((path) => path.endsWith('.tgz'))
+    if (packed.length !== 1) throw new Error(`Expected one packed ${role} archive`)
+    archives[role] = join(destination, packed[0]!)
+  }
+  return { archives, lifecycleMarker, roots }
+}
+
+async function installHost(release: PackedRelease, name: string): Promise<InstalledHost> {
+  const root = join(suiteRoot, 'hosts', name)
+  const archiveRoot = join(root, 'archives')
+  const lifecycleMarker = join(root, 'lifecycle-ran')
+  await mkdir(join(root, 'api'), { recursive: true })
+  await mkdir(join(root, 'features'), { recursive: true })
+  await mkdir(archiveRoot, { recursive: true })
+  for (const role of packageRoles)
+    await copyFile(release.archives[role], join(archiveRoot, `${role}.tgz`))
+  await writeFile(
+    join(root, 'package.json'),
+    json({
+      name: `external-module-host-${name}`,
+      private: true,
+      packageManager,
+      dependencies: {
+        [packageNames.manifest]: 'file:archives/manifest.tgz',
+        [packageNames.nuxt]: 'file:archives/nuxt.tgz',
+      },
+    }),
+  )
+  await writeFile(
+    join(root, 'api/package.json'),
+    json({
+      name: `external-module-api-${name}`,
+      private: true,
+      dependencies: { [packageNames.server]: 'file:../archives/server.tgz' },
+    }),
+  )
+  await writeFile(join(root, 'pnpm-workspace.yaml'), "packages:\n  - 'api'\n")
+  await writeInstalledSelection(root, moduleId, packageNames.manifest)
+  runPnpm(
+    root,
+    [
+      'install',
+      '--offline',
+      '--ignore-scripts',
+      '--no-frozen-lockfile',
+      '--package-import-method=copy',
+      '--reporter=silent',
+      '--store-dir',
+      join(suiteRoot, 'pnpm-store'),
+    ],
+    lifecycleMarker,
+  )
+  return {
+    root,
+    lifecycleMarker,
+    packages: {
+      manifest: await realpath(join(root, 'node_modules', ...packageNames.manifest.split('/'))),
+      server: await realpath(join(root, 'api/node_modules', ...packageNames.server.split('/'))),
+      nuxt: await realpath(join(root, 'node_modules', ...packageNames.nuxt.split('/'))),
+    },
+  }
+}
+
+async function writeInstalledSelection(root: string, selectedId: string, publisherPackage: string) {
+  await writeFile(
+    join(root, 'features/installed-modules.json'),
+    json({
+      modules: [
+        {
+          moduleId: selectedId,
+          manifest: { package: publisherPackage, export: './manifest' },
+        },
+      ],
+    }),
+  )
+}
+
+async function updateManifest(host: InstalledHost, mutate: (manifest: JsonRecord) => void) {
+  await updateJson(join(host.packages.manifest, 'manifest.json'), mutate)
+}
+
+async function updateJson(path: string, mutate: (value: JsonRecord) => void) {
+  const value = JSON.parse(await readFile(path, 'utf8')) as unknown
+  if (!isRecord(value)) throw new Error(`${path} must contain an object`)
+  mutate(value)
+  await writeFile(path, json(value))
+}
+
+async function rejectedHostMessage(root: string) {
+  try {
+    await loadInstalledModuleManifests(root)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes(root) || message.includes(suiteRoot))
+      throw new Error('Host validation failure exposed a temporary filesystem path', {
+        cause: error,
+      })
+    return message
+  }
+  throw new Error('Expected installed module host validation to fail')
+}
+
+function packageRoots(root: string): Record<PackageRole, string> {
+  return {
+    manifest: join(root, 'manifest'),
+    server: join(root, 'server'),
+    nuxt: join(root, 'nuxt'),
+  }
+}
+
+async function writeFiles(root: string, files: Readonly<Record<string, string>>) {
+  await Promise.all(
+    Object.entries(files).map(async ([path, source]) => {
+      const output = join(root, path)
+      await mkdir(dirname(output), { recursive: true })
+      await writeFile(output, source)
+    }),
+  )
+}
+
+function runPnpm(cwd: string, arguments_: readonly string[], lifecycleMarker: string) {
+  const result = spawnSync('corepack', ['pnpm', ...arguments_], {
+    cwd,
+    encoding: 'utf8',
+    maxBuffer: 16 * 1024 * 1024,
+    env: {
+      ...process.env,
+      CI: 'true',
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: '0',
+      SYNTHETIC_LIFECYCLE_MARKER: lifecycleMarker,
+    },
+  })
+  if (result.status !== 0 || result.error)
+    throw new Error(
+      `pnpm ${arguments_[0] ?? 'command'} failed: ${result.stderr || result.stdout || result.error?.message || 'unknown error'}`,
+    )
+}
+
+function objectField(value: JsonRecord, key: string) {
+  const nested = value[key]
+  if (!isRecord(nested)) throw new Error(`${key} must contain an object`)
+  return nested
+}
+
+function json(value: unknown) {
+  return `${JSON.stringify(value, null, 2)}\n`
+}
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}

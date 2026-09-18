@@ -1,0 +1,74 @@
+<script setup lang="ts">
+import type { PlatformReviewerPanelCatalogEntry } from '@eve-space/platform-module-nuxt/runtime'
+import { reviewerContributionIdentity } from '../../utils/organization-review'
+
+const props = defineProps<{
+  contributions: readonly PlatformReviewerPanelCatalogEntry[]
+  modelValue?: string
+}>()
+
+const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+
+const tabs = computed(() =>
+  props.contributions.map((contribution) => ({
+    label: contribution.label,
+    value: reviewerContributionIdentity(contribution),
+    contribution,
+  })),
+)
+</script>
+
+<template>
+  <section class="organization-review-contributions" aria-labelledby="review-contributions-heading">
+    <header>
+      <p class="ui-eyebrow">REVIEW CAPABILITIES</p>
+      <h2 id="review-contributions-heading">Available panels</h2>
+    </header>
+    <UiTabs
+      :model-value="props.modelValue"
+      :tabs="tabs"
+      aria-label="Available review panels"
+      content-class="organization-review-contributions__content"
+      list-class="organization-review-contributions__tabs"
+      :unmount-on-hide="true"
+      @update:model-value="$event && emit('update:modelValue', $event)"
+    >
+      <template #trigger="slotProps">
+        <span>{{ slotProps?.tab.label }}</span>
+      </template>
+      <template v-for="tab in tabs" :key="tab.value" #[tab.value]>
+        <slot v-if="tab.value === props.modelValue" />
+      </template>
+    </UiTabs>
+  </section>
+</template>
+
+<style scoped>
+.organization-review-contributions {
+  min-width: 0;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-raised);
+  overflow: hidden;
+}
+
+.organization-review-contributions h2 {
+  margin: 0.25rem 0 1rem;
+}
+
+.organization-review-contributions :deep(.organization-review-contributions__tabs) {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.organization-review-contributions :deep(.ui-tabs-trigger:focus-visible) {
+  outline: var(--ui-focus-ring-width) solid var(--ui-focus-ring);
+  outline-offset: -2px;
+}
+
+.organization-review-contributions :deep(.organization-review-contributions__content) {
+  min-width: 0;
+  padding-top: 1rem;
+}
+</style>

@@ -1,6 +1,15 @@
 import { CORE_DATA_PRODUCT_IDS } from '@eve-space/core-data-contract'
 import type { PlatformActivityProviderContribution } from './activity.js'
-import type { PlatformModuleManifest, PlatformRouteContribution } from './manifest.js'
+import type {
+  PlatformModuleManifest,
+  PlatformReviewerContribution,
+  PlatformRouteContribution,
+} from './manifest.js'
+import {
+  platformPermissionSensitivities,
+  type PlatformPermissionDeclaration,
+  type PlatformPermissionProfileDeclaration,
+} from './permissions.js'
 import type {
   PlatformNavigationContribution,
   PlatformNuxtExposedContributions,
@@ -27,6 +36,7 @@ import {
   platformOrganizationCommandIds,
   platformRouteExposures,
   platformRouteTargets,
+  platformReviewerTargetKinds,
   type PlatformModuleSectionContribution,
 } from './server.js'
 import {
@@ -40,6 +50,7 @@ const compiledPlatformModulesBrand: unique symbol = Symbol('compiled-platform-mo
 
 export interface PlatformModuleCandidate {
   readonly expectedModuleId: string
+  readonly expectedPublisherPackage?: string
   readonly declaration: unknown
 }
 
@@ -90,7 +101,16 @@ export function compilePlatformModules(
         issues.push(
           `installed module ${candidate.expectedModuleId} descriptor declares mismatched ID ${manifest.id}`,
         )
-      return [{ expectedModuleId: candidate.expectedModuleId, manifest }]
+      if (
+        candidate.expectedPublisherPackage !== undefined &&
+        manifest.release.publisherPackage !== candidate.expectedPublisherPackage
+      )
+        issues.push(
+          `installed module ${candidate.expectedModuleId} descriptor declares mismatched publisher package ${manifest.release.publisherPackage}; expected ${candidate.expectedPublisherPackage}`,
+        )
+      return [
+        { expectedModuleId: candidate.expectedModuleId, manifest: normalizeManifest(manifest) },
+      ]
     })
   let validatedCandidates = parsedCandidates
   try {
@@ -128,6 +148,28 @@ export function readCompiledPlatformModules(
   return compiled.modules
 }
 
+function normalizeManifest(manifest: PlatformModuleManifest): PlatformModuleManifest {
+  return {
+    ...manifest,
+    permissions: manifest.permissions
+      ?.map((permission) => ({
+        ...permission,
+        audiences: permission.audiences.toSorted(compareStable),
+      }))
+      .toSorted((left, right) => compareStable(left.key, right.key)),
+    permissionProfiles: manifest.permissionProfiles
+      ?.map((profile) => ({
+        ...profile,
+        audiences: profile.audiences.toSorted(compareStable),
+        permissions: profile.permissions.toSorted(compareStable),
+      }))
+      .toSorted((left, right) => compareStable(left.id, right.id)),
+    reviewerContributions: manifest.reviewerContributions?.toSorted(
+      (left, right) => left.order - right.order || compareStable(left.id, right.id),
+    ),
+  }
+}
+
 function parseManifest(
   value: unknown,
   expectedModuleId: string,
@@ -137,13 +179,25 @@ function parseManifest(
   const record = readRecord(
     value,
     `${path} declaration`,
-    ['id', 'icon', 'defaultEnabled', 'sections', 'server', 'nuxt'],
+    [
+      'id',
+      'release',
+      'icon',
+      'defaultEnabled',
+      'permissions',
+      'permissionProfiles',
+      'reviewerContributions',
+      'sections',
+      'server',
+      'nuxt',
+    ],
     issues,
   )
   if (!record) return undefined
   const id = readString(record.id, `${path} id`, issues)
   const icon = readDeclaredMember(record.icon, platformIconTokens, `${path} icon`, issues)
   const defaultEnabled = readBoolean(record.defaultEnabled, `${path} defaultEnabled`, issues)
+  const release = parseRelease(record.release, `${path} release`, issues)
   const server = readRecord(
     record.server,
     `${path} server`,
@@ -164,9 +218,34 @@ function parseManifest(
     ['package', 'pages', 'navigation', 'exposed'],
     issues,
   )
-  if (id === undefined || icon === undefined || defaultEnabled === undefined || !server || !nuxt)
+  if (
+    id === undefined ||
+    release === undefined ||
+    icon === undefined ||
+    defaultEnabled === undefined ||
+    !server ||
+    !nuxt
+  )
     return undefined
 
+  const permissions = readOptionalArray(
+    record.permissions,
+    `${path} permissions`,
+    issues,
+    parsePermission,
+  )
+  const permissionProfiles = readOptionalArray(
+    record.permissionProfiles,
+    `${path} permissionProfiles`,
+    issues,
+    parsePermissionProfile,
+  )
+  const reviewerContributions = readOptionalArray(
+    record.reviewerContributions,
+    `${path} reviewerContributions`,
+    issues,
+    parseReviewerContribution,
+  )
   const sections = readOptionalArray(record.sections, `${path} sections`, issues, parseSection)
   const serverPackage = readString(server.package, `${path} server.package`, issues)
   const routes = readArray(server.routes, `${path} server.routes`, issues, parseRoute)
@@ -215,8 +294,12 @@ function parseManifest(
 
   return {
     id,
+    release,
     icon,
     defaultEnabled,
+    permissions,
+    permissionProfiles,
+    reviewerContributions,
     sections,
     server: {
       package: serverPackage,
@@ -228,6 +311,177 @@ function parseManifest(
       activityProviders,
     },
     nuxt: { package: nuxtPackage, pages, navigation, exposed },
+  }
+}
+
+function parseRelease(
+  value: unknown,
+  path: string,
+  issues: string[],
+): PlatformModuleManifest['release'] | undefined {
+  const record = readRecord(
+    value,
+    path,
+    ['publisherPackage', 'version', 'hostContractRange'],
+    issues,
+  )
+  if (!record) return undefined
+  const publisherPackage = readString(record.publisherPackage, `${path}.publisherPackage`, issues)
+  const version = readString(record.version, `${path}.version`, issues)
+  const hostContractRange = readString(
+    record.hostContractRange,
+    `${path}.hostContractRange`,
+    issues,
+  )
+  if (publisherPackage === undefined || version === undefined || hostContractRange === undefined)
+    return undefined
+  return { publisherPackage, version, hostContractRange }
+}
+
+function parsePermission(
+  value: unknown,
+  path: string,
+  issues: string[],
+): PlatformPermissionDeclaration | undefined {
+  const record = readRecord(
+    value,
+    path,
+    ['key', 'label', 'purpose', 'audiences', 'sensitivity', 'reviewAllowed'],
+    issues,
+  )
+  if (!record) return undefined
+  const key = readString(record.key, `${path}.key`, issues)
+  const label = readString(record.label, `${path}.label`, issues)
+  const purpose = readString(record.purpose, `${path}.purpose`, issues)
+  const audiences = readMembers(
+    record.audiences,
+    platformOrganizationAudiences,
+    `${path}.audiences`,
+    issues,
+  )
+  const sensitivity = readDeclaredMember(
+    record.sensitivity,
+    platformPermissionSensitivities,
+    `${path}.sensitivity`,
+    issues,
+  )
+  const reviewAllowed = readBoolean(record.reviewAllowed, `${path}.reviewAllowed`, issues)
+  if (
+    key === undefined ||
+    label === undefined ||
+    purpose === undefined ||
+    audiences === undefined ||
+    sensitivity === undefined ||
+    reviewAllowed === undefined
+  )
+    return undefined
+  return { key, label, purpose, audiences, sensitivity, reviewAllowed }
+}
+
+function parsePermissionProfile(
+  value: unknown,
+  path: string,
+  issues: string[],
+): PlatformPermissionProfileDeclaration | undefined {
+  const record = readRecord(
+    value,
+    path,
+    ['id', 'label', 'description', 'audiences', 'permissions'],
+    issues,
+  )
+  if (!record) return undefined
+  const id = readString(record.id, `${path}.id`, issues)
+  const label = readString(record.label, `${path}.label`, issues)
+  const description = readString(record.description, `${path}.description`, issues)
+  const audiences = readMembers(
+    record.audiences,
+    platformOrganizationAudiences,
+    `${path}.audiences`,
+    issues,
+  )
+  const permissions = readStringArray(record.permissions, `${path}.permissions`, issues)
+  if (
+    id === undefined ||
+    label === undefined ||
+    description === undefined ||
+    audiences === undefined ||
+    permissions === undefined
+  )
+    return undefined
+  return { id, label, description, audiences, permissions }
+}
+
+function parseReviewerContribution(
+  value: unknown,
+  path: string,
+  issues: string[],
+): PlatformReviewerContribution | undefined {
+  const record = readRecord(
+    value,
+    path,
+    [
+      'id',
+      'routeId',
+      'audience',
+      'requiredPermission',
+      'target',
+      'panelExport',
+      'label',
+      'description',
+      'icon',
+      'order',
+    ],
+    issues,
+  )
+  if (!record) return undefined
+  const id = readString(record.id, `${path}.id`, issues)
+  const routeId = readString(record.routeId, `${path}.routeId`, issues)
+  const audience = readDeclaredMember(
+    record.audience,
+    platformOrganizationAudiences,
+    `${path}.audience`,
+    issues,
+  )
+  const requiredPermission = readString(
+    record.requiredPermission,
+    `${path}.requiredPermission`,
+    issues,
+  )
+  const target = readDeclaredMember(
+    record.target,
+    platformReviewerTargetKinds,
+    `${path}.target`,
+    issues,
+  )
+  const panelExport = readString(record.panelExport, `${path}.panelExport`, issues)
+  const label = readString(record.label, `${path}.label`, issues)
+  const description = readString(record.description, `${path}.description`, issues)
+  const icon = readDeclaredMember(record.icon, platformIconTokens, `${path}.icon`, issues)
+  const order = readNumber(record.order, `${path}.order`, issues)
+  if (
+    id === undefined ||
+    routeId === undefined ||
+    audience === undefined ||
+    requiredPermission === undefined ||
+    target === undefined ||
+    panelExport === undefined ||
+    label === undefined ||
+    description === undefined ||
+    icon === undefined ||
+    order === undefined
+  )
+    return undefined
+  return {
+    id,
+    routeId,
+    audience,
+    requiredPermission,
+    target,
+    panelExport,
+    label,
+    description,
+    icon,
+    order,
   }
 }
 
@@ -834,6 +1088,12 @@ function readOptionalStringArray(value: unknown, path: string, issues: string[])
       )
 }
 
+function readStringArray(value: unknown, path: string, issues: string[]) {
+  return readArray(value, path, issues, (item, itemPath, itemIssues) =>
+    readString(item, itemPath, itemIssues),
+  )
+}
+
 function readDeclaredMember<const Member extends string>(
   value: unknown,
   _allowed: readonly Member[],
@@ -865,6 +1125,17 @@ function readOptionalMembers<const Member extends string>(
     : readArray(value, path, issues, (item, itemPath, itemIssues) =>
         readDeclaredMember(item, allowed, itemPath, itemIssues),
       )
+}
+
+function readMembers<const Member extends string>(
+  value: unknown,
+  allowed: readonly Member[],
+  path: string,
+  issues: string[],
+) {
+  return readArray(value, path, issues, (item, itemPath, itemIssues) =>
+    readDeclaredMember(item, allowed, itemPath, itemIssues),
+  )
 }
 
 function deepFreeze(value: object): void {

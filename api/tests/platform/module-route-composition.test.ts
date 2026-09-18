@@ -5,6 +5,7 @@ import type {
   PlatformReviewerTargetContext,
   PlatformReviewerTargetRouteEnv,
 } from '@eve-space/platform-module-contract/server'
+import type { PlatformInstalledReviewerContributionDescriptor } from '@eve-space/platform-module-contract/installed'
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   findOwnedCharacter: vi.fn(),
   findSession: vi.fn(),
   isInstalledModuleContributionEnabled: vi.fn(),
+  loadModuleRuntimeState: vi.fn(),
   createPlatformModuleCollectionStatusReads: vi.fn(() => ({ read: vi.fn() })),
   createPlatformOrganizationCommandCapabilities: vi.fn(() => ({ blockMember: vi.fn() })),
   createPlatformReviewerCollectionStatusReads: vi.fn(() => ({ read: vi.fn() })),
@@ -21,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   createPlatformReviewerEvidenceReads: vi.fn(() => ({ read: vi.fn() })),
   createPlatformReviewerAccountSearch: vi.fn(() => ({ search: vi.fn() })),
   recordModuleSensitiveAccessDecision: vi.fn(),
+  recordDiagnostic: vi.fn(),
   resolveOrganizationReviewerTarget: vi.fn(),
 }))
 
@@ -32,7 +35,9 @@ vi.mock('../../src/auth/session-store.js', () => ({
 }))
 vi.mock('../../src/platform/module-settings.js', () => ({
   isInstalledModuleContributionEnabled: mocks.isInstalledModuleContributionEnabled,
+  loadModuleRuntimeState: mocks.loadModuleRuntimeState,
 }))
+vi.mock('../../src/logging.js', () => ({ recordDiagnostic: mocks.recordDiagnostic }))
 vi.mock('../../src/platform/module-collection-status-capabilities.js', () => ({
   createPlatformModuleCollectionStatusReads: mocks.createPlatformModuleCollectionStatusReads,
 }))
@@ -72,10 +77,20 @@ vi.mock('../../src/organization/reviewer-target.js', () => ({
   resolveOrganizationReviewerTarget: mocks.resolveOrganizationReviewerTarget,
 }))
 
-import { platformModuleRouteComposers } from '../../src/platform/module-route-composition.js'
+import {
+  composePlatformReviewerContributionRoute,
+  platformModuleRouteComposers,
+} from '../../src/platform/module-route-composition.js'
 
-const organizationDeclaration = { audience: 'member', requiredPermission: 'alpha.view' } as const
+const organizationDeclaration = {
+  publisherPackage: '@example/alpha-manifest',
+  moduleId: 'alpha',
+  audience: 'member',
+  requiredPermission: 'alpha.view',
+} as const
 const reviewerAccountDeclaration = {
+  publisherPackage: '@example/alpha-manifest',
+  moduleId: 'alpha',
   audience: 'hr',
   requiredPermission: 'member-audit.skills.read',
   sectionId: 'skills',
@@ -83,6 +98,8 @@ const reviewerAccountDeclaration = {
   exposure: 'sensitive-evidence',
 } as const
 const reviewerSearchDeclaration = {
+  publisherPackage: '@example/alpha-manifest',
+  moduleId: 'alpha',
   audience: 'hr',
   requiredPermission: 'member-audit.search',
   additionalRequiredPermissions: ['member-audit.summary.read'],
@@ -102,12 +119,36 @@ const reviewerEvidenceDeclaration = {
   },
 } as const
 const reviewerBlockDeclaration = {
+  publisherPackage: '@example/alpha-manifest',
+  moduleId: 'alpha',
   audience: 'hr',
   requiredPermission: 'member-audit.members.block',
   sectionId: 'access-management',
   target: 'managed-organization-account',
   exposure: 'standard',
   organizationCommands: ['block-member'] as const,
+} as const
+const reviewerEvidenceContribution = {
+  publisherPackage: '@example/alpha-manifest',
+  moduleId: 'alpha',
+  contributionId: 'skills',
+  routeId: 'skills-detail',
+  routePath: '/api/modules/alpha/accounts/:userId/characters/:characterId/skills',
+  sectionId: 'skills',
+  audience: 'hr',
+  requiredPermission: 'member-audit.skills.read',
+  target: 'managed-organization-character',
+  panelPackage: '@example/alpha-nuxt',
+  panelExport: './reviewer/skills',
+  label: 'Skills',
+  description: 'Review trained skills.',
+  icon: 'character',
+  order: 10,
+} as const satisfies PlatformInstalledReviewerContributionDescriptor
+const reviewerEvidenceContributionRoute = {
+  ...reviewerEvidenceDeclaration,
+  routeId: 'skills-detail',
+  namespace: '/alpha/accounts/:userId/characters/:characterId/skills',
 } as const
 const targetUserId = '00000000-0000-4000-8000-000000000002'
 const reviewerTargetContext = {
@@ -267,6 +308,8 @@ describe('platform module route composition', () => {
       ['block-member'],
       {
         actorUserId: 'user-1',
+        publisherPackage: '@example/alpha-manifest',
+        moduleId: 'alpha',
         organization: expect.objectContaining({
           organizationVersion: 7,
           requiredPermission: 'member-audit.members.block',
@@ -276,6 +319,150 @@ describe('platform module route composition', () => {
     )
     expect(mocks.resolveOrganizationReviewerTarget.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.createPlatformOrganizationCommandCapabilities.mock.invocationCallOrder[0]!,
+    )
+  })
+
+  test('binds a generated reviewer contribution to only its declared resource capabilities', async () => {
+    mocks.resolveOrganizationReviewerTarget.mockResolvedValue({
+      ...reviewerTargetContext,
+      selection: {
+        kind: 'character',
+        characterId: 90_000_001,
+        subjectLifecycleId: 'lifecycle-2',
+      },
+    })
+    const feature = new Hono<PlatformReviewerTargetRouteEnv>().get('/', (context) =>
+      context.json({ contribution: context.var.platform.reviewerTarget.selection.kind }),
+    )
+    const app = new Hono().route(
+      reviewerEvidenceContributionRoute.namespace,
+      composePlatformReviewerContributionRoute(
+        reviewerEvidenceContribution,
+        reviewerEvidenceContributionRoute,
+        feature,
+        [reviewerEvidenceContribution],
+      ),
+    )
+
+    const response = await app.request(
+      `/alpha/accounts/${targetUserId}/characters/90000001/skills`,
+      { headers: { cookie: 'eve_space_session=session-token' } },
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.createPlatformReviewerCollectionStatusReads).toHaveBeenCalledWith({
+      moduleId: 'alpha',
+      sectionId: 'skills',
+      resourceIds: ['trained-skills'],
+      target: expect.objectContaining({ organizationVersion: 7 }),
+    })
+    expect(mocks.createPlatformReviewerEvidenceSummaryReads).toHaveBeenCalledWith({
+      moduleId: 'alpha',
+      sectionId: 'skills',
+      resourceIds: ['trained-skills'],
+      target: expect.objectContaining({ organizationVersion: 7 }),
+    })
+  })
+
+  test('rejects generated descriptor and literal route disagreement during composition', () => {
+    const mismatched = {
+      ...reviewerEvidenceContribution,
+      requiredPermission: 'alpha.forged',
+    }
+    const feature = new Hono<PlatformReviewerTargetRouteEnv>().get('/', (context) =>
+      context.json(context.var.platform.reviewerTarget.selection),
+    )
+
+    expect(() =>
+      composePlatformReviewerContributionRoute(
+        mismatched,
+        reviewerEvidenceContributionRoute,
+        feature,
+        [mismatched],
+      ),
+    ).toThrow('Reviewer contribution route binding does not match its installed descriptor')
+  })
+
+  test('accepts an explicitly empty additional permission list', async () => {
+    const feature = new Hono<PlatformReviewerTargetRouteEnv>().get('/', (context) =>
+      context.json(context.var.platform.reviewerTarget.selection),
+    )
+    const app = new Hono().route(
+      reviewerEvidenceContributionRoute.namespace,
+      composePlatformReviewerContributionRoute(
+        reviewerEvidenceContribution,
+        { ...reviewerEvidenceContributionRoute, additionalRequiredPermissions: [] as const },
+        feature,
+        [reviewerEvidenceContribution],
+      ),
+    )
+
+    const response = await app.request(
+      `/alpha/accounts/${targetUserId}/characters/90000001/skills`,
+      { headers: { cookie: 'eve_space_session=session-token' } },
+    )
+
+    expect(response.status).toBe(200)
+  })
+
+  test('isolates one contribution failure without disabling an unrelated contribution', async () => {
+    const alphaContribution = accountContribution('alpha', 'overview', 10)
+    const betaContribution = accountContribution('beta', 'details', 20)
+    mocks.authorizeOrganizationReviewerContribution.mockResolvedValue({
+      authorized: true,
+      context: {
+        organizationVersion: 7,
+        audience: 'hr',
+        requiredPermission: 'beta.review',
+        entitlementScope: 'all',
+      },
+    })
+    const failing = new Hono<PlatformReviewerTargetRouteEnv>().get('/', () => {
+      throw new Error('private module failure')
+    })
+    const healthy = new Hono<PlatformReviewerTargetRouteEnv>().get('/', (context) =>
+      context.json({ module: context.var.platform.organization.requiredPermission }),
+    )
+    const app = new Hono()
+      .route(
+        '/alpha/accounts/:userId',
+        composePlatformReviewerContributionRoute(
+          alphaContribution,
+          accountContributionRoute(alphaContribution),
+          failing,
+          [alphaContribution, betaContribution],
+        ),
+      )
+      .route(
+        '/beta/accounts/:userId',
+        composePlatformReviewerContributionRoute(
+          betaContribution,
+          accountContributionRoute(betaContribution),
+          healthy,
+          [alphaContribution, betaContribution],
+        ),
+      )
+
+    const failed = await app.request(`/alpha/accounts/${targetUserId}`, {
+      headers: { cookie: 'eve_space_session=session-token' },
+    })
+    const succeeded = await app.request(`/beta/accounts/${targetUserId}`, {
+      headers: { cookie: 'eve_space_session=session-token' },
+    })
+
+    expect(failed.status).toBe(503)
+    expectPrivateResponsePolicy(failed)
+    await expect(failed.json()).resolves.toEqual({
+      code: 'REVIEWER_CONTRIBUTION_UNAVAILABLE',
+      message: 'This reviewer contribution is temporarily unavailable.',
+    })
+    expect(succeeded.status).toBe(200)
+    await expect(succeeded.json()).resolves.toEqual({ module: 'beta.review' })
+    expect(mocks.recordDiagnostic).toHaveBeenCalledWith(
+      'platform.module.error',
+      expect.objectContaining({
+        context: { moduleId: 'alpha', moduleEvent: 'reviewer.overview.failed' },
+      }),
     )
   })
 
@@ -864,4 +1051,42 @@ describe('platform module route composition', () => {
 function expectPrivateResponsePolicy(response: Response) {
   expect(response.headers.get('cache-control')).toBe('private, no-store')
   expect(response.headers.get('vary')).toBe('Cookie')
+}
+
+function accountContribution(
+  moduleId: string,
+  contributionId: string,
+  order: number,
+): PlatformInstalledReviewerContributionDescriptor {
+  return {
+    publisherPackage: `@example/${moduleId}-manifest`,
+    moduleId,
+    contributionId,
+    routeId: `${moduleId}-route`,
+    routePath: `/api/modules/${moduleId}/accounts/:userId`,
+    sectionId: 'overview',
+    audience: 'hr',
+    requiredPermission: `${moduleId}.review`,
+    target: 'managed-organization-account',
+    panelPackage: `@example/${moduleId}-nuxt`,
+    panelExport: `./reviewer/${contributionId}`,
+    label: contributionId,
+    description: `Review ${moduleId}.`,
+    icon: 'overview',
+    order,
+  }
+}
+
+function accountContributionRoute(contribution: PlatformInstalledReviewerContributionDescriptor) {
+  return {
+    publisherPackage: contribution.publisherPackage,
+    moduleId: contribution.moduleId,
+    routeId: contribution.routeId,
+    namespace: `/${contribution.moduleId}/accounts/:userId`,
+    audience: contribution.audience,
+    requiredPermission: contribution.requiredPermission,
+    sectionId: contribution.sectionId,
+    target: contribution.target,
+    exposure: 'standard' as const,
+  }
 }

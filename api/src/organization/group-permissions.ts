@@ -2,6 +2,7 @@ import { and, asc, eq, gt, isNull, or } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import {
   deploymentSettings,
+  deploymentModules,
   organizationAccountCompliance,
   organizationGroupAssignments,
   organizationGroupPermissionBundles,
@@ -9,6 +10,7 @@ import {
   organizationPermissionBundleEntries,
 } from '../db/schema.js'
 import { expireCurrentOrganizationGroupAssignments } from './group-assignment-expiry.js'
+import { currentCatalogPermission } from './permission-catalog-store.js'
 
 export async function getOrganizationGroupPermissions(
   userId: string,
@@ -20,6 +22,11 @@ export async function getOrganizationGroupPermissions(
     .select({
       type: organizationPermissionBundleEntries.permissionType,
       key: organizationPermissionBundleEntries.permissionKey,
+      publisherPackage: organizationPermissionBundleEntries.publisherPackage,
+      moduleId: organizationPermissionBundleEntries.moduleId,
+      reviewAllowed: organizationPermissionBundleEntries.reviewAllowed,
+      complianceState: organizationAccountCompliance.state,
+      moduleEnabled: deploymentModules.enabled,
     })
     .from(deploymentSettings)
     .leftJoin(
@@ -93,6 +100,10 @@ export async function getOrganizationGroupPermissions(
         ),
       ),
     )
+    .leftJoin(
+      deploymentModules,
+      eq(deploymentModules.moduleId, organizationPermissionBundleEntries.moduleId),
+    )
     .where(
       and(
         eq(organizationGroupAssignments.userId, userId),
@@ -106,8 +117,8 @@ export async function getOrganizationGroupPermissions(
           gt(organizationGroupAssignments.expiresAt, now),
         ),
         or(
-          eq(organizationAccountCompliance.state, 'compliant'),
-          eq(organizationPermissionBundleEntries.reviewAllowed, true),
+          eq(organizationPermissionBundleEntries.permissionType, 'service'),
+          eq(deploymentModules.enabled, true),
         ),
       ),
     )
@@ -117,10 +128,39 @@ export async function getOrganizationGroupPermissions(
     )
   return {
     modules: [
-      ...new Set(permissions.filter(({ type }) => type === 'module').map(({ key }) => key)),
+      ...new Set(
+        permissions
+          .filter((permission) => {
+            if (
+              permission.type !== 'module' ||
+              !permission.publisherPackage ||
+              !permission.moduleId ||
+              !permission.moduleEnabled
+            )
+              return false
+            const declaration = currentCatalogPermission({
+              publisherPackage: permission.publisherPackage,
+              moduleId: permission.moduleId,
+              key: permission.key,
+            })
+            return Boolean(
+              declaration &&
+              (permission.complianceState === 'compliant' ||
+                (permission.reviewAllowed && declaration.reviewAllowed)),
+            )
+          })
+          .map(({ key }) => key),
+      ),
     ],
     services: [
-      ...new Set(permissions.filter(({ type }) => type === 'service').map(({ key }) => key)),
+      ...new Set(
+        permissions
+          .filter(
+            ({ type, complianceState, reviewAllowed }) =>
+              type === 'service' && (complianceState === 'compliant' || reviewAllowed),
+          )
+          .map(({ key }) => key),
+      ),
     ],
   }
 }

@@ -16,7 +16,9 @@ export default defineNuxtConfig({
         contributions: [
           {
             moduleId: 'organization-activity',
+            packageName: '@eve-space/organization-activity-nuxt',
             defaultIcon: 'corporation',
+            reviewerContributions: [],
             queryAdmissionScopes: [
               {
                 routeId: 'activity-details',

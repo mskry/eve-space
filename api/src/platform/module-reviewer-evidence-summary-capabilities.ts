@@ -11,6 +11,8 @@ import { platformResources } from './resources.js'
 
 interface ReviewerEvidenceSummaryBinding {
   readonly moduleId: string
+  readonly sectionId?: string
+  readonly resourceIds?: readonly string[]
   readonly target: PlatformReviewerTargetContext
 }
 
@@ -30,6 +32,8 @@ export function createPlatformReviewerEvidenceSummaryReads(
   const resources = (options.resources ?? platformResources).filter(
     (resource) =>
       resource.moduleId === binding.moduleId &&
+      (binding.sectionId === undefined || resource.sectionId === binding.sectionId) &&
+      (binding.resourceIds === undefined || binding.resourceIds.includes(resource.resourceId)) &&
       resource.subjectKind === 'character' &&
       resource.eligibility.kind === 'current-managed-member-character' &&
       resource.sectionId !== undefined,
@@ -48,6 +52,7 @@ export function createPlatformReviewerEvidenceSummaryReads(
       createPlatformReviewerCollectionStatusReads({
         moduleId: binding.moduleId,
         sectionId,
+        resourceIds: binding.resourceIds,
         target,
       }))
 

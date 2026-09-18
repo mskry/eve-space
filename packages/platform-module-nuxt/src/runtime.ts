@@ -8,6 +8,7 @@ export * from './runtime/query-lifecycle.js'
 export * from './runtime/query-persistence-invalidation.js'
 export * from './runtime/query-persistence-presentation.js'
 export * from './runtime/resource-state.js'
+export * from './runtime/reviewer-panel.js'
 export type {
   PlatformNavigationEntry,
   PlatformNavigationIdentity,

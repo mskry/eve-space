@@ -1,12 +1,12 @@
 import type {
   PlatformAuthorizedOrganizationContext,
   PlatformAuthenticatedSessionRouteEnv,
-  PlatformOrganizationContributionAuthorization,
   PlatformOrganizationCommandId,
   PlatformOwnedCharacterRouteEnv,
   PlatformReviewerSearchRouteEnv,
   PlatformReviewerTargetRouteEnv,
 } from '@eve-space/platform-module-contract/server'
+import type { PlatformInstalledOrganizationContributionAuthorization } from '@eve-space/platform-module-contract/installed'
 import type { Context } from 'hono'
 import { createMiddleware } from 'hono/factory'
 import { authRequiredBody } from '../http/contracts.js'
@@ -60,19 +60,19 @@ type ReviewerSearchModuleEnv = {
 }
 
 export function requireModuleOrganizationAuthorization(
-  declaration: PlatformOrganizationContributionAuthorization,
+  declaration: PlatformInstalledOrganizationContributionAuthorization,
 ) {
   return requireOrganizationAuthorization(declaration, false)
 }
 
 export function requireModuleReviewerAuthorization(
-  declaration: PlatformOrganizationContributionAuthorization,
+  declaration: PlatformInstalledOrganizationContributionAuthorization,
 ) {
   return requireOrganizationAuthorization(declaration, true)
 }
 
 function requireOrganizationAuthorization(
-  declaration: PlatformOrganizationContributionAuthorization,
+  declaration: PlatformInstalledOrganizationContributionAuthorization,
   reviewer: boolean,
 ) {
   return createMiddleware<ModuleOrganizationAuthorizationEnv>(async (context, next) => {
@@ -112,7 +112,7 @@ function requireOrganizationAuthorization(
 function organizationAuthorizationDenied(
   context: Context<ModuleOrganizationAuthorizationEnv>,
   organization: NonNullable<ModuleOrganizationAuthorizationEnv['Variables']['organization']>,
-  declaration: PlatformOrganizationContributionAuthorization,
+  declaration: PlatformInstalledOrganizationContributionAuthorization,
   authorization: Extract<OrganizationContributionAuthorizationResult, { authorized: false }>,
   reviewer: boolean,
 ) {
@@ -226,6 +226,7 @@ export function exposeOwnedCharacterModuleContext(moduleId: string, sectionId?: 
 export function exposeReviewerTargetModuleContext<
   const CommandIds extends readonly PlatformOrganizationCommandId[],
 >(
+  publisherPackage: string,
   moduleId: string,
   sectionId: string | undefined,
   commandIds: CommandIds,
@@ -233,6 +234,10 @@ export function exposeReviewerTargetModuleContext<
     readonly routeId: string
     readonly resourceId: string
     readonly operationId: string
+  },
+  contribution?: {
+    readonly contributionId: string
+    readonly resourceIds: readonly string[]
   },
 ) {
   return createMiddleware<ReviewerTargetModuleEnv<CommandIds>>(async (context, next) => {
@@ -249,6 +254,7 @@ export function exposeReviewerTargetModuleContext<
     const collectionStatus = createPlatformReviewerCollectionStatusReads({
       moduleId,
       sectionId,
+      ...(contribution ? { resourceIds: contribution.resourceIds } : {}),
       target: reviewerTarget,
     })
     const platform = {
@@ -260,6 +266,7 @@ export function exposeReviewerTargetModuleContext<
       collectionStatus,
       evidenceSummary: createPlatformReviewerEvidenceSummaryReads({
         moduleId,
+        ...(contribution ? { sectionId, resourceIds: contribution.resourceIds } : {}),
         target: reviewerTarget,
       }),
       reviewerTarget,
@@ -275,6 +282,8 @@ export function exposeReviewerTargetModuleContext<
         ? {
             organizationCommands: createPlatformOrganizationCommandCapabilities(commandIds, {
               actorUserId: session.userId,
+              publisherPackage,
+              moduleId,
               organization,
               target: reviewerTarget,
             }),

@@ -8,12 +8,14 @@ import {
 import { loadEsiGatewaySources } from './esi-gateway/sources.js'
 import { loadFeatureServerSources } from './module-registry/server-sources.js'
 import { loadTypescriptSourceDirectory } from './typescript-source-directory.js'
+import { resolveInstalledModuleReleases } from './module-registry/resolved-release.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
+const { releases } = resolveInstalledModuleReleases(root)
 const [gatewaySources, apiSources, moduleSources, testSources, scriptSources] = await Promise.all([
   loadEsiGatewaySources(root),
   loadTypescriptSourceDirectory(root, join(root, 'api', 'src')),
-  loadFeatureServerSources(root),
+  loadFeatureServerSources(root, releases),
   loadTypescriptSourceDirectory(root, join(root, 'api', 'tests')),
   loadTypescriptSourceDirectory(root, join(root, 'scripts')),
 ])

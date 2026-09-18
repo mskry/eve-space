@@ -5,6 +5,7 @@ import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-mod
 export const installedNuxtContributions = [
   {
     moduleId: 'member-audit',
+    packageName: '@eve-space/member-audit-nuxt',
     defaultIcon: 'corporation',
     sections: [
       {
@@ -42,6 +43,7 @@ export const installedNuxtContributions = [
         defaultEnabled: false,
       },
     ],
+    reviewerContributions: [],
     queryAdmissionScopes: [
       {
         routeId: 'member-search',
@@ -131,8 +133,10 @@ export const installedNuxtContributions = [
   },
   {
     moduleId: 'organization-activity',
+    packageName: '@eve-space/organization-activity-nuxt',
     defaultIcon: 'corporation',
     sections: [],
+    reviewerContributions: [],
     queryAdmissionScopes: [
       {
         routeId: 'activity-details',

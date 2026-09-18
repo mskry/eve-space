@@ -4,10 +4,40 @@ import type { PlatformInstalledModuleMigrationDescriptor } from '@eve-space/plat
 
 export const installedModuleIds = ['member-audit', 'organization-activity'] as const
 export const installedModuleMigrations = [
-  { moduleId: 'member-audit', name: 'member-audit-001-baseline.sql' },
-  { moduleId: 'member-audit', name: 'member-audit-002-evidence-storage.sql' },
-  { moduleId: 'member-audit', name: 'member-audit-003-persistence-operations.sql' },
-  { moduleId: 'member-audit', name: 'member-audit-004-purge-operation.sql' },
-  { moduleId: 'member-audit', name: 'member-audit-005-resource-collection.sql' },
-  { moduleId: 'organization-activity', name: 'organization-activity-001-baseline.sql' },
+  {
+    moduleId: 'member-audit',
+    name: 'member-audit-001-baseline.sql',
+    packageName: '@eve-space/member-audit-server',
+    exportPath: './migrations/member-audit-001-baseline.sql',
+  },
+  {
+    moduleId: 'member-audit',
+    name: 'member-audit-002-evidence-storage.sql',
+    packageName: '@eve-space/member-audit-server',
+    exportPath: './migrations/member-audit-002-evidence-storage.sql',
+  },
+  {
+    moduleId: 'member-audit',
+    name: 'member-audit-003-persistence-operations.sql',
+    packageName: '@eve-space/member-audit-server',
+    exportPath: './migrations/member-audit-003-persistence-operations.sql',
+  },
+  {
+    moduleId: 'member-audit',
+    name: 'member-audit-004-purge-operation.sql',
+    packageName: '@eve-space/member-audit-server',
+    exportPath: './migrations/member-audit-004-purge-operation.sql',
+  },
+  {
+    moduleId: 'member-audit',
+    name: 'member-audit-005-resource-collection.sql',
+    packageName: '@eve-space/member-audit-server',
+    exportPath: './migrations/member-audit-005-resource-collection.sql',
+  },
+  {
+    moduleId: 'organization-activity',
+    name: 'organization-activity-001-baseline.sql',
+    packageName: '@eve-space/organization-activity-server',
+    exportPath: './migrations/organization-activity-001-baseline.sql',
+  },
 ] as const satisfies readonly PlatformInstalledModuleMigrationDescriptor[]

@@ -9,7 +9,9 @@ export default defineNuxtConfig({
         contributions: [
           {
             moduleId: 'member-audit',
+            packageName: '@eve-space/member-audit-nuxt',
             defaultIcon: 'corporation',
+            reviewerContributions: [],
             queryAdmissionScopes: [],
             navigation: [],
             pages: [],

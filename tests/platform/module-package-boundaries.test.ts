@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
+  assertInstalledFeatureBoundaries,
   descriptorBoundaryViolations,
   featurePackageManifestViolations,
   manifestCompositionBoundaryViolations,
@@ -11,6 +12,9 @@ import {
   serverSourceBoundaryViolations,
 } from '../../scripts/module-registry/feature-boundaries'
 import { loadInstalledModuleManifests } from '../../scripts/module-registry/generator'
+import { loadFeatureNuxtSources } from '../../scripts/module-registry/nuxt-boundaries'
+import type { ResolvedInstalledModuleRelease } from '../../scripts/module-registry/resolved-release'
+import { loadFeatureServerSources } from '../../scripts/module-registry/server-sources'
 import {
   loadPlatformHostSources,
   platformFeatureImportViolations,
@@ -151,6 +155,50 @@ describe('feature package dependency allowlists', () => {
       ]),
     )
   })
+
+  it('validates external packed package dependencies and built artifacts', async () => {
+    const valid = await createExternalPackageBoundaryFixture()
+    temporaryRoots.push(valid.root)
+
+    await expect(
+      assertInstalledFeatureBoundaries(valid.root, [valid.release]),
+    ).resolves.toBeUndefined()
+    await expect(loadFeatureServerSources(valid.root, [valid.release])).resolves.toHaveLength(2)
+    await expect(loadFeatureNuxtSources(valid.root, [valid.release])).resolves.toHaveLength(2)
+
+    const invalid = await createExternalPackageBoundaryFixture({
+      serverDependencies: {
+        postgres: '^3.4.0',
+        '@eve-space/bravo-server': '^1.0.0',
+      },
+      serverSource: "import 'postgres'\nimport '@eve-space/bravo-server'\n",
+      nuxtDependencies: {
+        '@example/alpha-server': '^1.2.3',
+        '@eve-space/bravo-nuxt': '^1.0.0',
+      },
+      nuxtSource:
+        "import '@example/alpha-server'\nimport '@eve-space/bravo-nuxt'\nexport default {}\n",
+    })
+    temporaryRoots.push(invalid.root)
+
+    let message = ''
+    try {
+      await assertInstalledFeatureBoundaries(invalid.root, [invalid.release])
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error)
+    }
+    for (const fragment of [
+      'dependency postgres is not allowed',
+      'dependency @eve-space/bravo-server is not allowed',
+      'import postgres is not allowed',
+      'import @eve-space/bravo-server is not allowed',
+      'dependency @example/alpha-server is not allowed',
+      'dependency @eve-space/bravo-nuxt is not allowed',
+      'import @example/alpha-server is not allowed',
+      'import @eve-space/bravo-nuxt is not allowed',
+    ])
+      expect(message).toContain(fragment)
+  })
 })
 
 describe('feature source import allowlists', () => {
@@ -165,6 +213,21 @@ describe('feature source import allowlists', () => {
             return new Hono().get('/', (context) => context.json({ ok: true }))
           }
         `),
+      ),
+    ).toEqual([])
+  })
+
+  it('allows reviewer panels to import the focused public props contract', () => {
+    expect(
+      nuxtSourceBoundaryViolations(
+        nuxtRuntimeSource(
+          `<script setup lang="ts">
+            import type { PlatformReviewerPanelProps } from '@eve-space/platform-module-nuxt/runtime/reviewer-panel'
+            defineProps<PlatformReviewerPanelProps>()
+          </script>
+          <template><section>Review</section></template>`,
+          'reviewer/OverviewPanel.vue',
+        ),
       ),
     ).toEqual([])
   })
@@ -692,6 +755,7 @@ describe('descriptor and composition purity', () => {
           import type { PlatformModuleManifest } from '@eve-space/platform-module-contract/manifest'
           const manifest = {
             id: 'alpha', icon: 'character', defaultEnabled: false,
+            release: { publisherPackage: '@eve-space/alpha-manifest', version: '0.1.0', hostContractRange: '^1.0.0' },
             server: { package: '@eve-space/alpha-server', routes: [], migrations: [], persistenceOperations: [], resources: [], esiOperations: [], activityProviders: [] },
             nuxt: { package: '@eve-space/alpha-nuxt', pages: [], navigation: [] },
           } satisfies PlatformModuleManifest
@@ -914,7 +978,7 @@ describe('descriptor and composition purity', () => {
     delete globalThis.unsafeDescriptorImported
 
     await expect(loadInstalledModuleManifests(root)).rejects.toThrow(
-      'Feature module boundary verification failed',
+      'must be a module package-export record',
     )
     expect(globalThis.unsafeDescriptorImported).toBeUndefined()
   })
@@ -1099,4 +1163,113 @@ async function createUnsafeInstalledFixture() {
     }),
   )
   return root
+}
+
+interface ExternalPackageBoundaryFixtureOptions {
+  readonly serverDependencies?: Readonly<Record<string, string>>
+  readonly serverSource?: string
+  readonly nuxtDependencies?: Readonly<Record<string, string>>
+  readonly nuxtSource?: string
+}
+
+async function createExternalPackageBoundaryFixture(
+  options: ExternalPackageBoundaryFixtureOptions = {},
+) {
+  const root = await mkdtemp(join(tmpdir(), 'eve-space-external-module-boundaries-'))
+  const serverRoot = join(root, 'installed/alpha-server')
+  const nuxtRoot = join(root, 'installed/alpha-nuxt')
+  const manifestRoot = join(root, 'installed/alpha-manifest')
+  const serverPackage = {
+    name: '@example/alpha-server',
+    type: 'module',
+    sideEffects: false,
+    exports: {
+      '.': { types: './dist/index.d.ts', import: './dist/index.js' },
+      './migrations/*': './migrations/*',
+    },
+    files: ['dist', 'migrations'],
+    dependencies: {
+      '@eve-space/platform-module-contract': '^1.0.0',
+      ...options.serverDependencies,
+    },
+  }
+  const nuxtPackage = {
+    name: '@example/alpha-nuxt',
+    type: 'module',
+    sideEffects: ['**/*.vue'],
+    exports: { '.': { types: './dist/module.d.ts', import: './dist/module.js' } },
+    files: ['dist'],
+    dependencies: { '@nuxt/kit': '^4.0.0', ...options.nuxtDependencies },
+  }
+  const files: Record<string, string> = {
+    'installed/alpha-server/package.json': JSON.stringify(serverPackage),
+    'installed/alpha-server/dist/index.js':
+      options.serverSource ??
+      "import {} from '@eve-space/platform-module-contract/server'\nexport function alphaRoutes() {}\n",
+    'installed/alpha-server/dist/index.d.ts':
+      "import type { PlatformModuleRouteCapabilities } from '@eve-space/platform-module-contract/server'\nexport declare function alphaRoutes(capabilities: PlatformModuleRouteCapabilities): void\n",
+    'installed/alpha-nuxt/package.json': JSON.stringify(nuxtPackage),
+    'installed/alpha-nuxt/dist/module.js':
+      options.nuxtSource ??
+      "import { defineNuxtModule } from '@nuxt/kit'\nexport default defineNuxtModule({})\n",
+    'installed/alpha-nuxt/dist/module.d.ts':
+      'declare const feature: unknown\nexport default feature\n',
+  }
+  await Promise.all(
+    Object.entries(files).map(async ([path, source]) => {
+      const output = join(root, path)
+      await mkdir(dirname(output), { recursive: true })
+      await writeFile(output, source)
+    }),
+  )
+
+  const manifest = {
+    id: 'alpha',
+    release: {
+      publisherPackage: '@example/alpha-manifest',
+      version: '1.2.3',
+      hostContractRange: '^1.0.0',
+    },
+    icon: 'character',
+    defaultEnabled: false,
+    server: {
+      package: '@example/alpha-server',
+      routes: [],
+      migrations: [],
+      persistenceOperations: [],
+      resources: [],
+      esiOperations: [],
+      activityProviders: [],
+    },
+    nuxt: { package: '@example/alpha-nuxt', pages: [], navigation: [] },
+  } as const
+  const release = {
+    moduleId: 'alpha',
+    publisherPackage: '@example/alpha-manifest',
+    version: '1.2.3',
+    manifest,
+    packages: {
+      manifest: externalPackageArtifact('@example/alpha-manifest', manifestRoot, 'manifest.json'),
+      server: externalPackageArtifact('@example/alpha-server', serverRoot, 'dist/index.js'),
+      nuxt: externalPackageArtifact('@example/alpha-nuxt', nuxtRoot, 'dist/module.js'),
+    },
+    migrations: [],
+    nuxtPages: {},
+  } satisfies ResolvedInstalledModuleRelease
+  return { root, release }
+}
+
+function externalPackageArtifact(
+  name: string,
+  packageRoot: string,
+  entry: string,
+): ResolvedInstalledModuleRelease['packages']['server'] {
+  return {
+    name,
+    version: '1.2.3',
+    integrity: 'sha512-fixture',
+    root: packageRoot,
+    entryPath: join(packageRoot, entry),
+    workspace: false,
+  }
 }

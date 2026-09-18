@@ -105,6 +105,47 @@ test('reports disabled sections unavailable without reading collection authority
   expect(read).toHaveBeenCalledOnce()
 })
 
+test('limits contribution summaries to the exact declared section and resources', async () => {
+  const read = vi.fn(async (resourceId: string, characterId: number) =>
+    status(resourceId, characterId),
+  )
+  const summary = createPlatformReviewerEvidenceSummaryReads(
+    {
+      moduleId: 'member-audit',
+      sectionId: 'wallet',
+      resourceIds: ['wallet-balance'],
+      target,
+    },
+    {
+      resources,
+      isContributionEnabled: vi.fn().mockResolvedValue(true),
+      createStatusReads: () => ({ read }),
+    },
+  )
+
+  const result = await summary.read()
+
+  expect(result).toEqual(
+    target.characters.map(({ characterId }) => ({
+      characterId,
+      sections: [
+        {
+          sectionId: 'wallet',
+          resources: [
+            {
+              resourceId: 'wallet-balance',
+              status: 'current',
+              validatedAt: '2026-09-16T12:00:00.000Z',
+            },
+          ],
+        },
+      ],
+    })),
+  )
+  expect(read).toHaveBeenCalledTimes(2)
+  expect(read).not.toHaveBeenCalledWith('wallet-journal', expect.any(Number))
+})
+
 function resource(sectionId: string, resourceId: string) {
   return {
     moduleId: 'member-audit',

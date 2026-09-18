@@ -62,6 +62,8 @@ export const installedModuleRoutes = new Hono()
     platformModuleRouteComposers['managed-organization-account-search'](
       'member-audit',
       {
+        publisherPackage: '@eve-space/member-audit-manifest',
+        moduleId: 'member-audit',
         audience: 'hr',
         requiredPermission: 'member-audit.search',
         additionalRequiredPermissions: ['member-audit.summary.read'] as const,
@@ -77,6 +79,8 @@ export const installedModuleRoutes = new Hono()
     platformModuleRouteComposers['managed-organization-account'](
       'member-audit',
       {
+        publisherPackage: '@eve-space/member-audit-manifest',
+        moduleId: 'member-audit',
         audience: 'hr',
         requiredPermission: 'member-audit.summary.read',
         sectionId: 'overview',
@@ -91,6 +95,8 @@ export const installedModuleRoutes = new Hono()
     platformModuleRouteComposers['managed-organization-character'](
       'member-audit',
       {
+        publisherPackage: '@eve-space/member-audit-manifest',
+        moduleId: 'member-audit',
         audience: 'hr',
         requiredPermission: 'member-audit.skills.read',
         sectionId: 'skills',
@@ -110,6 +116,8 @@ export const installedModuleRoutes = new Hono()
     platformModuleRouteComposers['managed-organization-character'](
       'member-audit',
       {
+        publisherPackage: '@eve-space/member-audit-manifest',
+        moduleId: 'member-audit',
         audience: 'hr',
         requiredPermission: 'member-audit.assets.read',
         sectionId: 'assets',
@@ -129,6 +137,8 @@ export const installedModuleRoutes = new Hono()
     platformModuleRouteComposers['managed-organization-character'](
       'member-audit',
       {
+        publisherPackage: '@eve-space/member-audit-manifest',
+        moduleId: 'member-audit',
         audience: 'hr',
         requiredPermission: 'member-audit.wallet.read',
         sectionId: 'wallet',
@@ -148,6 +158,8 @@ export const installedModuleRoutes = new Hono()
     platformModuleRouteComposers['managed-organization-character'](
       'member-audit',
       {
+        publisherPackage: '@eve-space/member-audit-manifest',
+        moduleId: 'member-audit',
         audience: 'hr',
         requiredPermission: 'member-audit.mail.read',
         sectionId: 'mail',
@@ -167,6 +179,8 @@ export const installedModuleRoutes = new Hono()
     platformModuleRouteComposers['managed-organization-account'](
       'member-audit',
       {
+        publisherPackage: '@eve-space/member-audit-manifest',
+        moduleId: 'member-audit',
         audience: 'hr',
         requiredPermission: 'member-audit.groups.manage',
         sectionId: 'access-management',
@@ -182,6 +196,8 @@ export const installedModuleRoutes = new Hono()
     platformModuleRouteComposers['managed-organization-account'](
       'member-audit',
       {
+        publisherPackage: '@eve-space/member-audit-manifest',
+        moduleId: 'member-audit',
         audience: 'hr',
         requiredPermission: 'member-audit.members.block',
         sectionId: 'access-management',
@@ -196,7 +212,12 @@ export const installedModuleRoutes = new Hono()
     '/organization-activity/details',
     platformModuleRouteComposers['authenticated-session'](
       'organization-activity',
-      { audience: 'member', requiredPermission: 'organization-activity.view' },
+      {
+        publisherPackage: '@eve-space/organization-activity-manifest',
+        moduleId: 'organization-activity',
+        audience: 'member',
+        requiredPermission: 'organization-activity.view',
+      },
       module1Route0,
     ),
   )
@@ -204,7 +225,12 @@ export const installedModuleRoutes = new Hono()
     '/organization-activity/characters/:characterId',
     platformModuleRouteComposers['owned-character'](
       'organization-activity',
-      { audience: 'member', requiredPermission: 'organization-activity.view' },
+      {
+        publisherPackage: '@eve-space/organization-activity-manifest',
+        moduleId: 'organization-activity',
+        audience: 'member',
+        requiredPermission: 'organization-activity.view',
+      },
       module1Route1,
     ),
   )

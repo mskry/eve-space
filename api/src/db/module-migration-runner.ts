@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises'
 import {
   isPlatformMigrationFilename,
   isPlatformModuleId,
+  isPlatformPackageExport,
+  isPlatformPackageName,
 } from '@eve-space/platform-module-contract/identifiers'
 import type { PlatformInstalledModuleMigrationDescriptor } from '@eve-space/platform-module-contract/installed'
 import type postgres from 'postgres'
@@ -24,7 +26,11 @@ import {
 
 const moduleMigrationLockTimeoutMs = 30_000
 
-export type InstalledModuleMigrationDescriptor = PlatformInstalledModuleMigrationDescriptor
+export type InstalledModuleMigrationDescriptor = Pick<
+  PlatformInstalledModuleMigrationDescriptor,
+  'moduleId' | 'name'
+> &
+  Partial<Pick<PlatformInstalledModuleMigrationDescriptor, 'packageName' | 'exportPath'>>
 
 export interface ModuleMigrationSet {
   readonly moduleId: string
@@ -38,11 +44,13 @@ export type ModuleMigrationSqlLoader = (
 
 export async function loadInstalledModuleMigrationSets(
   descriptors: readonly InstalledModuleMigrationDescriptor[],
-  loadSql: ModuleMigrationSqlLoader = loadModuleMigrationSql,
+  loadSql?: ModuleMigrationSqlLoader,
   moduleIds: readonly string[] = [...new Set(descriptors.map(({ moduleId }) => moduleId))],
   persistenceOperations: readonly ModulePersistenceRoutineDescriptor[] = [],
 ): Promise<readonly ModuleMigrationSet[]> {
   validateDescriptors(descriptors, moduleIds)
+  if (!loadSql) validateDescriptorPackageExports(descriptors)
+  const migrationSqlLoader = loadSql ?? loadModuleMigrationSql
   validatePersistenceOperations(persistenceOperations, descriptors, moduleIds)
   const grouped = new Map<string, InstalledModuleMigrationDescriptor[]>()
   for (const moduleId of moduleIds) grouped.set(moduleId, [])
@@ -69,7 +77,7 @@ export async function loadInstalledModuleMigrationSets(
           migrations: await Promise.all(
             migrations.map(async ({ name, ...descriptor }) => ({
               name,
-              sql: await loadSql({ name, ...descriptor }),
+              sql: await migrationSqlLoader({ name, ...descriptor }),
             })),
           ),
         }
@@ -283,8 +291,13 @@ function withCleanupFailure(error: unknown, cleanupFailure: Failure | undefined)
   )
 }
 
-async function loadModuleMigrationSql({ moduleId, name }: InstalledModuleMigrationDescriptor) {
-  const resolved = import.meta.resolve(`@eve-space/${moduleId}-server/migrations/${name}`)
+async function loadModuleMigrationSql({
+  packageName,
+  exportPath,
+}: InstalledModuleMigrationDescriptor) {
+  if (!packageName || !exportPath)
+    throw new Error('Installed module migration package coordinates are required')
+  const resolved = import.meta.resolve(`${packageName}/${exportPath.slice(2)}`)
   return readFile(new URL(resolved), 'utf8')
 }
 
@@ -305,6 +318,21 @@ function validateDescriptors(
     identities.add(identity)
   }
   assertDistinctModuleMigrationLockKeys(moduleIds)
+}
+
+function validateDescriptorPackageExports(
+  descriptors: readonly InstalledModuleMigrationDescriptor[],
+) {
+  for (const { moduleId, name, packageName, exportPath } of descriptors) {
+    if (typeof packageName !== 'string' || !isPlatformPackageName(packageName))
+      throw new Error(`Migration ${moduleId}/${name} has invalid package ${packageName}`)
+    if (
+      typeof exportPath !== 'string' ||
+      !isPlatformPackageExport(exportPath) ||
+      exportPath !== `./migrations/${name}`
+    )
+      throw new Error(`Migration ${moduleId}/${name} has invalid package export ${exportPath}`)
+  }
 }
 
 function validatePersistenceOperations(

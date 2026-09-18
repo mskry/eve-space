@@ -10,6 +10,12 @@ describe('dashboard section visibility', () => {
     expect(visibleDashboardSections(true).some((section) => section.to === '/admin')).toBe(true)
   })
 
+  it('does not expose organization review as a broad dashboard entry', () => {
+    expect(
+      visibleDashboardSections(true).some((section) => section.to === '/organization/review'),
+    ).toBe(false)
+  })
+
   it('retains distinct identities when protected destinations share the roster fallback', () => {
     const rosterSections = visibleDashboardSections(false).filter(
       (section) => section.to === '/characters',

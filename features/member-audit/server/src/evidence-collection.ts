@@ -18,15 +18,15 @@ type EvidenceCoreDataProductId =
   | 'static-location-labels'
 type EvidenceScalar = string | number | boolean | null
 export type IntentionalEvidence = Readonly<Record<string, EvidenceScalar | EvidenceScalar[]>>
-export type EvidenceCheckpoint = Readonly<Record<string, EvidenceScalar>>
+type EvidenceCheckpoint = Readonly<Record<string, EvidenceScalar>>
 export type EvidenceSectionId = 'assets' | 'wallet' | 'mail'
-export type EvidenceResourceId =
+type EvidenceResourceId =
   | 'assets'
   | 'wallet-journal'
   | 'wallet-transactions'
   | 'mail-headers'
   | 'mail-details'
-export type EvidenceRecordKind =
+type EvidenceRecordKind =
   | 'asset'
   | 'wallet-journal'
   | 'wallet-transaction'

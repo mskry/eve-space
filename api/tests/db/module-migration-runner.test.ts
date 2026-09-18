@@ -26,9 +26,9 @@ describe('installed module migration loading', () => {
     await expect(
       loadInstalledModuleMigrationSets(
         [
-          { moduleId: 'beta', name: 'beta-002-second.sql' },
-          { moduleId: 'alpha', name: 'alpha-001-first.sql' },
-          { moduleId: 'beta', name: 'beta-001-first.sql' },
+          migration('beta', 'beta-002-second.sql'),
+          migration('alpha', 'alpha-001-first.sql'),
+          migration('beta', 'beta-001-first.sql'),
         ],
         loadSql,
       ),
@@ -52,7 +52,7 @@ describe('installed module migration loading', () => {
 
     await expect(
       loadInstalledModuleMigrationSets(
-        [{ moduleId: 'alpha', name: 'alpha-001-first.sql' }],
+        [migration('alpha', 'alpha-001-first.sql')],
         async () => declaredReadRoutine(),
         ['alpha'],
         [operation],
@@ -69,7 +69,7 @@ describe('installed module migration loading', () => {
   test('rejects persistence routines associated with an uninstalled migration', async () => {
     await expect(
       loadInstalledModuleMigrationSets(
-        [{ moduleId: 'alpha', name: 'alpha-002-other.sql' }],
+        [migration('alpha', 'alpha-002-other.sql')],
         async () => 'select 1',
         ['alpha'],
         [persistenceOperationDescriptor()],
@@ -78,16 +78,13 @@ describe('installed module migration loading', () => {
   })
 
   test.each([
-    [[{ moduleId: 'core', name: 'core-001.sql' }], 'Invalid installed module migration owner'],
-    [[{ moduleId: 'Alpha', name: 'Alpha-001.sql' }], 'Invalid installed module migration owner'],
-    [[{ moduleId: 'alpha', name: '001.sql' }], 'must use package-local alpha-*.sql'],
-    [[{ moduleId: 'alpha', name: 'alpha-001?alias.sql' }], 'must use package-local alpha-*.sql'],
-    [[{ moduleId: 'alpha', name: 'alpha-../001.sql' }], 'must use package-local alpha-*.sql'],
+    [[migration('core', 'core-001.sql')], 'Invalid installed module migration owner'],
+    [[migration('Alpha', 'Alpha-001.sql')], 'Invalid installed module migration owner'],
+    [[migration('alpha', '001.sql')], 'must use package-local alpha-*.sql'],
+    [[migration('alpha', 'alpha-001?alias.sql')], 'must use package-local alpha-*.sql'],
+    [[migration('alpha', 'alpha-../001.sql')], 'must use package-local alpha-*.sql'],
     [
-      [
-        { moduleId: 'alpha', name: 'alpha-001.sql' },
-        { moduleId: 'alpha', name: 'alpha-001.sql' },
-      ],
+      [migration('alpha', 'alpha-001.sql'), migration('alpha', 'alpha-001.sql')],
       'Duplicate installed module migration alpha/alpha-001.sql',
     ],
   ])('rejects invalid descriptors before loading SQL', async (descriptors, message) => {
@@ -632,5 +629,14 @@ function persistenceOperationDescriptor() {
     revision: 1,
     routineName: 'persist_read_snapshot',
     schemaName: 'eve_module_alpha',
+  }
+}
+
+function migration(moduleId: string, name: string) {
+  return {
+    moduleId,
+    name,
+    packageName: `@example/${moduleId}-server`,
+    exportPath: `./migrations/${name}`,
   }
 }

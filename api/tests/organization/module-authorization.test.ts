@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  currentCatalogPermission: vi.fn(),
   getOrganizationGroupPermissions: vi.fn(),
   grants: [] as unknown[],
 }))
 
 vi.mock('../../src/organization/group-permissions.js', () => ({
   getOrganizationGroupPermissions: mocks.getOrganizationGroupPermissions,
+}))
+vi.mock('../../src/organization/permission-catalog-store.js', () => ({
+  currentCatalogPermission: mocks.currentCatalogPermission,
 }))
 vi.mock('../../src/db/client.js', () => ({
   db: { select: vi.fn(() => query(mocks.grants)) },
@@ -31,6 +35,7 @@ describe('organization module contribution authorization', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.grants = []
+    mocks.currentCatalogPermission.mockImplementation((value) => value)
     mocks.getOrganizationGroupPermissions.mockResolvedValue({
       modules: ['alpha.view'],
       services: [],
@@ -42,7 +47,7 @@ describe('organization module contribution authorization', () => {
       authorizeOrganizationContribution(
         'user-1',
         organization,
-        { audience: 'member', requiredPermission: 'alpha.view' },
+        moduleDeclaration('member', 'alpha.view'),
         now,
       ),
     ).resolves.toEqual({
@@ -62,7 +67,7 @@ describe('organization module contribution authorization', () => {
       authorizeOrganizationContribution(
         'user-1',
         { ...organization, blocked: true },
-        { audience: 'member', requiredPermission: 'alpha.view' },
+        moduleDeclaration('member', 'alpha.view'),
         now,
       ),
     ).resolves.toEqual({ authorized: false, reason: 'blocked' })
@@ -70,7 +75,7 @@ describe('organization module contribution authorization', () => {
       authorizeOrganizationContribution(
         'user-1',
         { ...organization, state: 'suspended', accessValidUntil: null },
-        { audience: 'member', requiredPermission: 'alpha.view' },
+        moduleDeclaration('member', 'alpha.view'),
         now,
       ),
     ).resolves.toEqual({ authorized: false, reason: 'compliance' })
@@ -91,7 +96,7 @@ describe('organization module contribution authorization', () => {
       authorizeOrganizationContribution(
         'user-1',
         review,
-        { audience: 'member', requiredPermission: 'alpha.view' },
+        moduleDeclaration('member', 'alpha.view'),
         now,
       ),
     ).resolves.toEqual({ authorized: false, reason: 'permission' })
@@ -99,7 +104,7 @@ describe('organization module contribution authorization', () => {
       authorizeOrganizationContribution(
         'user-1',
         review,
-        { audience: 'member', requiredPermission: 'alpha.view' },
+        moduleDeclaration('member', 'alpha.view'),
         now,
       ),
     ).resolves.toMatchObject({
@@ -108,12 +113,29 @@ describe('organization module contribution authorization', () => {
     })
   })
 
+  test('denies a declaration whose exact publisher ownership is absent from the current catalog', async () => {
+    mocks.currentCatalogPermission.mockReturnValueOnce(undefined)
+
+    await expect(
+      authorizeOrganizationContribution(
+        'user-1',
+        organization,
+        {
+          ...moduleDeclaration('member', 'alpha.view'),
+          publisherPackage: '@replacement/alpha-manifest',
+        },
+        now,
+      ),
+    ).resolves.toEqual({ authorized: false, reason: 'permission' })
+    expect(mocks.getOrganizationGroupPermissions).not.toHaveBeenCalled()
+  })
+
   test('requires exact HR grants and accepts director or current owner evidence', async () => {
     await expect(
       authorizeOrganizationContribution(
         'user-1',
         organization,
-        { audience: 'hr', requiredPermission: 'alpha.view' },
+        moduleDeclaration('hr', 'alpha.view'),
         now,
       ),
     ).resolves.toEqual({ authorized: false, reason: 'audience' })
@@ -123,7 +145,7 @@ describe('organization module contribution authorization', () => {
       authorizeOrganizationContribution(
         'user-1',
         organization,
-        { audience: 'hr', requiredPermission: 'alpha.view' },
+        moduleDeclaration('hr', 'alpha.view'),
         now,
       ),
     ).resolves.toMatchObject({ authorized: true })
@@ -133,7 +155,7 @@ describe('organization module contribution authorization', () => {
       authorizeOrganizationContribution(
         'user-1',
         organization,
-        { audience: 'director', requiredPermission: 'alpha.view' },
+        moduleDeclaration('director', 'alpha.view'),
         now,
       ),
     ).resolves.toMatchObject({ authorized: true })
@@ -144,6 +166,7 @@ describe('organization reviewer contribution authorization', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.grants = []
+    mocks.currentCatalogPermission.mockImplementation((value) => value)
     mocks.getOrganizationGroupPermissions.mockResolvedValue({
       modules: ['member-audit.skills.read'],
       services: [],
@@ -159,7 +182,7 @@ describe('organization reviewer contribution authorization', () => {
         authorizeOrganizationReviewerContribution(
           'user-1',
           organization,
-          { audience: 'hr', requiredPermission: 'member-audit.skills.read' },
+          moduleDeclaration('hr', 'member-audit.skills.read'),
           now,
         ),
       ).resolves.toEqual({
@@ -182,7 +205,7 @@ describe('organization reviewer contribution authorization', () => {
       authorizeOrganizationReviewerContribution(
         'user-1',
         organization,
-        { audience: 'hr', requiredPermission: 'member-audit.skills.read' },
+        moduleDeclaration('hr', 'member-audit.skills.read'),
         now,
       ),
     ).resolves.toEqual({ authorized: false, reason: 'audience' })
@@ -196,7 +219,7 @@ describe('organization reviewer contribution authorization', () => {
       authorizeOrganizationReviewerContribution(
         'user-1',
         organization,
-        { audience: 'director', requiredPermission: 'member-audit.skills.read' },
+        moduleDeclaration('director', 'member-audit.skills.read'),
         now,
       ),
     ).resolves.toEqual({ authorized: false, reason: 'audience' })
@@ -207,7 +230,7 @@ describe('organization reviewer contribution authorization', () => {
       authorizeOrganizationReviewerContribution(
         'user-1',
         organization,
-        { audience: 'director', requiredPermission: 'member-audit.skills.read' },
+        moduleDeclaration('director', 'member-audit.skills.read'),
         now,
       ),
     ).resolves.toMatchObject({ authorized: true })
@@ -224,7 +247,7 @@ describe('organization reviewer contribution authorization', () => {
           state: 'review_required',
           reviewDeadline: new Date('2026-09-02T12:30:00.000Z'),
         },
-        { audience: 'hr', requiredPermission: 'member-audit.skills.read' },
+        moduleDeclaration('hr', 'member-audit.skills.read'),
         now,
       ),
     ).resolves.toEqual({ authorized: false, reason: 'compliance' })
@@ -238,7 +261,7 @@ describe('organization reviewer contribution authorization', () => {
       authorizeOrganizationReviewerContribution(
         'user-1',
         { ...organization, blocked: true },
-        { audience: 'director', requiredPermission: 'member-audit.skills.read' },
+        moduleDeclaration('director', 'member-audit.skills.read'),
         now,
       ),
     ).resolves.toEqual({ authorized: false, reason: 'blocked' })
@@ -261,7 +284,7 @@ describe('organization reviewer contribution authorization', () => {
       authorizeOrganizationReviewerContribution(
         'user-1',
         organization,
-        { audience: 'director', requiredPermission: `member-audit.${requested}.read` },
+        moduleDeclaration('director', `member-audit.${requested}.read`),
         now,
       ),
     ).resolves.toEqual({ authorized: false, reason: 'permission' })
@@ -278,7 +301,7 @@ describe('organization reviewer contribution authorization', () => {
       authorizeOrganizationReviewerContribution(
         'user-1',
         organization,
-        { audience: 'hr', requiredPermission: 'member-audit.skills.read' },
+        moduleDeclaration('hr', 'member-audit.skills.read'),
         now,
       ),
     ).resolves.toEqual({ authorized: false, reason: 'permission' })
@@ -286,7 +309,7 @@ describe('organization reviewer contribution authorization', () => {
       authorizeOrganizationReviewerContribution(
         'user-1',
         organization,
-        { audience: 'member', requiredPermission: 'member-audit.assets.read' },
+        moduleDeclaration('member', 'member-audit.assets.read'),
         now,
       ),
     ).resolves.toEqual({ authorized: false, reason: 'audience' })
@@ -299,6 +322,8 @@ describe('organization reviewer contribution authorization', () => {
       services: [],
     })
     const declaration = {
+      publisherPackage: '@eve-space/member-audit-manifest',
+      moduleId: 'member-audit',
       audience: 'hr' as const,
       requiredPermission: 'member-audit.search',
       additionalRequiredPermissions: ['member-audit.summary.read'],
@@ -317,6 +342,17 @@ describe('organization reviewer contribution authorization', () => {
     ).resolves.toMatchObject({ authorized: true })
   })
 })
+
+function moduleDeclaration(audience: 'member' | 'hr' | 'director', requiredPermission: string) {
+  const moduleId = requiredPermission.split('.')[0]!
+  return {
+    publisherPackage:
+      moduleId === 'member-audit' ? '@eve-space/member-audit-manifest' : '@example/alpha-manifest',
+    moduleId,
+    audience,
+    requiredPermission,
+  }
+}
 
 function query(result: unknown[]) {
   const builder: Record<string, unknown> = {}

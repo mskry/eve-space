@@ -1,0 +1,23 @@
+{
+  "name": "@example/fixture-server",
+  "version": "1.2.3",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./migrations/*": "./migrations/*"
+  },
+  "files": [
+    "dist",
+    "migrations"
+  ],
+  "dependencies": {
+    "@eve-space/platform-module-contract": "^0.1.0",
+    "@eve-space/platform-module-server": "^0.1.0",
+    "hono": "^4.13.3",
+    "zod": "^4.5.4"
+  }
+}
