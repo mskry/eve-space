@@ -261,11 +261,13 @@ export class EsiResponseParseError extends EsiError {
   }
 
   override toJSON(): SerializedEsiResponseParseError {
-    return Object.freeze({
+    const serialized = {
       ...super.toJSON(),
       status: this.status,
       metadata: this.metadata,
-    });
+    };
+
+    return Object.freeze(serialized);
   }
 }
 
@@ -333,10 +335,11 @@ export class EsiResponseValidationError extends EsiValidationError {
   }
 
   override toJSON(): SerializedEsiResponseValidationError {
+    const { status, metadata } = this;
     return Object.freeze({
       ...super.toJSON(),
-      status: this.status,
-      metadata: this.metadata,
+      status,
+      metadata,
     });
   }
 }
