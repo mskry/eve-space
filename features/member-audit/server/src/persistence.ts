@@ -57,12 +57,7 @@ const skillQueueSchema = z.strictObject({
   kind: z.literal('skill-queue'),
   entries: z.array(queueEntrySchema).max(10_000),
 })
-const evidenceScalarSchema = z.union([
-  z.string().max(100_000),
-  z.number().finite(),
-  z.boolean(),
-  z.null(),
-])
+const evidenceScalarSchema = z.union([z.string().max(100_000), z.number(), z.boolean(), z.null()])
 const intentionalEvidenceRecordSchema = z
   .record(
     z.string().min(1).max(100),
@@ -75,7 +70,7 @@ const assetSnapshotSchema = z.strictObject({
 })
 const walletBalanceSnapshotSchema = z.strictObject({
   kind: z.literal('wallet-balance'),
-  balance: z.number().finite(),
+  balance: z.number(),
 })
 const authorityShape = {
   organizationVersion: z.number().int().positive(),
@@ -477,7 +472,7 @@ export const purgeEvidenceOperation = definePlatformPersistenceOperation({
   maximumOutputBytes: 256,
 })
 
-export const memberAuditPersistenceOperations = {
+const memberAuditPersistenceOperations = {
   'write-skill-snapshot': writeSkillSnapshotOperation,
   'read-skill-evidence': readSkillEvidenceOperation,
   'read-asset-evidence': readAssetEvidenceOperation,
@@ -495,27 +490,17 @@ export type CurrentSnapshotPersistence = PlatformPersistenceMethodsFor<
   readonly ['materialize-current-snapshot']
 >
 
+export type EvidenceCollectionPersistence = PlatformPersistenceMethodsFor<
+  typeof memberAuditPersistenceOperations,
+  readonly ['read-evidence-continuation']
+>
+
+export type EvidenceMaterializationPersistence = PlatformPersistenceMethodsFor<
+  typeof memberAuditPersistenceOperations,
+  readonly ['write-evidence-continuation', 'promote-evidence-observation']
+>
+
 export type EvidenceMaintenancePersistence = PlatformPersistenceMethodsFor<
   typeof memberAuditPersistenceOperations,
   readonly ['purge-evidence']
->
-
-export type SkillEvidenceReadPersistence = PlatformPersistenceMethodsFor<
-  typeof memberAuditPersistenceOperations,
-  readonly ['read-skill-evidence']
->
-
-export type AssetEvidenceReadPersistence = PlatformPersistenceMethodsFor<
-  typeof memberAuditPersistenceOperations,
-  readonly ['read-asset-evidence']
->
-
-export type WalletEvidenceReadPersistence = PlatformPersistenceMethodsFor<
-  typeof memberAuditPersistenceOperations,
-  readonly ['read-wallet-evidence']
->
-
-export type MailEvidenceReadPersistence = PlatformPersistenceMethodsFor<
-  typeof memberAuditPersistenceOperations,
-  readonly ['read-mail-evidence']
 >

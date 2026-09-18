@@ -26,7 +26,10 @@ export const conformanceStatusResource = definePlatformResourceOperation<
   ConformanceStatusProjection,
   string,
   unknown,
-  readonly ['published-type-groups']
+  readonly ['published-type-groups'],
+  object,
+  ConformanceSnapshotWritePersistence,
+  object
 >({
   operation: 'conformance-status-operation',
   async collect(context) {
@@ -48,8 +51,7 @@ export const conformanceStatusResource = definePlatformResourceOperation<
   map({ data }) {
     return { players: data.players }
   },
-  materialize: (context) =>
-    materializeConformanceStatus(context as unknown as ConformanceMaterializationContext),
+  materialize: materializeConformanceStatus,
 })
 
 async function materializeConformanceStatus({

@@ -16,7 +16,7 @@
         "scripts/copy-platform-nuxt-runtime-assets.mjs",
         "scripts/module-registry/source-extensions.d.mts",
         // Standalone negative type fixture invoked through test:registry:types.
-        "tests/fixtures/platform-module-registry-types/registry-input.ts",
+        "tests/fixtures/platform-module-registry-types/*.ts",
         "tests/fixtures/platform-module-conformance/{nuxt.config.ts,api/src/index.ts,app/**/*.{ts,vue}}",
         "tests/fixtures/platform-module-conformance/features/conformance/module.config.ts",
         "tests/fixtures/platform-module-conformance/features/conformance/server/src/index.ts",

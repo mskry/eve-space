@@ -10,16 +10,14 @@ export {
   writeEvidenceContinuationOperation,
   writeSkillSnapshotOperation,
 } from './persistence.js'
+export { skillQueueResource, trainedSkillsResource } from './skill-resources.js'
+export { assetsResource } from './asset-resource.js'
+export { mailDetailsResource, mailHeadersResource } from './mail-resources.js'
 export {
-  assetsResource,
-  mailDetailsResource,
-  mailHeadersResource,
-  skillQueueResource,
-  trainedSkillsResource,
   walletBalanceResource,
   walletJournalResource,
   walletTransactionsResource,
-} from './resources.js'
+} from './wallet-resources.js'
 export {
   memberAssetsRoutes,
   memberMailRoutes,

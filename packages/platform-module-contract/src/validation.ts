@@ -68,7 +68,6 @@ interface PersistenceReferenceValidationContext {
   readonly moduleId: string
   readonly operations: ReadonlyMap<string, PlatformPersistenceOperationContribution>
   readonly owners: ReadonlyMap<string, ReadonlySet<string>>
-  readonly referenced: Set<string>
   readonly issues: string[]
 }
 
@@ -245,12 +244,10 @@ function validatePersistenceGrants(
   owners: ReadonlyMap<string, ReadonlySet<string>>,
   issues: string[],
 ) {
-  const referenced = new Set<string>()
   const validationContext: PersistenceReferenceValidationContext = {
     moduleId: manifest.id,
     operations,
     owners,
-    referenced,
     issues,
   }
   for (const route of manifest.server.routes)
@@ -281,11 +278,6 @@ function validatePersistenceGrants(
       validationContext,
     )
   }
-  for (const [operationId, operation] of operations)
-    if (!referenced.has(operationId))
-      issues.push(
-        `persistence operation ${manifest.id}/${operation.id} is not granted to a contribution`,
-      )
 }
 
 function validatePersistenceReferences(
@@ -294,7 +286,7 @@ function validatePersistenceReferences(
   expectedMode: PlatformPersistenceOperationMode | undefined,
   context: PersistenceReferenceValidationContext,
 ) {
-  const { operations, referenced, issues } = context
+  const { operations, issues } = context
   if (!Array.isArray(value)) {
     issues.push(`${identity} persistence operations must be an array`)
     return
@@ -316,7 +308,6 @@ function validatePersistenceReferences(
       reportMissingPersistenceOperation(reference.operationId, key, identity, context)
       continue
     }
-    referenced.add(key)
     if (expectedMode && operation.mode !== expectedMode)
       issues.push(
         `${identity} cannot use ${operation.mode} persistence operation ${reference.operationId}; expected ${expectedMode}`,

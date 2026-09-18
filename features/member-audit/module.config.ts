@@ -194,7 +194,6 @@ const manifest = {
         persistence: {
           projection: [],
           materialization: [
-            { operationId: 'write-skill-snapshot' },
             { operationId: 'materialize-current-snapshot' },
             { operationId: 'purge-evidence' },
           ],
@@ -213,7 +212,6 @@ const manifest = {
         persistence: {
           projection: [],
           materialization: [
-            { operationId: 'write-skill-snapshot' },
             { operationId: 'materialize-current-snapshot' },
             { operationId: 'purge-evidence' },
           ],

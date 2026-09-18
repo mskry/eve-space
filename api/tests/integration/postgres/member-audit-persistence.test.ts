@@ -367,6 +367,14 @@ test('attests the declared routines and denies the runtime role direct table acc
     resourceMaterializations: [],
   })
   expect(
+    installedModulePersistenceOperationCatalog['member-audit/write-skill-snapshot'].grants,
+  ).toEqual({
+    routes: [],
+    activityProviders: [],
+    resourceProjections: [],
+    resourceMaterializations: [],
+  })
+  expect(
     installedModulePersistenceOperationCatalog['member-audit/write-evidence-continuation'].grants
       .routes,
   ).toEqual([])

@@ -345,7 +345,7 @@ describe('platform module declarations', () => {
     ).not.toThrow()
   })
 
-  it('rejects invalid persistence identities, metadata, migration links, and unused definitions', () => {
+  it('rejects invalid persistence identities, metadata, and migration links', () => {
     const invalid = manifest('alpha', {
       persistenceOperation: {
         id: 'ReadSnapshot',
@@ -372,7 +372,7 @@ describe('platform module declarations', () => {
       expect(message).toContain(fragment)
   })
 
-  it('rejects duplicate operation IDs and unused definitions', () => {
+  it('rejects duplicate operation IDs while allowing retained operations with zero grants', () => {
     const invalid = manifest('alpha', { persistenceOperation: {} })
     invalid.server.routes[0]!.persistenceOperations = []
     invalid.server.activityProviders[0]!.persistenceOperations = []
@@ -381,9 +381,7 @@ describe('platform module declarations', () => {
 
     const message = validationErrorMessage(invalid)
     expect(message).toContain('persistence operation ID alpha-read is duplicated in alpha')
-    expect(message).toContain(
-      'persistence operation alpha/alpha-read is not granted to a contribution',
-    )
+    expect(message).not.toContain('is not granted to a contribution')
   })
 
   it('rejects duplicate, unknown, cross-module, and mode-incompatible persistence grants', () => {
@@ -1336,6 +1334,8 @@ describe('platform module registry generation', () => {
     expect(persistence).toContain(
       "'alpha/alpha-resource': createModule0Resource0ProjectionPersistence",
     )
+    expect(persistence).toContain('export type InstalledModuleResourceProjectionPersistence<')
+    expect(persistence).toContain('export type InstalledModuleResourceMaterializationPersistence<')
     expect(persistence).not.toContain("'saveSnapshot': bindPlatformPersistenceOperation")
     expect(persistence).not.toContain('operationId: string')
   })
@@ -1427,7 +1427,7 @@ describe('platform module registry generation', () => {
       'coreDataProducts: ["published-type-groups"] as const',
     )
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      'implementation: module0Resource0 satisfies PlatformResourceImplementationForProducts<typeof module0Resource0, readonly ["published-type-groups"]>',
+      "implementation: module0Resource0 satisfies PlatformResourceImplementationForCapabilities<typeof module0Resource0, readonly [\"published-type-groups\"], InstalledModuleResourceProjectionPersistence<'alpha/alpha-resource'>, InstalledModuleResourceMaterializationPersistence<'alpha/alpha-resource'>>",
     )
     expect(
       files.get('api/src/generated/platform/installed-module-activity-providers.ts'),
@@ -1538,10 +1538,10 @@ describe('platform module registry generation', () => {
       "import { routes as module1Route0Factory } from '@eve-space/beta-server'",
     )
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      "({ moduleId: 'alpha', resourceId: 'alpha-resource', operationId: 'alpha-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"projection\":[],\"materialization\":[]} as const, implementation: module0Resource0 satisfies PlatformResourceImplementationForProducts<typeof module0Resource0, readonly []> } as const)",
+      "({ moduleId: 'alpha', resourceId: 'alpha-resource', operationId: 'alpha-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"projection\":[],\"materialization\":[]} as const, implementation: module0Resource0 satisfies PlatformResourceImplementationForCapabilities<typeof module0Resource0, readonly [], InstalledModuleResourceProjectionPersistence<'alpha/alpha-resource'>, InstalledModuleResourceMaterializationPersistence<'alpha/alpha-resource'>> } as const)",
     )
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      "({ moduleId: 'beta', resourceId: 'beta-resource', operationId: 'beta-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"projection\":[],\"materialization\":[]} as const, implementation: module1Resource0 satisfies PlatformResourceImplementationForProducts<typeof module1Resource0, readonly []> } as const)",
+      "({ moduleId: 'beta', resourceId: 'beta-resource', operationId: 'beta-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"projection\":[],\"materialization\":[]} as const, implementation: module1Resource0 satisfies PlatformResourceImplementationForCapabilities<typeof module1Resource0, readonly [], InstalledModuleResourceProjectionPersistence<'beta/beta-resource'>, InstalledModuleResourceMaterializationPersistence<'beta/beta-resource'>> } as const)",
     )
     expect(files.get('api/src/generated/platform/installed-module-esi.ts')).toContain(
       "'alpha-operation': module0EsiOperation0.contract,\n  'beta-operation': module1EsiOperation0.contract,",

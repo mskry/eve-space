@@ -337,6 +337,7 @@ function renderWorkerResources(compiled: CompiledPlatformModules) {
   )
   const descriptors = resources.map(({ manifest, resource, binding }) => {
     const coreDataProducts = JSON.stringify(resource.coreDataProducts ?? [])
+    const capabilityKey = quote(`${manifest.id}/${resource.id}`)
     const batch = resource.batch
       ? ` batch: { mode: ${quote(resource.batch.mode)}, operationId: ${quote(resource.batch.operationId)} },`
       : ''
@@ -345,13 +346,16 @@ function renderWorkerResources(compiled: CompiledPlatformModules) {
       : ''
     const sectionId = resource.sectionId ? ` sectionId: ${quote(resource.sectionId)},` : ''
     const scheduled = resource.scheduled === false ? ' scheduled: false,' : ''
-    return `({ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId} coreDataProducts: ${coreDataProducts} as const,${dependent}${batch}${scheduled} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, persistence: ${JSON.stringify(resource.persistence)} as const, implementation: ${binding} satisfies PlatformResourceImplementationForProducts<typeof ${binding}, readonly ${coreDataProducts}> } as const)`
+    return `({ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId} coreDataProducts: ${coreDataProducts} as const,${dependent}${batch}${scheduled} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, persistence: ${JSON.stringify(resource.persistence)} as const, implementation: ${binding} satisfies PlatformResourceImplementationForCapabilities<typeof ${binding}, readonly ${coreDataProducts}, InstalledModuleResourceProjectionPersistence<${capabilityKey}>, InstalledModuleResourceMaterializationPersistence<${capabilityKey}>> } as const)`
   })
   const rendered = descriptors.length ? `[${descriptors.join(', ')}]` : '[]'
   const importedTypes = resources.length
-    ? 'PlatformInstalledResourceDescriptor, PlatformResourceImplementationForProducts'
+    ? 'PlatformInstalledResourceDescriptor, PlatformResourceImplementationForCapabilities'
     : 'PlatformInstalledResourceDescriptor'
-  return `${generatedHeader}import type { ${importedTypes} } from '@eve-space/platform-module-contract/resources'\n${imports}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor[]\n`
+  const persistenceTypes = resources.length
+    ? "import type { InstalledModuleResourceMaterializationPersistence, InstalledModuleResourceProjectionPersistence } from './installed-module-persistence.js'\n"
+    : ''
+  return `${generatedHeader}import type { ${importedTypes} } from '@eve-space/platform-module-contract/resources'\n${persistenceTypes}${imports}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor[]\n`
 }
 
 function renderMigrations(compiled: CompiledPlatformModules) {
@@ -547,7 +551,7 @@ function renderPersistenceCapabilityFactories(
       return `\n  ${group}: {${entries}${entries ? '\n  ' : ''}},`
     })
     .join('')
-  return `${declarations}\nexport const installedModulePersistenceCapabilityFactories = {${catalogs}\n} as const\n`
+  return `${declarations}\nexport const installedModulePersistenceCapabilityFactories = {${catalogs}\n} as const\n\nexport type InstalledModuleResourceProjectionPersistence<\n  Key extends keyof typeof installedModulePersistenceCapabilityFactories.resourceProjections,\n> = ReturnType<(typeof installedModulePersistenceCapabilityFactories.resourceProjections)[Key]>\n\nexport type InstalledModuleResourceMaterializationPersistence<\n  Key extends keyof typeof installedModulePersistenceCapabilityFactories.resourceMaterializations,\n> = ReturnType<(typeof installedModulePersistenceCapabilityFactories.resourceMaterializations)[Key]>\n`
 }
 
 function persistenceOperationGrants(manifest: PlatformModuleManifest, operationId: string) {

@@ -45,7 +45,7 @@ export const installedModulePersistenceOperations = [
       routes: [],
       activityProviders: [],
       resourceProjections: [],
-      resourceMaterializations: ['trained-skills', 'skill-queue'],
+      resourceMaterializations: [],
     },
   },
   {
@@ -370,7 +370,7 @@ export const installedModulePersistenceOperations = [
 ] as const satisfies readonly PlatformInstalledPersistenceOperationDescriptor[]
 
 export const installedModulePersistenceContractFingerprint =
-  '067b9d393c6af0521fa3128ccc6fc5a14264835b37f28e357a091730b67d9861'
+  '87e36e933464ca662e4f983f7e6461468db8df30e8a9843bb3e62a031b0cb61a'
 
 export const installedModulePersistenceOperationCatalog = {
   'member-audit/write-skill-snapshot': installedModulePersistenceOperations[0]!,
@@ -443,10 +443,6 @@ export function createModule0Resource0MaterializationPersistence(
   invoke: PlatformPersistenceOperationInvoker,
 ) {
   return {
-    writeSkillSnapshot: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[0]!,
-      invoke,
-    ),
     materializeCurrentSnapshot: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[5]!,
       invoke,
@@ -468,10 +464,6 @@ export function createModule0Resource1MaterializationPersistence(
   invoke: PlatformPersistenceOperationInvoker,
 ) {
   return {
-    writeSkillSnapshot: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[0]!,
-      invoke,
-    ),
     materializeCurrentSnapshot: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[5]!,
       invoke,
@@ -886,3 +878,11 @@ export const installedModulePersistenceCapabilityFactories = {
     'organization-activity/character-projects': createModule1Resource6MaterializationPersistence,
   },
 } as const
+
+export type InstalledModuleResourceProjectionPersistence<
+  Key extends keyof typeof installedModulePersistenceCapabilityFactories.resourceProjections,
+> = ReturnType<(typeof installedModulePersistenceCapabilityFactories.resourceProjections)[Key]>
+
+export type InstalledModuleResourceMaterializationPersistence<
+  Key extends keyof typeof installedModulePersistenceCapabilityFactories.resourceMaterializations,
+> = ReturnType<(typeof installedModulePersistenceCapabilityFactories.resourceMaterializations)[Key]>
