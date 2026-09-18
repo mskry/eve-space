@@ -42,7 +42,7 @@ interface CharacterShipSnapshot {
 }
 
 const characterShipCacheSchema = z.object({ typeId: z.number(), name: z.string() })
-const universeTypeCacheSchema = z.object({ name: z.string() })
+const universeTypeCacheSchema = z.object({ name: z.string(), groupId: z.number() })
 
 const characterShipRead = createCharacterEsiRead({
   operation: 'ship',
@@ -61,7 +61,7 @@ const universeTypeRead = createPublicEsiRead({
   descriptor: operationRegistry.GetUniverseTypesTypeId.transport,
   cacheSchema: universeTypeCacheSchema,
   encodeRequest: (input: { typeId: number }) => ({ path: { type_id: input.typeId } }),
-  map: (response) => ({ name: response.data.name }),
+  map: (response) => ({ name: response.data.name, groupId: response.data.group_id }),
 })
 
 export const locationScope = characterLocationRead.requiredScope
@@ -71,6 +71,7 @@ export interface CharacterLocation extends EsiReadResultMetadata {
   solarSystemId: number
   solarSystemName: string
   solarSystemSecurityStatus: number
+  locationType: 'space' | 'station' | 'structure'
   stationId?: number
   stationName?: string
   structureId?: number
@@ -79,6 +80,7 @@ export interface CharacterLocation extends EsiReadResultMetadata {
 export interface CharacterShip extends EsiReadResultMetadata {
   typeId: number
   typeName: string
+  groupId: number
   name: string
 }
 
@@ -93,11 +95,15 @@ export async function getCharacterLocation(
     getUniverseSolarSystem(position.solarSystemId),
     position.stationId ? getUniverseStation(position.stationId) : Promise.resolve(undefined),
   ])
+  let locationType: CharacterLocation['locationType'] = 'space'
+  if (position.stationId) locationType = 'station'
+  else if (position.structureId) locationType = 'structure'
 
   return {
     solarSystemId: position.solarSystemId,
     solarSystemName: system.data.name,
     solarSystemSecurityStatus: system.data.security_status,
+    locationType,
     ...(position.stationId
       ? { stationId: position.stationId, stationName: station?.data.name }
       : {}),
@@ -121,6 +127,7 @@ export async function getCharacterShip(
   return {
     typeId: ship.typeId,
     typeName: typeResult.data.name,
+    groupId: typeResult.data.groupId,
     name: ship.name,
     ...combineEsiReadResultMetadata([
       toEsiReadResultMetadata(shipResult),

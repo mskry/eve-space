@@ -103,14 +103,14 @@ function locationLabel(location: CharacterRosterEntry['location']) {
       </span>
     </NuxtLink>
     <div class="roster-stats">
-      <span v-if="typeof character.securityStatus === 'number'" class="roster-stat">
-        <SecurityStatus :value="character.securityStatus" />
-      </span>
       <span class="roster-stat">
         <span class="sr-only">Location:</span>
-        <span class="roster-location-icon" aria-hidden="true">
-          <AppIcon name="location" />
-        </span>
+        <EveLocationBracketIcon
+          class="roster-location-icon"
+          :location-type="character.location?.locationType"
+          :station-id="character.location?.stationId"
+          :structure-id="character.location?.structureId"
+        />
         <SystemSecurityStatus
           v-if="typeof character.location?.solarSystemSecurityStatus === 'number'"
           :value="character.location.solarSystemSecurityStatus"
@@ -121,9 +121,7 @@ function locationLabel(location: CharacterRosterEntry['location']) {
       </span>
       <span class="roster-stat">
         <span class="sr-only">Ship:</span>
-        <span class="roster-ship-icon" aria-hidden="true">
-          <AppIcon name="ship" />
-        </span>
+        <EveShipBracketIcon class="roster-ship-icon" :group-id="character.ship?.groupId" />
         <span class="roster-stat-value" :title="character.ship ? character.ship.name : undefined">
           {{ character.ship?.typeName ?? '--' }}
         </span>

@@ -31,7 +31,7 @@ beforeEach(() => {
       return Promise.resolve(result({ solarSystemId: 30_000_142, stationId: 60_003_768 }))
     if (definition.operation === 'ship')
       return Promise.resolve(result({ typeId: 670, name: 'My Pod' }))
-    return Promise.resolve(result({ name: 'Capsule' }))
+    return Promise.resolve(result({ name: 'Capsule', groupId: 29 }))
   })
   mocks.getUniverseSolarSystem.mockResolvedValue(result({ name: 'Jita', security_status: 0.945 }))
   mocks.getUniverseStation.mockResolvedValue({
@@ -51,6 +51,7 @@ describe('character overview resources', () => {
       solarSystemId: 30_000_142,
       solarSystemName: 'Jita',
       solarSystemSecurityStatus: 0.945,
+      locationType: 'station',
       stationId: 60_003_768,
       stationName: 'Jita IV - Moon 4',
       stale: true,
@@ -63,12 +64,31 @@ describe('character overview resources', () => {
     )
   })
 
+  test.each([
+    ['structure', { solarSystemId: 30_000_142, structureId: 1_035_466_617_946 }],
+    ['space', { solarSystemId: 30_000_142 }],
+  ] as const)('classifies the current location as %s', async (locationType, position) => {
+    mocks.executeRepresentation.mockImplementation((definition) => {
+      if (definition.operation === 'location') return Promise.resolve(result(position))
+      if (definition.operation === 'ship')
+        return Promise.resolve(result({ typeId: 670, name: 'My Pod' }))
+      return Promise.resolve(result({ name: 'Capsule', groupId: 29 }))
+    })
+    const { getCharacterLocation } = await import('../../src/characters/overview.js')
+
+    await expect(getCharacterLocation(characterId, subjectLifecycleId)).resolves.toMatchObject({
+      locationType,
+    })
+    expect(mocks.getUniverseStation).not.toHaveBeenCalled()
+  })
+
   test('uses the mapped type result for ship presentation', async () => {
     const { getCharacterShip } = await import('../../src/characters/overview.js')
 
     await expect(getCharacterShip(characterId, subjectLifecycleId)).resolves.toMatchObject({
       typeId: 670,
       typeName: 'Capsule',
+      groupId: 29,
       name: 'My Pod',
     })
     expect(mocks.executeRepresentation.mock.calls.at(-1)?.[1]).toEqual({ typeId: 670 })

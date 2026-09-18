@@ -47,7 +47,41 @@ const formattedFounded = computed(() =>
               </div>
             </dl>
           </section>
+          <section class="character-detail-group character-detail-group--status">
+            <span class="card-index">03</span>
+            <h2>STATUS</h2>
+            <dl>
+              <div>
+                <dt>TYPE</dt>
+                <dd class="corporation-indicator" :data-status="corporation.type">
+                  {{ corporation.type === 'player_owned' ? 'PLAYER OWNED' : 'NPC OWNED' }}
+                </dd>
+              </div>
+              <div>
+                <dt>STATE</dt>
+                <dd class="corporation-indicator" :data-status="corporation.state">
+                  {{ corporation.state.toUpperCase() }}
+                </dd>
+              </div>
+              <div>
+                <dt>FRIENDLY FIRE</dt>
+                <dd class="corporation-indicator" :data-status="corporation.friendlyFire">
+                  {{ corporation.friendlyFire.toUpperCase() }}
+                </dd>
+              </div>
+              <div>
+                <dt>WAR ELIGIBLE</dt>
+                <dd
+                  class="corporation-indicator"
+                  :data-status="corporation.warEligible ? 'eligible' : 'ineligible'"
+                >
+                  {{ corporation.warEligible ? 'YES' : 'NO' }}
+                </dd>
+              </div>
+            </dl>
+          </section>
           <section class="character-detail-group character-detail-group--leadership">
+            <span class="card-index">04</span>
             <h2>LEADERSHIP</h2>
             <dl>
               <div class="leadership-ceo">
@@ -148,11 +182,14 @@ const formattedFounded = computed(() =>
   border-right: 0;
 }
 
-.character-detail-group--membership {
+.character-detail-group--membership,
+.character-detail-group--status,
+.character-detail-group--leadership {
   position: relative;
 }
 
 .character-detail-group--membership dl,
+.character-detail-group--status dl,
 .character-detail-group--leadership dl {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -174,6 +211,46 @@ const formattedFounded = computed(() =>
 .character-detail-group--leadership .leadership-creator {
   grid-column: 2;
   padding-left: 0.75rem;
+}
+
+.character-detail-group--status dl > div:nth-child(odd) {
+  padding-right: 0.75rem;
+}
+
+.character-detail-group--status dl > div:nth-child(even) {
+  padding-left: 0.75rem;
+}
+
+.corporation-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--ui-font-mono);
+  letter-spacing: 0.06em;
+}
+
+.corporation-indicator::before {
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 50%;
+  background: var(--ui-primary);
+  content: '';
+}
+
+.corporation-indicator[data-status='npc_owned']::before {
+  background: var(--ui-text-muted);
+}
+
+.corporation-indicator[data-status='closed']::before,
+.corporation-indicator[data-status='eligible']::before,
+.corporation-indicator[data-status='legal']::before {
+  background: var(--ui-warning);
+}
+
+.corporation-indicator[data-status='active']::before,
+.corporation-indicator[data-status='illegal']::before,
+.corporation-indicator[data-status='ineligible']::before {
+  background: var(--ui-success);
 }
 
 .character-detail-group--membership .membership-founded:has(+ .membership-home),
