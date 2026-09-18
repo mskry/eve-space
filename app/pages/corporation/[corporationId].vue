@@ -52,6 +52,13 @@ const navigation = computed<readonly RecordSectionNavigationEntry[]>(() => {
   ]
 })
 
+function formatTaxRate(taxRate: number) {
+  return taxRate.toLocaleString('en-US', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 2,
+  })
+}
+
 provideCorporationRecord({ corporationId, corporation, recordAccessAllowed })
 
 useHead({
@@ -116,18 +123,18 @@ useHead({
             <p class="ui-eyebrow">CORPORATION / {{ corporation.ticker }}</p>
             <h1>{{ corporation.name }}</h1>
             <p>
-              {{ corporation.memberCount.toLocaleString('en-US') }} MEMBERS · Tax
-              {{ corporation.taxRate !== null ? `${corporation.taxRate.toFixed(1)}%` : '—'
-              }}<template v-if="corporation.allianceName">
+              {{ corporation.memberCount.toLocaleString('en-US') }} MEMBERS · ISK TAX
+              {{ formatTaxRate(corporation.taxRate) }}% · LP TAX
+              {{ formatTaxRate(corporation.loyaltyPointTaxRate) }}%<template
+                v-if="corporation.allianceName"
+              >
                 · {{ corporation.allianceName }}</template
               ><template v-else-if="corporation.allianceId">
                 · Alliance {{ corporation.allianceId }}</template
               ><template v-if="corporation.factionId">
                 · Faction {{ corporation.factionId }}</template
-              ><template v-if="corporation.type !== 'player_owned'">
-                ·
-                {{ corporation.type === 'npc_owned' ? 'NPC' : corporation.type.toUpperCase() }}
-              </template>
+              >
+              · {{ corporation.type === 'player_owned' ? 'PLAYER CORP' : 'NPC CORP' }}
             </p>
           </div>
         </div>

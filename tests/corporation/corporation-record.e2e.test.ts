@@ -65,6 +65,7 @@ const apiServer = await startCorsJsonApi((request) => {
           creatorId: 10,
           creatorName: 'First Navigator',
           taxRate: 5,
+          loyaltyPointTaxRate: 2.5,
           dateFounded: '2020-01-01T00:00:00Z',
           description: 'A corporation used to verify routed records.',
           url: null,
@@ -76,6 +77,7 @@ const apiServer = await startCorsJsonApi((request) => {
           allianceName: corporationType === 'player_owned' ? 'Route Alliance' : null,
           type: corporationType,
           state: 'active',
+          friendlyFire: 'legal',
           warEligible: true,
           warHistory: [],
         },
@@ -148,6 +150,10 @@ describe('corporation record routes', async () => {
     const page = await openPage(`/corporation/${corporationId}`)
     await page.getByRole('heading', { name: 'Navigation Industries' }).waitFor()
     await page.getByText('A corporation used to verify routed records.').waitFor()
+    await page.getByText('LP TAX 2.5%').waitFor()
+    await page.getByText('PLAYER CORP').waitFor()
+    await page.getByText('FRIENDLY FIRE').waitFor()
+    await page.getByText('LEGAL', { exact: true }).waitFor()
     await expect
       .poll(() => page.title())
       .toBe('Navigation Industries [NAV] // Corporation Overview // EVE Space')
@@ -239,6 +245,7 @@ describe('corporation record routes', async () => {
 
     await page.waitForURL((url) => url.pathname === `/corporation/${corporationId}`)
     await page.getByRole('heading', { name: 'Navigation Industries' }).waitFor()
+    await page.getByText('NPC CORP').waitFor()
 
     const navigation = page.getByRole('navigation', { name: 'Corporation record sections' })
     expect(await navigation.getByRole('link').allTextContents()).toEqual(['OVERVIEW'])

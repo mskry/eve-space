@@ -20,7 +20,7 @@ export const coreEsiOperationCatalog = {
     retry,
   }),
   'public-corporation': defineContract('public-corporation', {
-    representationVersion: 'v2',
+    representationVersion: 'v3',
     identity: { kind: 'ordered', fields: ['corporationId'] },
     cache: sharedPublicCache(),
     retry,

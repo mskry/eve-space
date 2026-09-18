@@ -333,11 +333,6 @@
   white-space: nowrap;
 }
 
-.character-roster-page .roster-stat .security-status {
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 .roster-stat-key {
   flex: 0 0 auto;
   color: var(--ui-text-muted);
@@ -352,17 +347,8 @@
 }
 
 .roster-location-icon,
-.roster-location-icon .app-icon,
-.roster-ship-icon,
-.roster-ship-icon .app-icon {
-  width: 13px;
-  height: 13px;
-  flex: 0 0 auto;
-}
-
-.roster-location-icon,
 .roster-ship-icon {
-  color: var(--ui-text-muted);
+  flex: 0 0 auto;
 }
 
 .roster-org {

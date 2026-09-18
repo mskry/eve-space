@@ -122,7 +122,7 @@ describe('ESI operation policies', () => {
       cache: { kind: 'shared' },
     })
     expect(getEsiOperationContract('public-corporation')).toMatchObject({
-      representationVersion: 'v2',
+      representationVersion: 'v3',
     })
     expect(getEsiOperationContract('skills')).toMatchObject({
       representationVersion: 'v2',
