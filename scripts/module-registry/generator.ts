@@ -239,15 +239,18 @@ function renderApiRoutes(compiled: CompiledPlatformModules) {
   const platformImports = routes.length
     ? [
         "import { platformModuleRouteComposers } from '../../platform/module-route-composition.js'",
-        "import { createPlatformModuleRouteCapabilities } from '../../platform/module-route-capabilities.js'",
+        "import { createPlatformModuleRouteCapabilities, createPlatformReviewerRouteCapabilities } from '../../platform/module-route-capabilities.js'",
       ]
         .filter(Boolean)
         .join('\n') + '\n'
     : ''
-  const factories = routes.map(
-    ({ manifest, route, binding }) =>
-      `const ${binding} = ${binding}Factory(createPlatformModuleRouteCapabilities(${quote(manifest.id)}, ${quote(route.id)}, ${JSON.stringify(route.coreDataProducts ?? [])} as const))\n`,
-  )
+  const factories = routes.map(({ manifest, route, binding }) => {
+    const capabilities =
+      route.target !== undefined && route.target !== 'caller'
+        ? `createPlatformReviewerRouteCapabilities(${quote(manifest.id)}, ${JSON.stringify(route.coreDataProducts ?? [])} as const)`
+        : `createPlatformModuleRouteCapabilities(${quote(manifest.id)}, ${quote(route.id)}, ${JSON.stringify(route.coreDataProducts ?? [])} as const)`
+    return `const ${binding} = ${binding}Factory(${capabilities})\n`
+  })
   const chain = routes.map(({ manifest, route, binding }) => {
     const composer =
       route.target !== undefined && route.target !== 'caller' ? route.target : route.authorization
@@ -257,10 +260,13 @@ function renderApiRoutes(compiled: CompiledPlatformModules) {
       : ''
     const target = route.target ? `, target: ${quote(route.target)}` : ''
     const exposure = route.exposure ? `, exposure: ${quote(route.exposure)}` : ''
+    const reviewerEvidence = route.reviewerEvidenceResourceId
+      ? `, reviewerEvidence: { routeId: ${quote(route.id)}, resourceId: ${quote(route.reviewerEvidenceResourceId)}, operationId: ${quote(route.persistenceOperations[0]!.operationId)} }`
+      : ''
     const organizationCommands = route.organizationCommands
       ? `, organizationCommands: ${JSON.stringify(route.organizationCommands)} as const`
       : ''
-    return `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote(composer)}](\n      ${quote(manifest.id)},\n      { audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)}${additionalPermissions}${section}${target}${exposure}${organizationCommands} },\n      ${binding},\n    ),\n  )`
+    return `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote(composer)}](\n      ${quote(manifest.id)},\n      { audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)}${additionalPermissions}${section}${target}${exposure}${reviewerEvidence}${organizationCommands} },\n      ${binding},\n    ),\n  )`
   })
   const composition = routes.length ? `${platformImports}${imports}\n${factories.join('')}\n` : '\n'
   return `${generatedHeader}import { Hono } from 'hono'\n${composition}export const installedModuleRoutes = new Hono()${chain.join('')}\n`
@@ -338,7 +344,8 @@ function renderWorkerResources(compiled: CompiledPlatformModules) {
       ? ` dependentOperationIds: ${JSON.stringify(resource.dependentOperationIds)},`
       : ''
     const sectionId = resource.sectionId ? ` sectionId: ${quote(resource.sectionId)},` : ''
-    return `({ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId} coreDataProducts: ${coreDataProducts} as const,${dependent}${batch} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, persistence: ${JSON.stringify(resource.persistence)} as const, implementation: ${binding} satisfies PlatformResourceImplementationForProducts<typeof ${binding}, readonly ${coreDataProducts}> } as const)`
+    const scheduled = resource.scheduled === false ? ' scheduled: false,' : ''
+    return `({ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId} coreDataProducts: ${coreDataProducts} as const,${dependent}${batch}${scheduled} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, persistence: ${JSON.stringify(resource.persistence)} as const, implementation: ${binding} satisfies PlatformResourceImplementationForProducts<typeof ${binding}, readonly ${coreDataProducts}> } as const)`
   })
   const rendered = descriptors.length ? `[${descriptors.join(', ')}]` : '[]'
   const importedTypes = resources.length

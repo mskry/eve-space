@@ -68,6 +68,7 @@ export interface PlatformRouteSecurityClassification
   extends PlatformSectionBoundContribution, PlatformOrganizationCommandContribution {
   readonly target?: PlatformRouteTarget
   readonly exposure?: PlatformRouteExposure
+  readonly reviewerEvidenceResourceId?: string
 }
 
 export const platformOrganizationCommandIds = [
@@ -195,6 +196,7 @@ interface PlatformReviewerCollectionStatusBase {
   readonly characterLifecycleId: string
   readonly authorizationGeneration: number | null
   readonly disclosureVersion: number
+  readonly sectionActivationVersion: number
   readonly validatedAt: string | null
   readonly lastFailureClass: PlatformCollectionFailureClass | null
 }
@@ -211,6 +213,10 @@ export type PlatformReviewerCollectionStatus =
 
 export interface PlatformReviewerCollectionStatusReads {
   read(resourceId: string, characterId: number): Promise<PlatformReviewerCollectionStatus>
+}
+
+export interface PlatformReviewerEvidenceReads {
+  read(options?: { readonly limit?: number }): Promise<unknown>
 }
 
 export interface PlatformSafeErrorBody {
@@ -461,6 +467,7 @@ interface PlatformReviewerTargetRouteContextBase {
   }
   readonly organization: PlatformAuthorizedOrganizationContext
   readonly collectionStatus: PlatformReviewerCollectionStatusReads
+  readonly evidence?: PlatformReviewerEvidenceReads
   readonly reviewerTarget: PlatformReviewerTargetContext
 }
 

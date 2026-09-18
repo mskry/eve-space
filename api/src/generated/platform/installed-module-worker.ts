@@ -7,6 +7,12 @@ import type {
 import {
   trainedSkillsResource as module0Resource0,
   skillQueueResource as module0Resource1,
+  assetsResource as module0Resource2,
+  walletBalanceResource as module0Resource3,
+  walletJournalResource as module0Resource4,
+  walletTransactionsResource as module0Resource5,
+  mailHeadersResource as module0Resource6,
+  mailDetailsResource as module0Resource7,
 } from '@eve-space/member-audit-server'
 import {
   campaignsResource as module1Resource0,
@@ -29,7 +35,11 @@ export const installedModuleResources = [
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
       projection: [],
-      materialization: [{ operationId: 'write-skill-snapshot' }],
+      materialization: [
+        { operationId: 'write-skill-snapshot' },
+        { operationId: 'materialize-current-snapshot' },
+        { operationId: 'purge-evidence' },
+      ],
     } as const,
     implementation: module0Resource0 satisfies PlatformResourceImplementationForProducts<
       typeof module0Resource0,
@@ -47,11 +57,155 @@ export const installedModuleResources = [
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
       projection: [],
-      materialization: [{ operationId: 'write-skill-snapshot' }],
+      materialization: [
+        { operationId: 'write-skill-snapshot' },
+        { operationId: 'materialize-current-snapshot' },
+        { operationId: 'purge-evidence' },
+      ],
     } as const,
     implementation: module0Resource1 satisfies PlatformResourceImplementationForProducts<
       typeof module0Resource1,
       readonly ['published-skill-catalogue']
+    >,
+  } as const,
+  {
+    moduleId: 'member-audit',
+    resourceId: 'assets',
+    operationId: 'character-assets-page',
+    sectionId: 'assets',
+    coreDataProducts: ['published-type-details', 'static-location-labels'] as const,
+    dependentOperationIds: ['character-asset-names', 'universe-resolve-names'],
+    scheduled: false,
+    subjectKind: 'character',
+    materializationIntervalSeconds: 3600,
+    eligibility: { kind: 'current-managed-member-character' },
+    persistence: {
+      projection: [{ operationId: 'read-evidence-continuation' }],
+      materialization: [
+        { operationId: 'write-evidence-continuation' },
+        { operationId: 'promote-evidence-observation' },
+        { operationId: 'purge-evidence' },
+      ],
+    } as const,
+    implementation: module0Resource2 satisfies PlatformResourceImplementationForProducts<
+      typeof module0Resource2,
+      readonly ['published-type-details', 'static-location-labels']
+    >,
+  } as const,
+  {
+    moduleId: 'member-audit',
+    resourceId: 'wallet-balance',
+    operationId: 'wallet-balance',
+    sectionId: 'wallet',
+    coreDataProducts: [] as const,
+    scheduled: false,
+    subjectKind: 'character',
+    materializationIntervalSeconds: 900,
+    eligibility: { kind: 'current-managed-member-character' },
+    persistence: {
+      projection: [],
+      materialization: [
+        { operationId: 'materialize-current-snapshot' },
+        { operationId: 'purge-evidence' },
+      ],
+    } as const,
+    implementation: module0Resource3 satisfies PlatformResourceImplementationForProducts<
+      typeof module0Resource3,
+      readonly []
+    >,
+  } as const,
+  {
+    moduleId: 'member-audit',
+    resourceId: 'wallet-journal',
+    operationId: 'wallet-journal',
+    sectionId: 'wallet',
+    coreDataProducts: [] as const,
+    scheduled: false,
+    subjectKind: 'character',
+    materializationIntervalSeconds: 900,
+    eligibility: { kind: 'current-managed-member-character' },
+    persistence: {
+      projection: [{ operationId: 'read-evidence-continuation' }],
+      materialization: [
+        { operationId: 'write-evidence-continuation' },
+        { operationId: 'promote-evidence-observation' },
+        { operationId: 'purge-evidence' },
+      ],
+    } as const,
+    implementation: module0Resource4 satisfies PlatformResourceImplementationForProducts<
+      typeof module0Resource4,
+      readonly []
+    >,
+  } as const,
+  {
+    moduleId: 'member-audit',
+    resourceId: 'wallet-transactions',
+    operationId: 'wallet-transactions',
+    sectionId: 'wallet',
+    coreDataProducts: [] as const,
+    scheduled: false,
+    subjectKind: 'character',
+    materializationIntervalSeconds: 900,
+    eligibility: { kind: 'current-managed-member-character' },
+    persistence: {
+      projection: [{ operationId: 'read-evidence-continuation' }],
+      materialization: [
+        { operationId: 'write-evidence-continuation' },
+        { operationId: 'promote-evidence-observation' },
+        { operationId: 'purge-evidence' },
+      ],
+    } as const,
+    implementation: module0Resource5 satisfies PlatformResourceImplementationForProducts<
+      typeof module0Resource5,
+      readonly []
+    >,
+  } as const,
+  {
+    moduleId: 'member-audit',
+    resourceId: 'mail-headers',
+    operationId: 'mail-headers',
+    sectionId: 'mail',
+    coreDataProducts: [] as const,
+    dependentOperationIds: ['mail-lists', 'universe-resolve-names'],
+    scheduled: false,
+    subjectKind: 'character',
+    materializationIntervalSeconds: 900,
+    eligibility: { kind: 'current-managed-member-character' },
+    persistence: {
+      projection: [{ operationId: 'read-evidence-continuation' }],
+      materialization: [
+        { operationId: 'write-evidence-continuation' },
+        { operationId: 'promote-evidence-observation' },
+        { operationId: 'purge-evidence' },
+      ],
+    } as const,
+    implementation: module0Resource6 satisfies PlatformResourceImplementationForProducts<
+      typeof module0Resource6,
+      readonly []
+    >,
+  } as const,
+  {
+    moduleId: 'member-audit',
+    resourceId: 'mail-details',
+    operationId: 'mail-message',
+    sectionId: 'mail',
+    coreDataProducts: [] as const,
+    dependentOperationIds: ['mail-lists', 'universe-resolve-names'],
+    scheduled: false,
+    subjectKind: 'character',
+    materializationIntervalSeconds: 900,
+    eligibility: { kind: 'current-managed-member-character' },
+    persistence: {
+      projection: [{ operationId: 'read-evidence-continuation' }],
+      materialization: [
+        { operationId: 'write-evidence-continuation' },
+        { operationId: 'promote-evidence-observation' },
+        { operationId: 'purge-evidence' },
+      ],
+    } as const,
+    implementation: module0Resource7 satisfies PlatformResourceImplementationForProducts<
+      typeof module0Resource7,
+      readonly []
     >,
   } as const,
   {

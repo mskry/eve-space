@@ -17,7 +17,9 @@ const mocks = vi.hoisted(() => ({
   createPlatformModuleCollectionStatusReads: vi.fn(() => ({ read: vi.fn() })),
   createPlatformOrganizationCommandCapabilities: vi.fn(() => ({ blockMember: vi.fn() })),
   createPlatformReviewerCollectionStatusReads: vi.fn(() => ({ read: vi.fn() })),
+  createPlatformReviewerEvidenceReads: vi.fn(() => ({ read: vi.fn() })),
   createPlatformReviewerAccountSearch: vi.fn(() => ({ search: vi.fn() })),
+  recordModuleSensitiveAccessDecision: vi.fn(),
   resolveOrganizationReviewerTarget: vi.fn(),
 }))
 
@@ -35,6 +37,12 @@ vi.mock('../../src/platform/module-collection-status-capabilities.js', () => ({
 }))
 vi.mock('../../src/platform/module-reviewer-collection-status-capabilities.js', () => ({
   createPlatformReviewerCollectionStatusReads: mocks.createPlatformReviewerCollectionStatusReads,
+}))
+vi.mock('../../src/platform/module-reviewer-evidence-capabilities.js', () => ({
+  createPlatformReviewerEvidenceReads: mocks.createPlatformReviewerEvidenceReads,
+}))
+vi.mock('../../src/platform/module-sensitive-access-audit.js', () => ({
+  recordModuleSensitiveAccessDecision: mocks.recordModuleSensitiveAccessDecision,
 }))
 vi.mock('../../src/platform/module-organization-command-capabilities.js', () => ({
   createPlatformOrganizationCommandCapabilities:
@@ -80,6 +88,14 @@ const reviewerSearchDeclaration = {
 const reviewerCharacterDeclaration = {
   ...reviewerAccountDeclaration,
   target: 'managed-organization-character',
+} as const
+const reviewerEvidenceDeclaration = {
+  ...reviewerCharacterDeclaration,
+  reviewerEvidence: {
+    routeId: 'skills-detail',
+    resourceId: 'trained-skills',
+    operationId: 'read-skill-evidence',
+  },
 } as const
 const reviewerBlockDeclaration = {
   audience: 'hr',
@@ -492,6 +508,154 @@ describe('platform module route composition', () => {
       characterId: 90_000_001,
     })
     expect(privateRead).toHaveBeenCalledOnce()
+  })
+
+  test('records an allowed sensitive evidence request after target resolution', async () => {
+    mocks.resolveOrganizationReviewerTarget.mockResolvedValue({
+      ...reviewerTargetContext,
+      selection: {
+        kind: 'character',
+        characterId: 90_000_001,
+        subjectLifecycleId: 'lifecycle-2',
+      },
+    })
+    const privateRead = vi.fn()
+    const feature = new Hono<PlatformReviewerTargetRouteEnv>().get('/', (context) => {
+      privateRead()
+      return context.json({ available: Boolean(context.var.platform.evidence) })
+    })
+    const app = new Hono().route(
+      '/member-audit/accounts/:userId/characters/:characterId/skills',
+      platformModuleRouteComposers['managed-organization-character'](
+        'member-audit',
+        reviewerEvidenceDeclaration,
+        feature,
+      ),
+    )
+
+    const response = await app.request(
+      `/member-audit/accounts/${targetUserId}/characters/90000001/skills`,
+      { headers: { cookie: 'eve_space_session=session-token' } },
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.recordModuleSensitiveAccessDecision).toHaveBeenCalledWith({
+      actorUserId: 'user-1',
+      moduleId: 'member-audit',
+      sectionId: 'skills',
+      organizationVersion: 7,
+      decision: 'allowed',
+      reason: 'authorized',
+      targetUserId,
+      targetCharacterId: 90_000_001,
+    })
+    expect(mocks.resolveOrganizationReviewerTarget.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.recordModuleSensitiveAccessDecision.mock.invocationCallOrder[0]!,
+    )
+    expect(mocks.recordModuleSensitiveAccessDecision.mock.invocationCallOrder[0]).toBeLessThan(
+      privateRead.mock.invocationCallOrder[0]!,
+    )
+  })
+
+  test('records controlled sensitive evidence denials without retaining an unverified target', async () => {
+    mocks.authorizeOrganizationReviewerContribution.mockResolvedValue({
+      authorized: false,
+      reason: 'permission',
+    })
+    const feature = new Hono<PlatformReviewerTargetRouteEnv>().get('/', (context) =>
+      context.json(context.var.platform.reviewerTarget),
+    )
+    const app = new Hono().route(
+      '/member-audit/accounts/:userId/characters/:characterId/skills',
+      platformModuleRouteComposers['managed-organization-character'](
+        'member-audit',
+        reviewerEvidenceDeclaration,
+        feature,
+      ),
+    )
+
+    const response = await app.request(
+      `/member-audit/accounts/${targetUserId}/characters/90000001/skills`,
+      { headers: { cookie: 'eve_space_session=session-token' } },
+    )
+
+    expect(response.status).toBe(403)
+    expect(mocks.recordModuleSensitiveAccessDecision).toHaveBeenCalledWith({
+      actorUserId: 'user-1',
+      moduleId: 'member-audit',
+      sectionId: 'skills',
+      organizationVersion: 7,
+      decision: 'denied',
+      reason: 'reviewer-permission-required',
+      targetUserId: null,
+      targetCharacterId: null,
+    })
+    expect(mocks.resolveOrganizationReviewerTarget).not.toHaveBeenCalled()
+  })
+
+  test('records a sensitive evidence denial when target resolution refuses the subject', async () => {
+    mocks.resolveOrganizationReviewerTarget.mockResolvedValue(null)
+    const feature = new Hono<PlatformReviewerTargetRouteEnv>().get('/', (context) =>
+      context.json(context.var.platform.reviewerTarget),
+    )
+    const app = new Hono().route(
+      '/member-audit/accounts/:userId/characters/:characterId/skills',
+      platformModuleRouteComposers['managed-organization-character'](
+        'member-audit',
+        reviewerEvidenceDeclaration,
+        feature,
+      ),
+    )
+
+    const response = await app.request(
+      `/member-audit/accounts/${targetUserId}/characters/90000001/skills`,
+      { headers: { cookie: 'eve_space_session=session-token' } },
+    )
+
+    expect(response.status).toBe(404)
+    expect(mocks.recordModuleSensitiveAccessDecision).toHaveBeenCalledWith({
+      actorUserId: 'user-1',
+      moduleId: 'member-audit',
+      sectionId: 'skills',
+      organizationVersion: 7,
+      decision: 'denied',
+      reason: 'target-not-authorized',
+      targetUserId: null,
+      targetCharacterId: null,
+    })
+  })
+
+  test('fails a sensitive evidence response closed when audit recording fails', async () => {
+    mocks.resolveOrganizationReviewerTarget.mockResolvedValue({
+      ...reviewerTargetContext,
+      selection: {
+        kind: 'character',
+        characterId: 90_000_001,
+        subjectLifecycleId: 'lifecycle-2',
+      },
+    })
+    mocks.recordModuleSensitiveAccessDecision.mockRejectedValueOnce(new Error('audit unavailable'))
+    const privateRead = vi.fn()
+    const feature = new Hono<PlatformReviewerTargetRouteEnv>().get('/', (context) => {
+      privateRead()
+      return context.json(context.var.platform.reviewerTarget.selection)
+    })
+    const app = new Hono().route(
+      '/member-audit/accounts/:userId/characters/:characterId/skills',
+      platformModuleRouteComposers['managed-organization-character'](
+        'member-audit',
+        reviewerEvidenceDeclaration,
+        feature,
+      ),
+    )
+
+    const response = await app.request(
+      `/member-audit/accounts/${targetUserId}/characters/90000001/skills`,
+      { headers: { cookie: 'eve_space_session=session-token' } },
+    )
+
+    expect(response.status).toBe(500)
+    expect(privateRead).not.toHaveBeenCalled()
   })
 
   test('refuses missing reviewer authority before target lookup or private reads', async () => {

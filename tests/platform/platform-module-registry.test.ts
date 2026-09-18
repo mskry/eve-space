@@ -692,6 +692,34 @@ describe('platform module declarations', () => {
     )
   })
 
+  it('requires reviewer evidence routes to reference an eligible character resource', () => {
+    const invalid = manifest('alpha', { persistenceOperation: {} })
+    invalid.sections = [
+      {
+        id: 'evidence',
+        kind: 'sensitive-evidence',
+        defaultEnabled: false,
+        disclosureRevision: 1,
+      },
+    ]
+    Object.assign(invalid.server.routes[0]!, {
+      namespace: '/alpha/accounts/:userId/characters/:characterId/evidence',
+      authorization: 'authenticated-session',
+      audience: 'hr',
+      requiredPermission: 'alpha.evidence.read',
+      sectionId: 'evidence',
+      target: 'managed-organization-character',
+      exposure: 'sensitive-evidence',
+      reviewerEvidenceResourceId: 'alpha-resource',
+    })
+    invalid.server.resources[0]!.sectionId = 'evidence'
+    invalid.server.resources[0]!.eligibility = { kind: 'current-owned-character' }
+
+    expect(validationErrorMessage(invalid)).toContain(
+      'reviewer evidence route alpha/alpha-route resource alpha-resource must be a character resource with current-managed-member-character eligibility',
+    )
+  })
+
   it('requires managed reviewer routes to use reviewer authorization and target parameters', () => {
     const invalid = manifest('alpha')
     invalid.sections = [{ id: 'overview', kind: 'workspace', defaultEnabled: false }]

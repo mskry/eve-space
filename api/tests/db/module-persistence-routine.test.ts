@@ -109,6 +109,57 @@ describe('module persistence routine canonicalization', () => {
     expect(qualified.definitionFingerprint).toBe(unqualified.definitionFingerprint)
   })
 
+  test('normalizes PostgreSQL delete qualifiers, implicit aliases, and returning names', async () => {
+    const source = await canonicalizeWriteRoutine(`
+      begin atomic
+        with deleted as (
+          delete from routine_records
+          where routine_records.ctid in (
+            select routine_records.ctid from routine_records limit 1
+          )
+          returning 1
+        )
+        select jsonb_build_object('deleted', (select count(*) from deleted));
+      end
+    `)
+    const deparsed = await canonicalizeWriteRoutine(`
+      begin atomic
+        with deleted as (
+          delete from routine_records
+          where routine_records.ctid in (
+            select routine_records_1.ctid
+            from routine_records as routine_records_1
+            limit 1
+          )
+          returning 1 as "?column?"
+        )
+        select jsonb_build_object('deleted', (select count(*) from deleted))
+          as jsonb_build_object;
+      end
+    `)
+
+    expect(deparsed.definitionFingerprint).toBe(source.definitionFingerprint)
+  })
+
+  test('preserves the owning relation in qualified column fingerprints', async () => {
+    const leftRelation = await canonicalizeWriteRoutine(`
+      begin atomic
+        select left_table.id
+        from left_table
+        join right_table on right_table.id = left_table.id;
+      end
+    `)
+    const rightRelation = await canonicalizeWriteRoutine(`
+      begin atomic
+        select right_table.id
+        from left_table
+        join right_table on right_table.id = left_table.id;
+      end
+    `)
+
+    expect(leftRelation.definitionFingerprint).not.toBe(rightRelation.definitionFingerprint)
+  })
+
   test('requires exactly one canonical routine identity', async () => {
     await expect(
       canonicalizePersistenceRoutineSql({

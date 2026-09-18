@@ -13,6 +13,7 @@ import { authRequiredBody } from '../http/contracts.js'
 import { createOwnedCharacterCoreReads } from '../platform/core-read-capabilities.js'
 import { createPlatformModuleCollectionStatusReads } from '../platform/module-collection-status-capabilities.js'
 import { createPlatformReviewerCollectionStatusReads } from '../platform/module-reviewer-collection-status-capabilities.js'
+import { createPlatformReviewerEvidenceReads } from '../platform/module-reviewer-evidence-capabilities.js'
 import { createPlatformOrganizationCommandCapabilities } from '../platform/module-organization-command-capabilities.js'
 import { createPlatformReviewerAccountSearch } from '../platform/reviewer-search-capabilities.js'
 import {
@@ -27,6 +28,10 @@ import type { OrganizationReviewerTargetEnv } from './reviewer-target.js'
 export type ModuleOrganizationAuthorizationEnv = {
   Variables: OrganizationSessionEnv['Variables'] & {
     moduleOrganizationAuthorization: PlatformAuthorizedOrganizationContext | null
+    moduleOrganizationAuthorizationDenialReason?: Extract<
+      OrganizationContributionAuthorizationResult,
+      { authorized: false }
+    >['reason']
   }
 }
 
@@ -88,6 +93,7 @@ function requireOrganizationAuthorization(
       ? await authorizeOrganizationReviewerContribution(session.userId, organization, declaration)
       : await authorizeOrganizationContribution(session.userId, organization, declaration)
     if (!authorization.authorized) {
+      context.set('moduleOrganizationAuthorizationDenialReason', authorization.reason)
       return organizationAuthorizationDenied(
         context,
         organization,
@@ -218,7 +224,16 @@ export function exposeOwnedCharacterModuleContext(moduleId: string, sectionId?: 
 
 export function exposeReviewerTargetModuleContext<
   const CommandIds extends readonly PlatformOrganizationCommandId[],
->(moduleId: string, sectionId: string | undefined, commandIds: CommandIds) {
+>(
+  moduleId: string,
+  sectionId: string | undefined,
+  commandIds: CommandIds,
+  evidenceBinding?: {
+    readonly routeId: string
+    readonly resourceId: string
+    readonly operationId: string
+  },
+) {
   return createMiddleware<ReviewerTargetModuleEnv<CommandIds>>(async (context, next) => {
     const session = context.var.session
     if (!session) return context.json(authRequiredBody, 401)
@@ -230,18 +245,27 @@ export function exposeReviewerTargetModuleContext<
       )
 
     const organization = context.var.moduleOrganizationAuthorization!
+    const collectionStatus = createPlatformReviewerCollectionStatusReads({
+      moduleId,
+      sectionId,
+      target: reviewerTarget,
+    })
     const platform = {
       authorization: {
         strategy: 'authenticated-session',
         userId: session.userId,
       },
       organization,
-      collectionStatus: createPlatformReviewerCollectionStatusReads({
-        moduleId,
-        sectionId,
-        target: reviewerTarget,
-      }),
+      collectionStatus,
       reviewerTarget,
+      ...(evidenceBinding
+        ? {
+            evidence: createPlatformReviewerEvidenceReads(
+              { moduleId, ...evidenceBinding, target: reviewerTarget },
+              collectionStatus,
+            ),
+          }
+        : {}),
       ...(commandIds.length > 0
         ? {
             organizationCommands: createPlatformOrganizationCommandCapabilities(commandIds, {

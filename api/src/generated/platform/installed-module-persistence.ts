@@ -6,7 +6,18 @@ import {
   type PlatformPersistenceOperationDefinition,
   type PlatformPersistenceOperationInvoker,
 } from '@eve-space/platform-module-server'
-import { writeSkillSnapshotOperation as module0PersistenceOperation0 } from '@eve-space/member-audit-server'
+import {
+  writeSkillSnapshotOperation as module0PersistenceOperation0,
+  readSkillEvidenceOperation as module0PersistenceOperation1,
+  readAssetEvidenceOperation as module0PersistenceOperation2,
+  readWalletEvidenceOperation as module0PersistenceOperation3,
+  readMailEvidenceOperation as module0PersistenceOperation4,
+  materializeCurrentSnapshotOperation as module0PersistenceOperation5,
+  readEvidenceContinuationOperation as module0PersistenceOperation6,
+  writeEvidenceContinuationOperation as module0PersistenceOperation7,
+  promoteEvidenceObservationOperation as module0PersistenceOperation8,
+  purgeEvidenceOperation as module0PersistenceOperation9,
+} from '@eve-space/member-audit-server'
 import {
   readActivityCheckpointOperation as module1PersistenceOperation0,
   readActivitySnapshotsOperation as module1PersistenceOperation1,
@@ -23,7 +34,7 @@ export const installedModulePersistenceOperations = [
     migration: 'member-audit-001-baseline.sql',
     schemaName: 'eve_module_member_audit',
     routineName: 'persist_write_skill_snapshot',
-    definitionFingerprint: 'e22b7473c007972d37583e922547d8cd7547e5760a591b3d0ba6a5d14b5a2c35',
+    definitionFingerprint: 'c3c53833500c4d374a09ca7ebe6782f0e4d6860a49d5f25fb4bdc350e85e3594',
     definition: module0PersistenceOperation0 satisfies PlatformPersistenceOperationDefinition<
       'write-skill-snapshot',
       'writeSkillSnapshot',
@@ -35,6 +46,240 @@ export const installedModulePersistenceOperations = [
       activityProviders: [],
       resourceProjections: [],
       resourceMaterializations: ['trained-skills', 'skill-queue'],
+    },
+  },
+  {
+    moduleId: 'member-audit',
+    operationId: 'read-skill-evidence',
+    method: 'readSkillEvidence',
+    revision: 1,
+    mode: 'read',
+    migration: 'member-audit-003-persistence-operations.sql',
+    schemaName: 'eve_module_member_audit',
+    routineName: 'persist_read_skill_evidence',
+    definitionFingerprint: 'c8f216a65a36948aa95627086cb1a99a13c5ab317581272aeae81d333433da1e',
+    definition: module0PersistenceOperation1 satisfies PlatformPersistenceOperationDefinition<
+      'read-skill-evidence',
+      'readSkillEvidence',
+      1,
+      'read'
+    >,
+    grants: {
+      routes: ['skills-detail'],
+      activityProviders: [],
+      resourceProjections: [],
+      resourceMaterializations: [],
+    },
+  },
+  {
+    moduleId: 'member-audit',
+    operationId: 'read-asset-evidence',
+    method: 'readAssetEvidence',
+    revision: 1,
+    mode: 'read',
+    migration: 'member-audit-003-persistence-operations.sql',
+    schemaName: 'eve_module_member_audit',
+    routineName: 'persist_read_asset_evidence',
+    definitionFingerprint: '151b8dd33d96c7faf7c36cf6096198fea779537b8e789f4403e8807024fcc2e8',
+    definition: module0PersistenceOperation2 satisfies PlatformPersistenceOperationDefinition<
+      'read-asset-evidence',
+      'readAssetEvidence',
+      1,
+      'read'
+    >,
+    grants: {
+      routes: ['assets-detail'],
+      activityProviders: [],
+      resourceProjections: [],
+      resourceMaterializations: [],
+    },
+  },
+  {
+    moduleId: 'member-audit',
+    operationId: 'read-wallet-evidence',
+    method: 'readWalletEvidence',
+    revision: 1,
+    mode: 'read',
+    migration: 'member-audit-003-persistence-operations.sql',
+    schemaName: 'eve_module_member_audit',
+    routineName: 'persist_read_wallet_evidence',
+    definitionFingerprint: '596bc9fc8a61b71d19017c23f8d597acb7c33d5a014282bd03574ae352426ca0',
+    definition: module0PersistenceOperation3 satisfies PlatformPersistenceOperationDefinition<
+      'read-wallet-evidence',
+      'readWalletEvidence',
+      1,
+      'read'
+    >,
+    grants: {
+      routes: ['wallet-detail'],
+      activityProviders: [],
+      resourceProjections: [],
+      resourceMaterializations: [],
+    },
+  },
+  {
+    moduleId: 'member-audit',
+    operationId: 'read-mail-evidence',
+    method: 'readMailEvidence',
+    revision: 1,
+    mode: 'read',
+    migration: 'member-audit-003-persistence-operations.sql',
+    schemaName: 'eve_module_member_audit',
+    routineName: 'persist_read_mail_evidence',
+    definitionFingerprint: '8e4705761435a021a5e733a2c4a9423e3e371bbedf9b07c7dca582692e9728b8',
+    definition: module0PersistenceOperation4 satisfies PlatformPersistenceOperationDefinition<
+      'read-mail-evidence',
+      'readMailEvidence',
+      1,
+      'read'
+    >,
+    grants: {
+      routes: ['mail-detail'],
+      activityProviders: [],
+      resourceProjections: [],
+      resourceMaterializations: [],
+    },
+  },
+  {
+    moduleId: 'member-audit',
+    operationId: 'materialize-current-snapshot',
+    method: 'materializeCurrentSnapshot',
+    revision: 1,
+    mode: 'write',
+    migration: 'member-audit-003-persistence-operations.sql',
+    schemaName: 'eve_module_member_audit',
+    routineName: 'persist_materialize_current_snapshot',
+    definitionFingerprint: '0b1249af000f2d1bcd6ed9f611ee577012585be0a147320486ef6db09eadcf92',
+    definition: module0PersistenceOperation5 satisfies PlatformPersistenceOperationDefinition<
+      'materialize-current-snapshot',
+      'materializeCurrentSnapshot',
+      1,
+      'write'
+    >,
+    grants: {
+      routes: [],
+      activityProviders: [],
+      resourceProjections: [],
+      resourceMaterializations: ['trained-skills', 'skill-queue', 'wallet-balance'],
+    },
+  },
+  {
+    moduleId: 'member-audit',
+    operationId: 'read-evidence-continuation',
+    method: 'readEvidenceContinuation',
+    revision: 1,
+    mode: 'read',
+    migration: 'member-audit-003-persistence-operations.sql',
+    schemaName: 'eve_module_member_audit',
+    routineName: 'persist_read_evidence_continuation',
+    definitionFingerprint: '2cad9da6a23349fbc1021e55074e08105080d5f868083fada7ab8cbefe8a0177',
+    definition: module0PersistenceOperation6 satisfies PlatformPersistenceOperationDefinition<
+      'read-evidence-continuation',
+      'readEvidenceContinuation',
+      1,
+      'read'
+    >,
+    grants: {
+      routes: [],
+      activityProviders: [],
+      resourceProjections: [
+        'assets',
+        'wallet-journal',
+        'wallet-transactions',
+        'mail-headers',
+        'mail-details',
+      ],
+      resourceMaterializations: [],
+    },
+  },
+  {
+    moduleId: 'member-audit',
+    operationId: 'write-evidence-continuation',
+    method: 'writeEvidenceContinuation',
+    revision: 1,
+    mode: 'write',
+    migration: 'member-audit-003-persistence-operations.sql',
+    schemaName: 'eve_module_member_audit',
+    routineName: 'persist_write_evidence_continuation',
+    definitionFingerprint: '944ee854687b050a98d9c8976482c996987b7472065dc161aadbf622c4c76ed5',
+    definition: module0PersistenceOperation7 satisfies PlatformPersistenceOperationDefinition<
+      'write-evidence-continuation',
+      'writeEvidenceContinuation',
+      1,
+      'write'
+    >,
+    grants: {
+      routes: [],
+      activityProviders: [],
+      resourceProjections: [],
+      resourceMaterializations: [
+        'assets',
+        'wallet-journal',
+        'wallet-transactions',
+        'mail-headers',
+        'mail-details',
+      ],
+    },
+  },
+  {
+    moduleId: 'member-audit',
+    operationId: 'promote-evidence-observation',
+    method: 'promoteEvidenceObservation',
+    revision: 1,
+    mode: 'write',
+    migration: 'member-audit-003-persistence-operations.sql',
+    schemaName: 'eve_module_member_audit',
+    routineName: 'persist_promote_evidence_observation',
+    definitionFingerprint: '5628db2583a2069c70469ba31b17e58e3027c35e790d37d311fd90de80cabbc6',
+    definition: module0PersistenceOperation8 satisfies PlatformPersistenceOperationDefinition<
+      'promote-evidence-observation',
+      'promoteEvidenceObservation',
+      1,
+      'write'
+    >,
+    grants: {
+      routes: [],
+      activityProviders: [],
+      resourceProjections: [],
+      resourceMaterializations: [
+        'assets',
+        'wallet-journal',
+        'wallet-transactions',
+        'mail-headers',
+        'mail-details',
+      ],
+    },
+  },
+  {
+    moduleId: 'member-audit',
+    operationId: 'purge-evidence',
+    method: 'purgeEvidence',
+    revision: 1,
+    mode: 'write',
+    migration: 'member-audit-004-purge-operation.sql',
+    schemaName: 'eve_module_member_audit',
+    routineName: 'persist_purge_evidence',
+    definitionFingerprint: '68491b0dd9ac3efdd6167e15ab1d724e5f2340972c5f117a61603bc3474fbece',
+    definition: module0PersistenceOperation9 satisfies PlatformPersistenceOperationDefinition<
+      'purge-evidence',
+      'purgeEvidence',
+      1,
+      'write'
+    >,
+    grants: {
+      routes: [],
+      activityProviders: [],
+      resourceProjections: [],
+      resourceMaterializations: [
+        'trained-skills',
+        'skill-queue',
+        'assets',
+        'wallet-balance',
+        'wallet-journal',
+        'wallet-transactions',
+        'mail-headers',
+        'mail-details',
+      ],
     },
   },
   {
@@ -125,14 +370,23 @@ export const installedModulePersistenceOperations = [
 ] as const satisfies readonly PlatformInstalledPersistenceOperationDescriptor[]
 
 export const installedModulePersistenceContractFingerprint =
-  'a5b979f09215f956615a7af512bf0b1cb8482ec4328134c4a384dff252da28c2'
+  '067b9d393c6af0521fa3128ccc6fc5a14264835b37f28e357a091730b67d9861'
 
 export const installedModulePersistenceOperationCatalog = {
   'member-audit/write-skill-snapshot': installedModulePersistenceOperations[0]!,
-  'organization-activity/read-activity-checkpoint': installedModulePersistenceOperations[1]!,
-  'organization-activity/read-activity-snapshots': installedModulePersistenceOperations[2]!,
+  'member-audit/read-skill-evidence': installedModulePersistenceOperations[1]!,
+  'member-audit/read-asset-evidence': installedModulePersistenceOperations[2]!,
+  'member-audit/read-wallet-evidence': installedModulePersistenceOperations[3]!,
+  'member-audit/read-mail-evidence': installedModulePersistenceOperations[4]!,
+  'member-audit/materialize-current-snapshot': installedModulePersistenceOperations[5]!,
+  'member-audit/read-evidence-continuation': installedModulePersistenceOperations[6]!,
+  'member-audit/write-evidence-continuation': installedModulePersistenceOperations[7]!,
+  'member-audit/promote-evidence-observation': installedModulePersistenceOperations[8]!,
+  'member-audit/purge-evidence': installedModulePersistenceOperations[9]!,
+  'organization-activity/read-activity-checkpoint': installedModulePersistenceOperations[10]!,
+  'organization-activity/read-activity-snapshots': installedModulePersistenceOperations[11]!,
   'organization-activity/materialize-activity-observation':
-    installedModulePersistenceOperations[3]!,
+    installedModulePersistenceOperations[12]!,
 } as const
 
 export function createModule0Route0Persistence(_invoke: PlatformPersistenceOperationInvoker) {
@@ -141,6 +395,42 @@ export function createModule0Route0Persistence(_invoke: PlatformPersistenceOpera
 
 export function createModule0Route1Persistence(_invoke: PlatformPersistenceOperationInvoker) {
   return {}
+}
+
+export function createModule0Route2Persistence(invoke: PlatformPersistenceOperationInvoker) {
+  return {
+    readSkillEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[1]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Route3Persistence(invoke: PlatformPersistenceOperationInvoker) {
+  return {
+    readAssetEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[2]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Route4Persistence(invoke: PlatformPersistenceOperationInvoker) {
+  return {
+    readWalletEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[3]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Route5Persistence(invoke: PlatformPersistenceOperationInvoker) {
+  return {
+    readMailEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[4]!,
+      invoke,
+    ),
+  }
 }
 
 export function createModule0Resource0ProjectionPersistence(
@@ -155,6 +445,14 @@ export function createModule0Resource0MaterializationPersistence(
   return {
     writeSkillSnapshot: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[0]!,
+      invoke,
+    ),
+    materializeCurrentSnapshot: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[5]!,
+      invoke,
+    ),
+    purgeEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[9]!,
       invoke,
     ),
   }
@@ -174,13 +472,192 @@ export function createModule0Resource1MaterializationPersistence(
       installedModulePersistenceOperations[0]!,
       invoke,
     ),
+    materializeCurrentSnapshot: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[5]!,
+      invoke,
+    ),
+    purgeEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[9]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Resource2ProjectionPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    readEvidenceContinuation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[6]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Resource2MaterializationPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    writeEvidenceContinuation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[7]!,
+      invoke,
+    ),
+    promoteEvidenceObservation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[8]!,
+      invoke,
+    ),
+    purgeEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[9]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Resource3ProjectionPersistence(
+  _invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {}
+}
+
+export function createModule0Resource3MaterializationPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    materializeCurrentSnapshot: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[5]!,
+      invoke,
+    ),
+    purgeEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[9]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Resource4ProjectionPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    readEvidenceContinuation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[6]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Resource4MaterializationPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    writeEvidenceContinuation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[7]!,
+      invoke,
+    ),
+    promoteEvidenceObservation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[8]!,
+      invoke,
+    ),
+    purgeEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[9]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Resource5ProjectionPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    readEvidenceContinuation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[6]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Resource5MaterializationPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    writeEvidenceContinuation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[7]!,
+      invoke,
+    ),
+    promoteEvidenceObservation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[8]!,
+      invoke,
+    ),
+    purgeEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[9]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Resource6ProjectionPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    readEvidenceContinuation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[6]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Resource6MaterializationPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    writeEvidenceContinuation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[7]!,
+      invoke,
+    ),
+    promoteEvidenceObservation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[8]!,
+      invoke,
+    ),
+    purgeEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[9]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Resource7ProjectionPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    readEvidenceContinuation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[6]!,
+      invoke,
+    ),
+  }
+}
+
+export function createModule0Resource7MaterializationPersistence(
+  invoke: PlatformPersistenceOperationInvoker,
+) {
+  return {
+    writeEvidenceContinuation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[7]!,
+      invoke,
+    ),
+    promoteEvidenceObservation: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[8]!,
+      invoke,
+    ),
+    purgeEvidence: bindPlatformPersistenceOperation(
+      installedModulePersistenceOperations[9]!,
+      invoke,
+    ),
   }
 }
 
 export function createModule1Route0Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readActivitySnapshots: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[2]!,
+      installedModulePersistenceOperations[11]!,
       invoke,
     ),
   }
@@ -189,7 +666,7 @@ export function createModule1Route0Persistence(invoke: PlatformPersistenceOperat
 export function createModule1Route1Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readActivitySnapshots: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[2]!,
+      installedModulePersistenceOperations[11]!,
       invoke,
     ),
   }
@@ -200,7 +677,7 @@ export function createModule1ActivityProvider0Persistence(
 ) {
   return {
     readActivitySnapshots: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[2]!,
+      installedModulePersistenceOperations[11]!,
       invoke,
     ),
   }
@@ -211,7 +688,7 @@ export function createModule1Resource0ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[1]!,
+      installedModulePersistenceOperations[10]!,
       invoke,
     ),
   }
@@ -222,7 +699,7 @@ export function createModule1Resource0MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[3]!,
+      installedModulePersistenceOperations[12]!,
       invoke,
     ),
   }
@@ -233,7 +710,7 @@ export function createModule1Resource1ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[1]!,
+      installedModulePersistenceOperations[10]!,
       invoke,
     ),
   }
@@ -244,7 +721,7 @@ export function createModule1Resource1MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[3]!,
+      installedModulePersistenceOperations[12]!,
       invoke,
     ),
   }
@@ -255,7 +732,7 @@ export function createModule1Resource2ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[1]!,
+      installedModulePersistenceOperations[10]!,
       invoke,
     ),
   }
@@ -266,7 +743,7 @@ export function createModule1Resource2MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[3]!,
+      installedModulePersistenceOperations[12]!,
       invoke,
     ),
   }
@@ -277,7 +754,7 @@ export function createModule1Resource3ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[1]!,
+      installedModulePersistenceOperations[10]!,
       invoke,
     ),
   }
@@ -288,7 +765,7 @@ export function createModule1Resource3MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[3]!,
+      installedModulePersistenceOperations[12]!,
       invoke,
     ),
   }
@@ -299,7 +776,7 @@ export function createModule1Resource4ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[1]!,
+      installedModulePersistenceOperations[10]!,
       invoke,
     ),
   }
@@ -310,7 +787,7 @@ export function createModule1Resource4MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[3]!,
+      installedModulePersistenceOperations[12]!,
       invoke,
     ),
   }
@@ -321,7 +798,7 @@ export function createModule1Resource5ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[1]!,
+      installedModulePersistenceOperations[10]!,
       invoke,
     ),
   }
@@ -332,7 +809,7 @@ export function createModule1Resource5MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[3]!,
+      installedModulePersistenceOperations[12]!,
       invoke,
     ),
   }
@@ -343,7 +820,7 @@ export function createModule1Resource6ProjectionPersistence(
 ) {
   return {
     readActivityCheckpoint: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[1]!,
+      installedModulePersistenceOperations[10]!,
       invoke,
     ),
   }
@@ -354,7 +831,7 @@ export function createModule1Resource6MaterializationPersistence(
 ) {
   return {
     materializeActivityObservation: bindPlatformPersistenceOperation(
-      installedModulePersistenceOperations[3]!,
+      installedModulePersistenceOperations[12]!,
       invoke,
     ),
   }
@@ -364,6 +841,10 @@ export const installedModulePersistenceCapabilityFactories = {
   routes: {
     'member-audit/member-search': createModule0Route0Persistence,
     'member-audit/member-summary': createModule0Route1Persistence,
+    'member-audit/skills-detail': createModule0Route2Persistence,
+    'member-audit/assets-detail': createModule0Route3Persistence,
+    'member-audit/wallet-detail': createModule0Route4Persistence,
+    'member-audit/mail-detail': createModule0Route5Persistence,
     'organization-activity/activity-details': createModule1Route0Persistence,
     'organization-activity/activity-participation': createModule1Route1Persistence,
   },
@@ -373,6 +854,12 @@ export const installedModulePersistenceCapabilityFactories = {
   resourceProjections: {
     'member-audit/trained-skills': createModule0Resource0ProjectionPersistence,
     'member-audit/skill-queue': createModule0Resource1ProjectionPersistence,
+    'member-audit/assets': createModule0Resource2ProjectionPersistence,
+    'member-audit/wallet-balance': createModule0Resource3ProjectionPersistence,
+    'member-audit/wallet-journal': createModule0Resource4ProjectionPersistence,
+    'member-audit/wallet-transactions': createModule0Resource5ProjectionPersistence,
+    'member-audit/mail-headers': createModule0Resource6ProjectionPersistence,
+    'member-audit/mail-details': createModule0Resource7ProjectionPersistence,
     'organization-activity/campaigns': createModule1Resource0ProjectionPersistence,
     'organization-activity/public-jobs': createModule1Resource1ProjectionPersistence,
     'organization-activity/corporation-jobs': createModule1Resource2ProjectionPersistence,
@@ -384,6 +871,12 @@ export const installedModulePersistenceCapabilityFactories = {
   resourceMaterializations: {
     'member-audit/trained-skills': createModule0Resource0MaterializationPersistence,
     'member-audit/skill-queue': createModule0Resource1MaterializationPersistence,
+    'member-audit/assets': createModule0Resource2MaterializationPersistence,
+    'member-audit/wallet-balance': createModule0Resource3MaterializationPersistence,
+    'member-audit/wallet-journal': createModule0Resource4MaterializationPersistence,
+    'member-audit/wallet-transactions': createModule0Resource5MaterializationPersistence,
+    'member-audit/mail-headers': createModule0Resource6MaterializationPersistence,
+    'member-audit/mail-details': createModule0Resource7MaterializationPersistence,
     'organization-activity/campaigns': createModule1Resource0MaterializationPersistence,
     'organization-activity/public-jobs': createModule1Resource1MaterializationPersistence,
     'organization-activity/corporation-jobs': createModule1Resource2MaterializationPersistence,

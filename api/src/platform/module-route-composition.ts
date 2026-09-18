@@ -7,7 +7,12 @@ import type {
   PlatformReviewerTargetRouteEnv,
   PlatformRouteSecurityClassification,
 } from '@eve-space/platform-module-contract/server'
-import { Hono, type MiddlewareHandler, type Schema } from 'hono'
+import { Hono, type Context, type MiddlewareHandler, type Schema } from 'hono'
+import { createMiddleware } from 'hono/factory'
+import {
+  organizationSensitiveAccessSections,
+  type OrganizationSensitiveAccessReason,
+} from '../db/schema.js'
 import { privateNoStore } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
 import { loadSession, requireSession } from '../middleware/auth-session.js'
@@ -18,6 +23,7 @@ import {
   exposeReviewerTargetModuleContext,
   requireModuleOrganizationAuthorization,
   requireModuleReviewerAuthorization,
+  type ModuleOrganizationAuthorizationEnv,
 } from '../middleware/module-authorization.js'
 import { requireInstalledModuleEnabled } from '../middleware/module-enablement.js'
 import { loadOrganizationSession } from '../middleware/organization-session.js'
@@ -26,7 +32,9 @@ import {
   loadOrganizationReviewerTarget,
   reviewerAccountParams,
   reviewerCharacterParams,
+  type OrganizationReviewerTargetEnv,
 } from '../middleware/reviewer-target.js'
+import { recordModuleSensitiveAccessDecision } from './module-sensitive-access-audit.js'
 
 function composeAuthenticatedSessionModuleRoute<
   RouteSchema extends Schema,
@@ -78,9 +86,15 @@ type ReviewerRouteCommandIds<Organization> = Organization extends {
   ? CommandIds
   : readonly []
 
+interface ReviewerEvidenceBinding {
+  readonly routeId: string
+  readonly resourceId: string
+  readonly operationId: string
+}
+
 function composeReviewerTargetModuleRoute<
   const Organization extends PlatformOrganizationContributionAuthorization &
-    PlatformRouteSecurityClassification,
+    PlatformRouteSecurityClassification & { readonly reviewerEvidence?: ReviewerEvidenceBinding },
   RouteSchema extends Schema,
   RouteBasePath extends string,
 >(
@@ -94,21 +108,27 @@ function composeReviewerTargetModuleRoute<
 ) {
   const reviewerTargetKind = resolveReviewerTargetKind(organization.target)
   if (!reviewerTargetKind) throw new Error('Reviewer target route requires an account target')
+  const sensitiveAccessAudit = organization.reviewerEvidence
+    ? createReviewerEvidenceAccessAudit(moduleId, organization.sectionId)
+    : undefined
   return new Hono()
     .use('*', privateNoStore)
     .use('*', requireInstalledModuleEnabled(moduleId, organization.sectionId))
     .use('*', loadSession)
     .use('*', requireSession)
     .use('*', loadOrganizationSession)
+    .use('*', sensitiveAccessAudit?.denials ?? passThrough)
     .use('*', requireModuleReviewerAuthorization(organization))
     .use('*', reviewerTargetParamsValidator(reviewerTargetKind))
     .use('*', loadOrganizationReviewerTarget(reviewerTargetKind))
+    .use('*', sensitiveAccessAudit?.allowed ?? passThrough)
     .use(
       '*',
       exposeReviewerTargetModuleContext(
         moduleId,
         organization.sectionId,
         (organization.organizationCommands ?? []) as ReviewerRouteCommandIds<Organization>,
+        organization.reviewerEvidence,
       ),
     )
     .route('/', route)
@@ -155,4 +175,78 @@ function resolveReviewerTargetKind(
 function reviewerTargetParamsValidator(targetKind: 'account' | 'character'): MiddlewareHandler {
   if (targetKind === 'account') return zValidator('param', reviewerAccountParams)
   return zValidator('param', reviewerCharacterParams)
+}
+
+const passThrough = createMiddleware(async (_context, next) => next())
+
+function createReviewerEvidenceAccessAudit(moduleId: string, sectionId: string | undefined) {
+  if (!isSensitiveAccessSection(sectionId))
+    throw new Error('Reviewer evidence route requires an auditable sensitive section')
+  return {
+    denials: createMiddleware(async (context, next) => {
+      await next()
+      const target = context.var.organizationReviewerTarget
+      if (target) return
+      const authorizationDenial = context.var.moduleOrganizationAuthorizationDenialReason
+      await recordReviewerEvidenceAccess(context, {
+        moduleId,
+        sectionId,
+        decision: 'denied',
+        reason: authorizationDenial
+          ? sensitiveAccessDenialReason(authorizationDenial)
+          : 'target-not-authorized',
+        targetUserId: null,
+        targetCharacterId: null,
+      })
+    }),
+    allowed: createMiddleware(async (context, next) => {
+      const target = context.var.organizationReviewerTarget
+      if (!target) throw new Error('Sensitive access target is unavailable')
+      await recordReviewerEvidenceAccess(context, {
+        moduleId,
+        sectionId,
+        decision: 'allowed',
+        reason: 'authorized',
+        targetUserId: target.account.userId,
+        targetCharacterId:
+          target.selection.kind === 'character' ? target.selection.characterId : null,
+      })
+      await next()
+    }),
+  }
+}
+
+async function recordReviewerEvidenceAccess(
+  context: Context<{
+    Variables: ModuleOrganizationAuthorizationEnv['Variables'] &
+      OrganizationReviewerTargetEnv['Variables']
+  }>,
+  decision: Omit<
+    Parameters<typeof recordModuleSensitiveAccessDecision>[0],
+    'actorUserId' | 'organizationVersion'
+  >,
+) {
+  const session = context.var.session
+  const organization = context.var.organization
+  if (!session || !organization) throw new Error('Sensitive access audit context is unavailable')
+  await recordModuleSensitiveAccessDecision({
+    ...decision,
+    actorUserId: session.userId,
+    organizationVersion: organization.organizationVersion,
+  })
+}
+
+function isSensitiveAccessSection(
+  sectionId: string | undefined,
+): sectionId is (typeof organizationSensitiveAccessSections)[number] {
+  return organizationSensitiveAccessSections.includes(sectionId as never)
+}
+
+function sensitiveAccessDenialReason(
+  reason: 'blocked' | 'compliance' | 'audience' | 'permission',
+): OrganizationSensitiveAccessReason {
+  if (reason === 'blocked') return 'reviewer-blocked'
+  if (reason === 'compliance') return 'reviewer-compliance-required'
+  if (reason === 'audience') return 'reviewer-authority-required'
+  return 'reviewer-permission-required'
 }

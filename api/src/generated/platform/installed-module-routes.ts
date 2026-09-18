@@ -2,10 +2,17 @@
 
 import { Hono } from 'hono'
 import { platformModuleRouteComposers } from '../../platform/module-route-composition.js'
-import { createPlatformModuleRouteCapabilities } from '../../platform/module-route-capabilities.js'
+import {
+  createPlatformModuleRouteCapabilities,
+  createPlatformReviewerRouteCapabilities,
+} from '../../platform/module-route-capabilities.js'
 import {
   memberSearchRoutes as module0Route0Factory,
   memberSummaryRoutes as module0Route1Factory,
+  memberSkillsRoutes as module0Route2Factory,
+  memberAssetsRoutes as module0Route3Factory,
+  memberWalletRoutes as module0Route4Factory,
+  memberMailRoutes as module0Route5Factory,
 } from '@eve-space/member-audit-server'
 import {
   activityRoutes as module1Route0Factory,
@@ -13,10 +20,22 @@ import {
 } from '@eve-space/organization-activity-server'
 
 const module0Route0 = module0Route0Factory(
-  createPlatformModuleRouteCapabilities('member-audit', 'member-search', [] as const),
+  createPlatformReviewerRouteCapabilities('member-audit', [] as const),
 )
 const module0Route1 = module0Route1Factory(
-  createPlatformModuleRouteCapabilities('member-audit', 'member-summary', [] as const),
+  createPlatformReviewerRouteCapabilities('member-audit', [] as const),
+)
+const module0Route2 = module0Route2Factory(
+  createPlatformReviewerRouteCapabilities('member-audit', [] as const),
+)
+const module0Route3 = module0Route3Factory(
+  createPlatformReviewerRouteCapabilities('member-audit', [] as const),
+)
+const module0Route4 = module0Route4Factory(
+  createPlatformReviewerRouteCapabilities('member-audit', [] as const),
+)
+const module0Route5 = module0Route5Factory(
+  createPlatformReviewerRouteCapabilities('member-audit', [] as const),
 )
 const module1Route0 = module1Route0Factory(
   createPlatformModuleRouteCapabilities('organization-activity', 'activity-details', [] as const),
@@ -46,7 +65,7 @@ export const installedModuleRoutes = new Hono()
     ),
   )
   .route(
-    '/member-audit/accounts/:userId',
+    '/member-audit/accounts/:userId/summary',
     platformModuleRouteComposers['managed-organization-account'](
       'member-audit',
       {
@@ -57,6 +76,82 @@ export const installedModuleRoutes = new Hono()
         exposure: 'standard',
       },
       module0Route1,
+    ),
+  )
+  .route(
+    '/member-audit/accounts/:userId/characters/:characterId/skills',
+    platformModuleRouteComposers['managed-organization-character'](
+      'member-audit',
+      {
+        audience: 'hr',
+        requiredPermission: 'member-audit.skills.read',
+        sectionId: 'skills',
+        target: 'managed-organization-character',
+        exposure: 'sensitive-evidence',
+        reviewerEvidence: {
+          routeId: 'skills-detail',
+          resourceId: 'trained-skills',
+          operationId: 'read-skill-evidence',
+        },
+      },
+      module0Route2,
+    ),
+  )
+  .route(
+    '/member-audit/accounts/:userId/characters/:characterId/assets',
+    platformModuleRouteComposers['managed-organization-character'](
+      'member-audit',
+      {
+        audience: 'hr',
+        requiredPermission: 'member-audit.assets.read',
+        sectionId: 'assets',
+        target: 'managed-organization-character',
+        exposure: 'sensitive-evidence',
+        reviewerEvidence: {
+          routeId: 'assets-detail',
+          resourceId: 'assets',
+          operationId: 'read-asset-evidence',
+        },
+      },
+      module0Route3,
+    ),
+  )
+  .route(
+    '/member-audit/accounts/:userId/characters/:characterId/wallet',
+    platformModuleRouteComposers['managed-organization-character'](
+      'member-audit',
+      {
+        audience: 'hr',
+        requiredPermission: 'member-audit.wallet.read',
+        sectionId: 'wallet',
+        target: 'managed-organization-character',
+        exposure: 'sensitive-evidence',
+        reviewerEvidence: {
+          routeId: 'wallet-detail',
+          resourceId: 'wallet-balance',
+          operationId: 'read-wallet-evidence',
+        },
+      },
+      module0Route4,
+    ),
+  )
+  .route(
+    '/member-audit/accounts/:userId/characters/:characterId/mail',
+    platformModuleRouteComposers['managed-organization-character'](
+      'member-audit',
+      {
+        audience: 'hr',
+        requiredPermission: 'member-audit.mail.read',
+        sectionId: 'mail',
+        target: 'managed-organization-character',
+        exposure: 'sensitive-evidence',
+        reviewerEvidence: {
+          routeId: 'mail-detail',
+          resourceId: 'mail-headers',
+          operationId: 'read-mail-evidence',
+        },
+      },
+      module0Route5,
     ),
   )
   .route(

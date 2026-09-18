@@ -96,7 +96,8 @@ beforeEach(async () => {
   await connection`
     truncate character_transfer_audit, character_transfer_approvals, character_transfer_previews,
       organization_audit_events, domain_events, oauth_states, sessions, eve_tokens,
-      organization_account_compliance, platform_subject_lifecycles, characters, users,
+      organization_account_compliance, platform_resource_purge_work,
+      platform_subject_lifecycles, characters, users,
       deployment_settings, organization_epochs, admin_sessions, deployment_admins
     restart identity cascade
   `
@@ -111,6 +112,16 @@ afterAll(async () => {
 describe('approved character transfer', () => {
   test('atomically transfers a sole character with fresh authorization and deletes its source', async () => {
     const administratorId = await insertDeployment()
+    await connection`
+      insert into deployment_modules (module_id, enabled)
+      values ('member-audit', false)
+    `
+    await connection`
+      insert into deployment_module_sections (
+        module_id, section_id, kind, enabled, declaration_revision,
+        disclosure_version, activation_version
+      ) values ('member-audit', 'skills', 'sensitive-evidence', true, 1, 1, 1)
+    `
     const sourceSession = 'source-session-token'
     const destinationSession = 'destination-session-token'
     await saveLogin(sourceCharacterId, sourceSession, 'Source Pilot')
@@ -133,6 +144,12 @@ describe('approved character transfer', () => {
       where character_id = ${sourceCharacterId}
     `
     await insertCollectionState(
+      sourceCharacterId,
+      sourceLifecycle!.subjectLifecycleId,
+      sourceTokenBefore!.token_version,
+    )
+    await insertManagedCollectionState(
+      sourceUserId,
       sourceCharacterId,
       sourceLifecycle!.subjectLifecycleId,
       sourceTokenBefore!.token_version,
@@ -188,6 +205,27 @@ describe('approved character transfer', () => {
     expect(characters).toEqual([
       { character_id: String(sourceCharacterId), user_id: destinationUserId, is_main: false },
       { character_id: String(destinationCharacterId), user_id: destinationUserId, is_main: true },
+    ])
+    const accountPurgeWork = await connection<{ target_user_id: string }[]>`
+      select target_user_id from platform_resource_purge_work
+      where mode = 'account'
+      order by module_id, resource_id
+    `
+    expect(accountPurgeWork).toHaveLength(8)
+    expect(accountPurgeWork.every(({ target_user_id }) => target_user_id === sourceUserId)).toBe(
+      true,
+    )
+    const lifecyclePurgeWork = await connection<
+      { character_lifecycle_id: string; target_user_id: string }[]
+    >`
+      select character_lifecycle_id, target_user_id from platform_resource_purge_work
+      where mode = 'authority'
+    `
+    expect(lifecyclePurgeWork).toEqual([
+      {
+        character_lifecycle_id: sourceLifecycle!.subjectLifecycleId,
+        target_user_id: sourceUserId,
+      },
     ])
     const [token] = await connection<
       { encrypted_tokens: string; token_version: number; scopes: string[] }[]
@@ -2587,6 +2625,32 @@ async function insertCollectionState(
     ) values (
       'core', 'transfer-test', 'character', ${subjectLifecycleId}, ${String(characterId)},
       ${authorizationGeneration}, now()
+    )
+  `
+}
+
+async function insertManagedCollectionState(
+  userId: string,
+  characterId: number,
+  subjectLifecycleId: string,
+  authorizationGeneration: number,
+) {
+  const [memberLifecycle] = await connection<{ managed_member_lifecycle_id: string }[]>`
+    select managed_member_lifecycle_id from organization_managed_member_lifecycles
+    where deployment_id = 1 and organization_version = 1 and user_id = ${userId}
+      and ended_at is null
+  `
+  if (!memberLifecycle) throw new Error('Managed member lifecycle is unavailable')
+  await connection`
+    insert into platform_collection_state (
+      module_id, resource_id, subject_kind, subject_lifecycle_id, subject_id,
+      authorization_generation, organization_deployment_id, organization_version,
+      target_user_id, managed_member_lifecycle_id, section_id,
+      disclosure_version, section_activation_version, next_eligible_at
+    ) values (
+      'member-audit', 'trained-skills', 'character', ${subjectLifecycleId},
+      ${String(characterId)}, ${authorizationGeneration}, 1, 1, ${userId},
+      ${memberLifecycle.managed_member_lifecycle_id}, 'skills', 1, 1, now()
     )
   `
 }

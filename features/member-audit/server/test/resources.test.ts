@@ -1,5 +1,14 @@
 import { describe, expect, test, vi } from 'vitest'
-import { skillQueueResource, trainedSkillsResource } from '../src/resources.js'
+import {
+  assetsResource,
+  mailDetailsResource,
+  mailHeadersResource,
+  skillQueueResource,
+  trainedSkillsResource,
+  walletBalanceResource,
+  walletJournalResource,
+  walletTransactionsResource,
+} from '../src/resources.js'
 
 const subject = {
   kind: 'character' as const,
@@ -78,7 +87,7 @@ describe('member-audit skill resources', () => {
   })
 
   test('persists snapshots only with the exact managed authority binding', async () => {
-    const writeSkillSnapshot = vi.fn().mockResolvedValue({ outcome: 'applied' })
+    const materializeCurrentSnapshot = vi.fn().mockResolvedValue({ outcome: 'applied' })
     const context = {
       subject,
       data: {
@@ -99,12 +108,12 @@ describe('member-audit skill resources', () => {
       },
       capabilities: {
         logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-        persistence: { writeSkillSnapshot },
+        persistence: { materializeCurrentSnapshot },
       },
     }
 
     await skillQueueResource.materialize(context as never)
-    expect(writeSkillSnapshot).toHaveBeenCalledWith(
+    expect(materializeCurrentSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({
         organizationVersion: 4,
         targetUserId: '22222222-2222-4222-8222-222222222222',
@@ -120,9 +129,9 @@ describe('member-audit skill resources', () => {
       ...context,
       organizationVersion: 5,
     } as never)
-    expect(writeSkillSnapshot).toHaveBeenCalledOnce()
+    expect(materializeCurrentSnapshot).toHaveBeenCalledOnce()
 
-    writeSkillSnapshot.mockResolvedValueOnce({ outcome: 'obsolete' })
+    materializeCurrentSnapshot.mockResolvedValueOnce({ outcome: 'obsolete' })
     await expect(
       trainedSkillsResource.materialize({
         ...context,
@@ -135,5 +144,136 @@ describe('member-audit skill resources', () => {
         },
       } as never),
     ).resolves.toEqual({ outcome: 'obsolete' })
+  })
+
+  test('purges expired and invalid-authority evidence in bounded batches', async () => {
+    const purgeEvidence = vi.fn().mockResolvedValue({ deleted: 0, remaining: false })
+    const invalidAuthority = {
+      organizationVersion: 4,
+      targetUserId: '22222222-2222-4222-8222-222222222222',
+      managedMemberLifecycleId: '33333333-3333-4333-8333-333333333333',
+      characterId: subject.characterId,
+      characterLifecycleId: subject.lifecycleId,
+      authorizationGeneration: 8,
+      disclosureVersion: 2,
+      sectionActivationVersion: 3,
+    }
+    const context = {
+      now: '2026-09-18T10:00:00.000Z',
+      purgeAccountIds: [],
+      invalidAuthorities: [invalidAuthority],
+      purgeRetention: true,
+      capabilities: {
+        logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+        persistence: { purgeEvidence },
+      },
+    }
+
+    await trainedSkillsResource.maintain(context as never)
+
+    expect(purgeEvidence).toHaveBeenCalledTimes(10)
+    expect(purgeEvidence).toHaveBeenCalledWith({
+      mode: 'retention',
+      store: 'legacy-skills',
+      cutoff: '2026-06-20T10:00:00.000Z',
+      limit: 1_000,
+    })
+    expect(purgeEvidence).toHaveBeenCalledWith({
+      mode: 'retention',
+      store: 'continuations',
+      cutoff: '2026-09-17T10:00:00.000Z',
+      limit: 1_000,
+    })
+    expect(purgeEvidence).toHaveBeenCalledWith({
+      mode: 'authority',
+      store: 'trained-skills',
+      ...invalidAuthority,
+      limit: 1_000,
+    })
+    expect(purgeEvidence).toHaveBeenCalledWith({
+      mode: 'authority',
+      store: 'legacy-skills',
+      ...invalidAuthority,
+      limit: 1_000,
+    })
+
+    purgeEvidence.mockClear()
+    await walletBalanceResource.maintain(context as never)
+    expect(purgeEvidence).toHaveBeenCalledOnce()
+    expect(purgeEvidence).toHaveBeenCalledWith({
+      mode: 'authority',
+      store: 'wallet-balance',
+      ...invalidAuthority,
+      limit: 1_000,
+    })
+
+    purgeEvidence.mockClear()
+    await trainedSkillsResource.maintain({
+      ...context,
+      purgeAccountIds: [invalidAuthority.targetUserId],
+      invalidAuthorities: [],
+      purgeRetention: false,
+    } as never)
+    expect(purgeEvidence).toHaveBeenCalledTimes(2)
+    expect(purgeEvidence).toHaveBeenCalledWith({
+      mode: 'account',
+      store: 'trained-skills',
+      targetUserId: invalidAuthority.targetUserId,
+      limit: 1_000,
+    })
+    expect(purgeEvidence).toHaveBeenCalledWith({
+      mode: 'account',
+      store: 'legacy-skills',
+      targetUserId: invalidAuthority.targetUserId,
+      limit: 1_000,
+    })
+  })
+})
+
+describe('member-audit evidence resources', () => {
+  const directlyCollectedResources = [
+    assetsResource,
+    walletBalanceResource,
+    walletJournalResource,
+    walletTransactionsResource,
+    mailHeadersResource,
+  ] as const
+  const evidenceResources = [...directlyCollectedResources, mailDetailsResource] as const
+
+  test('binds direct collection requests to the exact character', () => {
+    for (const resource of directlyCollectedResources)
+      expect(resource.request(subject)).toEqual({ path: { character_id: subject.characterId } })
+
+    expect(() => mailDetailsResource.request()).toThrow(
+      'Mail detail collection requires a continuation checkpoint',
+    )
+  })
+
+  test('passes staged evidence through until persistence promotion is implemented', async () => {
+    const data = { sourceId: 'evidence-1' }
+
+    for (const resource of evidenceResources) {
+      expect(resource.map({ data } as never)).toBe(data)
+      await expect(resource.materialize()).resolves.toEqual({ outcome: 'obsolete' })
+    }
+  })
+
+  test('runs maintenance for every evidence store', async () => {
+    const purgeEvidence = vi.fn()
+    const context = {
+      now: '2026-09-18T10:00:00.000Z',
+      purgeAccountIds: [],
+      invalidAuthorities: [],
+      purgeRetention: false,
+      capabilities: {
+        logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+        persistence: { purgeEvidence },
+      },
+    }
+
+    for (const resource of [...evidenceResources, skillQueueResource])
+      await resource.maintain(context as never)
+
+    expect(purgeEvidence).not.toHaveBeenCalled()
   })
 })

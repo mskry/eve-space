@@ -51,6 +51,18 @@ export const installedModuleSectionDefinitions = [
 export const installedModuleOrganizationAdmissionScopes = [
   {
     moduleId: 'member-audit',
+    admissionScope: 'organization:v1:member-audit:hr:member-audit.assets.read',
+    audience: 'hr',
+    requiredPermission: 'member-audit.assets.read',
+  },
+  {
+    moduleId: 'member-audit',
+    admissionScope: 'organization:v1:member-audit:hr:member-audit.mail.read',
+    audience: 'hr',
+    requiredPermission: 'member-audit.mail.read',
+  },
+  {
+    moduleId: 'member-audit',
     admissionScope: 'organization:v1:member-audit:hr:member-audit.search,member-audit.summary.read',
     audience: 'hr',
     requiredPermission: 'member-audit.search',
@@ -58,9 +70,21 @@ export const installedModuleOrganizationAdmissionScopes = [
   },
   {
     moduleId: 'member-audit',
+    admissionScope: 'organization:v1:member-audit:hr:member-audit.skills.read',
+    audience: 'hr',
+    requiredPermission: 'member-audit.skills.read',
+  },
+  {
+    moduleId: 'member-audit',
     admissionScope: 'organization:v1:member-audit:hr:member-audit.summary.read',
     audience: 'hr',
     requiredPermission: 'member-audit.summary.read',
+  },
+  {
+    moduleId: 'member-audit',
+    admissionScope: 'organization:v1:member-audit:hr:member-audit.wallet.read',
+    audience: 'hr',
+    requiredPermission: 'member-audit.wallet.read',
   },
   {
     moduleId: 'organization-activity',

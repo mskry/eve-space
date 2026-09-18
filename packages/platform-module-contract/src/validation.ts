@@ -257,7 +257,7 @@ function validatePersistenceGrants(
     validatePersistenceReferences(
       route.persistenceOperations,
       `route ${manifest.id}/${route.id}`,
-      undefined,
+      route.reviewerEvidenceResourceId === undefined ? undefined : 'read',
       validationContext,
     )
   for (const provider of manifest.server.activityProviders)
@@ -393,7 +393,7 @@ function validateRoute(
     manifest.sections === undefined,
     issues,
   )
-  validateManagedReviewerRoute(route, manifest.id, identity, issues)
+  validateManagedReviewerRoute(route, manifest, identity, issues)
   validateRouteExposure(route, section, manifest.id, identity, issues)
   validateOrganizationCommands(
     route.organizationCommands,
@@ -433,7 +433,7 @@ function validateRouteNamespace(
 
 function validateManagedReviewerRoute(
   route: PlatformRouteContribution,
-  moduleId: string,
+  manifest: PlatformModuleManifest,
   identity: string,
   issues: string[],
 ) {
@@ -442,12 +442,52 @@ function validateManagedReviewerRoute(
     issues.push(`managed reviewer route ${identity} must use authenticated-session authorization`)
   if (managedReviewerTarget && route.audience === 'member')
     issues.push(`managed reviewer route ${identity} must require an HR or director audience`)
-  validateManagedReviewerSearchRoute(route, moduleId, identity, issues)
-  if (managedReviewerTarget && (route.persistenceOperations?.length ?? 0) > 0)
+  validateManagedReviewerSearchRoute(route, manifest.id, identity, issues)
+  validateReviewerEvidenceRoute(route, manifest, identity, issues)
+  validateManagedReviewerRouteParameters(route, identity, issues)
+}
+
+function validateReviewerEvidenceRoute(
+  route: PlatformRouteContribution,
+  manifest: PlatformModuleManifest,
+  identity: string,
+  issues: string[],
+) {
+  const hasPersistence = route.persistenceOperations.length > 0
+  const resourceId = route.reviewerEvidenceResourceId
+  const managedReviewerTarget = route.target !== undefined && route.target !== 'caller'
+  if (!managedReviewerTarget) {
+    if (resourceId !== undefined)
+      issues.push(`non-reviewer route ${identity} cannot declare reviewerEvidenceResourceId`)
+    return
+  }
+  if (!hasPersistence && resourceId === undefined) return
+  if (resourceId === undefined) {
     issues.push(
       `managed reviewer route ${identity} cannot receive generic route persistence; use a target-bound platform capability`,
     )
-  validateManagedReviewerRouteParameters(route, identity, issues)
+    return
+  }
+  if (route.target !== 'managed-organization-character' || route.exposure !== 'sensitive-evidence')
+    issues.push(
+      `reviewer evidence route ${identity} must target one managed character with sensitive-evidence exposure`,
+    )
+  if (route.persistenceOperations.length !== 1)
+    issues.push(`reviewer evidence route ${identity} must declare exactly one read operation`)
+  const resource = manifest.server.resources.find(({ id }) => id === resourceId)
+  if (!resource)
+    issues.push(`reviewer evidence route ${identity} references unknown resource ${resourceId}`)
+  else if (resource.sectionId !== route.sectionId)
+    issues.push(
+      `reviewer evidence route ${identity} resource ${resourceId} must belong to section ${String(route.sectionId)}`,
+    )
+  else if (
+    resource.subjectKind !== 'character' ||
+    resource.eligibility.kind !== 'current-managed-member-character'
+  )
+    issues.push(
+      `reviewer evidence route ${identity} resource ${resourceId} must be a character resource with current-managed-member-character eligibility`,
+    )
 }
 
 function validateManagedReviewerSearchRoute(

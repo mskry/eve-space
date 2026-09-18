@@ -9,11 +9,12 @@ import {
 } from '@eve-space/core-eve-projections/trained-skills'
 import type {
   PlatformCharacterResourceSubject,
+  PlatformResourceMaintenanceContext,
   PlatformResourceMaterializationContext,
   PlatformResourceOperationImplementation,
 } from '@eve-space/platform-module-contract/resources'
 import { z } from 'zod'
-import type { SkillSnapshotPersistence } from './persistence.js'
+import type { CurrentSnapshotPersistence, EvidenceMaintenancePersistence } from './persistence.js'
 
 const trainedSkillsResponseSchema = z.strictObject({
   total_sp: z.number().int().nonnegative(),
@@ -59,7 +60,14 @@ interface PublishedSkillRow {
 type SkillSnapshotMaterializationContext = PlatformResourceMaterializationContext<
   TrainedSkillsData | SkillQueueData,
   PlatformCharacterResourceSubject,
-  SkillSnapshotPersistence
+  CurrentSnapshotPersistence
+>
+type EvidenceMaintenanceContext = PlatformResourceMaintenanceContext<EvidenceMaintenancePersistence>
+type EvidencePurgeInput = Parameters<EvidenceMaintenancePersistence['purgeEvidence']>[0]
+type WithoutLimit<Input> = Input extends unknown ? Omit<Input, 'limit'> : never
+type EvidenceStore = Exclude<
+  EvidencePurgeInput['store'],
+  'continuations' | 'staging' | 'promotions'
 >
 
 export const trainedSkillsResource = {
@@ -91,6 +99,13 @@ export const trainedSkillsResource = {
     return persistSkillSnapshot(
       'trained-skills',
       context as unknown as SkillSnapshotMaterializationContext,
+    )
+  },
+  maintain(context) {
+    return maintainEvidence(
+      ['trained-skills', 'legacy-skills'],
+      context as unknown as EvidenceMaintenanceContext,
+      true,
     )
   },
 } satisfies PlatformResourceOperationImplementation<
@@ -130,6 +145,9 @@ export const skillQueueResource = {
       context as unknown as SkillSnapshotMaterializationContext,
     )
   },
+  maintain(context) {
+    return maintainEvidence('skill-queue', context as unknown as EvidenceMaintenanceContext, false)
+  },
 } satisfies PlatformResourceOperationImplementation<
   'skill-queue',
   unknown,
@@ -138,6 +156,161 @@ export const skillQueueResource = {
   unknown,
   PlatformCharacterResourceSubject,
   SkillProducts
+>
+
+export const assetsResource = {
+  operation: 'character-assets-page',
+  request(subject) {
+    return { path: { character_id: subject.characterId } }
+  },
+  map({ data }) {
+    return data
+  },
+  async materialize() {
+    return { outcome: 'obsolete' as const }
+  },
+  maintain(context) {
+    return maintainEvidence('assets', context as unknown as EvidenceMaintenanceContext, false)
+  },
+} satisfies PlatformResourceOperationImplementation<
+  'character-assets-page',
+  unknown,
+  unknown,
+  string,
+  unknown,
+  PlatformCharacterResourceSubject,
+  readonly ['published-type-details', 'static-location-labels']
+>
+
+export const walletBalanceResource = {
+  operation: 'wallet-balance',
+  request(subject) {
+    return { path: { character_id: subject.characterId } }
+  },
+  map({ data }) {
+    return data
+  },
+  async materialize() {
+    return { outcome: 'obsolete' as const }
+  },
+  maintain(context) {
+    return maintainEvidence(
+      'wallet-balance',
+      context as unknown as EvidenceMaintenanceContext,
+      false,
+    )
+  },
+} satisfies PlatformResourceOperationImplementation<
+  'wallet-balance',
+  unknown,
+  unknown,
+  string,
+  unknown,
+  PlatformCharacterResourceSubject
+>
+
+export const walletJournalResource = {
+  operation: 'wallet-journal',
+  request(subject) {
+    return { path: { character_id: subject.characterId } }
+  },
+  map({ data }) {
+    return data
+  },
+  async materialize() {
+    return { outcome: 'obsolete' as const }
+  },
+  maintain(context) {
+    return maintainEvidence(
+      'wallet-journal',
+      context as unknown as EvidenceMaintenanceContext,
+      false,
+    )
+  },
+} satisfies PlatformResourceOperationImplementation<
+  'wallet-journal',
+  unknown,
+  unknown,
+  string,
+  unknown,
+  PlatformCharacterResourceSubject
+>
+
+export const walletTransactionsResource = {
+  operation: 'wallet-transactions',
+  request(subject) {
+    return { path: { character_id: subject.characterId } }
+  },
+  map({ data }) {
+    return data
+  },
+  async materialize() {
+    return { outcome: 'obsolete' as const }
+  },
+  maintain(context) {
+    return maintainEvidence(
+      'wallet-transactions',
+      context as unknown as EvidenceMaintenanceContext,
+      false,
+    )
+  },
+} satisfies PlatformResourceOperationImplementation<
+  'wallet-transactions',
+  unknown,
+  unknown,
+  string,
+  unknown,
+  PlatformCharacterResourceSubject
+>
+
+export const mailHeadersResource = {
+  operation: 'mail-headers',
+  request(subject) {
+    return { path: { character_id: subject.characterId } }
+  },
+  map({ data }) {
+    return data
+  },
+  async materialize() {
+    return { outcome: 'obsolete' as const }
+  },
+  maintain(context) {
+    return maintainEvidence('mail-headers', context as unknown as EvidenceMaintenanceContext, false)
+  },
+} satisfies PlatformResourceOperationImplementation<
+  'mail-headers',
+  unknown,
+  unknown,
+  string,
+  unknown,
+  PlatformCharacterResourceSubject
+>
+
+export const mailDetailsResource = {
+  operation: 'mail-message',
+  request() {
+    throw new Error('Mail detail collection requires a continuation checkpoint')
+  },
+  map({ data }) {
+    return data
+  },
+  async materialize() {
+    return { outcome: 'obsolete' as const }
+  },
+  maintain(context) {
+    return maintainEvidence(
+      'mail-contents',
+      context as unknown as EvidenceMaintenanceContext,
+      false,
+    )
+  },
+} satisfies PlatformResourceOperationImplementation<
+  'mail-message',
+  unknown,
+  unknown,
+  string,
+  unknown,
+  PlatformCharacterResourceSubject
 >
 
 function catalogueFromRows(rows: readonly PublishedSkillRow[]) {
@@ -193,8 +366,7 @@ async function persistSkillSnapshot(
     context.authorizationGeneration === null
   )
     return { outcome: 'obsolete' }
-  const result = await context.capabilities.persistence.writeSkillSnapshot({
-    resourceId,
+  const common = {
     organizationVersion: authority.organizationVersion,
     targetUserId: authority.targetUserId,
     managedMemberLifecycleId: authority.managedMemberLifecycleId,
@@ -203,9 +375,102 @@ async function persistSkillSnapshot(
     authorizationGeneration: context.authorizationGeneration,
     disclosureVersion: authority.disclosureVersion,
     sectionActivationVersion: authority.sectionActivationVersion,
+    observationId: observationId(context, resourceId),
     dtoRevision: 1,
     validatedAt: context.validatedAt,
-    snapshot: context.data,
-  })
+  }
+  const result =
+    resourceId === 'trained-skills' && context.data.kind === 'trained-skills'
+      ? await context.capabilities.persistence.materializeCurrentSnapshot({
+          ...common,
+          resourceId,
+          snapshot: context.data,
+        })
+      : resourceId === 'skill-queue' && context.data.kind === 'skill-queue'
+        ? await context.capabilities.persistence.materializeCurrentSnapshot({
+            ...common,
+            resourceId,
+            snapshot: context.data,
+          })
+        : { outcome: 'obsolete' as const }
   return result.outcome === 'obsolete' ? { outcome: 'obsolete' } : undefined
+}
+
+function observationId(
+  context: SkillSnapshotMaterializationContext,
+  resourceId: 'trained-skills' | 'skill-queue',
+) {
+  const source = `${resourceId}:${context.subject.lifecycleId}:${context.validatedAt}`
+  const hex = [0, 1, 2, 3]
+    .map((salt) => hashObservationIdentity(source, salt).toString(16).padStart(8, '0'))
+    .join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20)}`
+}
+
+function hashObservationIdentity(value: string, salt: number) {
+  let hash = (2_166_136_261 + salt * 16_777_619) >>> 0
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16_777_619) >>> 0
+  }
+  return hash
+}
+
+async function maintainEvidence(
+  storeOrStores: EvidenceStore | readonly EvidenceStore[],
+  context: EvidenceMaintenanceContext,
+  purgeRetention: boolean,
+) {
+  if (purgeRetention && context.purgeRetention) await purgeExpiredEvidence(context)
+  const stores = typeof storeOrStores === 'string' ? [storeOrStores] : storeOrStores
+  const purges: WithoutLimit<EvidencePurgeInput>[] = []
+  for (const store of stores) {
+    for (const authority of context.invalidAuthorities)
+      purges.push({ mode: 'authority', store, ...authority })
+    for (const targetUserId of context.purgeAccountIds)
+      purges.push({ mode: 'account', store, targetUserId })
+  }
+  for (const purge of purges) {
+    context.signal?.throwIfAborted()
+    // oxlint-disable-next-line no-await-in-loop -- A resource can issue overlapping account and authority purges.
+    await purgeAllBatches(context, purge)
+  }
+}
+
+async function purgeExpiredEvidence(context: EvidenceMaintenanceContext) {
+  const now = new Date(context.now)
+  if (Number.isNaN(now.getTime())) throw new Error('Evidence maintenance time is invalid')
+  const retentionCutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1_000).toISOString()
+  const transientCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1_000).toISOString()
+  const purges: WithoutLimit<EvidencePurgeInput>[] = []
+  for (const store of [
+    'legacy-skills',
+    'wallet-journal',
+    'wallet-transactions',
+    'mail-headers',
+    'mail-contents',
+  ] as const)
+    purges.push({
+      mode: 'retention',
+      store,
+      cutoff: store === 'legacy-skills' ? retentionCutoff : context.now,
+    })
+  for (const store of ['continuations', 'staging', 'promotions'] as const)
+    purges.push({ mode: 'retention', store, cutoff: transientCutoff })
+  for (const purge of purges) {
+    // oxlint-disable-next-line no-await-in-loop -- Retention stores share promotion and staging rows.
+    await purgeAllBatches(context, purge)
+  }
+}
+
+async function purgeAllBatches(
+  context: EvidenceMaintenanceContext,
+  input: WithoutLimit<EvidencePurgeInput>,
+) {
+  context.signal?.throwIfAborted()
+  const { remaining } = await context.capabilities.persistence.purgeEvidence({
+    ...input,
+    limit: 1_000,
+  } as EvidencePurgeInput)
+  if (remaining) await purgeAllBatches(context, input)
 }

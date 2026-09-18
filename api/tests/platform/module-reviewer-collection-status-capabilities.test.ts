@@ -80,6 +80,7 @@ describe('platform reviewer collection-status capabilities', () => {
       characterLifecycleId,
       authorizationGeneration: 3,
       disclosureVersion: 1,
+      sectionActivationVersion: 1,
       validatedAt: '2026-09-16T11:55:00.000Z',
       lastFailureClass: null,
     })

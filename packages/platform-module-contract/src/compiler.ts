@@ -282,6 +282,7 @@ function parseRoute(
       'sectionId',
       'target',
       'exposure',
+      'reviewerEvidenceResourceId',
       'organizationCommands',
     ],
     issues,
@@ -324,6 +325,11 @@ function parseRoute(
     `${path}.exposure`,
     issues,
   )
+  const reviewerEvidenceResourceId = readOptionalString(
+    record.reviewerEvidenceResourceId,
+    `${path}.reviewerEvidenceResourceId`,
+    issues,
+  )
   const organizationCommands = readOptionalMembers(
     record.organizationCommands,
     platformOrganizationCommandIds,
@@ -352,6 +358,7 @@ function parseRoute(
     sectionId,
     target,
     exposure,
+    reviewerEvidenceResourceId,
     organizationCommands,
   }
 }
@@ -418,6 +425,7 @@ function parseResource(
       'persistence',
       'batch',
       'sectionId',
+      'scheduled',
     ],
     issues,
   )
@@ -454,6 +462,10 @@ function parseResource(
   const persistence = parseResourcePersistence(record.persistence, `${path}.persistence`, issues)
   const batch = parseOptionalBatch(record.batch, `${path}.batch`, issues)
   const sectionId = readOptionalString(record.sectionId, `${path}.sectionId`, issues)
+  const scheduled =
+    record.scheduled === undefined
+      ? undefined
+      : readBoolean(record.scheduled, `${path}.scheduled`, issues)
   if (
     id === undefined ||
     operationId === undefined ||
@@ -472,6 +484,7 @@ function parseResource(
     coreDataProducts,
     dependentOperationIds,
     persistence,
+    scheduled,
   }
   return {
     ...base,

@@ -19,6 +19,16 @@ export function createPlatformModuleRouteCapabilities<
   }
 }
 
+export function createPlatformReviewerRouteCapabilities<
+  const ModuleId extends string,
+  const ProductIds extends readonly CoreDataProductId[] = readonly [],
+>(moduleId: ModuleId, productIds: ProductIds = [] as unknown as ProductIds) {
+  return {
+    coreData: createCoreDataCapability(productIds, 'route'),
+    logger: createPlatformModuleLogger(moduleId),
+  }
+}
+
 export function createPlatformResourceReadCapabilities<
   const Resource extends PlatformInstalledResourceDescriptor,
 >(resource: Resource, signal?: AbortSignal) {

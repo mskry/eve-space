@@ -82,6 +82,7 @@ export function createPlatformReviewerCollectionStatusReads(
         characterLifecycleId: character.subjectLifecycleId,
         authorizationGeneration: eligibility.authorizationGeneration,
         disclosureVersion: authority.disclosureVersion,
+        sectionActivationVersion: authority.sectionActivationVersion,
       }
       if (eligibility.status === 'authorization-required')
         return {

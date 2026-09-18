@@ -17,6 +17,7 @@ interface PlatformResourceContributionBase {
   readonly coreDataProducts?: readonly CoreDataProductId[]
   readonly dependentOperationIds?: readonly string[]
   readonly persistence: PlatformResourcePersistenceReferences
+  readonly scheduled?: boolean
   readonly id: string
   readonly operationId: string
   readonly materializationIntervalSeconds: number
@@ -115,6 +116,26 @@ export interface PlatformResourceMaterializationContext<
   readonly authorizationGeneration: number | null
   readonly organizationVersion: number | null
   readonly managedAuthority: PlatformManagedResourceAuthority | null
+  readonly capabilities: PlatformModuleResourceMaterializationCapabilities<Persistence>
+}
+
+export interface PlatformResourceInvalidAuthority {
+  readonly organizationVersion: number
+  readonly targetUserId: string
+  readonly managedMemberLifecycleId: string
+  readonly characterId: number
+  readonly characterLifecycleId: string
+  readonly authorizationGeneration: number
+  readonly disclosureVersion: number
+  readonly sectionActivationVersion: number
+}
+
+export interface PlatformResourceMaintenanceContext<Persistence extends object = object> {
+  readonly now: string
+  readonly purgeAccountIds: readonly string[]
+  readonly invalidAuthorities: readonly PlatformResourceInvalidAuthority[]
+  readonly purgeRetention: boolean
+  readonly signal?: AbortSignal
   readonly capabilities: PlatformModuleResourceMaterializationCapabilities<Persistence>
 }
 
@@ -221,6 +242,7 @@ export interface PlatformResourceOperationImplementation<
   materialize(
     context: PlatformResourceMaterializationContext<Data, Subject>,
   ): Promise<void | { readonly outcome: 'obsolete' }>
+  maintain?(context: PlatformResourceMaintenanceContext): Promise<void>
   readonly batch?: PlatformResourceBatchOperationImplementation<BatchOperation, Data, BatchData>
 }
 
@@ -302,6 +324,7 @@ interface PlatformInstalledResourceDescriptorBase<
   readonly operationId: string
   readonly materializationIntervalSeconds: number
   readonly persistence?: PlatformResourcePersistenceReferences
+  readonly scheduled?: boolean
   readonly implementation: Implementation
   readonly sectionId?: string
 }
