@@ -18,7 +18,8 @@ interface CorporationPublic {
   ceoName: string | null
   creatorId: number | null
   creatorName: string | null
-  taxRate: number | null
+  taxRate: number
+  loyaltyPointTaxRate: number
   dateFounded: string | null
   description: string | null
   url: string | null
@@ -28,9 +29,10 @@ interface CorporationPublic {
   shares: number | null
   allianceId: number | null
   allianceName: string | null
-  type: string
-  state: string
-  warEligible: boolean | null
+  type: 'player_owned' | 'npc_owned'
+  state: 'active' | 'closed'
+  friendlyFire: 'legal' | 'illegal'
+  warEligible: boolean
   warHistory: Array<{ time: string; againstId: number; againstType: string }>
 }
 
@@ -58,7 +60,8 @@ const publicCorporationResultCacheSchema = z.object({
   ceoName: z.string().nullable(),
   creatorId: z.number().nullable(),
   creatorName: z.string().nullable(),
-  taxRate: z.number().nullable(),
+  taxRate: z.number(),
+  loyaltyPointTaxRate: z.number(),
   dateFounded: z.string().nullable(),
   description: z.string().nullable(),
   url: z.string().nullable(),
@@ -68,9 +71,10 @@ const publicCorporationResultCacheSchema = z.object({
   shares: z.number().nullable(),
   allianceId: z.number().nullable(),
   allianceName: z.string().nullable(),
-  type: z.string(),
-  state: z.string(),
-  warEligible: z.boolean().nullable(),
+  type: z.enum(['player_owned', 'npc_owned']),
+  state: z.enum(['active', 'closed']),
+  friendlyFire: z.enum(['legal', 'illegal']),
+  warEligible: z.boolean(),
 })
 const corporationLookupCacheSchema = z.discriminatedUnion('found', [
   z.object({ found: z.literal(true), corporation: publicCorporationResultCacheSchema }),
@@ -173,7 +177,8 @@ async function mapPublicCorporation(
     ceoName: ceoId ? (names.get(ceoId)?.name ?? null) : null,
     creatorId,
     creatorName: creatorId ? (names.get(creatorId)?.name ?? null) : null,
-    taxRate: corporation.tax_rates?.isk ?? null,
+    taxRate: corporation.tax_rates.isk,
+    loyaltyPointTaxRate: corporation.tax_rates.loyalty_point,
     dateFounded: corporation.date_founded ?? null,
     description: eveFormattedTextToPlainText(corporation.description) ?? null,
     url: corporation.url ?? null,
@@ -183,9 +188,10 @@ async function mapPublicCorporation(
     shares: corporation.shares ?? null,
     allianceId,
     allianceName: allianceId ? (names.get(allianceId)?.name ?? null) : null,
-    type: corporation.type ?? 'unknown',
-    state: corporation.state ?? 'unknown',
-    warEligible: corporation.war_eligible ?? null,
+    type: corporation.type,
+    state: corporation.state,
+    friendlyFire: corporation.friendly_fire,
+    warEligible: corporation.war_eligible,
   }
 }
 

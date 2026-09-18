@@ -23,7 +23,8 @@ const corporation = {
   ceoName: null,
   creatorId: null,
   creatorName: null,
-  taxRate: null,
+  taxRate: 7.5,
+  loyaltyPointTaxRate: 2.5,
   dateFounded: null,
   description: null,
   url: null,
@@ -33,9 +34,10 @@ const corporation = {
   shares: null,
   allianceId: null,
   allianceName: null,
-  type: 'unknown',
-  state: 'unknown',
-  warEligible: null,
+  type: 'player_owned',
+  state: 'active',
+  friendlyFire: 'illegal',
+  warEligible: true,
 }
 
 beforeEach(() => {

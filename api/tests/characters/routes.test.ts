@@ -143,9 +143,10 @@ const location = {
   solarSystemId: 30000142,
   solarSystemName: 'Jita',
   solarSystemSecurityStatus: 0.945,
+  locationType: 'space' as const,
   ...freshness,
 }
-const ship = { typeId: 670, typeName: 'Capsule', name: 'My Pod', ...freshness }
+const ship = { typeId: 670, typeName: 'Capsule', groupId: 29, name: 'My Pod', ...freshness }
 
 beforeEach(() => {
   mocks.deleteCharacter.mockResolvedValue('deleted')
