@@ -44,6 +44,9 @@ export interface EsiCacheEnvelope<Data> {
   validatedAt: string
   etag?: string
   lastModified?: string
+  pagination?: {
+    pages?: number
+  }
   authorization?: EsiCacheAuthorization
   resourceRevision?: EsiResourceRevision
   fence: number
@@ -63,6 +66,9 @@ export interface EsiCachedResult<Data> {
   retryAt?: string
   refreshFailureClass?: 'esi-cooldown' | 'esi-unavailable' | 'response-invalid' | 'unknown'
   quota: EsiQuota
+  pagination?: {
+    pages?: number
+  }
 }
 
 export type EsiResultMetadata = Pick<

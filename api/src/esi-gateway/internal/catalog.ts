@@ -55,6 +55,7 @@ export const coreEsiOperationCatalog = {
     },
   }),
   'character-assets-page': defineContract('character-assets-page', {
+    representationVersion: 'v2',
     identity: { kind: 'ordered', fields: ['characterId', 'page'] },
     cache: sharedPrivateCache(),
     retry,
@@ -76,6 +77,7 @@ export const coreEsiOperationCatalog = {
     retry,
   }),
   'wallet-journal': defineContract('wallet-journal', {
+    representationVersion: 'v2',
     identity: { kind: 'ordered', fields: ['characterId', 'page'] },
     cache: sharedPrivateCache(),
     retry,

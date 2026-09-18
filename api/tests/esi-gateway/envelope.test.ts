@@ -103,6 +103,7 @@ describe('ESI cache envelopes', () => {
         status: 200,
         headers: {},
         cache: { expires: '2026-08-20T12:01:00.000Z', etag: '"v1"', lastModified: 'yesterday' },
+        pagination: { pages: 7 },
       },
     })
 
@@ -114,6 +115,7 @@ describe('ESI cache envelopes', () => {
       retainUntil: now + 60_000 + retentionMilliseconds,
       etag: '"v1"',
       lastModified: 'yesterday',
+      pagination: { pages: 7 },
       fence: 3,
     })
     expect(isEnvelopeFresh(envelope, now + 59_999)).toBe(true)
@@ -236,6 +238,7 @@ describe('ESI cache envelopes', () => {
         status: 200,
         headers: { 'x-ratelimit-remaining': '99' },
         cache: { etag: '"old"', lastModified: 'old' },
+        pagination: { pages: 3 },
       },
     })
     const refreshed = updateNotModifiedEnvelope({
@@ -262,6 +265,7 @@ describe('ESI cache envelopes', () => {
       representationVersion: 'v1',
       authorization: { kind: 'character', principal: 'character-1', generation: 4 },
       resourceRevision: { namespace: 'mailbox', value: 7 },
+      pagination: { pages: 3 },
       fence: 5,
     })
     expect(refreshed).not.toHaveProperty('quota')

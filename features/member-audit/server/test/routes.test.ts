@@ -122,11 +122,10 @@ test('returns collection status and persisted evidence for each character sectio
   const cases = [
     {
       route: memberSkillsRoutes,
-      resources: ['trained-skills', 'skill-queue'],
+      resources: ['trained-skills'],
       evidenceInput: undefined,
       body: {
         trainedSkills: { resourceId: 'trained-skills' },
-        skillQueue: { resourceId: 'skill-queue' },
       },
     },
     {

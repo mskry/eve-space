@@ -3,6 +3,7 @@ import {
   installedModulePersistenceCapabilityFactories,
   installedModulePersistenceOperationCatalog,
 } from '../../src/generated/platform/installed-module-persistence.js'
+import { installedModuleResources } from '../../src/generated/platform/installed-module-worker.js'
 
 test('keeps the legacy skill writer installed without granting it to active resources', () => {
   expect(
@@ -14,14 +15,36 @@ test('keeps the legacy skill writer installed without granting it to active reso
     resourceMaterializations: [],
   })
 
-  for (const resourceId of ['trained-skills', 'skill-queue'] as const) {
-    const capability = installedModulePersistenceCapabilityFactories.resourceMaterializations[
-      `member-audit/${resourceId}`
-    ](vi.fn())
-    expect(Object.keys(capability).toSorted()).toEqual([
-      'materializeCurrentSnapshot',
-      'purgeEvidence',
-    ])
-    expect(capability).not.toHaveProperty('writeSkillSnapshot')
-  }
+  const capability = installedModulePersistenceCapabilityFactories.resourceMaterializations[
+    'member-audit/trained-skills'
+  ](vi.fn())
+  expect(Object.keys(capability).toSorted()).toEqual([
+    'materializeCurrentSnapshot',
+    'purgeEvidence',
+  ])
+  expect(capability).not.toHaveProperty('writeSkillSnapshot')
+  expect(installedModulePersistenceCapabilityFactories.resourceMaterializations).not.toHaveProperty(
+    'member-audit/skill-queue',
+  )
+})
+
+test('registers only independent audit evidence resources with managed-member gates', () => {
+  const resources = installedModuleResources.filter(({ moduleId }) => moduleId === 'member-audit')
+  expect(resources.map(({ resourceId }) => resourceId)).toEqual([
+    'trained-skills',
+    'assets',
+    'wallet-balance',
+    'wallet-journal',
+    'wallet-transactions',
+    'mail-headers',
+    'mail-details',
+  ])
+  expect(
+    resources.every(({ eligibility }) => eligibility.kind === 'current-managed-member-character'),
+  ).toBe(true)
+  expect(
+    resources.some(({ resourceId }) =>
+      ['skill-queue', 'affiliation', 'compliance', 'groups', 'blocks'].includes(resourceId),
+    ),
+  ).toBe(false)
 })

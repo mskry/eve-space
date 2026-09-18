@@ -50,13 +50,12 @@ export function memberSummaryRoutes(_capabilities: object) {
 export function memberSkillsRoutes(_capabilities: object) {
   return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
     const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
-    const [trainedSkills, skillQueue] = await Promise.all([
-      context.var.platform.collectionStatus.read('trained-skills', characterId),
-      context.var.platform.collectionStatus.read('skill-queue', characterId),
-    ])
+    const trainedSkills = await context.var.platform.collectionStatus.read(
+      'trained-skills',
+      characterId,
+    )
     return context.json({
       trainedSkills,
-      skillQueue,
       evidence: await readReviewerEvidence(context.var.platform),
     })
   })

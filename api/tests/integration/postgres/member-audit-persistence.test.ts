@@ -120,10 +120,32 @@ test('migrates migration 001 skill evidence to RFC UUID observations accepted by
       },
     }
     await expect(writeLegacySnapshot(authority)).resolves.toEqual({ outcome: 'applied' })
+    await expect(
+      writeLegacySnapshot({
+        ...authority,
+        resourceId: 'skill-queue',
+        characterId: 90_000_010,
+        snapshot: { kind: 'skill-queue', entries: [] },
+      }),
+    ).resolves.toEqual({ outcome: 'applied' })
 
     await runStartupMigrations(upgradeConnection)
+    const [queueState] = await upgradeConnection<{ queueRows: number }[]>`
+      select count(*)::integer as "queueRows"
+      from eve_module_member_audit.skill_queue_snapshots
+    `
+    expect(queueState).toEqual({ queueRows: 0 })
     const readSkillEvidence = bindPlatformPersistenceOperation(
       installedModulePersistenceOperationCatalog['member-audit/read-skill-evidence'],
+      createStandaloneModulePersistenceOperationInvoker(
+        upgradeConnection,
+        'member-audit',
+        installedModulePersistenceOperations,
+        { readOnly: true },
+      ),
+    )
+    const readTrainedSkillsEvidence = bindPlatformPersistenceOperation(
+      installedModulePersistenceOperationCatalog['member-audit/read-trained-skills-evidence'],
       createStandaloneModulePersistenceOperationInvoker(
         upgradeConnection,
         'member-audit',
@@ -149,13 +171,29 @@ test('migrates migration 001 skill evidence to RFC UUID observations accepted by
       },
       skillQueue: null,
     })
+    await expect(
+      readTrainedSkillsEvidence({
+        organizationVersion: authority.organizationVersion,
+        targetUserId: authority.targetUserId,
+        managedMemberLifecycleId: authority.managedMemberLifecycleId,
+        characterId: authority.characterId,
+        characterLifecycleId: authority.characterLifecycleId,
+        authorizationGeneration: authority.authorizationGeneration,
+        disclosureVersion: authority.disclosureVersion,
+        sectionActivationVersion: authority.sectionActivationVersion,
+      }),
+    ).resolves.toMatchObject({
+      trainedSkills: {
+        observationId: expect.stringMatching(/^[0-9a-f]{8}-.{4}-4.{3}-8.{3}-.{12}$/),
+      },
+    })
   } finally {
     await upgradeConnection.end()
     await connection`drop database ${connection(databaseName)}`
   }
 })
 
-test('keeps migrated legacy skill storage empty and replaces snapshots across authority revisions', async () => {
+test('keeps migrated legacy skill storage empty and replaces trained snapshots across authority revisions', async () => {
   const operation =
     installedModulePersistenceOperationCatalog['member-audit/materialize-current-snapshot']
   const materializeCurrentSnapshot = bindPlatformPersistenceOperation(
@@ -167,7 +205,7 @@ test('keeps migrated legacy skill storage empty and replaces snapshots across au
     ),
   )
   const initial = {
-    resourceId: 'skill-queue' as const,
+    resourceId: 'trained-skills' as const,
     organizationVersion: 1,
     targetUserId: '11111111-1111-4111-8111-111111111111',
     managedMemberLifecycleId: '22222222-2222-4222-8222-222222222222',
@@ -179,7 +217,13 @@ test('keeps migrated legacy skill storage empty and replaces snapshots across au
     observationId: '70000000-0000-4000-8000-000000000001',
     dtoRevision: 1,
     validatedAt: '2026-09-17T10:00:00Z',
-    snapshot: { kind: 'skill-queue' as const, entries: [] },
+    snapshot: {
+      kind: 'trained-skills' as const,
+      totalSp: 0,
+      unallocatedSp: 0,
+      injectedSkillCount: 0,
+      groups: [],
+    },
   }
   const revisions = [
     {
@@ -282,7 +326,7 @@ test('keeps migrated legacy skill storage empty and replaces snapshots across au
       disclosure_version as "disclosureVersion",
       section_activation_version as "sectionActivationVersion",
       validated_at as "validatedAt"
-    from eve_module_member_audit.skill_queue_snapshots
+    from eve_module_member_audit.trained_skill_snapshots
     where character_id = 90000001
   `
   expect(snapshots).toEqual([
@@ -352,8 +396,8 @@ test('attests the declared routines and denies the runtime role direct table acc
   `
 
   expect(state).toEqual({
-    attestationCount: 10,
-    migrationCount: 4,
+    attestationCount: 12,
+    migrationCount: 5,
     moduleTableAccess: false,
     publicTableAccess: false,
     routineAccess: true,
@@ -395,6 +439,10 @@ test('keeps incomplete observations isolated and promotes complete assets idempo
     installedModulePersistenceOperationCatalog['member-audit/read-evidence-continuation'],
     memberAuditInvoker({ readOnly: true }),
   )
+  const readActiveContinuation = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/read-active-evidence-continuation'],
+    memberAuditInvoker({ readOnly: true }),
+  )
   const promoteObservation = bindPlatformPersistenceOperation(
     installedModulePersistenceOperationCatalog['member-audit/promote-evidence-observation'],
     memberAuditInvoker(),
@@ -423,6 +471,19 @@ test('keeps incomplete observations isolated and promotes complete assets idempo
     }),
   ).resolves.toEqual({ outcome: 'applied', revision: 1 })
   await expect(readContinuation(continuationIdentity)).resolves.toEqual({
+    revision: 1,
+    checkpoint: { page: 1 },
+  })
+  await expect(
+    readActiveContinuation({
+      sectionId: continuationIdentity.sectionId,
+      resourceId: continuationIdentity.resourceId,
+      operationContractRevision: continuationIdentity.operationContractRevision,
+      resourceRevision: continuationIdentity.resourceRevision,
+      ...memberAuditAuthority,
+    }),
+  ).resolves.toEqual({
+    observationId: continuationIdentity.observationId,
     revision: 1,
     checkpoint: { page: 1 },
   })

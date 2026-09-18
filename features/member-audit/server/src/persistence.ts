@@ -83,6 +83,7 @@ const authorityShape = {
   sectionActivationVersion: z.number().int().positive(),
 } as const
 const boundedRecordListSchema = z.array(intentionalEvidenceRecordSchema).max(500)
+const maximumStagedPageRecords = 2_500
 const continuationResourceSchema = z.discriminatedUnion('sectionId', [
   z.strictObject({ sectionId: z.literal('assets'), resourceId: z.literal('assets') }),
   z.strictObject({
@@ -176,6 +177,9 @@ const readSkillEvidenceOutputSchema = z.strictObject({
   trainedSkills: z.nullable(trainedSkillsEnvelopeSchema),
   skillQueue: z.nullable(skillQueueEnvelopeSchema),
 })
+const readTrainedSkillsEvidenceOutputSchema = z.strictObject({
+  trainedSkills: z.nullable(trainedSkillsEnvelopeSchema),
+})
 const boundedEvidenceReadInputSchema = z.intersection(
   authoritySchema,
   z.strictObject({ limit: z.number().int().min(1).max(500) }),
@@ -206,21 +210,6 @@ const materializeCurrentSnapshotInputSchema = z.discriminatedUnion('resourceId',
     snapshot: trainedSkillsSchema,
   }),
   z.strictObject({
-    resourceId: z.literal('skill-queue'),
-    organizationVersion: z.number().int().positive(),
-    targetUserId: z.uuid(),
-    managedMemberLifecycleId: z.uuid(),
-    characterId: z.number().int().positive(),
-    characterLifecycleId: z.uuid(),
-    authorizationGeneration: z.number().int().nonnegative(),
-    disclosureVersion: z.number().int().positive(),
-    sectionActivationVersion: z.number().int().positive(),
-    observationId: z.uuid(),
-    dtoRevision: z.number().int().positive(),
-    validatedAt: instantSchema,
-    snapshot: skillQueueSchema,
-  }),
-  z.strictObject({
     resourceId: z.literal('wallet-balance'),
     organizationVersion: z.number().int().positive(),
     targetUserId: z.uuid(),
@@ -246,21 +235,38 @@ const readEvidenceContinuationOutputSchema = z
     checkpoint: continuationCheckpointSchema,
   })
   .nullable()
+const readActiveEvidenceContinuationInputSchema = z.intersection(
+  continuationResourceSchema,
+  z.intersection(
+    z.strictObject({
+      operationContractRevision: z.number().int().positive(),
+      resourceRevision: z.number().int().positive(),
+    }),
+    authoritySchema,
+  ),
+)
+const readActiveEvidenceContinuationOutputSchema = z
+  .strictObject({
+    observationId: z.uuid(),
+    revision: z.number().int().nonnegative(),
+    checkpoint: continuationCheckpointSchema,
+  })
+  .nullable()
 const stagedRecordsByResourceSchema = z.discriminatedUnion('resourceId', [
   z.strictObject({
     sectionId: z.literal('assets'),
     resourceId: z.literal('assets'),
-    records: z.array(assetStagedRecordSchema).max(500),
+    records: z.array(assetStagedRecordSchema).max(maximumStagedPageRecords),
   }),
   z.strictObject({
     sectionId: z.literal('wallet'),
     resourceId: z.literal('wallet-journal'),
-    records: z.array(walletJournalStagedRecordSchema).max(500),
+    records: z.array(walletJournalStagedRecordSchema).max(maximumStagedPageRecords),
   }),
   z.strictObject({
     sectionId: z.literal('wallet'),
     resourceId: z.literal('wallet-transactions'),
-    records: z.array(walletTransactionStagedRecordSchema).max(500),
+    records: z.array(walletTransactionStagedRecordSchema).max(maximumStagedPageRecords),
   }),
   z.strictObject({
     sectionId: z.literal('mail'),
@@ -333,6 +339,17 @@ export const readSkillEvidenceOperation = definePlatformPersistenceOperation({
   maximumOutputBytes: platformPersistencePayloadMaximumBytes,
 })
 
+export const readTrainedSkillsEvidenceOperation = definePlatformPersistenceOperation({
+  id: 'read-trained-skills-evidence',
+  method: 'readTrainedSkillsEvidence',
+  revision: 1,
+  mode: 'read',
+  inputSchema: authoritySchema,
+  outputSchema: readTrainedSkillsEvidenceOutputSchema,
+  maximumInputBytes: 2_048,
+  maximumOutputBytes: platformPersistencePayloadMaximumBytes,
+})
+
 export const readAssetEvidenceOperation = definePlatformPersistenceOperation({
   id: 'read-asset-evidence',
   method: 'readAssetEvidence',
@@ -384,6 +401,17 @@ export const readEvidenceContinuationOperation = definePlatformPersistenceOperat
   mode: 'read',
   inputSchema: readEvidenceContinuationInputSchema,
   outputSchema: readEvidenceContinuationOutputSchema,
+  maximumInputBytes: 4_096,
+  maximumOutputBytes: platformPersistencePayloadMaximumBytes,
+})
+
+export const readActiveEvidenceContinuationOperation = definePlatformPersistenceOperation({
+  id: 'read-active-evidence-continuation',
+  method: 'readActiveEvidenceContinuation',
+  revision: 1,
+  mode: 'read',
+  inputSchema: readActiveEvidenceContinuationInputSchema,
+  outputSchema: readActiveEvidenceContinuationOutputSchema,
   maximumInputBytes: 4_096,
   maximumOutputBytes: platformPersistencePayloadMaximumBytes,
 })
@@ -475,11 +503,13 @@ export const purgeEvidenceOperation = definePlatformPersistenceOperation({
 const memberAuditPersistenceOperations = {
   'write-skill-snapshot': writeSkillSnapshotOperation,
   'read-skill-evidence': readSkillEvidenceOperation,
+  'read-trained-skills-evidence': readTrainedSkillsEvidenceOperation,
   'read-asset-evidence': readAssetEvidenceOperation,
   'read-wallet-evidence': readWalletEvidenceOperation,
   'read-mail-evidence': readMailEvidenceOperation,
   'materialize-current-snapshot': materializeCurrentSnapshotOperation,
   'read-evidence-continuation': readEvidenceContinuationOperation,
+  'read-active-evidence-continuation': readActiveEvidenceContinuationOperation,
   'write-evidence-continuation': writeEvidenceContinuationOperation,
   'promote-evidence-observation': promoteEvidenceObservationOperation,
   'purge-evidence': purgeEvidenceOperation,
@@ -492,7 +522,7 @@ export type CurrentSnapshotPersistence = PlatformPersistenceMethodsFor<
 
 export type EvidenceCollectionPersistence = PlatformPersistenceMethodsFor<
   typeof memberAuditPersistenceOperations,
-  readonly ['read-evidence-continuation']
+  readonly ['read-active-evidence-continuation']
 >
 
 export type EvidenceMaterializationPersistence = PlatformPersistenceMethodsFor<

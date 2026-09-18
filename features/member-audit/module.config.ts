@@ -51,7 +51,7 @@ const manifest = {
         target: 'managed-organization-character',
         exposure: 'sensitive-evidence',
         reviewerEvidenceResourceId: 'trained-skills',
-        persistenceOperations: [{ operationId: 'read-skill-evidence' }],
+        persistenceOperations: [{ operationId: 'read-trained-skills-evidence' }],
       },
       {
         id: 'assets-detail',
@@ -98,8 +98,17 @@ const manifest = {
       { name: 'member-audit-002-evidence-storage.sql' },
       { name: 'member-audit-003-persistence-operations.sql' },
       { name: 'member-audit-004-purge-operation.sql' },
+      { name: 'member-audit-005-resource-collection.sql' },
     ],
     persistenceOperations: [
+      {
+        id: 'read-trained-skills-evidence',
+        method: 'readTrainedSkillsEvidence',
+        revision: 1,
+        mode: 'read',
+        exportName: 'readTrainedSkillsEvidenceOperation',
+        migration: 'member-audit-005-resource-collection.sql',
+      },
       {
         id: 'write-skill-snapshot',
         method: 'writeSkillSnapshot',
@@ -147,6 +156,14 @@ const manifest = {
         mode: 'write',
         exportName: 'materializeCurrentSnapshotOperation',
         migration: 'member-audit-003-persistence-operations.sql',
+      },
+      {
+        id: 'read-active-evidence-continuation',
+        method: 'readActiveEvidenceContinuation',
+        revision: 1,
+        mode: 'read',
+        exportName: 'readActiveEvidenceContinuationOperation',
+        migration: 'member-audit-005-resource-collection.sql',
       },
       {
         id: 'read-evidence-continuation',
@@ -201,26 +218,7 @@ const manifest = {
         exportName: 'trainedSkillsResource',
       },
       {
-        id: 'skill-queue',
-        operationId: 'skill-queue',
-        dependentOperationIds: [],
-        coreDataProducts: ['published-skill-catalogue'],
-        sectionId: 'skills',
-        subjectKind: 'character',
-        materializationIntervalSeconds: 900,
-        eligibility: { kind: 'current-managed-member-character' },
-        persistence: {
-          projection: [],
-          materialization: [
-            { operationId: 'materialize-current-snapshot' },
-            { operationId: 'purge-evidence' },
-          ],
-        },
-        exportName: 'skillQueueResource',
-      },
-      {
         id: 'assets',
-        scheduled: false,
         operationId: 'character-assets-page',
         dependentOperationIds: ['character-asset-names', 'universe-resolve-names'],
         coreDataProducts: ['published-type-details', 'static-location-labels'],
@@ -229,7 +227,7 @@ const manifest = {
         materializationIntervalSeconds: 3600,
         eligibility: { kind: 'current-managed-member-character' },
         persistence: {
-          projection: [{ operationId: 'read-evidence-continuation' }],
+          projection: [{ operationId: 'read-active-evidence-continuation' }],
           materialization: [
             { operationId: 'write-evidence-continuation' },
             { operationId: 'promote-evidence-observation' },
@@ -240,7 +238,6 @@ const manifest = {
       },
       {
         id: 'wallet-balance',
-        scheduled: false,
         operationId: 'wallet-balance',
         dependentOperationIds: [],
         coreDataProducts: [],
@@ -259,7 +256,6 @@ const manifest = {
       },
       {
         id: 'wallet-journal',
-        scheduled: false,
         operationId: 'wallet-journal',
         dependentOperationIds: [],
         coreDataProducts: [],
@@ -268,7 +264,7 @@ const manifest = {
         materializationIntervalSeconds: 900,
         eligibility: { kind: 'current-managed-member-character' },
         persistence: {
-          projection: [{ operationId: 'read-evidence-continuation' }],
+          projection: [{ operationId: 'read-active-evidence-continuation' }],
           materialization: [
             { operationId: 'write-evidence-continuation' },
             { operationId: 'promote-evidence-observation' },
@@ -279,16 +275,15 @@ const manifest = {
       },
       {
         id: 'wallet-transactions',
-        scheduled: false,
         operationId: 'wallet-transactions',
         dependentOperationIds: [],
-        coreDataProducts: [],
+        coreDataProducts: ['published-type-details', 'static-location-labels'],
         sectionId: 'wallet',
         subjectKind: 'character',
         materializationIntervalSeconds: 900,
         eligibility: { kind: 'current-managed-member-character' },
         persistence: {
-          projection: [{ operationId: 'read-evidence-continuation' }],
+          projection: [{ operationId: 'read-active-evidence-continuation' }],
           materialization: [
             { operationId: 'write-evidence-continuation' },
             { operationId: 'promote-evidence-observation' },
@@ -299,7 +294,6 @@ const manifest = {
       },
       {
         id: 'mail-headers',
-        scheduled: false,
         operationId: 'mail-headers',
         dependentOperationIds: ['mail-lists', 'universe-resolve-names'],
         coreDataProducts: [],
@@ -308,7 +302,7 @@ const manifest = {
         materializationIntervalSeconds: 900,
         eligibility: { kind: 'current-managed-member-character' },
         persistence: {
-          projection: [{ operationId: 'read-evidence-continuation' }],
+          projection: [{ operationId: 'read-active-evidence-continuation' }],
           materialization: [
             { operationId: 'write-evidence-continuation' },
             { operationId: 'promote-evidence-observation' },
@@ -319,16 +313,15 @@ const manifest = {
       },
       {
         id: 'mail-details',
-        scheduled: false,
-        operationId: 'mail-message',
-        dependentOperationIds: ['mail-lists', 'universe-resolve-names'],
+        operationId: 'mail-headers',
+        dependentOperationIds: ['mail-message', 'mail-lists', 'universe-resolve-names'],
         coreDataProducts: [],
         sectionId: 'mail',
         subjectKind: 'character',
         materializationIntervalSeconds: 900,
         eligibility: { kind: 'current-managed-member-character' },
         persistence: {
-          projection: [{ operationId: 'read-evidence-continuation' }],
+          projection: [{ operationId: 'read-active-evidence-continuation' }],
           materialization: [
             { operationId: 'write-evidence-continuation' },
             { operationId: 'promote-evidence-observation' },

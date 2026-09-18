@@ -1,9 +1,4 @@
 import {
-  projectSkillQueueEntries,
-  type ProjectedSkillQueueEntry,
-  type SkillQueueSourceEntry,
-} from '@eve-space/core-eve-projections/skill-queue'
-import {
   projectTrainedSkills,
   type ProjectedTrainedSkills,
 } from '@eve-space/core-eve-projections/trained-skills'
@@ -14,6 +9,7 @@ import type {
 } from '@eve-space/platform-module-contract/resources'
 import { z } from 'zod'
 import { maintainEvidence } from './evidence-maintenance.js'
+import { createObservationId } from './observation-identity.js'
 import type { CurrentSnapshotPersistence, EvidenceMaintenancePersistence } from './persistence.js'
 
 const trainedSkillsResponseSchema = z.strictObject({
@@ -28,33 +24,28 @@ const trainedSkillsResponseSchema = z.strictObject({
     }),
   ),
 })
-const queueResponseSchema = z.array(
-  z.strictObject({
-    queue_position: z.number().int().nonnegative(),
-    skill_id: z.number().int().positive(),
-    finished_level: z.number().int().min(1).max(5),
-    level_start_sp: z.number().int().nonnegative().optional(),
-    level_end_sp: z.number().int().nonnegative().optional(),
-    training_start_sp: z.number().int().nonnegative().optional(),
-    start_date: z.string().optional(),
-    finish_date: z.string().optional(),
-  }),
-)
-
 type SkillProducts = readonly ['published-skill-catalogue']
 type TrainedSkillsData = { readonly kind: 'trained-skills' } & ProjectedTrainedSkills
-interface SkillQueueData {
-  readonly kind: 'skill-queue'
-  readonly entries: ProjectedSkillQueueEntry[]
-}
 interface PublishedSkillRow {
   readonly typeId: number
   readonly typeName: string
   readonly groupId: number
   readonly groupName: string
   readonly rank: number | null
-  readonly primaryAttribute: ProjectedSkillQueueEntry['primaryAttribute']
-  readonly secondaryAttribute: ProjectedSkillQueueEntry['secondaryAttribute']
+  readonly primaryAttribute:
+    | 'charisma'
+    | 'intelligence'
+    | 'memory'
+    | 'perception'
+    | 'willpower'
+    | null
+  readonly secondaryAttribute:
+    | 'charisma'
+    | 'intelligence'
+    | 'memory'
+    | 'perception'
+    | 'willpower'
+    | null
 }
 type SkillResource<Operation extends string, Data> = PlatformResourceOperationImplementation<
   Operation,
@@ -69,7 +60,7 @@ type SkillResource<Operation extends string, Data> = PlatformResourceOperationIm
   EvidenceMaintenancePersistence
 >
 type SkillSnapshotMaterializationContext = PlatformResourceMaterializationContext<
-  TrainedSkillsData | SkillQueueData,
+  TrainedSkillsData,
   PlatformCharacterResourceSubject,
   CurrentSnapshotPersistence
 >
@@ -107,35 +98,6 @@ export const trainedSkillsResource: SkillResource<'skills', TrainedSkillsData> =
   },
 }
 
-export const skillQueueResource: SkillResource<'skill-queue', SkillQueueData> = {
-  operation: 'skill-queue',
-  request(subject) {
-    return { path: { character_id: subject.characterId } }
-  },
-  async map({ data, capabilities }) {
-    const response = queueResponseSchema.parse(data)
-    const catalogue = await capabilities.coreData.publishedSkillCatalogue()
-    const definitions = catalogue.rows.map((skill) => ({
-      typeId: skill.typeId,
-      name: skill.typeName,
-      groupId: skill.groupId,
-      groupName: skill.groupName,
-      primaryAttribute: skill.primaryAttribute,
-      secondaryAttribute: skill.secondaryAttribute,
-    }))
-    return {
-      kind: 'skill-queue',
-      entries: projectSkillQueueEntries(response.map(mapQueueEntry), definitions),
-    }
-  },
-  materialize(context) {
-    return persistSkillSnapshot('skill-queue', context)
-  },
-  maintain(context) {
-    return maintainEvidence('skill-queue', context, false)
-  },
-}
-
 function catalogueFromRows(rows: readonly PublishedSkillRow[]) {
   const groups = new Map<
     number,
@@ -165,21 +127,8 @@ function catalogueFromRows(rows: readonly PublishedSkillRow[]) {
   }
 }
 
-function mapQueueEntry(entry: z.infer<typeof queueResponseSchema>[number]): SkillQueueSourceEntry {
-  return {
-    queuePosition: entry.queue_position,
-    typeId: entry.skill_id,
-    finishedLevel: entry.finished_level,
-    levelStartSp: entry.level_start_sp ?? null,
-    levelEndSp: entry.level_end_sp ?? null,
-    trainingStartSp: entry.training_start_sp ?? null,
-    startDate: entry.start_date ?? null,
-    finishDate: entry.finish_date ?? null,
-  }
-}
-
 async function persistSkillSnapshot(
-  resourceId: 'trained-skills' | 'skill-queue',
+  resourceId: 'trained-skills',
   context: SkillSnapshotMaterializationContext,
 ): Promise<void | { readonly outcome: 'obsolete' }> {
   const authority = context.managedAuthority
@@ -197,45 +146,18 @@ async function persistSkillSnapshot(
     authorizationGeneration: context.authorizationGeneration,
     disclosureVersion: authority.disclosureVersion,
     sectionActivationVersion: authority.sectionActivationVersion,
-    observationId: observationId(context, resourceId),
+    observationId: createObservationId(
+      resourceId,
+      context.subject.lifecycleId,
+      context.validatedAt,
+    ),
     dtoRevision: 1,
     validatedAt: context.validatedAt,
   }
-  let result
-  if (resourceId === 'trained-skills' && context.data.kind === 'trained-skills') {
-    result = await context.capabilities.persistence.materializeCurrentSnapshot({
-      ...common,
-      resourceId,
-      snapshot: context.data,
-    })
-  } else if (resourceId === 'skill-queue' && context.data.kind === 'skill-queue') {
-    result = await context.capabilities.persistence.materializeCurrentSnapshot({
-      ...common,
-      resourceId,
-      snapshot: context.data,
-    })
-  } else {
-    result = { outcome: 'obsolete' as const }
-  }
+  const result = await context.capabilities.persistence.materializeCurrentSnapshot({
+    ...common,
+    resourceId,
+    snapshot: context.data,
+  })
   return result.outcome === 'obsolete' ? { outcome: 'obsolete' } : undefined
-}
-
-function observationId(
-  context: SkillSnapshotMaterializationContext,
-  resourceId: 'trained-skills' | 'skill-queue',
-) {
-  const source = `${resourceId}:${context.subject.lifecycleId}:${context.validatedAt}`
-  const hex = [0, 1, 2, 3]
-    .map((salt) => hashObservationIdentity(source, salt).toString(16).padStart(8, '0'))
-    .join('')
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20)}`
-}
-
-function hashObservationIdentity(value: string, salt: number) {
-  let hash = (2_166_136_261 + salt * 16_777_619) >>> 0
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.codePointAt(index)!
-    hash = Math.imul(hash, 16_777_619) >>> 0
-  }
-  return hash
 }

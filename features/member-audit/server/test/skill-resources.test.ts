@@ -3,7 +3,7 @@ import type {
   CurrentSnapshotPersistence,
   EvidenceMaintenancePersistence,
 } from '../src/persistence.js'
-import { skillQueueResource, trainedSkillsResource } from '../src/skill-resources.js'
+import { trainedSkillsResource } from '../src/skill-resources.js'
 import { maintenanceContext, materializationContext, subject } from './resource-test-fixtures.js'
 
 const catalogue = {
@@ -23,11 +23,8 @@ const catalogue = {
 }
 
 describe('member-audit skill resources', () => {
-  test('binds both resource requests to the exact character', () => {
+  test('binds the resource request to the exact character', () => {
     expect(trainedSkillsResource.request(subject)).toEqual({
-      path: { character_id: subject.characterId },
-    })
-    expect(skillQueueResource.request(subject)).toEqual({
       path: { character_id: subject.characterId },
     })
   })
@@ -59,33 +56,21 @@ describe('member-audit skill resources', () => {
     expect(publishedSkillCatalogue).toHaveBeenCalledOnce()
   })
 
-  test('projects ordered queue entries and deterministic unknown labels', async () => {
-    const result = await skillQueueResource.map({
-      subject,
-      data: [
-        { queue_position: 2, skill_id: 99, finished_level: 2 },
-        { queue_position: 1, skill_id: 34, finished_level: 5 },
-      ],
-      capabilities: {
-        coreData: { publishedSkillCatalogue: vi.fn().mockResolvedValue(catalogue) },
-      },
-    })
-
-    expect(result.entries.map(({ typeId, name }) => ({ typeId, name }))).toEqual([
-      { typeId: 34, name: 'Spaceship Command' },
-      { typeId: 99, name: 'Unknown skill 99' },
-    ])
-  })
-
   test('persists snapshots only with the exact managed authority binding', async () => {
     const materializeCurrentSnapshot = vi.fn().mockResolvedValue({ outcome: 'applied' as const })
     const persistence: CurrentSnapshotPersistence = { materializeCurrentSnapshot }
     const context = materializationContext(
-      { kind: 'skill-queue' as const, entries: [] },
+      {
+        kind: 'trained-skills' as const,
+        totalSp: 0,
+        unallocatedSp: 0,
+        injectedSkillCount: 0,
+        groups: [],
+      },
       persistence,
     )
 
-    await skillQueueResource.materialize(context)
+    await trainedSkillsResource.materialize(context)
     expect(materializeCurrentSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({
         organizationVersion: 4,
@@ -98,7 +83,7 @@ describe('member-audit skill resources', () => {
       }),
     )
 
-    await skillQueueResource.materialize({ ...context, organizationVersion: 5 })
+    await trainedSkillsResource.materialize({ ...context, organizationVersion: 5 })
     expect(materializeCurrentSnapshot).toHaveBeenCalledOnce()
 
     materializeCurrentSnapshot.mockResolvedValueOnce({ outcome: 'obsolete' })
@@ -118,11 +103,11 @@ describe('member-audit skill resources', () => {
     ).resolves.toEqual({ outcome: 'obsolete' })
   })
 
-  test('retains skill-queue maintenance without a purge when no work is planned', async () => {
+  test('runs trained-skill maintenance without a purge when no work is planned', async () => {
     const purgeEvidence = vi.fn()
     const persistence: EvidenceMaintenancePersistence = { purgeEvidence }
 
-    await skillQueueResource.maintain?.(maintenanceContext(persistence))
+    await trainedSkillsResource.maintain?.(maintenanceContext(persistence))
 
     expect(purgeEvidence).not.toHaveBeenCalled()
   })

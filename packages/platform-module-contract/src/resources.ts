@@ -214,6 +214,9 @@ export interface PlatformResourceCollectionContext<
   ): Promise<{
     readonly data: unknown
     readonly validatedAt: string
+    readonly pagination?: {
+      readonly pages?: number
+    }
   }>
 }
 

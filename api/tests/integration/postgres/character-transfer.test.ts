@@ -206,12 +206,20 @@ describe('approved character transfer', () => {
       { character_id: String(sourceCharacterId), user_id: destinationUserId, is_main: false },
       { character_id: String(destinationCharacterId), user_id: destinationUserId, is_main: true },
     ])
-    const accountPurgeWork = await connection<{ target_user_id: string }[]>`
-      select target_user_id from platform_resource_purge_work
+    const accountPurgeWork = await connection<{ resource_id: string; target_user_id: string }[]>`
+      select resource_id, target_user_id from platform_resource_purge_work
       where mode = 'account'
       order by module_id, resource_id
     `
-    expect(accountPurgeWork).toHaveLength(8)
+    expect(accountPurgeWork.map(({ resource_id }) => resource_id)).toEqual([
+      'assets',
+      'mail-details',
+      'mail-headers',
+      'trained-skills',
+      'wallet-balance',
+      'wallet-journal',
+      'wallet-transactions',
+    ])
     expect(accountPurgeWork.every(({ target_user_id }) => target_user_id === sourceUserId)).toBe(
       true,
     )

@@ -10,13 +10,12 @@ import type {
 } from './installed-module-persistence.js'
 import {
   trainedSkillsResource as module0Resource0,
-  skillQueueResource as module0Resource1,
-  assetsResource as module0Resource2,
-  walletBalanceResource as module0Resource3,
-  walletJournalResource as module0Resource4,
-  walletTransactionsResource as module0Resource5,
-  mailHeadersResource as module0Resource6,
-  mailDetailsResource as module0Resource7,
+  assetsResource as module0Resource1,
+  walletBalanceResource as module0Resource2,
+  walletJournalResource as module0Resource3,
+  walletTransactionsResource as module0Resource4,
+  mailHeadersResource as module0Resource5,
+  mailDetailsResource as module0Resource6,
 } from '@eve-space/member-audit-server'
 import {
   campaignsResource as module1Resource0,
@@ -53,48 +52,24 @@ export const installedModuleResources = [
   } as const,
   {
     moduleId: 'member-audit',
-    resourceId: 'skill-queue',
-    operationId: 'skill-queue',
-    sectionId: 'skills',
-    coreDataProducts: ['published-skill-catalogue'] as const,
-    subjectKind: 'character',
-    materializationIntervalSeconds: 900,
-    eligibility: { kind: 'current-managed-member-character' },
-    persistence: {
-      projection: [],
-      materialization: [
-        { operationId: 'materialize-current-snapshot' },
-        { operationId: 'purge-evidence' },
-      ],
-    } as const,
-    implementation: module0Resource1 satisfies PlatformResourceImplementationForCapabilities<
-      typeof module0Resource1,
-      readonly ['published-skill-catalogue'],
-      InstalledModuleResourceProjectionPersistence<'member-audit/skill-queue'>,
-      InstalledModuleResourceMaterializationPersistence<'member-audit/skill-queue'>
-    >,
-  } as const,
-  {
-    moduleId: 'member-audit',
     resourceId: 'assets',
     operationId: 'character-assets-page',
     sectionId: 'assets',
     coreDataProducts: ['published-type-details', 'static-location-labels'] as const,
     dependentOperationIds: ['character-asset-names', 'universe-resolve-names'],
-    scheduled: false,
     subjectKind: 'character',
     materializationIntervalSeconds: 3600,
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
-      projection: [{ operationId: 'read-evidence-continuation' }],
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
       materialization: [
         { operationId: 'write-evidence-continuation' },
         { operationId: 'promote-evidence-observation' },
         { operationId: 'purge-evidence' },
       ],
     } as const,
-    implementation: module0Resource2 satisfies PlatformResourceImplementationForCapabilities<
-      typeof module0Resource2,
+    implementation: module0Resource1 satisfies PlatformResourceImplementationForCapabilities<
+      typeof module0Resource1,
       readonly ['published-type-details', 'static-location-labels'],
       InstalledModuleResourceProjectionPersistence<'member-audit/assets'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/assets'>
@@ -106,7 +81,6 @@ export const installedModuleResources = [
     operationId: 'wallet-balance',
     sectionId: 'wallet',
     coreDataProducts: [] as const,
-    scheduled: false,
     subjectKind: 'character',
     materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
@@ -117,8 +91,8 @@ export const installedModuleResources = [
         { operationId: 'purge-evidence' },
       ],
     } as const,
-    implementation: module0Resource3 satisfies PlatformResourceImplementationForCapabilities<
-      typeof module0Resource3,
+    implementation: module0Resource2 satisfies PlatformResourceImplementationForCapabilities<
+      typeof module0Resource2,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'member-audit/wallet-balance'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/wallet-balance'>
@@ -130,20 +104,19 @@ export const installedModuleResources = [
     operationId: 'wallet-journal',
     sectionId: 'wallet',
     coreDataProducts: [] as const,
-    scheduled: false,
     subjectKind: 'character',
     materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
-      projection: [{ operationId: 'read-evidence-continuation' }],
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
       materialization: [
         { operationId: 'write-evidence-continuation' },
         { operationId: 'promote-evidence-observation' },
         { operationId: 'purge-evidence' },
       ],
     } as const,
-    implementation: module0Resource4 satisfies PlatformResourceImplementationForCapabilities<
-      typeof module0Resource4,
+    implementation: module0Resource3 satisfies PlatformResourceImplementationForCapabilities<
+      typeof module0Resource3,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'member-audit/wallet-journal'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/wallet-journal'>
@@ -154,22 +127,21 @@ export const installedModuleResources = [
     resourceId: 'wallet-transactions',
     operationId: 'wallet-transactions',
     sectionId: 'wallet',
-    coreDataProducts: [] as const,
-    scheduled: false,
+    coreDataProducts: ['published-type-details', 'static-location-labels'] as const,
     subjectKind: 'character',
     materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
-      projection: [{ operationId: 'read-evidence-continuation' }],
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
       materialization: [
         { operationId: 'write-evidence-continuation' },
         { operationId: 'promote-evidence-observation' },
         { operationId: 'purge-evidence' },
       ],
     } as const,
-    implementation: module0Resource5 satisfies PlatformResourceImplementationForCapabilities<
-      typeof module0Resource5,
-      readonly [],
+    implementation: module0Resource4 satisfies PlatformResourceImplementationForCapabilities<
+      typeof module0Resource4,
+      readonly ['published-type-details', 'static-location-labels'],
       InstalledModuleResourceProjectionPersistence<'member-audit/wallet-transactions'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/wallet-transactions'>
     >,
@@ -181,20 +153,19 @@ export const installedModuleResources = [
     sectionId: 'mail',
     coreDataProducts: [] as const,
     dependentOperationIds: ['mail-lists', 'universe-resolve-names'],
-    scheduled: false,
     subjectKind: 'character',
     materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
-      projection: [{ operationId: 'read-evidence-continuation' }],
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
       materialization: [
         { operationId: 'write-evidence-continuation' },
         { operationId: 'promote-evidence-observation' },
         { operationId: 'purge-evidence' },
       ],
     } as const,
-    implementation: module0Resource6 satisfies PlatformResourceImplementationForCapabilities<
-      typeof module0Resource6,
+    implementation: module0Resource5 satisfies PlatformResourceImplementationForCapabilities<
+      typeof module0Resource5,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'member-audit/mail-headers'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/mail-headers'>
@@ -203,24 +174,23 @@ export const installedModuleResources = [
   {
     moduleId: 'member-audit',
     resourceId: 'mail-details',
-    operationId: 'mail-message',
+    operationId: 'mail-headers',
     sectionId: 'mail',
     coreDataProducts: [] as const,
-    dependentOperationIds: ['mail-lists', 'universe-resolve-names'],
-    scheduled: false,
+    dependentOperationIds: ['mail-message', 'mail-lists', 'universe-resolve-names'],
     subjectKind: 'character',
     materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
-      projection: [{ operationId: 'read-evidence-continuation' }],
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
       materialization: [
         { operationId: 'write-evidence-continuation' },
         { operationId: 'promote-evidence-observation' },
         { operationId: 'purge-evidence' },
       ],
     } as const,
-    implementation: module0Resource7 satisfies PlatformResourceImplementationForCapabilities<
-      typeof module0Resource7,
+    implementation: module0Resource6 satisfies PlatformResourceImplementationForCapabilities<
+      typeof module0Resource6,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'member-audit/mail-details'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/mail-details'>

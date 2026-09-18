@@ -91,7 +91,7 @@ export const installedModuleRoutes = new Hono()
         reviewerEvidence: {
           routeId: 'skills-detail',
           resourceId: 'trained-skills',
-          operationId: 'read-skill-evidence',
+          operationId: 'read-trained-skills-evidence',
         },
       },
       module0Route2,
