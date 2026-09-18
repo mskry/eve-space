@@ -261,11 +261,21 @@ describe('organization storage invariants', () => {
         organizationVersion: 1,
         filters: { query: String(secondCharacterId) },
       }),
-    ).resolves.toEqual({ status: 'available', items: [], nextCursor: null })
+    ).resolves.toEqual({
+      organizationVersion: 1,
+      status: 'available',
+      items: [],
+      nextCursor: null,
+    })
     for (const query of ['%', '_', '\\'])
       await expect(
         searchManagedOrganizationAccounts({ organizationVersion: 1, filters: { query } }),
-      ).resolves.toEqual({ status: 'available', items: [], nextCursor: null })
+      ).resolves.toEqual({
+        organizationVersion: 1,
+        status: 'available',
+        items: [],
+        nextCursor: null,
+      })
   })
 
   test('does not expose or match an unclassified main character', async () => {
@@ -299,7 +309,12 @@ describe('organization storage invariants', () => {
         organizationVersion: 1,
         filters: { query: 'Organization Pilot' },
       }),
-    ).resolves.toEqual({ status: 'available', items: [], nextCursor: null })
+    ).resolves.toEqual({
+      organizationVersion: 1,
+      status: 'available',
+      items: [],
+      nextCursor: null,
+    })
 
     await connection`
       insert into organization_character_exceptions (
@@ -330,7 +345,12 @@ describe('organization storage invariants', () => {
 
     await expect(
       searchManagedOrganizationAccounts({ organizationVersion: 1, filters: {} }),
-    ).resolves.toEqual({ status: 'unavailable', items: [], nextCursor: null })
+    ).resolves.toEqual({
+      organizationVersion: 1,
+      status: 'unavailable',
+      items: [],
+      nextCursor: null,
+    })
   })
 
   test('rejects malformed reviewer account search filters before querying', async () => {
@@ -2320,6 +2340,26 @@ describe('organization storage invariants', () => {
         reason: 'Reviewer permission escalation attempt.',
       }),
     ).rejects.toMatchObject({ code: 'reviewer-permission-group-not-allowed' })
+    await assignOrganizationGroup({
+      actorUserId: userId,
+      targetUserId: fixture.targetUserId,
+      groupId: unsafeGroup.groupId,
+      reason: 'Existing reviewer access.',
+      expiresAt: null,
+    })
+    const reviewerTarget = await resolveOrganizationReviewerTarget({
+      organizationVersion: 1,
+      targetUserId: fixture.targetUserId,
+    })
+    const projectedUnsafeGroup = reviewerTarget?.groups.find(
+      ({ groupId }) => groupId === unsafeGroup.groupId,
+    )
+    expect(projectedUnsafeGroup).toMatchObject({
+      restricted: false,
+      managementMode: 'manual',
+      readOnly: true,
+    })
+    expect(projectedUnsafeGroup).not.toHaveProperty('hasReviewerPermission')
 
     await expect(
       assignOrganizationReviewerOrdinaryGroup({

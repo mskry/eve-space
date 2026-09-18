@@ -16,6 +16,19 @@ const searchQuery = z.object({
   cursor: z.string().refine(isPlatformReviewerAccountSearchCursor).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(25),
 })
+const actionReason = z.string().trim().min(1).max(2000)
+const groupParams = z.object({ groupId: z.uuid() })
+const groupAssignmentParams = z.object({ groupId: z.uuid(), assignmentId: z.uuid() })
+const assignGroupBody = z
+  .object({
+    reason: actionReason,
+    expiresAt: z.iso.datetime({ offset: true }).nullable().optional(),
+  })
+  .strict()
+const actionReasonBody = z.object({ reason: actionReason }).strict()
+
+type GroupCommandIds = readonly ['assign-ordinary-group', 'revoke-ordinary-group']
+type BlockCommandIds = readonly ['block-member', 'unblock-member']
 
 export function memberSearchRoutes(_capabilities: object) {
   return new Hono<PlatformReviewerSearchRouteEnv>().get(
@@ -41,6 +54,7 @@ export function memberSummaryRoutes(_capabilities: object) {
         compliance: target.compliance,
         groups: target.groups,
         block: target.block,
+        evidence: await context.var.platform.evidenceSummary.read(),
       },
       200,
     )
@@ -102,6 +116,55 @@ export function memberMailRoutes(_capabilities: object) {
       evidence: await readReviewerEvidence(context.var.platform, 500),
     })
   })
+}
+
+export function memberGroupRoutes(_capabilities: object) {
+  return new Hono<PlatformReviewerTargetRouteEnv<GroupCommandIds>>()
+    .post(
+      '/',
+      zValidator('param', groupParams),
+      zValidator('json', assignGroupBody),
+      async (context) =>
+        context.json(
+          await context.var.platform.organizationCommands.assignOrdinaryGroup({
+            groupId: context.req.valid('param').groupId,
+            ...context.req.valid('json'),
+          }),
+          201,
+        ),
+    )
+    .delete(
+      '/assignments/:assignmentId',
+      zValidator('param', groupAssignmentParams),
+      zValidator('json', actionReasonBody),
+      async (context) => {
+        const params = context.req.valid('param')
+        return context.json(
+          await context.var.platform.organizationCommands.revokeOrdinaryGroup({
+            groupId: params.groupId,
+            assignmentId: params.assignmentId,
+            reason: context.req.valid('json').reason,
+          }),
+          200,
+        )
+      },
+    )
+}
+
+export function memberBlockRoutes(_capabilities: object) {
+  return new Hono<PlatformReviewerTargetRouteEnv<BlockCommandIds>>()
+    .post('/', zValidator('json', actionReasonBody), async (context) =>
+      context.json(
+        await context.var.platform.organizationCommands.blockMember(context.req.valid('json')),
+        201,
+      ),
+    )
+    .delete('/', zValidator('json', actionReasonBody), async (context) =>
+      context.json(
+        await context.var.platform.organizationCommands.unblockMember(context.req.valid('json')),
+        200,
+      ),
+    )
 }
 
 function selectedCharacterId(

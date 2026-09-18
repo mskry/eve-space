@@ -6,6 +6,8 @@ import { Hono } from 'hono'
 import { expect, test, vi } from 'vitest'
 import {
   memberAssetsRoutes,
+  memberBlockRoutes,
+  memberGroupRoutes,
   memberMailRoutes,
   memberSearchRoutes,
   memberSkillsRoutes,
@@ -40,6 +42,7 @@ const characterTarget = {
 
 test('validates and forwards bounded reviewer search filters', async () => {
   const search = vi.fn().mockResolvedValue({
+    organizationVersion: 4,
     status: 'available',
     items: [],
     nextCursor: null,
@@ -55,7 +58,12 @@ test('validates and forwards bounded reviewer search filters', async () => {
     '/?query=Pilot&corporationId=98000001&complianceState=compliant&blocked=true&limit=50',
   )
   expect(response.status).toBe(200)
-  expect(await response.json()).toEqual({ status: 'available', items: [], nextCursor: null })
+  expect(await response.json()).toEqual({
+    organizationVersion: 4,
+    status: 'available',
+    items: [],
+    nextCursor: null,
+  })
   expect(search).toHaveBeenCalledWith({
     query: 'Pilot',
     corporationId: 98_000_001,
@@ -95,12 +103,26 @@ test('returns only the bounded reviewer target summary', async () => {
       accessValidUntil: null,
       evaluatedAt: '2026-09-17T10:00:00Z',
     },
-    groups: [],
+    groups: [
+      {
+        groupId: '44444444-4444-4444-8444-444444444444',
+        assignmentId: '55555555-5555-4555-8555-555555555555',
+        name: 'Registration compliant',
+        restricted: false,
+        managementMode: 'compliance',
+        readOnly: true,
+        assignedAt: '2026-09-17T10:00:00Z',
+        expiresAt: null,
+      },
+    ],
     block: { blocked: false },
   } as const
   const app = new Hono<PlatformReviewerTargetRouteEnv>()
     .use('*', async (context, next) => {
-      context.set('platform', { reviewerTarget: target } as never)
+      context.set('platform', {
+        reviewerTarget: target,
+        evidenceSummary: { read: vi.fn().mockResolvedValue([{ characterId: 90_000_001 }]) },
+      } as never)
       await next()
     })
     .route('/', memberSummaryRoutes({} as never))
@@ -113,8 +135,9 @@ test('returns only the bounded reviewer target summary', async () => {
     account: target.account,
     characters: [],
     compliance: target.compliance,
-    groups: [],
+    groups: target.groups,
     block: { blocked: false },
+    evidence: [{ characterId: 90_000_001 }],
   })
 })
 
@@ -200,4 +223,107 @@ test('rejects character evidence routes without a character target or evidence c
     })
     .route('/', memberAssetsRoutes({} as never))
   expect((await evidenceApp.request('/')).status).toBe(500)
+})
+
+test('validates and forwards bounded ordinary-group assignment and revocation commands', async () => {
+  const assignOrdinaryGroup = vi.fn().mockResolvedValue({
+    decision: 'assigned',
+    groupId: '44444444-4444-4444-8444-444444444444',
+    assignmentId: '55555555-5555-4555-8555-555555555555',
+    expiresAt: '2026-10-01T00:00:00.000Z',
+  })
+  const revokeOrdinaryGroup = vi.fn().mockResolvedValue({
+    decision: 'revoked',
+    groupId: '44444444-4444-4444-8444-444444444444',
+    assignmentId: '55555555-5555-4555-8555-555555555555',
+    revokedAt: '2026-09-18T12:00:00.000Z',
+  })
+  const app = new Hono<
+    PlatformReviewerTargetRouteEnv<readonly ['assign-ordinary-group', 'revoke-ordinary-group']>
+  >()
+    .use('*', async (context, next) => {
+      context.set('platform', {
+        reviewerTarget: characterTarget,
+        organizationCommands: { assignOrdinaryGroup, revokeOrdinaryGroup },
+      } as never)
+      await next()
+    })
+    .route('/groups/:groupId', memberGroupRoutes({} as never))
+
+  const assigned = await app.request('/groups/44444444-4444-4444-8444-444444444444', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      reason: '  Approved after review.  ',
+      expiresAt: '2026-10-01T00:00:00.000Z',
+    }),
+  })
+  expect(assigned.status).toBe(201)
+  expect(assignOrdinaryGroup).toHaveBeenCalledWith({
+    groupId: '44444444-4444-4444-8444-444444444444',
+    reason: 'Approved after review.',
+    expiresAt: '2026-10-01T00:00:00.000Z',
+  })
+
+  const revoked = await app.request(
+    '/groups/44444444-4444-4444-8444-444444444444/assignments/55555555-5555-4555-8555-555555555555',
+    {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'Review access ended.' }),
+    },
+  )
+  expect(revoked.status).toBe(200)
+  expect(revokeOrdinaryGroup).toHaveBeenCalledWith({
+    groupId: '44444444-4444-4444-8444-444444444444',
+    assignmentId: '55555555-5555-4555-8555-555555555555',
+    reason: 'Review access ended.',
+  })
+
+  const forged = await app.request('/groups/44444444-4444-4444-8444-444444444444', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ reason: 'Attempted target substitution.', targetUserId: 'other-user' }),
+  })
+  expect(forged.status).toBe(400)
+})
+
+test('validates and forwards bounded block and unblock commands', async () => {
+  const blockMember = vi.fn().mockResolvedValue({
+    decision: 'blocked',
+    blockId: '66666666-6666-4666-8666-666666666666',
+    blockedAt: '2026-09-18T12:00:00.000Z',
+  })
+  const unblockMember = vi.fn().mockResolvedValue({
+    decision: 'unblocked',
+    blockId: '66666666-6666-4666-8666-666666666666',
+    unblockedAt: '2026-09-18T12:10:00.000Z',
+  })
+  const app = new Hono<
+    PlatformReviewerTargetRouteEnv<readonly ['block-member', 'unblock-member']>
+  >()
+    .use('*', async (context, next) => {
+      context.set('platform', {
+        reviewerTarget: characterTarget,
+        organizationCommands: { blockMember, unblockMember },
+      } as never)
+      await next()
+    })
+    .route('/block', memberBlockRoutes({} as never))
+
+  const blocked = await app.request('/block', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ reason: 'Immediate protected-access removal.' }),
+  })
+  expect(blocked.status).toBe(201)
+  expect(blockMember).toHaveBeenCalledWith({ reason: 'Immediate protected-access removal.' })
+
+  const unblocked = await app.request('/block', {
+    method: 'DELETE',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ reason: 'Current compliance may be reevaluated.' }),
+  })
+  expect(unblocked.status).toBe(200)
+  expect(unblockMember).toHaveBeenCalledWith({ reason: 'Current compliance may be reevaluated.' })
 })

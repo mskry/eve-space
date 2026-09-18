@@ -76,7 +76,7 @@ function composeReviewerSearchModuleRoute<RouteSchema extends Schema, RouteBaseP
     .use('*', requireSession)
     .use('*', loadOrganizationSession)
     .use('*', requireModuleReviewerAuthorization(organization))
-    .use('*', exposeReviewerSearchModuleContext())
+    .use('*', exposeReviewerSearchModuleContext(moduleId))
     .route('/', route)
 }
 

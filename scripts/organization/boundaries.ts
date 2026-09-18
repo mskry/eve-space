@@ -26,6 +26,7 @@ const modulesByTier = {
     'managed-corporations',
     'organization-lock',
     'reviewer-account-search',
+    'reviewer-group-policy',
     'reviewer-organization-snapshot',
     'reviewer-target',
     'roster-collection',

@@ -482,6 +482,14 @@ export function createModule0Route5Persistence(invoke: PlatformPersistenceOperat
   }
 }
 
+export function createModule0Route6Persistence(_invoke: PlatformPersistenceOperationInvoker) {
+  return {}
+}
+
+export function createModule0Route7Persistence(_invoke: PlatformPersistenceOperationInvoker) {
+  return {}
+}
+
 export function createModule0Resource0ProjectionPersistence(
   _invoke: PlatformPersistenceOperationInvoker,
 ) {
@@ -865,6 +873,8 @@ export const installedModulePersistenceCapabilityFactories = {
     'member-audit/assets-detail': createModule0Route3Persistence,
     'member-audit/wallet-detail': createModule0Route4Persistence,
     'member-audit/mail-detail': createModule0Route5Persistence,
+    'member-audit/group-actions': createModule0Route6Persistence,
+    'member-audit/block-actions': createModule0Route7Persistence,
     'organization-activity/activity-details': createModule1Route0Persistence,
     'organization-activity/activity-participation': createModule1Route1Persistence,
   },

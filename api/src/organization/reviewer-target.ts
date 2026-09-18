@@ -18,6 +18,7 @@ import {
   platformSubjectLifecycles,
 } from '../db/schema.js'
 import { resolveAffiliationFreshness } from './affiliation-freshness.js'
+import { organizationReviewerPermissionExists } from './reviewer-group-policy.js'
 import { hasCurrentReviewerOrganizationSnapshot } from './reviewer-organization-snapshot.js'
 const pendingCompliance: PlatformReviewerTargetCompliance = {
   state: 'pending',
@@ -123,6 +124,8 @@ async function resolveOrganizationReviewerTargetInTransaction(
       name: group.name,
       restricted: group.restricted,
       managementMode: group.managementMode,
+      readOnly:
+        group.restricted || group.managementMode === 'compliance' || group.hasReviewerPermission,
       assignedAt: group.assignedAt.toISOString(),
       expiresAt: group.expiresAt?.toISOString() ?? null,
     })),
@@ -267,6 +270,10 @@ function loadGroups(
       name: organizationGroups.name,
       restricted: organizationGroups.restricted,
       managementMode: organizationGroups.managementMode,
+      hasReviewerPermission: organizationReviewerPermissionExists(
+        organizationVersion,
+        organizationGroups.groupId,
+      ),
       assignedAt: organizationGroupAssignments.assignedAt,
       expiresAt: organizationGroupAssignments.expiresAt,
     })

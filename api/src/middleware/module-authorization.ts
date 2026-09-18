@@ -13,6 +13,7 @@ import { authRequiredBody } from '../http/contracts.js'
 import { createOwnedCharacterCoreReads } from '../platform/core-read-capabilities.js'
 import { createPlatformModuleCollectionStatusReads } from '../platform/module-collection-status-capabilities.js'
 import { createPlatformReviewerCollectionStatusReads } from '../platform/module-reviewer-collection-status-capabilities.js'
+import { createPlatformReviewerEvidenceSummaryReads } from '../platform/module-reviewer-evidence-summary-capabilities.js'
 import { createPlatformReviewerEvidenceReads } from '../platform/module-reviewer-evidence-capabilities.js'
 import { createPlatformOrganizationCommandCapabilities } from '../platform/module-organization-command-capabilities.js'
 import { createPlatformReviewerAccountSearch } from '../platform/reviewer-search-capabilities.js'
@@ -257,6 +258,10 @@ export function exposeReviewerTargetModuleContext<
       },
       organization,
       collectionStatus,
+      evidenceSummary: createPlatformReviewerEvidenceSummaryReads({
+        moduleId,
+        target: reviewerTarget,
+      }),
       reviewerTarget,
       ...(evidenceBinding
         ? {
@@ -284,7 +289,7 @@ export function exposeReviewerTargetModuleContext<
   })
 }
 
-export function exposeReviewerSearchModuleContext() {
+export function exposeReviewerSearchModuleContext(moduleId: string) {
   return createMiddleware<ReviewerSearchModuleEnv>(async (context, next) => {
     const session = context.var.session
     if (!session) return context.json(authRequiredBody, 401)
@@ -296,7 +301,10 @@ export function exposeReviewerSearchModuleContext() {
         userId: session.userId,
       },
       organization,
-      reviewerSearch: createPlatformReviewerAccountSearch(organization.organizationVersion),
+      reviewerSearch: createPlatformReviewerAccountSearch(
+        moduleId,
+        organization.organizationVersion,
+      ),
     })
     await next()
   })

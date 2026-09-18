@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   createPlatformModuleCollectionStatusReads: vi.fn(() => ({ read: vi.fn() })),
   createPlatformOrganizationCommandCapabilities: vi.fn(() => ({ blockMember: vi.fn() })),
   createPlatformReviewerCollectionStatusReads: vi.fn(() => ({ read: vi.fn() })),
+  createPlatformReviewerEvidenceSummaryReads: vi.fn(() => ({ read: vi.fn() })),
   createPlatformReviewerEvidenceReads: vi.fn(() => ({ read: vi.fn() })),
   createPlatformReviewerAccountSearch: vi.fn(() => ({ search: vi.fn() })),
   recordModuleSensitiveAccessDecision: vi.fn(),
@@ -40,6 +41,9 @@ vi.mock('../../src/platform/module-reviewer-collection-status-capabilities.js', 
 }))
 vi.mock('../../src/platform/module-reviewer-evidence-capabilities.js', () => ({
   createPlatformReviewerEvidenceReads: mocks.createPlatformReviewerEvidenceReads,
+}))
+vi.mock('../../src/platform/module-reviewer-evidence-summary-capabilities.js', () => ({
+  createPlatformReviewerEvidenceSummaryReads: mocks.createPlatformReviewerEvidenceSummaryReads,
 }))
 vi.mock('../../src/platform/module-sensitive-access-audit.js', () => ({
   recordModuleSensitiveAccessDecision: mocks.recordModuleSensitiveAccessDecision,
@@ -222,7 +226,7 @@ describe('platform module route composition', () => {
       organizationVersion: 7,
       hasSearch: true,
     })
-    expect(mocks.createPlatformReviewerAccountSearch).toHaveBeenCalledWith(7)
+    expect(mocks.createPlatformReviewerAccountSearch).toHaveBeenCalledWith('alpha', 7)
     expect(mocks.resolveOrganizationReviewerTarget).not.toHaveBeenCalled()
   })
 

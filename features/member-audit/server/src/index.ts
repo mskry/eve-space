@@ -22,6 +22,8 @@ export {
 } from './wallet-resources.js'
 export {
   memberAssetsRoutes,
+  memberBlockRoutes,
+  memberGroupRoutes,
   memberMailRoutes,
   memberSearchRoutes,
   memberSkillsRoutes,

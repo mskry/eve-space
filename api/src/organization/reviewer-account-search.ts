@@ -94,7 +94,7 @@ async function searchManagedOrganizationAccountsInTransaction(
     ? decodeCursor(filters.cursor, organizationVersion, searchFingerprint(filters))
     : null
   if (!(await hasCurrentReviewerOrganizationSnapshot(transaction, organizationVersion, now)))
-    return { status: 'unavailable', items: [], nextCursor: null }
+    return { organizationVersion, status: 'unavailable', items: [], nextCursor: null }
 
   const rows = await loadSearchPage(transaction, organizationVersion, filters, cursorUserId, now)
   const page = rows.slice(0, filters.limit)
@@ -106,6 +106,7 @@ async function searchManagedOrganizationAccountsInTransaction(
   )
 
   return {
+    organizationVersion,
     status: 'available',
     items: page.map((row) => projectSearchItem(row, mainCharacterByUserId.get(row.userId))),
     nextCursor:
@@ -329,6 +330,7 @@ function projectSearchItem(
     block: row.blockedAt
       ? { blocked: true, blockedAt: row.blockedAt.toISOString() }
       : { blocked: false },
+    evidenceSections: [],
   }
 }
 

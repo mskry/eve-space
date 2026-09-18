@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, isNull, like, or } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNull, or } from 'drizzle-orm'
 import { db, type DatabaseTransaction } from '../db/client.js'
 import {
   organizationGroupAssignments,
@@ -24,6 +24,7 @@ import {
   revokeManualOrganizationGroupAssignmentInTransaction,
 } from './group-store.js'
 import { lockCurrentOrganization } from './organization-lock.js'
+import { organizationReviewerPermissionExists } from './reviewer-group-policy.js'
 
 type OrganizationReviewerActionPermission =
   | 'member-audit.groups.manage'
@@ -338,36 +339,13 @@ async function loadOrdinaryGroupForUpdate(
   if (group.managementMode === 'compliance')
     throw new OrganizationReviewerCommandError('compliance-group-not-allowed')
   const [reviewerPermission] = await transaction
-    .select({ key: organizationPermissionBundleEntries.permissionKey })
-    .from(organizationGroupPermissionBundles)
-    .innerJoin(
-      organizationPermissionBundleEntries,
-      and(
-        eq(
-          organizationPermissionBundleEntries.bundleId,
-          organizationGroupPermissionBundles.bundleId,
-        ),
-        eq(
-          organizationPermissionBundleEntries.deploymentId,
-          organizationGroupPermissionBundles.deploymentId,
-        ),
-        eq(
-          organizationPermissionBundleEntries.organizationVersion,
-          organizationGroupPermissionBundles.organizationVersion,
-        ),
-      ),
-    )
-    .where(
-      and(
-        eq(organizationGroupPermissionBundles.groupId, group.groupId),
-        eq(organizationGroupPermissionBundles.deploymentId, 1),
-        eq(organizationGroupPermissionBundles.organizationVersion, organizationVersion),
-        eq(organizationPermissionBundleEntries.permissionType, 'module'),
-        like(organizationPermissionBundleEntries.permissionKey, 'member-audit.%'),
-      ),
-    )
+    .select({
+      exists: organizationReviewerPermissionExists(organizationVersion, group.groupId),
+    })
+    .from(organizationGroups)
+    .where(eq(organizationGroups.groupId, group.groupId))
     .limit(1)
-  if (reviewerPermission)
+  if (reviewerPermission?.exists)
     throw new OrganizationReviewerCommandError('reviewer-permission-group-not-allowed')
   return group
 }

@@ -13,6 +13,8 @@ import {
   memberAssetsRoutes as module0Route3Factory,
   memberWalletRoutes as module0Route4Factory,
   memberMailRoutes as module0Route5Factory,
+  memberGroupRoutes as module0Route6Factory,
+  memberBlockRoutes as module0Route7Factory,
 } from '@eve-space/member-audit-server'
 import {
   activityRoutes as module1Route0Factory,
@@ -35,6 +37,12 @@ const module0Route4 = module0Route4Factory(
   createPlatformReviewerRouteCapabilities('member-audit', [] as const),
 )
 const module0Route5 = module0Route5Factory(
+  createPlatformReviewerRouteCapabilities('member-audit', [] as const),
+)
+const module0Route6 = module0Route6Factory(
+  createPlatformReviewerRouteCapabilities('member-audit', [] as const),
+)
+const module0Route7 = module0Route7Factory(
   createPlatformReviewerRouteCapabilities('member-audit', [] as const),
 )
 const module1Route0 = module1Route0Factory(
@@ -152,6 +160,36 @@ export const installedModuleRoutes = new Hono()
         },
       },
       module0Route5,
+    ),
+  )
+  .route(
+    '/member-audit/accounts/:userId/groups/:groupId',
+    platformModuleRouteComposers['managed-organization-account'](
+      'member-audit',
+      {
+        audience: 'hr',
+        requiredPermission: 'member-audit.groups.manage',
+        sectionId: 'access-management',
+        target: 'managed-organization-account',
+        exposure: 'standard',
+        organizationCommands: ['assign-ordinary-group', 'revoke-ordinary-group'] as const,
+      },
+      module0Route6,
+    ),
+  )
+  .route(
+    '/member-audit/accounts/:userId/block',
+    platformModuleRouteComposers['managed-organization-account'](
+      'member-audit',
+      {
+        audience: 'hr',
+        requiredPermission: 'member-audit.members.block',
+        sectionId: 'access-management',
+        target: 'managed-organization-account',
+        exposure: 'standard',
+        organizationCommands: ['block-member', 'unblock-member'] as const,
+      },
+      module0Route7,
     ),
   )
   .route(

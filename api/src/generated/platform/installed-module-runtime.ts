@@ -57,9 +57,21 @@ export const installedModuleOrganizationAdmissionScopes = [
   },
   {
     moduleId: 'member-audit',
+    admissionScope: 'organization:v1:member-audit:hr:member-audit.groups.manage',
+    audience: 'hr',
+    requiredPermission: 'member-audit.groups.manage',
+  },
+  {
+    moduleId: 'member-audit',
     admissionScope: 'organization:v1:member-audit:hr:member-audit.mail.read',
     audience: 'hr',
     requiredPermission: 'member-audit.mail.read',
+  },
+  {
+    moduleId: 'member-audit',
+    admissionScope: 'organization:v1:member-audit:hr:member-audit.members.block',
+    audience: 'hr',
+    requiredPermission: 'member-audit.members.block',
   },
   {
     moduleId: 'member-audit',
