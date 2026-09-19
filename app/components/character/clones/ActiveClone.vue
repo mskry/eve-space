@@ -2,7 +2,7 @@
 import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type { CharacterClones } from '../../../queries/clones'
 import type { CloneResourceState } from '../../../types/clones'
-import type { JumpCloneCapacity } from '../../../utils/clone-derivation'
+import { jumpCloneLocationLabel, type JumpCloneCapacity } from '../../../utils/clone-derivation'
 import { toCloneEsiResourceState } from '../../../utils/clone-resource-state'
 
 const props = defineProps<{
@@ -30,6 +30,16 @@ const capacityLabel = computed(() => {
 })
 
 const lastCloneJumpLabel = computed(() => historicalDate(props.clones?.lastCloneJumpAt))
+const lastStationChangeLabel = computed(() => historicalDate(props.clones?.lastStationChangeAt))
+const homeLocationLabel = computed(() => {
+  const location = props.clones?.homeLocation
+  if (!location?.locationId || !location.locationType) return 'Home Station unavailable'
+  return jumpCloneLocationLabel({
+    locationId: location.locationId,
+    locationType: location.locationType,
+    name: location.name,
+  })
+})
 
 const capacityNote = computed(() =>
   props.capacity.maximum === null ? 'Maximum needs the skills resource for this character.' : '',
@@ -69,8 +79,26 @@ function historicalDate(value: string | null | undefined) {
       @retry="$emit('retry')"
     >
       <template v-if="clones">
-        <dl v-if="lastCloneJumpLabel" class="character-summary-stats">
+        <dl class="character-summary-stats">
           <div>
+            <dt>HOME STATION</dt>
+            <dd class="character-clones-home-location">
+              <SystemSecurityStatus
+                v-if="typeof clones.homeLocation?.solarSystemSecurityStatus === 'number'"
+                :value="clones.homeLocation.solarSystemSecurityStatus"
+              />
+              <span>{{ homeLocationLabel }}</span>
+            </dd>
+          </div>
+          <div v-if="lastStationChangeLabel">
+            <dt>LAST HOME STATION CHANGE</dt>
+            <dd>
+              <time :datetime="clones.lastStationChangeAt ?? undefined">
+                {{ lastStationChangeLabel }}
+              </time>
+            </dd>
+          </div>
+          <div v-if="lastCloneJumpLabel">
             <dt>LAST CLONE JUMP</dt>
             <dd>
               <time :datetime="clones.lastCloneJumpAt ?? undefined">

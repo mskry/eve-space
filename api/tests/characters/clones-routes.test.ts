@@ -79,7 +79,12 @@ const freshness = {
   stale: false,
 }
 const clones = {
-  homeLocation: { locationId: 60_000_001, locationType: 'station', name: 'Jita IV - Moon 4' },
+  homeLocation: {
+    locationId: 60_000_001,
+    locationType: 'station',
+    name: 'Jita IV - Moon 4',
+    solarSystemSecurityStatus: 0.9,
+  },
   jumpClones: [
     {
       jumpCloneId: 11,

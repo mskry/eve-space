@@ -41,11 +41,9 @@ const {
   characterId,
   ownsCharacter,
 })
-const characterBreadcrumb = computed(() => {
-  const name = selectedCharacter.value?.name
-  if (!name) return 'CHARACTERS'
-  return ['CHARACTERS', name, characterSectionLabel.value].filter(Boolean).join(' / ')
-})
+const characterBreadcrumb = computed(() =>
+  ['CHARACTER', characterSectionLabel.value].filter(Boolean).join(' / '),
+)
 const reauthorizeStatus = computed<ReauthorizeStatus>(() => {
   const status = route.query.reauthorize
   return status === 'success' || status === 'cancelled' || status === 'error' ? status : ''
@@ -162,7 +160,7 @@ useHead({
         <NuxtLink class="character-shell-back" to="/characters">← ALL CHARACTERS</NuxtLink>
         <div class="character-shell-identity">
           <span
-            class="character-shell-portrait"
+            class="character-shell-portrait character-shell-portrait--large"
             :style="{
               viewTransitionName: characterPortraitViewTransitionName(
                 selectedCharacter.characterId,
@@ -172,9 +170,9 @@ useHead({
             <UiEveImage
               kind="character"
               :id="selectedCharacter.characterId"
-              :dimension="72"
-              :width="72"
-              :height="72"
+              :dimension="96"
+              :width="96"
+              :height="96"
               loading="eager"
               decoding="async"
               alt=""
@@ -194,12 +192,37 @@ useHead({
               </span>
               <UiMainCharacterMark v-if="selectedCharacter.isMain" variant="icon" />
             </h1>
-            <p>
-              {{ selectedCharacter.corporation.name }}
-              <template v-if="selectedCharacter.alliance">
-                / {{ selectedCharacter.alliance.name }}
-              </template>
-            </p>
+            <div class="character-shell-organization">
+              <NuxtLink
+                class="character-shell-organization-link"
+                :to="`/corporation/${selectedCharacter.corporation.id}`"
+              >
+                <UiEveImage
+                  kind="corporation"
+                  :id="selectedCharacter.corporation.id"
+                  :dimension="32"
+                  :width="32"
+                  :height="32"
+                  loading="lazy"
+                  decoding="async"
+                  :alt="`${selectedCharacter.corporation.name} corporation logo`"
+                />
+                <strong>{{ selectedCharacter.corporation.name }}</strong>
+              </NuxtLink>
+              <span v-if="selectedCharacter.alliance" class="character-shell-organization-alliance">
+                <UiEveImage
+                  kind="alliance"
+                  :id="selectedCharacter.alliance.id"
+                  :dimension="32"
+                  :width="32"
+                  :height="32"
+                  loading="lazy"
+                  decoding="async"
+                  :alt="`${selectedCharacter.alliance.name} alliance logo`"
+                />
+                <strong>{{ selectedCharacter.alliance.name }}</strong>
+              </span>
+            </div>
           </div>
         </div>
       </header>

@@ -4,17 +4,21 @@ import type { ImplantRackEntry } from '../../../utils/clone-derivation'
 import { formatImplantSlot, implantBonusLabel } from '../../../utils/clone-derivation'
 
 type RackImplant = CharacterImplants['implants'][number]
+type FilledRackEntry = ImplantRackEntry<RackImplant> & { implant: RackImplant }
 
-defineProps<{
+const props = defineProps<{
   entries: ImplantRackEntry<RackImplant>[]
 }>()
+
+const filledEntries = computed(() =>
+  props.entries.filter((entry): entry is FilledRackEntry => entry.implant !== null),
+)
 </script>
 
 <template>
   <ul class="character-clones-slot-list">
-    <li v-for="entry in entries" :key="entry.slot">
+    <li v-for="entry in filledEntries" :key="entry.slot">
       <CharacterClonesImplantInformationPopover
-        v-if="entry.implant"
         :name="entry.implant.name"
         :type-id="entry.implant.typeId"
       >
@@ -39,12 +43,6 @@ defineProps<{
           {{ implantBonusLabel(entry.implant) }}
         </span>
       </CharacterClonesImplantInformationPopover>
-      <p v-else class="character-clones-slot-empty">
-        <span class="character-clones-slot-index" aria-hidden="true">
-          {{ formatImplantSlot(entry.slot) }}
-        </span>
-        <span>Empty slot</span>
-      </p>
     </li>
   </ul>
 </template>

@@ -101,23 +101,52 @@ useHead({
       <header class="character-shell-header">
         <button class="character-shell-back" type="button" @click="$router.back()">← BACK</button>
         <div class="character-shell-identity">
-          <UiEveImage
-            kind="character"
-            :id="profile.id"
-            :dimension="72"
-            :width="72"
-            :height="72"
-            loading="eager"
-            decoding="async"
-            :alt="`${profile.name} character portrait`"
-          />
+          <span class="character-shell-portrait character-shell-portrait--large">
+            <UiEveImage
+              kind="character"
+              :id="profile.id"
+              :dimension="96"
+              :width="96"
+              :height="96"
+              loading="eager"
+              decoding="async"
+              :alt="`${profile.name} character portrait`"
+            />
+          </span>
           <div>
             <p class="ui-eyebrow">PUBLIC CHARACTER RECORD</p>
             <h1>{{ profile.name }}</h1>
-            <p>
-              {{ profile.corporation.name }}
-              <template v-if="profile.alliance"> / {{ profile.alliance.name }}</template>
-            </p>
+            <div class="character-shell-organization">
+              <NuxtLink
+                class="character-shell-organization-link"
+                :to="`/corporation/${profile.corporation.id}`"
+              >
+                <UiEveImage
+                  kind="corporation"
+                  :id="profile.corporation.id"
+                  :dimension="32"
+                  :width="32"
+                  :height="32"
+                  loading="lazy"
+                  decoding="async"
+                  :alt="`${profile.corporation.name} corporation logo`"
+                />
+                <strong>{{ profile.corporation.name }}</strong>
+              </NuxtLink>
+              <span v-if="profile.alliance" class="character-shell-organization-alliance">
+                <UiEveImage
+                  kind="alliance"
+                  :id="profile.alliance.id"
+                  :dimension="32"
+                  :width="32"
+                  :height="32"
+                  loading="lazy"
+                  decoding="async"
+                  :alt="`${profile.alliance.name} alliance logo`"
+                />
+                <strong>{{ profile.alliance.name }}</strong>
+              </span>
+            </div>
           </div>
         </div>
       </header>
@@ -128,8 +157,7 @@ useHead({
         <div class="identity-panel">
           <section
             class="overview-summary-grid"
-            :class="{ 'overview-summary-grid--single-affiliation': !profile.alliance }"
-            aria-label="Character biography and affiliations"
+            aria-label="Character biography, identity, and public record"
           >
             <div class="overview-bio-card">
               <span class="card-index">01</span>
@@ -139,119 +167,70 @@ useHead({
                 <template v-else>No biography recorded.</template>
               </div>
             </div>
-            <section class="affiliation-card">
+            <section class="character-overview-detail-card">
               <span class="card-index">02</span>
-              <p>CORPORATION</p>
-              <NuxtLink class="affiliation-identity" :to="`/corporation/${profile.corporation.id}`">
-                <UiEveImage
-                  kind="corporation"
-                  :id="profile.corporation.id"
-                  :dimension="48"
-                  :width="48"
-                  :height="48"
-                  loading="lazy"
-                  decoding="async"
-                  :alt="`${profile.corporation.name} corporation logo`"
-                />
-                <div class="affiliation-copy">
-                  <h2>
-                    <span class="affiliation-ticker">[{{ profile.corporation.ticker }}]</span>
-                    {{ profile.corporation.name }}
-                  </h2>
-                  <div class="affiliation-meta">
-                    <span
-                      >{{ profile.corporation.memberCount.toLocaleString('en-US') }} MEMBERS</span
-                    >
+              <section
+                class="character-overview-detail-section character-overview-detail-section--identity"
+              >
+                <h2>IDENTITY</h2>
+                <dl>
+                  <div class="character-detail-col-start">
+                    <dt>RACE</dt>
+                    <dd>{{ profile.race }}</dd>
                   </div>
-                </div>
-              </NuxtLink>
-            </section>
-            <section v-if="profile.alliance" class="affiliation-card">
-              <span class="card-index">03</span>
-              <p>ALLIANCE</p>
-              <div class="affiliation-identity">
-                <UiEveImage
-                  kind="alliance"
-                  :id="profile.alliance.id"
-                  :dimension="48"
-                  :width="48"
-                  :height="48"
-                  loading="lazy"
-                  decoding="async"
-                  :alt="`${profile.alliance.name} alliance logo`"
-                />
-                <div class="affiliation-copy">
-                  <h2>
-                    <span class="affiliation-ticker">[{{ profile.alliance.ticker }}]</span>
-                    {{ profile.alliance.name }}
-                  </h2>
-                  <div class="affiliation-meta"><span>ACTIVE AFFILIATION</span></div>
-                </div>
-              </div>
-            </section>
-          </section>
-
-          <section
-            class="character-detail-groups public-character-detail-groups"
-            aria-label="Public character details"
-          >
-            <section class="character-detail-group character-detail-group--identity">
-              <h2>IDENTITY</h2>
-              <dl>
-                <div class="character-detail-col-start">
-                  <dt>RACE</dt>
-                  <dd>{{ profile.race }}</dd>
-                </div>
-                <div class="character-detail-col-end">
-                  <dt>BLOODLINE</dt>
-                  <dd>{{ profile.bloodline }}</dd>
-                </div>
-                <div class="character-detail-col-start">
-                  <dt>DATE OF BIRTH</dt>
-                  <dd>{{ formattedBirthday }}</dd>
-                </div>
-                <div class="character-detail-col-end">
-                  <dt>GENDER</dt>
-                  <dd>
-                    <span class="gender-symbol" :title="profile.gender" aria-hidden="true">{{
-                      genderSymbol
-                    }}</span>
-                    <span class="sr-only">{{ profile.gender }}</span>
-                  </dd>
-                </div>
-              </dl>
-            </section>
-            <section class="character-detail-group character-detail-group--public-record">
-              <h2>PUBLIC RECORD</h2>
-              <dl>
-                <div>
-                  <dt>SECURITY STATUS</dt>
-                  <dd><SecurityStatus :value="profile.securityStatus" /></dd>
-                </div>
-                <div>
-                  <dt>ACHIEVEMENT SCORE</dt>
-                  <dd>{{ profile.achievementScore.toLocaleString('en-US') }}</dd>
-                </div>
-                <div v-if="profile.corporationTitle">
-                  <dt>CORPORATION TITLE</dt>
-                  <dd>{{ profile.corporationTitle }}</dd>
-                </div>
-                <div v-if="profile.factionId">
-                  <dt>FACTION WARFARE</dt>
-                  <dd>
-                    <UiEveImage
-                      kind="faction"
-                      :id="profile.factionId"
-                      :dimension="32"
-                      :width="32"
-                      :height="32"
-                      loading="lazy"
-                      decoding="async"
-                      alt="Faction militia emblem"
-                    />
-                  </dd>
-                </div>
-              </dl>
+                  <div class="character-detail-col-end">
+                    <dt>BLOODLINE</dt>
+                    <dd>{{ profile.bloodline }}</dd>
+                  </div>
+                  <div class="character-detail-col-start">
+                    <dt>DATE OF BIRTH</dt>
+                    <dd>{{ formattedBirthday }}</dd>
+                  </div>
+                  <div class="character-detail-col-end">
+                    <dt>GENDER</dt>
+                    <dd>
+                      <span class="gender-symbol" :title="profile.gender" aria-hidden="true">{{
+                        genderSymbol
+                      }}</span>
+                      <span class="sr-only">{{ profile.gender }}</span>
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+              <section
+                class="character-overview-detail-section character-overview-detail-section--public-record"
+              >
+                <h2>PUBLIC RECORD</h2>
+                <dl>
+                  <div>
+                    <dt>ACHIEVEMENT SCORE</dt>
+                    <dd>{{ profile.achievementScore.toLocaleString('en-US') }}</dd>
+                  </div>
+                  <div v-if="profile.corporationTitle">
+                    <dt>CORPORATION TITLE</dt>
+                    <dd>{{ profile.corporationTitle }}</dd>
+                  </div>
+                  <div v-if="profile.factionId">
+                    <dt>FACTION WARFARE</dt>
+                    <dd>
+                      <UiEveImage
+                        kind="faction"
+                        :id="profile.factionId"
+                        :dimension="32"
+                        :width="32"
+                        :height="32"
+                        loading="lazy"
+                        decoding="async"
+                        alt="Faction militia emblem"
+                      />
+                    </dd>
+                  </div>
+                  <div class="character-detail-wide">
+                    <dt>SECURITY STATUS</dt>
+                    <dd><SecurityStatus :value="profile.securityStatus" /></dd>
+                  </div>
+                </dl>
+              </section>
             </section>
           </section>
         </div>
@@ -264,16 +243,4 @@ useHead({
 @import url('~/assets/css/features/record-dossier.css');
 @import url('~/assets/css/features/character-record.css');
 @import url('~/assets/css/responsive/record.css');
-</style>
-
-<style scoped>
-.public-character-detail-groups {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-@media (max-width: 760px) {
-  .public-character-detail-groups {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

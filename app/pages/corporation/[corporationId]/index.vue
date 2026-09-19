@@ -5,11 +5,62 @@ const { corporation } = useCorporationRecord()
 const formattedFounded = computed(() =>
   corporation.value?.dateFounded ? formatBirthday(corporation.value.dateFounded) : '—',
 )
+const creator = computed(() => {
+  const record = corporation.value
+  if (!record || record.creatorId === null || record.creatorId === record.ceoId) return undefined
+  return { id: record.creatorId, name: record.creatorName ?? `ID ${record.creatorId}` }
+})
+const statusBadges = computed(() => {
+  const record = corporation.value
+  if (!record) return []
+
+  const badges = [
+    {
+      id: 'state',
+      label: record.state.toUpperCase(),
+      tone: record.state === 'active' ? 'on' : 'alert',
+    },
+  ]
+  if (record.type === 'npc_owned') {
+    badges.push({ id: 'type', label: 'NPC OWNED', tone: 'off' })
+    return badges
+  }
+
+  badges.push(
+    {
+      id: 'war',
+      label: record.warEligible ? 'WAR ELIGIBLE' : 'WAR INELIGIBLE',
+      tone: record.warEligible ? 'warn' : 'off',
+    },
+    {
+      id: 'friendly-fire',
+      label: `FRIENDLY FIRE ${record.friendlyFire.toUpperCase()}`,
+      tone: record.friendlyFire === 'legal' ? 'warn' : 'off',
+    },
+  )
+  return badges
+})
+
+function formatTaxRate(taxRate: number) {
+  return taxRate.toLocaleString('en-US', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 2,
+  })
+}
 </script>
 
 <template>
   <article v-if="corporation" class="dossier">
     <div class="identity-panel">
+      <div class="corporation-dossier-badges">
+        <span
+          v-for="badge in statusBadges"
+          :key="badge.id"
+          class="corporation-dossier-badge"
+          :data-tone="badge.tone"
+          >{{ badge.label }}</span
+        >
+      </div>
       <div class="corporation-body" aria-label="Corporation dossier">
         <div class="overview-bio-card corporation-bio">
           <span class="card-index">01</span>
@@ -22,127 +73,51 @@ const formattedFounded = computed(() =>
           </p>
         </div>
         <div class="corporation-side">
-          <section class="character-detail-group character-detail-group--membership">
+          <section class="character-detail-group character-detail-group--profile">
             <span class="card-index">02</span>
-            <h2>CORPORATION</h2>
+            <h2>PROFILE</h2>
             <dl>
-              <div class="character-detail-primary">
+              <div>
                 <dt>MEMBERS</dt>
                 <dd>{{ corporation.memberCount.toLocaleString('en-US') }}</dd>
               </div>
-              <div class="membership-founded">
+              <div>
                 <dt>FOUNDED</dt>
                 <dd>{{ formattedFounded }}</dd>
               </div>
-              <div
-                v-if="corporation.shares !== null && corporation.shares !== 0"
-                class="membership-shares"
-              >
+              <div>
+                <dt>ISK TAX</dt>
+                <dd>{{ formatTaxRate(corporation.taxRate) }}%</dd>
+              </div>
+              <div>
+                <dt>LP TAX</dt>
+                <dd>{{ formatTaxRate(corporation.loyaltyPointTaxRate) }}%</dd>
+              </div>
+              <div v-if="corporation.shares !== null && corporation.shares !== 0">
                 <dt>SHARES</dt>
                 <dd>{{ corporation.shares.toLocaleString('en-US') }}</dd>
               </div>
-              <div v-if="corporation.homeStationId" class="membership-home">
+              <div v-if="creator" class="profile-wide">
+                <dt>CREATOR</dt>
+                <dd>
+                  <NuxtLink class="corporation-character-link" :to="`/character/${creator.id}`">
+                    <UiEveImage
+                      kind="character"
+                      :id="creator.id"
+                      :dimension="32"
+                      :width="32"
+                      :height="32"
+                      loading="lazy"
+                      decoding="async"
+                      :alt="`${creator.name} portrait`"
+                    />
+                    <span>{{ creator.name }}</span>
+                  </NuxtLink>
+                </dd>
+              </div>
+              <div v-if="corporation.homeStationId" class="profile-wide">
                 <dt>HOME STATION</dt>
                 <dd>{{ corporation.homeStationName ?? corporation.homeStationId }}</dd>
-              </div>
-            </dl>
-          </section>
-          <section class="character-detail-group character-detail-group--status">
-            <span class="card-index">03</span>
-            <h2>STATUS</h2>
-            <dl>
-              <div>
-                <dt>TYPE</dt>
-                <dd class="corporation-indicator" :data-status="corporation.type">
-                  {{ corporation.type === 'player_owned' ? 'PLAYER OWNED' : 'NPC OWNED' }}
-                </dd>
-              </div>
-              <div>
-                <dt>STATE</dt>
-                <dd class="corporation-indicator" :data-status="corporation.state">
-                  {{ corporation.state.toUpperCase() }}
-                </dd>
-              </div>
-              <div>
-                <dt>FRIENDLY FIRE</dt>
-                <dd class="corporation-indicator" :data-status="corporation.friendlyFire">
-                  {{ corporation.friendlyFire.toUpperCase() }}
-                </dd>
-              </div>
-              <div>
-                <dt>WAR ELIGIBLE</dt>
-                <dd
-                  class="corporation-indicator"
-                  :data-status="corporation.warEligible ? 'eligible' : 'ineligible'"
-                >
-                  {{ corporation.warEligible ? 'YES' : 'NO' }}
-                </dd>
-              </div>
-            </dl>
-          </section>
-          <section class="character-detail-group character-detail-group--leadership">
-            <span class="card-index">04</span>
-            <h2>LEADERSHIP</h2>
-            <dl>
-              <div class="leadership-ceo">
-                <dt>CEO</dt>
-                <dd class="corporation-ceo">
-                  <NuxtLink
-                    v-if="corporation.ceoId !== null"
-                    class="corporation-character-link"
-                    :to="`/character/${corporation.ceoId}`"
-                  >
-                    <UiEveImage
-                      kind="character"
-                      :id="corporation.ceoId"
-                      :dimension="32"
-                      :width="32"
-                      :height="32"
-                      loading="lazy"
-                      decoding="async"
-                      :alt="`${corporation.ceoName ?? `CEO ${corporation.ceoId}`} portrait`"
-                    />
-                    <span>{{ corporation.ceoName ?? `ID ${corporation.ceoId}` }}</span>
-                  </NuxtLink>
-                  <span v-else>—</span>
-                </dd>
-              </div>
-              <div v-if="corporation.creatorId !== null" class="leadership-creator">
-                <dt>CREATOR</dt>
-                <dd class="corporation-ceo">
-                  <NuxtLink
-                    class="corporation-character-link"
-                    :to="`/character/${corporation.creatorId}`"
-                  >
-                    <UiEveImage
-                      kind="character"
-                      :id="corporation.creatorId"
-                      :dimension="32"
-                      :width="32"
-                      :height="32"
-                      loading="lazy"
-                      decoding="async"
-                      :alt="`${corporation.creatorName ?? `Creator ${corporation.creatorId}`} portrait`"
-                    />
-                    <span>{{ corporation.creatorName ?? `ID ${corporation.creatorId}` }}</span>
-                  </NuxtLink>
-                </dd>
-              </div>
-              <div v-if="corporation.allianceId" class="leadership-alliance">
-                <dt>ALLIANCE</dt>
-                <dd class="corporation-alliance">
-                  <UiEveImage
-                    kind="alliance"
-                    :id="corporation.allianceId"
-                    :dimension="32"
-                    :width="32"
-                    :height="32"
-                    loading="lazy"
-                    decoding="async"
-                    :alt="`${corporation.allianceName ?? `Alliance ${corporation.allianceId}`} logo`"
-                  />
-                  <span>{{ corporation.allianceName ?? `ID ${corporation.allianceId}` }}</span>
-                </dd>
               </div>
             </dl>
           </section>
@@ -157,6 +132,40 @@ const formattedFounded = computed(() =>
 </style>
 
 <style scoped>
+.corporation-dossier-badges {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4375rem;
+}
+
+.corporation-dossier-badge {
+  padding: 0.375rem 0.625rem;
+  border: 0.0625rem solid var(--ui-border-strong);
+  color: var(--ui-text-muted);
+  font: 700 0.625rem/1 var(--ui-font-mono);
+  letter-spacing: 0.14em;
+}
+
+.corporation-dossier-badge[data-tone='on'] {
+  border-color: color-mix(in srgb, var(--ui-success) 42%, transparent);
+  background: color-mix(in srgb, var(--ui-success) 8%, transparent);
+  color: var(--ui-success);
+}
+
+.corporation-dossier-badge[data-tone='warn'] {
+  border-color: color-mix(in srgb, var(--ui-warning) 44%, transparent);
+  background: color-mix(in srgb, var(--ui-warning) 8%, transparent);
+  color: var(--ui-warning);
+}
+
+.corporation-dossier-badge[data-tone='alert'] {
+  border-color: color-mix(in srgb, var(--ui-danger) 44%, transparent);
+  background: color-mix(in srgb, var(--ui-danger) 8%, transparent);
+  color: var(--ui-danger);
+}
+
 .corporation-body {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
@@ -182,83 +191,27 @@ const formattedFounded = computed(() =>
   border-right: 0;
 }
 
-.character-detail-group--membership,
-.character-detail-group--status,
-.character-detail-group--leadership {
+.character-detail-group--profile {
   position: relative;
 }
 
-.character-detail-group--membership dl,
-.character-detail-group--status dl,
-.character-detail-group--leadership dl {
+.character-detail-group--profile dl {
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
 
-.character-detail-group--membership .character-detail-primary,
-.character-detail-group--membership .membership-home,
-.character-detail-group--leadership .leadership-alliance {
-  grid-column: 1 / -1;
-}
-
-.character-detail-group--membership .membership-founded,
-.character-detail-group--leadership .leadership-ceo {
-  grid-column: 1;
+.character-detail-group--profile dl > div:nth-child(odd) {
   padding-right: 0.75rem;
 }
 
-.character-detail-group--membership .membership-shares,
-.character-detail-group--leadership .leadership-creator {
-  grid-column: 2;
+.character-detail-group--profile dl > div:nth-child(even) {
   padding-left: 0.75rem;
 }
 
-.character-detail-group--status dl > div:nth-child(odd) {
-  padding-right: 0.75rem;
-}
-
-.character-detail-group--status dl > div:nth-child(even) {
-  padding-left: 0.75rem;
-}
-
-.corporation-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-family: var(--ui-font-mono);
-  letter-spacing: 0.06em;
-}
-
-.corporation-indicator::before {
-  width: 0.4375rem;
-  height: 0.4375rem;
-  border-radius: 50%;
-  background: var(--ui-primary);
-  content: '';
-}
-
-.corporation-indicator[data-status='npc_owned']::before {
-  background: var(--ui-text-muted);
-}
-
-.corporation-indicator[data-status='closed']::before,
-.corporation-indicator[data-status='eligible']::before,
-.corporation-indicator[data-status='legal']::before {
-  background: var(--ui-warning);
-}
-
-.corporation-indicator[data-status='active']::before,
-.corporation-indicator[data-status='illegal']::before,
-.corporation-indicator[data-status='ineligible']::before {
-  background: var(--ui-success);
-}
-
-.character-detail-group--membership .membership-founded:has(+ .membership-home),
-.character-detail-group--leadership
-  .leadership-ceo:not(:has(+ .leadership-creator)):has(+ .leadership-alliance),
-.character-detail-group--leadership .leadership-ceo:last-child {
+.character-detail-group--profile .profile-wide {
   grid-column: 1 / -1;
   padding-right: 0;
+  padding-left: 0;
 }
 
 .corporation-url {
@@ -268,15 +221,10 @@ const formattedFounded = computed(() =>
   word-break: break-all;
 }
 
-.corporation-ceo,
-.corporation-alliance,
 .corporation-character-link {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.corporation-character-link {
   color: inherit;
   text-decoration: none;
 }
@@ -290,12 +238,15 @@ const formattedFounded = computed(() =>
   outline-offset: 0.1875rem;
 }
 
-.corporation-ceo img,
-.corporation-alliance img {
+.corporation-character-link img {
   border: 0.0625rem solid var(--ui-border);
 }
 
 @media (max-width: 56.25rem) {
+  .corporation-dossier-badges {
+    justify-content: flex-start;
+  }
+
   .corporation-body {
     grid-template-columns: 1fr;
     border-bottom: 0;

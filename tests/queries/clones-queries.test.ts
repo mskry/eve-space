@@ -253,7 +253,12 @@ describe('character clone queries', () => {
 
 function cloneResponse(homeName: string, stale = false) {
   return {
-    homeLocation: { locationId: 60_000_001, locationType: 'station' as const, name: homeName },
+    homeLocation: {
+      locationId: 60_000_001,
+      locationType: 'station' as const,
+      name: homeName,
+      solarSystemSecurityStatus: 0.9,
+    },
     jumpClones: [
       {
         jumpCloneId: 11,

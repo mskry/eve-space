@@ -40,15 +40,6 @@ const capacity = computed(() =>
       :presentation="implantsPresentation"
       @retry="$emit('retryImplants')"
     />
-    <CharacterClonesHomeLocation
-      v-if="clones"
-      :home-location="clones.homeLocation"
-      :last-station-change-at="clones.lastStationChangeAt"
-    />
-    <CharacterClonesStoredClones
-      v-if="clones"
-      :jump-clones="clones.jumpClones"
-      :capacity="capacity"
-    />
+    <CharacterClonesStoredClones v-if="clones" :jump-clones="clones.jumpClones" />
   </div>
 </template>
