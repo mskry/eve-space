@@ -152,6 +152,67 @@ describe('Assets workspace resource states', () => {
     ).not.toContain('Route:')
   })
 
+  it('sorts locations by route jumps and leaves unavailable routes last', async () => {
+    const wrapper = await mountWorkspace(
+      collection([
+        asset(1, {
+          locationName: 'Alpha unavailable',
+          locationId: 60_000_001,
+          solarSystemId: 30_000_145,
+        }),
+        asset(2, {
+          locationName: 'Bravo two jumps',
+          locationId: 60_000_002,
+          solarSystemId: 30_000_144,
+        }),
+        asset(3, {
+          locationName: 'Charlie same system',
+          locationId: 60_000_003,
+          solarSystemId: 30_000_142,
+        }),
+        asset(4, {
+          locationName: 'Delta one jump',
+          locationId: 60_000_004,
+          solarSystemId: 30_000_143,
+        }),
+      ]),
+      state(),
+      true,
+      new Map([
+        [30_000_142, 0],
+        [30_000_143, 1],
+        [30_000_144, 2],
+      ]),
+    )
+
+    const sort = wrapper.get('button[aria-label="Sort by"]')
+    await sort.trigger('pointerdown', {
+      button: 0,
+      ctrlKey: false,
+      pageX: 0,
+      pageY: 0,
+      pointerId: 1,
+      pointerType: 'mouse',
+    })
+    await settle()
+    const jumpsOption = [...document.querySelectorAll<HTMLElement>('[role="option"]')].find(
+      (option) => option.textContent?.includes('Jumps'),
+    )
+    expect(jumpsOption).toBeDefined()
+    jumpsOption?.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1 }),
+    )
+    await settle()
+
+    expect(sort.text()).toContain('Jumps')
+    expect(wrapper.findAll('.assets-location-name').map((location) => location.text())).toEqual([
+      'Charlie same system',
+      'Delta one jump',
+      'Bravo two jumps',
+      'Alpha unavailable',
+    ])
+  })
+
   it('keeps stale retained data primary and reports refresh and partial enrichment context', async () => {
     const wrapper = await mountWorkspace(
       collection([asset(1)], {

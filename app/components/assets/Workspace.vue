@@ -19,6 +19,7 @@ import { buildAssetHierarchy } from '../../utils/assets-hierarchy'
 
 type AssetSortKey =
   | 'item'
+  | 'jumps'
   | 'quantity'
   | 'group'
   | 'category'
@@ -49,7 +50,10 @@ const columns: { key: AssetSortKey; label: string; numeric?: boolean }[] = [
   { key: 'totalVolume', label: 'Volume', numeric: true },
   { key: 'unitVolume', label: 'Unit vol.', numeric: true },
 ]
-const sortOptions = columns.map((column) => ({ value: column.key, label: column.label }))
+const sortOptions = [
+  ...columns.map((column) => ({ value: column.key, label: column.label })),
+  { value: 'jumps', label: 'Jumps' },
+]
 const identityProperties = {
   type: { id: 'typeId', label: 'typeName' },
   group: { id: 'groupId', label: 'groupName' },
@@ -64,6 +68,11 @@ const hierarchy = computed(
   () => props.hierarchy ?? buildAssetHierarchy(props.collection?.assets ?? []),
 )
 const filtered = computed(() => filterAssetHierarchy(hierarchy.value, filters.value))
+const sortedGroups = computed(() =>
+  sortKey.value === 'jumps'
+    ? filtered.value.groups.toSorted(compareLocationGroups)
+    : filtered.value.groups,
+)
 const activeFilters = computed(() => hasActiveAssetFilters(filters.value))
 const containerExpansion = computed<ReadonlySet<number>>(() => {
   return new Set(
@@ -189,9 +198,30 @@ function compareRows(left: AssetHierarchyRow, right: AssetHierarchyRow) {
   return sortDescending.value ? -resolved : resolved
 }
 
+function compareLocationGroups(left: AssetLocationGroup, right: AssetLocationGroup) {
+  const leftJumps = routeJumps(left)
+  const rightJumps = routeJumps(right)
+  if (leftJumps === null && rightJumps === null)
+    return left.label.localeCompare(right.label, 'en') || left.key.localeCompare(right.key, 'en')
+  if (leftJumps === null) return 1
+  if (rightJumps === null) return -1
+  return (
+    leftJumps - rightJumps ||
+    left.label.localeCompare(right.label, 'en') ||
+    left.key.localeCompare(right.key, 'en')
+  )
+}
+
+function routeJumps(group: AssetLocationGroup) {
+  return group.solarSystemId === null
+    ? null
+    : (props.routeJumpsBySystemId?.get(group.solarSystemId) ?? null)
+}
+
 function sortValue(row: AssetHierarchyRow) {
   const asset = row.asset
-  if (sortKey.value === 'item') return asset.customName?.trim() || asset.typeName
+  if (sortKey.value === 'item' || sortKey.value === 'jumps')
+    return asset.customName?.trim() || asset.typeName
   if (sortKey.value === 'quantity') return asset.quantity
   if (sortKey.value === 'group') return asset.groupName
   if (sortKey.value === 'category') return asset.categoryName
@@ -256,7 +286,7 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
             <h2 id="assets-results-title" class="sr-only">Inventory by location</h2>
 
             <UiStatePanel
-              v-if="filtered.groups.length === 0"
+              v-if="sortedGroups.length === 0"
               class="assets-filtered-empty"
               compact
               role="status"
@@ -297,16 +327,12 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
                 </thead>
 
                 <AssetsLocationSection
-                  v-for="group in filtered.groups"
+                  v-for="group in sortedGroups"
                   :key="group.key"
                   :container-expansion="containerExpansion"
                   :expanded="isLocationExpanded(group.key)"
                   :group="group"
-                  :jump-count="
-                    group.solarSystemId === null
-                      ? null
-                      : (routeJumpsBySystemId?.get(group.solarSystemId) ?? null)
-                  "
+                  :jump-count="routeJumps(group)"
                   :visible="visibleLocation(group)"
                   @item-information="emit('itemInformation', $event)"
                   @toggle-container="toggleContainer"
