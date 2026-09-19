@@ -193,6 +193,12 @@ const readMailEvidenceOutputSchema = z.strictObject({
   headers: boundedRecordListSchema,
   contents: boundedRecordListSchema,
 })
+
+export type MemberAuditTrainedSkillsEvidence = z.infer<typeof readTrainedSkillsEvidenceOutputSchema>
+export type MemberAuditAssetEvidence = z.infer<typeof nullableAssetEnvelopeSchema>
+export type MemberAuditWalletEvidence = z.infer<typeof readWalletEvidenceOutputSchema>
+export type MemberAuditMailEvidence = z.infer<typeof readMailEvidenceOutputSchema>
+
 const materializeCurrentSnapshotInputSchema = z.discriminatedUnion('resourceId', [
   z.strictObject({
     resourceId: z.literal('trained-skills'),

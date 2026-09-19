@@ -1,21 +1,14 @@
-import {
-  isPlatformReviewerAccountSearchCursor,
-  isPlatformReviewerAccountSearchQuery,
-  type PlatformReviewerSearchRouteEnv,
-  type PlatformReviewerTargetRouteEnv,
-} from '@eve-space/platform-module-contract/server'
+import type { PlatformReviewerTargetRouteEnv } from '@eve-space/platform-module-contract/server'
 import { zValidator } from '@eve-space/platform-module-server'
 import { Hono } from 'hono'
 import { z } from 'zod'
+import type {
+  MemberAuditAssetEvidence,
+  MemberAuditMailEvidence,
+  MemberAuditTrainedSkillsEvidence,
+  MemberAuditWalletEvidence,
+} from './persistence.js'
 
-const searchQuery = z.object({
-  query: z.string().trim().refine(isPlatformReviewerAccountSearchQuery).optional(),
-  corporationId: z.coerce.number().int().positive().optional(),
-  complianceState: z.enum(['pending', 'compliant', 'review_required', 'suspended']).optional(),
-  blocked: z.stringbool().optional(),
-  cursor: z.string().refine(isPlatformReviewerAccountSearchCursor).optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(25),
-})
 const actionReason = z.string().trim().min(1).max(2000)
 const groupParams = z.object({ groupId: z.uuid() })
 const groupAssignmentParams = z.object({ groupId: z.uuid(), assignmentId: z.uuid() })
@@ -29,18 +22,6 @@ const actionReasonBody = z.object({ reason: actionReason }).strict()
 
 type GroupCommandIds = readonly ['assign-ordinary-group', 'revoke-ordinary-group']
 type BlockCommandIds = readonly ['block-member', 'unblock-member']
-
-export function memberSearchRoutes(_capabilities: object) {
-  return new Hono<PlatformReviewerSearchRouteEnv>().get(
-    '/',
-    zValidator('query', searchQuery),
-    async (context) =>
-      context.json(
-        await context.var.platform.reviewerSearch.search(context.req.valid('query')),
-        200,
-      ),
-  )
-}
 
 export function memberSummaryRoutes(_capabilities: object) {
   return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
@@ -68,10 +49,15 @@ export function memberSkillsRoutes(_capabilities: object) {
       'trained-skills',
       characterId,
     )
-    return context.json({
-      trainedSkills,
-      evidence: await readReviewerEvidence(context.var.platform),
-    })
+    return context.json(
+      {
+        trainedSkills,
+        evidence: await readReviewerEvidence<MemberAuditTrainedSkillsEvidence>(
+          context.var.platform,
+        ),
+      },
+      200,
+    )
   })
 }
 
@@ -79,10 +65,13 @@ export function memberAssetsRoutes(_capabilities: object) {
   return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
     const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
     const status = await context.var.platform.collectionStatus.read('assets', characterId)
-    return context.json({
-      status,
-      evidence: await readReviewerEvidence(context.var.platform),
-    })
+    return context.json(
+      {
+        status,
+        evidence: await readReviewerEvidence<MemberAuditAssetEvidence>(context.var.platform),
+      },
+      200,
+    )
   })
 }
 
@@ -94,12 +83,15 @@ export function memberWalletRoutes(_capabilities: object) {
       context.var.platform.collectionStatus.read('wallet-journal', characterId),
       context.var.platform.collectionStatus.read('wallet-transactions', characterId),
     ])
-    return context.json({
-      balance,
-      journal,
-      transactions,
-      evidence: await readReviewerEvidence(context.var.platform, 500),
-    })
+    return context.json(
+      {
+        balance,
+        journal,
+        transactions,
+        evidence: await readReviewerEvidence<MemberAuditWalletEvidence>(context.var.platform, 500),
+      },
+      200,
+    )
   })
 }
 
@@ -110,18 +102,24 @@ export function memberMailRoutes(_capabilities: object) {
       context.var.platform.collectionStatus.read('mail-headers', characterId),
       context.var.platform.collectionStatus.read('mail-details', characterId),
     ])
-    return context.json({
-      headers,
-      details,
-      evidence: await readReviewerEvidence(context.var.platform, 500),
-    })
+    return context.json(
+      {
+        headers,
+        details,
+        evidence: await readReviewerEvidence<MemberAuditMailEvidence>(context.var.platform, 500),
+      },
+      200,
+    )
   })
 }
 
 export function memberGroupRoutes(_capabilities: object) {
   return new Hono<PlatformReviewerTargetRouteEnv<GroupCommandIds>>()
+    .get('/', (context) =>
+      context.json({ groups: context.var.platform.reviewerTarget.groups }, 200),
+    )
     .post(
-      '/',
+      '/:groupId',
       zValidator('param', groupParams),
       zValidator('json', assignGroupBody),
       async (context) =>
@@ -134,7 +132,7 @@ export function memberGroupRoutes(_capabilities: object) {
         ),
     )
     .delete(
-      '/assignments/:assignmentId',
+      '/:groupId/assignments/:assignmentId',
       zValidator('param', groupAssignmentParams),
       zValidator('json', actionReasonBody),
       async (context) => {
@@ -153,6 +151,7 @@ export function memberGroupRoutes(_capabilities: object) {
 
 export function memberBlockRoutes(_capabilities: object) {
   return new Hono<PlatformReviewerTargetRouteEnv<BlockCommandIds>>()
+    .get('/', (context) => context.json({ block: context.var.platform.reviewerTarget.block }, 200))
     .post('/', zValidator('json', actionReasonBody), async (context) =>
       context.json(
         await context.var.platform.organizationCommands.blockMember(context.req.valid('json')),
@@ -175,10 +174,10 @@ function selectedCharacterId(
   return target.selection.characterId
 }
 
-function readReviewerEvidence(
+function readReviewerEvidence<Evidence>(
   platform: PlatformReviewerTargetRouteEnv['Variables']['platform'],
   limit?: number,
-) {
+): Promise<Evidence> {
   if (!platform.evidence) throw new Error('Reviewer evidence capability is unavailable')
-  return platform.evidence.read(limit === undefined ? undefined : { limit })
+  return platform.evidence.read(limit === undefined ? undefined : { limit }) as Promise<Evidence>
 }

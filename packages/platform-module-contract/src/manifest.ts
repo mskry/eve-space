@@ -35,6 +35,7 @@ export interface PlatformModuleRelease {
 export interface PlatformReviewerContribution
   extends PlatformReviewerRouteLink, PlatformReviewerPanelDeclaration {
   readonly id: string
+  readonly directoryPermission?: string
 }
 
 export interface PlatformRouteContribution

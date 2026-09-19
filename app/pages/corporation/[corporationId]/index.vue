@@ -19,6 +19,10 @@ const statusBadges = computed(() => {
   const record = corporation.value
   if (!record) return []
 
+  if (record.type === 'npc_owned') {
+    return [{ id: 'type', label: 'NPC', tone: 'off' }]
+  }
+
   const badges = [
     {
       id: 'state',
@@ -26,10 +30,6 @@ const statusBadges = computed(() => {
       tone: record.state === 'active' ? 'on' : 'alert',
     },
   ]
-  if (record.type === 'npc_owned') {
-    badges.push({ id: 'type', label: 'NPC OWNED', tone: 'off' })
-    return badges
-  }
 
   badges.push(
     {

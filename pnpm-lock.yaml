@@ -443,6 +443,9 @@ importers:
       '@nuxt/schema':
         specifier: 'catalog:'
         version: 4.5.2
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.41(@typescript/typescript6@6.0.2)
     devDependencies:
       '@vitest/coverage-v8':
         specifier: catalog:vitest4

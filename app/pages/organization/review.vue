@@ -123,23 +123,23 @@ const selectedContributionIdentity = computed(
       </UiStatePanel>
 
       <OrganizationReviewContributionNavigation
-        v-if="workspace.selectedContribution.value"
+        v-if="workspace.selectedMember.value"
         :model-value="selectedContributionIdentity"
         :contributions="workspace.availableContributions.value"
         @update:model-value="workspace.selectContribution"
       >
         <OrganizationReviewPanelHost
-          v-if="workspace.selectedTarget.value"
+          v-if="workspace.selectedContribution.value && workspace.selectedTarget.value"
           :contribution="workspace.selectedContribution.value"
           :focus-request="workspace.panelFocusRequest.value"
           :organization-version="workspace.organizationVersion.value"
           :query-access="workspace.queryAccess.value"
           :target="workspace.selectedTarget.value"
         />
-        <UiStatePanel v-else compact code="SELECT A MEMBER" title="Choose a managed member">
-          <p>A panel loads only after a current managed target is selected.</p>
-        </UiStatePanel>
       </OrganizationReviewContributionNavigation>
+      <UiStatePanel v-else compact code="SELECT A MEMBER" title="Choose a managed member">
+        <p>Private panels remain unloaded until you select a member and a review capability.</p>
+      </UiStatePanel>
     </template>
   </div>
 </template>

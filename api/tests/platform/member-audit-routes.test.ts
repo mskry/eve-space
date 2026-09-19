@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   createCommands: vi.fn(),
   createEvidence: vi.fn(),
   createEvidenceSummary: vi.fn(),
-  createReviewerSearch: vi.fn(),
   evidenceRead: vi.fn(),
   evidenceSummaryRead: vi.fn(),
   enabled: true,
@@ -20,13 +19,26 @@ const mocks = vi.hoisted(() => ({
   recordSensitiveAccess: vi.fn(),
   resolveTarget: vi.fn(),
   revokeOrdinaryGroup: vi.fn(),
-  search: vi.fn(),
+  searchDirectory: vi.fn(),
   unblockMember: vi.fn(),
 }))
 
 vi.mock('../../src/auth/session-store.js', () => ({ findSession: mocks.findSession }))
 vi.mock('../../src/platform/module-settings.js', () => ({
   isInstalledModuleContributionEnabled: vi.fn(async () => mocks.enabled),
+  loadModuleRuntimeState: vi.fn(async () => ({
+    enabledModuleIds: ['member-audit'],
+    enabledSections: ['overview', 'skills', 'assets', 'wallet', 'mail', 'access-management'].map(
+      (sectionId) => ({
+        moduleId: 'member-audit',
+        sectionId,
+        kind: sectionId === 'access-management' ? 'access-management' : 'sensitive-evidence',
+        disclosureVersion: 1,
+        activationVersion: 1,
+      }),
+    ),
+    shellNavigationOrder: { dashboard: [], character: [] },
+  })),
 }))
 vi.mock('../../src/middleware/organization-session.js', () => ({
   loadOrganizationSession: async (
@@ -44,8 +56,9 @@ vi.mock('../../src/organization/module-authorization.js', () => ({
 vi.mock('../../src/organization/reviewer-target.js', () => ({
   resolveOrganizationReviewerTarget: mocks.resolveTarget,
 }))
-vi.mock('../../src/platform/reviewer-search-capabilities.js', () => ({
-  createPlatformReviewerAccountSearch: mocks.createReviewerSearch,
+vi.mock('../../src/organization/reviewer-account-search.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/organization/reviewer-account-search.js')>()),
+  searchManagedOrganizationDirectory: mocks.searchDirectory,
 }))
 vi.mock('../../src/platform/module-reviewer-collection-status-capabilities.js', () => ({
   createPlatformReviewerCollectionStatusReads: vi.fn(() => ({
@@ -175,13 +188,12 @@ describe('full-root Member Audit routes', () => {
                 },
         }) satisfies PlatformReviewerTargetContext,
     )
-    mocks.search.mockResolvedValue({
+    mocks.searchDirectory.mockResolvedValue({
       organizationVersion: 7,
       status: 'available',
       items: [],
       nextCursor: null,
     })
-    mocks.createReviewerSearch.mockReturnValue({ search: mocks.search })
     mocks.evidenceSummaryRead.mockResolvedValue([
       { characterId, sections: [{ sectionId: 'skills', resources: [] }] },
     ])
@@ -223,7 +235,7 @@ describe('full-root Member Audit routes', () => {
   })
 
   test('mounts bounded search, summary, and independently authorized detail routes', async () => {
-    const search = await app.request('/api/modules/member-audit/search?limit=25', {
+    const search = await app.request('/api/organization/review/members?limit=25', {
       headers: sessionHeaders,
     })
     expect(search.status).toBe(200)

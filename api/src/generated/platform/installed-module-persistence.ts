@@ -442,11 +442,7 @@ export function createModule0Route0Persistence(_invoke: PlatformPersistenceOpera
   return {}
 }
 
-export function createModule0Route1Persistence(_invoke: PlatformPersistenceOperationInvoker) {
-  return {}
-}
-
-export function createModule0Route2Persistence(invoke: PlatformPersistenceOperationInvoker) {
+export function createModule0Route1Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readTrainedSkillsEvidence: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[0]!,
@@ -455,7 +451,7 @@ export function createModule0Route2Persistence(invoke: PlatformPersistenceOperat
   }
 }
 
-export function createModule0Route3Persistence(invoke: PlatformPersistenceOperationInvoker) {
+export function createModule0Route2Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readAssetEvidence: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[3]!,
@@ -464,7 +460,7 @@ export function createModule0Route3Persistence(invoke: PlatformPersistenceOperat
   }
 }
 
-export function createModule0Route4Persistence(invoke: PlatformPersistenceOperationInvoker) {
+export function createModule0Route3Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readWalletEvidence: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[4]!,
@@ -473,7 +469,7 @@ export function createModule0Route4Persistence(invoke: PlatformPersistenceOperat
   }
 }
 
-export function createModule0Route5Persistence(invoke: PlatformPersistenceOperationInvoker) {
+export function createModule0Route4Persistence(invoke: PlatformPersistenceOperationInvoker) {
   return {
     readMailEvidence: bindPlatformPersistenceOperation(
       installedModulePersistenceOperations[5]!,
@@ -482,11 +478,11 @@ export function createModule0Route5Persistence(invoke: PlatformPersistenceOperat
   }
 }
 
-export function createModule0Route6Persistence(_invoke: PlatformPersistenceOperationInvoker) {
+export function createModule0Route5Persistence(_invoke: PlatformPersistenceOperationInvoker) {
   return {}
 }
 
-export function createModule0Route7Persistence(_invoke: PlatformPersistenceOperationInvoker) {
+export function createModule0Route6Persistence(_invoke: PlatformPersistenceOperationInvoker) {
   return {}
 }
 
@@ -867,14 +863,13 @@ export function createModule1Resource6MaterializationPersistence(
 
 export const installedModulePersistenceCapabilityFactories = {
   routes: {
-    'member-audit/member-search': createModule0Route0Persistence,
-    'member-audit/member-summary': createModule0Route1Persistence,
-    'member-audit/skills-detail': createModule0Route2Persistence,
-    'member-audit/assets-detail': createModule0Route3Persistence,
-    'member-audit/wallet-detail': createModule0Route4Persistence,
-    'member-audit/mail-detail': createModule0Route5Persistence,
-    'member-audit/group-actions': createModule0Route6Persistence,
-    'member-audit/block-actions': createModule0Route7Persistence,
+    'member-audit/member-summary': createModule0Route0Persistence,
+    'member-audit/skills-detail': createModule0Route1Persistence,
+    'member-audit/assets-detail': createModule0Route2Persistence,
+    'member-audit/wallet-detail': createModule0Route3Persistence,
+    'member-audit/mail-detail': createModule0Route4Persistence,
+    'member-audit/group-actions': createModule0Route5Persistence,
+    'member-audit/block-actions': createModule0Route6Persistence,
     'organization-activity/activity-details': createModule1Route0Persistence,
     'organization-activity/activity-participation': createModule1Route1Persistence,
   },

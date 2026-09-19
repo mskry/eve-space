@@ -9,11 +9,12 @@ import {
   readdir,
   realpath,
   rm,
+  symlink,
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { verifyInstalledModuleArtifacts } from '@eve-space/platform-module-conformance'
 import {
@@ -22,6 +23,7 @@ import {
 } from '../../scripts/module-registry/generator'
 
 const packageManager = 'pnpm@11.27.0'
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const moduleId = 'synthetic'
 const version = '1.2.3'
 const packageNames = {
@@ -42,6 +44,7 @@ interface PackedRelease {
 
 interface InstalledHost {
   readonly root: string
+  readonly apiPackageName: string
   readonly lifecycleMarker: string
   readonly packages: Readonly<Record<PackageRole, string>>
 }
@@ -71,6 +74,11 @@ describe.sequential('external module archives', () => {
     const inventory = files.get('api/src/generated/platform/installed-module-inventory.ts') ?? ''
     const reviewerCatalog =
       files.get('api/src/generated/platform/installed-reviewer-contributions.ts') ?? ''
+    const generatedOutput = [...files.values()].join('\n')
+    const generatedBrowserOutput = [...files]
+      .filter(([path]) => path.startsWith('generated/'))
+      .map(([, source]) => source)
+      .join('\n')
     const serverModule = (await import(pathToFileURL(release.packages.server.entryPath).href)) as {
       syntheticRoutes(): { readonly source: string }
     }
@@ -91,7 +99,7 @@ describe.sequential('external module archives', () => {
     for (const artifact of Object.values(release.packages))
       expect(artifact.integrity).toMatch(/^sha512-/)
     expect(serverModule.syntheticRoutes()).toEqual({ source: 'external-server' })
-    expect(nuxtModule.default).toEqual({ source: 'external-nuxt' })
+    expect(nuxtModule.default).toBeTypeOf('function')
     expect(files.get('api/src/generated/platform/installed-module-routes.ts')).toContain(
       `from '${packageNames.server}'`,
     )
@@ -133,9 +141,76 @@ describe.sequential('external module archives', () => {
     expect(reviewerCatalog).not.toContain(host.root)
     expect(reviewerCatalog).not.toContain(suiteRoot)
     expect(reviewerCatalog).not.toContain('.tgz')
+    expect(generatedOutput).not.toMatch(/(?:_authToken|NPM_TOKEN|NODE_AUTH_TOKEN|\.npmrc)/)
+    expect(generatedOutput).not.toContain('SYNTHETIC_LIFECYCLE_MARKER')
+    expect(generatedBrowserOutput).not.toContain('integrity')
+    expect(generatedBrowserOutput).not.toContain(packageNames.server)
     await expect(access(baseRelease.lifecycleMarker)).rejects.toThrow('ENOENT')
     await expect(access(host.lifecycleMarker)).rejects.toThrow('ENOENT')
   }, 120_000)
+
+  it('deploys API and worker artifacts and builds Nuxt with an external panel', async () => {
+    const host = await installHost(baseRelease, 'production')
+    const deploymentRoot = join(host.root, 'production-api')
+    runPnpm(
+      host.root,
+      [
+        '--config.ignore-scripts=true',
+        '--filter',
+        host.apiPackageName,
+        '--prod',
+        'deploy',
+        deploymentRoot,
+      ],
+      host.lifecycleMarker,
+    )
+
+    expect(runNode(deploymentRoot, 'dist/server.js')).toEqual({
+      artifact: 'api',
+      migration: 'select 1;',
+      source: 'external-server',
+    })
+    expect(runNode(deploymentRoot, 'dist/worker.js')).toEqual({
+      artifact: 'worker',
+      migration: 'select 1;',
+      source: 'external-server',
+    })
+
+    const nuxtApplication = join(host.root, 'nuxt-application')
+    await writeFiles(nuxtApplication, {
+      'app.vue': `<script setup lang="ts">
+import SyntheticReviewerPanel from '${packageNames.nuxt}/reviewer/overview'
+</script>
+
+<template>
+  <SyntheticReviewerPanel />
+</template>
+`,
+      'nuxt.config.ts': `import syntheticModule from '${packageNames.nuxt}'
+
+export default defineNuxtConfig({
+  modules: [syntheticModule],
+  typescript: { typeCheck: false },
+})
+`,
+    })
+    await mkdir(join(nuxtApplication, 'node_modules'), { recursive: true })
+    await symlink(
+      await realpath(join(repositoryRoot, 'node_modules/nuxt')),
+      join(nuxtApplication, 'node_modules/nuxt'),
+      'junction',
+    )
+    runNuxtBuild(nuxtApplication)
+
+    expect(
+      await directoryContainsText(
+        join(nuxtApplication, '.output'),
+        'Synthetic external reviewer panel',
+      ),
+    ).toBe(true)
+    await expect(access(baseRelease.lifecycleMarker)).rejects.toThrow('ENOENT')
+    await expect(access(host.lifecycleMarker)).rejects.toThrow('ENOENT')
+  }, 180_000)
 
   it('rejects forbidden dependencies and imports from every inspectable orphan artifact', async () => {
     const host = await installHost(baseRelease, 'forbidden-imports')
@@ -272,10 +347,10 @@ describe.sequential('external module archives', () => {
       'migration',
       async (host: InstalledHost) => {
         await updateManifest(host, (manifest) => {
-          objectField(manifest, 'server').migrations = [{ name: 'synthetic-001.sql' }]
+          objectField(manifest, 'server').migrations = [{ name: 'synthetic-missing.sql' }]
         })
       },
-      `is missing migration synthetic-001.sql`,
+      `is missing migration synthetic-missing.sql`,
     ],
     [
       'Nuxt page',
@@ -472,7 +547,7 @@ async function createPackedRelease(root: string) {
           persistenceOperations: [],
         },
       ],
-      migrations: [],
+      migrations: [{ name: 'synthetic-001.sql' }],
       persistenceOperations: [],
       resources: [],
       esiOperations: [],
@@ -535,6 +610,7 @@ async function createPackedRelease(root: string) {
     'dist/index.js': "export function syntheticRoutes() { return { source: 'external-server' } }\n",
     'dist/index.d.ts':
       "export declare function syntheticRoutes(): { readonly source: 'external-server' }\n",
+    'migrations/synthetic-001.sql': 'select 1;\n',
   })
   await writeFiles(roots.nuxt, {
     'package.json': json({
@@ -550,11 +626,10 @@ async function createPackedRelease(root: string) {
       files: ['dist', 'src/runtime/app'],
       scripts,
     }),
-    'dist/module.js': "export default { source: 'external-nuxt' }\n",
-    'dist/module.d.ts':
-      "declare const module: { readonly source: 'external-nuxt' }\nexport default module\n",
+    'dist/module.js': 'export default function () {}\n',
+    'dist/module.d.ts': 'export default function syntheticNuxtModule(): void\n',
     'dist/reviewer/overview.js':
-      "export default { name: 'SyntheticReviewerPanel' }\nexport const syntheticPanel = { contributionId: 'overview' }\n",
+      "export default { name: 'SyntheticReviewerPanel', render() { return 'Synthetic external reviewer panel' } }\nexport const syntheticPanel = { contributionId: 'overview' }\n",
     'src/runtime/app/pages/SyntheticPage.vue':
       '<template><main><h1>Synthetic external module</h1></main></template>\n',
   })
@@ -594,6 +669,7 @@ async function installHost(release: PackedRelease, name: string): Promise<Instal
   const root = join(suiteRoot, 'hosts', name)
   const archiveRoot = join(root, 'archives')
   const lifecycleMarker = join(root, 'lifecycle-ran')
+  const apiPackageName = `external-module-api-${name}`
   await mkdir(join(root, 'api'), { recursive: true })
   await mkdir(join(root, 'features'), { recursive: true })
   await mkdir(archiveRoot, { recursive: true })
@@ -606,19 +682,36 @@ async function installHost(release: PackedRelease, name: string): Promise<Instal
       private: true,
       packageManager,
       dependencies: {
-        [packageNames.manifest]: 'file:archives/manifest.tgz',
-        [packageNames.nuxt]: 'file:archives/nuxt.tgz',
+        [packageNames.manifest]: `file:${join(archiveRoot, 'manifest.tgz')}`,
+        [packageNames.nuxt]: `file:${join(archiveRoot, 'nuxt.tgz')}`,
       },
     }),
   )
   await writeFile(
     join(root, 'api/package.json'),
     json({
-      name: `external-module-api-${name}`,
+      name: apiPackageName,
       private: true,
-      dependencies: { [packageNames.server]: 'file:../archives/server.tgz' },
+      type: 'module',
+      scripts: {
+        start: 'node dist/server.js',
+        'start:worker': 'node dist/worker.js',
+      },
+      dependencies: { [packageNames.server]: `file:${join(archiveRoot, 'server.tgz')}` },
     }),
   )
+  const productionArtifact = (
+    artifact: 'api' | 'worker',
+  ) => `import { readFile } from 'node:fs/promises'
+import { syntheticRoutes } from '${packageNames.server}'
+
+const migration = await readFile(new URL(import.meta.resolve('${packageNames.server}/migrations/synthetic-001.sql')), 'utf8')
+console.log(JSON.stringify({ artifact: '${artifact}', migration: migration.trim(), source: syntheticRoutes().source }))
+`
+  await writeFiles(join(root, 'api/dist'), {
+    'server.js': productionArtifact('api'),
+    'worker.js': productionArtifact('worker'),
+  })
   await writeFile(join(root, 'pnpm-workspace.yaml'), "packages:\n  - 'api'\n")
   await writeInstalledSelection(root, moduleId, packageNames.manifest)
   runPnpm(
@@ -637,6 +730,7 @@ async function installHost(release: PackedRelease, name: string): Promise<Instal
   )
   return {
     root,
+    apiPackageName,
     lifecycleMarker,
     packages: {
       manifest: await realpath(join(root, 'node_modules', ...packageNames.manifest.split('/'))),
@@ -719,6 +813,33 @@ function runPnpm(cwd: string, arguments_: readonly string[], lifecycleMarker: st
     throw new Error(
       `pnpm ${arguments_[0] ?? 'command'} failed: ${result.stderr || result.stdout || result.error?.message || 'unknown error'}`,
     )
+}
+
+function runNode(cwd: string, path: string) {
+  const result = spawnSync(process.execPath, [path], { cwd, encoding: 'utf8' })
+  if (result.status !== 0 || result.error)
+    throw new Error(result.stderr || result.stdout || result.error?.message || 'node failed')
+  return JSON.parse(result.stdout.trim()) as unknown
+}
+
+function runNuxtBuild(root: string) {
+  const result = spawnSync(join(repositoryRoot, 'node_modules/.bin/nuxt'), ['build', root], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+    maxBuffer: 16 * 1024 * 1024,
+    env: { ...process.env, NUXT_TELEMETRY_DISABLED: '1' },
+  })
+  if (result.status !== 0 || result.error)
+    throw new Error(result.stderr || result.stdout || result.error?.message || 'Nuxt build failed')
+}
+
+async function directoryContainsText(root: string, expected: string): Promise<boolean> {
+  for (const entry of await readdir(root, { withFileTypes: true })) {
+    const path = join(root, entry.name)
+    if (entry.isDirectory() && (await directoryContainsText(path, expected))) return true
+    if (entry.isFile() && (await readFile(path, 'utf8')).includes(expected)) return true
+  }
+  return false
 }
 
 function objectField(value: JsonRecord, key: string) {

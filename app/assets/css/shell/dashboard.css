@@ -661,6 +661,7 @@
 }
 
 .upstream-notice .ui-eyebrow {
+  margin-bottom: 0;
   color: var(--ui-warning);
 }
 

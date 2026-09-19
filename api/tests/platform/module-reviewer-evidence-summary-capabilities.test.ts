@@ -146,6 +146,31 @@ test('limits contribution summaries to the exact declared section and resources'
   expect(read).not.toHaveBeenCalledWith('wallet-journal', expect.any(Number))
 })
 
+test('uses an explicit workspace resource allowlist across evidence sections', async () => {
+  const read = vi.fn(async (resourceId: string, characterId: number) =>
+    status(resourceId, characterId),
+  )
+  const summary = createPlatformReviewerEvidenceSummaryReads(
+    {
+      moduleId: 'member-audit',
+      sectionId: 'overview',
+      resourceIds: ['trained-skills', 'wallet-balance', 'wallet-journal'],
+      target,
+    },
+    {
+      resources,
+      isContributionEnabled: vi.fn().mockResolvedValue(true),
+      createStatusReads: () => ({ read }),
+    },
+  )
+
+  await expect(summary.read()).resolves.toEqual([
+    characterSummary(90_000_001),
+    characterSummary(90_000_002),
+  ])
+  expect(read).toHaveBeenCalledTimes(6)
+})
+
 function resource(sectionId: string, resourceId: string) {
   return {
     moduleId: 'member-audit',

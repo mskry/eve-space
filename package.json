@@ -54,7 +54,7 @@
     "test:api": "pnpm --filter @eve-space/api test",
     "test:api:coverage": "pnpm --filter @eve-space/api test:coverage",
     "test:postgres": "pnpm --filter @eve-space/api test:postgres && tsx scripts/run-installed-module-package-script.ts server test:postgres --if-present",
-    "test:packaging": "pnpm --filter @eve-space/core-data-contract test:package && pnpm --filter @eve-space/api test:packaging && pnpm build",
+    "test:packaging": "pnpm --filter @eve-space/core-data-contract test:package && pnpm --filter @eve-space/api test:packaging && vitest run --config vitest.registry.config.ts tests/platform/external-module-archives.test.ts -t \"deploys API and worker artifacts and builds Nuxt with an external panel\" && pnpm build",
     "test:redis": "pnpm --filter @eve-space/api test:redis",
     "test:redis:no-coverage": "pnpm --filter @eve-space/api test:redis:no-coverage",
     "test:e2e": "node -e \"require('node:fs').rmSync('.output', { recursive: true, force: true })\" && EVE_SPACE_E2E_PERSISTENCE_FIXTURE=1 nuxt build && EVE_SPACE_E2E_PERSISTENCE_FIXTURE=1 vitest run --config vitest.e2e.config.ts",

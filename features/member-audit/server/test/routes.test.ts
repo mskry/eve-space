@@ -1,7 +1,4 @@
-import type {
-  PlatformReviewerSearchRouteEnv,
-  PlatformReviewerTargetRouteEnv,
-} from '@eve-space/platform-module-contract/server'
+import type { PlatformReviewerTargetRouteEnv } from '@eve-space/platform-module-contract/server'
 import { Hono } from 'hono'
 import { expect, test, vi } from 'vitest'
 import {
@@ -9,7 +6,6 @@ import {
   memberBlockRoutes,
   memberGroupRoutes,
   memberMailRoutes,
-  memberSearchRoutes,
   memberSkillsRoutes,
   memberSummaryRoutes,
   memberWalletRoutes,
@@ -39,51 +35,6 @@ const characterTarget = {
   groups: [],
   block: { blocked: false },
 }
-
-test('validates and forwards bounded reviewer search filters', async () => {
-  const search = vi.fn().mockResolvedValue({
-    organizationVersion: 4,
-    status: 'available',
-    items: [],
-    nextCursor: null,
-  })
-  const app = new Hono<PlatformReviewerSearchRouteEnv>()
-    .use('*', async (context, next) => {
-      context.set('platform', { reviewerSearch: { search } } as never)
-      await next()
-    })
-    .route('/', memberSearchRoutes({} as never))
-
-  const response = await app.request(
-    '/?query=Pilot&corporationId=98000001&complianceState=compliant&blocked=true&limit=50',
-  )
-  expect(response.status).toBe(200)
-  expect(await response.json()).toEqual({
-    organizationVersion: 4,
-    status: 'available',
-    items: [],
-    nextCursor: null,
-  })
-  expect(search).toHaveBeenCalledWith({
-    query: 'Pilot',
-    corporationId: 98_000_001,
-    complianceState: 'compliant',
-    blocked: true,
-    limit: 50,
-  })
-  search.mockClear()
-  const invalidResponses = await Promise.all(
-    [
-      `/?query=${'x'.repeat(81)}`,
-      '/?query=bad%0Aquery',
-      `/?cursor=${'A'.repeat(513)}`,
-      '/?cursor=invalid%2Bcursor',
-      '/?limit=51',
-    ].map((path) => app.request(path)),
-  )
-  expect(invalidResponses.map(({ status }) => status)).toEqual([400, 400, 400, 400, 400])
-  expect(search).not.toHaveBeenCalled()
-})
 
 test('returns only the bounded reviewer target summary', async () => {
   const target = {
@@ -248,7 +199,11 @@ test('validates and forwards bounded ordinary-group assignment and revocation co
       } as never)
       await next()
     })
-    .route('/groups/:groupId', memberGroupRoutes({} as never))
+    .route('/groups', memberGroupRoutes({} as never))
+
+  const current = await app.request('/groups')
+  expect(current.status).toBe(200)
+  expect(await current.json()).toEqual({ groups: characterTarget.groups })
 
   const assigned = await app.request('/groups/44444444-4444-4444-8444-444444444444', {
     method: 'POST',
@@ -310,6 +265,10 @@ test('validates and forwards bounded block and unblock commands', async () => {
       await next()
     })
     .route('/block', memberBlockRoutes({} as never))
+
+  const current = await app.request('/block')
+  expect(current.status).toBe(200)
+  expect(await current.json()).toEqual({ block: characterTarget.block })
 
   const blocked = await app.request('/block', {
     method: 'POST',

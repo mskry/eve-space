@@ -25,7 +25,6 @@ export {
   memberBlockRoutes,
   memberGroupRoutes,
   memberMailRoutes,
-  memberSearchRoutes,
   memberSkillsRoutes,
   memberSummaryRoutes,
   memberWalletRoutes,

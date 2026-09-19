@@ -9,6 +9,7 @@ import OrganizationReviewPage from '../../app/pages/organization/review.vue'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { platformReviewerContributionTargetQueryKey } from '@eve-space/platform-module-nuxt/runtime'
 import { cacheAdmissionForOrganization } from '../support/cache-admission'
+import { clearQueryCache } from '../support/clear-query-cache'
 import { queryServer } from '../support/query-server'
 
 const mocks = vi.hoisted(() => ({
@@ -48,6 +49,7 @@ beforeAll(() => queryServer.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => queryServer.close())
 
 beforeEach(() => {
+  clearQueryCache()
   authenticated.value = true
   enabledModuleIds.value = new Set(['alpha', 'beta'])
   enabledSectionKeys.value = new Set(['beta/details'])
@@ -70,7 +72,18 @@ beforeEach(() => {
     enabledModuleIds: computed(() => enabledModuleIds.value),
     enabledSectionKeys: computed(() => enabledSectionKeys.value),
     runtimeQuery: {
-      data: ref({ enabledModuleIds: [], enabledSections: [], shellNavigationOrder: {} }),
+      data: ref({
+        enabledModuleIds: ['alpha', 'beta'],
+        enabledSections: [
+          {
+            moduleId: 'beta',
+            sectionId: 'details',
+            disclosureVersion: 2,
+            activationVersion: 3,
+          },
+        ],
+        shellNavigationOrder: {},
+      }),
       error: runtimeError,
       refetch: mocks.runtimeRefetch,
     },
@@ -112,6 +125,14 @@ beforeEach(() => {
         nextCursor: null,
       })
     }),
+    http.get('*/api/organization/review/members/:userId', ({ params }) => {
+      const selected =
+        params.userId === secondaryMember().account.userId ? secondaryMember() : member()
+      return HttpResponse.json({
+        organizationVersion: organizationVersion.value,
+        member: targetMember(selected),
+      })
+    }),
   )
 })
 
@@ -123,7 +144,31 @@ afterEach(async () => {
 })
 
 describe('useOrganizationReviewWorkspace', () => {
-  it('canonicalizes deep links, removes account character IDs, and follows history without focus requests', async () => {
+  it('keeps the contribution unset when a reviewer selects only a member', async () => {
+    let workspace!: ReturnType<typeof useOrganizationReviewWorkspace>
+    const catalog = mocks.usePlatformReviewerPanels()
+    const Host = defineComponent({
+      setup() {
+        workspace = useOrganizationReviewWorkspace({ route: routeState, router: testRouter })
+        return () => h('span')
+      },
+    })
+    const wrapper = await mountSuspended(Host, { route: '/organization/review' })
+    mountedWrappers.push(wrapper)
+    await expectWorkspaceReady(workspace)
+
+    await workspace.selectMember(member())
+
+    expect(testRouter.push).toHaveBeenCalledWith({
+      query: { targetUserId: member().account.userId },
+    })
+    expect(workspace.selectedContribution.value).toBeUndefined()
+    expect(workspace.selectedTarget.value).toBeUndefined()
+    expect(workspace.panelFocusRequest.value).toBe(0)
+    expect(catalog.contributions.every(({ load }) => !load.mock.calls.length)).toBe(true)
+  })
+
+  it('canonicalizes deep links, preserves disclosed character selection, and follows history without focus requests', async () => {
     let workspace!: ReturnType<typeof useOrganizationReviewWorkspace>
     const Host = defineComponent({
       setup() {
@@ -140,7 +185,7 @@ describe('useOrganizationReviewWorkspace', () => {
     await router.push({
       query: {
         targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
-        targetCharacterId: '999',
+        targetCharacterId: '90000001',
         contribution: 'beta/details',
       },
     })
@@ -152,6 +197,7 @@ describe('useOrganizationReviewWorkspace', () => {
         contribution: 'beta/details',
       }),
     )
+    await vi.waitFor(() => expect(workspace.selectedTarget.value).toBeDefined())
     expect(workspace.selectedTarget.value).toMatchObject({
       kind: 'managed-organization-character',
       characterId: 90_000_001,
@@ -160,7 +206,7 @@ describe('useOrganizationReviewWorkspace', () => {
 
     await workspace.selectContribution('alpha/summary')
     await vi.waitFor(() => expect(routeState.query.contribution).toBe('alpha/summary'))
-    expect(routeState.query).not.toHaveProperty('targetCharacterId')
+    expect(routeState.query.targetCharacterId).toBe('90000001')
     expect(workspace.selectedTarget.value?.kind).toBe('managed-organization-account')
 
     router.back()
@@ -226,23 +272,18 @@ describe('useOrganizationReviewWorkspace', () => {
     const lookupGate = deferred<void>()
     const lookupStarted = vi.fn()
     queryServer.use(
-      http.get('*/api/organization/review/members', async ({ request }) => {
-        const query = new URL(request.url).searchParams.get('query')
-        if (query === secondaryMember().account.userId) {
+      http.get('*/api/organization/review/members/:userId', async ({ params }) => {
+        if (params.userId === secondaryMember().account.userId) {
           lookupStarted()
           await lookupGate.promise
           return HttpResponse.json({
             organizationVersion: organizationVersion.value,
-            status: 'available',
-            items: [secondaryMember()],
-            nextCursor: null,
+            member: targetMember(secondaryMember()),
           })
         }
         return HttpResponse.json({
           organizationVersion: organizationVersion.value,
-          status: 'available',
-          items: [member()],
-          nextCursor: null,
+          member: targetMember(member()),
         })
       }),
     )
@@ -280,7 +321,6 @@ describe('useOrganizationReviewWorkspace', () => {
       targetUserId: secondaryMember().account.userId,
       targetCharacterId: '90000002',
       contribution: 'beta/details',
-      query: '90000002',
       items: [secondaryMember(90_000_003)],
     },
     {
@@ -288,22 +328,20 @@ describe('useOrganizationReviewWorkspace', () => {
       targetUserId: secondaryMember().account.userId,
       targetCharacterId: undefined,
       contribution: 'alpha/summary',
-      query: secondaryMember().account.userId,
       items: [],
     },
   ])(
     'clears an unresolved target after $name settles',
-    async ({ contribution, items, query, targetCharacterId, targetUserId }) => {
+    async ({ contribution, items, targetCharacterId, targetUserId }) => {
       const exactLookup = vi.fn()
       queryServer.use(
-        http.get('*/api/organization/review/members', ({ request }) => {
-          const requested = new URL(request.url).searchParams.get('query')
-          if (requested) exactLookup(requested)
+        http.get('*/api/organization/review/members/:userId', ({ params }) => {
+          exactLookup(params.userId)
+          if (items.length === 0)
+            return HttpResponse.json({ code: 'NOT_FOUND', message: 'Not found.' }, { status: 404 })
           return HttpResponse.json({
             organizationVersion: organizationVersion.value,
-            status: 'available',
-            items: requested === query ? items : [member()],
-            nextCursor: null,
+            member: targetMember(items[0]!),
           })
         }),
       )
@@ -326,7 +364,7 @@ describe('useOrganizationReviewWorkspace', () => {
         },
       })
 
-      await vi.waitFor(() => expect(exactLookup).toHaveBeenCalledWith(query))
+      await vi.waitFor(() => expect(exactLookup).toHaveBeenCalledWith(targetUserId))
       await vi.waitFor(() => expect(routeState.query).toEqual({ contribution }))
       expect(workspace.selectedMember.value).toBeUndefined()
     },
@@ -369,6 +407,9 @@ describe('useOrganizationReviewWorkspace', () => {
 
     await workspace.selectContribution('beta/details')
     await vi.waitFor(() => expect(queryCache.getQueryData(alphaKey)).toBeUndefined())
+    await vi.waitFor(() =>
+      expect(workspace.selectedTarget.value?.kind).toBe('managed-organization-character'),
+    )
 
     const betaIdentity = {
       organizationVersion: 7,
@@ -387,7 +428,9 @@ describe('useOrganizationReviewWorkspace', () => {
       'alpha',
     ])
 
+    await workspace.selectContribution('alpha/summary')
     await workspace.selectMember(member())
+    await vi.waitFor(() => expect(workspace.selectedTarget.value).toBeDefined())
     const lifecycleKey = [
       ...platformReviewerContributionTargetQueryKey({
         organizationVersion: 7,
@@ -537,7 +580,10 @@ describe('useOrganizationReviewWorkspace', () => {
     expect(workspace.availableContributions.value.map(({ moduleId }) => moduleId)).toEqual([
       'alpha',
     ])
-    expect(workspace.selectedContribution.value?.moduleId).toBe('alpha')
+    expect(workspace.selectedContribution.value).toBeUndefined()
+    expect(routeState.query).toEqual({
+      targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+    })
 
     enabledSectionKeys.value = new Set(['beta/details'])
     await testRouter.push({
@@ -551,7 +597,7 @@ describe('useOrganizationReviewWorkspace', () => {
 
     enabledModuleIds.value = new Set(['alpha'])
     await flushPromises()
-    expect(workspace.selectedContribution.value?.moduleId).toBe('alpha')
+    expect(workspace.selectedContribution.value).toBeUndefined()
   })
 })
 
@@ -691,6 +737,28 @@ function secondaryMember(characterId = 90_000_002) {
       allianceId: null,
       checkedAt: '2026-09-18T00:00:00.000Z',
     },
+  }
+}
+
+function targetMember(selected: ReturnType<typeof member>) {
+  return {
+    ...selected,
+    characters: [
+      {
+        characterId: selected.managedAffiliation.characterId,
+        subjectLifecycleId: `character-lifecycle-${selected.managedAffiliation.characterId}`,
+        authorizationGeneration: 4,
+        name: selected.managedAffiliation.name,
+        isMain: true,
+        affiliation: {
+          corporationId: selected.managedAffiliation.corporationId,
+          allianceId: selected.managedAffiliation.allianceId,
+          membership: 'managed' as const,
+          freshness: 'fresh' as const,
+          checkedAt: selected.managedAffiliation.checkedAt,
+        },
+      },
+    ],
   }
 }
 

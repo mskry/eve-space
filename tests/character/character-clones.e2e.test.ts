@@ -257,6 +257,11 @@ describe('character Clones production route', async () => {
     apiMode = 'long-content'
     const page = await openPage(`/characters/${characterId}/clones`)
     await page.setViewportSize({ width: 1180, height: 820 })
+    const storedClones = page.getByRole('region', {
+      name: 'Jump clones by location',
+      exact: true,
+    })
+    await storedClones.getByRole('button').click()
     const cards = page.locator('.character-clones-card')
     await cards.first().waitFor()
 

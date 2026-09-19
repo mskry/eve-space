@@ -10,14 +10,21 @@
     ".": {
       "types": "./dist/module.d.ts",
       "import": "./dist/module.js"
-    }
+    },
+    "./reviewer/overview": "./dist/reviewer/overview.vue",
+    "./reviewer/trained-skills": "./dist/reviewer/trained-skills.vue",
+    "./reviewer/assets": "./dist/reviewer/assets.vue",
+    "./reviewer/wallet": "./dist/reviewer/wallet.vue",
+    "./reviewer/mail": "./dist/reviewer/mail.vue",
+    "./reviewer/ordinary-groups": "./dist/reviewer/ordinary-groups.vue",
+    "./reviewer/member-block": "./dist/reviewer/member-block.vue"
   },
   "files": [
     "dist",
     "src/runtime/app"
   ],
   "scripts": {
-    "build": "tsc6",
+    "build": "tsc6 && node scripts/copy-reviewer-runtime.mjs",
     "typecheck": "tsc6 --noEmit && nuxt prepare test/fixtures/basic && vue-tsc --noEmit -p tsconfig.runtime.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
@@ -25,7 +32,8 @@
   "dependencies": {
     "@eve-space/platform-module-nuxt": "workspace:*",
     "@nuxt/kit": "catalog:",
-    "@nuxt/schema": "catalog:"
+    "@nuxt/schema": "catalog:",
+    "vue": "catalog:"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "catalog:vitest4",

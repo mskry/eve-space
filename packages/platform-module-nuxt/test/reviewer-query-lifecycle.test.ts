@@ -11,12 +11,17 @@ describe('reviewer contribution target query lifecycle', () => {
       kind: 'managed-organization-account',
       managedMemberLifecycleId: 'lifecycle-1',
       userId: 'user-1',
+      sectionActivationVersion: 3,
     })
     const character = identity({
       kind: 'managed-organization-character',
       managedMemberLifecycleId: 'lifecycle-1',
       userId: 'user-1',
       characterId: 90_000_001,
+      characterLifecycleId: 'character-lifecycle-1',
+      authorizationGeneration: 4,
+      disclosureVersion: 2,
+      sectionActivationVersion: 3,
     })
 
     expect(platformReviewerContributionTargetResourceKey(account)).toEqual([
@@ -26,6 +31,8 @@ describe('reviewer contribution target query lifecycle', () => {
       'targets',
       'lifecycle-1',
       'user-1',
+      'section-activation',
+      3,
     ])
     expect(platformReviewerContributionTargetQueryKey(character)).toEqual([
       'private',
@@ -41,7 +48,15 @@ describe('reviewer contribution target query lifecycle', () => {
       'targets',
       'lifecycle-1',
       'user-1',
+      'section-activation',
+      3,
       90_000_001,
+      'character-lifecycle',
+      'character-lifecycle-1',
+      'authorization-generation',
+      4,
+      'disclosure-version',
+      2,
     ])
   })
 
@@ -65,6 +80,28 @@ describe('reviewer contribution target query lifecycle', () => {
     expect(queryCache.remove).toHaveBeenCalledWith(matching)
     expect(queryCache.remove).not.toHaveBeenCalledWith(unrelated)
   })
+
+  it('changes the private prefix for every live character authority identity', () => {
+    const target = {
+      kind: 'managed-organization-character' as const,
+      managedMemberLifecycleId: 'lifecycle-1',
+      userId: 'user-1',
+      characterId: 90_000_001,
+      characterLifecycleId: 'character-lifecycle-1',
+      authorizationGeneration: 4,
+      disclosureVersion: 2,
+      sectionActivationVersion: 3,
+    }
+    const original = platformReviewerContributionTargetQueryKey(identity(target))
+
+    for (const changed of [
+      { ...target, characterLifecycleId: 'character-lifecycle-2' },
+      { ...target, authorizationGeneration: 5 },
+      { ...target, disclosureVersion: 3 },
+      { ...target, sectionActivationVersion: 4 },
+    ])
+      expect(platformReviewerContributionTargetQueryKey(identity(changed))).not.toEqual(original)
+  })
 })
 
 function accountTarget() {
@@ -72,6 +109,7 @@ function accountTarget() {
     kind: 'managed-organization-account' as const,
     managedMemberLifecycleId: 'lifecycle-1',
     userId: 'user-1',
+    sectionActivationVersion: 3,
   }
 }
 
@@ -83,6 +121,10 @@ function identity(
         readonly managedMemberLifecycleId: string
         readonly userId: string
         readonly characterId: number
+        readonly characterLifecycleId: string
+        readonly authorizationGeneration: number | null
+        readonly disclosureVersion: number
+        readonly sectionActivationVersion: number
       },
 ) {
   return {

@@ -6,12 +6,17 @@ export type PlatformReviewerSelectedTarget =
       readonly kind: 'managed-organization-account'
       readonly managedMemberLifecycleId: string
       readonly userId: string
+      readonly sectionActivationVersion: number
     }
   | {
       readonly kind: 'managed-organization-character'
       readonly managedMemberLifecycleId: string
       readonly userId: string
       readonly characterId: number
+      readonly characterLifecycleId: string
+      readonly authorizationGeneration: number | null
+      readonly disclosureVersion: number
+      readonly sectionActivationVersion: number
     }
 
 export interface PlatformReviewerPanelQueryAccess {

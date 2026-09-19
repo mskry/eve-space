@@ -5,6 +5,7 @@ import type {
 import type {
   OrganizationReviewContribution,
   OrganizationReviewDirectoryMember,
+  OrganizationReviewTargetMember,
 } from '../queries/organization-review'
 
 export interface OrganizationReviewUrlState {
@@ -51,27 +52,33 @@ export function parseOrganizationReviewUrlState(query: Record<string, unknown>) 
 }
 
 export function selectedReviewerTarget(
-  member: OrganizationReviewDirectoryMember,
+  member: OrganizationReviewDirectoryMember | OrganizationReviewTargetMember,
   contribution: PlatformReviewerPanelCatalogEntry,
   requestedCharacterId?: number,
+  sectionAuthority?: { readonly disclosureVersion: number; readonly activationVersion: number },
 ): PlatformReviewerSelectedTarget | undefined {
+  if (!sectionAuthority) return undefined
   if (contribution.target === 'managed-organization-account') {
     return {
       kind: 'managed-organization-account',
       managedMemberLifecycleId: member.managedMemberLifecycleId,
       userId: member.account.userId,
+      sectionActivationVersion: sectionAuthority.activationVersion,
     }
   }
-  if (
-    requestedCharacterId !== undefined &&
-    requestedCharacterId !== member.managedAffiliation.characterId
-  )
-    return undefined
+  if (!('characters' in member)) return undefined
+  const characterId = requestedCharacterId ?? member.managedAffiliation.characterId
+  const character = member.characters.find((candidate) => candidate.characterId === characterId)
+  if (!character) return undefined
   return {
     kind: 'managed-organization-character',
     managedMemberLifecycleId: member.managedMemberLifecycleId,
     userId: member.account.userId,
-    characterId: member.managedAffiliation.characterId,
+    characterId,
+    characterLifecycleId: character.subjectLifecycleId,
+    authorizationGeneration: character.authorizationGeneration,
+    disclosureVersion: sectionAuthority.disclosureVersion,
+    sectionActivationVersion: sectionAuthority.activationVersion,
   }
 }
 

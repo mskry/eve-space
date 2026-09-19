@@ -284,6 +284,7 @@ describe('SSR and authentication query boundaries', () => {
       target: {
         kind: 'managed-organization-account',
         managedMemberLifecycleId: 'member-lifecycle-1',
+        sectionActivationVersion: 1,
         userId: 'target-user',
       },
     })

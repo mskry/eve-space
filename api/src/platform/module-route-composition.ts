@@ -14,6 +14,7 @@ import type {
 import { PlatformModuleHttpError } from '@eve-space/platform-module-server'
 import { Hono, type Context, type MiddlewareHandler, type Schema } from 'hono'
 import { createMiddleware } from 'hono/factory'
+import { HTTPException } from 'hono/http-exception'
 import {
   organizationSensitiveAccessSections,
   type OrganizationSensitiveAccessReason,
@@ -109,6 +110,7 @@ interface ReviewerContributionRouteBinding
   readonly namespace: string
   readonly target: 'managed-organization-account' | 'managed-organization-character'
   readonly reviewerEvidence?: ReviewerEvidenceBinding
+  readonly reviewerResourceIds?: readonly string[]
 }
 
 export function composePlatformReviewerContributionRoute<
@@ -132,7 +134,10 @@ export function composePlatformReviewerContributionRoute<
 
 function composeReviewerTargetModuleRoute<
   const Organization extends PlatformInstalledOrganizationContributionAuthorization &
-    PlatformRouteSecurityClassification & { readonly reviewerEvidence?: ReviewerEvidenceBinding },
+    PlatformRouteSecurityClassification & {
+      readonly reviewerEvidence?: ReviewerEvidenceBinding
+      readonly reviewerResourceIds?: readonly string[]
+    },
   RouteSchema extends Schema,
   RouteBasePath extends string,
 >(
@@ -172,9 +177,9 @@ function composeReviewerTargetModuleRoute<
         contribution
           ? {
               contributionId: contribution.contributionId,
-              resourceIds: organization.reviewerEvidence
-                ? [organization.reviewerEvidence.resourceId]
-                : [],
+              resourceIds:
+                organization.reviewerResourceIds ??
+                (organization.reviewerEvidence ? [organization.reviewerEvidence.resourceId] : []),
             }
           : undefined,
       ),
@@ -210,6 +215,10 @@ function reviewerContributionFailureResponse(
   context: Context,
 ) {
   if (error instanceof PlatformModuleHttpError) return context.json(error.body, error.status)
+  if (error instanceof HTTPException) {
+    const message = error.message || (error.status === 403 ? 'Forbidden' : 'Request failed.')
+    return context.json({ message }, error.status)
+  }
   recordDiagnostic('platform.module.error', {
     context: {
       moduleId: contribution.moduleId,

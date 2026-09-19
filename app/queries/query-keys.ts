@@ -131,12 +131,14 @@ export const PRIVATE_QUERY_KEYS = {
     organizationVersion: number,
     targetUserId: string,
     targetCharacterId?: number,
+    managedMemberLifecycleId?: string,
   ) =>
     [
       ...PRIVATE_QUERY_KEYS.organizationReviewerVersion(organizationVersion),
       'targets',
       targetUserId,
       targetCharacterId ?? null,
+      managedMemberLifecycleId ?? null,
     ] as const,
   organizationContext: () => [...PRIVATE_QUERY_KEYS.organization(), 'context'] as const,
   organizationCompliance: () => [...PRIVATE_QUERY_KEYS.organization(), 'compliance'] as const,

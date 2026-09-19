@@ -167,6 +167,30 @@ describe('OrganizationReviewPanelHost', () => {
 })
 
 describe('OrganizationReviewContributionNavigation', () => {
+  it('does not select a contribution until a reviewer activates one', async () => {
+    const alpha = panel('alpha', 'summary', vi.fn())
+    const beta = panel('beta', 'details', vi.fn())
+    const wrapper = await mountSuspended(OrganizationReviewContributionNavigation, {
+      attachTo: document.body,
+      props: {
+        contributions: [alpha, beta],
+      },
+      route: false,
+    })
+    wrappers.push(wrapper)
+
+    await flushPromises()
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(wrapper.findAll('[role="tab"]')).toHaveLength(0)
+    const choices = wrapper.findAll('.organization-review-contributions__choices button')
+    expect(choices).toHaveLength(2)
+    expect(wrapper.text()).toContain('Select a permitted panel to load its private data.')
+
+    await choices[0]!.trigger('click')
+
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['alpha/summary'])
+  })
+
   it('exposes labeled tabs with Reka keyboard semantics', async () => {
     const alpha = panel('alpha', 'summary', vi.fn())
     const beta = panel('beta', 'details', vi.fn())

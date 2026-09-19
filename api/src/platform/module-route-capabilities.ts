@@ -20,18 +20,8 @@ export function createPlatformModuleRouteCapabilities<
   }
 }
 
-export function createPlatformReviewerRouteCapabilities<
-  const ModuleId extends string,
-  const ProductIds extends readonly CoreDataProductId[] = readonly [],
->(moduleId: ModuleId, productIds: ProductIds = [] as unknown as ProductIds) {
-  return {
-    coreData: createCoreDataCapability(productIds, 'route'),
-    logger: createPlatformModuleLogger(moduleId),
-  }
-}
-
 export function createPlatformReviewerContributionRouteCapabilities<
-  const Descriptor extends PlatformInstalledReviewerContributionDescriptor,
+  const Descriptor extends Pick<PlatformInstalledReviewerContributionDescriptor, 'moduleId'>,
   const ProductIds extends readonly CoreDataProductId[] = readonly [],
 >(descriptor: Descriptor, productIds: ProductIds = [] as unknown as ProductIds) {
   return {

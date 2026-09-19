@@ -37,9 +37,22 @@ export function platformReviewerContributionTargetResourceKey(
     'targets',
     requiredIdentity(target.managedMemberLifecycleId, 'Managed member lifecycle ID'),
     requiredIdentity(target.userId, 'Reviewer target user ID'),
+    'section-activation',
+    positiveInteger(target.sectionActivationVersion, 'section activation version'),
   ]
   return target.kind === 'managed-organization-character'
-    ? [...key, positiveInteger(target.characterId, 'character ID')]
+    ? [
+        ...key,
+        positiveInteger(target.characterId, 'character ID'),
+        'character-lifecycle',
+        requiredIdentity(target.characterLifecycleId, 'Character lifecycle ID'),
+        'authorization-generation',
+        target.authorizationGeneration === null
+          ? 'authorization-required'
+          : nonnegativeInteger(target.authorizationGeneration, 'authorization generation'),
+        'disclosure-version',
+        positiveInteger(target.disclosureVersion, 'disclosure version'),
+      ]
     : key
 }
 
@@ -141,6 +154,11 @@ export function isPlatformQuerySubjectValid(subject: PlatformQuerySubject) {
 
 function positiveInteger(value: number, name: string) {
   if (!isPositiveInteger(value)) throw new TypeError(`Invalid ${name}: ${value}`)
+  return value
+}
+
+function nonnegativeInteger(value: number, name: string) {
+  if (!Number.isSafeInteger(value) || value < 0) throw new TypeError(`Invalid ${name}: ${value}`)
   return value
 }
 

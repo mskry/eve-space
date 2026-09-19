@@ -422,6 +422,7 @@ function parseReviewerContribution(
     [
       'id',
       'routeId',
+      'directoryPermission',
       'audience',
       'requiredPermission',
       'target',
@@ -436,6 +437,11 @@ function parseReviewerContribution(
   if (!record) return undefined
   const id = readString(record.id, `${path}.id`, issues)
   const routeId = readString(record.routeId, `${path}.routeId`, issues)
+  const directoryPermission = readOptionalString(
+    record.directoryPermission,
+    `${path}.directoryPermission`,
+    issues,
+  )
   const audience = readDeclaredMember(
     record.audience,
     platformOrganizationAudiences,
@@ -474,6 +480,7 @@ function parseReviewerContribution(
   return {
     id,
     routeId,
+    directoryPermission,
     audience,
     requiredPermission,
     target,

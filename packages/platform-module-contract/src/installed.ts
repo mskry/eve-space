@@ -40,6 +40,7 @@ export interface PlatformInstalledReviewerContributionDescriptor
   readonly sectionId?: string
   readonly audience: Exclude<PlatformOrganizationAudience, 'member'>
   readonly panelPackage: string
+  readonly directoryPermission?: string
 }
 
 export interface PlatformInstalledPermissionDescriptor {

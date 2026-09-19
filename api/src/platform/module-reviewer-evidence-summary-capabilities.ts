@@ -32,8 +32,9 @@ export function createPlatformReviewerEvidenceSummaryReads(
   const resources = (options.resources ?? platformResources).filter(
     (resource) =>
       resource.moduleId === binding.moduleId &&
-      (binding.sectionId === undefined || resource.sectionId === binding.sectionId) &&
-      (binding.resourceIds === undefined || binding.resourceIds.includes(resource.resourceId)) &&
+      (binding.resourceIds === undefined
+        ? binding.sectionId === undefined || resource.sectionId === binding.sectionId
+        : binding.resourceIds.includes(resource.resourceId)) &&
       resource.subjectKind === 'character' &&
       resource.eligibility.kind === 'current-managed-member-character' &&
       resource.sectionId !== undefined,

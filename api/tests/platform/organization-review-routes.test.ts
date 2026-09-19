@@ -1,4 +1,7 @@
-import type { PlatformInstalledReviewerContributionDescriptor } from '@eve-space/platform-module-contract/installed'
+import type {
+  PlatformInstalledOrganizationContributionAuthorization,
+  PlatformInstalledReviewerContributionDescriptor,
+} from '@eve-space/platform-module-contract/installed'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -14,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     blocked: false,
   },
   searchManagedOrganizationDirectory: vi.fn(),
+  resolveOrganizationReviewerTarget: vi.fn(),
 }))
 
 vi.mock('../../src/env.js', () => ({
@@ -43,6 +47,9 @@ vi.mock('../../src/organization/reviewer-account-search.js', async (importOrigin
     searchManagedOrganizationDirectory: mocks.searchManagedOrganizationDirectory,
   }
 })
+vi.mock('../../src/organization/reviewer-target.js', () => ({
+  resolveOrganizationReviewerTarget: mocks.resolveOrganizationReviewerTarget,
+}))
 vi.mock('../../src/platform/reviewer-contributions.js', () => ({
   listAvailableReviewerContributions: mocks.listAvailableReviewerContributions,
 }))
@@ -90,7 +97,7 @@ describe('platform organization review routes', () => {
       async (
         _userId,
         _organization,
-        descriptor: PlatformInstalledReviewerContributionDescriptor,
+        descriptor: PlatformInstalledOrganizationContributionAuthorization,
       ) =>
         descriptor.moduleId === 'alpha'
           ? {
@@ -105,6 +112,38 @@ describe('platform organization review routes', () => {
           : { authorized: false, reason: 'permission' },
     )
     mocks.searchManagedOrganizationDirectory.mockResolvedValue(directoryPage)
+    mocks.resolveOrganizationReviewerTarget.mockResolvedValue({
+      organizationVersion: 7,
+      managedMemberLifecycleId: directoryPage.items[0]!.managedMemberLifecycleId,
+      selection: { kind: 'account' },
+      account: directoryPage.items[0]!.account,
+      characters: [
+        {
+          characterId: 90_000_001,
+          subjectLifecycleId: 'character-lifecycle-1',
+          authorizationGeneration: 4,
+          name: 'Target Main',
+          isMain: true,
+          affiliation: {
+            corporationId: 98_000_001,
+            allianceId: null,
+            membership: 'managed',
+            freshness: 'fresh',
+            checkedAt: '2026-09-18T12:00:00.000Z',
+          },
+        },
+      ],
+      compliance: {
+        state: 'compliant',
+        evidenceFreshness: 'fresh',
+        evidenceAt: '2026-09-18T12:00:00.000Z',
+        reviewDeadline: null,
+        accessValidUntil: '2026-09-19T12:00:00.000Z',
+        evaluatedAt: '2026-09-18T12:00:00.000Z',
+      },
+      groups: [],
+      block: { blocked: false },
+    })
   })
 
   test('returns only independently authorized safe contribution metadata', async () => {
@@ -131,6 +170,14 @@ describe('platform organization review routes', () => {
     })
     expect(responseText).not.toContain('panelPackage')
     expect(mocks.authorizeOrganizationReviewerContribution).toHaveBeenCalledTimes(2)
+    expect(mocks.authorizeOrganizationReviewerContribution).toHaveBeenCalledWith(
+      'reviewer-1',
+      mocks.organization,
+      expect.objectContaining({
+        moduleId: 'alpha',
+        additionalRequiredPermissions: ['alpha.search', 'member-audit.summary.read'],
+      }),
+    )
   })
 
   test('returns only the bounded core directory after entry authorization', async () => {
@@ -147,6 +194,40 @@ describe('platform organization review routes', () => {
     expect(JSON.stringify(directoryPage)).not.toContain('block')
   })
 
+  test.each(['/members', '/members/00000000-0000-4000-8000-000000000002'])(
+    'requires summary permission before serving %s',
+    async (path) => {
+      mocks.authorizeOrganizationReviewerContribution.mockImplementation(
+        async (
+          _userId,
+          _organization,
+          descriptor: PlatformInstalledOrganizationContributionAuthorization,
+        ) => {
+          if (descriptor.additionalRequiredPermissions?.includes('member-audit.summary.read'))
+            return { authorized: false, reason: 'permission' }
+          return {
+            authorized: true,
+            context: {
+              organizationVersion: 7,
+              audience: 'hr',
+              requiredPermission: descriptor.requiredPermission,
+              entitlementScope: 'all',
+            },
+          }
+        },
+      )
+
+      const response = await request(path)
+
+      expect(response.status).toBe(403)
+      await expect(response.json()).resolves.toMatchObject({
+        code: 'ORGANIZATION_REVIEWER_REQUIRED',
+      })
+      expect(mocks.searchManagedOrganizationDirectory).not.toHaveBeenCalled()
+      expect(mocks.resolveOrganizationReviewerTarget).not.toHaveBeenCalled()
+    },
+  )
+
   test('does not accept a deployment administrator session as reviewer identity', async () => {
     const response = await organizationReviewerPlatformRoutes.request('/', {
       headers: { cookie: 'eve_space_admin_session=administrator-token' },
@@ -155,6 +236,29 @@ describe('platform organization review routes', () => {
     expect(response.status).toBe(401)
     expectPrivateResponsePolicy(response)
     expect(mocks.authorizeOrganizationReviewerContribution).not.toHaveBeenCalled()
+  })
+
+  test('returns current disclosed target authority identities without evidence', async () => {
+    const response = await request('/members/00000000-0000-4000-8000-000000000002')
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      organizationVersion: 7,
+      member: {
+        managedMemberLifecycleId: directoryPage.items[0]!.managedMemberLifecycleId,
+        characters: [
+          {
+            characterId: 90_000_001,
+            subjectLifecycleId: 'character-lifecycle-1',
+            authorizationGeneration: 4,
+          },
+        ],
+      },
+    })
+    expect(mocks.resolveOrganizationReviewerTarget).toHaveBeenCalledWith({
+      organizationVersion: 7,
+      targetUserId: '00000000-0000-4000-8000-000000000002',
+    })
   })
 
   test.each([
@@ -206,6 +310,7 @@ function contribution(
     routePath: `/api/modules/${moduleId}/accounts/:userId`,
     audience: 'hr',
     requiredPermission: `${moduleId}.review`,
+    directoryPermission: `${moduleId}.search`,
     target: 'managed-organization-account',
     panelPackage: `@example/${moduleId}-nuxt`,
     panelExport: `./reviewer/${contributionId}`,

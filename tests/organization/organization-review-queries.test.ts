@@ -71,9 +71,9 @@ describe('organization review queries', () => {
 
   it('keys exact targets by organization and identity and forwards character lookups and aborts', async () => {
     const signal = new AbortController().signal
-    const membersGet = vi.fn().mockResolvedValue(Response.json(directoryResponse()))
+    const targetGet = vi.fn().mockResolvedValue(Response.json(targetResponse()))
     const options = organizationReviewTargetQuery({
-      apiClient: apiClient(vi.fn(), membersGet),
+      apiClient: apiClient(vi.fn(), vi.fn(), targetGet),
       enabled: true,
       input: {
         organizationVersion: 7,
@@ -90,52 +90,33 @@ describe('organization review queries', () => {
       'targets',
       '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
       90_000_001,
+      null,
     ])
     expect(options.meta?.esiPersistence).toEqual({ kind: 'none' })
     await expect(options.query({ signal } as never)).resolves.toMatchObject({
-      member: directoryResponse().items[0],
+      member: targetResponse().member,
     })
-    expect(membersGet).toHaveBeenCalledWith(
-      { query: { query: '90000001', limit: '1' } },
+    expect(targetGet).toHaveBeenCalledWith(
+      { param: { userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c' } },
       { init: { signal } },
     )
   })
 
-  it.each([
-    {
-      name: 'a mismatched character',
+  it('rejects a character outside the resolved disclosed target', async () => {
+    const targetGet = vi.fn().mockResolvedValue(Response.json(targetResponse()))
+    const options = organizationReviewTargetQuery({
+      apiClient: apiClient(vi.fn(), vi.fn(), targetGet),
+      enabled: true,
       input: {
         organizationVersion: 7,
         targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
         targetCharacterId: 90_000_099,
       },
-      response: directoryResponse(),
-      query: '90000099',
-    },
-    {
-      name: 'no account result',
-      input: {
-        organizationVersion: 7,
-        targetUserId: 'ee800380-dc86-4c4f-9f26-0e6031848dbf',
-      },
-      response: { ...directoryResponse(), items: [] },
-      query: 'ee800380-dc86-4c4f-9f26-0e6031848dbf',
-    },
-  ])('rejects $name from an exact target lookup', async ({ input, query, response }) => {
-    const membersGet = vi.fn().mockResolvedValue(Response.json(response))
-    const options = organizationReviewTargetQuery({
-      apiClient: apiClient(vi.fn(), membersGet),
-      enabled: true,
-      input,
     })
 
     await expect(options.query({ signal: undefined } as never)).resolves.toMatchObject({
       member: null,
     })
-    expect(membersGet).toHaveBeenCalledWith(
-      { query: { query, limit: '1' } },
-      { init: { signal: undefined } },
-    )
   })
 })
 
@@ -170,42 +151,67 @@ describe('organization review selection policy', () => {
       }),
     ).toEqual({})
 
-    const member = directoryResponse().items[0]!
+    const member = targetResponse().member
+    const sectionAuthority = { disclosureVersion: 2, activationVersion: 3 }
     const accountTarget = selectedReviewerTarget(
       member,
       panel('alpha', 'summary', 'managed-organization-account'),
       123,
+      sectionAuthority,
     )
     const characterTarget = selectedReviewerTarget(
       member,
       panel('beta', 'details', 'managed-organization-character'),
       member.managedAffiliation.characterId,
+      sectionAuthority,
     )
     expect(accountTarget).toEqual({
       kind: 'managed-organization-account',
       managedMemberLifecycleId: 'member-lifecycle-1',
       userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+      sectionActivationVersion: 3,
     })
     expect(characterTarget).toEqual({
       kind: 'managed-organization-character',
       managedMemberLifecycleId: 'member-lifecycle-1',
       userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
       characterId: 90_000_001,
+      characterLifecycleId: 'character-lifecycle-1',
+      authorizationGeneration: 4,
+      disclosureVersion: 2,
+      sectionActivationVersion: 3,
+    })
+    expect(
+      selectedReviewerTarget(
+        member,
+        panel('beta', 'details', 'managed-organization-character'),
+        90_000_002,
+        sectionAuthority,
+      ),
+    ).toMatchObject({
+      characterId: 90_000_002,
+      characterLifecycleId: 'character-lifecycle-2',
+      authorizationGeneration: 5,
     })
     expect(
       selectedReviewerTarget(
         member,
         panel('beta', 'details', 'managed-organization-character'),
         90_000_099,
+        sectionAuthority,
       ),
     ).toBeUndefined()
     expect(characterTarget).not.toHaveProperty('subjectLifecycleId')
   })
 })
 
-function apiClient(entryGet = vi.fn(), membersGet = vi.fn()) {
+function apiClient(entryGet = vi.fn(), membersGet = vi.fn(), targetGet = vi.fn()) {
   return {
-    api: { organization: { review: { $get: entryGet, members: { $get: membersGet } } } },
+    api: {
+      organization: {
+        review: { $get: entryGet, members: { $get: membersGet, ':userId': { $get: targetGet } } },
+      },
+    },
   } as unknown as ApiClient
 }
 
@@ -235,6 +241,45 @@ function directoryResponse() {
       },
     ],
     nextCursor: null,
+  }
+}
+
+function targetResponse() {
+  return {
+    organizationVersion: 7,
+    member: {
+      ...directoryResponse().items[0]!,
+      characters: [
+        {
+          characterId: 90_000_001,
+          subjectLifecycleId: 'character-lifecycle-1',
+          authorizationGeneration: 4,
+          name: 'Review Pilot',
+          isMain: true,
+          affiliation: {
+            corporationId: 98_000_001,
+            allianceId: null,
+            membership: 'managed' as const,
+            freshness: 'fresh' as const,
+            checkedAt: '2026-09-18T00:00:00.000Z',
+          },
+        },
+        {
+          characterId: 90_000_002,
+          subjectLifecycleId: 'character-lifecycle-2',
+          authorizationGeneration: 5,
+          name: 'External Pilot',
+          isMain: false,
+          affiliation: {
+            corporationId: 98_000_002,
+            allianceId: null,
+            membership: 'approved-external' as const,
+            freshness: 'fresh' as const,
+            checkedAt: '2026-09-18T00:00:00.000Z',
+          },
+        },
+      ],
+    },
   }
 }
 

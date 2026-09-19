@@ -10,11 +10,12 @@ module.
 
 ## Installation And Enablement
 
-`features/installed-modules.json` is the only source of installed feature identities. Registry
-generation resolves each identity to `features/<module-id>/module.config.ts` and verifies the
-separate `server` and `nuxt` package manifests. Directory scanning never installs a feature.
-The descriptor supplies the module's default platform icon; individual navigation entries may
-override it.
+`features/installed-modules.json` is the only source of installed feature identities. Each record
+names an expected module ID and a manifest-package JSON export. Registry generation resolves that
+package data without importing publisher code, then verifies the exact manifest, server, and Nuxt
+packages selected by the lockfile. Directory scanning and package installation alone never install
+a feature. See [External Platform Modules](external-platform-modules.md) for publisher conformance,
+operator trust, and the complete external release lifecycle.
 
 The backend owns one shell navigation order shared by all users. Only the deployment administrator
 may rearrange stable core and module navigation identities. Disabled or uninstalled entries are
@@ -24,11 +25,11 @@ default order.
 Use `pnpm registry:generate` after changing installed declarations. `pnpm registry:check` renders
 all outputs in a temporary directory and compares them byte-for-byte with the checked-in files.
 
-Installation is a build-time deployment change. Add the feature to `installed-modules.json`, add its
-server package to the API dependencies and its Nuxt package to the root dependencies, regenerate the
-registries, run `pnpm test:packaging`, and deploy rebuilt API/worker and Nuxt artifacts. The registry
-check rejects missing package dependencies, runtime exports, packaged server migrations, and stale
-generated output.
+Installation is a build-time deployment change. Add the manifest selection, add its server package
+to API dependencies and its manifest and Nuxt packages to root dependencies, regenerate registries,
+run `pnpm test:packaging`, and deploy rebuilt API/worker and Nuxt artifacts. The registry check
+rejects incompatible host-contract ranges, package/version/lockfile skew, missing exports, runtime
+inventories, packaged server migrations, final composition collisions, and stale generated output.
 
 Enablement is durable runtime state and does not change the compiled `AppType` or require a rebuild.
 Use the deployment-administrator endpoints `GET /api/admin/modules` and
@@ -218,6 +219,7 @@ pnpm --filter @eve-space/api exec tsc --noEmit
 | ----------------------------- | ---------- | -------------------------------------- | ----------- |
 | Empty generated module router | 2026-08-25 | 2.22 s, 1.98 s, 2.03 s, 2.03 s, 1.98 s | 2.03 s      |
 | Post-foundation               | 2026-08-27 | 2.40 s, 2.44 s, 2.48 s, 2.51 s, 2.54 s | 2.48 s      |
+| External package composition  | 2026-09-19 | 1.47 s, 1.40 s, 1.46 s, 1.44 s, 1.48 s | 1.46 s      |
 
 The post-foundation median is 22% above the baseline and remains below the 5-second investigation
 threshold.
@@ -226,6 +228,14 @@ Investigate a declaration rollup or per-module client only when the same-machine
 median exceeds 5 seconds or twice the recorded baseline, whichever is greater. Confirm with a
 TypeScript performance trace that Hono and `AppType` inference dominate the regression before
 changing the contract architecture.
+
+## Nuxt Production Build Baseline
+
+The external-package verification compared warm `pnpm build` runs on the same arm64 Apple M4 with
+Node.js 24.20.0. A clean checkout of pre-change commit `6d92c7c` completed in 26.9 seconds; the
+external-package implementation completed in 25.2 seconds. The measured build was 6% faster, so the
+change introduced no observed Nuxt production-build regression. Re-measure several warm runs before
+making architecture decisions from a smaller difference.
 
 ## Resource Refresh Deduplication
 

@@ -22,14 +22,17 @@ import {
   ReviewerAccountSearchInputError,
   searchManagedOrganizationDirectory,
 } from '../organization/reviewer-account-search.js'
+import { resolveOrganizationReviewerTarget } from '../organization/reviewer-target.js'
 import { listAvailableReviewerContributions } from './reviewer-contributions.js'
 
+const reviewerDirectorySummaryPermission = 'member-audit.summary.read'
 const reviewerDirectoryQuery = z.object({
   query: z.string().trim().refine(isPlatformReviewerAccountSearchQuery).optional(),
   corporationId: z.coerce.number().int().positive().optional(),
   cursor: z.string().refine(isPlatformReviewerAccountSearchCursor).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(25),
 })
+const reviewerTargetParams = z.object({ userId: z.uuid() })
 
 type OrganizationReviewerEntryEnv = {
   Variables: OrganizationSessionEnv['Variables'] & {
@@ -65,6 +68,32 @@ export const organizationReviewerPlatformRoutes = new Hono<OrganizationReviewerE
       )
     }
   })
+  .get('/members/:userId', zValidator('param', reviewerTargetParams), async (context) => {
+    const target = await resolveOrganizationReviewerTarget({
+      organizationVersion: context.var.organization!.organizationVersion,
+      targetUserId: context.req.valid('param').userId,
+    })
+    if (!target) return context.json(routeNotFoundBody, 404)
+    const managedAffiliation = target.characters.find(
+      ({ affiliation }) =>
+        affiliation.membership === 'managed' && affiliation.freshness === 'fresh',
+    )!
+    return context.json({
+      organizationVersion: target.organizationVersion,
+      member: {
+        managedMemberLifecycleId: target.managedMemberLifecycleId,
+        account: target.account,
+        managedAffiliation: {
+          characterId: managedAffiliation.characterId,
+          name: managedAffiliation.name,
+          corporationId: managedAffiliation.affiliation.corporationId,
+          allianceId: managedAffiliation.affiliation.allianceId,
+          checkedAt: managedAffiliation.affiliation.checkedAt,
+        },
+        characters: target.characters,
+      },
+    })
+  })
 
 function createOrganizationReviewerEntryGate() {
   return createMiddleware<OrganizationReviewerEntryEnv>(async (context, next) => {
@@ -76,7 +105,19 @@ function createOrganizationReviewerEntryGate() {
     if (!session || !organization) throw new Error('Organization reviewer session is unavailable')
     const authorizations = await Promise.all(
       available.map((contribution) =>
-        authorizeOrganizationReviewerContribution(session.userId, organization, contribution),
+        authorizeOrganizationReviewerContribution(
+          session.userId,
+          organization,
+          contribution.directoryPermission
+            ? {
+                ...contribution,
+                additionalRequiredPermissions: [
+                  contribution.directoryPermission,
+                  reviewerDirectorySummaryPermission,
+                ],
+              }
+            : contribution,
+        ),
       ),
     )
     const authorized = available.filter((_, index) => authorizations[index]!.authorized)

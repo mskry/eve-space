@@ -186,7 +186,7 @@ function renderApiRoutes(compiled: CompiledPlatformModules) {
       ({ route, reviewerContributionIndex }) =>
         reviewerContributionIndex < 0 && route.target !== undefined && route.target !== 'caller',
     )
-      ? ['createPlatformReviewerRouteCapabilities']
+      ? ['createPlatformReviewerContributionRouteCapabilities']
       : []),
   ]
   const platformImports = routes.length
@@ -205,7 +205,7 @@ function renderApiRoutes(compiled: CompiledPlatformModules) {
     if (reviewerContributionIndex >= 0)
       capabilities = `createPlatformReviewerContributionRouteCapabilities(installedReviewerContributions[${reviewerContributionIndex}]!, ${JSON.stringify(route.coreDataProducts ?? [])} as const)`
     else if (route.target !== undefined && route.target !== 'caller')
-      capabilities = `createPlatformReviewerRouteCapabilities(${quote(manifest.id)}, ${JSON.stringify(route.coreDataProducts ?? [])} as const)`
+      capabilities = `createPlatformReviewerContributionRouteCapabilities({ moduleId: ${quote(manifest.id)} }, ${JSON.stringify(route.coreDataProducts ?? [])} as const)`
     else
       capabilities = `createPlatformModuleRouteCapabilities(${quote(manifest.id)}, ${quote(route.id)}, ${JSON.stringify(route.coreDataProducts ?? [])} as const)`
     return `const ${binding} = ${binding}Factory(${capabilities})\n`
@@ -222,6 +222,17 @@ function renderApiRoutes(compiled: CompiledPlatformModules) {
     const reviewerEvidence = route.reviewerEvidenceResourceId
       ? `, reviewerEvidence: { routeId: ${quote(route.id)}, resourceId: ${quote(route.reviewerEvidenceResourceId)}, operationId: ${quote(route.persistenceOperations[0]!.operationId)} }`
       : ''
+    const sectionDescriptor = manifest.sections?.find(({ id }) => id === route.sectionId)
+    const sectionResourceIds =
+      sectionDescriptor?.kind === 'workspace'
+        ? manifest.server.resources.map(({ id }) => id)
+        : manifest.server.resources
+            .filter(({ sectionId }) => sectionId === route.sectionId)
+            .map(({ id }) => id)
+    const reviewerResourceIds =
+      reviewerContributionIndex < 0
+        ? ''
+        : `, reviewerResourceIds: ${JSON.stringify(sectionResourceIds)} as const`
     const organizationCommands = route.organizationCommands
       ? `, organizationCommands: ${JSON.stringify(route.organizationCommands)} as const`
       : ''
@@ -229,7 +240,7 @@ function renderApiRoutes(compiled: CompiledPlatformModules) {
       reviewerContributionIndex >= 0
         ? `, routeId: ${quote(route.id)}, namespace: ${quote(route.namespace)}`
         : ''
-    const organization = `{ publisherPackage: ${quote(manifest.release.publisherPackage)}, moduleId: ${quote(manifest.id)}${contributionRoute}, audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)}${additionalPermissions}${section}${target}${exposure}${reviewerEvidence}${organizationCommands} }`
+    const organization = `{ publisherPackage: ${quote(manifest.release.publisherPackage)}, moduleId: ${quote(manifest.id)}${contributionRoute}, audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)}${additionalPermissions}${section}${target}${exposure}${reviewerEvidence}${reviewerResourceIds}${organizationCommands} }`
     if (reviewerContributionIndex >= 0)
       return `\n  .route(\n    ${quote(route.namespace)},\n    composePlatformReviewerContributionRoute(\n      installedReviewerContributions[${reviewerContributionIndex}]!,\n      ${organization},\n      ${binding},\n    ),\n  )`
     return `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote(composer)}](\n      ${quote(manifest.id)},\n      { publisherPackage: ${quote(manifest.release.publisherPackage)}, moduleId: ${quote(manifest.id)}, audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)}${additionalPermissions}${section}${target}${exposure}${reviewerEvidence}${organizationCommands} },\n      ${binding},\n    ),\n  )`
@@ -821,6 +832,7 @@ function installedReviewerContributionDescriptors(
           sectionId: route.sectionId,
           audience: contribution.audience,
           requiredPermission: contribution.requiredPermission,
+          directoryPermission: contribution.directoryPermission,
           target: contribution.target,
           panelPackage: manifest.nuxt.package,
           panelExport: contribution.panelExport,

@@ -112,19 +112,16 @@ describe('platform Nuxt module fixture', async () => {
     expect(retainedAuthorization).not.toContain('Alpha authorization required')
   })
 
-  it('keeps retained feature data while distinguishing persistence provenance', async () => {
+  it('keeps retained feature data without duplicating the global persistence notice', async () => {
     const restored = await $fetch('/characters/7/alpha?retained=true&presentation=refresh-failed')
     expect(restored).toContain('Alpha nested page')
-    expect(restored).toContain('Historical data, refresh failed.')
-    expect(restored).toContain('datetime="2026-09-15T01:00:00.000Z"')
-    expect(restored).toContain('datetime="2026-09-15T01:05:00.000Z"')
+    expect(restored).not.toContain('Historical data, refresh failed.')
 
     const serverStale = await $fetch(
       '/characters/7/alpha?state=stale&retained=true&presentation=server-stale',
     )
     expect(serverStale).toContain('Alpha nested page')
-    expect(serverStale).toContain('Server-stale data.')
-    expect(serverStale).toContain('esi-cooldown')
+    expect(serverStale).not.toContain('Server-stale data.')
   })
 
   it('rejects direct disabled-page navigation and restores it without rebuilding', async () => {

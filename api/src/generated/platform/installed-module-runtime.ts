@@ -80,14 +80,6 @@ export const installedModuleOrganizationAdmissionScopes = [
   {
     publisherPackage: '@eve-space/member-audit-manifest',
     moduleId: 'member-audit',
-    admissionScope: 'organization:v1:member-audit:hr:member-audit.search,member-audit.summary.read',
-    audience: 'hr',
-    requiredPermission: 'member-audit.search',
-    additionalRequiredPermissions: ['member-audit.summary.read'] as const,
-  },
-  {
-    publisherPackage: '@eve-space/member-audit-manifest',
-    moduleId: 'member-audit',
     admissionScope: 'organization:v1:member-audit:hr:member-audit.skills.read',
     audience: 'hr',
     requiredPermission: 'member-audit.skills.read',

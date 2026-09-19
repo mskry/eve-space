@@ -15,6 +15,7 @@ import {
   type OrganizationReviewDirectoryInput,
   type OrganizationReviewDirectoryMember,
   type OrganizationReviewTargetInput,
+  type OrganizationReviewTargetMember,
   type OrganizationReviewTargetResult,
 } from '../queries/organization-review'
 import { PRIVATE_QUERY_KEYS } from '../queries/query-keys'
@@ -107,14 +108,9 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     organizationVersion: organizationVersion.value,
     targetUserId: urlState.value.targetUserId ?? '',
     targetCharacterId: urlState.value.targetCharacterId,
+    managedMemberLifecycleId: browseSelectedMember.value?.managedMemberLifecycleId,
   }))
-  const targetLookupRequired = computed(
-    () =>
-      urlState.value.targetUserId !== undefined &&
-      directoryQuery.data.value !== undefined &&
-      directoryQuery.asyncStatus.value !== 'loading' &&
-      browseSelectedMember.value === undefined,
-  )
+  const targetLookupRequired = computed(() => urlState.value.targetUserId !== undefined)
   const targetQuery = useQuery(() =>
     organizationReviewTargetQuery({
       apiClient,
@@ -128,21 +124,28 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   )
   const selectedMember = computed(
     () =>
-      browseSelectedMember.value ??
-      currentTargetLookupMember(targetQuery.data.value, targetInput.value),
+      currentTargetLookupMember(targetQuery.data.value, targetInput.value) ??
+      browseSelectedMember.value,
   )
   const selectedContribution = computed(() => {
-    const requested = availableContributions.value.find(
+    return availableContributions.value.find(
       (contribution) => reviewerContributionIdentity(contribution) === urlState.value.contribution,
     )
-    return requested ?? availableContributions.value[0]
   })
   const selectedTarget = computed<PlatformReviewerSelectedTarget | undefined>(() => {
     if (!selectedMember.value || !selectedContribution.value) return undefined
+    const section = selectedContribution.value.sectionId
+      ? runtimeQuery.data.value?.enabledSections.find(
+          ({ moduleId, sectionId }) =>
+            moduleId === selectedContribution.value!.moduleId &&
+            sectionId === selectedContribution.value!.sectionId,
+        )
+      : { disclosureVersion: 1, activationVersion: 1 }
     return selectedReviewerTarget(
       selectedMember.value,
       selectedContribution.value,
       urlState.value.targetCharacterId,
+      section,
     )
   })
   const queryAccess = computed<PlatformReviewerPanelQueryAccess>(() => ({
@@ -237,12 +240,15 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   }
 
   async function selectMember(member: OrganizationReviewDirectoryMember) {
-    const contribution = selectedContribution.value ?? availableContributions.value[0]
-    if (!contribution) return
+    const contribution = selectedContribution.value
     announcer.polite(`Selected ${member.account.mainCharacter?.name ?? 'managed member'}.`)
-    await router.push({ query: canonicalQuery(member, contribution) })
+    await router.push({
+      query: contribution
+        ? canonicalQuery(member, contribution)
+        : { targetUserId: member.account.userId },
+    })
     await nextTick()
-    panelFocusRequest.value += 1
+    if (contribution) panelFocusRequest.value += 1
   }
 
   async function selectContribution(identity: string) {
@@ -252,7 +258,7 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     if (!contribution) return
     await router.push({
       query: selectedMember.value
-        ? canonicalQuery(selectedMember.value, contribution)
+        ? canonicalQuery(selectedMember.value, contribution, urlState.value.targetCharacterId)
         : { contribution: identity },
     })
   }
@@ -284,7 +290,7 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     const state = urlState.value
     const contribution = selectedContribution.value
     if (!contribution) {
-      clearLocationWithoutContribution()
+      canonicalizeLocationWithoutContribution()
       return
     }
     if (!state.targetUserId) {
@@ -296,27 +302,37 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
       canonicalizeUnresolvedTarget(contribution)
       return
     }
-    replaceLocationQuery(canonicalQuery(member, contribution))
+    replaceLocationQuery(canonicalQuery(member, contribution, state.targetCharacterId))
   }
 
-  function clearLocationWithoutContribution() {
+  function canonicalizeLocationWithoutContribution() {
     const state = urlState.value
-    if (!state.contribution && !state.targetUserId && !state.targetCharacterId) return
-    void router.replace({ query: {} })
+    if (!state.targetUserId) {
+      if (!state.contribution && !state.targetCharacterId) return
+      replaceLocationQuery({})
+      return
+    }
+    const member = selectedMember.value
+    if (!member) {
+      canonicalizeUnresolvedTarget()
+      return
+    }
+    replaceLocationQuery({ targetUserId: member.account.userId })
   }
 
   function replaceWithContribution(contribution: PlatformReviewerPanelCatalogEntry) {
     replaceLocationQuery({ contribution: reviewerContributionIdentity(contribution) })
   }
 
-  function canonicalizeUnresolvedTarget(contribution: PlatformReviewerPanelCatalogEntry) {
+  function canonicalizeUnresolvedTarget(contribution?: PlatformReviewerPanelCatalogEntry) {
     const lookupResult = currentTargetLookupResult(targetQuery.data.value, targetInput.value)
     const lookupDenied =
       targetQuery.error.value instanceof ApiQueryError &&
       [403, 404].includes(targetQuery.error.value.status)
     if (!directoryQuery.data.value) return
     if (targetLookupRequired.value && !lookupResult && !lookupDenied) return
-    replaceWithContribution(contribution)
+    if (contribution) replaceWithContribution(contribution)
+    else replaceLocationQuery({})
   }
 
   function replaceLocationQuery(query: Record<string, string>) {
@@ -381,20 +397,24 @@ function currentTargetLookupResult(
   if (
     result?.organizationVersion !== input.organizationVersion ||
     result?.targetUserId !== input.targetUserId ||
-    result?.targetCharacterId !== input.targetCharacterId
+    result?.targetCharacterId !== input.targetCharacterId ||
+    result?.managedMemberLifecycleId !== input.managedMemberLifecycleId
   )
     return undefined
   return result
 }
 
 function canonicalQuery(
-  member: OrganizationReviewDirectoryMember,
+  member: OrganizationReviewDirectoryMember | OrganizationReviewTargetMember,
   contribution: PlatformReviewerPanelCatalogEntry,
+  requestedCharacterId?: number,
 ) {
+  const targetCharacterId = requestedCharacterId ?? member.managedAffiliation.characterId
   return {
     targetUserId: member.account.userId,
-    ...(contribution.target === 'managed-organization-character'
-      ? { targetCharacterId: String(member.managedAffiliation.characterId) }
+    ...(requestedCharacterId !== undefined ||
+    contribution.target === 'managed-organization-character'
+      ? { targetCharacterId: String(targetCharacterId) }
       : {}),
     contribution: reviewerContributionIdentity(contribution),
   }

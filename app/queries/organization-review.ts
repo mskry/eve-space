@@ -14,6 +14,11 @@ type OrganizationReviewDirectory = InferResponseType<
   200
 >
 export type OrganizationReviewDirectoryMember = OrganizationReviewDirectory['items'][number]
+type OrganizationReviewTarget = InferResponseType<
+  OrganizationReviewClient['members'][':userId']['$get'],
+  200
+>
+export type OrganizationReviewTargetMember = OrganizationReviewTarget['member']
 
 export interface OrganizationReviewDirectoryInput {
   readonly organizationVersion: number
@@ -27,10 +32,11 @@ export interface OrganizationReviewTargetInput {
   readonly organizationVersion: number
   readonly targetUserId: string
   readonly targetCharacterId?: number
+  readonly managedMemberLifecycleId?: string
 }
 
 export interface OrganizationReviewTargetResult extends OrganizationReviewTargetInput {
-  readonly member: OrganizationReviewDirectoryMember | null
+  readonly member: OrganizationReviewTargetMember | null
 }
 
 export const organizationReviewEntryQuery = defineEsiQueryOptions(
@@ -109,26 +115,24 @@ export const organizationReviewTargetQuery = defineEsiQueryOptions(
       input.organizationVersion,
       input.targetUserId,
       input.targetCharacterId,
+      input.managedMemberLifecycleId,
     ),
     query: async ({ signal }) => {
-      const response = await apiClient.api.organization.review.members.$get(
-        {
-          query: {
-            query: String(input.targetCharacterId ?? input.targetUserId),
-            limit: '1',
-          },
-        },
+      const response = await apiClient.api.organization.review.members[':userId'].$get(
+        { param: { userId: input.targetUserId } },
         { init: { signal } },
       )
       if (response.status !== 200)
         throw await toApiQueryError(response, 'Managed member target is unavailable.')
-      const directory = await response.json()
-      const candidate = directory.items[0]
+      const target = await response.json()
+      const candidate = target.member
       const member =
-        directory.organizationVersion === input.organizationVersion &&
+        target.organizationVersion === input.organizationVersion &&
         candidate?.account.userId === input.targetUserId &&
+        (input.managedMemberLifecycleId === undefined ||
+          candidate.managedMemberLifecycleId === input.managedMemberLifecycleId) &&
         (input.targetCharacterId === undefined ||
-          candidate.managedAffiliation.characterId === input.targetCharacterId)
+          candidate.characters.some(({ characterId }) => characterId === input.targetCharacterId))
           ? candidate
           : null
       return { ...input, member } satisfies OrganizationReviewTargetResult

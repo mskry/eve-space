@@ -1227,7 +1227,10 @@ function validateReviewerContribution(
   if (contribution.audience !== 'hr' && contribution.audience !== 'director')
     issues.push(`${identity} must require an HR or director audience`)
   validatePermissionReferences(
-    [contribution.requiredPermission],
+    [
+      contribution.requiredPermission,
+      ...(contribution.directoryPermission ? [contribution.directoryPermission] : []),
+    ],
     identity,
     permissions,
     contribution.audience,
