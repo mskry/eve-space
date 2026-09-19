@@ -19,6 +19,13 @@ const SECTION_OPERATIONS = new Map<string, ReadonlySet<string>>([
   ['mail', new Set(['mail-headers', 'mail-message', 'mail-lists', 'universe-resolve-names'])],
 ])
 
+const ORGANIZATION_COMMAND_PERMISSIONS = new Map([
+  ['assign-ordinary-group', 'member-audit.groups.manage'],
+  ['revoke-ordinary-group', 'member-audit.groups.manage'],
+  ['block-member', 'member-audit.members.block'],
+  ['unblock-member', 'member-audit.members.block'],
+] as const)
+
 export const memberAuditModulePolicy = {
   moduleId: 'member-audit',
   evaluate(manifest) {
@@ -69,6 +76,7 @@ function validateRoute(route: PlatformRouteContribution, issues: string[]) {
     issues.push(`Member Audit route ${identity} must declare a managed reviewer target`)
   if (route.audience !== 'hr' && route.audience !== 'director')
     issues.push(`Member Audit route ${identity} must require an HR or director audience`)
+  validateOrganizationCommands(route, identity, issues)
   if (route.sectionId !== 'overview') return
   if (
     route.target !== 'managed-organization-account-search' &&
@@ -82,6 +90,27 @@ function validateRoute(route: PlatformRouteContribution, issues: string[]) {
     issues.push(
       `Member Audit account summary route ${identity} must require member-audit.summary.read`,
     )
+}
+
+function validateOrganizationCommands(
+  route: PlatformRouteContribution,
+  identity: string,
+  issues: string[],
+) {
+  if (!route.organizationCommands) return
+  const permissions = new Set(
+    route.organizationCommands.flatMap((commandId) => {
+      const permission = ORGANIZATION_COMMAND_PERMISSIONS.get(commandId)
+      return permission ? [permission] : []
+    }),
+  )
+  if (permissions.size > 1)
+    issues.push(`route ${identity} cannot mix organization commands with different permissions`)
+  else {
+    const [permission] = permissions
+    if (permission && route.requiredPermission !== permission)
+      issues.push(`route ${identity} organization commands require permission ${permission}`)
+  }
 }
 
 function validateResources(

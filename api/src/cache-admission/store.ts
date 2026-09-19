@@ -56,6 +56,8 @@ export interface OrganizationRevisionFacts {
     readonly bundleId: string | null
     readonly permissionType: string | null
     readonly permissionKey: string | null
+    readonly publisherPackage: string | null
+    readonly moduleId: string | null
     readonly reviewAllowed: boolean | null
   }[]
 }
@@ -200,6 +202,8 @@ export async function loadOrganizationRevisionFacts(
         bundleId: organizationGroupPermissionBundles.bundleId,
         permissionType: organizationPermissionBundleEntries.permissionType,
         permissionKey: organizationPermissionBundleEntries.permissionKey,
+        publisherPackage: organizationPermissionBundleEntries.publisherPackage,
+        moduleId: organizationPermissionBundleEntries.moduleId,
         reviewAllowed: organizationPermissionBundleEntries.reviewAllowed,
       })
       .from(organizationGroupAssignments)
@@ -261,6 +265,8 @@ export async function loadOrganizationRevisionFacts(
         asc(organizationGroupAssignments.assignmentId),
         asc(organizationGroupPermissionBundles.bundleId),
         asc(organizationPermissionBundleEntries.permissionType),
+        asc(organizationPermissionBundleEntries.publisherPackage),
+        asc(organizationPermissionBundleEntries.moduleId),
         asc(organizationPermissionBundleEntries.permissionKey),
       ),
   ])
@@ -281,6 +287,8 @@ export async function loadOrganizationRevisionFacts(
       bundleId: group.bundleId,
       permissionType: group.permissionType,
       permissionKey: group.permissionKey,
+      publisherPackage: group.publisherPackage,
+      moduleId: group.moduleId,
       reviewAllowed: group.reviewAllowed,
     })),
   }

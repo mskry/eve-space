@@ -57,6 +57,21 @@ export const platformRouteTargets = [
 ] as const
 export type PlatformRouteTarget = (typeof platformRouteTargets)[number]
 
+export const platformReviewerTargetKinds = [
+  'managed-organization-account',
+  'managed-organization-character',
+] as const
+export type PlatformReviewerTargetKind = (typeof platformReviewerTargetKinds)[number]
+
+export interface PlatformReviewerRouteLink extends PlatformOrganizationContributionAuthorization {
+  readonly routeId: string
+  readonly target: PlatformReviewerTargetKind
+}
+
+export interface PlatformReviewerServerContribution extends PlatformReviewerRouteLink {
+  readonly contributionId: string
+}
+
 export const platformRouteExposures = ['standard', 'sensitive-evidence'] as const
 export type PlatformRouteExposure = (typeof platformRouteExposures)[number]
 
@@ -68,6 +83,7 @@ export interface PlatformRouteSecurityClassification
   extends PlatformSectionBoundContribution, PlatformOrganizationCommandContribution {
   readonly target?: PlatformRouteTarget
   readonly exposure?: PlatformRouteExposure
+  readonly reviewerEvidenceResourceId?: string
 }
 
 export const platformOrganizationCommandIds = [
@@ -195,6 +211,7 @@ interface PlatformReviewerCollectionStatusBase {
   readonly characterLifecycleId: string
   readonly authorizationGeneration: number | null
   readonly disclosureVersion: number
+  readonly sectionActivationVersion: number
   readonly validatedAt: string | null
   readonly lastFailureClass: PlatformCollectionFailureClass | null
 }
@@ -211,6 +228,30 @@ export type PlatformReviewerCollectionStatus =
 
 export interface PlatformReviewerCollectionStatusReads {
   read(resourceId: string, characterId: number): Promise<PlatformReviewerCollectionStatus>
+}
+
+export interface PlatformReviewerEvidenceResourceSummary {
+  readonly resourceId: string
+  readonly status: PlatformReviewerCollectionStatus['status']
+  readonly validatedAt: string | null
+}
+
+export interface PlatformReviewerEvidenceSectionSummary {
+  readonly sectionId: string
+  readonly resources: readonly PlatformReviewerEvidenceResourceSummary[]
+}
+
+export interface PlatformReviewerCharacterEvidenceSummary {
+  readonly characterId: number
+  readonly sections: readonly PlatformReviewerEvidenceSectionSummary[]
+}
+
+export interface PlatformReviewerEvidenceSummaryReads {
+  read(): Promise<readonly PlatformReviewerCharacterEvidenceSummary[]>
+}
+
+export interface PlatformReviewerEvidenceReads {
+  read(options?: { readonly limit?: number }): Promise<unknown>
 }
 
 export interface PlatformSafeErrorBody {
@@ -274,6 +315,7 @@ export interface PlatformReviewerTargetGroup {
   readonly name: string
   readonly restricted: boolean
   readonly managementMode: 'manual' | 'compliance'
+  readonly readOnly: boolean
   readonly assignedAt: string
   readonly expiresAt: string | null
 }
@@ -332,9 +374,11 @@ export interface PlatformReviewerAccountSearchItem {
   readonly block:
     | { readonly blocked: false }
     | { readonly blocked: true; readonly blockedAt: string }
+  readonly evidenceSections: readonly PlatformReviewerEvidenceSectionSummary[]
 }
 
 export interface PlatformReviewerAccountSearchPage {
+  readonly organizationVersion: number
   readonly status: 'available' | 'unavailable'
   readonly items: readonly PlatformReviewerAccountSearchItem[]
   readonly nextCursor: string | null
@@ -461,6 +505,8 @@ interface PlatformReviewerTargetRouteContextBase {
   }
   readonly organization: PlatformAuthorizedOrganizationContext
   readonly collectionStatus: PlatformReviewerCollectionStatusReads
+  readonly evidence?: PlatformReviewerEvidenceReads
+  readonly evidenceSummary: PlatformReviewerEvidenceSummaryReads
   readonly reviewerTarget: PlatformReviewerTargetContext
 }
 

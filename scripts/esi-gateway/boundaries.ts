@@ -30,6 +30,7 @@ const modulesByTier = {
     'internal/representations',
     'internal/representation-registry',
     'internal/runtime-ports',
+    'catalog-authority',
     'catalog-interface',
   ],
   infrastructure: [

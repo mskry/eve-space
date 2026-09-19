@@ -13,12 +13,16 @@ import { getPlatformEsiOperationDefinition } from '../../src/esi-gateway/catalog
 const mocks = vi.hoisted(() => ({
   getCharacterAuthorizationForLifecycle: vi.fn(),
   getCharacterCacheAuthorizationForLifecycle: vi.fn(),
+  resolveUniverseNamesBestEffort: vi.fn(),
 }))
 
 vi.mock('../../src/auth/tokens.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../src/auth/tokens.js')>()),
   getCharacterAuthorizationForLifecycle: mocks.getCharacterAuthorizationForLifecycle,
   getCharacterCacheAuthorizationForLifecycle: mocks.getCharacterCacheAuthorizationForLifecycle,
+}))
+vi.mock('../../src/universe/names.js', () => ({
+  resolveUniverseNamesBestEffort: mocks.resolveUniverseNamesBestEffort,
 }))
 import { assertInstalledResourceDeclarations } from '../../src/platform/resource-declarations.js'
 import { guardInstalledResourceExecution } from '../../src/platform/resource-execution-guard.js'
@@ -73,6 +77,7 @@ describe('installed resource operation policy', () => {
       scopes: ['esi-wallet.read_character_wallet.v1'],
       tokenVersion: 4,
     })
+    mocks.resolveUniverseNamesBestEffort.mockResolvedValue({ names: new Map(), complete: true })
   })
 
   test('maps cached platform wire data before returning a resource observation', async () => {
@@ -413,7 +418,9 @@ describe('installed resource operation policy', () => {
       characterId: 1404328063,
       authorization: { tokenVersion: 4 },
     })
-    const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution([], null))
+    const executeEsiOperation = vi
+      .fn()
+      .mockResolvedValue(platformExecution([], null, 'esi', { pages: 4 }))
 
     await expect(
       executeInstalledResourceOperation(identity, {
@@ -425,11 +432,57 @@ describe('installed resource operation policy', () => {
           .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
         createCapabilities: vi.fn().mockReturnValue({}),
       }),
-    ).resolves.toMatchObject({ authorizationGeneration: 4, complete: true })
+    ).resolves.toMatchObject({
+      authorizationGeneration: 4,
+      complete: true,
+      result: {
+        pagination: { pages: 4 },
+        data: { pagination: { pages: 4 } },
+      },
+    })
     expect(executeEsiOperation).toHaveBeenCalledWith({
       operation: 'universe-resolve-names',
       inputs: { body: [1404328063] },
       authorization: { kind: 'public' },
+    })
+  })
+
+  test('uses resilient per-item universe-name resolution for production collection', async () => {
+    const collect = vi.fn(async (context) => ({
+      complete: true,
+      data: await context.execute('universe-resolve-names', { body: [1, 90_666_561] }),
+    }))
+    const collectingResource = {
+      ...resource,
+      dependentOperationIds: ['universe-resolve-names'],
+      implementation: { ...implementation, collect },
+    }
+    const guardExecution = vi.fn().mockResolvedValue({
+      outcome: 'ready',
+      resource: collectingResource,
+      characterId: 1_404_328_063,
+      authorization: { tokenVersion: 4 },
+    })
+    mocks.resolveUniverseNamesBestEffort.mockResolvedValue({
+      names: new Map([[1, { id: 1, name: 'Resolved', category: 'character' }]]),
+      complete: true,
+    })
+
+    await expect(
+      executeInstalledResourceOperation(identity, {
+        resources: [collectingResource],
+        guardExecution,
+        loadCollectionContext: vi
+          .fn()
+          .mockResolvedValue({ organizationVersion: 2, corporationId: 98_000_001 }),
+        createCapabilities: vi.fn().mockReturnValue({}),
+      }),
+    ).resolves.toMatchObject({
+      complete: true,
+      result: { data: { data: [{ id: 1, name: 'Resolved', category: 'character' }] } },
+    })
+    expect(mocks.resolveUniverseNamesBestEffort).toHaveBeenCalledWith([1, 90_666_561], {
+      signal: undefined,
     })
   })
 
@@ -627,10 +680,12 @@ function platformExecution(
   data: unknown,
   authorizationGeneration: number | null,
   source: 'esi' | 'cache' = 'esi',
+  pagination?: { readonly pages?: number },
 ) {
   return {
     ...cached(data),
     source,
     authorizationGeneration,
+    ...(pagination ? { pagination } : {}),
   }
 }

@@ -1,4 +1,5 @@
 import type { EntryKey } from '@pinia/colada'
+import type { PlatformReviewerSelectedTarget } from './reviewer-panel.js'
 
 export type PlatformQuerySubject =
   | { readonly kind: 'account' }
@@ -16,6 +17,55 @@ export type PlatformQuerySubject =
     }
 
 export const PLATFORM_PRIVATE_QUERY_ROOT = ['private'] as const
+
+export interface PlatformReviewerContributionTargetIdentity {
+  readonly organizationVersion: number
+  readonly moduleId: string
+  readonly sectionId?: string
+  readonly contributionId: string
+  readonly target: PlatformReviewerSelectedTarget
+}
+
+export function platformReviewerContributionTargetResourceKey(
+  identity: Omit<PlatformReviewerContributionTargetIdentity, 'moduleId' | 'organizationVersion'>,
+): EntryKey {
+  const target = identity.target
+  const key: EntryKey = [
+    'reviewer',
+    'contributions',
+    requiredIdentity(identity.contributionId, 'Reviewer contribution ID'),
+    'targets',
+    requiredIdentity(target.managedMemberLifecycleId, 'Managed member lifecycle ID'),
+    requiredIdentity(target.userId, 'Reviewer target user ID'),
+    'section-activation',
+    positiveInteger(target.sectionActivationVersion, 'section activation version'),
+  ]
+  return target.kind === 'managed-organization-character'
+    ? [
+        ...key,
+        positiveInteger(target.characterId, 'character ID'),
+        'character-lifecycle',
+        requiredIdentity(target.characterLifecycleId, 'Character lifecycle ID'),
+        'authorization-generation',
+        target.authorizationGeneration === null
+          ? 'authorization-required'
+          : nonnegativeInteger(target.authorizationGeneration, 'authorization generation'),
+        'disclosure-version',
+        positiveInteger(target.disclosureVersion, 'disclosure version'),
+      ]
+    : key
+}
+
+export function platformReviewerContributionTargetQueryKey(
+  identity: PlatformReviewerContributionTargetIdentity,
+): EntryKey {
+  return platformModuleQueryKey(
+    identity.moduleId,
+    { kind: 'organization', organizationVersion: identity.organizationVersion },
+    platformReviewerContributionTargetResourceKey(identity),
+    identity.sectionId,
+  )
+}
 
 export function platformModuleQueryKey(
   moduleId: string,
@@ -104,6 +154,11 @@ export function isPlatformQuerySubjectValid(subject: PlatformQuerySubject) {
 
 function positiveInteger(value: number, name: string) {
   if (!isPositiveInteger(value)) throw new TypeError(`Invalid ${name}: ${value}`)
+  return value
+}
+
+function nonnegativeInteger(value: number, name: string) {
+  if (!Number.isSafeInteger(value) || value < 0) throw new TypeError(`Invalid ${name}: ${value}`)
   return value
 }
 

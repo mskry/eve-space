@@ -142,7 +142,15 @@ export async function seedLocalOrganizationFixture({
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: account.userId,
       name: 'Organization Activity Members',
-      permissions: [{ type: 'module', key: 'organization-activity.view', reviewAllowed: false }],
+      reason: 'Create the local organization activity permission bundle.',
+      permissions: [
+        {
+          type: 'module',
+          publisherPackage: '@eve-space/organization-activity-manifest',
+          moduleId: 'organization-activity',
+          key: 'organization-activity.view',
+        },
+      ],
     })
     await createOrganizationGroup({
       actorUserId: account.userId,

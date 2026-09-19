@@ -1,0 +1,9 @@
+{
+  "name": "@eve-space/beta-nuxt",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/module.js",
+    "./reviewer/details": "./src/runtime/reviewer/details.vue"
+  }
+}

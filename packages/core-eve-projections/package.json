@@ -1,7 +1,6 @@
 {
   "name": "@eve-space/core-eve-projections",
   "version": "0.1.0",
-  "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "sideEffects": false,
@@ -41,6 +40,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",

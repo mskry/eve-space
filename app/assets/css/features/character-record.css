@@ -32,6 +32,10 @@
   gap: 1.25rem;
 }
 
+.character-shell-identity--record {
+  align-items: center;
+}
+
 .character-shell-portrait {
   width: 4.5rem;
   height: 4.5rem;
@@ -148,6 +152,20 @@ a.character-shell-affiliation:focus-visible {
 }
 
 .character-shell-organization-link:focus-visible {
+  outline: 0.125rem solid var(--ui-primary);
+  outline-offset: 0.1875rem;
+}
+
+.character-shell-record-affiliations a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.character-shell-record-affiliations a:hover {
+  color: var(--ui-primary);
+}
+
+.character-shell-record-affiliations a:focus-visible {
   outline: 0.125rem solid var(--ui-primary);
   outline-offset: 0.1875rem;
 }

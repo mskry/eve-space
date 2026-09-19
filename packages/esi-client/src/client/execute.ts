@@ -127,80 +127,34 @@ export async function executeOperation<TArguments extends OperationRequestArgume
     configuration.language,
   );
 
-  const secrets: string[] = [];
-  if (execution.authentication !== null) {
-    const token = await raceCallerCancellation(
-      resolveAccessToken(configuration, descriptor.operationId, execution.authentication),
-      options.signal,
-      descriptor.operationId,
-    );
-    secrets.push(token);
-    headers.set('authorization', `Bearer ${token}`);
-  }
-
-  const fetchImplementation = configuration.fetch;
+  const secrets = await authorizeOperationRequest(
+    configuration,
+    descriptor.operationId,
+    execution.authentication,
+    options.signal,
+    headers,
+  );
   const redaction = { secrets };
   const exchange = createExchangeDeadline(configuration.requestTimeoutMs, options.signal);
-  let response: Response | undefined;
   try {
-    const fetchPromise = Promise.resolve().then(() =>
-      fetchImplementation(`${configuration.baseUrl}${request.path}`, {
-        method: request.method,
-        headers,
-        signal: exchange.signal,
-        ...(request.body === undefined ? {} : { body: request.body }),
-      }),
+    const response = await fetchOperationResponse(
+      configuration,
+      request,
+      headers,
+      exchange,
+      descriptor.operationId,
+      redaction,
     );
-    void fetchPromise.then(
-      (lateResponse) => {
-        if (exchange.cancelled) void lateResponse.body?.cancel().catch(() => undefined);
-      },
-      () => undefined,
-    );
-    try {
-      response = await exchange.race(fetchPromise, {
-        operationId: descriptor.operationId,
-        phase: 'request',
-        redaction,
-      });
-    } catch (cause) {
-      if (cause instanceof EsiTransportError) throw cause;
-      throw new EsiTransportError({
-        operationId: descriptor.operationId,
-        reason: 'network',
-        phase: 'request',
-        redaction,
-        cause,
-      });
-    }
     const metadata = extractEsiResponseMetadata(response.status, new Headers(response.headers));
-    const responseTransport = {
+    const responseTransport: EsiOperationResponseContext = {
       operationId: descriptor.operationId,
-      phase: 'response' as const,
+      phase: 'response',
       status: response.status,
       metadata,
       redaction,
     };
 
-    if (response.status === 304) {
-      await cancelResponseBody(response, exchange, responseTransport);
-      throw new EsiNotModifiedError({ operationId: descriptor.operationId, metadata, redaction });
-    }
-    if (!response.ok) {
-      const responseBodyText = await readResponseBody(
-        response,
-        exchange,
-        responseTransport,
-        ESI_ERROR_BODY_LIMITS.bytes + 1,
-      );
-      throw new EsiHttpError({
-        operationId: descriptor.operationId,
-        status: response.status,
-        metadata,
-        responseBodyText,
-        redaction,
-      });
-    }
+    await rejectUnsuccessfulResponse(response, exchange, responseTransport);
 
     const successResponse = selectSuccessResponse(execution.successResponses, response.status);
     if (response.status === 204 || response.status === 205 || successResponse?.body === 'none') {
@@ -214,56 +168,133 @@ export async function executeOperation<TArguments extends OperationRequestArgume
     }
 
     const responseBodyText = await readResponseBody(response, exchange, responseTransport);
-    let data: unknown;
-    try {
-      data = JSON.parse(responseBodyText ?? '');
-    } catch (cause) {
-      throw new EsiResponseParseError({
-        operationId: descriptor.operationId,
-        status: response.status,
-        metadata,
-        redaction,
-        cause,
-      });
-    }
-
-    if (!configuration.validateResponses) {
-      return createEsiResponse(
-        // Validation is explicitly disabled, so the wire value retains the generated response type.
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-        data as TResponse,
-        metadata,
-      );
-    }
-    if (successResponse === undefined) {
-      throw new EsiResponseValidationError({
-        operationId: descriptor.operationId,
-        status: response.status,
-        metadata,
-        issues: [
-          {
-            path: [],
-            code: 'unsupported_status',
-            message: `No response schema is declared for successful HTTP status ${response.status}`,
-          },
-        ],
-        redaction,
-      });
-    }
-    const parsed = successResponse.schema.safeParse(data);
-    if (!parsed.success) {
-      throw new EsiResponseValidationError({
-        operationId: descriptor.operationId,
-        status: response.status,
-        metadata,
-        issues: parsed.error.issues,
-        redaction,
-      });
-    }
-    return createEsiResponse(parsed.data, metadata);
+    const data = parseResponseBody(responseBodyText, responseTransport);
+    return createEsiResponse(
+      validateResponseData(
+        data,
+        configuration.validateResponses,
+        successResponse,
+        responseTransport,
+      ),
+      metadata,
+    );
   } finally {
     exchange.close();
   }
+}
+
+async function authorizeOperationRequest(
+  configuration: EsiClientConfiguration,
+  operationId: string,
+  authentication: OperationAuthentication | null,
+  signal: AbortSignal | undefined,
+  headers: Headers,
+): Promise<string[]> {
+  if (authentication === null) return [];
+  const token = await raceCallerCancellation(
+    resolveAccessToken(configuration, operationId, authentication),
+    signal,
+    operationId,
+  );
+  headers.set('authorization', `Bearer ${token}`);
+  return [token];
+}
+
+async function fetchOperationResponse(
+  configuration: EsiClientConfiguration,
+  request: ReturnType<typeof constructOperationRequest>,
+  headers: Headers,
+  exchange: EsiExchangeDeadline,
+  operationId: string,
+  redaction: EsiResponseTransportContext['redaction'],
+): Promise<Response> {
+  const fetchImplementation = configuration.fetch;
+  const fetchPromise = Promise.resolve().then(() =>
+    fetchImplementation(`${configuration.baseUrl}${request.path}`, {
+      method: request.method,
+      headers,
+      signal: exchange.signal,
+      ...requestBodyInit(request.body),
+    }),
+  );
+  void fetchPromise.then(
+    (lateResponse) => cancelLateResponse(lateResponse, exchange),
+    () => undefined,
+  );
+  try {
+    return await exchange.race(fetchPromise, { operationId, phase: 'request', redaction });
+  } catch (cause) {
+    throw networkTransportError(cause, { operationId, phase: 'request', redaction });
+  }
+}
+
+function requestBodyInit(body: string | undefined): { readonly body?: string } {
+  return body === undefined ? {} : { body };
+}
+
+function cancelLateResponse(response: Response, exchange: EsiExchangeDeadline): void {
+  if (!exchange.cancelled) return;
+  void response.body?.cancel().catch(() => undefined);
+}
+
+async function rejectUnsuccessfulResponse(
+  response: Response,
+  exchange: EsiExchangeDeadline,
+  context: EsiOperationResponseContext,
+): Promise<void> {
+  if (response.status === 304) {
+    await cancelResponseBody(response, exchange, context);
+    throw new EsiNotModifiedError(context);
+  }
+  if (response.ok) return;
+  const responseBodyText = await readResponseBody(
+    response,
+    exchange,
+    context,
+    ESI_ERROR_BODY_LIMITS.bytes + 1,
+  );
+  throw new EsiHttpError({ ...context, responseBodyText });
+}
+
+function parseResponseBody(
+  responseBodyText: string | undefined,
+  context: EsiOperationResponseContext,
+): unknown {
+  try {
+    return JSON.parse(responseBodyText ?? '');
+  } catch (cause) {
+    throw new EsiResponseParseError({ ...context, cause });
+  }
+}
+
+function validateResponseData<TResponse>(
+  data: unknown,
+  validateResponses: boolean,
+  successResponse: JsonOperationSuccessResponse<TResponse> | undefined,
+  context: EsiOperationResponseContext,
+): TResponse {
+  if (!validateResponses) {
+    // Validation is explicitly disabled, so the wire value retains the generated response type.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+    return data as TResponse;
+  }
+  if (successResponse === undefined) {
+    throw new EsiResponseValidationError({
+      ...context,
+      issues: [
+        {
+          path: [],
+          code: 'unsupported_status',
+          message: `No response schema is declared for successful HTTP status ${context.status}`,
+        },
+      ],
+    });
+  }
+  const parsed = successResponse.schema.safeParse(data);
+  if (!parsed.success) {
+    throw new EsiResponseValidationError({ ...context, issues: parsed.error.issues });
+  }
+  return parsed.data;
 }
 
 function validateExecutionDescriptor<TResponse>(
@@ -555,6 +586,12 @@ interface EsiResponseTransportContext {
   readonly redaction: { readonly secrets: readonly string[] };
 }
 
+interface EsiOperationResponseContext extends EsiResponseTransportContext {
+  readonly phase: 'response';
+  readonly status: number;
+  readonly metadata: EsiResponseMetadata;
+}
+
 interface EsiExchangeDeadline {
   readonly signal: AbortSignal;
   readonly cancelled: boolean;
@@ -621,8 +658,7 @@ async function cancelResponseBody(
   try {
     await exchange.race(response.body.cancel(), context);
   } catch (cause) {
-    if (cause instanceof EsiTransportError) throw cause;
-    throw new EsiTransportError({ ...context, reason: 'network', cause });
+    throw networkTransportError(cause, context);
   }
 }
 
@@ -634,53 +670,90 @@ async function readResponseBody(
 ): Promise<string | undefined> {
   if (response.body === null) return undefined;
   const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let byteLength = 0;
+  const body = { chunks: [] as Uint8Array[], byteLength: 0 };
   let cancellationStarted = false;
-  const release = () => {
-    try {
-      reader.releaseLock();
-    } catch {
-      void reader.closed.finally(() => reader.releaseLock()).catch(() => undefined);
-    }
-  };
   const cancel = () => {
     cancellationStarted = true;
-    void reader
-      .cancel(exchange.signal.reason)
-      .finally(release)
-      .catch(() => undefined);
+    cancelResponseReader(reader, exchange.signal.reason);
   };
   exchange.signal.addEventListener('abort', cancel, { once: true });
   if (exchange.signal.aborted) cancel();
   try {
-    while (byteLength < maximumBytes) {
-      const result = await exchange.race(reader.read(), context);
-      if (result.done) break;
-      const remaining = maximumBytes - byteLength;
-      const chunk =
-        result.value.byteLength > remaining ? result.value.slice(0, remaining) : result.value;
-      chunks.push(chunk);
-      byteLength += chunk.byteLength;
-      if (result.value.byteLength > remaining) break;
-    }
+    await readResponseChunks(reader, exchange, context, maximumBytes, body);
   } catch (cause) {
-    if (cause instanceof EsiTransportError) throw cause;
-    throw new EsiTransportError({ ...context, reason: 'network', cause });
+    throw networkTransportError(cause, context);
   } finally {
     exchange.signal.removeEventListener('abort', cancel);
-    if (!cancellationStarted) {
-      if (byteLength >= maximumBytes) await reader.cancel().catch(() => undefined);
-      release();
-    }
+    await finishResponseRead(reader, cancellationStarted, body.byteLength >= maximumBytes);
   }
-  const bytes = new Uint8Array(byteLength);
+  return decodeResponseChunks(body);
+}
+
+async function readResponseChunks(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  exchange: EsiExchangeDeadline,
+  context: EsiResponseTransportContext,
+  maximumBytes: number,
+  body: { chunks: Uint8Array[]; byteLength: number },
+): Promise<void> {
+  while (body.byteLength < maximumBytes) {
+    const result = await exchange.race(reader.read(), context);
+    if (result.done) break;
+    const remaining = maximumBytes - body.byteLength;
+    body.chunks.push(boundedResponseChunk(result.value, remaining));
+    body.byteLength += Math.min(result.value.byteLength, remaining);
+    if (result.value.byteLength > remaining) break;
+  }
+}
+
+function boundedResponseChunk(chunk: Uint8Array, maximumBytes: number): Uint8Array {
+  return chunk.byteLength > maximumBytes ? chunk.slice(0, maximumBytes) : chunk;
+}
+
+function cancelResponseReader(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  reason: unknown,
+): void {
+  void reader
+    .cancel(reason)
+    .finally(() => releaseResponseReader(reader))
+    .catch(() => undefined);
+}
+
+async function finishResponseRead(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  cancellationStarted: boolean,
+  reachedMaximumBytes: boolean,
+): Promise<void> {
+  if (cancellationStarted) return;
+  if (reachedMaximumBytes) await reader.cancel().catch(() => undefined);
+  releaseResponseReader(reader);
+}
+
+function releaseResponseReader(reader: ReadableStreamDefaultReader<Uint8Array>): void {
+  try {
+    reader.releaseLock();
+  } catch {
+    void reader.closed.finally(() => reader.releaseLock()).catch(() => undefined);
+  }
+}
+
+function decodeResponseChunks(body: { chunks: Uint8Array[]; byteLength: number }): string {
+  const bytes = new Uint8Array(body.byteLength);
   let offset = 0;
-  for (const chunk of chunks) {
+  for (const chunk of body.chunks) {
     bytes.set(chunk, offset);
     offset += chunk.byteLength;
   }
   return new TextDecoder().decode(bytes);
+}
+
+function networkTransportError(
+  cause: unknown,
+  context: EsiResponseTransportContext,
+): EsiTransportError {
+  if (cause instanceof EsiTransportError) return cause;
+  return new EsiTransportError({ ...context, reason: 'network', cause });
 }
 
 function requestValidationError(

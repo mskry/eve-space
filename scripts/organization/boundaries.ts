@@ -12,6 +12,7 @@ const modulesByTier = {
     'group-mutation-error',
     'managed-corporation-evidence',
     'owner-claim-policy',
+    'permission-catalog-policy',
     'registration-policy',
   ],
   adapter: [
@@ -25,7 +26,9 @@ const modulesByTier = {
     'managed-member-lifecycle',
     'managed-corporations',
     'organization-lock',
+    'permission-catalog-store',
     'reviewer-account-search',
+    'reviewer-group-policy',
     'reviewer-organization-snapshot',
     'reviewer-target',
     'roster-collection',
@@ -36,6 +39,7 @@ const modulesByTier = {
     'audit-history',
     'entitlement-transitions',
     'group-audit',
+    'permission-bundle-audit',
     'sensitive-access-audit',
   ],
   service: [

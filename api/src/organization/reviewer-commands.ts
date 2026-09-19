@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, isNull, like, or } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNull, or } from 'drizzle-orm'
 import { db, type DatabaseTransaction } from '../db/client.js'
 import {
   organizationGroupAssignments,
@@ -8,6 +8,7 @@ import {
   organizationMemberBlocks,
   organizationPermissionBundleEntries,
   organizationRoleGrants,
+  deploymentModules,
 } from '../db/schema.js'
 import { organizationAuditReasonSchema } from './audit.js'
 import {
@@ -24,38 +25,34 @@ import {
   revokeManualOrganizationGroupAssignmentInTransaction,
 } from './group-store.js'
 import { lockCurrentOrganization } from './organization-lock.js'
+import { organizationReviewerPermissionExists } from './reviewer-group-policy.js'
+import { currentCatalogPermission } from './permission-catalog-store.js'
 
-type OrganizationReviewerActionPermission =
-  | 'member-audit.groups.manage'
-  | 'member-audit.members.block'
-
-export interface OrganizationReviewerCommandBinding<
-  Permission extends OrganizationReviewerActionPermission,
-> {
+export interface OrganizationReviewerCommandBinding {
   readonly organizationDeploymentId: 1
   readonly organizationVersion: number
   readonly actorUserId: string
+  readonly publisherPackage: string
+  readonly moduleId: string
   readonly targetUserId: string
   readonly managedMemberLifecycleId: string
-  readonly requiredPermission: Permission
+  readonly requiredPermission: string
   readonly reason: string
 }
 
-export interface AssignOrganizationReviewerGroupCommand extends OrganizationReviewerCommandBinding<'member-audit.groups.manage'> {
+export interface AssignOrganizationReviewerGroupCommand extends OrganizationReviewerCommandBinding {
   readonly groupId: string
   readonly expiresAt?: Date | null
 }
 
-export interface RevokeOrganizationReviewerGroupCommand extends OrganizationReviewerCommandBinding<'member-audit.groups.manage'> {
+export interface RevokeOrganizationReviewerGroupCommand extends OrganizationReviewerCommandBinding {
   readonly groupId: string
   readonly assignmentId: string
 }
 
-export type BlockOrganizationReviewerMemberCommand =
-  OrganizationReviewerCommandBinding<'member-audit.members.block'>
+export type BlockOrganizationReviewerMemberCommand = OrganizationReviewerCommandBinding
 
-export type UnblockOrganizationReviewerMemberCommand =
-  OrganizationReviewerCommandBinding<'member-audit.members.block'>
+export type UnblockOrganizationReviewerMemberCommand = OrganizationReviewerCommandBinding
 
 export class OrganizationReviewerCommandError extends Error {
   constructor(
@@ -80,7 +77,7 @@ export async function assignOrganizationReviewerOrdinaryGroup(
 ) {
   const reason = requireReason(input.reason)
   return db.transaction(async (transaction) => {
-    const organization = await authorizeCommand(transaction, input, 'member-audit.groups.manage')
+    const organization = await authorizeCommand(transaction, input)
     requireDifferentTarget(input)
     const group = await loadOrdinaryGroupForUpdate(
       transaction,
@@ -114,7 +111,7 @@ export async function revokeOrganizationReviewerOrdinaryGroup(
 ) {
   const reason = requireReason(input.reason)
   return db.transaction(async (transaction) => {
-    const organization = await authorizeCommand(transaction, input, 'member-audit.groups.manage')
+    const organization = await authorizeCommand(transaction, input)
     requireDifferentTarget(input)
     const group = await loadOrdinaryGroupForUpdate(
       transaction,
@@ -152,7 +149,7 @@ export async function blockOrganizationReviewerMember(
 ) {
   const reason = requireReason(input.reason)
   return db.transaction(async (transaction) => {
-    const organization = await authorizeCommand(transaction, input, 'member-audit.members.block')
+    const organization = await authorizeCommand(transaction, input)
     requireDifferentTarget(input)
     await requireNonReviewerTarget(transaction, input)
     const block = await blockOrganizationMemberInTransaction(transaction, organization, {
@@ -175,7 +172,7 @@ export async function unblockOrganizationReviewerMember(
 ) {
   const reason = requireReason(input.reason)
   return db.transaction(async (transaction) => {
-    const organization = await authorizeCommand(transaction, input, 'member-audit.members.block')
+    const organization = await authorizeCommand(transaction, input)
     requireDifferentTarget(input)
     await requireNonReviewerTarget(transaction, input)
     const block = await unblockOrganizationMemberInTransaction(transaction, organization, {
@@ -195,14 +192,20 @@ export async function unblockOrganizationReviewerMember(
 
 async function authorizeCommand(
   transaction: DatabaseTransaction,
-  input: OrganizationReviewerCommandBinding<OrganizationReviewerActionPermission>,
-  expectedPermission: OrganizationReviewerActionPermission,
+  input: OrganizationReviewerCommandBinding,
 ) {
+  if (
+    !currentCatalogPermission({
+      publisherPackage: input.publisherPackage,
+      moduleId: input.moduleId,
+      key: input.requiredPermission,
+    })
+  )
+    throw new OrganizationReviewerCommandError('reviewer-permission-required')
   const organization = await lockCurrentOrganization(transaction)
   if (
     input.organizationDeploymentId !== 1 ||
-    input.organizationVersion !== organization.organizationVersion ||
-    input.requiredPermission !== expectedPermission
+    input.organizationVersion !== organization.organizationVersion
   )
     throw new OrganizationReviewerCommandError('invalid-binding')
 
@@ -307,6 +310,13 @@ async function authorizeCommand(
         ),
       ),
     )
+    .innerJoin(
+      deploymentModules,
+      and(
+        eq(deploymentModules.moduleId, organizationPermissionBundleEntries.moduleId),
+        eq(deploymentModules.enabled, true),
+      ),
+    )
     .where(
       and(
         eq(organizationGroupAssignments.deploymentId, input.organizationDeploymentId),
@@ -320,7 +330,9 @@ async function authorizeCommand(
         eq(organizationGroups.restricted, true),
         eq(organizationGroups.managementMode, 'manual'),
         eq(organizationPermissionBundleEntries.permissionType, 'module'),
-        eq(organizationPermissionBundleEntries.permissionKey, expectedPermission),
+        eq(organizationPermissionBundleEntries.publisherPackage, input.publisherPackage),
+        eq(organizationPermissionBundleEntries.moduleId, input.moduleId),
+        eq(organizationPermissionBundleEntries.permissionKey, input.requiredPermission),
       ),
     )
     .for('key share')
@@ -338,43 +350,20 @@ async function loadOrdinaryGroupForUpdate(
   if (group.managementMode === 'compliance')
     throw new OrganizationReviewerCommandError('compliance-group-not-allowed')
   const [reviewerPermission] = await transaction
-    .select({ key: organizationPermissionBundleEntries.permissionKey })
-    .from(organizationGroupPermissionBundles)
-    .innerJoin(
-      organizationPermissionBundleEntries,
-      and(
-        eq(
-          organizationPermissionBundleEntries.bundleId,
-          organizationGroupPermissionBundles.bundleId,
-        ),
-        eq(
-          organizationPermissionBundleEntries.deploymentId,
-          organizationGroupPermissionBundles.deploymentId,
-        ),
-        eq(
-          organizationPermissionBundleEntries.organizationVersion,
-          organizationGroupPermissionBundles.organizationVersion,
-        ),
-      ),
-    )
-    .where(
-      and(
-        eq(organizationGroupPermissionBundles.groupId, group.groupId),
-        eq(organizationGroupPermissionBundles.deploymentId, 1),
-        eq(organizationGroupPermissionBundles.organizationVersion, organizationVersion),
-        eq(organizationPermissionBundleEntries.permissionType, 'module'),
-        like(organizationPermissionBundleEntries.permissionKey, 'member-audit.%'),
-      ),
-    )
+    .select({
+      exists: organizationReviewerPermissionExists(organizationVersion, group.groupId),
+    })
+    .from(organizationGroups)
+    .where(eq(organizationGroups.groupId, group.groupId))
     .limit(1)
-  if (reviewerPermission)
+  if (reviewerPermission?.exists)
     throw new OrganizationReviewerCommandError('reviewer-permission-group-not-allowed')
   return group
 }
 
 async function requireNonReviewerTarget(
   transaction: DatabaseTransaction,
-  input: OrganizationReviewerCommandBinding<OrganizationReviewerActionPermission>,
+  input: OrganizationReviewerCommandBinding,
 ) {
   const [reviewerGrant] = await transaction
     .select({ id: organizationRoleGrants.grantId })
@@ -392,9 +381,7 @@ async function requireNonReviewerTarget(
   if (reviewerGrant) throw new OrganizationReviewerCommandError('reviewer-target-not-allowed')
 }
 
-function requireDifferentTarget(
-  input: OrganizationReviewerCommandBinding<OrganizationReviewerActionPermission>,
-) {
+function requireDifferentTarget(input: OrganizationReviewerCommandBinding) {
   if (input.actorUserId === input.targetUserId)
     throw new OrganizationReviewerCommandError('self-target-not-allowed')
 }

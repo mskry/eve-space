@@ -1,31 +1,27 @@
 export { ESI_ERROR_BODY_LIMITS } from './error/limits.js';
 import {
-  EsiAuthenticationRequiredError,
   EsiError,
-  EsiGenericMutationDisabledError,
-  EsiGenericMutationUnconfirmedError,
   EsiHttpError,
   EsiNotModifiedError,
-  EsiRequestValidationError,
   EsiResponseParseError,
   EsiResponseValidationError,
   EsiTransportError,
+} from './error/classes.js';
+export {
+  EsiAuthenticationRequiredError,
+  EsiGenericMutationDisabledError,
+  EsiGenericMutationUnconfirmedError,
+  EsiRequestValidationError,
   EsiUnknownOperationError,
   EsiValidationError,
 } from './error/classes.js';
 export {
-  EsiAuthenticationRequiredError,
   EsiError,
-  EsiGenericMutationDisabledError,
-  EsiGenericMutationUnconfirmedError,
   EsiHttpError,
   EsiNotModifiedError,
-  EsiRequestValidationError,
   EsiResponseParseError,
   EsiResponseValidationError,
   EsiTransportError,
-  EsiUnknownOperationError,
-  EsiValidationError,
 };
 export type {
   EsiAuthenticationRequiredErrorOptions,

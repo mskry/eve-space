@@ -2,11 +2,20 @@
 
 import type {
   PlatformInstalledResourceDescriptor,
-  PlatformResourceImplementationForProducts,
+  PlatformResourceImplementationForCapabilities,
 } from '@eve-space/platform-module-contract/resources'
+import type {
+  InstalledModuleResourceMaterializationPersistence,
+  InstalledModuleResourceProjectionPersistence,
+} from './installed-module-persistence.js'
 import {
   trainedSkillsResource as module0Resource0,
-  skillQueueResource as module0Resource1,
+  assetsResource as module0Resource1,
+  walletBalanceResource as module0Resource2,
+  walletJournalResource as module0Resource3,
+  walletTransactionsResource as module0Resource4,
+  mailHeadersResource as module0Resource5,
+  mailDetailsResource as module0Resource6,
 } from '@eve-space/member-audit-server'
 import {
   campaignsResource as module1Resource0,
@@ -29,29 +38,162 @@ export const installedModuleResources = [
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
       projection: [],
-      materialization: [{ operationId: 'write-skill-snapshot' }],
+      materialization: [
+        { operationId: 'materialize-current-snapshot' },
+        { operationId: 'purge-evidence' },
+      ],
     } as const,
-    implementation: module0Resource0 satisfies PlatformResourceImplementationForProducts<
+    implementation: module0Resource0 satisfies PlatformResourceImplementationForCapabilities<
       typeof module0Resource0,
-      readonly ['published-skill-catalogue']
+      readonly ['published-skill-catalogue'],
+      InstalledModuleResourceProjectionPersistence<'member-audit/trained-skills'>,
+      InstalledModuleResourceMaterializationPersistence<'member-audit/trained-skills'>
     >,
   } as const,
   {
     moduleId: 'member-audit',
-    resourceId: 'skill-queue',
-    operationId: 'skill-queue',
-    sectionId: 'skills',
-    coreDataProducts: ['published-skill-catalogue'] as const,
+    resourceId: 'assets',
+    operationId: 'character-assets-page',
+    sectionId: 'assets',
+    coreDataProducts: ['published-type-details', 'static-location-labels'] as const,
+    dependentOperationIds: ['character-asset-names', 'universe-resolve-names'],
+    subjectKind: 'character',
+    materializationIntervalSeconds: 3600,
+    eligibility: { kind: 'current-managed-member-character' },
+    persistence: {
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
+      materialization: [
+        { operationId: 'write-evidence-continuation' },
+        { operationId: 'promote-evidence-observation' },
+        { operationId: 'purge-evidence' },
+      ],
+    } as const,
+    implementation: module0Resource1 satisfies PlatformResourceImplementationForCapabilities<
+      typeof module0Resource1,
+      readonly ['published-type-details', 'static-location-labels'],
+      InstalledModuleResourceProjectionPersistence<'member-audit/assets'>,
+      InstalledModuleResourceMaterializationPersistence<'member-audit/assets'>
+    >,
+  } as const,
+  {
+    moduleId: 'member-audit',
+    resourceId: 'wallet-balance',
+    operationId: 'wallet-balance',
+    sectionId: 'wallet',
+    coreDataProducts: [] as const,
     subjectKind: 'character',
     materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
       projection: [],
-      materialization: [{ operationId: 'write-skill-snapshot' }],
+      materialization: [
+        { operationId: 'materialize-current-snapshot' },
+        { operationId: 'purge-evidence' },
+      ],
     } as const,
-    implementation: module0Resource1 satisfies PlatformResourceImplementationForProducts<
-      typeof module0Resource1,
-      readonly ['published-skill-catalogue']
+    implementation: module0Resource2 satisfies PlatformResourceImplementationForCapabilities<
+      typeof module0Resource2,
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'member-audit/wallet-balance'>,
+      InstalledModuleResourceMaterializationPersistence<'member-audit/wallet-balance'>
+    >,
+  } as const,
+  {
+    moduleId: 'member-audit',
+    resourceId: 'wallet-journal',
+    operationId: 'wallet-journal',
+    sectionId: 'wallet',
+    coreDataProducts: [] as const,
+    subjectKind: 'character',
+    materializationIntervalSeconds: 900,
+    eligibility: { kind: 'current-managed-member-character' },
+    persistence: {
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
+      materialization: [
+        { operationId: 'write-evidence-continuation' },
+        { operationId: 'promote-evidence-observation' },
+        { operationId: 'purge-evidence' },
+      ],
+    } as const,
+    implementation: module0Resource3 satisfies PlatformResourceImplementationForCapabilities<
+      typeof module0Resource3,
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'member-audit/wallet-journal'>,
+      InstalledModuleResourceMaterializationPersistence<'member-audit/wallet-journal'>
+    >,
+  } as const,
+  {
+    moduleId: 'member-audit',
+    resourceId: 'wallet-transactions',
+    operationId: 'wallet-transactions',
+    sectionId: 'wallet',
+    coreDataProducts: ['published-type-details', 'static-location-labels'] as const,
+    subjectKind: 'character',
+    materializationIntervalSeconds: 900,
+    eligibility: { kind: 'current-managed-member-character' },
+    persistence: {
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
+      materialization: [
+        { operationId: 'write-evidence-continuation' },
+        { operationId: 'promote-evidence-observation' },
+        { operationId: 'purge-evidence' },
+      ],
+    } as const,
+    implementation: module0Resource4 satisfies PlatformResourceImplementationForCapabilities<
+      typeof module0Resource4,
+      readonly ['published-type-details', 'static-location-labels'],
+      InstalledModuleResourceProjectionPersistence<'member-audit/wallet-transactions'>,
+      InstalledModuleResourceMaterializationPersistence<'member-audit/wallet-transactions'>
+    >,
+  } as const,
+  {
+    moduleId: 'member-audit',
+    resourceId: 'mail-headers',
+    operationId: 'mail-headers',
+    sectionId: 'mail',
+    coreDataProducts: [] as const,
+    dependentOperationIds: ['mail-lists', 'universe-resolve-names'],
+    subjectKind: 'character',
+    materializationIntervalSeconds: 900,
+    eligibility: { kind: 'current-managed-member-character' },
+    persistence: {
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
+      materialization: [
+        { operationId: 'write-evidence-continuation' },
+        { operationId: 'promote-evidence-observation' },
+        { operationId: 'purge-evidence' },
+      ],
+    } as const,
+    implementation: module0Resource5 satisfies PlatformResourceImplementationForCapabilities<
+      typeof module0Resource5,
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'member-audit/mail-headers'>,
+      InstalledModuleResourceMaterializationPersistence<'member-audit/mail-headers'>
+    >,
+  } as const,
+  {
+    moduleId: 'member-audit',
+    resourceId: 'mail-details',
+    operationId: 'mail-headers',
+    sectionId: 'mail',
+    coreDataProducts: [] as const,
+    dependentOperationIds: ['mail-message', 'mail-lists', 'universe-resolve-names'],
+    subjectKind: 'character',
+    materializationIntervalSeconds: 900,
+    eligibility: { kind: 'current-managed-member-character' },
+    persistence: {
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
+      materialization: [
+        { operationId: 'write-evidence-continuation' },
+        { operationId: 'promote-evidence-observation' },
+        { operationId: 'purge-evidence' },
+      ],
+    } as const,
+    implementation: module0Resource6 satisfies PlatformResourceImplementationForCapabilities<
+      typeof module0Resource6,
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'member-audit/mail-details'>,
+      InstalledModuleResourceMaterializationPersistence<'member-audit/mail-details'>
     >,
   } as const,
   {
@@ -71,9 +213,11 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource0 satisfies PlatformResourceImplementationForProducts<
+    implementation: module1Resource0 satisfies PlatformResourceImplementationForCapabilities<
       typeof module1Resource0,
-      readonly []
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'organization-activity/campaigns'>,
+      InstalledModuleResourceMaterializationPersistence<'organization-activity/campaigns'>
     >,
   } as const,
   {
@@ -89,9 +233,11 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource1 satisfies PlatformResourceImplementationForProducts<
+    implementation: module1Resource1 satisfies PlatformResourceImplementationForCapabilities<
       typeof module1Resource1,
-      readonly []
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'organization-activity/public-jobs'>,
+      InstalledModuleResourceMaterializationPersistence<'organization-activity/public-jobs'>
     >,
   } as const,
   {
@@ -106,9 +252,11 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource2 satisfies PlatformResourceImplementationForProducts<
+    implementation: module1Resource2 satisfies PlatformResourceImplementationForCapabilities<
       typeof module1Resource2,
-      readonly []
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'organization-activity/corporation-jobs'>,
+      InstalledModuleResourceMaterializationPersistence<'organization-activity/corporation-jobs'>
     >,
   } as const,
   {
@@ -124,9 +272,11 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource3 satisfies PlatformResourceImplementationForProducts<
+    implementation: module1Resource3 satisfies PlatformResourceImplementationForCapabilities<
       typeof module1Resource3,
-      readonly []
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'organization-activity/corporation-projects'>,
+      InstalledModuleResourceMaterializationPersistence<'organization-activity/corporation-projects'>
     >,
   } as const,
   {
@@ -142,9 +292,11 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource4 satisfies PlatformResourceImplementationForProducts<
+    implementation: module1Resource4 satisfies PlatformResourceImplementationForCapabilities<
       typeof module1Resource4,
-      readonly []
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'organization-activity/character-jobs'>,
+      InstalledModuleResourceMaterializationPersistence<'organization-activity/character-jobs'>
     >,
   } as const,
   {
@@ -160,9 +312,11 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource5 satisfies PlatformResourceImplementationForProducts<
+    implementation: module1Resource5 satisfies PlatformResourceImplementationForCapabilities<
       typeof module1Resource5,
-      readonly []
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'organization-activity/character-campaigns'>,
+      InstalledModuleResourceMaterializationPersistence<'organization-activity/character-campaigns'>
     >,
   } as const,
   {
@@ -178,9 +332,11 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource6 satisfies PlatformResourceImplementationForProducts<
+    implementation: module1Resource6 satisfies PlatformResourceImplementationForCapabilities<
       typeof module1Resource6,
-      readonly []
+      readonly [],
+      InstalledModuleResourceProjectionPersistence<'organization-activity/character-projects'>,
+      InstalledModuleResourceMaterializationPersistence<'organization-activity/character-projects'>
     >,
   } as const,
 ] as const satisfies readonly PlatformInstalledResourceDescriptor[]

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { EsiQueryPersistencePresentation } from '../../query-persistence-presentation.js'
 import type { PlatformResourceState } from '../../resource-state.js'
-import PlatformQueryPersistenceStatus from './PlatformQueryPersistenceStatus.vue'
 
 withDefaults(
   defineProps<{
@@ -28,8 +27,6 @@ defineSlots<{
 
 <template>
   <slot v-if="hasData || state.status === 'ready'" />
-
-  <PlatformQueryPersistenceStatus :presentation="presentation" />
 
   <slot v-if="!hasData && state.status === 'loading'" name="loading" :state="state">
     <output class="platform-resource-state">

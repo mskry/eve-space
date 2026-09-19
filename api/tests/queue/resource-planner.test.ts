@@ -56,6 +56,17 @@ describe('generic resource planner', () => {
     expect(plannerMocks.selectDue).not.toHaveBeenCalled()
   })
 
+  test('does not schedule resources whose collectors are not materialized', async () => {
+    await expect(
+      runResourcePlanner(context(), { resources: [{ ...resource, scheduled: false }] }),
+    ).resolves.toEqual({
+      selected: 0,
+      planned: 0,
+      reason: 'idle',
+    })
+    expect(plannerMocks.selectDue).not.toHaveBeenCalled()
+  })
+
   test('bounds PostgreSQL selection by remaining high-water capacity', async () => {
     await runResourcePlanner(context({ depth: 5 }), {
       resources: [resource],

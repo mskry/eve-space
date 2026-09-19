@@ -19,3 +19,7 @@ declare module '#build/eve-space-platform/query-admission-scopes' {
     readonly moduleId: string
   })[]
 }
+
+declare module '#build/eve-space-platform/reviewer-panels' {
+  export const platformReviewerPanels: readonly import('../src/runtime/reviewer-panel.js').PlatformReviewerPanelCatalogEntry[]
+}

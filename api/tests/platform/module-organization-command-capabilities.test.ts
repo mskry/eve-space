@@ -83,6 +83,8 @@ describe('platform organization command capabilities', () => {
     expect(mocks.assignGroup).toHaveBeenCalledWith({
       organizationDeploymentId: 1,
       organizationVersion: 7,
+      publisherPackage: '@eve-space/member-audit-manifest',
+      moduleId: 'member-audit',
       actorUserId: '00000000-0000-4000-8000-000000000001',
       targetUserId: target.account.userId,
       managedMemberLifecycleId: target.managedMemberLifecycleId,
@@ -298,19 +300,35 @@ describe('platform organization command capabilities', () => {
     await expect(commands.blockMember({ reason: 'Reviewed change' })).rejects.toBe(failure)
   })
 
-  test('refuses a command whose route permission does not match', () => {
-    expect(() =>
-      createPlatformOrganizationCommandCapabilities(
-        ['unblock-member'] as const,
-        binding('member-audit.groups.manage'),
-      ),
-    ).toThrow('Organization command requires route permission member-audit.members.block')
+  test('binds an external module command to its exact route permission', async () => {
+    mocks.unblockMember.mockResolvedValue({
+      decision: 'unblocked',
+      blockId: 'block-1',
+      unblockedAt: '2026-09-18T12:01:00.000Z',
+    })
+    const commands = createPlatformOrganizationCommandCapabilities(['unblock-member'] as const, {
+      ...binding('alpha.members.manage'),
+      publisherPackage: '@example/alpha-manifest',
+      moduleId: 'alpha',
+    })
+
+    await commands.unblockMember({ reason: 'External review completed' })
+
+    expect(mocks.unblockMember).toHaveBeenCalledWith(
+      expect.objectContaining({
+        publisherPackage: '@example/alpha-manifest',
+        moduleId: 'alpha',
+        requiredPermission: 'alpha.members.manage',
+      }),
+    )
   })
 })
 
 function binding(requiredPermission: string) {
   return {
     actorUserId: '00000000-0000-4000-8000-000000000001',
+    publisherPackage: '@eve-space/member-audit-manifest',
+    moduleId: 'member-audit',
     organization: {
       organizationVersion: 7,
       audience: 'hr' as const,

@@ -16,8 +16,14 @@ import { unauthenticatedSession } from '../../app/queries/auth'
 import { characterOverviewQuery, publicCharacterQuery } from '../../app/queries/characters'
 import { corporationAllianceHistoryQuery, corporationQuery } from '../../app/queries/corporations'
 import { canRunProtectedCharacterQuery } from '../../app/queries/protected-character-query-access'
+import { platformReviewerContributionTargetQueryKey } from '@eve-space/platform-module-nuxt/runtime'
 import { clearAuthenticatedQueries } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
+import {
+  organizationReviewDirectoryQuery,
+  organizationReviewEntryQuery,
+  organizationReviewTargetQuery,
+} from '../../app/queries/organization-review'
 import { systemStatusQuery } from '../../app/queries/system-status'
 import { createApiClient } from '../../app/utils/api-client'
 import { coladaOptions } from '../../app/utils/colada-options'
@@ -187,6 +193,63 @@ describe('SSR and authentication query boundaries', () => {
     wrapper.unmount()
   })
 
+  it('does not request reviewer entry, directory, target, or panel data during SSR', async () => {
+    const requests = vi.fn()
+    queryServer.use(
+      http.get('http://localhost/api/organization/review', () => {
+        requests('entry')
+        return HttpResponse.json({ organizationVersion: 7, contributions: [] })
+      }),
+      http.get('http://localhost/api/organization/review/members', () => {
+        requests('directory')
+        return HttpResponse.json({
+          organizationVersion: 7,
+          status: 'available',
+          items: [],
+          nextCursor: null,
+        })
+      }),
+    )
+    const apiClient = createApiClient('http://localhost')
+    const panelQuery = vi.fn()
+    const Root = defineComponent({
+      setup() {
+        useQuery(organizationReviewEntryQuery({ apiClient, authenticated: true }))
+        useQuery(
+          organizationReviewDirectoryQuery({
+            apiClient,
+            enabled: true,
+            input: { organizationVersion: 7, limit: 25 },
+          }),
+        )
+        useQuery(
+          organizationReviewTargetQuery({
+            apiClient,
+            enabled: true,
+            input: {
+              organizationVersion: 7,
+              targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+            },
+          }),
+        )
+        useQuery({
+          key: ['private', 'organization', 7, 'modules', 'alpha', 'reviewer'],
+          enabled: import.meta.client,
+          query: panelQuery,
+        })
+        return () => h('span', 'Reviewer shell')
+      },
+    })
+    const pinia = createPinia()
+    const app = createSSRApp(Root)
+    app.use(pinia)
+    app.use(PiniaColada, coladaOptions)
+
+    await expect(renderToString(app)).resolves.toContain('Reviewer shell')
+    expect(requests).not.toHaveBeenCalled()
+    expect(panelQuery).not.toHaveBeenCalled()
+  })
+
   it('clears private cache entries while keeping an anonymous active session value', () => {
     const Root = defineComponent({ setup: () => () => h('span') })
     const { queryCache, wrapper } = mountWithQueryPlugins(Root)
@@ -210,6 +273,25 @@ describe('SSR and authentication query boundaries', () => {
       key: PRIVATE_QUERY_KEYS.organizationCompliance(),
       query: async () => ({ state: 'compliant' }),
     })
+    queryCache.ensure({
+      key: PRIVATE_QUERY_KEYS.organizationReviewerEntry(),
+      query: async () => ({ organizationVersion: 7, contributions: [] }),
+    })
+    const reviewerTargetKey = platformReviewerContributionTargetQueryKey({
+      organizationVersion: 7,
+      moduleId: 'alpha',
+      contributionId: 'summary',
+      target: {
+        kind: 'managed-organization-account',
+        managedMemberLifecycleId: 'member-lifecycle-1',
+        sectionActivationVersion: 1,
+        userId: 'target-user',
+      },
+    })
+    queryCache.ensure({
+      key: reviewerTargetKey,
+      query: async () => ({ privateRecord: true }),
+    })
     queryCache.setQueryData(PRIVATE_QUERY_KEYS.session(), {
       authenticated: true,
       account: { userId: 'user', mainCharacter: { characterId: 7 } },
@@ -221,6 +303,11 @@ describe('SSR and authentication query boundaries', () => {
       { records: [] },
     )
     queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationCompliance(), { state: 'compliant' })
+    queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationReviewerEntry(), {
+      organizationVersion: 7,
+      contributions: [],
+    })
+    queryCache.setQueryData(reviewerTargetKey, { privateRecord: true })
 
     clearAuthenticatedQueries(queryCache, unauthenticatedSession)
 
@@ -235,6 +322,8 @@ describe('SSR and authentication query boundaries', () => {
       ),
     ).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationCompliance())).toBeUndefined()
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationReviewerEntry())).toBeUndefined()
+    expect(queryCache.getQueryData(reviewerTargetKey)).toBeUndefined()
     expect(queryCache.getEntries({ key: PRIVATE_QUERY_KEYS.root })).toHaveLength(1)
     wrapper.unmount()
   })

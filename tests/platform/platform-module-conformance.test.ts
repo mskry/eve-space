@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { platformModuleRouteComposers } from '../../api/src/platform/module-route-composition'
 import {
   generateRegistryFiles,
+  generatedRegistryPaths,
   loadInstalledModuleManifests,
 } from '../../scripts/module-registry/generator'
 
@@ -116,7 +117,11 @@ beforeEach(() => {
 describe('production-shaped module conformance', () => {
   it('loads the real fixture root and generates every declared contribution', async () => {
     const registry = await loadInstalledModuleManifests(fixtureRoot)
-    const files = generateRegistryFiles(registry.compiled, registry.persistenceRoutines)
+    const files = generateRegistryFiles(
+      registry.compiled,
+      registry.persistenceRoutines,
+      registry.releases,
+    )
     const manifests = readCompiledPlatformModules(registry.compiled)
 
     expect(manifests).toHaveLength(1)
@@ -132,7 +137,7 @@ describe('production-shaped module conformance', () => {
       },
       nuxt: { package: '@eve-space/conformance-nuxt' },
     })
-    expect(files).toHaveLength(10)
+    expect(files).toHaveLength(generatedRegistryPaths.length)
     expect(files.get('api/src/generated/platform/installed-module-routes.ts')).toContain(
       "platformModuleRouteComposers['owned-character']",
     )

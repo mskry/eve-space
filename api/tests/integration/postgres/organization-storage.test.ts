@@ -29,6 +29,8 @@ let hasCurrentOrganizationManagerAuthority: typeof import('../../../src/organiza
 let convergeRegistrationComplianceGroupAssignment: typeof import('../../../src/organization/group-compliance.js').convergeRegistrationComplianceGroupAssignment
 let createOrganizationGroup: typeof import('../../../src/organization/group-store.js').createOrganizationGroup
 let createOrganizationPermissionBundle: typeof import('../../../src/organization/group-store.js').createOrganizationPermissionBundle
+let listCurrentOrganizationPermissionBundles: typeof import('../../../src/organization/group-store.js').listCurrentOrganizationPermissionBundles
+let updateOrganizationPermissionBundle: typeof import('../../../src/organization/group-store.js').updateOrganizationPermissionBundle
 let getOrganizationGroupPermissions: typeof import('../../../src/organization/group-permissions.js').getOrganizationGroupPermissions
 let revokeOrganizationGroupAssignment: typeof import('../../../src/organization/group-store.js').revokeOrganizationGroupAssignment
 let blockOrganizationMember: typeof import('../../../src/organization/block-store.js').blockOrganizationMember
@@ -53,6 +55,7 @@ let getOrganizationAccountComplianceDetails: typeof import('../../../src/organiz
 let loadOrganizationSessionContext: typeof import('../../../src/middleware/organization-session.js').loadOrganizationSessionContext
 let listOrganizationRosterCoverage: typeof import('../../../src/organization/roster-coverage.js').listOrganizationRosterCoverage
 let searchManagedOrganizationAccounts: typeof import('../../../src/organization/reviewer-account-search.js').searchManagedOrganizationAccounts
+let searchManagedOrganizationDirectory: typeof import('../../../src/organization/reviewer-account-search.js').searchManagedOrganizationDirectory
 let resolveOrganizationReviewerTarget: typeof import('../../../src/organization/reviewer-target.js').resolveOrganizationReviewerTarget
 let assignOrganizationReviewerOrdinaryGroup: typeof import('../../../src/organization/reviewer-commands.js').assignOrganizationReviewerOrdinaryGroup
 let blockOrganizationReviewerMember: typeof import('../../../src/organization/reviewer-commands.js').blockOrganizationReviewerMember
@@ -96,7 +99,9 @@ beforeAll(async () => {
     assignOrganizationGroup,
     createOrganizationGroup,
     createOrganizationPermissionBundle,
+    listCurrentOrganizationPermissionBundles,
     revokeOrganizationGroupAssignment,
+    updateOrganizationPermissionBundle,
   } = await import('../../../src/organization/group-store.js'))
   ;({ convergeRegistrationComplianceGroupAssignment } =
     await import('../../../src/organization/group-compliance.js'))
@@ -136,7 +141,7 @@ beforeAll(async () => {
     await import('../../../src/middleware/organization-session.js'))
   ;({ listOrganizationRosterCoverage } =
     await import('../../../src/organization/roster-coverage.js'))
-  ;({ searchManagedOrganizationAccounts } =
+  ;({ searchManagedOrganizationAccounts, searchManagedOrganizationDirectory } =
     await import('../../../src/organization/reviewer-account-search.js'))
   ;({ resolveOrganizationReviewerTarget } =
     await import('../../../src/organization/reviewer-target.js'))
@@ -187,6 +192,227 @@ afterAll(async () => {
 })
 
 describe('organization storage invariants', () => {
+  test('keeps owned module permissions auditable, attributable, and inert when unavailable', async () => {
+    await claimOrganizationOwnership(
+      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
+    )
+    const targetUserId = randomUUID()
+    await establishCompliantAccount(targetUserId, 90_000_001)
+
+    await expect(
+      createOrganizationPermissionBundle({
+        actorUserId: userId,
+        name: 'Typo',
+        reason: 'Attempt an invalid permission.',
+        permissions: [{ ...organizationActivityPermission(), key: 'organization-activity.typo' }],
+      }),
+    ).rejects.toMatchObject({ code: 'permission-unavailable' })
+
+    const bundle = await createOrganizationPermissionBundle({
+      actorUserId: userId,
+      name: 'Organization activity',
+      reason: 'Create organization activity access.',
+      permissions: [organizationActivityPermission()],
+    })
+    const group = await createOrganizationGroup({
+      actorUserId: userId,
+      name: 'Activity viewers',
+      restricted: false,
+      managementMode: 'manual',
+      complianceSource: null,
+      bundleIds: [bundle.bundleId],
+    })
+    await assignOrganizationGroup({
+      actorUserId: userId,
+      groupId: group.groupId,
+      targetUserId,
+      reason: 'Grant activity access.',
+      expiresAt: null,
+    })
+
+    const [stored] = await connection<
+      { publisher_package: string; module_id: string; review_allowed: boolean }[]
+    >`
+      select publisher_package, module_id, review_allowed
+      from organization_permission_bundle_entries
+      where bundle_id = ${bundle.bundleId}
+    `
+    expect(stored).toEqual({
+      publisher_package: '@eve-space/organization-activity-manifest',
+      module_id: 'organization-activity',
+      review_allowed: false,
+    })
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toMatchObject({
+      modules: ['organization-activity.view'],
+    })
+
+    await connection`
+      update deployment_modules set enabled = false where module_id = 'organization-activity'
+    `
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toMatchObject({
+      modules: [],
+    })
+    await connection`
+      update deployment_modules set enabled = true where module_id = 'organization-activity'
+    `
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toMatchObject({
+      modules: ['organization-activity.view'],
+    })
+
+    await connection`
+      update organization_permission_bundle_entries
+      set publisher_package = '@replacement/organization-activity-manifest'
+      where bundle_id = ${bundle.bundleId}
+    `
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toMatchObject({
+      modules: [],
+    })
+    await expect(listCurrentOrganizationPermissionBundles(userId)).resolves.toMatchObject({
+      bundles: [
+        {
+          permissions: [
+            {
+              type: 'module',
+              publisherPackage: '@replacement/organization-activity-manifest',
+              moduleId: 'organization-activity',
+              key: 'organization-activity.view',
+              available: false,
+            },
+          ],
+        },
+      ],
+    })
+
+    const retainedBundles = await listCurrentOrganizationPermissionBundles(userId)
+    const retainedEntry = retainedBundles.bundles[0]?.permissions[0]
+    if (!retainedEntry) throw new Error('Retained permission entry is missing')
+    const [beforeRetention] = await connection<
+      {
+        entry_id: string
+        publisher_package: string
+        module_id: string
+        permission_key: string
+        review_allowed: boolean
+        created_at: Date
+      }[]
+    >`
+      select entry_id, publisher_package, module_id, permission_key, review_allowed, created_at
+      from organization_permission_bundle_entries
+      where bundle_id = ${bundle.bundleId}
+    `
+
+    await updateOrganizationPermissionBundle({
+      actorUserId: userId,
+      bundleId: bundle.bundleId,
+      name: bundle.name,
+      reason: 'Keep the unavailable permission.',
+      permissions: [],
+      retainedUnavailableEntryIds: [retainedEntry.entryId],
+    })
+    const [afterRetention] = await connection<
+      {
+        entry_id: string
+        publisher_package: string
+        module_id: string
+        permission_key: string
+        review_allowed: boolean
+        created_at: Date
+      }[]
+    >`
+      select entry_id, publisher_package, module_id, permission_key, review_allowed, created_at
+      from organization_permission_bundle_entries
+      where bundle_id = ${bundle.bundleId}
+    `
+    expect(afterRetention).toEqual(beforeRetention)
+
+    await updateOrganizationPermissionBundle({
+      actorUserId: userId,
+      bundleId: bundle.bundleId,
+      name: bundle.name,
+      reason: 'Remove the unavailable permission.',
+      permissions: [],
+      retainedUnavailableEntryIds: [],
+    })
+    const [counts] = await connection<{ entries: number; audits: number }[]>`
+      select
+        (select count(*)::integer from organization_permission_bundle_entries
+          where bundle_id = ${bundle.bundleId}) as entries,
+        (select count(*)::integer from organization_audit_events
+          where subject_type = 'permission_bundle' and subject_id = ${bundle.bundleId}) as audits
+    `
+    expect(counts).toEqual({ entries: 0, audits: 3 })
+  })
+
+  test('rejects retained IDs that are foreign, missing, service, available, or duplicated', async () => {
+    await claimOrganizationOwnership(
+      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
+    )
+    const bundle = await createOrganizationPermissionBundle({
+      actorUserId: userId,
+      name: 'Mixed permissions',
+      reason: 'Create permissions for retention validation.',
+      permissions: [
+        organizationActivityPermission(),
+        { type: 'service', key: 'discord.operations', reviewAllowed: true },
+      ],
+    })
+    const foreignBundle = await createOrganizationPermissionBundle({
+      actorUserId: userId,
+      name: 'Foreign permissions',
+      reason: 'Create a foreign permission entry.',
+      permissions: [{ type: 'service', key: 'discord.foreign' }],
+    })
+    const listed = await listCurrentOrganizationPermissionBundles(userId)
+    const targetEntries = listed.bundles.find(
+      ({ bundleId }) => bundleId === bundle.bundleId,
+    )!.permissions
+    const availableEntry = targetEntries.find(({ type }) => type === 'module')!
+    const serviceEntry = targetEntries.find(({ type }) => type === 'service')!
+    const foreignEntry = listed.bundles.find(({ bundleId }) => bundleId === foreignBundle.bundleId)!
+      .permissions[0]!
+
+    const update = (retainedUnavailableEntryIds: string[]) =>
+      updateOrganizationPermissionBundle({
+        actorUserId: userId,
+        bundleId: bundle.bundleId,
+        name: bundle.name,
+        reason: 'Validate retained permission IDs.',
+        permissions: [],
+        retainedUnavailableEntryIds,
+      })
+
+    await expect(update([availableEntry.entryId])).rejects.toMatchObject({
+      code: 'retained-permission-invalid',
+    })
+    await expect(update([serviceEntry.entryId])).rejects.toMatchObject({
+      code: 'retained-permission-invalid',
+    })
+    await expect(update([foreignEntry.entryId])).rejects.toMatchObject({
+      code: 'retained-permission-invalid',
+    })
+    await expect(update([randomUUID()])).rejects.toMatchObject({
+      code: 'retained-permission-invalid',
+    })
+
+    await connection`
+      update organization_permission_bundle_entries
+      set publisher_package = '@replacement/organization-activity-manifest'
+      where entry_id = ${availableEntry.entryId}
+    `
+    await expect(update([availableEntry.entryId, availableEntry.entryId])).rejects.toMatchObject({
+      code: 'retained-permission-invalid',
+    })
+
+    const [unchanged] = await connection<{ name: string; entries: number }[]>`
+      select bundles.name, count(entries.entry_id)::integer as entries
+      from organization_permission_bundles bundles
+      join organization_permission_bundle_entries entries using (bundle_id)
+      where bundles.bundle_id = ${bundle.bundleId}
+      group by bundles.name
+    `
+    expect(unchanged).toEqual({ name: bundle.name, entries: 2 })
+  })
+
   test('searches only current managed accounts with bounded opaque pagination', async () => {
     const secondUserId = randomUUID()
     const secondCharacterId = characterId + 1
@@ -261,11 +487,47 @@ describe('organization storage invariants', () => {
         organizationVersion: 1,
         filters: { query: String(secondCharacterId) },
       }),
-    ).resolves.toEqual({ status: 'available', items: [], nextCursor: null })
+    ).resolves.toEqual({
+      organizationVersion: 1,
+      status: 'available',
+      items: [],
+      nextCursor: null,
+    })
     for (const query of ['%', '_', '\\'])
       await expect(
         searchManagedOrganizationAccounts({ organizationVersion: 1, filters: { query } }),
-      ).resolves.toEqual({ status: 'available', items: [], nextCursor: null })
+      ).resolves.toEqual({
+        organizationVersion: 1,
+        status: 'available',
+        items: [],
+        nextCursor: null,
+      })
+  })
+
+  test('projects the core reviewer directory without compliance, block, or module evidence', async () => {
+    const page = await searchManagedOrganizationDirectory({
+      organizationVersion: 1,
+      filters: { query: 'Organization Pilot' },
+    })
+
+    expect(page.status).toBe('available')
+    expect(page.items).toHaveLength(1)
+    expect(Object.keys(page.items[0]!).toSorted()).toEqual([
+      'account',
+      'managedAffiliation',
+      'managedMemberLifecycleId',
+    ])
+    expect(page.items[0]).not.toHaveProperty('compliance')
+    expect(page.items[0]).not.toHaveProperty('block')
+    expect(page.items[0]).not.toHaveProperty('evidenceSections')
+    await expect(
+      searchManagedOrganizationDirectory({ organizationVersion: 2, filters: {} }),
+    ).resolves.toEqual({
+      organizationVersion: 2,
+      status: 'unavailable',
+      items: [],
+      nextCursor: null,
+    })
   })
 
   test('does not expose or match an unclassified main character', async () => {
@@ -299,7 +561,12 @@ describe('organization storage invariants', () => {
         organizationVersion: 1,
         filters: { query: 'Organization Pilot' },
       }),
-    ).resolves.toEqual({ status: 'available', items: [], nextCursor: null })
+    ).resolves.toEqual({
+      organizationVersion: 1,
+      status: 'available',
+      items: [],
+      nextCursor: null,
+    })
 
     await connection`
       insert into organization_character_exceptions (
@@ -330,7 +597,12 @@ describe('organization storage invariants', () => {
 
     await expect(
       searchManagedOrganizationAccounts({ organizationVersion: 1, filters: {} }),
-    ).resolves.toEqual({ status: 'unavailable', items: [], nextCursor: null })
+    ).resolves.toEqual({
+      organizationVersion: 1,
+      status: 'unavailable',
+      items: [],
+      nextCursor: null,
+    })
   })
 
   test('rejects malformed reviewer account search filters before querying', async () => {
@@ -624,6 +896,7 @@ describe('organization storage invariants', () => {
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Review-period access',
+      reason: 'Create review-period access.',
       permissions: [
         { type: 'service', key: 'discord.review-member', reviewAllowed: true },
         { type: 'service', key: 'discord.review-denied', reviewAllowed: false },
@@ -1855,8 +2128,9 @@ describe('organization storage invariants', () => {
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Operations access',
+      reason: 'Create operations access.',
       permissions: [
-        { type: 'module', key: 'organization-activity.manage' },
+        organizationActivityPermission(),
         { type: 'service', key: 'discord.operations' },
         { type: 'service', key: 'discord.operations' },
       ],
@@ -1879,7 +2153,7 @@ describe('organization storage invariants', () => {
     })
 
     await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
-      modules: ['organization-activity.manage'],
+      modules: ['organization-activity.view'],
       services: ['discord.operations'],
     })
     await connection`
@@ -1924,7 +2198,7 @@ describe('organization storage invariants', () => {
       userId: targetUserId,
     })
     await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
-      modules: ['organization-activity.manage'],
+      modules: ['organization-activity.view'],
       services: ['discord.operations'],
     })
     const [grant] = await connection<
@@ -2029,12 +2303,14 @@ describe('organization storage invariants', () => {
       createOrganizationPermissionBundle({
         actorUserId: directorUserId,
         name: 'Unauthorized definition',
+        reason: 'Attempt an unauthorized definition.',
         permissions: [{ type: 'service', key: 'discord.leadership' }],
       }),
     ).rejects.toMatchObject({ code: 'owner-authority-required' })
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Restricted services',
+      reason: 'Create restricted services.',
       permissions: [{ type: 'service', key: 'discord.leadership' }],
     })
     const restricted = await createOrganizationGroup({
@@ -2105,6 +2381,7 @@ describe('organization storage invariants', () => {
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Compliant member services',
+      reason: 'Create compliant member services.',
       permissions: [{ type: 'service', key: 'discord.member' }],
     })
     const group = await createOrganizationGroup({
@@ -2320,6 +2597,26 @@ describe('organization storage invariants', () => {
         reason: 'Reviewer permission escalation attempt.',
       }),
     ).rejects.toMatchObject({ code: 'reviewer-permission-group-not-allowed' })
+    await assignOrganizationGroup({
+      actorUserId: userId,
+      targetUserId: fixture.targetUserId,
+      groupId: unsafeGroup.groupId,
+      reason: 'Existing reviewer access.',
+      expiresAt: null,
+    })
+    const reviewerTarget = await resolveOrganizationReviewerTarget({
+      organizationVersion: 1,
+      targetUserId: fixture.targetUserId,
+    })
+    const projectedUnsafeGroup = reviewerTarget?.groups.find(
+      ({ groupId }) => groupId === unsafeGroup.groupId,
+    )
+    expect(projectedUnsafeGroup).toMatchObject({
+      restricted: false,
+      managementMode: 'manual',
+      readOnly: true,
+    })
+    expect(projectedUnsafeGroup).not.toHaveProperty('hasReviewerPermission')
 
     await expect(
       assignOrganizationReviewerOrdinaryGroup({
@@ -2493,8 +2790,9 @@ describe('organization storage invariants', () => {
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Block precedence access',
+      reason: 'Create block precedence access.',
       permissions: [
-        { type: 'module', key: 'organization-activity.manage' },
+        organizationActivityPermission(),
         { type: 'service', key: 'discord.operations' },
       ],
     })
@@ -2523,7 +2821,7 @@ describe('organization storage invariants', () => {
     ).rejects.toMatchObject({ code: 'owner-block-not-allowed' })
     await expect(hasCurrentOrganizationManagerAuthority(targetUserId)).resolves.toBe(true)
     await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
-      modules: ['organization-activity.manage'],
+      modules: ['organization-activity.view'],
       services: ['discord.operations'],
     })
     const firstBlock = await blockOrganizationMember({
@@ -2545,7 +2843,7 @@ describe('organization storage invariants', () => {
     })
     await expect(hasCurrentOrganizationManagerAuthority(targetUserId)).resolves.toBe(true)
     await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
-      modules: ['organization-activity.manage'],
+      modules: ['organization-activity.view'],
       services: ['discord.operations'],
     })
 
@@ -2708,6 +3006,7 @@ describe('organization storage invariants', () => {
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Bulk lock order bundle',
+      reason: 'Create the bulk lock order bundle.',
       permissions: [{ type: 'service', key: 'discord.bulk-lock' }],
     })
     await createOrganizationGroup({
@@ -2780,7 +3079,8 @@ describe('organization storage invariants', () => {
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Concurrent assignment bundle',
-      permissions: [{ type: 'module', key: 'organization-activity.member' }],
+      reason: 'Create the concurrent assignment bundle.',
+      permissions: [organizationActivityPermission()],
     })
     const group = await createOrganizationGroup({
       actorUserId: userId,
@@ -3306,6 +3606,11 @@ async function seedDeployment() {
     ) values (1, 'corporation', 98000001, 'First Corporation', 'ONE', 1)
   `
   await connection`
+    insert into deployment_modules (module_id, enabled)
+    values ('organization-activity', true), ('member-audit', true)
+    on conflict (module_id) do update set enabled = excluded.enabled
+  `
+  await connection`
     insert into organization_managed_corporations (
       deployment_id, organization_version, corporation_id, first_observed_at, last_observed_at
     ) values (1, 1, 98000001, now(), now())
@@ -3361,9 +3666,10 @@ async function establishReviewerCommandFixture() {
   const reviewerBundle = await createOrganizationPermissionBundle({
     actorUserId: userId,
     name: 'Reviewer command permissions',
+    reason: 'Create reviewer command permissions.',
     permissions: [
-      { type: 'module', key: 'member-audit.groups.manage' },
-      { type: 'module', key: 'member-audit.members.block' },
+      memberAuditPermission('member-audit.groups.manage'),
+      memberAuditPermission('member-audit.members.block'),
     ],
   })
   const reviewerGroup = await createOrganizationGroup({
@@ -3384,6 +3690,7 @@ async function establishReviewerCommandFixture() {
   const ordinaryBundle = await createOrganizationPermissionBundle({
     actorUserId: userId,
     name: 'Reviewer command ordinary access',
+    reason: 'Create reviewer command ordinary access.',
     permissions: [{ type: 'service', key: 'discord.reviewer-command' }],
   })
   const ordinaryGroup = await createOrganizationGroup({
@@ -3419,12 +3726,32 @@ function reviewerCommandBinding<
 ) {
   return {
     organizationDeploymentId: 1 as const,
+    publisherPackage: '@eve-space/member-audit-manifest',
+    moduleId: 'member-audit',
     organizationVersion: 1,
     actorUserId: userId,
     targetUserId: fixture.targetUserId,
     managedMemberLifecycleId: fixture.targetManagedMemberLifecycleId,
     requiredPermission,
     reason: '',
+  }
+}
+
+function organizationActivityPermission() {
+  return {
+    type: 'module' as const,
+    publisherPackage: '@eve-space/organization-activity-manifest',
+    moduleId: 'organization-activity',
+    key: 'organization-activity.view',
+  }
+}
+
+function memberAuditPermission(key: 'member-audit.groups.manage' | 'member-audit.members.block') {
+  return {
+    type: 'module' as const,
+    publisherPackage: '@eve-space/member-audit-manifest',
+    moduleId: 'member-audit',
+    key,
   }
 }
 

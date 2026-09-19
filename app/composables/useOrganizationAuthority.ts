@@ -149,6 +149,7 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
   }
 
   return {
+    authenticated: computed(() => authSession.value.authenticated),
     authorityContext,
     deploymentConfigured,
     errorMessage,

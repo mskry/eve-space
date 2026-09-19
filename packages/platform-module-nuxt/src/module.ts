@@ -2,6 +2,7 @@ import { defineNuxtModule, extendPages } from '@nuxt/kit'
 import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract/nuxt'
 import { resolveContributionPackages, resolveContributionPages } from './contribution-resolution.js'
 import { composePlatformPages } from './pages.js'
+import { resolveContributionReviewerPanels } from './reviewer-panel-resolution.js'
 import { validateResolvedExposures } from './resolved-exposures.js'
 import { registerPlatformRuntime } from './runtime-registration.js'
 import { registerPlatformTemplates } from './templates.js'
@@ -33,10 +34,13 @@ export default defineNuxtModule<PlatformNuxtModuleOptions>({
     const contributions = [...(options.contributions ?? [])].toSorted((left, right) =>
       compareStable(left.moduleId, right.moduleId),
     )
-    registerPlatformTemplates(contributions)
-    registerPlatformRuntime()
     const packageRoots = await resolveContributionPackages(contributions)
-    const contributionPages = await resolveContributionPages(contributions, packageRoots)
+    const [contributionPages, reviewerPanels] = await Promise.all([
+      resolveContributionPages(contributions, packageRoots),
+      resolveContributionReviewerPanels(contributions, packageRoots),
+    ])
+    registerPlatformTemplates(contributions, reviewerPanels)
+    registerPlatformRuntime()
     extendPages((pages) => composePlatformPages(pages, contributionPages))
     nuxt.hook('components:extend', (components) => {
       validateResolvedExposures(

@@ -2,8 +2,23 @@ import type { PlatformModuleManifest } from '@eve-space/platform-module-contract
 
 const manifest = {
   id: 'organization-activity',
+  release: {
+    publisherPackage: '@eve-space/organization-activity-manifest',
+    version: '0.1.0',
+    hostContractRange: '^1.0.0',
+  },
   icon: 'corporation',
   defaultEnabled: true,
+  permissions: [
+    {
+      key: 'organization-activity.view',
+      label: 'View organization activity',
+      purpose: 'View member-safe organization activity and participation.',
+      audiences: ['member'],
+      sensitivity: 'standard',
+      reviewAllowed: false,
+    },
+  ],
   server: {
     package: '@eve-space/organization-activity-server',
     routes: [

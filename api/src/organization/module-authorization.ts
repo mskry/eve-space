@@ -1,7 +1,5 @@
-import type {
-  PlatformAuthorizedOrganizationContext,
-  PlatformOrganizationContributionAuthorization,
-} from '@eve-space/platform-module-contract/server'
+import type { PlatformAuthorizedOrganizationContext } from '@eve-space/platform-module-contract/server'
+import type { PlatformInstalledOrganizationContributionAuthorization } from '@eve-space/platform-module-contract/installed'
 import { and, eq, inArray, isNull, or } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import {
@@ -14,6 +12,7 @@ import {
   type OrganizationSessionContext,
 } from './access-policy.js'
 import { getOrganizationGroupPermissions } from './group-permissions.js'
+import { currentCatalogPermission } from './permission-catalog-store.js'
 
 export type OrganizationContributionAuthorizationResult =
   | { readonly authorized: true; readonly context: PlatformAuthorizedOrganizationContext }
@@ -25,10 +24,12 @@ export type OrganizationContributionAuthorizationResult =
 export async function authorizeOrganizationContribution(
   userId: string,
   organization: OrganizationSessionContext,
-  declaration: PlatformOrganizationContributionAuthorization,
+  declaration: PlatformInstalledOrganizationContributionAuthorization,
   now = new Date(),
 ): Promise<OrganizationContributionAuthorizationResult> {
   if (organization.blocked) return { authorized: false, reason: 'blocked' }
+  if (!currentCatalogPermission({ ...declaration, key: declaration.requiredPermission }))
+    return { authorized: false, reason: 'permission' }
   const entitlementScope = resolveOrganizationEntitlementScope(organization, now)
   if (entitlementScope === 'none') return { authorized: false, reason: 'compliance' }
   if (
@@ -67,10 +68,12 @@ export async function authorizeOrganizationContribution(
 export async function authorizeOrganizationReviewerContribution(
   userId: string,
   organization: OrganizationSessionContext,
-  declaration: PlatformOrganizationContributionAuthorization,
+  declaration: PlatformInstalledOrganizationContributionAuthorization,
   now = new Date(),
 ): Promise<OrganizationContributionAuthorizationResult> {
   if (organization.blocked) return { authorized: false, reason: 'blocked' }
+  if (!currentCatalogPermission({ ...declaration, key: declaration.requiredPermission }))
+    return { authorized: false, reason: 'permission' }
   if (resolveOrganizationEntitlementScope(organization, now) !== 'all')
     return { authorized: false, reason: 'compliance' }
   if (
@@ -107,7 +110,7 @@ export async function authorizeOrganizationReviewerContribution(
 
 function hasRequiredPermissions(
   permissions: readonly string[],
-  declaration: PlatformOrganizationContributionAuthorization,
+  declaration: PlatformInstalledOrganizationContributionAuthorization,
 ) {
   return [
     declaration.requiredPermission,

@@ -1,0 +1,16 @@
+lockfileVersion: '9.0'
+
+importers:
+  .:
+    dependencies:
+      '@eve-space/conformance-manifest':
+        specifier: workspace:*
+        version: link:features/conformance/manifest
+      '@eve-space/conformance-nuxt':
+        specifier: workspace:*
+        version: link:features/conformance/nuxt
+  api:
+    dependencies:
+      '@eve-space/conformance-server':
+        specifier: workspace:*
+        version: link:../features/conformance/server

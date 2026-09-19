@@ -4,11 +4,14 @@ import { http, HttpResponse } from 'msw'
 import { defineComponent, h } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  canRunOrganizationOwnerQuery,
   organizationActivitiesQuery,
   organizationAuditQuery,
   organizationComplianceQuery,
   organizationContextQuery,
   organizationExceptionsQuery,
+  organizationPermissionBundlesQuery,
+  organizationPermissionCatalogQuery,
   organizationRolesQuery,
   organizationRosterCoverageQuery,
   type OrganizationActivities,
@@ -16,6 +19,7 @@ import {
   type OrganizationCompliance,
   type OrganizationContext,
   type OrganizationExceptions,
+  type OrganizationOwnerQueryAccess,
   type OrganizationRoles,
   type OrganizationRosterCoverage,
 } from '../../app/queries/organization'
@@ -28,6 +32,41 @@ const apiClient = createApiClient('http://localhost')
 afterEach(() => vi.restoreAllMocks())
 
 describe('organization queries', () => {
+  it('gates owner permission reads and scopes memory-only keys to organization version', () => {
+    const allowed: OrganizationOwnerQueryAccess = {
+      authenticated: true,
+      blocked: false,
+      isOrganizationOwner: true,
+      memberAccess: true,
+    }
+    const catalog = organizationPermissionCatalogQuery({
+      apiClient,
+      organizationVersion: 7,
+      access: allowed,
+    })
+    const bundles = organizationPermissionBundlesQuery({
+      apiClient,
+      organizationVersion: 7,
+      access: allowed,
+    })
+
+    expect(catalog.key).toEqual(['private', 'organization', 7, 'permission-catalog'])
+    expect(bundles.key).toEqual(['private', 'organization', 7, 'permission-bundles'])
+    expect(catalog.meta.esiPersistence).toEqual({ kind: 'none' })
+    expect(bundles.meta.esiPersistence).toEqual({ kind: 'none' })
+    expect(canRunOrganizationOwnerQuery(allowed, 7)).toBe(true)
+
+    for (const access of [
+      { ...allowed, authenticated: false },
+      { ...allowed, isOrganizationOwner: false },
+      { ...allowed, memberAccess: false },
+      { ...allowed, blocked: true },
+    ]) {
+      expect(canRunOrganizationOwnerQuery(access, 7)).toBe(false)
+    }
+    expect(canRunOrganizationOwnerQuery(allowed, 0)).toBe(false)
+  })
+
   it('loads member compliance through the private API query', async () => {
     const response = {
       organizationVersion: 1,

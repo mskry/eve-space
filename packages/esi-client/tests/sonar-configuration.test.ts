@@ -58,6 +58,8 @@ describe('Sonar project boundaries', () => {
     expect(csv(rootProperties, 'sonar.typescript.tsconfigPaths')).toEqual([
       'tsconfig.json',
       'api/tsconfig.test.json',
+      'features/member-audit/nuxt/tsconfig.json',
+      'features/member-audit/server/tsconfig.json',
       'features/organization-activity/nuxt/tsconfig.json',
       'features/organization-activity/server/tsconfig.json',
       'packages/core-data-contract/tsconfig.json',

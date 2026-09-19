@@ -26,11 +26,45 @@ export type OrganizationExceptions = InferResponseType<
 >
 export type OrganizationAudit = InferResponseType<OrganizationClient['audit']['$get'], 200>
 export type OrganizationRoles = InferResponseType<OrganizationClient['roles']['$get'], 200>
+export type OrganizationPermissionCatalog = InferResponseType<
+  OrganizationClient['permission-catalog']['$get'],
+  200
+>
+export type OrganizationPermissionBundles = InferResponseType<
+  OrganizationClient['permission-bundles']['$get'],
+  200
+>
 export type OrganizationRosterCoverage = InferResponseType<
   OrganizationClient['roster-coverage']['$get'],
   200
 >
 export type DelegatedOrganizationRole = OrganizationRoles['grants'][number]['role']
+
+export interface OrganizationOwnerQueryAccess {
+  authenticated: boolean
+  blocked: boolean
+  isOrganizationOwner: boolean
+  memberAccess: boolean
+}
+
+interface OrganizationOwnerQueryParameters {
+  apiClient: ApiClient
+  organizationVersion: number
+  access: OrganizationOwnerQueryAccess
+}
+
+export function canRunOrganizationOwnerQuery(
+  access: OrganizationOwnerQueryAccess,
+  organizationVersion: number,
+) {
+  return (
+    organizationVersion > 0 &&
+    access.authenticated &&
+    access.isOrganizationOwner &&
+    access.memberAccess &&
+    !access.blocked
+  )
+}
 
 export const organizationContextQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
   key: PRIVATE_QUERY_KEYS.organizationContext(),
@@ -144,6 +178,44 @@ export const organizationRolesQuery = defineEsiQueryOptions((apiClient: ApiClien
   esiPersistence: { kind: 'none' },
   meta: { globalErrorMessage: 'Organization roles are unavailable.' },
 }))
+
+export const organizationPermissionCatalogQuery = defineEsiQueryOptions(
+  ({ apiClient, organizationVersion, access }: OrganizationOwnerQueryParameters) => ({
+    key: PRIVATE_QUERY_KEYS.organizationPermissionCatalog(organizationVersion),
+    query: async ({ signal }) => {
+      const response = await apiClient.api.organization['permission-catalog'].$get(undefined, {
+        init: { signal },
+      })
+      if (response.status !== 200) {
+        throw await toApiQueryError(response, 'Organization permission catalog is unavailable.')
+      }
+      return response.json()
+    },
+    ...QUERY_POLICY.organizationPermissionCatalog,
+    esiPersistence: { kind: 'none' },
+    enabled: import.meta.client && canRunOrganizationOwnerQuery(access, organizationVersion),
+    meta: { globalErrorMessage: 'Organization permission catalog is unavailable.' },
+  }),
+)
+
+export const organizationPermissionBundlesQuery = defineEsiQueryOptions(
+  ({ apiClient, organizationVersion, access }: OrganizationOwnerQueryParameters) => ({
+    key: PRIVATE_QUERY_KEYS.organizationPermissionBundles(organizationVersion),
+    query: async ({ signal }) => {
+      const response = await apiClient.api.organization['permission-bundles'].$get(undefined, {
+        init: { signal },
+      })
+      if (response.status !== 200) {
+        throw await toApiQueryError(response, 'Organization permission bundles are unavailable.')
+      }
+      return response.json()
+    },
+    ...QUERY_POLICY.organizationPermissionBundles,
+    esiPersistence: { kind: 'none' },
+    enabled: import.meta.client && canRunOrganizationOwnerQuery(access, organizationVersion),
+    meta: { globalErrorMessage: 'Organization permission bundles are unavailable.' },
+  }),
+)
 
 export const organizationRosterCoverageQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
   key: PRIVATE_QUERY_KEYS.organizationRosterCoverage(),

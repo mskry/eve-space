@@ -300,4 +300,58 @@ export const platformCollectionState = pgTable(
   ],
 )
 
+export const platformResourcePurgeWork = pgTable(
+  'platform_resource_purge_work',
+  {
+    purgeWorkId: uuid('purge_work_id').defaultRandom().primaryKey().notNull(),
+    moduleId: text('module_id').notNull(),
+    resourceId: text('resource_id').notNull(),
+    mode: text().$type<'account' | 'authority'>().notNull(),
+    targetUserId: uuid('target_user_id').notNull(),
+    organizationVersion: bigint('organization_version', { mode: 'number' }),
+    managedMemberLifecycleId: uuid('managed_member_lifecycle_id'),
+    characterId: bigint('character_id', { mode: 'number' }),
+    characterLifecycleId: uuid('character_lifecycle_id'),
+    authorizationGeneration: integer('authorization_generation'),
+    disclosureVersion: integer('disclosure_version'),
+    sectionActivationVersion: integer('section_activation_version'),
+    ...auditTimestamps(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.moduleId],
+      foreignColumns: [deploymentModules.moduleId],
+      name: 'platform_resource_purge_work_module_id_fkey',
+    }).onDelete('restrict'),
+    index('platform_resource_purge_work_resource_idx').on(
+      table.moduleId,
+      table.resourceId,
+      table.createdAt,
+    ),
+    check('platform_resource_purge_work_mode_check', sql`mode in ('account', 'authority')`),
+    check(
+      'platform_resource_purge_work_identity_check',
+      sql`(
+        mode = 'account'
+        and organization_version is null
+        and managed_member_lifecycle_id is null
+        and character_id is null
+        and character_lifecycle_id is null
+        and authorization_generation is null
+        and disclosure_version is null
+        and section_activation_version is null
+      ) or (
+        mode = 'authority'
+        and organization_version is not null and organization_version > 0
+        and managed_member_lifecycle_id is not null
+        and character_id is not null and character_id > 0
+        and character_lifecycle_id is not null
+        and authorization_generation is not null and authorization_generation >= 0
+        and disclosure_version is not null and disclosure_version > 0
+        and section_activation_version is not null and section_activation_version > 0
+      )`,
+    ),
+  ],
+)
+
 export type PlatformCollectionStateRow = typeof platformCollectionState.$inferSelect

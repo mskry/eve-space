@@ -1,10 +1,13 @@
 # First-Party Features
 
-Installed features are listed explicitly in `installed-modules.json`. A feature uses this layout:
+First-party releases use the same package-export installation model as external releases. Their
+source layout is:
 
 ```text
 features/<module-id>/
-  module.config.ts
+  manifest/
+    package.json
+    manifest.json
   server/
     package.json
     src/
@@ -16,9 +19,8 @@ features/<module-id>/
     test/fixtures/
 ```
 
-`module.config.ts` is a serializable descriptor with type-only imports from
-`@eve-space/platform-module-contract`. It must not import either runtime package. The API and worker
-depend only on `server`; the root Nuxt application depends only on `nuxt`.
+The pure manifest package exports canonical JSON and must not import either runtime package. The API
+and worker depend only on `server`; the root Nuxt application depends on the manifest and `nuxt`.
 
 Feature server code receives platform capabilities and must not import API source directly. Repository
 verification rejects imports of the core database client, auth/session stores, token services, routes,
@@ -41,8 +43,9 @@ declare an explicit icon override.
 
 Installation is static. Adding a directory is not enough:
 
-1. Add or remove the module ID in `installed-modules.json`.
-2. Add or remove the server package from `api/package.json` and the Nuxt package from the root `package.json`.
+1. Add or remove the module ID and manifest package export in `installed-modules.json`.
+2. Add or remove the server package from `api/package.json` and the manifest and Nuxt packages from
+   the root `package.json`.
 3. Run `pnpm registry:generate` and `pnpm registry:check`.
 4. Run `pnpm test:packaging` to verify the API image and combined Nuxt build.
 5. Deploy rebuilt API/worker and Nuxt artifacts.
@@ -51,4 +54,5 @@ Runtime enablement is a separate deployment-administrator setting. Disable a mod
 converge before uninstalling it. Uninstallation does not erase retained module data; destructive
 removal requires a reviewed forward operator migration. See
 [`docs/platform-module-foundation.md`](../docs/platform-module-foundation.md) for the complete
-lifecycle and failure procedure.
+lifecycle and failure procedure. External publishers and deployment operators must also follow
+[`docs/external-platform-modules.md`](../docs/external-platform-modules.md).

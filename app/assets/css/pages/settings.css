@@ -350,6 +350,301 @@
   gap: 8px;
 }
 
+.organization-access {
+  min-width: 0;
+}
+
+.organization-access__catalog,
+.organization-access__draft,
+.organization-access__bundles {
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.organization-access__draft,
+.organization-access__bundles {
+  margin-top: 1rem;
+}
+
+.organization-access__panel-heading {
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.organization-access__panel-heading h3,
+.organization-access__module h3,
+.organization-access__module h4,
+.organization-access__bundle h4,
+.organization-profile-preview h4 {
+  margin: 7px 0 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.organization-access__loading,
+.organization-access__empty {
+  margin: 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font: 12px/1.6 var(--ui-font-mono);
+}
+
+.organization-access__empty {
+  border: 0;
+}
+
+.organization-access__module {
+  min-width: 0;
+  padding: 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.organization-access__module:last-child {
+  border-bottom: 0;
+}
+
+.organization-access__module > header p,
+.organization-access__bundle p,
+.organization-access__retained p,
+.organization-access__cleanup-confirmation p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.organization-access__module > header p,
+.organization-access code,
+.organization-profile-preview code {
+  overflow-wrap: anywhere;
+}
+
+.organization-access__permissions,
+.organization-access__retained {
+  min-width: 0;
+  margin: 20px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.organization-access__permissions legend,
+.organization-access__retained legend,
+.organization-access__profiles h4,
+.organization-access__draft > label > span {
+  color: var(--ui-text-faint);
+  font: 11px/1.4 var(--ui-font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.organization-access__permission {
+  min-width: 0;
+  padding: 16px 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.organization-access__permission > span,
+.organization-access__permission dl,
+.organization-profile-preview,
+.organization-profile-preview dl {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.organization-access__permission > span > span,
+.organization-profile-preview > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.organization-access__permission dl,
+.organization-profile-preview dl,
+.organization-access__unavailable dl {
+  margin: 0;
+}
+
+.organization-access__permission dl div,
+.organization-profile-preview dl div,
+.organization-access__unavailable dl div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(120px, 0.45fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.organization-access dt,
+.organization-access dd,
+.organization-profile-preview dt,
+.organization-profile-preview dd {
+  min-width: 0;
+  margin: 0;
+  font: 11px/1.5 var(--ui-font-mono);
+  overflow-wrap: anywhere;
+}
+
+.organization-access dt,
+.organization-profile-preview dt {
+  color: var(--ui-text-faint);
+  text-transform: uppercase;
+}
+
+.organization-access__profiles {
+  margin-top: 20px;
+}
+
+.organization-access__profile-trigger {
+  margin: 10px 8px 0 0;
+}
+
+.organization-profile-preview ul {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+.organization-profile-preview li {
+  min-width: 0;
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line);
+}
+
+.organization-profile-preview__warning {
+  padding: 12px;
+  border-left: 2px solid var(--ui-warning);
+  color: var(--ui-warning) !important;
+}
+
+.organization-access__draft {
+  padding-bottom: 22px;
+}
+
+.organization-access__draft > label {
+  margin: 18px 22px 0;
+  display: grid;
+  gap: 8px;
+}
+
+.organization-access__draft input,
+.organization-access__draft textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  outline: none;
+  background: var(--ui-surface-solid);
+  color: var(--ui-text);
+  font: 12px/1.4 var(--ui-font-mono);
+}
+
+.organization-access__draft textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.organization-access__draft input:focus,
+.organization-access__draft textarea:focus {
+  border-color: var(--ui-primary);
+}
+
+.organization-access__draft > fieldset,
+.organization-access__draft > button,
+.organization-access__cleanup-confirmation {
+  margin-right: 22px;
+  margin-left: 22px;
+}
+
+.organization-access__retained article,
+.organization-access__bundle {
+  min-width: 0;
+  padding: 16px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.organization-access__unavailable > div,
+.organization-access__bundle > div,
+.organization-access__bundle li {
+  min-width: 0;
+}
+
+.organization-access__unavailable code {
+  margin: 8px 0;
+  display: block;
+}
+
+.organization-access__unavailable > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.organization-access__unavailable > div:last-child p {
+  flex-basis: 100%;
+}
+
+.organization-access__cleanup-confirmation {
+  margin-top: 20px;
+  padding: 16px;
+  border-left: 2px solid var(--ui-warning);
+  background: color-mix(in srgb, var(--ui-warning) 6%, transparent);
+}
+
+.organization-access__cleanup-confirmation button {
+  margin: 12px 8px 0 0;
+}
+
+.organization-access__draft > button {
+  margin-top: 20px;
+}
+
+.organization-access__bundle {
+  padding: 20px 22px;
+}
+
+.organization-access__bundle ul {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+.organization-access__bundle li {
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font: 11px/1.5 var(--ui-font-mono);
+  overflow-wrap: anywhere;
+}
+
 .organization-hr-review {
   gap: 1.5rem;
   padding: 0 clamp(1rem, 3vw, 2.5rem) clamp(1rem, 3vw, 2.5rem);

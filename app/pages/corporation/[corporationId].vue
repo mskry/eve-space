@@ -52,12 +52,6 @@ const navigation = computed<readonly RecordSectionNavigationEntry[]>(() => {
   ]
 })
 
-const ceoLabel = computed(() => {
-  const record = corporation.value
-  if (!record || record.ceoId === null) return 'CEO'
-  return record.ceoId === record.creatorId ? 'CEO · FOUNDER' : 'CEO'
-})
-
 provideCorporationRecord({ corporationId, corporation, recordAccessAllowed })
 
 useHead({
@@ -108,13 +102,13 @@ useHead({
       <header class="character-shell-header">
         <button class="character-shell-back" type="button" @click="$router.back()">← BACK</button>
         <div class="character-shell-identity">
-          <span class="character-shell-portrait character-shell-portrait--large">
+          <span class="character-shell-portrait">
             <UiEveImage
               kind="corporation"
               :id="corporation.corporationId"
-              :dimension="96"
-              :width="96"
-              :height="96"
+              :dimension="72"
+              :width="72"
+              :height="72"
               loading="eager"
               decoding="async"
               :alt="`${corporation.name} corporation logo`"
@@ -123,8 +117,8 @@ useHead({
           <div>
             <p class="ui-eyebrow">CORPORATION / {{ corporation.ticker }}</p>
             <h1>{{ corporation.name }}</h1>
-            <div class="character-shell-meta">
-              <span v-if="corporation.allianceId" class="character-shell-affiliation">
+            <div v-if="corporation.allianceId" class="character-shell-meta">
+              <span class="character-shell-affiliation">
                 <UiEveImage
                   kind="alliance"
                   :id="corporation.allianceId"
@@ -140,26 +134,6 @@ useHead({
                   <strong>{{ corporation.allianceName ?? `ID ${corporation.allianceId}` }}</strong>
                 </span>
               </span>
-              <NuxtLink
-                v-if="corporation.ceoId !== null"
-                class="character-shell-affiliation"
-                :to="`/character/${corporation.ceoId}`"
-              >
-                <UiEveImage
-                  kind="character"
-                  :id="corporation.ceoId"
-                  :dimension="32"
-                  :width="32"
-                  :height="32"
-                  loading="lazy"
-                  decoding="async"
-                  :alt="`${corporation.ceoName ?? `CEO ${corporation.ceoId}`} portrait`"
-                />
-                <span>
-                  <small>{{ ceoLabel }}</small>
-                  <strong>{{ corporation.ceoName ?? `ID ${corporation.ceoId}` }}</strong>
-                </span>
-              </NuxtLink>
             </div>
           </div>
         </div>

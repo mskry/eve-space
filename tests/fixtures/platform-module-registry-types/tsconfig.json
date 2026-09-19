@@ -8,5 +8,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["registry-input.ts"]
+  "include": ["*.ts"]
 }

@@ -1,3 +1,11 @@
 {
-  "modules": ["conformance"]
+  "modules": [
+    {
+      "moduleId": "conformance",
+      "manifest": {
+        "package": "@eve-space/conformance-manifest",
+        "export": "./manifest"
+      }
+    }
+  ]
 }

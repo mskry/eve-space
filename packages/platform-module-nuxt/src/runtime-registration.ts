@@ -39,6 +39,10 @@ export function registerPlatformRuntime() {
       name: 'usePlatformProtectedQuery',
       from: resolver.resolve('./runtime/app/composables/usePlatformProtectedQuery'),
     },
+    {
+      name: 'usePlatformReviewerPanels',
+      from: resolver.resolve('./runtime/app/composables/usePlatformReviewerPanels'),
+    },
   ])
   for (const name of [
     'PlatformAuthorizationRequired',

@@ -1,0 +1,293 @@
+import {
+  projectMailRecipients,
+  projectMailSender,
+  sanitizeMailBody,
+  type MailPartyNames,
+  type MailRecipientSource,
+} from '@eve-space/core-eve-projections/mail'
+import type {
+  PlatformCharacterResourceSubject,
+  PlatformResourceOperationImplementation,
+} from '@eve-space/platform-module-contract/resources'
+import { z } from 'zod'
+import {
+  materializeEvidenceObservation,
+  startEvidenceCollection,
+  type EvidenceObservation,
+  type IntentionalEvidence,
+  type StagedEvidenceRecord,
+} from './evidence-collection.js'
+import { maintainEvidence } from './evidence-maintenance.js'
+import type {
+  EvidenceCollectionPersistence,
+  EvidenceMaintenancePersistence,
+  EvidenceMaterializationPersistence,
+} from './persistence.js'
+import { resolveUniverseNamesBestEffort } from './universe-name-resolution.js'
+
+const mailPageSize = 50
+const recipientSchema = z.object({
+  recipient_id: z.number().int().positive(),
+  recipient_type: z.enum(['alliance', 'character', 'corporation', 'mailing_list']),
+})
+const mailHeaderSchema = z.object({
+  from: z.number().int().positive().optional(),
+  is_read: z.boolean().optional(),
+  labels: z.array(z.number().int()).max(1_000).optional(),
+  mail_id: z.number().int().positive(),
+  recipients: z.array(recipientSchema).max(1_000).optional(),
+  subject: z.string().max(100_000).optional(),
+  timestamp: z.iso.datetime({ offset: true }),
+})
+const mailHeadersSchema = z.array(mailHeaderSchema).max(mailPageSize)
+const mailDetailSchema = z.object({
+  body: z.string().optional(),
+  from: z.number().int().positive().optional(),
+  labels: z.array(z.number().int()).max(1_000).optional(),
+  read: z.boolean().optional(),
+  recipients: z.array(recipientSchema).max(1_000).optional(),
+  subject: z.string().max(100_000).optional(),
+  timestamp: z.iso.datetime({ offset: true }).optional(),
+})
+const mailingListsSchema = z.array(
+  z.object({ mailing_list_id: z.number().int().positive(), name: z.string().max(500) }),
+)
+const headerCheckpointSchema = z.object({
+  lastMailId: z.number().int().positive().nullable().default(null),
+})
+const detailCheckpointSchema = z.object({
+  lastMailId: z.number().int().positive().nullable().default(null),
+})
+
+type MailHeader = z.infer<typeof mailHeaderSchema>
+type MailDetail = z.infer<typeof mailDetailSchema>
+type MailHeaderObservation = Extract<EvidenceObservation, { resourceId: 'mail-headers' }>
+type MailDetailObservation = Extract<EvidenceObservation, { resourceId: 'mail-details' }>
+type MailResource<Operation extends string, Data> = PlatformResourceOperationImplementation<
+  Operation,
+  unknown,
+  Data,
+  string,
+  unknown,
+  PlatformCharacterResourceSubject,
+  readonly [],
+  EvidenceCollectionPersistence,
+  EvidenceMaterializationPersistence,
+  EvidenceMaintenancePersistence
+>
+
+export const mailHeadersResource: MailResource<'mail-headers', MailHeaderObservation> = {
+  operation: 'mail-headers',
+  async collect(context) {
+    const collection = await startEvidenceCollection(
+      { sectionId: 'mail', resourceId: 'mail-headers' },
+      context,
+    )
+    const checkpoint = headerCheckpointSchema.parse(collection.checkpoint)
+    const result = await context.execute('mail-headers', {
+      path: { character_id: context.subject.characterId },
+      ...(checkpoint.lastMailId === null ? {} : { query: { last_mail_id: checkpoint.lastMailId } }),
+    })
+    const headers = mailHeadersSchema.parse(result.data)
+    const parties = await resolveParties(headers, context)
+    const nextLastMailId = headers.at(-1)?.mail_id ?? null
+    if (
+      headers.length === mailPageSize &&
+      (nextLastMailId === null || nextLastMailId === checkpoint.lastMailId)
+    )
+      throw new Error('Mail header continuation did not advance')
+    const complete = headers.length < mailPageSize
+    return {
+      complete,
+      data: {
+        sectionId: 'mail',
+        resourceId: 'mail-headers',
+        observationId: collection.observationId,
+        expectedRevision: collection.expectedRevision,
+        checkpoint: {
+          complete,
+          lastMailId: complete ? checkpoint.lastMailId : nextLastMailId,
+        },
+        records: headers.map((header) => headerRecord(header, parties, result.validatedAt)),
+      },
+    }
+  },
+  request(subject) {
+    return { path: { character_id: subject.characterId } }
+  },
+  map() {
+    throw new Error('Mail header mapping requires bounded collection')
+  },
+  materialize(context) {
+    return materializeEvidenceObservation(context)
+  },
+  maintain(context) {
+    return maintainEvidence('mail-headers', context, false)
+  },
+}
+
+export const mailDetailsResource: MailResource<'mail-headers', MailDetailObservation> = {
+  operation: 'mail-headers',
+  async collect(context) {
+    const collection = await startEvidenceCollection(
+      { sectionId: 'mail', resourceId: 'mail-details' },
+      context,
+    )
+    const checkpoint = detailCheckpointSchema.parse(collection.checkpoint)
+    const headerResult = await context.execute('mail-headers', {
+      path: { character_id: context.subject.characterId },
+      ...(checkpoint.lastMailId === null ? {} : { query: { last_mail_id: checkpoint.lastMailId } }),
+    })
+    const headers = mailHeadersSchema.parse(headerResult.data)
+    const detailLimit = Math.max(0, context.requestBudget - 3)
+    if (detailLimit === 0 && headers.length > 0)
+      throw new Error('Mail detail request budget cannot advance collection')
+    const selected = headers.slice(0, detailLimit)
+    const details = await Promise.all(
+      selected.map(async (header) => {
+        const result = await context.execute('mail-message', {
+          path: { character_id: context.subject.characterId, mail_id: header.mail_id },
+        })
+        return {
+          header,
+          detail: mailDetailSchema.parse(result.data),
+          validatedAt: result.validatedAt,
+        }
+      }),
+    )
+    const parties = await resolveParties(
+      details.map(({ detail }) => detail),
+      context,
+    )
+    const consumedPage = selected.length >= headers.length
+    const complete = consumedPage && headers.length < mailPageSize
+    const nextLastMailId = selected.at(-1)?.mail_id ?? null
+    if (!complete && (nextLastMailId === null || nextLastMailId === checkpoint.lastMailId))
+      throw new Error('Mail detail continuation did not advance')
+    return {
+      complete,
+      data: {
+        sectionId: 'mail',
+        resourceId: 'mail-details',
+        observationId: collection.observationId,
+        expectedRevision: collection.expectedRevision,
+        checkpoint: complete
+          ? { complete: true, lastMailId: checkpoint.lastMailId }
+          : { complete: false, lastMailId: nextLastMailId },
+        records: details.map(({ header, detail, validatedAt }) =>
+          detailRecord(header.mail_id, detail, parties, validatedAt),
+        ),
+      },
+    }
+  },
+  request(subject) {
+    return { path: { character_id: subject.characterId } }
+  },
+  map() {
+    throw new Error('Mail detail mapping requires bounded collection')
+  },
+  materialize(context) {
+    return materializeEvidenceObservation(context)
+  },
+  maintain(context) {
+    return maintainEvidence('mail-contents', context, false)
+  },
+}
+
+function headerRecord(
+  header: MailHeader,
+  parties: MailPartyNames,
+  validatedAt: string,
+): StagedEvidenceRecord<'mail-header'> {
+  return {
+    recordKind: 'mail-header',
+    sourceId: String(header.mail_id),
+    sourceTimestamp: header.timestamp,
+    evidence: mailEvidence(header.mail_id, header, parties, header.is_read ?? null, null),
+    validatedAt,
+  }
+}
+
+function detailRecord(
+  mailId: number,
+  detail: MailDetail,
+  parties: MailPartyNames,
+  validatedAt: string,
+): StagedEvidenceRecord<'mail-content'> {
+  return {
+    recordKind: 'mail-content',
+    sourceId: String(mailId),
+    sourceTimestamp: detail.timestamp ?? null,
+    evidence: mailEvidence(
+      mailId,
+      detail,
+      parties,
+      detail.read ?? null,
+      sanitizeMailBody(detail.body)?.slice(0, 100_000) ?? null,
+    ),
+    validatedAt,
+  }
+}
+
+function mailEvidence(
+  mailId: number,
+  mail: {
+    readonly from?: number
+    readonly labels?: readonly number[]
+    readonly recipients?: readonly MailRecipientSource[]
+    readonly subject?: string
+    readonly timestamp?: string
+  },
+  parties: MailPartyNames,
+  isRead: boolean | null,
+  body: string | null,
+): IntentionalEvidence {
+  const sender = projectMailSender(mail.from, parties)
+  const recipients = projectMailRecipients(mail.recipients, parties)
+  return {
+    mailId,
+    senderId: sender?.id ?? null,
+    senderType: sender?.type ?? null,
+    senderName: sender?.name ?? null,
+    recipientIds: recipients.map((recipient) => recipient.id),
+    recipientTypes: recipients.map((recipient) => recipient.type),
+    recipientNames: recipients.map((recipient) => recipient.name),
+    subject: mail.subject ?? null,
+    sentAt: mail.timestamp ?? null,
+    labelIds: [...(mail.labels ?? [])],
+    isRead,
+    body,
+  }
+}
+
+async function resolveParties(
+  records: readonly {
+    readonly from?: number
+    readonly recipients?: readonly MailRecipientSource[]
+  }[],
+  context: Parameters<NonNullable<typeof mailHeadersResource.collect>>[0],
+): Promise<MailPartyNames> {
+  const universeIds = new Set<number>()
+  let needsMailingLists = false
+  for (const record of records) {
+    if (record.from !== undefined) universeIds.add(record.from)
+    for (const recipient of record.recipients ?? []) {
+      if (recipient.recipient_type === 'mailing_list') needsMailingLists = true
+      else universeIds.add(recipient.recipient_id)
+    }
+  }
+  const [universeNames, listsResult] = await Promise.all([
+    resolveUniverseNamesBestEffort([...universeIds], context),
+    !needsMailingLists
+      ? { data: [] }
+      : context.execute('mail-lists', {
+          path: { character_id: context.subject.characterId },
+        }),
+  ])
+  return {
+    universeNames,
+    mailingListNames: new Map(
+      mailingListsSchema.parse(listsResult.data).map((list) => [list.mailing_list_id, list.name]),
+    ),
+  }
+}

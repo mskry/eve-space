@@ -17,8 +17,10 @@ import {
   assignOrganizationGroup,
   createOrganizationGroup,
   createOrganizationPermissionBundle,
+  listCurrentOrganizationPermissionBundles,
   listCurrentOrganizationGroups,
   revokeOrganizationGroupAssignment,
+  updateOrganizationPermissionBundle,
 } from './group-store.js'
 import { OrganizationGroupMutationError } from './group-mutation-error.js'
 import {
@@ -26,6 +28,11 @@ import {
   requireOrganizationOwner,
   requireTrustedOrigin,
 } from './route-middleware.js'
+import {
+  listEnabledPermissionCatalog,
+  OrganizationPermissionCatalogError,
+  previewEnabledPermissionProfile,
+} from './permission-catalog-store.js'
 
 const reasonSchema = z.string().trim().min(1, 'A reason is required.').max(2000)
 const revokeSchema = z.object({ reason: reasonSchema }).strict()
@@ -39,21 +46,57 @@ const permissionKeySchema = z
     (key) => key.split(/[.:]/).every((segment) => segment.length > 0 && !segment.endsWith('-')),
     'Enter a valid permission key.',
   )
-const permissionBundleSchema = z
+const publisherPackageSchema = z.string().trim().min(1).max(214)
+const moduleIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(44)
+  .regex(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/)
+const permissionSelectionSchema = z.discriminatedUnion('type', [
+  z
+    .object({
+      type: z.literal('module'),
+      publisherPackage: publisherPackageSchema,
+      moduleId: moduleIdSchema,
+      key: permissionKeySchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('service'),
+      key: permissionKeySchema,
+      reviewAllowed: z.boolean().optional(),
+    })
+    .strict(),
+])
+const permissionBundleCreateSchema = z
   .object({
     name: z.string().trim().min(1).max(100),
-    permissions: z
-      .array(
-        z
-          .object({
-            type: z.enum(['module', 'service']),
-            key: permissionKeySchema,
-            reviewAllowed: z.boolean().optional(),
-          })
-          .strict(),
-      )
-      .min(1)
-      .max(100),
+    reason: reasonSchema,
+    permissions: z.array(permissionSelectionSchema).min(1).max(100),
+  })
+  .strict()
+const retainedUnavailableEntryIdsSchema = z
+  .array(z.uuid('Enter a valid retained permission entry ID.'))
+  .max(100)
+  .refine((entryIds) => new Set(entryIds).size === entryIds.length, {
+    message: 'Retained permission entry IDs must be unique.',
+  })
+const permissionBundleUpdateSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100),
+    reason: reasonSchema,
+    permissions: z.array(permissionSelectionSchema).max(100),
+    retainedUnavailableEntryIds: retainedUnavailableEntryIdsSchema,
+  })
+  .strict()
+const permissionBundleParamsSchema = z.object({ bundleId: z.uuid('Enter a valid bundle ID.') })
+const permissionProfilePreviewSchema = z
+  .object({
+    publisherPackage: publisherPackageSchema,
+    moduleId: moduleIdSchema,
+    profileId: moduleIdSchema,
   })
   .strict()
 const groupSchema = z
@@ -118,6 +161,12 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
   .get('/groups', requireOrganizationManager, async (context) =>
     context.json(await listCurrentOrganizationGroups()),
   )
+  .get('/permission-catalog', requireOrganizationOwner, async (context) =>
+    context.json(await listEnabledPermissionCatalog()),
+  )
+  .get('/permission-bundles', requireOrganizationOwner, async (context) =>
+    context.json(await listCurrentOrganizationPermissionBundles(context.var.session!.userId)),
+  )
   .get('/member-blocks', requireOrganizationManager, async (context) =>
     context.json(await listCurrentOrganizationMemberBlocks()),
   )
@@ -125,7 +174,7 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
     '/permission-bundles',
     requireTrustedOrigin,
     requireOrganizationOwner,
-    zValidator('json', permissionBundleSchema),
+    zValidator('json', permissionBundleCreateSchema),
     async (context) => {
       try {
         const bundle = await createOrganizationPermissionBundle({
@@ -135,6 +184,42 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
         return context.json({ bundle }, 201)
       } catch (error) {
         return groupMutationFailure(context, error)
+      }
+    },
+  )
+  .put(
+    '/permission-bundles/:bundleId',
+    requireTrustedOrigin,
+    requireOrganizationOwner,
+    zValidator('param', permissionBundleParamsSchema),
+    zValidator('json', permissionBundleUpdateSchema),
+    async (context) => {
+      try {
+        const bundle = await updateOrganizationPermissionBundle({
+          actorUserId: context.var.session!.userId,
+          bundleId: context.req.valid('param').bundleId,
+          ...context.req.valid('json'),
+        })
+        return context.json({ bundle })
+      } catch (error) {
+        return groupMutationFailure(context, error)
+      }
+    },
+  )
+  .post(
+    '/permission-profile-preview',
+    requireTrustedOrigin,
+    requireOrganizationOwner,
+    zValidator('json', permissionProfilePreviewSchema),
+    async (context) => {
+      try {
+        return context.json(await previewEnabledPermissionProfile(context.req.valid('json')))
+      } catch (error) {
+        if (!(error instanceof OrganizationPermissionCatalogError)) throw error
+        return context.json(
+          { code: 'PERMISSION_PROFILE_UNAVAILABLE', message: 'Permission profile is unavailable.' },
+          404,
+        )
       }
     },
   )
@@ -261,6 +346,22 @@ function groupMutationFailure(context: Context, error: unknown) {
       return context.json(
         { code: 'PERMISSION_BUNDLE_NOT_FOUND', message: 'Permission bundle not found.' },
         404,
+      )
+    case 'permission-unavailable':
+      return context.json(
+        {
+          code: 'MODULE_PERMISSION_UNAVAILABLE',
+          message: 'A selected module permission is unavailable.',
+        },
+        409,
+      )
+    case 'retained-permission-invalid':
+      return context.json(
+        {
+          code: 'RETAINED_PERMISSION_INVALID',
+          message: 'A retained permission entry is invalid or no longer unavailable.',
+        },
+        409,
       )
     case 'group-name-conflict':
       return context.json(

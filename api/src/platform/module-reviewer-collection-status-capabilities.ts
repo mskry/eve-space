@@ -10,6 +10,7 @@ import { platformResources } from './resources.js'
 interface ReviewerCollectionStatusBinding {
   readonly moduleId: string
   readonly sectionId?: string
+  readonly resourceIds?: readonly string[]
   readonly target: PlatformReviewerTargetContext
 }
 
@@ -43,6 +44,7 @@ export function createPlatformReviewerCollectionStatusReads(
         (candidate) =>
           candidate.moduleId === binding.moduleId &&
           candidate.resourceId === resourceId &&
+          (binding.resourceIds === undefined || binding.resourceIds.includes(resourceId)) &&
           candidate.subjectKind === 'character' &&
           candidate.eligibility.kind === 'current-managed-member-character' &&
           candidate.sectionId === binding.sectionId,
@@ -82,6 +84,7 @@ export function createPlatformReviewerCollectionStatusReads(
         characterLifecycleId: character.subjectLifecycleId,
         authorizationGeneration: eligibility.authorizationGeneration,
         disclosureVersion: authority.disclosureVersion,
+        sectionActivationVersion: authority.sectionActivationVersion,
       }
       if (eligibility.status === 'authorization-required')
         return {

@@ -4,7 +4,11 @@ import { validateResolvedExposures } from '../src/resolved-exposures.js'
 
 const contribution: PlatformNuxtContributionDescriptor = {
   moduleId: 'alpha',
+  packageName: '@example/alpha-nuxt',
   defaultIcon: 'character',
+  reviewerContributions: [],
+  queryAdmissionScopes: [],
+  sections: [],
   pages: [],
   navigation: [],
   exposed: {

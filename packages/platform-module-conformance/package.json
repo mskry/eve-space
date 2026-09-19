@@ -1,0 +1,63 @@
+{
+  "name": "@eve-space/platform-module-conformance",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=24.20.0"
+  },
+  "bin": {
+    "eve-space-module-conformance": "./bin/conformance.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/conformance.d.ts",
+      "import": "./dist/conformance.js"
+    },
+    "./policy": {
+      "types": "./dist/source-policy.d.ts",
+      "import": "./dist/source-policy.js"
+    },
+    "./postgres-policy": {
+      "types": "./dist/postgres-policy.d.ts",
+      "import": "./dist/postgres-policy.js"
+    },
+    "./persistence-policy": {
+      "types": "./dist/persistence-policy.d.ts",
+      "import": "./dist/persistence-policy.js"
+    }
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "pnpm --filter @eve-space/platform-module-persistence-policy build && tsc6",
+    "test": "pnpm build && vitest run",
+    "test:package": "pnpm build:public-interface && node scripts/smoke-public-interface.ts",
+    "build:public-interface": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/core-data-contract build && pnpm --filter @eve-space/core-eve-projections build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && pnpm --filter @eve-space/platform-module-persistence-policy build && pnpm build",
+    "typecheck": "tsc6 --noEmit && tsc6 --project tsconfig.scripts.json && tsc6 --project test/fixtures/tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@eve-space/platform-module-contract": "workspace:*",
+    "@eve-space/platform-module-persistence-policy": "workspace:*",
+    "@vue/compiler-sfc": "catalog:",
+    "typescript": "catalog:tsapi"
+  },
+  "devDependencies": {
+    "@eve-space/platform-module-nuxt": "workspace:*",
+    "@eve-space/platform-module-server": "workspace:*",
+    "@nuxt/kit": "catalog:",
+    "@nuxt/schema": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:vitest4",
+    "hono": "catalog:",
+    "vitest": "catalog:vitest4",
+    "vue": "catalog:",
+    "zod": "catalog:"
+  }
+}

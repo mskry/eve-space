@@ -7,6 +7,7 @@ import {
   installedModuleIds,
   installedModuleMigrations,
 } from '../../src/generated/platform/installed-module-migrations.js'
+import { installedModuleInventory } from '../../src/generated/platform/installed-module-inventory.js'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 const image = `eve-space-api-packaging-test:${process.pid}`
@@ -33,7 +34,12 @@ describe('API production image', () => {
       '--input-type=module',
       '--eval',
       imageVerificationScript,
-      JSON.stringify({ coreMigrations, installedModuleIds, installedModuleMigrations }),
+      JSON.stringify({
+        coreMigrations,
+        installedModuleIds,
+        installedModuleInventory,
+        installedModuleMigrations,
+      }),
     ])
 
     expect(JSON.parse(verification)).toEqual({ verified: true })
@@ -50,6 +56,7 @@ const required = [
   '/app/dist/generated/platform/installed-module-routes.js',
   '/app/dist/generated/platform/installed-module-worker.js',
   '/app/dist/generated/platform/installed-module-migrations.js',
+  '/app/dist/generated/platform/installed-module-inventory.js',
   '/app/dist/generated/platform/installed-module-esi.js',
   '/app/dist/generated/platform/installed-module-runtime.js',
   '/app/node_modules/@pgsql/parser/wasm/v17/libpg-query.wasm',
@@ -65,11 +72,15 @@ if (
   parsed.statements.length !== 1 ||
   parsed.statements[0]?.kind !== 'CreateStmt'
 ) throw new Error('Unexpected PostgreSQL 17 parser result')
-for (const moduleId of expected.installedModuleIds)
-  await import('@eve-space/' + moduleId + '-server')
+for (const module of expected.installedModuleInventory)
+  await import(module.packages.server.name)
+if (
+  expected.installedModuleInventory.map(({ moduleId }) => moduleId).join(',') !==
+  expected.installedModuleIds.join(',')
+) throw new Error('Installed module inventory differs from the migration registry')
 for (const migration of expected.installedModuleMigrations) {
   const resolved = import.meta.resolve(
-    '@eve-space/' + migration.moduleId + '-server/migrations/' + migration.name,
+    migration.packageName + '/migrations/' + migration.name,
   )
   await readFile(new URL(resolved), 'utf8')
 }

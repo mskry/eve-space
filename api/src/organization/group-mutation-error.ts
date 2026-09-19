@@ -5,6 +5,8 @@ export class OrganizationGroupMutationError extends Error {
       | 'owner-authority-required'
       | 'bundle-name-conflict'
       | 'bundle-not-found'
+      | 'permission-unavailable'
+      | 'retained-permission-invalid'
       | 'group-name-conflict'
       | 'group-not-found'
       | 'target-not-found'

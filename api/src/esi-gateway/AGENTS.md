@@ -14,7 +14,7 @@ This subsystem uses support, representation, contract, infrastructure, execution
 - Recorder-only observability modules may be imported by any tier and must not depend on execution. Aggregate observability may read execution state when explicitly allowed, but must not initiate or own execution.
 - Pure modules, infrastructure, execution, and recorders must not import aggregate observability. Pure result metadata belongs to the representation tier.
 - External imports require an explicit allowance: shared libraries and pure helpers are available across tiers, while generated catalogs, authentication, and Redis dependencies are restricted to their declared callers. New repository modules, packages, and package subpaths are rejected by default; type imports follow the same rules.
-- The root exposes only `feature-execution`, `platform-execution`, `catalog-interface`, `failures`, `runtime-lifecycle`, and `status-interface`. Each is a behavior-owning seam, never a re-export barrel.
+- The root exposes only `feature-execution`, `platform-execution`, `catalog-authority`, `catalog-interface`, `failures`, `runtime-lifecycle`, and `status-interface`. Each is a behavior-owning seam, never a general re-export barrel.
 - All other gateway modules belong in `internal/`. Outside callers, including tests outside the gateway-owned test directory, must not import them directly.
 - `scripts/esi-gateway/boundaries.ts` is the source of truth for exact module-to-tier membership, allowed tier imports, and narrow module exceptions. Update it when adding or moving an ESI gateway module.
 - `scripts/verify-esi-gateway-boundaries.ts` must continue to reject undeclared modules, dependency cycles, and forbidden external imports.

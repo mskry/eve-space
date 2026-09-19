@@ -31,8 +31,6 @@ defineSlots<{
 <template>
   <slot v-if="hasData || state.status === 'ready'" />
 
-  <PlatformQueryPersistenceStatus :presentation="presentation" />
-
   <slot v-if="!hasData && state.status === 'loading'" name="loading" :state="state">
     <UiStatePanel :code="state.code" :title="state.title" :compact="compact" role="status">
       <template #icon><div class="app-scanner" aria-hidden="true"></div></template>
