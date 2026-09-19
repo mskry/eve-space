@@ -130,7 +130,12 @@ vi.mock('../../src/generated/platform/installed-module-routes.js', async () => {
   const { platformModuleError, zValidator } = await import('@eve-space/platform-module-server')
   const { platformModuleRouteComposers } =
     await import('../../src/platform/module-route-composition.js')
-  const organization = { audience: 'member', requiredPermission: 'alpha.view' } as const
+  const organization = {
+    publisherPackage: '@example/alpha-manifest',
+    moduleId: 'alpha',
+    audience: 'member',
+    requiredPermission: 'alpha.view',
+  } as const
 
   const sessionRoutes = new Hono<PlatformAuthenticatedSessionRouteEnv>()
     .get('/', (context) => {
@@ -182,7 +187,7 @@ vi.mock('../../src/generated/platform/installed-module-routes.js', async () => {
         '/alpha/hr',
         platformModuleRouteComposers['authenticated-session'](
           'alpha',
-          { audience: 'hr', requiredPermission: 'alpha.view' },
+          { ...organization, audience: 'hr' },
           sessionRoutes,
         ),
       )

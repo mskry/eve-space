@@ -40,6 +40,63 @@ afterAll(async () => {
 })
 
 describe('organization foundation migration', () => {
+  test('supports publisher-bound module permissions while retaining unattributed legacy rows', async () => {
+    const [bundle] = await connection<{ bundle_id: string }[]>`
+      insert into organization_permission_bundles (
+        deployment_id, organization_version, name, created_by_user_id
+      ) values (1, 1, 'Migration ownership', ${userId})
+      returning bundle_id
+    `
+    if (!bundle) throw new Error('Permission bundle fixture is missing')
+
+    await connection`
+      insert into organization_permission_bundle_entries (
+        bundle_id, deployment_id, organization_version, permission_type, permission_key
+      ) values (${bundle.bundle_id}, 1, 1, 'module', 'legacy.permission')
+    `
+    await connection`
+      insert into organization_permission_bundle_entries (
+        bundle_id, deployment_id, organization_version, permission_type, permission_key,
+        publisher_package, module_id
+      ) values
+        (${bundle.bundle_id}, 1, 1, 'module', 'alpha.view', '@example/alpha-manifest', 'alpha'),
+        (${bundle.bundle_id}, 1, 1, 'module', 'alpha.view', '@replacement/alpha-manifest', 'alpha')
+    `
+
+    const rows = await connection<
+      { permission_key: string; publisher_package: string | null; module_id: string | null }[]
+    >`
+      select permission_key, publisher_package, module_id
+      from organization_permission_bundle_entries
+      where bundle_id = ${bundle.bundle_id}
+      order by permission_key, publisher_package nulls first
+    `
+    expect(rows).toEqual([
+      {
+        permission_key: 'alpha.view',
+        publisher_package: '@example/alpha-manifest',
+        module_id: 'alpha',
+      },
+      {
+        permission_key: 'alpha.view',
+        publisher_package: '@replacement/alpha-manifest',
+        module_id: 'alpha',
+      },
+      { permission_key: 'legacy.permission', publisher_package: null, module_id: null },
+    ])
+    await expect(
+      connection`
+        insert into organization_permission_bundle_entries (
+          bundle_id, deployment_id, organization_version, permission_type, permission_key,
+          publisher_package, module_id
+        ) values (${bundle.bundle_id}, 1, 1, 'service', 'discord.access', '@example/service', 'alpha')
+      `,
+    ).rejects.toMatchObject({
+      code: '23514',
+      constraint_name: 'organization_permission_bundle_entries_ownership_check',
+    })
+  })
+
   test('supports character and token data within a locked organization epoch', async () => {
     const [settings] = await connection<
       {

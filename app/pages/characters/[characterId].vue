@@ -158,9 +158,9 @@ useHead({
     <template v-else-if="selectedCharacter">
       <header class="character-shell-header">
         <NuxtLink class="character-shell-back" to="/characters">← ALL CHARACTERS</NuxtLink>
-        <div class="character-shell-identity">
+        <div class="character-shell-identity character-shell-identity--record">
           <span
-            class="character-shell-portrait character-shell-portrait--large"
+            class="character-shell-portrait"
             :style="{
               viewTransitionName: characterPortraitViewTransitionName(
                 selectedCharacter.characterId,
@@ -170,9 +170,9 @@ useHead({
             <UiEveImage
               kind="character"
               :id="selectedCharacter.characterId"
-              :dimension="96"
-              :width="96"
-              :height="96"
+              :dimension="72"
+              :width="72"
+              :height="72"
               loading="eager"
               decoding="async"
               alt=""
@@ -192,37 +192,14 @@ useHead({
               </span>
               <UiMainCharacterMark v-if="selectedCharacter.isMain" variant="icon" />
             </h1>
-            <div class="character-shell-organization">
-              <NuxtLink
-                class="character-shell-organization-link"
-                :to="`/corporation/${selectedCharacter.corporation.id}`"
-              >
-                <UiEveImage
-                  kind="corporation"
-                  :id="selectedCharacter.corporation.id"
-                  :dimension="32"
-                  :width="32"
-                  :height="32"
-                  loading="lazy"
-                  decoding="async"
-                  :alt="`${selectedCharacter.corporation.name} corporation logo`"
-                />
-                <strong>{{ selectedCharacter.corporation.name }}</strong>
+            <p class="character-shell-record-affiliations">
+              <NuxtLink :to="`/corporation/${selectedCharacter.corporation.id}`">
+                {{ selectedCharacter.corporation.name }}
               </NuxtLink>
-              <span v-if="selectedCharacter.alliance" class="character-shell-organization-alliance">
-                <UiEveImage
-                  kind="alliance"
-                  :id="selectedCharacter.alliance.id"
-                  :dimension="32"
-                  :width="32"
-                  :height="32"
-                  loading="lazy"
-                  decoding="async"
-                  :alt="`${selectedCharacter.alliance.name} alliance logo`"
-                />
-                <strong>{{ selectedCharacter.alliance.name }}</strong>
-              </span>
-            </div>
+              <template v-if="selectedCharacter.alliance">
+                / {{ selectedCharacter.alliance.name }}
+              </template>
+            </p>
           </div>
         </div>
       </header>

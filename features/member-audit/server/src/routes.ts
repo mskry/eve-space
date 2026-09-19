@@ -1,36 +1,29 @@
-import {
-  isPlatformReviewerAccountSearchCursor,
-  isPlatformReviewerAccountSearchQuery,
-  type PlatformModuleRouteCapabilities,
-  type PlatformReviewerSearchRouteEnv,
-  type PlatformReviewerTargetRouteEnv,
-} from '@eve-space/platform-module-contract/server'
+import type { PlatformReviewerTargetRouteEnv } from '@eve-space/platform-module-contract/server'
 import { zValidator } from '@eve-space/platform-module-server'
 import { Hono } from 'hono'
 import { z } from 'zod'
+import type {
+  MemberAuditAssetEvidence,
+  MemberAuditMailEvidence,
+  MemberAuditTrainedSkillsEvidence,
+  MemberAuditWalletEvidence,
+} from './persistence.js'
 
-const searchQuery = z.object({
-  query: z.string().trim().refine(isPlatformReviewerAccountSearchQuery).optional(),
-  corporationId: z.coerce.number().int().positive().optional(),
-  complianceState: z.enum(['pending', 'compliant', 'review_required', 'suspended']).optional(),
-  blocked: z.stringbool().optional(),
-  cursor: z.string().refine(isPlatformReviewerAccountSearchCursor).optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(25),
-})
+const actionReason = z.string().trim().min(1).max(2000)
+const groupParams = z.object({ groupId: z.uuid() })
+const groupAssignmentParams = z.object({ groupId: z.uuid(), assignmentId: z.uuid() })
+const assignGroupBody = z
+  .object({
+    reason: actionReason,
+    expiresAt: z.iso.datetime({ offset: true }).nullable().optional(),
+  })
+  .strict()
+const actionReasonBody = z.object({ reason: actionReason }).strict()
 
-export function memberSearchRoutes(_capabilities: PlatformModuleRouteCapabilities) {
-  return new Hono<PlatformReviewerSearchRouteEnv>().get(
-    '/',
-    zValidator('query', searchQuery),
-    async (context) =>
-      context.json(
-        await context.var.platform.reviewerSearch.search(context.req.valid('query')),
-        200,
-      ),
-  )
-}
+type GroupCommandIds = readonly ['assign-ordinary-group', 'revoke-ordinary-group']
+type BlockCommandIds = readonly ['block-member', 'unblock-member']
 
-export function memberSummaryRoutes(_capabilities: PlatformModuleRouteCapabilities) {
+export function memberSummaryRoutes(_capabilities: object) {
   return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
     const target = context.var.platform.reviewerTarget
     return context.json(
@@ -42,8 +35,149 @@ export function memberSummaryRoutes(_capabilities: PlatformModuleRouteCapabiliti
         compliance: target.compliance,
         groups: target.groups,
         block: target.block,
+        evidence: await context.var.platform.evidenceSummary.read(),
       },
       200,
     )
   })
+}
+
+export function memberSkillsRoutes(_capabilities: object) {
+  return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
+    const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
+    const trainedSkills = await context.var.platform.collectionStatus.read(
+      'trained-skills',
+      characterId,
+    )
+    return context.json(
+      {
+        trainedSkills,
+        evidence: await readReviewerEvidence<MemberAuditTrainedSkillsEvidence>(
+          context.var.platform,
+        ),
+      },
+      200,
+    )
+  })
+}
+
+export function memberAssetsRoutes(_capabilities: object) {
+  return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
+    const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
+    const status = await context.var.platform.collectionStatus.read('assets', characterId)
+    return context.json(
+      {
+        status,
+        evidence: await readReviewerEvidence<MemberAuditAssetEvidence>(context.var.platform),
+      },
+      200,
+    )
+  })
+}
+
+export function memberWalletRoutes(_capabilities: object) {
+  return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
+    const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
+    const [balance, journal, transactions] = await Promise.all([
+      context.var.platform.collectionStatus.read('wallet-balance', characterId),
+      context.var.platform.collectionStatus.read('wallet-journal', characterId),
+      context.var.platform.collectionStatus.read('wallet-transactions', characterId),
+    ])
+    return context.json(
+      {
+        balance,
+        journal,
+        transactions,
+        evidence: await readReviewerEvidence<MemberAuditWalletEvidence>(context.var.platform, 500),
+      },
+      200,
+    )
+  })
+}
+
+export function memberMailRoutes(_capabilities: object) {
+  return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
+    const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
+    const [headers, details] = await Promise.all([
+      context.var.platform.collectionStatus.read('mail-headers', characterId),
+      context.var.platform.collectionStatus.read('mail-details', characterId),
+    ])
+    return context.json(
+      {
+        headers,
+        details,
+        evidence: await readReviewerEvidence<MemberAuditMailEvidence>(context.var.platform, 500),
+      },
+      200,
+    )
+  })
+}
+
+export function memberGroupRoutes(_capabilities: object) {
+  return new Hono<PlatformReviewerTargetRouteEnv<GroupCommandIds>>()
+    .get('/', (context) =>
+      context.json({ groups: context.var.platform.reviewerTarget.groups }, 200),
+    )
+    .post(
+      '/:groupId',
+      zValidator('param', groupParams),
+      zValidator('json', assignGroupBody),
+      async (context) =>
+        context.json(
+          await context.var.platform.organizationCommands.assignOrdinaryGroup({
+            groupId: context.req.valid('param').groupId,
+            ...context.req.valid('json'),
+          }),
+          201,
+        ),
+    )
+    .delete(
+      '/:groupId/assignments/:assignmentId',
+      zValidator('param', groupAssignmentParams),
+      zValidator('json', actionReasonBody),
+      async (context) => {
+        const params = context.req.valid('param')
+        return context.json(
+          await context.var.platform.organizationCommands.revokeOrdinaryGroup({
+            groupId: params.groupId,
+            assignmentId: params.assignmentId,
+            reason: context.req.valid('json').reason,
+          }),
+          200,
+        )
+      },
+    )
+}
+
+export function memberBlockRoutes(_capabilities: object) {
+  return new Hono<PlatformReviewerTargetRouteEnv<BlockCommandIds>>()
+    .get('/', (context) => context.json({ block: context.var.platform.reviewerTarget.block }, 200))
+    .post('/', zValidator('json', actionReasonBody), async (context) =>
+      context.json(
+        await context.var.platform.organizationCommands.blockMember(context.req.valid('json')),
+        201,
+      ),
+    )
+    .delete('/', zValidator('json', actionReasonBody), async (context) =>
+      context.json(
+        await context.var.platform.organizationCommands.unblockMember(context.req.valid('json')),
+        200,
+      ),
+    )
+}
+
+function selectedCharacterId(
+  target: PlatformReviewerTargetRouteEnv['Variables']['platform']['reviewerTarget'],
+) {
+  if (target.selection.kind !== 'character')
+    throw new Error('Member Audit character target is unavailable')
+  return target.selection.characterId
+}
+
+function readReviewerEvidence<Evidence>(
+  platform: PlatformReviewerTargetRouteEnv['Variables']['platform'],
+  limit?: number,
+): Promise<Evidence> {
+  if (!platform.evidence) throw new Error('Reviewer evidence capability is unavailable')
+  return platform.evidence.read(limit === undefined ? undefined : { limit }) as Promise<Evidence>
 }

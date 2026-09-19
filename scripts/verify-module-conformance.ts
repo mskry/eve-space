@@ -3,6 +3,10 @@ import { spawnSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { generateRegistryFiles, loadInstalledModuleManifests } from './module-registry/generator.js'
+import {
+  assertInstalledFeatureBoundaries,
+  assertManifestCompositionBoundaries,
+} from './module-registry/feature-boundaries.js'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const fixtureRoot = join(repositoryRoot, 'tests/fixtures/platform-module-conformance')
@@ -27,16 +31,21 @@ const outputs = [
   join(fixtureRoot, 'node_modules'),
   join(serverRoot, 'node_modules'),
   join(nuxtRoot, 'node_modules'),
-  join(serverRoot, 'dist'),
-  join(nuxtRoot, 'dist'),
 ]
 
 try {
   cleanOutputs()
   const registry = await loadInstalledModuleManifests(fixtureRoot)
+  await assertInstalledFeatureBoundaries(fixtureRoot, registry.releases)
+  await Promise.all(
+    registry.releases.map(async (release) =>
+      assertManifestCompositionBoundaries(fixtureRoot, release),
+    ),
+  )
   for (const [path, content] of generateRegistryFiles(
     registry.compiled,
     registry.persistenceRoutines,
+    registry.releases,
   )) {
     const output = join(fixtureRoot, path)
     mkdirSync(dirname(output), { recursive: true })
@@ -113,6 +122,7 @@ try {
     ),
     join(fixtureRoot, '.output/server/index.mjs'),
     join(fixtureRoot, 'api/src/generated/platform/installed-module-routes.ts'),
+    join(fixtureRoot, 'api/src/generated/platform/installed-reviewer-contributions.ts'),
     join(fixtureRoot, 'generated/platform/installed-nuxt-contributions.ts'),
   ])
     if (!existsSync(output)) throw new Error(`Module conformance output is missing ${output}`)

@@ -1,0 +1,38 @@
+{
+  "name": "@eve-space/platform-module-persistence-policy",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=24.20.0"
+  },
+  "exports": {
+    "./postgres-policy": {
+      "types": "./dist/postgres-policy.d.ts",
+      "import": "./dist/postgres-policy.js"
+    },
+    "./persistence-policy": {
+      "types": "./dist/persistence-policy.d.ts",
+      "import": "./dist/persistence-policy.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc6",
+    "typecheck": "tsc6 --noEmit"
+  },
+  "dependencies": {
+    "@eve-space/platform-module-contract": "workspace:*",
+    "@pgsql/parser": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:tsapi"
+  }
+}

@@ -64,6 +64,8 @@ const revisionFacts: OrganizationRevisionFacts = {
       bundleId: '345697a4-df0b-44e7-bf19-f10912c53a27',
       permissionType: 'module',
       permissionKey: 'alpha.view',
+      publisherPackage: '@example/alpha-manifest',
+      moduleId: 'alpha',
       reviewAllowed: true,
     },
   ],
@@ -313,7 +315,10 @@ function organizationOptions(
     loadOrganizationRevision: async () => selectedRevision,
     loadPermissions: overrides.loadPermissions ?? (async () => selectedPermissions),
     authorize: overrides.authorize ?? createAuthorizer(selectedRevision.roles, selectedPermissions),
-    moduleAdmissionScopes: [moduleAdmission, moduleAdmission],
+    moduleAdmissionScopes: [
+      { publisherPackage: '@example/alpha-manifest', ...moduleAdmission },
+      { publisherPackage: '@example/alpha-manifest', ...moduleAdmission },
+    ],
   }
 }
 

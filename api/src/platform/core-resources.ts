@@ -12,7 +12,11 @@ const managedCorporationsImplementation: PlatformResourceOperationImplementation
   readonly number[],
   string,
   unknown,
-  PlatformAllianceResourceSubject
+  PlatformAllianceResourceSubject,
+  readonly [],
+  object,
+  object,
+  object
 > = {
   operation: 'alliance-corporations',
   request(subject) {
@@ -34,7 +38,11 @@ const corporationRosterImplementation: PlatformResourceOperationImplementation<
   readonly number[],
   string,
   unknown,
-  PlatformCorporationResourceSubject
+  PlatformCorporationResourceSubject,
+  readonly [],
+  object,
+  object,
+  object
 > = {
   operation: 'corporation-members',
   request(subject) {

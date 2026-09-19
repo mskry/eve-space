@@ -33,6 +33,9 @@ export interface PlatformEsiExecution<Data> {
   readonly retryAt?: string
   readonly refreshFailureClass?: 'esi-cooldown' | 'esi-unavailable' | 'response-invalid' | 'unknown'
   readonly quota: PlatformEsiQuota
+  readonly pagination?: {
+    readonly pages?: number
+  }
 }
 
 export interface PlatformEsiQuota {

@@ -80,6 +80,7 @@ describe('platform reviewer collection-status capabilities', () => {
       characterLifecycleId,
       authorizationGeneration: 3,
       disclosureVersion: 1,
+      sectionActivationVersion: 1,
       validatedAt: '2026-09-16T11:55:00.000Z',
       lastFailureClass: null,
     })
@@ -182,6 +183,41 @@ describe('platform reviewer collection-status capabilities', () => {
       'Reviewer collection resource is unavailable',
     )
     await expect(characterReads.read('trained-skills', characterId + 1)).rejects.toThrow(
+      'Reviewer collection resource is unavailable',
+    )
+    expect(resolveEligibility).not.toHaveBeenCalled()
+  })
+
+  test('refuses another resource in the same module section when the contribution did not declare it', async () => {
+    const reads = createPlatformReviewerCollectionStatusReads(
+      {
+        moduleId: 'member-audit',
+        sectionId: 'skills',
+        resourceIds: ['trained-skills'],
+        target,
+      },
+      {
+        resources: [
+          ...resources,
+          {
+            ...resources[0]!,
+            resourceId: 'private-skill-history',
+          } as PlatformInstalledResourceDescriptor,
+          {
+            ...resources[0]!,
+            moduleId: 'other-module',
+            resourceId: 'other-private-data',
+          } as PlatformInstalledResourceDescriptor,
+        ],
+        now: () => now,
+        resolveEligibility,
+      },
+    )
+
+    await expect(reads.read('private-skill-history', characterId)).rejects.toThrow(
+      'Reviewer collection resource is unavailable',
+    )
+    await expect(reads.read('other-private-data', characterId)).rejects.toThrow(
       'Reviewer collection resource is unavailable',
     )
     expect(resolveEligibility).not.toHaveBeenCalled()

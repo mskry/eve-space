@@ -1,9 +1,14 @@
-import { readFile, readdir, realpath, stat } from 'node:fs/promises'
-import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path'
+import { lstat, readFile, readdir, stat } from 'node:fs/promises'
+import { dirname, extname, join, relative, resolve } from 'node:path'
 import ts from 'typescript'
 import { parse as parseVue } from 'vue/compiler-sfc'
 import { CORE_DATA_PRODUCT_CONTRACTS } from '../../packages/core-data-contract/src/index.js'
 import type { PlatformModuleManifest } from '@eve-space/platform-module-contract/manifest'
+import {
+  platformModulePackageManifestIssues,
+  platformModuleSourceIssues,
+} from '@eve-space/platform-module-conformance/policy'
+import type { ResolvedInstalledModuleRelease, ResolvedModulePackage } from './resolved-release.js'
 import { forbiddenGlobalReferences } from './forbidden-global-references.js'
 import { unwrapExpression } from './typescript-expressions.js'
 
@@ -18,6 +23,7 @@ const sourceExtensions = new Set([
   '.tsx',
   '.vue',
 ])
+const symbolicLinkSource = '/* symbolic links are not valid feature package source */'
 const forbiddenServerGlobals = new Set([
   'Function',
   'EventSource',
@@ -49,100 +55,6 @@ const forbiddenNuxtGlobals = new Set([
   'navigator',
   'process',
   'require',
-])
-
-const serverRuntimePackages = new Set([
-  '@eve-space/core-eve-projections',
-  '@eve-space/platform-module-contract',
-  '@eve-space/platform-module-server',
-  'hono',
-  'zod',
-  'drizzle-orm',
-])
-
-const nuxtRuntimePackages = new Set([
-  '@eve-space/platform-module-contract',
-  '@eve-space/platform-module-nuxt',
-  '@nuxt/kit',
-  '@nuxt/schema',
-  '@pinia/colada',
-  'vue',
-])
-
-const exactServerRuntimeImports = new Set([
-  '@eve-space/core-eve-projections/assets',
-  '@eve-space/core-eve-projections/mail',
-  '@eve-space/core-eve-projections/skill-queue',
-  '@eve-space/core-eve-projections/trained-skills',
-  '@eve-space/core-eve-projections/wallet',
-  '@eve-space/platform-module-contract/activity',
-  '@eve-space/platform-module-contract/esi',
-  '@eve-space/platform-module-contract/identifiers',
-  '@eve-space/platform-module-contract/persistence',
-  '@eve-space/platform-module-contract/resources',
-  '@eve-space/platform-module-contract/server',
-  '@eve-space/platform-module-server',
-  'drizzle-orm/pg-core',
-  'hono',
-  'zod',
-])
-
-const exactNuxtRuntimeImports = new Set([
-  '@eve-space/platform-module-contract/nuxt',
-  '@eve-space/platform-module-nuxt',
-  '@eve-space/platform-module-nuxt/runtime',
-  '@nuxt/kit',
-  '@nuxt/schema',
-  '@pinia/colada',
-  'vue',
-])
-
-const sharedDevelopmentPackages = new Set([
-  '@types/node',
-  '@vitest/coverage-v8',
-  'tsx',
-  'typescript',
-  'vitest',
-])
-
-const serverDevelopmentPackages = new Set([
-  ...sharedDevelopmentPackages,
-  'postgres',
-  'testcontainers',
-])
-
-const nuxtDevelopmentPackages = new Set([
-  ...sharedDevelopmentPackages,
-  '@nuxt/test-utils',
-  '@typescript/native',
-  '@vue/test-utils',
-  'happy-dom',
-  'nuxt',
-  'vue-tsc',
-])
-
-const nuxtRuntimeImports = new Set([
-  'computed',
-  'createError',
-  'definePageMeta',
-  'navigateTo',
-  'nextTick',
-  'onBeforeUnmount',
-  'onMounted',
-  'reactive',
-  'readonly',
-  'ref',
-  'shallowRef',
-  'toRef',
-  'toRefs',
-  'useAnnouncer',
-  'useHead',
-  'useNuxtApp',
-  'useRoute',
-  'useRouter',
-  'useSeoMeta',
-  'watch',
-  'watchEffect',
 ])
 
 const definitionCalls = new Set([
@@ -258,6 +170,9 @@ export interface FeatureBoundarySource {
   readonly moduleId: string
   readonly path: string
   readonly source: string
+  readonly boundaryRoot?: string
+  readonly layout?: 'source' | 'artifact'
+  readonly entry?: boolean
 }
 
 interface FeaturePackageManifest {
@@ -271,17 +186,25 @@ interface FeaturePackageManifest {
   readonly exports?: unknown
 }
 
-export async function assertInstalledFeatureBoundaries(root: string) {
-  const violations = await installedFeatureBoundaryViolations(root)
+export async function assertInstalledFeatureBoundaries(
+  root: string,
+  releases: readonly ResolvedInstalledModuleRelease[],
+) {
+  const violations = await installedFeatureBoundaryViolations(root, releases)
   if (violations.length > 0)
     throw new Error(`Feature module boundary verification failed:\n${violations.join('\n')}`)
 }
 
 export async function assertManifestCompositionBoundaries(
   root: string,
-  manifest: PlatformModuleManifest,
+  release: ResolvedInstalledModuleRelease,
 ) {
-  const violations = await manifestCompositionBoundaryViolations(root, manifest)
+  if (!release.packages.server.workspace) return
+  const violations = await manifestCompositionBoundaryViolations(
+    root,
+    release.manifest,
+    release.packages.server.root,
+  )
   if (violations.length > 0)
     throw new Error(`Feature module composition verification failed:\n${violations.join('\n')}`)
 }
@@ -291,35 +214,18 @@ export function featurePackageManifestViolations(
   environment: FeaturePackageEnvironment,
   path: string,
   manifest: FeaturePackageManifest,
+  expectedPackageName = `@eve-space/${moduleId}-${environment}`,
+  requireWorkspaceSpecifiers = true,
 ) {
-  const violations: string[] = []
-  const expectedName = `@eve-space/${moduleId}-${environment}`
-  if (manifest.name !== expectedName)
-    violations.push(`${path}: feature package must be named ${expectedName}`)
-  if (manifest.type !== 'module') violations.push(`${path}: feature package must use ESM`)
-  if (
-    environment === 'server'
-      ? manifest.sideEffects !== false
-      : !isNuxtSideEffectsDeclaration(manifest.sideEffects)
-  )
-    violations.push(
-      `${path}: feature package must declare ${environment === 'server' ? 'sideEffects false' : 'only Vue files as side-effectful'}`,
-    )
-
-  const runtimePackages = environment === 'server' ? serverRuntimePackages : nuxtRuntimePackages
-  const developmentPackages =
-    environment === 'server' ? serverDevelopmentPackages : nuxtDevelopmentPackages
-  for (const field of ['dependencies', 'optionalDependencies', 'peerDependencies'] as const)
-    validateDependencyField(manifest[field], field, runtimePackages, path, violations)
-  validateDependencyField(
-    manifest.devDependencies,
-    'devDependencies',
-    developmentPackages,
+  return platformModulePackageManifestIssues({
+    moduleId,
+    environment,
     path,
-    violations,
-  )
-  validatePackageExports(manifest.exports, environment, path, violations)
-  return violations
+    manifest,
+    expectedPackageName,
+    scope: 'source',
+    requireWorkspaceSpecifiers,
+  }).map(({ path: issuePath, message }) => `${issuePath}: ${lowercaseFirst(message)}`)
 }
 
 export function descriptorBoundaryViolations(source: FeatureBoundarySource) {
@@ -348,10 +254,10 @@ export function serverSourceBoundaryViolations(source: FeatureBoundarySource) {
   const violations: string[] = []
   if (source.path.endsWith('.cjs') || source.path.endsWith('.cts'))
     violations.push(`${source.path}: feature packages must use ESM source files`)
-  const packageRoot = `features/${source.moduleId}/server`
+  const packageRoot = source.boundaryRoot ?? `features/${source.moduleId}/server/src`
+  violations.push(...portableImportViolations(source, packageRoot, 'server'))
   const sourceFiles = parseSourceFiles(source, violations)
   for (const sourceFile of sourceFiles) {
-    validateImports(source, sourceFile, packageRoot, 'server', violations)
     validateServerRuntimeBoundaries(source.path, sourceFile, violations)
     validateCoreDataBypasses(source.path, sourceFile, violations)
     validateCompositionTopLevel(source.path, sourceFile, 'server', violations)
@@ -363,19 +269,53 @@ export function nuxtSourceBoundaryViolations(source: FeatureBoundarySource) {
   const violations: string[] = []
   if (source.path.endsWith('.cjs') || source.path.endsWith('.cts'))
     violations.push(`${source.path}: feature packages must use ESM source files`)
-  const packageRoot = `features/${source.moduleId}/nuxt`
+  const packageRoot = source.boundaryRoot ?? `features/${source.moduleId}/nuxt/src`
   const runtimePath = `/nuxt/src/runtime/app/`
-  const isModuleSetup = /\/nuxt\/src\/module\.(?:[cm]?[jt]s)$/.test(source.path)
-  if (!source.path.includes(runtimePath) && !isModuleSetup)
+  const sourceLayout = source.layout !== 'artifact'
+  const isModuleSetup = sourceLayout
+    ? /\/nuxt\/src\/module\.(?:[cm]?[jt]s)$/.test(source.path)
+    : source.entry === true
+  if (sourceLayout && !source.path.includes(runtimePath) && !isModuleSetup)
     violations.push(`${source.path}: Nuxt source must live under src/runtime/app`)
 
+  violations.push(...portableImportViolations(source, packageRoot, 'nuxt'))
   const sourceFiles = parseSourceFiles(source, violations)
   for (const sourceFile of sourceFiles) {
-    validateImports(source, sourceFile, packageRoot, 'nuxt', violations)
-    validateNuxtRuntimeBoundaries(source.path, sourceFile, violations)
+    validateNuxtRuntimeBoundaries(source, sourceFile, violations)
     if (isModuleSetup) validateCompositionTopLevel(source.path, sourceFile, 'nuxt', violations)
   }
   return violations
+}
+
+function portableImportViolations(
+  source: FeatureBoundarySource,
+  boundaryRoot: string,
+  environment: FeaturePackageEnvironment,
+) {
+  const importCodes = new Set([
+    'ABSOLUTE_IMPORT_FORBIDDEN',
+    'DYNAMIC_IMPORT_INVALID',
+    'HOST_CONTRACT_IMPORT_FORBIDDEN',
+    'IMPORT_EQUALS_FORBIDDEN',
+    'IMPORT_ESCAPE',
+    'IMPORT_NOT_ALLOWED',
+    'NUXT_IMPORT_NOT_ALLOWED',
+    'PUBLIC_CONTRACT_IMPORT_REQUIRED',
+    'SIDE_EFFECT_IMPORT_FORBIDDEN',
+  ])
+  return platformModuleSourceIssues(
+    {
+      moduleId: source.moduleId,
+      path: source.path,
+      source: source.source,
+      boundaryRoot,
+      environment,
+      scope: source.layout === 'artifact' ? 'artifact' : 'source',
+    },
+    new Set(),
+  )
+    .filter(({ code }) => importCodes.has(code))
+    .map(({ path, message }) => `${path}: ${lowercaseFirst(message)}`)
 }
 
 export function serverFactoryBoundaryViolations(
@@ -410,10 +350,12 @@ export function serverFactoryBoundaryViolations(
   return violations
 }
 
-async function installedFeatureBoundaryViolations(root: string) {
-  const moduleIds = await loadInstalledModuleIds(root)
+async function installedFeatureBoundaryViolations(
+  root: string,
+  releases: readonly ResolvedInstalledModuleRelease[],
+) {
   const violations = await Promise.all(
-    moduleIds.map((moduleId) => installedModuleBoundaryViolations(root, moduleId)),
+    releases.map((release) => installedModuleBoundaryViolations(root, release)),
   )
   return violations.flat().toSorted((left, right) => left.localeCompare(right))
 }
@@ -421,12 +363,9 @@ async function installedFeatureBoundaryViolations(root: string) {
 export async function manifestCompositionBoundaryViolations(
   root: string,
   manifest: PlatformModuleManifest,
+  serverRoot = join(root, 'features', manifest.id, 'server'),
 ) {
-  const sources = await loadSources(
-    root,
-    manifest.id,
-    join(root, 'features', manifest.id, 'server', 'src'),
-  )
+  const sources = await loadSources(root, manifest.id, join(serverRoot, 'src'))
   const violations = [
     ...manifest.server.routes.flatMap(({ exportName }) =>
       serverFactoryBoundaryViolations(sources, exportName, 'route'),
@@ -574,10 +513,6 @@ function sourceModuleIdentity(path: string) {
   return path.replace(/\.(?:[cm]?[jt]sx?)$/, '')
 }
 
-function isNuxtSideEffectsDeclaration(sideEffects: unknown) {
-  return Array.isArray(sideEffects) && sideEffects.length === 1 && sideEffects[0] === '**/*.vue'
-}
-
 function validateDescriptorStatement(
   path: string,
   statement: ts.Statement,
@@ -633,17 +568,14 @@ function collectDescriptorConstants(
   }
 }
 
-async function installedModuleBoundaryViolations(root: string, moduleId: string) {
-  const featureRoot = join(root, 'features', moduleId)
-  const descriptorPath = join(featureRoot, 'module.config.ts')
+async function installedModuleBoundaryViolations(
+  root: string,
+  release: ResolvedInstalledModuleRelease,
+) {
   const violations: string[] = []
-  const descriptor = await readSource(root, moduleId, descriptorPath)
-  if (!descriptor) violations.push(`features/${moduleId}/module.config.ts: descriptor is missing`)
-  else violations.push(...descriptorBoundaryViolations(descriptor))
-
   const packageViolations = await Promise.all(
     (['server', 'nuxt'] as const).map((environment) =>
-      installedPackageBoundaryViolations(root, featureRoot, moduleId, environment),
+      installedPackageBoundaryViolations(root, release, environment),
     ),
   )
   violations.push(...packageViolations.flat())
@@ -652,52 +584,79 @@ async function installedModuleBoundaryViolations(root: string, moduleId: string)
 
 async function installedPackageBoundaryViolations(
   root: string,
-  featureRoot: string,
-  moduleId: string,
+  release: ResolvedInstalledModuleRelease,
   environment: FeaturePackageEnvironment,
 ) {
+  const moduleId = release.moduleId
+  const packageArtifact = release.packages[environment]
+  const packageRoot = packageArtifact.root
   const violations: string[] = []
-  const packageRoot = join(featureRoot, environment)
   const packagePath = join(packageRoot, 'package.json')
   const manifest = await readJson(packagePath)
-  const relativePackagePath = relative(root, packagePath).replaceAll('\\', '/')
+  const relativePackagePath = packageArtifact.workspace
+    ? relative(root, packagePath).replaceAll('\\', '/')
+    : `${packageArtifact.name}/package.json`
   if (!manifest)
     violations.push(`${relativePackagePath}: feature package manifest is missing or invalid`)
   else
     violations.push(
-      ...featurePackageManifestViolations(moduleId, environment, relativePackagePath, manifest),
+      ...featurePackageManifestViolations(
+        moduleId,
+        environment,
+        relativePackagePath,
+        manifest,
+        packageArtifact.name,
+        packageArtifact.workspace,
+      ),
     )
 
-  const sources = await loadSources(root, moduleId, join(packageRoot, 'src'))
+  const sources = await loadInstalledFeaturePackageSources(root, release, environment)
   if (sources.length === 0)
-    violations.push(`features/${moduleId}/${environment}/src: feature package source is missing`)
-  for (const source of sources)
     violations.push(
-      ...(environment === 'server'
-        ? serverSourceBoundaryViolations(source)
-        : nuxtSourceBoundaryViolations(source)),
+      packageArtifact.workspace
+        ? `features/${moduleId}/${environment}/src: feature package source is missing`
+        : `${packageArtifact.name}: feature package artifacts are missing`,
     )
-  if (manifest)
-    for (const source of sources)
-      violations.push(...undeclaredSourceDependencyViolations(source, manifest))
-  for (const source of sources)
-    if (source.source === '/* symbolic links are not valid feature package source */')
-      violations.push(`${source.path}: symbolic links are not allowed in feature package source`)
-  if (environment === 'nuxt') await validateNuxtPackageLayout(packageRoot, moduleId, violations)
+  const packageSourceBoundaryViolations =
+    environment === 'server' ? serverSourceBoundaryViolations : nuxtSourceBoundaryViolations
+  violations.push(
+    ...installedSourceBoundaryViolations(sources, manifest, packageSourceBoundaryViolations),
+  )
+  if (environment === 'nuxt')
+    await validateNuxtPackageLayout(packageRoot, moduleId, packageArtifact.workspace, violations)
 
   return violations
+}
+
+function installedSourceBoundaryViolations(
+  sources: readonly FeatureBoundarySource[],
+  manifest: FeaturePackageManifest | undefined,
+  sourceBoundaryViolations: (source: FeatureBoundarySource) => readonly string[],
+) {
+  const dependencyViolations = manifest
+    ? sources.flatMap((source) => undeclaredSourceDependencyViolations(source, manifest))
+    : []
+  const symbolicLinkViolations = sources
+    .filter(({ source }) => source === symbolicLinkSource)
+    .map(({ path }) => `${path}: symbolic links are not allowed in feature package source`)
+  return [
+    ...sources.flatMap(sourceBoundaryViolations),
+    ...dependencyViolations,
+    ...symbolicLinkViolations,
+  ]
 }
 
 async function validateNuxtPackageLayout(
   packageRoot: string,
   moduleId: string,
+  requireSourceLayout: boolean,
   violations: string[],
 ) {
   const [hasRuntimeApp, hasServerDirectory] = await Promise.all([
     isDirectory(join(packageRoot, 'src', 'runtime', 'app')),
     isDirectory(join(packageRoot, 'server')),
   ])
-  if (!hasRuntimeApp)
+  if (requireSourceLayout && !hasRuntimeApp)
     violations.push(`features/${moduleId}/nuxt: installed Nuxt module is missing src/runtime/app`)
   if (hasServerDirectory)
     violations.push(
@@ -705,21 +664,86 @@ async function validateNuxtPackageLayout(
     )
 }
 
-async function loadInstalledModuleIds(root: string) {
-  const installed = await readJson(join(root, 'features', 'installed-modules.json'))
-  if (
-    !installed ||
-    !Array.isArray(installed.modules) ||
-    !installed.modules.every((moduleId) => typeof moduleId === 'string')
+export async function loadInstalledFeaturePackageSources(
+  root: string,
+  release: ResolvedInstalledModuleRelease,
+  environment: FeaturePackageEnvironment,
+): Promise<FeatureBoundarySource[]> {
+  const packageArtifact = release.packages[environment]
+  if (packageArtifact.workspace)
+    return loadSources(root, release.moduleId, join(packageArtifact.root, 'src'), {
+      boundaryRoot: `features/${release.moduleId}/${environment}/src`,
+      entryPath: packageArtifact.entryPath,
+      layout: 'source',
+    })
+  const packageJson = await readJson(join(packageArtifact.root, 'package.json'))
+  const exportPaths = packageJson
+    ? exportTargets(packageJson.exports)
+        .filter(
+          (target) =>
+            target.startsWith('./') &&
+            !target.includes('*') &&
+            !target.replaceAll('\\', '/').split('/').includes('..'),
+        )
+        .map((target) => resolve(packageArtifact.root, target))
+    : []
+  const artifactPaths = [
+    join(packageArtifact.root, 'dist'),
+    packageArtifact.entryPath,
+    ...exportPaths,
+    ...(environment === 'nuxt' ? Object.values(release.nuxtPages) : []),
+  ]
+  const options = {
+    artifact: packageArtifact,
+    boundaryRoot: packageArtifact.name,
+    entryPath: packageArtifact.entryPath,
+    layout: 'artifact',
+  } as const
+  const sources = await Promise.all(
+    artifactPaths.map((path) => loadSourcePath(root, release.moduleId, path, options)),
   )
-    throw new Error('features/installed-modules.json must contain a string modules array')
-  return installed.modules
+  return [...new Map(sources.flat().map((source) => [source.path, source])).values()]
+}
+
+interface SourceLoadOptions {
+  readonly artifact?: ResolvedModulePackage
+  readonly boundaryRoot?: string
+  readonly entryPath?: string
+  readonly layout?: 'source' | 'artifact'
+}
+
+async function loadSourcePath(
+  root: string,
+  moduleId: string,
+  path: string,
+  options: SourceLoadOptions,
+): Promise<FeatureBoundarySource[]> {
+  let stats
+  try {
+    stats = await lstat(path)
+  } catch {
+    return []
+  }
+  if (stats.isDirectory()) return loadSources(root, moduleId, path, options)
+  if (!stats.isFile() && !stats.isSymbolicLink()) return []
+  if (!stats.isSymbolicLink() && !sourceExtensions.has(extname(path))) return []
+  return [
+    {
+      moduleId,
+      path: sourceDisplayPath(root, path, options.artifact),
+      source: stats.isSymbolicLink() ? symbolicLinkSource : await readFile(path, 'utf8'),
+      boundaryRoot: options.boundaryRoot,
+      layout: options.layout,
+      entry: options.entryPath === path,
+    },
+  ]
 }
 
 async function loadSources(
   root: string,
   moduleId: string,
   directory: string,
+  options: SourceLoadOptions = {},
 ): Promise<FeatureBoundarySource[]> {
   let entries
   try {
@@ -730,21 +754,28 @@ async function loadSources(
   const nested: FeatureBoundarySource[][] = await Promise.all(
     entries.map(async (entry) => {
       const path = join(directory, entry.name)
+      if (options.layout === 'artifact' && entry.name === 'node_modules') return []
       if (entry.isSymbolicLink())
         return [
           {
             moduleId,
-            path: relative(root, path).replaceAll('\\', '/'),
-            source: '/* symbolic links are not valid feature package source */',
+            path: sourceDisplayPath(root, path, options.artifact),
+            source: symbolicLinkSource,
+            boundaryRoot: options.boundaryRoot,
+            layout: options.layout,
+            entry: options.entryPath === path,
           },
         ]
-      if (entry.isDirectory()) return loadSources(root, moduleId, path)
+      if (entry.isDirectory()) return loadSources(root, moduleId, path, options)
       if (!entry.isFile() || !sourceExtensions.has(extname(entry.name))) return []
       return [
         {
           moduleId,
-          path: relative(root, path).replaceAll('\\', '/'),
+          path: sourceDisplayPath(root, path, options.artifact),
           source: await readFile(path, 'utf8'),
+          boundaryRoot: options.boundaryRoot,
+          layout: options.layout,
+          entry: options.entryPath === path,
         },
       ]
     }),
@@ -752,67 +783,10 @@ async function loadSources(
   return nested.flat()
 }
 
-function validateDependencyField(
-  value: unknown,
-  field: string,
-  allowed: ReadonlySet<string>,
-  path: string,
-  violations: string[],
-) {
-  if (value === undefined) return
-  if (!isRecord(value)) {
-    violations.push(`${path}: ${field} must be an object`)
-    return
-  }
-  for (const [dependency, version] of Object.entries(value)) {
-    if (!allowed.has(dependency))
-      violations.push(
-        `${path}: ${field} dependency ${dependency} is not allowed for this feature package`,
-      )
-    const expectedVersion = dependency.startsWith('@eve-space/') ? 'workspace:*' : 'catalog:'
-    const namedCatalog =
-      (dependency === 'typescript' &&
-        (version === 'catalog:tsapi' || version === 'catalog:tsgo')) ||
-      ((dependency === 'vitest' || dependency === '@vitest/coverage-v8') &&
-        version === 'catalog:vitest4')
-    if (version !== expectedVersion && !namedCatalog)
-      violations.push(`${path}: ${field} dependency ${dependency} must use ${expectedVersion}`)
-  }
-}
-
-function validatePackageExports(
-  value: unknown,
-  environment: FeaturePackageEnvironment,
-  path: string,
-  violations: string[],
-) {
-  if (!isRecord(value) || !('.' in value)) {
-    violations.push(`${path}: feature package must export its root entry`)
-    return
-  }
-  const expectedRoot =
-    environment === 'server'
-      ? { types: './dist/index.d.ts', import: './dist/index.js' }
-      : { types: './dist/module.d.ts', import: './dist/module.js' }
-  const rootExport = value['.']
-  if (
-    !isRecord(rootExport) ||
-    rootExport.types !== expectedRoot.types ||
-    rootExport.import !== expectedRoot.import ||
-    Object.keys(rootExport).some((key) => key !== 'types' && key !== 'import')
-  )
-    violations.push(
-      `${path}: feature package root export must use ${expectedRoot.types} and ${expectedRoot.import}`,
-    )
-  for (const target of exportTargets(value)) {
-    const normalized = target.replaceAll('\\', '/')
-    if (!normalized.startsWith('./') || normalized.split('/').includes('..'))
-      violations.push(`${path}: package export ${target} escapes the feature package root`)
-    else if (!normalized.startsWith('./dist/') && !normalized.startsWith('./migrations/'))
-      violations.push(`${path}: package export ${target} must resolve from dist or migrations`)
-  }
-  if (environment === 'server' && !('./migrations/*' in value))
-    violations.push(`${path}: server feature package must export ./migrations/*`)
+function sourceDisplayPath(root: string, path: string, artifact?: ResolvedModulePackage) {
+  return artifact
+    ? `${artifact.name}/${relative(artifact.root, path).replaceAll('\\', '/')}`
+    : relative(root, path).replaceAll('\\', '/')
 }
 
 function undeclaredSourceDependencyViolations(
@@ -871,178 +845,6 @@ function exportTargets(value: unknown): string[] {
   if (typeof value === 'string') return [value]
   if (!isRecord(value)) return []
   return Object.values(value).flatMap(exportTargets)
-}
-
-function validateImports(
-  source: FeatureBoundarySource,
-  sourceFile: ts.SourceFile,
-  packageRoot: string,
-  environment: FeaturePackageEnvironment,
-  violations: string[],
-) {
-  visit(sourceFile, (node) =>
-    validateImportNode(source, node, packageRoot, environment, violations),
-  )
-}
-
-function validateImportNode(
-  source: FeatureBoundarySource,
-  node: ts.Node,
-  packageRoot: string,
-  environment: FeaturePackageEnvironment,
-  violations: string[],
-) {
-  if (
-    (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
-    node.moduleSpecifier &&
-    ts.isStringLiteral(node.moduleSpecifier)
-  ) {
-    validateSpecifier(
-      source,
-      node.moduleSpecifier.text,
-      packageRoot,
-      environment,
-      ts.isImportDeclaration(node) ? node.importClause : undefined,
-      violations,
-    )
-    if (ts.isImportDeclaration(node) && !node.importClause)
-      violations.push(`${source.path}: side-effect imports are not allowed in feature packages`)
-  }
-  if (ts.isImportEqualsDeclaration(node)) {
-    const reference = node.moduleReference
-    if (
-      ts.isExternalModuleReference(reference) &&
-      reference.expression &&
-      ts.isStringLiteralLike(reference.expression)
-    )
-      validateSpecifier(
-        source,
-        reference.expression.text,
-        packageRoot,
-        environment,
-        undefined,
-        violations,
-      )
-    violations.push(
-      `${source.path}: import-equals declarations are not allowed in feature packages`,
-    )
-  }
-  if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-    const argument = node.arguments[0]
-    if (!argument || !ts.isStringLiteral(argument)) {
-      violations.push(`${source.path}: feature package dynamic imports must use string literals`)
-      return
-    }
-    validateSpecifier(source, argument.text, packageRoot, environment, undefined, violations)
-  }
-}
-
-function validateSpecifier(
-  source: FeatureBoundarySource,
-  specifier: string,
-  packageRoot: string,
-  environment: FeaturePackageEnvironment,
-  importClause: ts.ImportClause | undefined,
-  violations: string[],
-) {
-  const normalized = specifier.replaceAll('\\', '/')
-  if (
-    environment === 'server' &&
-    (normalized === '@eve-space/api' ||
-      normalized.startsWith('@eve-space/api/') ||
-      /(?:^|\/)api\/src(?:\/|$)/.test(normalized))
-  ) {
-    violations.push(
-      `${source.path}: feature server code cannot import core API source ${specifier}`,
-    )
-    return
-  }
-  if (normalized.startsWith('.')) {
-    const target = resolve('/', dirname(source.path), normalized)
-    const root = resolve('/', packageRoot, 'src')
-    const relativeTarget = relative(root, target)
-    if (relativeTarget === '..' || relativeTarget.startsWith('../') || isAbsolute(relativeTarget))
-      violations.push(
-        `${source.path}: relative import ${specifier} escapes the feature package root`,
-      )
-    return
-  }
-  if (normalized.startsWith('/') || normalized.startsWith('file:')) {
-    violations.push(
-      `${source.path}: absolute import ${specifier} is not allowed in feature packages`,
-    )
-    return
-  }
-  if (normalized === '#imports') {
-    validateNuxtRuntimeImports(source.path, environment, importClause, violations)
-    return
-  }
-  if (normalized.startsWith('#')) {
-    violations.push(
-      `${source.path}: feature package import ${specifier} bypasses its public platform surface`,
-    )
-    return
-  }
-  const packageName = packageNameFromSpecifier(normalized)
-  const allowedPackages = environment === 'server' ? serverRuntimePackages : nuxtRuntimePackages
-  const allowedImports =
-    environment === 'server' ? exactServerRuntimeImports : exactNuxtRuntimeImports
-  if (!allowedPackages.has(packageName) || !allowedImports.has(normalized))
-    violations.push(
-      `${source.path}: import ${specifier} is not allowed for ${environment} feature code`,
-    )
-  if (normalized === '@eve-space/platform-module-server')
-    rejectHostOnlyImports(
-      source.path,
-      importClause,
-      new Set([
-        'PlatformInstalledPersistenceOperationDescriptor',
-        'PlatformPersistenceOperationInvoker',
-        'bindPlatformPersistenceOperation',
-      ]),
-      violations,
-    )
-  if (normalized === '@eve-space/platform-module-nuxt/runtime')
-    rejectHostOnlyImports(
-      source.path,
-      importClause,
-      new Set(['PlatformApiClient', 'PlatformApiHost', 'createPlatformApiClient']),
-      violations,
-    )
-}
-
-function rejectHostOnlyImports(
-  path: string,
-  importClause: ts.ImportClause | undefined,
-  rejectedNames: ReadonlySet<string>,
-  violations: string[],
-) {
-  const names = importedNames(importClause)
-  const rejected = names.filter((name) => rejectedNames.has(name))
-  if (!importClause?.namedBindings || ts.isNamespaceImport(importClause.namedBindings))
-    violations.push(`${path}: feature packages must use named feature-facing platform imports`)
-  if (rejected.length > 0)
-    violations.push(
-      `${path}: feature package imports host-only platform symbols ${rejected.join(', ')}`,
-    )
-}
-
-function validateNuxtRuntimeImports(
-  path: string,
-  environment: FeaturePackageEnvironment,
-  importClause: ts.ImportClause | undefined,
-  violations: string[],
-) {
-  if (environment !== 'nuxt') {
-    violations.push(`${path}: import #imports is not allowed for server feature code`)
-    return
-  }
-  const names = importedNames(importClause)
-  const rejected = names.filter((name) => !nuxtRuntimeImports.has(name))
-  if (rejected.length > 0 || names.length === 0)
-    violations.push(
-      `${path}: #imports may only expose approved Nuxt runtime imports; rejected ${rejected.join(', ') || 'namespace/default import'}`,
-    )
 }
 
 function validateServerRuntimeBoundaries(
@@ -1285,13 +1087,14 @@ function containsSatisfiesExpression(expression: ts.Expression): boolean {
 }
 
 function validateNuxtRuntimeBoundaries(
-  path: string,
+  source: FeatureBoundarySource,
   sourceFile: ts.SourceFile,
   violations: string[],
 ) {
+  const path = source.path
   for (const name of forbiddenGlobalReferences(sourceFile, forbiddenNuxtGlobals))
     violations.push(`${path}: feature Nuxt code must not reference ${name}`)
-  validatePlatformApiAccess(path, sourceFile, violations)
+  validatePlatformApiAccess(source, sourceFile, violations)
   visit(sourceFile, (node) => {
     if (ts.isNewExpression(node)) {
       const name = identifierText(node.expression)
@@ -1312,7 +1115,12 @@ function validateNuxtRuntimeBoundaries(
   })
 }
 
-function validatePlatformApiAccess(path: string, sourceFile: ts.SourceFile, violations: string[]) {
+function validatePlatformApiAccess(
+  source: FeatureBoundarySource,
+  sourceFile: ts.SourceFile,
+  violations: string[],
+) {
+  const path = source.path
   const clientNames = new Set<string>()
   visit(sourceFile, (node) => {
     if (
@@ -1340,12 +1148,12 @@ function validatePlatformApiAccess(path: string, sourceFile: ts.SourceFile, viol
     const access = platformApiAccess(node, clientNames)
     if (!access) return
     const moduleRoute =
-      access[0] === 'api' && access[1] === 'modules' && access[2] === sourceModuleId(path)
+      access[0] === 'api' && access[1] === 'modules' && access[2] === source.moduleId
     const ownedCharacterReauthorization =
       access[0] === 'auth' && access[1] === 'eve' && access[2] === 'reauthorize'
     if (!moduleRoute && !ownedCharacterReauthorization)
       violations.push(
-        `${path}: feature Nuxt API access must remain under api.modules[${JSON.stringify(sourceModuleId(path))}]`,
+        `${path}: feature Nuxt API access must remain under api.modules[${JSON.stringify(source.moduleId)}]`,
       )
   })
 }
@@ -1406,10 +1214,6 @@ function platformApiAccess(
   if (ts.isIdentifier(current) && clientNames.has(current.text)) return segments
   if (isNamedCall(current, 'usePlatformApi')) return segments
   return undefined
-}
-
-function sourceModuleId(path: string) {
-  return path.replaceAll('\\', '/').split('/')[1] ?? 'unknown'
 }
 
 function validateCompositionTopLevel(
@@ -1837,14 +1641,6 @@ function normalizeIdentifier(value: string) {
   return value.replaceAll(/[^a-z0-9]/gi, '').toLowerCase()
 }
 
-function importedNames(importClause: ts.ImportClause | undefined) {
-  if (!importClause || importClause.name || !importClause.namedBindings) return []
-  if (ts.isNamespaceImport(importClause.namedBindings)) return []
-  return importClause.namedBindings.elements.map(
-    (element) => element.propertyName?.text ?? element.name.text,
-  )
-}
-
 function isTypeOnlyImport(importClause: ts.ImportClause | undefined) {
   if (!importClause) return false
   if (importClause.phaseModifier === ts.SyntaxKind.TypeKeyword) return true
@@ -1901,23 +1697,6 @@ function visit(node: ts.Node, operation: (node: ts.Node) => void) {
   ts.forEachChild(node, (child) => visit(child, operation))
 }
 
-async function readSource(root: string, moduleId: string, path: string) {
-  try {
-    const resolved = await realpath(path)
-    const featureRoot = await realpath(join(root, 'features', moduleId))
-    const relativePath = relative(featureRoot, resolved)
-    if (relativePath === '..' || relativePath.startsWith('../') || isAbsolute(relativePath))
-      return null
-    return {
-      moduleId,
-      path: relative(root, path).replaceAll('\\', '/'),
-      source: await readFile(resolved, 'utf8'),
-    }
-  } catch {
-    return null
-  }
-}
-
 async function readJson(path: string): Promise<Record<string, unknown> | null> {
   try {
     const value: unknown = JSON.parse(await readFile(path, 'utf8'))
@@ -1937,4 +1716,11 @@ async function isDirectory(path: string) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function lowercaseFirst(value: string) {
+  const normalized = value.endsWith('.') ? value.slice(0, -1) : value
+  return normalized.length === 0
+    ? normalized
+    : `${normalized[0]!.toLowerCase()}${normalized.slice(1)}`
 }

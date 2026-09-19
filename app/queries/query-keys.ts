@@ -108,6 +108,38 @@ export const PRIVATE_QUERY_KEYS = {
   mailingLists: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.mail(characterId), 'mailing-lists'] as const,
   organization: () => [...PRIVATE_QUERY_KEYS.root, 'organization'] as const,
+  organizationReviewer: () => [...PRIVATE_QUERY_KEYS.organization(), 'reviewer'] as const,
+  organizationReviewerVersion: (organizationVersion: number) =>
+    [...PRIVATE_QUERY_KEYS.organizationReviewer(), organizationVersion] as const,
+  organizationReviewerEntry: () => [...PRIVATE_QUERY_KEYS.organizationReviewer(), 'entry'] as const,
+  organizationReviewerDirectory: (
+    organizationVersion: number,
+    query: string | undefined,
+    corporationId: number | undefined,
+    cursor: string | undefined,
+    limit: number,
+  ) =>
+    [
+      ...PRIVATE_QUERY_KEYS.organizationReviewerVersion(organizationVersion),
+      'members',
+      query ?? null,
+      corporationId ?? null,
+      cursor ?? null,
+      limit,
+    ] as const,
+  organizationReviewerTarget: (
+    organizationVersion: number,
+    targetUserId: string,
+    targetCharacterId?: number,
+    managedMemberLifecycleId?: string,
+  ) =>
+    [
+      ...PRIVATE_QUERY_KEYS.organizationReviewerVersion(organizationVersion),
+      'targets',
+      targetUserId,
+      targetCharacterId ?? null,
+      managedMemberLifecycleId ?? null,
+    ] as const,
   organizationContext: () => [...PRIVATE_QUERY_KEYS.organization(), 'context'] as const,
   organizationCompliance: () => [...PRIVATE_QUERY_KEYS.organization(), 'compliance'] as const,
   organizationActivities: () => [...PRIVATE_QUERY_KEYS.organization(), 'activities'] as const,
@@ -115,6 +147,10 @@ export const PRIVATE_QUERY_KEYS = {
   organizationAudit: (beforeAuditSequence: string | null = null) =>
     [...PRIVATE_QUERY_KEYS.organization(), 'audit', beforeAuditSequence] as const,
   organizationRoles: () => [...PRIVATE_QUERY_KEYS.organization(), 'roles'] as const,
+  organizationPermissionCatalog: (organizationVersion: number) =>
+    [...PRIVATE_QUERY_KEYS.organization(), organizationVersion, 'permission-catalog'] as const,
+  organizationPermissionBundles: (organizationVersion: number) =>
+    [...PRIVATE_QUERY_KEYS.organization(), organizationVersion, 'permission-bundles'] as const,
   organizationRosterCoverage: () =>
     [...PRIVATE_QUERY_KEYS.organization(), 'roster-coverage'] as const,
   mailRecipientResolution: (characterId: number, name: string) =>

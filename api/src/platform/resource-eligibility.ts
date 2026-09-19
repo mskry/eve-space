@@ -200,7 +200,9 @@ export async function selectDueInstalledResources(
   options.signal?.throwIfAborted()
   if (!isPositiveSafeInteger(options.limit))
     throw new Error('Resource planning limit must be a positive safe integer')
-  const resources = options.resources ?? platformResources
+  const resources = (options.resources ?? platformResources).filter(
+    ({ scheduled }) => scheduled !== false,
+  )
   if (resources.length === 0) return []
 
   const connection = options.connection ?? sql

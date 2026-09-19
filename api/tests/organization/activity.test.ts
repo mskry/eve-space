@@ -333,6 +333,7 @@ function provider(
   sectionId?: string,
 ): PlatformInstalledActivityProviderDescriptor {
   return {
+    publisherPackage: `@example/${moduleId}-manifest`,
     moduleId,
     providerId: 'activity',
     sectionId,

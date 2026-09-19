@@ -12,10 +12,12 @@ import {
   loadPlatformNuxtSources,
   platformNuxtBoundaryViolations,
 } from './platform-nuxt-boundaries.js'
+import { resolveInstalledModuleReleases } from './module-registry/resolved-release.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
-await assertInstalledFeatureBoundaries(root)
-const sources = await loadFeatureNuxtSources(root)
+const { releases } = resolveInstalledModuleReleases(root)
+await assertInstalledFeatureBoundaries(root, releases)
+const sources = await loadFeatureNuxtSources(root, releases)
 const violations = [
   ...moduleNuxtBoundaryViolations(sources),
   ...platformFeatureImportViolations(await loadPlatformHostSources(root)),

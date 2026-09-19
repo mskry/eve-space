@@ -108,3 +108,25 @@ export interface PlatformEsiLoadResult<Data> {
   readonly data: Data
   readonly meta: PlatformEsiResponseMetadata
 }
+
+export const platformCoreEsiOperationCatalog = {
+  version: 1,
+  operationIds: [
+    'alliance-corporations',
+    'character-asset-names',
+    'character-assets-page',
+    'corporation-members',
+    'mail-headers',
+    'mail-lists',
+    'mail-message',
+    'skill-queue',
+    'skills',
+    'universe-resolve-names',
+    'wallet-balance',
+    'wallet-journal',
+    'wallet-transactions',
+  ],
+} as const
+
+export type PlatformCoreEsiOperationId =
+  (typeof platformCoreEsiOperationCatalog.operationIds)[number]

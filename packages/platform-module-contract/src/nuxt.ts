@@ -2,6 +2,7 @@ import type {
   PlatformAuthorizationStrategy,
   PlatformModuleSectionContribution,
   PlatformOrganizationContributionAuthorization,
+  PlatformReviewerTargetKind,
   PlatformRouteSecurityClassification,
   PlatformSectionBoundContribution,
 } from './server.js'
@@ -48,6 +49,25 @@ export const platformIconTokens = [
   'admin',
 ] as const
 export type PlatformIconToken = (typeof platformIconTokens)[number]
+
+export interface PlatformReviewerPanelDeclaration {
+  readonly panelExport: string
+  readonly label: string
+  readonly description: string
+  readonly icon: PlatformIconToken
+  readonly order: number
+}
+
+export interface PlatformReviewerNuxtContribution
+  extends
+    PlatformReviewerPanelDeclaration,
+    PlatformSectionBoundContribution,
+    PlatformOrganizationContributionAuthorization {
+  readonly contributionId: string
+  readonly routeId: string
+  readonly routePath: string
+  readonly target: PlatformReviewerTargetKind
+}
 
 export interface PlatformCoreNavigationEntry extends PlatformNavigationDefault {
   readonly label: string
@@ -215,9 +235,11 @@ export interface PlatformNavigationContribution extends PlatformSectionBoundCont
 
 export interface PlatformNuxtContributionDescriptor {
   readonly moduleId: string
+  readonly packageName: string
   readonly defaultIcon: PlatformIconToken
   readonly queryAdmissionScopes: readonly PlatformQueryAdmissionScopeDescriptor[]
   readonly sections: readonly PlatformModuleSectionContribution[]
+  readonly reviewerContributions: readonly PlatformReviewerNuxtContribution[]
   readonly pages: readonly PlatformPageContribution[]
   readonly navigation: readonly PlatformNavigationContribution[]
   readonly exposed?: PlatformNuxtExposedContributions

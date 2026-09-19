@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { dirname, extname, join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { resolveInstalledModuleReleases } from './module-registry/resolved-release.js'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const environment = process.argv[2]
@@ -18,15 +19,13 @@ if (
     'Usage: run-installed-module-package-script.ts server|nuxt <script> [--if-present]',
   )
 
-const installed = readJson<{ modules?: unknown }>(resolve(root, 'features/installed-modules.json'))
-if (!Array.isArray(installed.modules) || installed.modules.some((id) => typeof id !== 'string'))
-  throw new Error('features/installed-modules.json must contain a modules string array')
-
-const moduleIds = [...installed.modules].toSorted((left, right) => left.localeCompare(right))
+const { releases } = resolveInstalledModuleReleases(root, { validateArtifacts: false })
 let runCount = 0
-for (const moduleId of moduleIds) {
-  const packageName = `@eve-space/${moduleId}-${environment}`
-  const packagePath = resolve(root, 'features', moduleId, environment, 'package.json')
+for (const release of releases) {
+  const artifact = release.packages[environment]
+  if (!artifact.workspace) continue
+  const packageName = artifact.name
+  const packagePath = join(artifact.root, 'package.json')
   const manifest = readJson<{ name?: string; scripts?: Record<string, string> }>(packagePath)
   if (manifest.name !== packageName)
     throw new Error(`${packagePath} must declare package name ${packageName}`)
@@ -36,7 +35,13 @@ for (const moduleId of moduleIds) {
 
   const pnpmPath = process.env.npm_execpath
   if (!pnpmPath) throw new Error('This command must run through pnpm')
-  const result = spawnSync(process.execPath, [pnpmPath, '--filter', packageName, 'run', script], {
+  const pnpmArguments = ['--filter', packageName, 'run', script]
+  let executable = pnpmPath
+  if (['.js', '.cjs', '.mjs'].includes(extname(pnpmPath))) {
+    executable = process.execPath
+    pnpmArguments.unshift(pnpmPath)
+  }
+  const result = spawnSync(executable, pnpmArguments, {
     cwd: root,
     env: process.env,
     stdio: 'inherit',

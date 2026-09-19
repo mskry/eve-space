@@ -1059,13 +1059,18 @@ async function loadInstalledModuleSources(repositoryRoot) {
   )
   if (
     !Array.isArray(installed.modules) ||
-    !installed.modules.every((moduleId) => typeof moduleId === 'string')
+    !installed.modules.every(
+      (selection) =>
+        typeof selection === 'object' &&
+        selection !== null &&
+        typeof selection.moduleId === 'string',
+    )
   )
-    throw new Error('features/installed-modules.json must contain a string modules array')
+    throw new Error('features/installed-modules.json must contain module package-export records')
 
   const extensions = new Set(moduleServerSourceExtensions)
   const sources = await Promise.all(
-    installed.modules.map((moduleId) =>
+    installed.modules.map(({ moduleId }) =>
       loadSources(
         repositoryRoot,
         join(repositoryRoot, 'features', moduleId, 'server', 'src'),

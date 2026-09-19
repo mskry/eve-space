@@ -219,7 +219,14 @@ function representationSource(name: string, extra = '') {
 async function createEgressFixture(files: Readonly<Record<string, string>>) {
   const root = await mkdtemp(join(tmpdir(), 'eve-space-esi-egress-'))
   const required = {
-    'features/installed-modules.json': JSON.stringify({ modules: ['alpha'] }),
+    'features/installed-modules.json': JSON.stringify({
+      modules: [
+        {
+          moduleId: 'alpha',
+          manifest: { package: '@eve-space/alpha-manifest', export: './manifest' },
+        },
+      ],
+    }),
     'api/src/esi-gateway/internal/catalog.ts': "defineContract('status', {})",
     'api/src/characters/status.ts': representationSource('status-core'),
     'api/src/generated/platform/installed-module-esi.ts': `

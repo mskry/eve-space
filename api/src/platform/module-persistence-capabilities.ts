@@ -110,6 +110,24 @@ export function createPlatformResourceMaterializationPersistence<
   }
 }
 
+export function createPlatformResourceMaintenancePersistence<
+  const ModuleId extends string,
+  const ResourceId extends string,
+>(moduleId: ModuleId, resourceId: ResourceId, signal?: AbortSignal) {
+  return resolveFactory(
+    'resourceMaterializations',
+    moduleId,
+    resourceId,
+  )(
+    createStandaloneModulePersistenceOperationInvoker(
+      sql,
+      moduleId,
+      installedModulePersistenceOperations,
+      signal ? { signal } : {},
+    ),
+  )
+}
+
 function resolveFactory<
   Group extends PersistenceCapabilityGroup,
   ModuleId extends string,

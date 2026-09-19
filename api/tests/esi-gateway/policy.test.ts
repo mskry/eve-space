@@ -127,6 +127,12 @@ describe('ESI operation policies', () => {
     expect(getEsiOperationContract('skills')).toMatchObject({
       representationVersion: 'v2',
     })
+    expect(getEsiOperationContract('character-assets-page')).toMatchObject({
+      representationVersion: 'v2',
+    })
+    expect(getEsiOperationContract('wallet-journal')).toMatchObject({
+      representationVersion: 'v2',
+    })
     expect(esiOperationMetadata['universe-resolve-names']).toMatchObject({
       cache: { kind: 'runtime-only' },
     })

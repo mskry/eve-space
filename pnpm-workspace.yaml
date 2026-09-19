@@ -1,10 +1,12 @@
 packages:
   - 'api'
   - 'packages/*'
+  - 'features/*/manifest'
   - 'features/*/server'
   - 'features/*/nuxt'
 
 injectWorkspacePackages: true
+pmOnFail: ignore
 
 # Single source of truth for external dependency versions. Packages reference these with
 # `catalog:` so a version is declared once and inherited, never pinned per package.
@@ -33,6 +35,7 @@ catalog:
   '@types/node': ^24.13.3
   '@typescript/native': 'npm:typescript@^7.0.2'
   '@vue/server-renderer': ^3.5.41
+  '@vue/compiler-sfc': ^3.5.41
   '@vue/test-utils': ^2.4.11
   bullmq: 6.2.0
   devalue: ^5.9.0

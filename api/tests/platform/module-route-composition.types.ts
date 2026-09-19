@@ -7,10 +7,14 @@ import type {
   PlatformReviewerSearchRouteEnv,
   PlatformReviewerTargetRouteEnv,
 } from '@eve-space/platform-module-contract/server'
+import type { PlatformInstalledReviewerContributionDescriptor } from '@eve-space/platform-module-contract/installed'
 import type { InferResponseType } from 'hono/client'
 import { hc } from 'hono/client'
 import { Hono } from 'hono'
-import { platformModuleRouteComposers } from '../../src/platform/module-route-composition.js'
+import {
+  composePlatformReviewerContributionRoute,
+  platformModuleRouteComposers,
+} from '../../src/platform/module-route-composition.js'
 
 const authenticatedSessionRoute = new Hono<PlatformAuthenticatedSessionRouteEnv>().get(
   '/status',
@@ -98,8 +102,10 @@ const commandlessReviewerRoute = new Hono<PlatformReviewerTargetRouteEnv>().get(
     return context.json({ status: 'ok' as const })
   },
 )
-const organization = { audience: 'member', requiredPermission: 'test.view' } as const
+const ownership = { publisherPackage: '@example/test-manifest', moduleId: 'test' } as const
+const organization = { ...ownership, audience: 'member', requiredPermission: 'test.view' } as const
 const reviewerOrganization = {
+  ...ownership,
   audience: 'hr',
   requiredPermission: 'test.review',
   sectionId: 'overview',
@@ -107,6 +113,7 @@ const reviewerOrganization = {
   exposure: 'standard',
 } as const
 const reviewerSearchOrganization = {
+  ...ownership,
   audience: 'hr',
   requiredPermission: 'member-audit.search',
   additionalRequiredPermissions: ['member-audit.summary.read'],
@@ -114,6 +121,7 @@ const reviewerSearchOrganization = {
   exposure: 'standard',
 } as const
 const groupCommandOrganization = {
+  ...ownership,
   audience: 'hr',
   requiredPermission: 'member-audit.groups.manage',
   sectionId: 'access-management',
@@ -122,12 +130,35 @@ const groupCommandOrganization = {
   organizationCommands: ['assign-ordinary-group', 'revoke-ordinary-group'],
 } as const
 const blockCommandOrganization = {
+  ...ownership,
   audience: 'director',
   requiredPermission: 'member-audit.members.block',
   sectionId: 'access-management',
   target: 'managed-organization-account',
   exposure: 'standard',
   organizationCommands: ['block-member', 'unblock-member'],
+} as const
+const reviewerContribution = {
+  publisherPackage: '@example/test-manifest',
+  moduleId: 'test',
+  contributionId: 'overview',
+  routeId: 'test-review',
+  routePath: '/api/modules/test/accounts/:userId',
+  sectionId: 'overview',
+  audience: 'hr',
+  requiredPermission: 'test.review',
+  target: 'managed-organization-account',
+  panelPackage: '@example/test-nuxt',
+  panelExport: './reviewer/overview',
+  label: 'Overview',
+  description: 'Review an account.',
+  icon: 'overview',
+  order: 10,
+} as const satisfies PlatformInstalledReviewerContributionDescriptor
+const reviewerContributionOrganization = {
+  ...reviewerOrganization,
+  routeId: 'test-review',
+  namespace: '/test/accounts/:userId',
 } as const
 
 const composedAuthenticatedRoute = platformModuleRouteComposers['authenticated-session'](
@@ -145,6 +176,12 @@ const composedReviewerTargetRoute = platformModuleRouteComposers['managed-organi
   reviewerOrganization,
   reviewerTargetRoute,
 )
+const composedReviewerContributionRoute = composePlatformReviewerContributionRoute(
+  reviewerContribution,
+  reviewerContributionOrganization,
+  reviewerTargetRoute,
+  [reviewerContribution],
+)
 const composedReviewerSearchRoute = platformModuleRouteComposers[
   'managed-organization-account-search'
 ]('test', reviewerSearchOrganization, reviewerSearchRoute)
@@ -161,10 +198,12 @@ platformModuleRouteComposers['managed-organization-account'](
 const authenticatedClient = hc<typeof composedAuthenticatedRoute>('http://localhost')
 const ownedCharacterClient = hc<typeof composedOwnedCharacterRoute>('http://localhost')
 const reviewerTargetClient = hc<typeof composedReviewerTargetRoute>('http://localhost')
+const reviewerContributionClient = hc<typeof composedReviewerContributionRoute>('http://localhost')
 const reviewerSearchClient = hc<typeof composedReviewerSearchRoute>('http://localhost')
 type AuthenticatedStatus = InferResponseType<typeof authenticatedClient.status.$get, 200>
 type OwnedCharacter = InferResponseType<typeof ownedCharacterClient.character.$get, 200>
 type ReviewerTarget = InferResponseType<typeof reviewerTargetClient.target.$get, 200>
+type ReviewerContribution = InferResponseType<typeof reviewerContributionClient.target.$get, 200>
 type ReviewerSearch = InferResponseType<typeof reviewerSearchClient.search.$get, 200>
 const authenticatedStatus: AuthenticatedStatus = { status: 'ok' }
 const ownedCharacter: OwnedCharacter = { characterId: 9001 }
@@ -172,6 +211,7 @@ const reviewerTarget: ReviewerTarget = {
   targetUserId: 'user-1',
   managedMemberLifecycleId: 'managed-lifecycle-1',
 }
+const reviewerContributionResponse: ReviewerContribution = reviewerTarget
 const reviewerSearch: ReviewerSearch = { hasSearch: true }
 // @ts-expect-error the composed authenticated response must retain its literal status
 const invalidAuthenticatedStatus: AuthenticatedStatus = { status: 'not-ok' }
@@ -180,6 +220,7 @@ const invalidOwnedCharacter: OwnedCharacter = { characterId: '9001' }
 void authenticatedStatus
 void ownedCharacter
 void reviewerTarget
+void reviewerContributionResponse
 void reviewerSearch
 void invalidAuthenticatedStatus
 void invalidOwnedCharacter

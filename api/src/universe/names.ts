@@ -62,7 +62,7 @@ const universeNamesRead = createPublicEsiRead({
   name: 'universe-names-core',
   descriptor: operationRegistry.PostUniverseNames.transport,
   cacheSchema: universeResolutionCacheSchema,
-  encodeRequest: (input: { body: number[] }) => input,
+  encodeRequest: (input: { body: number[]; signal?: AbortSignal }) => ({ body: input.body }),
   map: ({ data }): UniverseName[] => data.map(({ id, name, category }) => ({ id, name, category })),
 })
 
@@ -75,18 +75,24 @@ const universeIdsRead = createPublicEsiRead({
   map: ({ data }) => mapUniverseIds(data),
 })
 
-export async function resolveUniverseNames(ids: readonly number[]) {
-  const result = await resolveUniverseNameResults(ids)
+export async function resolveUniverseNames(
+  ids: readonly number[],
+  options: { readonly signal?: AbortSignal } = {},
+) {
+  const result = await resolveUniverseNameResults(ids, options.signal)
   if (result.failure !== undefined) throw result.failure
   return result.names
 }
 
-export async function resolveUniverseNamesBestEffort(ids: readonly number[]) {
-  const result = await resolveUniverseNameResults(ids)
+export async function resolveUniverseNamesBestEffort(
+  ids: readonly number[],
+  options: { readonly signal?: AbortSignal } = {},
+) {
+  const result = await resolveUniverseNameResults(ids, options.signal)
   return { names: result.names, complete: result.failure === undefined }
 }
 
-async function resolveUniverseNameResults(ids: readonly number[]) {
+async function resolveUniverseNameResults(ids: readonly number[], signal?: AbortSignal) {
   const names = new Map<number, UniverseName>()
   const uniqueIds = [...new Set(ids)]
   const cached = await readUniverseNames(uniqueIds)
@@ -105,7 +111,7 @@ async function resolveUniverseNameResults(ids: readonly number[]) {
   )
   const results = await mapBoundedSettled(chunks, (chunk) =>
     resolveChunkWithSplitting(chunk, splitState, missingIds, (currentChunk) =>
-      loadUniverseNameChunk(currentChunk, names, missingIds),
+      loadUniverseNameChunk(currentChunk, names, missingIds, signal),
     ),
   )
   await suppressUniverseNameIds(missingIds)
@@ -146,8 +152,9 @@ async function loadUniverseNameChunk(
   chunk: number[],
   names: Map<number, UniverseName>,
   missingIds: number[],
+  signal?: AbortSignal,
 ) {
-  const response = await universeNamesRead.execute({ body: chunk })
+  const response = await universeNamesRead.execute({ body: chunk, ...(signal ? { signal } : {}) })
   for (const entry of response.data) names.set(entry.id, entry)
   if (response.stale) return
   const returnedIds = new Set(response.data.map((entry) => entry.id))

@@ -20,7 +20,9 @@ const band = computed(() => getSystemSecurityBand(props.value))
 .system-security-status {
   flex: 0 0 auto;
   color: var(--system-security-status-color);
-  font: 500 0.75rem/1 var(--ui-font-mono);
+  font-family: var(--ui-font-mono);
+  font-weight: 500;
+  line-height: 1;
   text-align: right;
 }
 

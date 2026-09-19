@@ -7,16 +7,16 @@
   },
   "totals": {
     "compressedBytes": {
-      "measured": 345741,
-      "maximum": 352656
+      "measured": 353803,
+      "maximum": 360880
     },
     "unpackedBytes": {
-      "measured": 3937451,
-      "maximum": 4016201
+      "measured": 3939032,
+      "maximum": 4017813
     },
     "javascriptBytes": {
-      "measured": 2189905,
-      "maximum": 2233704
+      "measured": 2191477,
+      "maximum": 2235307
     },
     "declarationBytes": {
       "measured": 1723207,
@@ -126,8 +126,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 2093818,
-        "maximumUniqueBytes": 2135695
+        "measuredUniqueBytes": 2095390,
+        "maximumUniqueBytes": 2137298
       },
       "declaration": {
         "target": "dist/root.d.ts",
@@ -297,8 +297,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 1889284,
-        "maximumUniqueBytes": 1927070
+        "measuredUniqueBytes": 1890856,
+        "maximumUniqueBytes": 1928674
       },
       "declaration": {
         "target": "dist/operations/index.d.ts",
@@ -339,8 +339,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 391044,
-        "maximumUniqueBytes": 398865
+        "measuredUniqueBytes": 392616,
+        "maximumUniqueBytes": 400469
       },
       "declaration": {
         "target": "dist/domains/access-list.d.ts",
@@ -377,8 +377,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 393743,
-        "maximumUniqueBytes": 401618
+        "measuredUniqueBytes": 395315,
+        "maximumUniqueBytes": 403222
       },
       "declaration": {
         "target": "dist/domains/activities.d.ts",
@@ -415,8 +415,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 394586,
-        "maximumUniqueBytes": 402478
+        "measuredUniqueBytes": 396158,
+        "maximumUniqueBytes": 404082
       },
       "declaration": {
         "target": "dist/domains/alliance.d.ts",
@@ -453,8 +453,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 402880,
-        "maximumUniqueBytes": 410938
+        "measuredUniqueBytes": 404452,
+        "maximumUniqueBytes": 412542
       },
       "declaration": {
         "target": "dist/domains/assets.d.ts",
@@ -491,8 +491,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 397311,
-        "maximumUniqueBytes": 405258
+        "measuredUniqueBytes": 398883,
+        "maximumUniqueBytes": 406861
       },
       "declaration": {
         "target": "dist/domains/calendar.d.ts",
@@ -529,8 +529,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 421619,
-        "maximumUniqueBytes": 430052
+        "measuredUniqueBytes": 423191,
+        "maximumUniqueBytes": 431655
       },
       "declaration": {
         "target": "dist/domains/character.d.ts",
@@ -567,8 +567,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 390821,
-        "maximumUniqueBytes": 398638
+        "measuredUniqueBytes": 392393,
+        "maximumUniqueBytes": 400241
       },
       "declaration": {
         "target": "dist/domains/clones.d.ts",
@@ -605,8 +605,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 411932,
-        "maximumUniqueBytes": 420171
+        "measuredUniqueBytes": 413504,
+        "maximumUniqueBytes": 421775
       },
       "declaration": {
         "target": "dist/domains/contacts.d.ts",
@@ -643,8 +643,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 412295,
-        "maximumUniqueBytes": 420541
+        "measuredUniqueBytes": 413867,
+        "maximumUniqueBytes": 422145
       },
       "declaration": {
         "target": "dist/domains/contracts.d.ts",
@@ -681,8 +681,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 398257,
-        "maximumUniqueBytes": 406223
+        "measuredUniqueBytes": 399829,
+        "maximumUniqueBytes": 407826
       },
       "declaration": {
         "target": "dist/domains/corporation-projects.d.ts",
@@ -719,8 +719,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 446285,
-        "maximumUniqueBytes": 455211
+        "measuredUniqueBytes": 447857,
+        "maximumUniqueBytes": 456815
       },
       "declaration": {
         "target": "dist/domains/corporation.d.ts",
@@ -757,8 +757,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 393280,
-        "maximumUniqueBytes": 401146
+        "measuredUniqueBytes": 394852,
+        "maximumUniqueBytes": 402750
       },
       "declaration": {
         "target": "dist/domains/cosmetics.d.ts",
@@ -795,8 +795,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 396105,
-        "maximumUniqueBytes": 404028
+        "measuredUniqueBytes": 397677,
+        "maximumUniqueBytes": 405631
       },
       "declaration": {
         "target": "dist/domains/dogma.d.ts",
@@ -833,8 +833,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 402204,
-        "maximumUniqueBytes": 410249
+        "measuredUniqueBytes": 403776,
+        "maximumUniqueBytes": 411852
       },
       "declaration": {
         "target": "dist/domains/faction-warfare.d.ts",
@@ -871,8 +871,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 393635,
-        "maximumUniqueBytes": 401508
+        "measuredUniqueBytes": 395207,
+        "maximumUniqueBytes": 403112
       },
       "declaration": {
         "target": "dist/domains/fittings.d.ts",
@@ -909,8 +909,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 419642,
-        "maximumUniqueBytes": 428035
+        "measuredUniqueBytes": 421214,
+        "maximumUniqueBytes": 429639
       },
       "declaration": {
         "target": "dist/domains/fleets.d.ts",
@@ -947,8 +947,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 403064,
-        "maximumUniqueBytes": 411126
+        "measuredUniqueBytes": 404636,
+        "maximumUniqueBytes": 412729
       },
       "declaration": {
         "target": "dist/domains/freelance-jobs.d.ts",
@@ -985,8 +985,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 387729,
-        "maximumUniqueBytes": 395484
+        "measuredUniqueBytes": 389301,
+        "maximumUniqueBytes": 397088
       },
       "declaration": {
         "target": "dist/domains/incursions.d.ts",
@@ -1023,8 +1023,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 408261,
-        "maximumUniqueBytes": 416427
+        "measuredUniqueBytes": 409833,
+        "maximumUniqueBytes": 418030
       },
       "declaration": {
         "target": "dist/domains/industry.d.ts",
@@ -1061,8 +1061,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 387800,
-        "maximumUniqueBytes": 395556
+        "measuredUniqueBytes": 389372,
+        "maximumUniqueBytes": 397160
       },
       "declaration": {
         "target": "dist/domains/insurance.d.ts",
@@ -1099,8 +1099,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 394534,
-        "maximumUniqueBytes": 402425
+        "measuredUniqueBytes": 396106,
+        "maximumUniqueBytes": 404029
       },
       "declaration": {
         "target": "dist/domains/killmails.d.ts",
@@ -1137,8 +1137,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 393311,
-        "maximumUniqueBytes": 401178
+        "measuredUniqueBytes": 394883,
+        "maximumUniqueBytes": 402781
       },
       "declaration": {
         "target": "dist/domains/location.d.ts",
@@ -1175,8 +1175,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 390761,
-        "maximumUniqueBytes": 398577
+        "measuredUniqueBytes": 392333,
+        "maximumUniqueBytes": 400180
       },
       "declaration": {
         "target": "dist/domains/loyalty.d.ts",
@@ -1213,8 +1213,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 409702,
-        "maximumUniqueBytes": 417897
+        "measuredUniqueBytes": 411274,
+        "maximumUniqueBytes": 419500
       },
       "declaration": {
         "target": "dist/domains/mail.d.ts",
@@ -1251,8 +1251,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 413419,
-        "maximumUniqueBytes": 421688
+        "measuredUniqueBytes": 414991,
+        "maximumUniqueBytes": 423291
       },
       "declaration": {
         "target": "dist/domains/market.d.ts",
@@ -1289,8 +1289,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 393567,
-        "maximumUniqueBytes": 401439
+        "measuredUniqueBytes": 395139,
+        "maximumUniqueBytes": 403042
       },
       "declaration": {
         "target": "dist/domains/meta.d.ts",
@@ -1327,8 +1327,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 403056,
-        "maximumUniqueBytes": 411118
+        "measuredUniqueBytes": 404628,
+        "maximumUniqueBytes": 412721
       },
       "declaration": {
         "target": "dist/domains/military-campaigns.d.ts",
@@ -1365,8 +1365,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 400850,
-        "maximumUniqueBytes": 408867
+        "measuredUniqueBytes": 402422,
+        "maximumUniqueBytes": 410471
       },
       "declaration": {
         "target": "dist/domains/paragon-hub.d.ts",
@@ -1403,8 +1403,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 396800,
-        "maximumUniqueBytes": 404736
+        "measuredUniqueBytes": 398372,
+        "maximumUniqueBytes": 406340
       },
       "declaration": {
         "target": "dist/domains/planetary-interaction.d.ts",
@@ -1441,8 +1441,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 388469,
-        "maximumUniqueBytes": 396239
+        "measuredUniqueBytes": 390041,
+        "maximumUniqueBytes": 397842
       },
       "declaration": {
         "target": "dist/domains/routes.d.ts",
@@ -1479,8 +1479,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 388863,
-        "maximumUniqueBytes": 396641
+        "measuredUniqueBytes": 390435,
+        "maximumUniqueBytes": 398244
       },
       "declaration": {
         "target": "dist/domains/search.d.ts",
@@ -1517,8 +1517,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 393415,
-        "maximumUniqueBytes": 401284
+        "measuredUniqueBytes": 394987,
+        "maximumUniqueBytes": 402887
       },
       "declaration": {
         "target": "dist/domains/skills.d.ts",
@@ -1555,8 +1555,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 389957,
-        "maximumUniqueBytes": 397757
+        "measuredUniqueBytes": 391529,
+        "maximumUniqueBytes": 399360
       },
       "declaration": {
         "target": "dist/domains/sovereignty.d.ts",
@@ -1593,8 +1593,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 387637,
-        "maximumUniqueBytes": 395390
+        "measuredUniqueBytes": 389209,
+        "maximumUniqueBytes": 396994
       },
       "declaration": {
         "target": "dist/domains/status.d.ts",
@@ -1631,8 +1631,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 402932,
-        "maximumUniqueBytes": 410991
+        "measuredUniqueBytes": 404504,
+        "maximumUniqueBytes": 412595
       },
       "declaration": {
         "target": "dist/domains/structures.d.ts",
@@ -1669,8 +1669,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 447712,
-        "maximumUniqueBytes": 456667
+        "measuredUniqueBytes": 449284,
+        "maximumUniqueBytes": 458270
       },
       "declaration": {
         "target": "dist/domains/universe.d.ts",
@@ -1707,8 +1707,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 397147,
-        "maximumUniqueBytes": 405090
+        "measuredUniqueBytes": 398719,
+        "maximumUniqueBytes": 406694
       },
       "declaration": {
         "target": "dist/domains/user-interface.d.ts",
@@ -1745,8 +1745,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 403740,
-        "maximumUniqueBytes": 411815
+        "measuredUniqueBytes": 405312,
+        "maximumUniqueBytes": 413419
       },
       "declaration": {
         "target": "dist/domains/wallet.d.ts",
@@ -1783,8 +1783,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 392491,
-        "maximumUniqueBytes": 400341
+        "measuredUniqueBytes": 394063,
+        "maximumUniqueBytes": 401945
       },
       "declaration": {
         "target": "dist/domains/wars.d.ts",

@@ -1,9 +1,4 @@
 import {
-  projectSkillQueueEntries,
-  type ProjectedSkillQueueEntry,
-  type SkillQueueSourceEntry,
-} from '@eve-space/core-eve-projections/skill-queue'
-import {
   projectTrainedSkills,
   type ProjectedTrainedSkills,
 } from '@eve-space/core-eve-projections/trained-skills'
@@ -13,7 +8,9 @@ import type {
   PlatformResourceOperationImplementation,
 } from '@eve-space/platform-module-contract/resources'
 import { z } from 'zod'
-import type { SkillSnapshotPersistence } from './persistence.js'
+import { maintainEvidence } from './evidence-maintenance.js'
+import { createObservationId } from './observation-identity.js'
+import type { CurrentSnapshotPersistence, EvidenceMaintenancePersistence } from './persistence.js'
 
 const trainedSkillsResponseSchema = z.strictObject({
   total_sp: z.number().int().nonnegative(),
@@ -27,42 +24,48 @@ const trainedSkillsResponseSchema = z.strictObject({
     }),
   ),
 })
-const queueResponseSchema = z.array(
-  z.strictObject({
-    queue_position: z.number().int().nonnegative(),
-    skill_id: z.number().int().positive(),
-    finished_level: z.number().int().min(1).max(5),
-    level_start_sp: z.number().int().nonnegative().optional(),
-    level_end_sp: z.number().int().nonnegative().optional(),
-    training_start_sp: z.number().int().nonnegative().optional(),
-    start_date: z.string().optional(),
-    finish_date: z.string().optional(),
-  }),
-)
-
 type SkillProducts = readonly ['published-skill-catalogue']
 type TrainedSkillsData = { readonly kind: 'trained-skills' } & ProjectedTrainedSkills
-interface SkillQueueData {
-  readonly kind: 'skill-queue'
-  readonly entries: ProjectedSkillQueueEntry[]
-}
-
 interface PublishedSkillRow {
   readonly typeId: number
   readonly typeName: string
   readonly groupId: number
   readonly groupName: string
   readonly rank: number | null
-  readonly primaryAttribute: ProjectedSkillQueueEntry['primaryAttribute']
-  readonly secondaryAttribute: ProjectedSkillQueueEntry['secondaryAttribute']
+  readonly primaryAttribute:
+    | 'charisma'
+    | 'intelligence'
+    | 'memory'
+    | 'perception'
+    | 'willpower'
+    | null
+  readonly secondaryAttribute:
+    | 'charisma'
+    | 'intelligence'
+    | 'memory'
+    | 'perception'
+    | 'willpower'
+    | null
 }
-type SkillSnapshotMaterializationContext = PlatformResourceMaterializationContext<
-  TrainedSkillsData | SkillQueueData,
+type SkillResource<Operation extends string, Data> = PlatformResourceOperationImplementation<
+  Operation,
+  unknown,
+  Data,
+  string,
+  unknown,
   PlatformCharacterResourceSubject,
-  SkillSnapshotPersistence
+  SkillProducts,
+  object,
+  CurrentSnapshotPersistence,
+  EvidenceMaintenancePersistence
+>
+type SkillSnapshotMaterializationContext = PlatformResourceMaterializationContext<
+  TrainedSkillsData,
+  PlatformCharacterResourceSubject,
+  CurrentSnapshotPersistence
 >
 
-export const trainedSkillsResource = {
+export const trainedSkillsResource: SkillResource<'skills', TrainedSkillsData> = {
   operation: 'skills',
   request(subject) {
     return { path: { character_id: subject.characterId } }
@@ -71,7 +74,7 @@ export const trainedSkillsResource = {
     const response = trainedSkillsResponseSchema.parse(data)
     const catalogue = await capabilities.coreData.publishedSkillCatalogue()
     return {
-      kind: 'trained-skills' as const,
+      kind: 'trained-skills',
       ...projectTrainedSkills(
         {
           totalSp: response.total_sp,
@@ -88,57 +91,12 @@ export const trainedSkillsResource = {
     }
   },
   materialize(context) {
-    return persistSkillSnapshot(
-      'trained-skills',
-      context as unknown as SkillSnapshotMaterializationContext,
-    )
+    return persistSkillSnapshot('trained-skills', context)
   },
-} satisfies PlatformResourceOperationImplementation<
-  'skills',
-  unknown,
-  TrainedSkillsData,
-  string,
-  unknown,
-  PlatformCharacterResourceSubject,
-  SkillProducts
->
-
-export const skillQueueResource = {
-  operation: 'skill-queue',
-  request(subject) {
-    return { path: { character_id: subject.characterId } }
+  maintain(context) {
+    return maintainEvidence('trained-skills', context, true)
   },
-  async map({ data, capabilities }) {
-    const response = queueResponseSchema.parse(data)
-    const catalogue = await capabilities.coreData.publishedSkillCatalogue()
-    const definitions = catalogue.rows.map((skill) => ({
-      typeId: skill.typeId,
-      name: skill.typeName,
-      groupId: skill.groupId,
-      groupName: skill.groupName,
-      primaryAttribute: skill.primaryAttribute,
-      secondaryAttribute: skill.secondaryAttribute,
-    }))
-    return {
-      kind: 'skill-queue' as const,
-      entries: projectSkillQueueEntries(response.map(mapQueueEntry), definitions),
-    }
-  },
-  materialize(context) {
-    return persistSkillSnapshot(
-      'skill-queue',
-      context as unknown as SkillSnapshotMaterializationContext,
-    )
-  },
-} satisfies PlatformResourceOperationImplementation<
-  'skill-queue',
-  unknown,
-  SkillQueueData,
-  string,
-  unknown,
-  PlatformCharacterResourceSubject,
-  SkillProducts
->
+}
 
 function catalogueFromRows(rows: readonly PublishedSkillRow[]) {
   const groups = new Map<
@@ -169,32 +127,17 @@ function catalogueFromRows(rows: readonly PublishedSkillRow[]) {
   }
 }
 
-function mapQueueEntry(entry: z.infer<typeof queueResponseSchema>[number]): SkillQueueSourceEntry {
-  return {
-    queuePosition: entry.queue_position,
-    typeId: entry.skill_id,
-    finishedLevel: entry.finished_level,
-    levelStartSp: entry.level_start_sp ?? null,
-    levelEndSp: entry.level_end_sp ?? null,
-    trainingStartSp: entry.training_start_sp ?? null,
-    startDate: entry.start_date ?? null,
-    finishDate: entry.finish_date ?? null,
-  }
-}
-
 async function persistSkillSnapshot(
-  resourceId: 'trained-skills' | 'skill-queue',
+  resourceId: 'trained-skills',
   context: SkillSnapshotMaterializationContext,
 ): Promise<void | { readonly outcome: 'obsolete' }> {
   const authority = context.managedAuthority
   if (
-    !authority ||
-    context.organizationVersion !== authority.organizationVersion ||
+    context.organizationVersion !== authority?.organizationVersion ||
     context.authorizationGeneration === null
   )
     return { outcome: 'obsolete' }
-  const result = await context.capabilities.persistence.writeSkillSnapshot({
-    resourceId,
+  const common = {
     organizationVersion: authority.organizationVersion,
     targetUserId: authority.targetUserId,
     managedMemberLifecycleId: authority.managedMemberLifecycleId,
@@ -203,8 +146,17 @@ async function persistSkillSnapshot(
     authorizationGeneration: context.authorizationGeneration,
     disclosureVersion: authority.disclosureVersion,
     sectionActivationVersion: authority.sectionActivationVersion,
+    observationId: createObservationId(
+      resourceId,
+      context.subject.lifecycleId,
+      context.validatedAt,
+    ),
     dtoRevision: 1,
     validatedAt: context.validatedAt,
+  }
+  const result = await context.capabilities.persistence.materializeCurrentSnapshot({
+    ...common,
+    resourceId,
     snapshot: context.data,
   })
   return result.outcome === 'obsolete' ? { outcome: 'obsolete' } : undefined

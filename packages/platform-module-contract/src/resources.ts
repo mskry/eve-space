@@ -17,6 +17,7 @@ interface PlatformResourceContributionBase {
   readonly coreDataProducts?: readonly CoreDataProductId[]
   readonly dependentOperationIds?: readonly string[]
   readonly persistence: PlatformResourcePersistenceReferences
+  readonly scheduled?: boolean
   readonly id: string
   readonly operationId: string
   readonly materializationIntervalSeconds: number
@@ -118,6 +119,26 @@ export interface PlatformResourceMaterializationContext<
   readonly capabilities: PlatformModuleResourceMaterializationCapabilities<Persistence>
 }
 
+export interface PlatformResourceInvalidAuthority {
+  readonly organizationVersion: number
+  readonly targetUserId: string
+  readonly managedMemberLifecycleId: string
+  readonly characterId: number
+  readonly characterLifecycleId: string
+  readonly authorizationGeneration: number
+  readonly disclosureVersion: number
+  readonly sectionActivationVersion: number
+}
+
+export interface PlatformResourceMaintenanceContext<Persistence extends object = object> {
+  readonly now: string
+  readonly purgeAccountIds: readonly string[]
+  readonly invalidAuthorities: readonly PlatformResourceInvalidAuthority[]
+  readonly purgeRetention: boolean
+  readonly signal?: AbortSignal
+  readonly capabilities: PlatformModuleResourceMaterializationCapabilities<Persistence>
+}
+
 export interface PlatformResourceMappingCapabilities<
   ProductIds extends readonly CoreDataProductId[] = readonly [],
 > {
@@ -193,6 +214,9 @@ export interface PlatformResourceCollectionContext<
   ): Promise<{
     readonly data: unknown
     readonly validatedAt: string
+    readonly pagination?: {
+      readonly pages?: number
+    }
   }>
 }
 
@@ -209,18 +233,22 @@ export interface PlatformResourceOperationImplementation<
   BatchData = unknown,
   Subject extends PlatformResourceSubject = PlatformCharacterResourceSubject,
   ProductIds extends readonly CoreDataProductId[] = readonly [],
+  ProjectionPersistence extends object = object,
+  MaterializationPersistence extends object = object,
+  MaintenancePersistence extends object = object,
 > {
   readonly operation: Operation
   collect?(
-    context: PlatformResourceCollectionContext<Subject, ProductIds>,
+    context: PlatformResourceCollectionContext<Subject, ProductIds, ProjectionPersistence>,
   ): Promise<PlatformResourceCollectionResult<Data>>
   request(subject: Subject): Readonly<Record<string, unknown>>
   map(
     input: PlatformResourceMappingContext<OperationData, Subject, ProductIds>,
   ): Data | Promise<Data>
   materialize(
-    context: PlatformResourceMaterializationContext<Data, Subject>,
+    context: PlatformResourceMaterializationContext<Data, Subject, MaterializationPersistence>,
   ): Promise<void | { readonly outcome: 'obsolete' }>
+  maintain?(context: PlatformResourceMaintenanceContext<MaintenancePersistence>): Promise<void>
   readonly batch?: PlatformResourceBatchOperationImplementation<BatchOperation, Data, BatchData>
 }
 
@@ -232,7 +260,10 @@ type PlatformResourceImplementationParts<Implementation> =
     infer BatchOperation,
     infer BatchData,
     infer Subject,
-    infer ProductIds
+    infer ProductIds,
+    infer ProjectionPersistence,
+    infer MaterializationPersistence,
+    infer MaintenancePersistence
   >
     ? readonly [
         operation: Operation,
@@ -242,17 +273,38 @@ type PlatformResourceImplementationParts<Implementation> =
         batchData: BatchData,
         subject: Subject,
         productIds: ProductIds,
+        projectionPersistence: ProjectionPersistence,
+        materializationPersistence: MaterializationPersistence,
+        maintenancePersistence: MaintenancePersistence,
       ]
     : never
 
 type PlatformResourceImplementationProductIds<Implementation> =
   PlatformResourceImplementationParts<Implementation>[6]
 
+type PlatformResourceImplementationProjectionPersistence<Implementation> =
+  PlatformResourceImplementationParts<Implementation>[7]
+
+type PlatformResourceImplementationMaterializationPersistence<Implementation> =
+  PlatformResourceImplementationParts<Implementation>[8]
+
+type PlatformResourceImplementationMaintenancePersistence<Implementation> =
+  PlatformResourceImplementationParts<Implementation>[9]
+
 type SameProductIds<Left, Right> = [Left] extends [Right]
   ? [Right] extends [Left]
     ? true
     : false
   : false
+
+type NormalizedPersistence<Persistence> = {
+  readonly [Method in keyof Persistence]: Persistence[Method]
+}
+
+type SamePersistence<Left, Right> = SameProductIds<
+  NormalizedPersistence<Left>,
+  NormalizedPersistence<Right>
+>
 
 export type PlatformResourceImplementationForProducts<
   Implementation,
@@ -262,6 +314,27 @@ export type PlatformResourceImplementationForProducts<
     ? Implementation
     : never
 
+export type PlatformResourceImplementationForCapabilities<
+  Implementation,
+  ProductIds extends readonly CoreDataProductId[],
+  ProjectionPersistence extends object,
+  MaterializationPersistence extends object,
+> =
+  SameProductIds<PlatformResourceImplementationProductIds<Implementation>, ProductIds> extends true
+    ? SamePersistence<
+        PlatformResourceImplementationProjectionPersistence<Implementation>,
+        ProjectionPersistence
+      > extends true
+      ? SamePersistence<
+          PlatformResourceImplementationMaterializationPersistence<Implementation> &
+            PlatformResourceImplementationMaintenancePersistence<Implementation>,
+          MaterializationPersistence
+        > extends true
+        ? Implementation
+        : never
+      : never
+    : never
+
 export function definePlatformResourceOperation<
   const Operation extends string,
   OperationData,
@@ -269,6 +342,9 @@ export function definePlatformResourceOperation<
   const BatchOperation extends string = string,
   BatchData = unknown,
   const ProductIds extends readonly CoreDataProductId[] = readonly [],
+  ProjectionPersistence extends object = object,
+  MaterializationPersistence extends object = object,
+  MaintenancePersistence extends object = object,
 >(
   implementation: PlatformResourceOperationImplementation<
     Operation,
@@ -277,7 +353,10 @@ export function definePlatformResourceOperation<
     BatchOperation,
     BatchData,
     PlatformCharacterResourceSubject,
-    ProductIds
+    ProductIds,
+    ProjectionPersistence,
+    MaterializationPersistence,
+    MaintenancePersistence
   >,
 ): PlatformResourceOperationImplementation<
   Operation,
@@ -286,7 +365,10 @@ export function definePlatformResourceOperation<
   BatchOperation,
   BatchData,
   PlatformCharacterResourceSubject,
-  ProductIds
+  ProductIds,
+  ProjectionPersistence,
+  MaterializationPersistence,
+  MaintenancePersistence
 > {
   return implementation
 }
@@ -302,6 +384,7 @@ interface PlatformInstalledResourceDescriptorBase<
   readonly operationId: string
   readonly materializationIntervalSeconds: number
   readonly persistence?: PlatformResourcePersistenceReferences
+  readonly scheduled?: boolean
   readonly implementation: Implementation
   readonly sectionId?: string
 }

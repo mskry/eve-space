@@ -123,7 +123,7 @@ export const materializeActivityObservationOperation = definePlatformPersistence
   maximumOutputBytes: 1_024,
 })
 
-export const organizationActivityPersistenceOperations = {
+const organizationActivityPersistenceOperations = {
   'read-activity-checkpoint': readActivityCheckpointOperation,
   'read-activity-snapshots': readActivitySnapshotsOperation,
   'materialize-activity-observation': materializeActivityObservationOperation,

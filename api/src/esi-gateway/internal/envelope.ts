@@ -44,6 +44,10 @@ const resourceRevisionSchema = z.object({
   value: z.number().int().nonnegative(),
 }) satisfies z.ZodType<EsiResourceRevision>
 
+const paginationSchema = z.object({
+  pages: z.number().int().positive().optional(),
+})
+
 const envelopeMetadataSchema = z.object({
   version: z.literal(ESI_CACHE_ENVELOPE_VERSION),
   representationVersion: z.string(),
@@ -54,6 +58,7 @@ const envelopeMetadataSchema = z.object({
   fence: z.number().int().nonnegative(),
   etag: z.string().optional(),
   lastModified: z.string().optional(),
+  pagination: paginationSchema.optional(),
   authorization: authorizationSchema.optional(),
   resourceRevision: resourceRevisionSchema.optional(),
 }) satisfies z.ZodType<Omit<EsiCacheEnvelope<unknown>, 'data'>>
@@ -105,6 +110,10 @@ export function createCacheEnvelope<Data>(options: {
     validatedAt: new Date(now).toISOString(),
     etag: options.metadata?.cache?.etag,
     lastModified: options.metadata?.cache?.lastModified,
+    pagination:
+      options.metadata?.pagination?.pages === undefined
+        ? undefined
+        : { pages: options.metadata.pagination.pages },
     authorization: options.authorization,
     resourceRevision: options.resourceRevision,
     fence: options.fence,
@@ -157,6 +166,10 @@ export function updateNotModifiedEnvelope<Data>(options: {
       ...options.metadata?.cache,
       etag: options.metadata?.cache?.etag ?? options.envelope.etag,
       lastModified: options.metadata?.cache?.lastModified ?? options.envelope.lastModified,
+    },
+    pagination: {
+      ...options.metadata?.pagination,
+      pages: options.metadata?.pagination?.pages ?? options.envelope.pagination?.pages,
     },
   }
 

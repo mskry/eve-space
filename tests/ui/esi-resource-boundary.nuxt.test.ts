@@ -1,4 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import { afterEach, describe, expect, it } from 'vitest'
 import EsiResourceBoundary from '../../app/components/esi/ResourceBoundary.vue'
 
@@ -87,13 +88,13 @@ describe('EsiResourceBoundary', () => {
     expect(wrapper.get('[role="alert"]').text()).toContain('Refresh authorization required')
   })
 
-  it.each(['fresh', 'restored'] as const)(
-    'keeps %s data visible without a persistence notice',
+  it.each(['fresh', 'restored', 'restored-refresh-failed', 'server-stale'] as const)(
+    'keeps %s data visible without a per-resource persistence notice',
     async (kind) => {
       const wrapper = await mountSuspended(EsiResourceBoundary, {
         props: {
           hasData: true,
-          presentation: { kind, originalSuccessAt: '2026-09-15T01:00:00.000Z' },
+          presentation: persistencePresentation(kind),
           state: { status: 'ready' },
         },
         slots: { default: '<p data-retained>Retained resource</p>' },
@@ -104,60 +105,6 @@ describe('EsiResourceBoundary', () => {
       expect(wrapper.find('.platform-query-persistence').exists()).toBe(false)
     },
   )
-
-  it('keeps retained data visible and identifies failed restored refreshes accessibly', async () => {
-    const originalSuccessAt = '2026-09-15T01:00:00.000Z'
-    const retryAt = '2026-09-15T01:05:00.000Z'
-    const wrapper = await mountSuspended(EsiResourceBoundary, {
-      props: {
-        hasData: true,
-        presentation: {
-          kind: 'restored-refresh-failed',
-          originalSuccessAt,
-          retryAt,
-          refreshFailureCode: 'ESI_UNAVAILABLE',
-          refreshFailureStatus: 503,
-        },
-        state: {
-          status: 'error',
-          title: 'Refresh unavailable',
-          message: 'The latest refresh failed.',
-        },
-      },
-      slots: { default: '<p data-retained>Retained resource</p>' },
-    })
-    mountedWrappers.push(wrapper)
-
-    expect(wrapper.get('[data-retained]').text()).toBe('Retained resource')
-    const presentation = wrapper.get('[data-persistence-state="restored-refresh-failed"]')
-    expect(presentation.text()).toContain('Historical data, refresh failed.')
-    expect(presentation.text()).toContain('ESI_UNAVAILABLE')
-    expect(presentation.get(`time[datetime="${originalSuccessAt}"]`).text()).toBe(originalSuccessAt)
-    expect(presentation.get(`time[datetime="${retryAt}"]`).text()).toBe(retryAt)
-    expect(wrapper.get('[role="alert"]').text()).toContain('The latest refresh failed.')
-  })
-
-  it('distinguishes authoritative server-stale metadata from browser restoration', async () => {
-    const validatedAt = '2026-09-15T00:45:00.000Z'
-    const wrapper = await mountSuspended(EsiResourceBoundary, {
-      props: {
-        hasData: true,
-        presentation: {
-          kind: 'server-stale',
-          validatedAt,
-          refreshFailureClass: 'esi-cooldown',
-        },
-        state: { status: 'ready' },
-      },
-      slots: { default: '<p>Server representation</p>' },
-    })
-    mountedWrappers.push(wrapper)
-
-    const presentation = wrapper.get('[data-persistence-state="server-stale"]')
-    expect(presentation.text()).toContain('Server-stale data.')
-    expect(presentation.text()).toContain('esi-cooldown')
-    expect(presentation.get('time').attributes('datetime')).toBe(validatedAt)
-  })
 
   it('allows feature-owned loading and error presentation', async () => {
     const wrapper = await mountSuspended(EsiResourceBoundary, {
@@ -179,3 +126,22 @@ describe('EsiResourceBoundary', () => {
     expect(wrapper.get('[data-error]').text()).toBe('Feature error')
   })
 })
+
+function persistencePresentation(
+  kind: EsiQueryPersistencePresentation['kind'],
+): EsiQueryPersistencePresentation {
+  if (kind === 'restored-refresh-failed')
+    return {
+      kind,
+      originalSuccessAt: '2026-09-15T01:00:00.000Z',
+      refreshFailureCode: 'ESI_UNAVAILABLE',
+    }
+  if (kind === 'server-stale')
+    return {
+      kind,
+      validatedAt: '2026-09-15T00:45:00.000Z',
+      refreshFailureClass: 'esi-cooldown',
+    }
+  if (kind === 'restored') return { kind, originalSuccessAt: '2026-09-15T01:00:00.000Z' }
+  return { kind }
+}

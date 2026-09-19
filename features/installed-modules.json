@@ -1,3 +1,18 @@
 {
-  "modules": ["organization-activity", "member-audit"]
+  "modules": [
+    {
+      "moduleId": "organization-activity",
+      "manifest": {
+        "package": "@eve-space/organization-activity-manifest",
+        "export": "./manifest"
+      }
+    },
+    {
+      "moduleId": "member-audit",
+      "manifest": {
+        "package": "@eve-space/member-audit-manifest",
+        "export": "./manifest"
+      }
+    }
+  ]
 }

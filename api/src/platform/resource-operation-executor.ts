@@ -5,6 +5,7 @@ import type {
 } from '@eve-space/platform-module-contract/resources'
 import {
   getEsiOperationAuthorization,
+  getPlatformEsiOperationDefinition,
   type EsiOperation,
 } from '../esi-gateway/catalog-interface.js'
 import { isEsiAuthorizationFailure } from '../esi-gateway/failures.js'
@@ -14,6 +15,7 @@ import {
   PlatformEsiRequestError,
 } from '../esi-gateway/platform-execution.js'
 import { isRecord } from '../type-guards.js'
+import { resolveUniverseNamesBestEffort } from '../universe/names.js'
 import {
   createPlatformResourceMappingCapabilities,
   createPlatformResourceReadCapabilities,
@@ -184,6 +186,11 @@ async function executeCollectionRequest(
     throw new Error('Resource collection request budget exceeded')
   assertDeclaredCollectionOperation(operationId, context.guarded.resource)
   assertCollectionSubject(inputs, context.subject, context.collectionContext.corporationId)
+  if (operationId === 'universe-resolve-names' && !context.options.executeEsiOperation) {
+    const result = await resolveCollectionUniverseNames(inputs, context.options.signal)
+    retainCollectionExecution(context.state, result)
+    return { data: result.data, validatedAt: result.validatedAt }
+  }
   const result = await executeInstalledResourceOperation(context.identity, {
     ...context.options,
     request: { operationId, inputs },
@@ -191,7 +198,38 @@ async function executeCollectionRequest(
   context.options.signal?.throwIfAborted()
   assertCollectionAuthority(result, context.guarded)
   retainCollectionExecution(context.state, result.result)
-  return { data: result.result.data, validatedAt: result.result.validatedAt }
+  return {
+    data: result.result.data,
+    validatedAt: result.result.validatedAt,
+    ...(result.result.pagination ? { pagination: { ...result.result.pagination } } : {}),
+  }
+}
+
+async function resolveCollectionUniverseNames(
+  inputs: Readonly<Record<string, unknown>>,
+  signal?: AbortSignal,
+): Promise<PlatformEsiExecution<unknown>> {
+  const parsed =
+    getPlatformEsiOperationDefinition('universe-resolve-names').descriptor.requestSchema.parse(
+      inputs,
+    )
+  if (!isRecord(parsed) || !Array.isArray(parsed.body))
+    throw new PlatformResourceMappingError(new Error('Universe name request is invalid'))
+  const ids = parsed.body as number[]
+  const resolved = await resolveUniverseNamesBestEffort(ids, { signal })
+  const validatedAt = new Date().toISOString()
+  return {
+    data: ids.flatMap((id) => {
+      const name = resolved.names.get(id)
+      return name ? [name] : []
+    }),
+    authorizationGeneration: null,
+    cachedUntil: validatedAt,
+    validatedAt,
+    source: 'cache',
+    stale: false,
+    quota: {},
+  }
 }
 
 async function executeSingleResourceOperation(

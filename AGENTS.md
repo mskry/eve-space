@@ -11,10 +11,25 @@ These instructions apply to the entire repository. Preserve the architecture and
 
 - Prefer optional chaining over separate nullish guards when reading a property from a nullable value.
 
+### Sonar Authoring Guardrails
+
+Apply these rules while first writing code or while changing the relevant lines. They are preventive authoring guidance, not a request to scan for, refactor, or rewrite existing code. Do not start a repository-wide cleanup, run Sonar solely to recheck these rules, or enter repeated scan-and-rewrite cycles unless the user explicitly asks. Normal task verification may report a finding in changed code; address that scoped finding without expanding into unrelated cleanup.
+
+- Keep TypeScript unions and intersections meaningful. Do not combine `unknown` or `any` with other union members, add `never` to a union, add `unknown` to an intersection, or include a literal/subtype already covered by a wider constituent.
+- Give every `sort()` and `toSorted()` call an explicit comparator. Use `left.localeCompare(right)` for strings and a numeric comparator for numbers; choose a domain-specific comparator for records.
+- Do not nest ternary expressions. Use an early return, an `if` statement, or a named intermediate value when a choice contains another choice.
+- Keep each newly authored or materially changed function at or below Sonar's cognitive-complexity limit of 15 by designing flat control flow from the start. Prefer guard clauses, named predicates, and focused helpers over deep nesting or mixed multi-stage branching.
+- Merge imports from the same module into one declaration, using inline `type` specifiers when type and value imports share a source.
+- Use optional chaining for nullable property, element, and method access when it preserves the existing falsy-value semantics.
+- Express string-prefix and string-suffix checks with `startsWith()` and `endsWith()` rather than index arithmetic, slicing, or a regular expression.
+- Use current standardized CSS rather than deprecated selectors, at-rules, properties, or values. In particular, do not use `word-break: break-word`; use `overflow-wrap: anywhere` when arbitrary wrapping is intended.
+
 ### Regular Expressions
 
 - Regular expressions that process untrusted or unbounded input must have linear-time matching behavior.
 - Do not use nested quantifiers or consecutive unbounded quantifiers when their character classes can match the same input. Make separators unambiguous by excluding them from adjacent character classes, use bounded quantifiers, or parse structured values with string operations instead.
+- Use concise equivalent regex syntax: `\d`/`\D` instead of `[0-9]`/`[^0-9]`, `\w`/`\W` instead of their full ASCII word-character classes, and `?`, `*`, `+`, or `{n}` instead of verbose equivalent quantifiers.
+- Keep a regular expression at or below Sonar's complexity limit of 20. Split independent checks into named patterns or move structured validation to string operations when one pattern would exceed that limit.
 - Add adversarial near-match tests for non-trivial regular expressions and resolve Sonar slow-regex or regular-expression denial-of-service findings rather than suppressing them.
 
 ### Vue
@@ -61,6 +76,7 @@ These rules compile Nuxt 4's official best-practice guidance for [accessibility]
 
 #### Accessibility
 
+- Prefer native HTML semantics over recreating them with ARIA roles. Use `<output>` for result or status messages instead of placing `role="status"` on a generic element; use ARIA only when no native element supplies the required semantics.
 - Keep `NuxtRouteAnnouncer` mounted at the application root and give every route a distinct, meaningful document title so client-side navigation is announced.
 - Use `NuxtAnnouncer`/`useAnnouncer` for important in-page status changes such as validation or asynchronous results; do not misuse route announcements for ordinary updates.
 - Use `NuxtLink` for internal navigation so links retain native focus, keyboard, new-tab, and `aria-current` behavior. Mark public files or same-origin destinations outside Vue Router as `external`.

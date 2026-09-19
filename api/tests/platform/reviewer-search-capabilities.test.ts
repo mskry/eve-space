@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => {
   class ReviewerAccountSearchInputError extends TypeError {}
   return {
     ReviewerAccountSearchInputError,
+    createSummaryReads: vi.fn(),
+    resolveOrganizationReviewerTarget: vi.fn(),
     searchManagedOrganizationAccounts: vi.fn(),
   }
 })
@@ -12,6 +14,12 @@ const mocks = vi.hoisted(() => {
 vi.mock('../../src/organization/reviewer-account-search.js', () => ({
   ReviewerAccountSearchInputError: mocks.ReviewerAccountSearchInputError,
   searchManagedOrganizationAccounts: mocks.searchManagedOrganizationAccounts,
+}))
+vi.mock('../../src/organization/reviewer-target.js', () => ({
+  resolveOrganizationReviewerTarget: mocks.resolveOrganizationReviewerTarget,
+}))
+vi.mock('../../src/platform/module-reviewer-evidence-summary-capabilities.js', () => ({
+  createPlatformReviewerEvidenceSummaryReads: mocks.createSummaryReads,
 }))
 
 import { createPlatformReviewerAccountSearch } from '../../src/platform/reviewer-search-capabilities.js'
@@ -23,7 +31,7 @@ test('translates invalid authenticated cursors into the typed validation respons
     new mocks.ReviewerAccountSearchInputError(),
   )
 
-  const failure = await createPlatformReviewerAccountSearch(7)
+  const failure = await createPlatformReviewerAccountSearch('member-audit', 7)
     .search({ cursor: 'valid-looking-but-unauthenticated' })
     .catch((error: unknown) => error)
 
@@ -41,5 +49,66 @@ test('does not relabel unexpected reviewer search failures as validation errors'
   const unexpected = new Error('Database unavailable')
   mocks.searchManagedOrganizationAccounts.mockRejectedValueOnce(unexpected)
 
-  await expect(createPlatformReviewerAccountSearch(7).search({})).rejects.toBe(unexpected)
+  await expect(createPlatformReviewerAccountSearch('member-audit', 7).search({})).rejects.toBe(
+    unexpected,
+  )
+})
+
+test('adds safe evidence summaries only after resolving each current search target', async () => {
+  const item = {
+    managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+    account: {
+      userId: '00000000-0000-4000-8000-000000000002',
+      mainCharacter: { characterId: 90_000_001, name: 'Pilot' },
+    },
+    managedAffiliation: {
+      characterId: 90_000_001,
+      name: 'Pilot',
+      corporationId: 98_000_001,
+      allianceId: null,
+      checkedAt: '2026-09-18T10:00:00.000Z',
+    },
+    compliance: {
+      state: 'compliant',
+      evidenceFreshness: 'fresh',
+      evidenceAt: '2026-09-18T10:00:00.000Z',
+      reviewDeadline: null,
+      accessValidUntil: null,
+      evaluatedAt: '2026-09-18T10:00:00.000Z',
+    },
+    block: { blocked: false },
+    evidenceSections: [],
+  } as const
+  mocks.searchManagedOrganizationAccounts.mockResolvedValue({
+    organizationVersion: 7,
+    status: 'available',
+    items: [item],
+    nextCursor: null,
+  })
+  const target = { account: item.account }
+  mocks.resolveOrganizationReviewerTarget.mockResolvedValue(target)
+  const sections = [
+    {
+      sectionId: 'skills',
+      resources: [{ resourceId: 'trained-skills', status: 'current', validatedAt: null }],
+    },
+  ]
+  mocks.createSummaryReads.mockReturnValue({
+    read: vi.fn().mockResolvedValue([{ characterId: 90_000_001, sections }]),
+  })
+
+  await expect(
+    createPlatformReviewerAccountSearch('member-audit', 7).search({ limit: 25 }),
+  ).resolves.toEqual({
+    organizationVersion: 7,
+    status: 'available',
+    items: [{ ...item, evidenceSections: sections }],
+    nextCursor: null,
+  })
+  expect(mocks.resolveOrganizationReviewerTarget).toHaveBeenCalledWith({
+    organizationVersion: 7,
+    targetUserId: item.account.userId,
+    characterId: item.managedAffiliation.characterId,
+  })
+  expect(mocks.createSummaryReads).toHaveBeenCalledWith({ moduleId: 'member-audit', target })
 })

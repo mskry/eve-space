@@ -1,0 +1,82 @@
+{
+  "id": "fixture",
+  "release": {
+    "publisherPackage": "@example/fixture-manifest",
+    "version": "1.2.3",
+    "hostContractRange": "^1.0.0"
+  },
+  "icon": "overview",
+  "defaultEnabled": false,
+  "permissions": [
+    {
+      "key": "fixture.view",
+      "label": "View fixture",
+      "purpose": "Read fixture data",
+      "audiences": ["member"],
+      "sensitivity": "standard",
+      "reviewAllowed": false
+    }
+  ],
+  "server": {
+    "package": "@example/fixture-server",
+    "routes": [
+      {
+        "id": "fixture-route",
+        "namespace": "/fixture",
+        "exportName": "fixtureRoutes",
+        "authorization": "authenticated-session",
+        "audience": "member",
+        "requiredPermission": "fixture.view",
+        "persistenceOperations": [{ "operationId": "read-fixture" }]
+      }
+    ],
+    "migrations": [{ "name": "fixture-001.sql" }],
+    "persistenceOperations": [
+      {
+        "id": "read-fixture",
+        "method": "readFixture",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readFixtureOperation",
+        "migration": "fixture-001.sql"
+      }
+    ],
+    "resources": [],
+    "esiOperations": [],
+    "activityProviders": [
+      {
+        "id": "fixture-provider",
+        "exportName": "fixtureProvider",
+        "audience": "member",
+        "requiredPermission": "fixture.view",
+        "persistenceOperations": [{ "operationId": "read-fixture" }],
+        "freshness": { "staleAfterSeconds": 60 }
+      }
+    ]
+  },
+  "nuxt": {
+    "package": "@example/fixture-nuxt",
+    "pages": [
+      {
+        "id": "fixture-page",
+        "name": "eve-fixture-page",
+        "path": "/fixture",
+        "file": "src/runtime/app/pages/FixturePage.vue",
+        "extensionPoint": "root",
+        "audience": "authenticated"
+      }
+    ],
+    "navigation": [
+      {
+        "id": "fixture-navigation",
+        "label": "Fixture",
+        "description": "Fixture page",
+        "to": "/fixture",
+        "audience": "authenticated",
+        "placement": "dashboard",
+        "order": 90,
+        "pageName": "eve-fixture-page"
+      }
+    ]
+  }
+}

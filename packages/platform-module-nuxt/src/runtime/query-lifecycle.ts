@@ -1,11 +1,13 @@
 import type { EntryKey, QueryCache, UseQueryEntry, UseQueryOptions } from '@pinia/colada'
-import type { PlatformQuerySubject } from './query-keys.js'
 import {
   isPlatformModuleQueryKey,
   isPlatformModuleSectionQueryKey,
   isPlatformQuerySubjectValid,
   PLATFORM_PRIVATE_QUERY_ROOT,
   platformModuleQueryKey,
+  platformReviewerContributionTargetQueryKey,
+  type PlatformQuerySubject,
+  type PlatformReviewerContributionTargetIdentity,
 } from './query-keys.js'
 
 export interface PlatformProtectedQueryAccess {
@@ -104,6 +106,13 @@ export function removePlatformQuery(queryCache: QueryCache, key: EntryKey) {
   const filter = { key, exact: true }
   queryCache.cancelQueries(filter, new Error('Protected query state cleared.'))
   for (const entry of queryCache.getEntries(filter)) queryCache.remove(entry)
+}
+
+export function removePlatformReviewerContributionTargetQueries(
+  queryCache: QueryCache,
+  identity: PlatformReviewerContributionTargetIdentity,
+) {
+  removePlatformQueryScope(queryCache, platformReviewerContributionTargetQueryKey(identity))
 }
 
 export function prefetchQuery<

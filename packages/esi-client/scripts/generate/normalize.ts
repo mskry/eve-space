@@ -168,6 +168,30 @@ interface SourceOperation {
   readonly pathItem: Record<string, unknown>;
 }
 
+interface LocalReference {
+  readonly reference: string;
+  readonly segments: readonly string[];
+}
+
+type RequestArrayReference =
+  | { readonly kind: 'absent' | 'cycle' }
+  | {
+      readonly kind: 'resolved';
+      readonly activeReferences: ReadonlySet<string>;
+      readonly value: unknown;
+    };
+
+interface NestedRequestSchema {
+  readonly path: readonly string[];
+  readonly value: unknown;
+}
+
+type CacheModeExtensionName = 'x-cache-mode' | 'x-server-cache-mode';
+type CacheDurationExtensionName = Exclude<keyof NormalizedCacheExtensions, CacheModeExtensionName>;
+type MutableNormalizedCacheExtensions = {
+  -readonly [Name in keyof NormalizedCacheExtensions]?: NormalizedCacheExtensions[Name];
+};
+
 export const defaultExclusionsPath: string = resolveConfigPath('exclusions');
 
 const httpMethods: ReadonlySet<Lowercase<HttpMethod>> = new Set([
@@ -281,6 +305,15 @@ export async function normalizeOpenApiDocument(
 }
 
 export function resolveLocalReference(document: unknown, reference: unknown): unknown {
+  const localReference = parseLocalReference(reference);
+  let value: unknown = document;
+  for (const encodedSegment of localReference.segments) {
+    value = resolveLocalReferenceSegment(value, encodedSegment, localReference.reference);
+  }
+  return value;
+}
+
+function parseLocalReference(reference: unknown): LocalReference {
   if (typeof reference !== 'string' || (!reference.startsWith('#/') && reference !== '#')) {
     throw new Error(`External or unsupported OpenAPI reference: ${describeValue(reference)}`);
   }
@@ -292,26 +325,37 @@ export function resolveLocalReference(document: unknown, reference: unknown): un
     throw new Error(`Invalid local OpenAPI reference: ${reference}`, { cause: error });
   }
 
-  let value: unknown = document;
-  const segments = decodedPointer === '' ? [] : decodedPointer.slice(1).split('/');
-  for (const encodedSegment of segments) {
-    if (/~(?:[^01]|$)/u.test(encodedSegment)) {
-      throw new Error(`Invalid local OpenAPI reference: ${reference}`);
-    }
-    const segment = encodedSegment.replaceAll('~1', '/').replaceAll('~0', '~');
-    if (Array.isArray(value)) {
-      if (!/^(?:0|[1-9]\d*)$/u.test(segment) || Number(segment) >= value.length) {
-        throw new Error(`Unresolved local OpenAPI reference: ${reference}`);
-      }
-      value = value[Number(segment)];
-      continue;
-    }
-    if (!isObject(value) || !Object.hasOwn(value, segment)) {
-      throw new Error(`Unresolved local OpenAPI reference: ${reference}`);
-    }
-    value = value[segment];
+  return {
+    reference,
+    segments: decodedPointer === '' ? [] : decodedPointer.slice(1).split('/'),
+  };
+}
+
+function resolveLocalReferenceSegment(
+  value: unknown,
+  encodedSegment: string,
+  reference: string,
+): unknown {
+  if (/~(?:[^01]|$)/u.test(encodedSegment)) {
+    throw new Error(`Invalid local OpenAPI reference: ${reference}`);
   }
-  return value;
+  const segment = encodedSegment.replaceAll('~1', '/').replaceAll('~0', '~');
+  if (Array.isArray(value)) return resolveArrayReferenceSegment(value, segment, reference);
+  if (!isObject(value) || !Object.hasOwn(value, segment)) {
+    throw new Error(`Unresolved local OpenAPI reference: ${reference}`);
+  }
+  return value[segment];
+}
+
+function resolveArrayReferenceSegment(
+  value: readonly unknown[],
+  segment: string,
+  reference: string,
+): unknown {
+  if (!/^(?:0|[1-9]\d*)$/u.test(segment) || Number(segment) >= value.length) {
+    throw new Error(`Unresolved local OpenAPI reference: ${reference}`);
+  }
+  return value[Number(segment)];
 }
 
 export function createOpenApiInventory(
@@ -510,46 +554,67 @@ function normalizeCacheExtensions(
   extensions: JsonObject,
   operationId: string,
 ): NormalizedCacheExtensions {
-  const normalized: {
-    'x-cache-age'?: number;
-    'x-cache-mode'?: CacheMode;
-    'x-client-cache-ttl'?: number;
-    'x-server-cache-mode'?: CacheMode;
-    'x-server-cache-ttl'?: number;
-    'x-tombstone-ttl'?: number;
-  } = {};
+  const normalized: MutableNormalizedCacheExtensions = {};
   for (const name of cacheExtensionNames) {
     if (!Object.hasOwn(extensions, name)) continue;
-    const value = extensions[name];
-    if (name === 'x-cache-mode' || name === 'x-server-cache-mode') {
-      if (!isCacheMode(value)) {
-        throw new Error(
-          `Invalid ${name} extension for ${operationId}: expected ${cacheModes.join(', ')}`,
-        );
-      }
-      if (name === 'x-cache-mode') normalized['x-cache-mode'] = value;
-      else normalized['x-server-cache-mode'] = value;
-      continue;
-    }
-    if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
-      throw new Error(
-        `Invalid ${name} extension for ${operationId}: expected a non-negative safe integer`,
-      );
-    }
-    if (name === 'x-cache-age') normalized['x-cache-age'] = value;
-    else if (name === 'x-client-cache-ttl') normalized['x-client-cache-ttl'] = value;
-    else if (name === 'x-server-cache-ttl') normalized['x-server-cache-ttl'] = value;
-    else normalized['x-tombstone-ttl'] = value;
+    normalizeCacheExtension(normalized, name, extensions[name], operationId);
   }
   return normalized;
 }
 
+function normalizeCacheExtension(
+  normalized: MutableNormalizedCacheExtensions,
+  name: keyof NormalizedCacheExtensions,
+  value: JsonValue,
+  operationId: string,
+): void {
+  if (isCacheModeExtensionName(name)) {
+    assignCacheModeExtension(normalized, name, value, operationId);
+    return;
+  }
+  assignCacheDurationExtension(normalized, name, value, operationId);
+}
+
+function isCacheModeExtensionName(
+  name: keyof NormalizedCacheExtensions,
+): name is CacheModeExtensionName {
+  return name === 'x-cache-mode' || name === 'x-server-cache-mode';
+}
+
+function assignCacheModeExtension(
+  normalized: MutableNormalizedCacheExtensions,
+  name: CacheModeExtensionName,
+  value: JsonValue,
+  operationId: string,
+): void {
+  if (!isCacheMode(value)) {
+    throw new Error(
+      `Invalid ${name} extension for ${operationId}: expected ${cacheModes.join(', ')}`,
+    );
+  }
+  normalized[name] = value;
+}
+
+function assignCacheDurationExtension(
+  normalized: MutableNormalizedCacheExtensions,
+  name: CacheDurationExtensionName,
+  value: JsonValue,
+  operationId: string,
+): void {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
+    throw new Error(
+      `Invalid ${name} extension for ${operationId}: expected a non-negative safe integer`,
+    );
+  }
+  normalized[name] = value;
+}
+
 function isConditionalRequestValidator(value: string): value is ConditionalRequestValidator {
-  return conditionalRequestValidatorNames.some((name) => name === value);
+  return (conditionalRequestValidatorNames as readonly string[]).includes(value);
 }
 
 function isCacheMode(value: unknown): value is CacheMode {
-  return cacheModes.some((mode) => mode === value);
+  return (cacheModes as readonly unknown[]).includes(value);
 }
 
 function normalizeRouteRateLimit(
@@ -635,65 +700,100 @@ function collectRequestArrayLimits(
 ): void {
   if (typeof value === 'boolean') return;
   assertRecord(value, `${context} schema`);
-  if (typeof value.$ref === 'string') {
-    if (activeReferences.has(value.$ref)) return;
-    const target = resolveLocalReference(document, value.$ref);
-    const nextReferences = new Set(activeReferences).add(value.$ref);
-    collectRequestArrayLimits(document, target, location, path, context, limits, nextReferences);
-  }
-
-  if (Object.hasOwn(value, 'maxItems')) {
-    if (value.type !== 'array') {
-      throw new Error(`${context} maxItems requires an array schema`);
-    }
-    if (
-      typeof value.maxItems !== 'number' ||
-      !Number.isSafeInteger(value.maxItems) ||
-      value.maxItems < 0
-    ) {
-      throw new Error(`${context} maxItems must be a non-negative safe integer`);
-    }
-    recordRequestArrayLimit(location, path, value.maxItems, context, limits);
-  }
-
-  if (isObject(value.properties)) {
-    for (const name of Object.keys(value.properties).toSorted(compareText)) {
-      collectRequestArrayLimits(
-        document,
-        value.properties[name],
-        location,
-        [...path, name],
-        context,
-        limits,
-        activeReferences,
-      );
-    }
-  }
-  if (value.type === 'array' && value.items !== undefined) {
+  const reference = resolveRequestArrayReference(document, value, activeReferences);
+  if (reference.kind === 'cycle') return;
+  if (reference.kind === 'resolved') {
     collectRequestArrayLimits(
       document,
-      value.items,
+      reference.value,
       location,
-      [...path, '*'],
+      path,
+      context,
+      limits,
+      reference.activeReferences,
+    );
+  }
+
+  recordDeclaredRequestArrayLimit(value, location, path, context, limits);
+  for (const nestedSchema of nestedRequestSchemas(value, path)) {
+    collectRequestArrayLimits(
+      document,
+      nestedSchema.value,
+      location,
+      nestedSchema.path,
       context,
       limits,
       activeReferences,
     );
   }
+}
+
+function resolveRequestArrayReference(
+  document: Record<string, unknown>,
+  value: Record<string, unknown>,
+  activeReferences: ReadonlySet<string>,
+): RequestArrayReference {
+  const reference = value.$ref;
+  if (typeof reference !== 'string') return { kind: 'absent' };
+  if (activeReferences.has(reference)) return { kind: 'cycle' };
+  return {
+    kind: 'resolved',
+    activeReferences: new Set(activeReferences).add(reference),
+    value: resolveLocalReference(document, reference),
+  };
+}
+
+function recordDeclaredRequestArrayLimit(
+  value: Record<string, unknown>,
+  location: NormalizedRequestArrayLimit['location'],
+  path: readonly string[],
+  context: string,
+  limits: Map<string, NormalizedRequestArrayLimit>,
+): void {
+  if (!Object.hasOwn(value, 'maxItems')) return;
+  if (value.type !== 'array') {
+    throw new Error(`${context} maxItems requires an array schema`);
+  }
+  if (
+    typeof value.maxItems !== 'number' ||
+    !Number.isSafeInteger(value.maxItems) ||
+    value.maxItems < 0
+  ) {
+    throw new Error(`${context} maxItems must be a non-negative safe integer`);
+  }
+  recordRequestArrayLimit(location, path, value.maxItems, context, limits);
+}
+
+function* nestedRequestSchemas(
+  value: Record<string, unknown>,
+  path: readonly string[],
+): Generator<NestedRequestSchema> {
+  yield* propertyRequestSchemas(value.properties, path);
+  if (value.type === 'array' && value.items !== undefined) {
+    yield { path: [...path, '*'], value: value.items };
+  }
   for (const keyword of ['allOf', 'anyOf', 'oneOf', 'prefixItems']) {
-    const schemas = value[keyword];
-    if (!Array.isArray(schemas)) continue;
-    for (const schema of schemas) {
-      collectRequestArrayLimits(
-        document,
-        schema,
-        location,
-        path,
-        context,
-        limits,
-        activeReferences,
-      );
-    }
+    yield* arrayRequestSchemas(value[keyword], path);
+  }
+}
+
+function* propertyRequestSchemas(
+  value: unknown,
+  path: readonly string[],
+): Generator<NestedRequestSchema> {
+  if (!isObject(value)) return;
+  for (const name of Object.keys(value).toSorted(compareText)) {
+    yield { path: [...path, name], value: value[name] };
+  }
+}
+
+function* arrayRequestSchemas(
+  value: unknown,
+  path: readonly string[],
+): Generator<NestedRequestSchema> {
+  if (!Array.isArray(value)) return;
+  for (const schema of value) {
+    yield { path, value: schema };
   }
 }
 
@@ -938,19 +1038,20 @@ function validatePathParameters(
 }
 
 function validateDocumentReferences(document: Record<string, unknown>): void {
-  function visit(value: unknown): void {
-    if (Array.isArray(value)) {
-      for (const entry of value) visit(entry);
-      return;
-    }
-    if (!isObject(value)) return;
-    if (Object.hasOwn(value, '$ref')) resolveLocalReference(document, value.$ref);
-    for (const [key, entry] of Object.entries(value)) {
-      if (key === '$ref' || key.startsWith('x-') || arbitraryValueKeys.has(key)) continue;
-      visit(entry);
-    }
+  validateDocumentReferenceValue(document, document);
+}
+
+function validateDocumentReferenceValue(document: Record<string, unknown>, value: unknown): void {
+  if (Array.isArray(value)) {
+    for (const entry of value) validateDocumentReferenceValue(document, entry);
+    return;
   }
-  visit(document);
+  if (!isObject(value)) return;
+  if (Object.hasOwn(value, '$ref')) resolveLocalReference(document, value.$ref);
+  for (const [key, entry] of Object.entries(value)) {
+    if (key === '$ref' || key.startsWith('x-') || arbitraryValueKeys.has(key)) continue;
+    validateDocumentReferenceValue(document, entry);
+  }
 }
 
 function resolveReferenceObject(

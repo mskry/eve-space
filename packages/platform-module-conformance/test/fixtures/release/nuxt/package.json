@@ -1,0 +1,24 @@
+{
+  "name": "@example/fixture-nuxt",
+  "version": "1.2.3",
+  "type": "module",
+  "sideEffects": [
+    "**/*.vue"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/module.d.ts",
+      "import": "./dist/module.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src/runtime/app"
+  ],
+  "dependencies": {
+    "@eve-space/platform-module-nuxt": "^0.1.0",
+    "@nuxt/kit": "^4.5.2",
+    "@nuxt/schema": "^4.5.2",
+    "vue": "^3.5.41"
+  }
+}

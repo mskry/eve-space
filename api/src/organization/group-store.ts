@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, inArray, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, isNull, ne, sql } from 'drizzle-orm'
 import { db, type DatabaseTransaction } from '../db/client.js'
 import {
   organizationAccountCompliance,
@@ -10,7 +10,6 @@ import {
   users,
   type OrganizationComplianceSource,
   type OrganizationGroupManagementMode,
-  type OrganizationPermissionType,
 } from '../db/schema.js'
 import {
   loadCurrentGroupForUpdate,
@@ -31,19 +30,22 @@ import {
   type OrganizationManagementAuthority,
 } from './management-authority.js'
 import { lockCurrentOrganization } from './organization-lock.js'
+import { appendPermissionBundleAudit } from './permission-bundle-audit.js'
+import type { PermissionSelection } from './permission-catalog-policy.js'
+import {
+  listEnabledPermissionCatalog,
+  OrganizationPermissionCatalogError,
+  resolveCurrentPermissionSelections,
+  type StoredPermission,
+} from './permission-catalog-store.js'
 
 type Transaction = DatabaseTransaction
-
-interface PermissionInput {
-  type: OrganizationPermissionType
-  key: string
-  reviewAllowed?: boolean
-}
 
 export async function createOrganizationPermissionBundle(input: {
   actorUserId: string
   name: string
-  permissions: PermissionInput[]
+  reason: string
+  permissions: PermissionSelection[]
 }) {
   return db.transaction(async (transaction) => {
     const organization = await lockCurrentOrganization(transaction)
@@ -71,7 +73,7 @@ export async function createOrganizationPermissionBundle(input: {
       .returning()
     if (!bundle) throw new Error('Failed to create organization permission bundle')
 
-    const permissions = uniquePermissions(input.permissions)
+    const permissions = await resolvePermissions(transaction, input.permissions)
     await transaction.insert(organizationPermissionBundleEntries).values(
       permissions.map((permission) => ({
         bundleId: bundle.bundleId,
@@ -79,14 +81,199 @@ export async function createOrganizationPermissionBundle(input: {
         organizationVersion: organization.organizationVersion,
         permissionType: permission.type,
         permissionKey: permission.key,
+        publisherPackage: permission.type === 'module' ? permission.publisherPackage : undefined,
+        moduleId: permission.type === 'module' ? permission.moduleId : undefined,
         reviewAllowed: permission.reviewAllowed,
       })),
     )
+    await appendPermissionBundleAudit(transaction, organization, {
+      eventType: 'permission-bundle.created',
+      actorUserId: input.actorUserId,
+      bundleId: bundle.bundleId,
+      reason: input.reason,
+      now: new Date(),
+    })
     return {
       bundleId: bundle.bundleId,
       organizationVersion: bundle.organizationVersion,
       name: bundle.name,
       permissions,
+    }
+  })
+}
+
+export async function updateOrganizationPermissionBundle(input: {
+  actorUserId: string
+  bundleId: string
+  name: string
+  reason: string
+  permissions: PermissionSelection[]
+  retainedUnavailableEntryIds: string[]
+}) {
+  return db.transaction(async (transaction) => {
+    const organization = await lockCurrentOrganization(transaction)
+    await requireOwner(transaction, organization.organizationVersion, input.actorUserId)
+    const [bundle] = await transaction
+      .select()
+      .from(organizationPermissionBundles)
+      .where(
+        and(
+          eq(organizationPermissionBundles.bundleId, input.bundleId),
+          eq(organizationPermissionBundles.deploymentId, 1),
+          eq(organizationPermissionBundles.organizationVersion, organization.organizationVersion),
+        ),
+      )
+      .for('update')
+    if (!bundle) throw new OrganizationGroupMutationError('bundle-not-found')
+    const [existing] = await transaction
+      .select({ bundleId: organizationPermissionBundles.bundleId })
+      .from(organizationPermissionBundles)
+      .where(
+        and(
+          eq(organizationPermissionBundles.deploymentId, 1),
+          eq(organizationPermissionBundles.organizationVersion, organization.organizationVersion),
+          ne(organizationPermissionBundles.bundleId, input.bundleId),
+          sql`lower(${organizationPermissionBundles.name}) = ${input.name.toLowerCase()}`,
+        ),
+      )
+    if (existing) throw new OrganizationGroupMutationError('bundle-name-conflict')
+
+    const [permissions, retainedPermissions] = await Promise.all([
+      resolvePermissions(transaction, input.permissions),
+      loadRetainedUnavailablePermissions(
+        transaction,
+        organization.organizationVersion,
+        input.bundleId,
+        input.retainedUnavailableEntryIds,
+      ),
+    ])
+    await transaction
+      .update(organizationPermissionBundles)
+      .set({ name: input.name, updatedAt: new Date() })
+      .where(eq(organizationPermissionBundles.bundleId, input.bundleId))
+    await transaction
+      .delete(organizationPermissionBundleEntries)
+      .where(eq(organizationPermissionBundleEntries.bundleId, input.bundleId))
+    if (permissions.length > 0 || retainedPermissions.length > 0)
+      await transaction.insert(organizationPermissionBundleEntries).values([
+        ...permissions.map((permission) => ({
+          bundleId: input.bundleId,
+          deploymentId: 1,
+          organizationVersion: organization.organizationVersion,
+          permissionType: permission.type,
+          permissionKey: permission.key,
+          publisherPackage: permission.type === 'module' ? permission.publisherPackage : undefined,
+          moduleId: permission.type === 'module' ? permission.moduleId : undefined,
+          reviewAllowed: permission.reviewAllowed,
+        })),
+        ...retainedPermissions,
+      ])
+    await appendPermissionBundleAudit(transaction, organization, {
+      eventType: 'permission-bundle.updated',
+      actorUserId: input.actorUserId,
+      bundleId: input.bundleId,
+      reason: input.reason,
+      now: new Date(),
+    })
+    return {
+      bundleId: input.bundleId,
+      organizationVersion: organization.organizationVersion,
+      name: input.name,
+      permissions,
+    }
+  })
+}
+
+export async function listCurrentOrganizationPermissionBundles(actorUserId: string) {
+  return db.transaction(async (transaction) => {
+    const organization = await lockCurrentOrganization(transaction)
+    await requireOwner(transaction, organization.organizationVersion, actorUserId)
+    const [bundles, entries, currentCatalog] = await Promise.all([
+      transaction
+        .select()
+        .from(organizationPermissionBundles)
+        .where(
+          and(
+            eq(organizationPermissionBundles.deploymentId, 1),
+            eq(organizationPermissionBundles.organizationVersion, organization.organizationVersion),
+          ),
+        )
+        .orderBy(
+          asc(organizationPermissionBundles.name),
+          asc(organizationPermissionBundles.bundleId),
+        ),
+      transaction
+        .select()
+        .from(organizationPermissionBundleEntries)
+        .where(
+          and(
+            eq(organizationPermissionBundleEntries.deploymentId, 1),
+            eq(
+              organizationPermissionBundleEntries.organizationVersion,
+              organization.organizationVersion,
+            ),
+          ),
+        )
+        .orderBy(
+          asc(organizationPermissionBundleEntries.bundleId),
+          asc(organizationPermissionBundleEntries.permissionType),
+          asc(organizationPermissionBundleEntries.publisherPackage),
+          asc(organizationPermissionBundleEntries.moduleId),
+          asc(organizationPermissionBundleEntries.permissionKey),
+        ),
+      listEnabledPermissionCatalog(transaction),
+    ])
+    const declarations = new Map(
+      currentCatalog.permissions.map((permission) => [
+        `${permission.publisherPackage}\u0000${permission.moduleId}\u0000${permission.key}`,
+        permission,
+      ]),
+    )
+    return {
+      bundles: bundles.map((bundle) => ({
+        bundleId: bundle.bundleId,
+        organizationVersion: bundle.organizationVersion,
+        name: bundle.name,
+        permissions: entries
+          .filter(({ bundleId }) => bundleId === bundle.bundleId)
+          .map((entry) => {
+            if (entry.permissionType === 'service')
+              return {
+                entryId: entry.entryId,
+                type: 'service' as const,
+                key: entry.permissionKey,
+                reviewAllowed: entry.reviewAllowed,
+                available: true,
+              }
+            const declaration = declarations.get(
+              `${entry.publisherPackage ?? ''}\u0000${entry.moduleId ?? ''}\u0000${entry.permissionKey}`,
+            )
+            if (declaration)
+              return {
+                entryId: entry.entryId,
+                type: 'module' as const,
+                publisherPackage: entry.publisherPackage,
+                moduleId: entry.moduleId,
+                key: entry.permissionKey,
+                reviewAllowed: entry.reviewAllowed,
+                available: true,
+                label: declaration.label,
+                purpose: declaration.purpose,
+                audiences: declaration.audiences,
+                sensitivity: declaration.sensitivity,
+                currentReviewAllowed: declaration.reviewAllowed,
+              }
+            return {
+              entryId: entry.entryId,
+              type: 'module' as const,
+              publisherPackage: entry.publisherPackage,
+              moduleId: entry.moduleId,
+              key: entry.permissionKey,
+              reviewAllowed: entry.reviewAllowed,
+              available: false,
+            }
+          }),
+      })),
     }
   })
 }
@@ -417,17 +604,74 @@ function requireGroupManagementAuthority(
     throw new OrganizationGroupMutationError('owner-authority-required')
 }
 
-function uniquePermissions(permissions: PermissionInput[]) {
-  const unique = new Map<string, PermissionInput & { reviewAllowed: boolean }>()
-  for (const permission of permissions) {
-    const identity = `${permission.type}:${permission.key}`
-    const existing = unique.get(identity)
-    unique.set(identity, {
-      ...permission,
-      reviewAllowed: Boolean(existing?.reviewAllowed || permission.reviewAllowed),
-    })
+async function resolvePermissions(
+  transaction: Transaction,
+  permissions: readonly PermissionSelection[],
+): Promise<readonly StoredPermission[]> {
+  try {
+    return await resolveCurrentPermissionSelections(transaction, permissions)
+  } catch (error) {
+    if (error instanceof OrganizationPermissionCatalogError)
+      throw new OrganizationGroupMutationError('permission-unavailable')
+    throw error
   }
-  return [...unique.values()]
+}
+
+async function loadRetainedUnavailablePermissions(
+  transaction: Transaction,
+  organizationVersion: number,
+  bundleId: string,
+  entryIds: readonly string[],
+) {
+  if (new Set(entryIds).size !== entryIds.length)
+    throw new OrganizationGroupMutationError('retained-permission-invalid')
+  if (entryIds.length === 0) return []
+
+  const [entries, currentCatalog] = await Promise.all([
+    transaction
+      .select()
+      .from(organizationPermissionBundleEntries)
+      .where(
+        and(
+          eq(organizationPermissionBundleEntries.bundleId, bundleId),
+          eq(organizationPermissionBundleEntries.deploymentId, 1),
+          eq(organizationPermissionBundleEntries.organizationVersion, organizationVersion),
+          inArray(organizationPermissionBundleEntries.entryId, entryIds),
+        ),
+      )
+      .for('update'),
+    listEnabledPermissionCatalog(transaction),
+  ])
+  const availablePermissions = new Set(
+    currentCatalog.permissions.map(
+      (permission) =>
+        `${permission.publisherPackage}\u0000${permission.moduleId}\u0000${permission.key}`,
+    ),
+  )
+  if (
+    entries.length !== entryIds.length ||
+    entries.some(
+      (entry) =>
+        entry.permissionType !== 'module' ||
+        availablePermissions.has(
+          `${entry.publisherPackage ?? ''}\u0000${entry.moduleId ?? ''}\u0000${entry.permissionKey}`,
+        ),
+    )
+  )
+    throw new OrganizationGroupMutationError('retained-permission-invalid')
+
+  return entries.map((entry) => ({
+    entryId: entry.entryId,
+    bundleId: entry.bundleId,
+    deploymentId: entry.deploymentId,
+    organizationVersion: entry.organizationVersion,
+    permissionType: entry.permissionType,
+    permissionKey: entry.permissionKey,
+    publisherPackage: entry.publisherPackage,
+    moduleId: entry.moduleId,
+    reviewAllowed: entry.reviewAllowed,
+    createdAt: entry.createdAt,
+  }))
 }
 
 function toGroup(group: typeof organizationGroups.$inferSelect, bundleIds: string[]) {

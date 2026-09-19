@@ -17,6 +17,8 @@ import { queryServer } from '../support/query-server'
 const mountedWrappers: { unmount: () => void }[] = []
 const grantRequests: unknown[] = []
 const revokeRequests: unknown[] = []
+let permissionReadCount = 0
+let sessionAuthenticated = true
 let context = ownerContext()
 let grantFails = false
 let revokeFails = false
@@ -27,10 +29,12 @@ afterAll(() => queryServer.close())
 beforeEach(() => {
   clearQueryCache()
   context = ownerContext()
+  sessionAuthenticated = true
   grantFails = false
   revokeFails = false
   grantRequests.length = 0
   revokeRequests.length = 0
+  permissionReadCount = 0
   installHandlers()
 })
 
@@ -48,6 +52,7 @@ describe('SettingsIntegrations', () => {
     expect(wrapper.text()).toContain('Authority supplied by')
     expect(wrapper.text()).toContain('Authority Pilot')
     expect(wrapper.text()).toContain('Director')
+    expect(wrapper.text()).toContain('Organization access')
     expect(wrapper.findAll('.integration-row')).toHaveLength(3)
 
     await wrapper.get('#role-user-id').setValue('  target-user  ')
@@ -71,6 +76,23 @@ describe('SettingsIntegrations', () => {
     expect(wrapper.find('.role-revoke-form').exists()).toBe(false)
     expect(wrapper.get('[aria-live="polite"]').text()).toBe('Organization role revoked.')
   })
+
+  it.each([
+    ['anonymous', false, ownerContext()],
+    ['non-owner', true, { ...ownerContext(), isOrganizationOwner: false }],
+    ['blocked owner', true, { ...ownerContext(), isBlocked: true }],
+    ['noncompliant owner', true, { ...ownerContext(), memberAccess: false }],
+  ])(
+    'does not render or request owner access for %s context',
+    async (_name, authenticated, nextContext) => {
+      sessionAuthenticated = authenticated
+      context = nextContext
+      const wrapper = await mountSettingsIntegrations()
+
+      expect(wrapper.text()).not.toContain('Organization access')
+      expect(permissionReadCount).toBe(0)
+    },
+  )
 
   it('selects the main character when an owner claim is available', async () => {
     context = {
@@ -141,8 +163,10 @@ async function mountSettingsIntegrations() {
     route: false,
   })
   mountedWrappers.push(wrapper)
-  await vi.waitFor(() => expect(wrapper.text()).toContain('Example Corporation'))
-  await vi.waitFor(() => expect(wrapper.text()).toContain('Authority Pilot'))
+  if (sessionAuthenticated) {
+    await vi.waitUntil(() => wrapper.text().includes('Example Corporation'))
+    await vi.waitUntil(() => wrapper.text().includes('Authority Pilot'))
+  }
   return wrapper
 }
 
@@ -156,13 +180,17 @@ function installHandlers() {
       }),
     ),
     http.get('http://localhost:8788/auth/session', () =>
-      HttpResponse.json({
-        authenticated: true,
-        account: {
-          userId: 'owner-user',
-          mainCharacter: { characterId: 1_404_328_063, name: 'Authority Pilot' },
-        },
-      }),
+      HttpResponse.json(
+        sessionAuthenticated
+          ? {
+              authenticated: true,
+              account: {
+                userId: 'owner-user',
+                mainCharacter: { characterId: 1_404_328_063, name: 'Authority Pilot' },
+              },
+            }
+          : { authenticated: false },
+      ),
     ),
     http.get('http://localhost:8788/api/me/cache-admission', () =>
       HttpResponse.json(cacheAdmissionForOrganization('owner-user', 1_404_328_063)),
@@ -174,6 +202,14 @@ function installHandlers() {
     http.get('http://localhost:8788/api/organization/roles', () =>
       HttpResponse.json({ grants: [roleGrant()] } satisfies OrganizationRoles),
     ),
+    http.get('http://localhost:8788/api/organization/permission-catalog', () => {
+      permissionReadCount += 1
+      return HttpResponse.json({ permissions: [], profiles: [] })
+    }),
+    http.get('http://localhost:8788/api/organization/permission-bundles', () => {
+      permissionReadCount += 1
+      return HttpResponse.json({ bundles: [] })
+    }),
     http.post('http://localhost:8788/api/organization/roles', async ({ request }) => {
       grantRequests.push(await request.json())
       if (grantFails) {

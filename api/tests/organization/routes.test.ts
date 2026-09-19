@@ -31,6 +31,11 @@ const mocks = vi.hoisted(() => {
       super(code)
     }
   }
+  class PermissionCatalogError extends Error {
+    constructor(readonly code: string) {
+      super(code)
+    }
+  }
   const organizationSession: {
     context: {
       organizationVersion: number
@@ -55,6 +60,7 @@ const mocks = vi.hoisted(() => {
     CharacterExceptionMutationError,
     GroupMutationError,
     MemberBlockMutationError,
+    PermissionCatalogError,
     RoleMutationError,
     RegistrationPolicyMutationError,
     aggregateOrganizationActivities: vi.fn(),
@@ -75,6 +81,7 @@ const mocks = vi.hoisted(() => {
     listCurrentOrganizationAuditHistory: vi.fn(),
     listCurrentOrganizationCharacterExceptionCandidates: vi.fn(),
     listCurrentOrganizationGroups: vi.fn(),
+    listCurrentOrganizationPermissionBundles: vi.fn(),
     listCurrentOrganizationCharacterExceptions: vi.fn(),
     listCurrentOrganizationMemberBlocks: vi.fn(),
     listCurrentOrganizationRoles: vi.fn(),
@@ -92,8 +99,11 @@ const mocks = vi.hoisted(() => {
     revokeOrganizationCharacterException: vi.fn(),
     revokeOrganizationGroupAssignment: vi.fn(),
     registerOrganizationCorporationSource: vi.fn(),
+    listEnabledPermissionCatalog: vi.fn(),
+    previewEnabledPermissionProfile: vi.fn(),
     unblockOrganizationMember: vi.fn(),
     updateOrganizationRegistrationPolicy: vi.fn(),
+    updateOrganizationPermissionBundle: vi.fn(),
   }
 })
 
@@ -120,8 +130,10 @@ vi.mock('../../src/organization/group-store.js', () => ({
   assignOrganizationGroup: mocks.assignOrganizationGroup,
   createOrganizationGroup: mocks.createOrganizationGroup,
   createOrganizationPermissionBundle: mocks.createOrganizationPermissionBundle,
+  listCurrentOrganizationPermissionBundles: mocks.listCurrentOrganizationPermissionBundles,
   listCurrentOrganizationGroups: mocks.listCurrentOrganizationGroups,
   revokeOrganizationGroupAssignment: mocks.revokeOrganizationGroupAssignment,
+  updateOrganizationPermissionBundle: mocks.updateOrganizationPermissionBundle,
 }))
 vi.mock('../../src/organization/group-mutation-error.js', () => ({
   OrganizationGroupMutationError: mocks.GroupMutationError,
@@ -164,6 +176,11 @@ vi.mock('../../src/organization/policy-store.js', () => ({
   OrganizationRegistrationPolicyMutationError: mocks.RegistrationPolicyMutationError,
   updateOrganizationRegistrationPolicy: mocks.updateOrganizationRegistrationPolicy,
 }))
+vi.mock('../../src/organization/permission-catalog-store.js', () => ({
+  OrganizationPermissionCatalogError: mocks.PermissionCatalogError,
+  listEnabledPermissionCatalog: mocks.listEnabledPermissionCatalog,
+  previewEnabledPermissionProfile: mocks.previewEnabledPermissionProfile,
+}))
 
 import { organizationRoutes } from '../../src/organization/routes.js'
 
@@ -171,9 +188,16 @@ const actorUserId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
 const targetUserId = '98a782d2-e042-47d7-9659-03b218121a1a'
 const grantId = '35acd527-9539-44ad-aacf-9f8e45232267'
 const bundleId = '345697a4-df0b-44e7-bf19-f10912c53a27'
+const retainedEntryId = 'e7d875d7-21be-4bf2-a92c-c5bc95b8e2bb'
 const groupId = '81974469-fdfe-4327-9f87-1df6e23badc4'
 const assignmentId = '7643fd73-6350-4307-b7cd-041b74c41ad6'
 const blockId = 'bc83840d-47c2-4c76-aed4-94d3e51407f7'
+const organizationActivityPermission = {
+  type: 'module' as const,
+  publisherPackage: '@eve-space/organization-activity-manifest',
+  moduleId: 'organization-activity',
+  key: 'organization-activity.view',
+}
 const grant = {
   grantId,
   organizationVersion: 1,
@@ -211,6 +235,8 @@ beforeEach(() => {
   mocks.hasCurrentOrganizationManagerAuthority.mockResolvedValue(true)
   mocks.hasCurrentOrganizationHrAuthority.mockResolvedValue(true)
   mocks.listCurrentOrganizationGroups.mockResolvedValue({ groups: [] })
+  mocks.listCurrentOrganizationPermissionBundles.mockResolvedValue({ bundles: [] })
+  mocks.listEnabledPermissionCatalog.mockResolvedValue({ permissions: [], profiles: [] })
   mocks.listCurrentOrganizationMemberBlocks.mockResolvedValue({ blocks: [] })
   mocks.getOrganizationAccessContext.mockResolvedValue({
     organization: {
@@ -266,7 +292,13 @@ beforeEach(() => {
     bundleId,
     organizationVersion: 1,
     name: 'Operations',
-    permissions: [{ type: 'module', key: 'organization-activity.manage' }],
+    permissions: [organizationActivityPermission],
+  })
+  mocks.updateOrganizationPermissionBundle.mockResolvedValue({
+    bundleId,
+    organizationVersion: 1,
+    name: 'Operations',
+    permissions: [],
   })
   mocks.createOrganizationGroup.mockResolvedValue({
     groupId,
@@ -867,16 +899,236 @@ describe('organization group routes', () => {
     expect(mocks.listCurrentOrganizationGroups).toHaveBeenCalledOnce()
   })
 
+  test('limits permission catalog and retained bundle reads to organization owners', async () => {
+    mocks.listEnabledPermissionCatalog.mockResolvedValueOnce({
+      permissions: [
+        {
+          ...organizationActivityPermission,
+          label: 'View organization activity',
+          purpose: 'View member-safe organization activity and participation.',
+          audiences: ['member'],
+          sensitivity: 'standard',
+          reviewAllowed: false,
+        },
+      ],
+      profiles: [],
+    })
+
+    const catalog = await get('/permission-catalog')
+    const bundles = await get('/permission-bundles')
+
+    expect(catalog.status).toBe(200)
+    expect(await catalog.json()).toMatchObject({
+      permissions: [organizationActivityPermission],
+      profiles: [],
+    })
+    expect(bundles.status).toBe(200)
+    expect(mocks.listCurrentOrganizationPermissionBundles).toHaveBeenCalledWith(actorUserId)
+
+    mocks.hasCurrentOrganizationOwnerAuthority.mockResolvedValue(false)
+    expect((await get('/permission-catalog')).status).toBe(403)
+    expect((await get('/permission-bundles')).status).toBe(403)
+  })
+
+  test('previews an exact profile without mutating a bundle', async () => {
+    mocks.previewEnabledPermissionProfile.mockResolvedValueOnce({
+      profile: {
+        publisherPackage: '@example/alpha-manifest',
+        moduleId: 'alpha',
+        id: 'reviewer',
+        label: 'Reviewer',
+        description: 'Reviewer permissions.',
+        audiences: ['hr'],
+        permissions: ['alpha.view'],
+      },
+      permissions: [],
+    })
+
+    const response = await request('/permission-profile-preview', {
+      publisherPackage: '@example/alpha-manifest',
+      moduleId: 'alpha',
+      profileId: 'reviewer',
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.previewEnabledPermissionProfile).toHaveBeenCalledWith({
+      publisherPackage: '@example/alpha-manifest',
+      moduleId: 'alpha',
+      profileId: 'reviewer',
+    })
+    expect(mocks.createOrganizationPermissionBundle).not.toHaveBeenCalled()
+    expect(mocks.updateOrganizationPermissionBundle).not.toHaveBeenCalled()
+  })
+
+  test('keeps adopted bundle keys explicit when a later profile preview changes', async () => {
+    const adoptedPermission = {
+      type: 'module' as const,
+      publisherPackage: '@example/alpha-manifest',
+      moduleId: 'alpha',
+      key: 'alpha.read',
+    }
+    mocks.previewEnabledPermissionProfile
+      .mockResolvedValueOnce({
+        profile: {
+          publisherPackage: '@example/alpha-manifest',
+          moduleId: 'alpha',
+          id: 'reviewer',
+          label: 'Reviewer',
+          description: 'Original reviewer permissions.',
+          audiences: ['hr'],
+          permissions: ['alpha.read'],
+        },
+        permissions: [],
+      })
+      .mockResolvedValueOnce({
+        profile: {
+          publisherPackage: '@example/alpha-manifest',
+          moduleId: 'alpha',
+          id: 'reviewer',
+          label: 'Reviewer',
+          description: 'Changed reviewer permissions.',
+          audiences: ['hr'],
+          permissions: ['alpha.manage'],
+        },
+        permissions: [],
+      })
+    mocks.createOrganizationPermissionBundle.mockResolvedValueOnce({
+      bundleId,
+      organizationVersion: 1,
+      name: 'Adopted reviewer',
+      permissions: [{ ...adoptedPermission, reviewAllowed: false }],
+    })
+    mocks.listCurrentOrganizationPermissionBundles.mockResolvedValueOnce({
+      bundles: [
+        {
+          bundleId,
+          organizationVersion: 1,
+          name: 'Adopted reviewer',
+          permissions: [{ ...adoptedPermission, reviewAllowed: false, available: true }],
+        },
+      ],
+    })
+
+    await request('/permission-profile-preview', {
+      publisherPackage: '@example/alpha-manifest',
+      moduleId: 'alpha',
+      profileId: 'reviewer',
+    })
+    const adopted = await request('/permission-bundles', {
+      name: 'Adopted reviewer',
+      reason: 'Adopt the reviewed exact keys.',
+      permissions: [adoptedPermission],
+    })
+    await request('/permission-profile-preview', {
+      publisherPackage: '@example/alpha-manifest',
+      moduleId: 'alpha',
+      profileId: 'reviewer',
+    })
+    const retained = await get('/permission-bundles')
+
+    expect(adopted.status).toBe(201)
+    expect(mocks.createOrganizationPermissionBundle).toHaveBeenCalledWith({
+      actorUserId,
+      name: 'Adopted reviewer',
+      reason: 'Adopt the reviewed exact keys.',
+      permissions: [adoptedPermission],
+    })
+    expect(await retained.json()).toMatchObject({
+      bundles: [{ permissions: [{ key: 'alpha.read' }] }],
+    })
+    expect(await mocks.previewEnabledPermissionProfile.mock.results[1]!.value).toMatchObject({
+      profile: { permissions: ['alpha.manage'] },
+    })
+  })
+
+  test('rejects caller-forged module review policy', async () => {
+    const response = await request('/permission-bundles', {
+      name: 'Operations',
+      reason: 'Create operations access.',
+      permissions: [{ ...organizationActivityPermission, reviewAllowed: true }],
+    })
+
+    expect(response.status).toBe(400)
+    expect(mocks.createOrganizationPermissionBundle).not.toHaveBeenCalled()
+  })
+
+  test('updates a bundle with an empty selection for explicit cleanup', async () => {
+    const response = await mutate('PUT', `/permission-bundles/${bundleId}`, {
+      name: 'Operations',
+      reason: 'Remove unavailable permissions.',
+      permissions: [],
+      retainedUnavailableEntryIds: [],
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.updateOrganizationPermissionBundle).toHaveBeenCalledWith({
+      actorUserId,
+      bundleId,
+      name: 'Operations',
+      reason: 'Remove unavailable permissions.',
+      permissions: [],
+      retainedUnavailableEntryIds: [],
+    })
+  })
+
+  test('rejects duplicate retained permission entry IDs before bundle mutation', async () => {
+    const response = await mutate('PUT', `/permission-bundles/${bundleId}`, {
+      name: 'Operations',
+      reason: 'Retain unavailable permissions.',
+      permissions: [],
+      retainedUnavailableEntryIds: [retainedEntryId, retainedEntryId],
+    })
+
+    expect(response.status).toBe(400)
+    expect(mocks.updateOrganizationPermissionBundle).not.toHaveBeenCalled()
+  })
+
+  test('maps invalid retained entries without disclosing their ownership', async () => {
+    mocks.updateOrganizationPermissionBundle.mockRejectedValueOnce(
+      new mocks.GroupMutationError('retained-permission-invalid'),
+    )
+
+    const response = await mutate('PUT', `/permission-bundles/${bundleId}`, {
+      name: 'Operations',
+      reason: 'Retain unavailable permissions.',
+      permissions: [],
+      retainedUnavailableEntryIds: [retainedEntryId],
+    })
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({
+      code: 'RETAINED_PERMISSION_INVALID',
+      message: 'A retained permission entry is invalid or no longer unavailable.',
+    })
+  })
+
+  test('maps unavailable current module selections without accepting a typo', async () => {
+    mocks.createOrganizationPermissionBundle.mockRejectedValueOnce(
+      new mocks.GroupMutationError('permission-unavailable'),
+    )
+
+    const response = await request('/permission-bundles', {
+      name: 'Operations',
+      reason: 'Create operations access.',
+      permissions: [{ ...organizationActivityPermission, key: 'organization-activity.typo' }],
+    })
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({ code: 'MODULE_PERMISSION_UNAVAILABLE' })
+  })
+
   test('creates permission bundles, groups, and expiring manual assignments', async () => {
     const bundle = await request('/permission-bundles', {
       name: 'Operations',
-      permissions: [{ type: 'module', key: 'organization-activity.manage' }],
+      reason: 'Create operations access.',
+      permissions: [organizationActivityPermission],
     })
     expect(bundle.status).toBe(201)
     expect(mocks.createOrganizationPermissionBundle).toHaveBeenCalledWith({
       actorUserId,
       name: 'Operations',
-      permissions: [{ type: 'module', key: 'organization-activity.manage' }],
+      reason: 'Create operations access.',
+      permissions: [organizationActivityPermission],
     })
 
     const group = await request('/groups', {
@@ -918,6 +1170,7 @@ describe('organization group routes', () => {
     mocks.hasCurrentOrganizationOwnerAuthority.mockResolvedValueOnce(false)
     const unauthorized = await request('/permission-bundles', {
       name: 'Operations',
+      reason: 'Create operations access.',
       permissions: [{ type: 'service', key: 'discord.access' }],
     })
     expect(unauthorized.status).toBe(403)
@@ -965,7 +1218,8 @@ describe('organization group routes', () => {
     async (key) => {
       const response = await request('/permission-bundles', {
         name: 'Operations',
-        permissions: [{ type: 'module', key }],
+        reason: 'Create operations access.',
+        permissions: [{ ...organizationActivityPermission, key }],
       })
 
       expect(response.status).toBe(201)
@@ -977,7 +1231,8 @@ describe('organization group routes', () => {
     async (key) => {
       const response = await request('/permission-bundles', {
         name: 'Operations',
-        permissions: [{ type: 'module', key }],
+        reason: 'Create operations access.',
+        permissions: [{ ...organizationActivityPermission, key }],
       })
 
       expect(response.status).toBe(400)
@@ -1001,7 +1256,8 @@ describe('organization group routes', () => {
       path: '/permission-bundles',
       body: {
         name: 'Operations',
-        permissions: [{ type: 'module', key: 'organization-activity.manage' }],
+        reason: 'Create operations access.',
+        permissions: [organizationActivityPermission],
       },
       status: 403,
       responseCode: 'ORGANIZATION_OWNER_REQUIRED',
@@ -1013,7 +1269,8 @@ describe('organization group routes', () => {
       path: '/permission-bundles',
       body: {
         name: 'Operations',
-        permissions: [{ type: 'module', key: 'organization-activity.manage' }],
+        reason: 'Create operations access.',
+        permissions: [organizationActivityPermission],
       },
       status: 409,
       responseCode: 'PERMISSION_BUNDLE_EXISTS',
@@ -1242,6 +1499,20 @@ describe('organization corporation roster routes', () => {
       corporationId: 98_000_001,
       characterId: 1_404_328_063,
     })
+  })
+
+  test('reports replacement of an existing corporation data source', async () => {
+    mocks.registerOrganizationCorporationSource.mockResolvedValueOnce({
+      corporationId: 98_000_001,
+      characterId: 1_404_328_063,
+      replaced: true,
+    })
+
+    const response = await mutate('PUT', '/corporations/98000001/source', {
+      characterId: 1_404_328_063,
+    })
+
+    expect(response.status).toBe(200)
   })
 
   test('reports stale source affiliation as a transient conflict', async () => {

@@ -6,6 +6,7 @@ const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const {
+  authenticated,
   authorityContext,
   deploymentConfigured,
   errorMessage,
@@ -26,6 +27,13 @@ const grantReason = ref('')
 const revokeGrantId = ref<string | null>(null)
 const revokeReason = ref('')
 const actionMessage = ref('')
+const organizationAccessAvailable = computed(
+  () =>
+    authenticated.value &&
+    authorityContext.value?.isOrganizationOwner === true &&
+    authorityContext.value.memberAccess &&
+    !authorityContext.value.isBlocked,
+)
 
 watch(invalidationRevision, resetRoleAdministrationState, { flush: 'sync' })
 
@@ -348,10 +356,17 @@ function roleLabel(role: DelegatedOrganizationRole) {
       </div>
     </section>
 
+    <SettingsOrganizationAccess
+      v-if="organizationAccessAvailable && authorityContext"
+      :authenticated="authenticated"
+      :context="authorityContext"
+      :invalidation-revision="invalidationRevision"
+    />
+
     <section class="settings-subsection" aria-labelledby="settings-integrations-heading">
       <header class="settings-subsection-heading">
         <div>
-          <p class="ui-eyebrow">03 / SETTINGS</p>
+          <p class="ui-eyebrow">04 / SETTINGS</p>
           <h2 id="settings-integrations-heading">Integrations</h2>
         </div>
         <p>Connected services and their authorization boundaries.</p>

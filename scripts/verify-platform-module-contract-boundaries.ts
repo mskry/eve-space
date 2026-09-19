@@ -12,17 +12,20 @@ const publicModules = new Set([
   'installed',
   'manifest',
   'nuxt',
+  'permissions',
   'persistence',
+  'publisher',
   'resources',
   'server',
 ])
 const internalModules = new Set([...publicModules, 'validation'])
 const allowedInternalImports: Readonly<Record<string, ReadonlySet<string>>> = {
-  activity: new Set(['persistence', 'server']),
+  activity: new Set(['installed', 'persistence', 'server']),
   compiler: new Set([
     'activity',
     'manifest',
     'nuxt',
+    'permissions',
     'persistence',
     'resources',
     'server',
@@ -30,13 +33,23 @@ const allowedInternalImports: Readonly<Record<string, ReadonlySet<string>>> = {
   ]),
   esi: new Set(),
   identifiers: new Set(),
-  installed: new Set(['server']),
-  manifest: new Set(['activity', 'nuxt', 'persistence', 'resources', 'server']),
+  installed: new Set(['nuxt', 'permissions', 'server']),
+  manifest: new Set(['activity', 'nuxt', 'permissions', 'persistence', 'resources', 'server']),
   nuxt: new Set(['server']),
+  permissions: new Set(['server']),
   persistence: new Set(),
+  publisher: new Set(['compiler', 'esi', 'identifiers', 'manifest', 'nuxt']),
   resources: new Set(['persistence', 'server']),
   server: new Set(),
-  validation: new Set(['identifiers', 'manifest', 'nuxt', 'persistence', 'resources', 'server']),
+  validation: new Set([
+    'identifiers',
+    'manifest',
+    'nuxt',
+    'permissions',
+    'persistence',
+    'resources',
+    'server',
+  ]),
 }
 const sourceExtensions = new Set([
   '.cjs',
@@ -88,6 +101,7 @@ const apiGeneratedRegistryModules: Readonly<Record<string, ReadonlySet<string>>>
   'installed-module-migrations': new Set(['installed']),
   'installed-module-runtime': new Set(['installed', 'nuxt']),
   'installed-module-worker': new Set(['resources']),
+  'installed-reviewer-contributions': new Set(['installed']),
 }
 
 export function platformModuleContractBoundaryViolations() {
@@ -184,17 +198,44 @@ export function platformModuleContractImportViolations(relativePath: string, spe
 
 function contractCallerRole(relativePath: string) {
   const normalizedPath = relativePath.replaceAll('\\', '/')
+  return (
+    featureContractCallerRole(normalizedPath) ??
+    platformPackageContractCallerRole(normalizedPath) ??
+    generatedRegistryContractCallerRole(normalizedPath) ??
+    hostContractCallerRole(normalizedPath) ??
+    scriptContractCallerRole(normalizedPath) ??
+    testContractCallerRole(normalizedPath)
+  )
+}
+
+function featureContractCallerRole(normalizedPath: string) {
   if (/(?:^|\/)features\/[^/]+\/module\.config\.[cm]?[jt]sx?$/.test(normalizedPath))
     return { name: 'feature descriptors', allowed: new Set(['manifest']) }
+  if (/(?:^|\/)features\/[^/]+\/manifest\//.test(normalizedPath))
+    return { name: 'feature manifest packages', allowed: new Set(['manifest', 'publisher']) }
   if (/(?:^|\/)features\/[^/]+\/server\//.test(normalizedPath))
     return { name: 'feature server', allowed: featureServerModules }
   if (/(?:^|\/)features\/[^/]+\/nuxt\//.test(normalizedPath))
     return { name: 'feature Nuxt', allowed: new Set(['nuxt']) }
+  return undefined
+}
+
+function platformPackageContractCallerRole(normalizedPath: string) {
   if (normalizedPath.startsWith('packages/platform-module-nuxt/'))
     return { name: 'platform Nuxt', allowed: platformNuxtModules }
   if (normalizedPath.startsWith('packages/platform-module-server/'))
     return { name: 'platform server', allowed: featureServerModules }
+  if (normalizedPath.startsWith('packages/platform-module-conformance/'))
+    return { name: 'platform module conformance', allowed: publicModules }
+  if (normalizedPath.startsWith('packages/platform-module-persistence-policy/'))
+    return {
+      name: 'platform module persistence policy',
+      allowed: new Set(['identifiers', 'persistence']),
+    }
+  return undefined
+}
 
+function generatedRegistryContractCallerRole(normalizedPath: string) {
   const apiGeneratedPrefix = 'api/src/generated/platform/'
   if (normalizedPath.startsWith(apiGeneratedPrefix)) {
     const filename = normalizedPath.slice(apiGeneratedPrefix.length)
@@ -206,6 +247,10 @@ function contractCallerRole(relativePath: string) {
   }
   if (normalizedPath.startsWith('generated/platform/'))
     return { name: 'generated Nuxt registry', allowed: new Set(['nuxt']) }
+  return undefined
+}
+
+function hostContractCallerRole(normalizedPath: string) {
   if (normalizedPath.startsWith('api/')) return { name: 'API host', allowed: hostApiModules }
   if (
     normalizedPath.startsWith('app/') ||
@@ -213,6 +258,10 @@ function contractCallerRole(relativePath: string) {
     /^nuxt\.config\.[cm]?[jt]s$/.test(normalizedPath)
   )
     return { name: 'Nuxt host', allowed: hostNuxtModules }
+  return undefined
+}
+
+function scriptContractCallerRole(normalizedPath: string) {
   if (
     normalizedPath.startsWith('scripts/module-registry/') ||
     normalizedPath === 'scripts/generate-module-registries.ts'
@@ -220,6 +269,10 @@ function contractCallerRole(relativePath: string) {
     return { name: 'registry composition scripts', allowed: publicModules }
   if (normalizedPath.startsWith('scripts/'))
     return { name: 'repository scripts', allowed: nonCompositionModules }
+  return undefined
+}
+
+function testContractCallerRole(normalizedPath: string) {
   if (
     normalizedPath.startsWith('packages/platform-module-contract/test/') ||
     normalizedPath.startsWith('tests/fixtures/platform-module-registry-types/') ||

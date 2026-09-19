@@ -32,7 +32,9 @@ export async function runResourcePlanner(
 ) {
   const { producer, signal } = context
   signal?.throwIfAborted()
-  const resources = options.resources ?? platformResources
+  const resources = (options.resources ?? platformResources).filter(
+    ({ scheduled }) => scheduled !== false,
+  )
   if (resources.length === 0) return { selected: 0, planned: 0, reason: 'idle' as const }
 
   const highWaterMark = options.highWaterMark ?? env.QUEUE_HIGH_WATER_MARK

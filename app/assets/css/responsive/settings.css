@@ -54,4 +54,33 @@
   .role-grant-row {
     grid-template-columns: 1fr;
   }
+
+  .organization-access__panel-heading,
+  .organization-access__retained article,
+  .organization-access__bundle,
+  .organization-access__bundle li {
+    grid-template-columns: 1fr;
+  }
+
+  .organization-access__panel-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .organization-access__module,
+  .organization-access__bundle {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .organization-access__permission dl div,
+  .organization-profile-preview dl div,
+  .organization-access__unavailable dl div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .organization-access__unavailable > div:last-child {
+    justify-content: flex-start;
+  }
 }

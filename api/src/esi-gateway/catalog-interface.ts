@@ -1,4 +1,7 @@
-import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract/esi'
+import type {
+  PlatformCoreEsiOperationId,
+  PlatformEsiOperationContract,
+} from '@eve-space/platform-module-contract/esi'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import { operationRegistry } from '@evespace/esi-client/operations'
 import {
@@ -14,7 +17,7 @@ import {
 } from './internal/operation-metadata.js'
 
 export type EsiOperation = keyof typeof esiOperationCatalog
-export { coreEsiOperationIds } from './internal/operation-metadata.js'
+export { coreEsiOperationIds } from './catalog-authority.js'
 
 export type EsiOperationAuthorization =
   | { readonly kind: 'public' }
@@ -91,7 +94,9 @@ const corePlatformEsiOperationDefinitions = {
     descriptor: operationRegistry.GetCharactersCharacterIdWalletTransactions!,
     contract: esiOperationCatalog['wallet-transactions'],
   },
-} as const satisfies Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>
+} as const satisfies Readonly<
+  Record<PlatformCoreEsiOperationId, PlatformExecutableEsiOperationDefinition>
+>
 
 const platformEsiOperationDefinitions = {
   ...corePlatformEsiOperationDefinitions,

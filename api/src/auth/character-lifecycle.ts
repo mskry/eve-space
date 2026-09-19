@@ -7,6 +7,7 @@ import {
   lockCurrentOrganizationVersionForCompliance,
   recomputeOrganizationAccountCompliance,
 } from '../organization/compliance.js'
+import { enqueueInstalledResourceLifecyclePurges } from '../platform/resource-purge.js'
 import { normalizeScopeSet } from '../scopes.js'
 import { findCharacterDetachmentBlocker } from '../organization/character-detachment-guards.js'
 import type { ReviewerUseDisclosure } from '../reviewer-use-disclosure.js'
@@ -376,6 +377,8 @@ export async function deleteCharacter(
     if (target.isMain) return 'main-character' as const
     const blocker = await findCharacterDetachmentBlocker(transaction, characterId)
     if (blocker) return blocker
+
+    await enqueueInstalledResourceLifecyclePurges(transaction, subjectLifecycleId)
 
     const [deleted] = await transaction
       .delete(characters)

@@ -1,0 +1,12 @@
+{
+  "name": "@example/fixture-manifest",
+  "version": "1.2.3",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./manifest": "./manifest.json"
+  },
+  "files": [
+    "manifest.json"
+  ]
+}

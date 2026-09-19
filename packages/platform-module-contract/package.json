@@ -1,12 +1,14 @@
 {
   "name": "@eve-space/platform-module-contract",
   "version": "0.1.0",
-  "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "sideEffects": false,
   "engines": {
     "node": ">=24.20.0"
+  },
+  "bin": {
+    "eve-space-module-manifest": "./bin/emit-manifest.mjs"
   },
   "exports": {
     "./activity": {
@@ -41,6 +43,14 @@
       "types": "./dist/persistence.d.ts",
       "import": "./dist/persistence.js"
     },
+    "./permissions": {
+      "types": "./dist/permissions.d.ts",
+      "import": "./dist/permissions.js"
+    },
+    "./publisher": {
+      "types": "./dist/publisher.d.ts",
+      "import": "./dist/publisher.js"
+    },
     "./resources": {
       "types": "./dist/resources.d.ts",
       "import": "./dist/resources.js"
@@ -51,8 +61,12 @@
     }
   },
   "files": [
+    "bin",
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit"

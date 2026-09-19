@@ -1,5 +1,5 @@
 import { and, count, eq, isNull } from 'drizzle-orm'
-import { db } from '../db/client.js'
+import { db, type DatabaseTransaction } from '../db/client.js'
 import {
   characterTransferApprovals,
   characterTransferAudit,
@@ -18,6 +18,10 @@ import {
   findCharacterDetachmentBlocker,
   type CharacterDetachmentBlocker,
 } from '../organization/character-detachment-guards.js'
+import {
+  enqueueInstalledResourceAccountPurges,
+  enqueueInstalledResourceLifecyclePurges,
+} from '../platform/resource-purge.js'
 import { normalizeScopeSet } from '../scopes.js'
 import { lockCharacter, setAuthTransactionLockTimeout } from './character-lock.js'
 import { insertCharacterToken } from './character-token-store.js'
@@ -178,6 +182,7 @@ export async function transferCharacter(input: {
       },
       occurredAt: now,
     })
+    await enqueueInstalledResourceLifecyclePurges(transaction, input.sourceSubjectLifecycleId)
     await transaction.delete(characters).where(eq(characters.characterId, input.characterId))
     await transaction.insert(characters).values({
       characterId: input.characterId,
@@ -242,10 +247,7 @@ export async function transferCharacter(input: {
         transaction,
       )
     }
-    if (sourceRoster.value === 1) {
-      await deleteUserSessions(transaction, input.sourceUserId)
-      await deleteEmptyTransferSourceUser(transaction, input.sourceUserId)
-    }
+    await cleanupEmptyTransferSourceAccount(transaction, input.sourceUserId, sourceRoster.value)
 
     const [consumed] = await transaction
       .update(characterTransferApprovals)
@@ -292,4 +294,17 @@ function transferIdentityMatches(
     identity.sourceUserId === input.sourceUserId &&
     identity.destinationUserId === input.destinationUserId
   )
+}
+
+async function cleanupEmptyTransferSourceAccount(
+  transaction: DatabaseTransaction,
+  sourceUserId: string,
+  sourceCharacterCount: number,
+) {
+  if (sourceCharacterCount !== 1) return
+
+  await deleteUserSessions(transaction, sourceUserId)
+  if (!(await deleteEmptyTransferSourceUser(transaction, sourceUserId))) return
+
+  await enqueueInstalledResourceAccountPurges(transaction, sourceUserId)
 }

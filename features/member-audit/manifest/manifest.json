@@ -1,0 +1,650 @@
+{
+  "id": "member-audit",
+  "release": {
+    "publisherPackage": "@eve-space/member-audit-manifest",
+    "version": "0.1.0",
+    "hostContractRange": "^1.0.0"
+  },
+  "icon": "corporation",
+  "defaultEnabled": false,
+  "permissions": [
+    {
+      "key": "member-audit.assets.read",
+      "label": "View member assets",
+      "purpose": "View sensitive asset evidence for managed member characters.",
+      "audiences": ["director", "hr"],
+      "sensitivity": "sensitive",
+      "reviewAllowed": false
+    },
+    {
+      "key": "member-audit.groups.manage",
+      "label": "Manage ordinary groups",
+      "purpose": "Assign and revoke ordinary groups for managed members.",
+      "audiences": ["director", "hr"],
+      "sensitivity": "sensitive",
+      "reviewAllowed": false
+    },
+    {
+      "key": "member-audit.mail.read",
+      "label": "View member mail",
+      "purpose": "View sensitive mail evidence for managed member characters.",
+      "audiences": ["director", "hr"],
+      "sensitivity": "sensitive",
+      "reviewAllowed": false
+    },
+    {
+      "key": "member-audit.members.block",
+      "label": "Manage member blocks",
+      "purpose": "Block and unblock managed members from organization access.",
+      "audiences": ["director", "hr"],
+      "sensitivity": "sensitive",
+      "reviewAllowed": false
+    },
+    {
+      "key": "member-audit.search",
+      "label": "Search managed members",
+      "purpose": "Find managed organization accounts for review.",
+      "audiences": ["director", "hr"],
+      "sensitivity": "standard",
+      "reviewAllowed": false
+    },
+    {
+      "key": "member-audit.skills.read",
+      "label": "View member skills",
+      "purpose": "View sensitive trained-skill evidence for managed member characters.",
+      "audiences": ["director", "hr"],
+      "sensitivity": "sensitive",
+      "reviewAllowed": false
+    },
+    {
+      "key": "member-audit.summary.read",
+      "label": "View member summaries",
+      "purpose": "View a managed member summary and evidence availability.",
+      "audiences": ["director", "hr"],
+      "sensitivity": "standard",
+      "reviewAllowed": false
+    },
+    {
+      "key": "member-audit.wallet.read",
+      "label": "View member wallet",
+      "purpose": "View sensitive wallet evidence for managed member characters.",
+      "audiences": ["director", "hr"],
+      "sensitivity": "sensitive",
+      "reviewAllowed": false
+    }
+  ],
+  "permissionProfiles": [
+    {
+      "id": "access-management",
+      "label": "Access management",
+      "description": "Suggested access to review members and manage ordinary groups and blocks.",
+      "audiences": ["director", "hr"],
+      "permissions": [
+        "member-audit.groups.manage",
+        "member-audit.members.block",
+        "member-audit.search",
+        "member-audit.summary.read"
+      ]
+    },
+    {
+      "id": "evidence-review",
+      "label": "Evidence review",
+      "description": "Suggested access to review all sensitive Member Audit evidence sections.",
+      "audiences": ["director", "hr"],
+      "permissions": [
+        "member-audit.assets.read",
+        "member-audit.mail.read",
+        "member-audit.search",
+        "member-audit.skills.read",
+        "member-audit.summary.read",
+        "member-audit.wallet.read"
+      ]
+    },
+    {
+      "id": "member-review",
+      "label": "Member review",
+      "description": "Suggested access to find managed members and review their bounded summary.",
+      "audiences": ["director", "hr"],
+      "permissions": ["member-audit.search", "member-audit.summary.read"]
+    }
+  ],
+  "reviewerContributions": [
+    {
+      "id": "overview",
+      "routeId": "member-summary",
+      "directoryPermission": "member-audit.search",
+      "audience": "hr",
+      "requiredPermission": "member-audit.summary.read",
+      "target": "managed-organization-account",
+      "panelExport": "./reviewer/overview",
+      "label": "Member overview",
+      "description": "Review identity, compliance, access, and evidence availability.",
+      "icon": "overview",
+      "order": 100
+    },
+    {
+      "id": "trained-skills",
+      "routeId": "skills-detail",
+      "directoryPermission": "member-audit.search",
+      "audience": "hr",
+      "requiredPermission": "member-audit.skills.read",
+      "target": "managed-organization-character",
+      "panelExport": "./reviewer/trained-skills",
+      "label": "Trained skills",
+      "description": "Review current trained-skill evidence for one disclosed character.",
+      "icon": "character",
+      "order": 110
+    },
+    {
+      "id": "assets",
+      "routeId": "assets-detail",
+      "directoryPermission": "member-audit.search",
+      "audience": "hr",
+      "requiredPermission": "member-audit.assets.read",
+      "target": "managed-organization-character",
+      "panelExport": "./reviewer/assets",
+      "label": "Assets",
+      "description": "Review current asset evidence for one disclosed character.",
+      "icon": "ship",
+      "order": 120
+    },
+    {
+      "id": "wallet",
+      "routeId": "wallet-detail",
+      "directoryPermission": "member-audit.search",
+      "audience": "hr",
+      "requiredPermission": "member-audit.wallet.read",
+      "target": "managed-organization-character",
+      "panelExport": "./reviewer/wallet",
+      "label": "Wallet",
+      "description": "Review wallet balance, journal, and transaction evidence.",
+      "icon": "wallet",
+      "order": 130
+    },
+    {
+      "id": "mail",
+      "routeId": "mail-detail",
+      "directoryPermission": "member-audit.search",
+      "audience": "hr",
+      "requiredPermission": "member-audit.mail.read",
+      "target": "managed-organization-character",
+      "panelExport": "./reviewer/mail",
+      "label": "Mail",
+      "description": "Review retained sanitized mail evidence for one disclosed character.",
+      "icon": "mail",
+      "order": 140
+    },
+    {
+      "id": "ordinary-groups",
+      "routeId": "group-actions",
+      "directoryPermission": "member-audit.search",
+      "audience": "hr",
+      "requiredPermission": "member-audit.groups.manage",
+      "target": "managed-organization-account",
+      "panelExport": "./reviewer/ordinary-groups",
+      "label": "Ordinary groups",
+      "description": "Assign or revoke non-restricted ordinary group access.",
+      "icon": "settings",
+      "order": 150
+    },
+    {
+      "id": "member-block",
+      "routeId": "block-actions",
+      "directoryPermission": "member-audit.search",
+      "audience": "hr",
+      "requiredPermission": "member-audit.members.block",
+      "target": "managed-organization-account",
+      "panelExport": "./reviewer/member-block",
+      "label": "Member block",
+      "description": "Block or unblock organization access with an audited reason.",
+      "icon": "auth",
+      "order": 160
+    }
+  ],
+  "sections": [
+    {
+      "id": "overview",
+      "kind": "workspace",
+      "defaultEnabled": false
+    },
+    {
+      "id": "skills",
+      "kind": "sensitive-evidence",
+      "defaultEnabled": false,
+      "disclosureRevision": 1
+    },
+    {
+      "id": "assets",
+      "kind": "sensitive-evidence",
+      "defaultEnabled": false,
+      "disclosureRevision": 1
+    },
+    {
+      "id": "wallet",
+      "kind": "sensitive-evidence",
+      "defaultEnabled": false,
+      "disclosureRevision": 1
+    },
+    {
+      "id": "mail",
+      "kind": "sensitive-evidence",
+      "defaultEnabled": false,
+      "disclosureRevision": 1
+    },
+    {
+      "id": "access-management",
+      "kind": "access-management",
+      "defaultEnabled": false
+    }
+  ],
+  "server": {
+    "package": "@eve-space/member-audit-server",
+    "routes": [
+      {
+        "id": "member-summary",
+        "namespace": "/member-audit/accounts/:userId/summary",
+        "exportName": "memberSummaryRoutes",
+        "authorization": "authenticated-session",
+        "audience": "hr",
+        "requiredPermission": "member-audit.summary.read",
+        "persistenceOperations": [],
+        "sectionId": "overview",
+        "target": "managed-organization-account",
+        "exposure": "standard"
+      },
+      {
+        "id": "skills-detail",
+        "namespace": "/member-audit/accounts/:userId/characters/:characterId/skills",
+        "exportName": "memberSkillsRoutes",
+        "authorization": "authenticated-session",
+        "audience": "hr",
+        "requiredPermission": "member-audit.skills.read",
+        "persistenceOperations": [
+          {
+            "operationId": "read-trained-skills-evidence"
+          }
+        ],
+        "sectionId": "skills",
+        "target": "managed-organization-character",
+        "exposure": "sensitive-evidence",
+        "reviewerEvidenceResourceId": "trained-skills"
+      },
+      {
+        "id": "assets-detail",
+        "namespace": "/member-audit/accounts/:userId/characters/:characterId/assets",
+        "exportName": "memberAssetsRoutes",
+        "authorization": "authenticated-session",
+        "audience": "hr",
+        "requiredPermission": "member-audit.assets.read",
+        "persistenceOperations": [
+          {
+            "operationId": "read-asset-evidence"
+          }
+        ],
+        "sectionId": "assets",
+        "target": "managed-organization-character",
+        "exposure": "sensitive-evidence",
+        "reviewerEvidenceResourceId": "assets"
+      },
+      {
+        "id": "wallet-detail",
+        "namespace": "/member-audit/accounts/:userId/characters/:characterId/wallet",
+        "exportName": "memberWalletRoutes",
+        "authorization": "authenticated-session",
+        "audience": "hr",
+        "requiredPermission": "member-audit.wallet.read",
+        "persistenceOperations": [
+          {
+            "operationId": "read-wallet-evidence"
+          }
+        ],
+        "sectionId": "wallet",
+        "target": "managed-organization-character",
+        "exposure": "sensitive-evidence",
+        "reviewerEvidenceResourceId": "wallet-balance"
+      },
+      {
+        "id": "mail-detail",
+        "namespace": "/member-audit/accounts/:userId/characters/:characterId/mail",
+        "exportName": "memberMailRoutes",
+        "authorization": "authenticated-session",
+        "audience": "hr",
+        "requiredPermission": "member-audit.mail.read",
+        "persistenceOperations": [
+          {
+            "operationId": "read-mail-evidence"
+          }
+        ],
+        "sectionId": "mail",
+        "target": "managed-organization-character",
+        "exposure": "sensitive-evidence",
+        "reviewerEvidenceResourceId": "mail-headers"
+      },
+      {
+        "id": "group-actions",
+        "namespace": "/member-audit/accounts/:userId/groups",
+        "exportName": "memberGroupRoutes",
+        "authorization": "authenticated-session",
+        "audience": "hr",
+        "requiredPermission": "member-audit.groups.manage",
+        "persistenceOperations": [],
+        "sectionId": "access-management",
+        "target": "managed-organization-account",
+        "exposure": "standard",
+        "organizationCommands": ["assign-ordinary-group", "revoke-ordinary-group"]
+      },
+      {
+        "id": "block-actions",
+        "namespace": "/member-audit/accounts/:userId/block",
+        "exportName": "memberBlockRoutes",
+        "authorization": "authenticated-session",
+        "audience": "hr",
+        "requiredPermission": "member-audit.members.block",
+        "persistenceOperations": [],
+        "sectionId": "access-management",
+        "target": "managed-organization-account",
+        "exposure": "standard",
+        "organizationCommands": ["block-member", "unblock-member"]
+      }
+    ],
+    "migrations": [
+      {
+        "name": "member-audit-001-baseline.sql"
+      }
+    ],
+    "persistenceOperations": [
+      {
+        "id": "read-trained-skills-evidence",
+        "method": "readTrainedSkillsEvidence",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readTrainedSkillsEvidenceOperation",
+        "migration": "member-audit-001-baseline.sql"
+      },
+      {
+        "id": "read-asset-evidence",
+        "method": "readAssetEvidence",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readAssetEvidenceOperation",
+        "migration": "member-audit-001-baseline.sql"
+      },
+      {
+        "id": "read-wallet-evidence",
+        "method": "readWalletEvidence",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readWalletEvidenceOperation",
+        "migration": "member-audit-001-baseline.sql"
+      },
+      {
+        "id": "read-mail-evidence",
+        "method": "readMailEvidence",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readMailEvidenceOperation",
+        "migration": "member-audit-001-baseline.sql"
+      },
+      {
+        "id": "materialize-current-snapshot",
+        "method": "materializeCurrentSnapshot",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "materializeCurrentSnapshotOperation",
+        "migration": "member-audit-001-baseline.sql"
+      },
+      {
+        "id": "read-active-evidence-continuation",
+        "method": "readActiveEvidenceContinuation",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readActiveEvidenceContinuationOperation",
+        "migration": "member-audit-001-baseline.sql"
+      },
+      {
+        "id": "read-evidence-continuation",
+        "method": "readEvidenceContinuation",
+        "revision": 1,
+        "mode": "read",
+        "exportName": "readEvidenceContinuationOperation",
+        "migration": "member-audit-001-baseline.sql"
+      },
+      {
+        "id": "write-evidence-continuation",
+        "method": "writeEvidenceContinuation",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "writeEvidenceContinuationOperation",
+        "migration": "member-audit-001-baseline.sql"
+      },
+      {
+        "id": "promote-evidence-observation",
+        "method": "promoteEvidenceObservation",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "promoteEvidenceObservationOperation",
+        "migration": "member-audit-001-baseline.sql"
+      },
+      {
+        "id": "purge-evidence",
+        "method": "purgeEvidence",
+        "revision": 1,
+        "mode": "write",
+        "exportName": "purgeEvidenceOperation",
+        "migration": "member-audit-001-baseline.sql"
+      }
+    ],
+    "resources": [
+      {
+        "id": "trained-skills",
+        "operationId": "skills",
+        "materializationIntervalSeconds": 3600,
+        "exportName": "trainedSkillsResource",
+        "coreDataProducts": ["published-skill-catalogue"],
+        "dependentOperationIds": [],
+        "persistence": {
+          "projection": [],
+          "materialization": [
+            {
+              "operationId": "materialize-current-snapshot"
+            },
+            {
+              "operationId": "purge-evidence"
+            }
+          ]
+        },
+        "subjectKind": "character",
+        "eligibility": {
+          "kind": "current-managed-member-character"
+        },
+        "sectionId": "skills"
+      },
+      {
+        "id": "assets",
+        "operationId": "character-assets-page",
+        "materializationIntervalSeconds": 3600,
+        "exportName": "assetsResource",
+        "coreDataProducts": ["published-type-details", "static-location-labels"],
+        "dependentOperationIds": ["character-asset-names", "universe-resolve-names"],
+        "persistence": {
+          "projection": [
+            {
+              "operationId": "read-active-evidence-continuation"
+            }
+          ],
+          "materialization": [
+            {
+              "operationId": "write-evidence-continuation"
+            },
+            {
+              "operationId": "promote-evidence-observation"
+            },
+            {
+              "operationId": "purge-evidence"
+            }
+          ]
+        },
+        "subjectKind": "character",
+        "eligibility": {
+          "kind": "current-managed-member-character"
+        },
+        "sectionId": "assets"
+      },
+      {
+        "id": "wallet-balance",
+        "operationId": "wallet-balance",
+        "materializationIntervalSeconds": 900,
+        "exportName": "walletBalanceResource",
+        "coreDataProducts": [],
+        "dependentOperationIds": [],
+        "persistence": {
+          "projection": [],
+          "materialization": [
+            {
+              "operationId": "materialize-current-snapshot"
+            },
+            {
+              "operationId": "purge-evidence"
+            }
+          ]
+        },
+        "subjectKind": "character",
+        "eligibility": {
+          "kind": "current-managed-member-character"
+        },
+        "sectionId": "wallet"
+      },
+      {
+        "id": "wallet-journal",
+        "operationId": "wallet-journal",
+        "materializationIntervalSeconds": 900,
+        "exportName": "walletJournalResource",
+        "coreDataProducts": [],
+        "dependentOperationIds": [],
+        "persistence": {
+          "projection": [
+            {
+              "operationId": "read-active-evidence-continuation"
+            }
+          ],
+          "materialization": [
+            {
+              "operationId": "write-evidence-continuation"
+            },
+            {
+              "operationId": "promote-evidence-observation"
+            },
+            {
+              "operationId": "purge-evidence"
+            }
+          ]
+        },
+        "subjectKind": "character",
+        "eligibility": {
+          "kind": "current-managed-member-character"
+        },
+        "sectionId": "wallet"
+      },
+      {
+        "id": "wallet-transactions",
+        "operationId": "wallet-transactions",
+        "materializationIntervalSeconds": 900,
+        "exportName": "walletTransactionsResource",
+        "coreDataProducts": ["published-type-details", "static-location-labels"],
+        "dependentOperationIds": [],
+        "persistence": {
+          "projection": [
+            {
+              "operationId": "read-active-evidence-continuation"
+            }
+          ],
+          "materialization": [
+            {
+              "operationId": "write-evidence-continuation"
+            },
+            {
+              "operationId": "promote-evidence-observation"
+            },
+            {
+              "operationId": "purge-evidence"
+            }
+          ]
+        },
+        "subjectKind": "character",
+        "eligibility": {
+          "kind": "current-managed-member-character"
+        },
+        "sectionId": "wallet"
+      },
+      {
+        "id": "mail-headers",
+        "operationId": "mail-headers",
+        "materializationIntervalSeconds": 900,
+        "exportName": "mailHeadersResource",
+        "coreDataProducts": [],
+        "dependentOperationIds": ["mail-lists", "universe-resolve-names"],
+        "persistence": {
+          "projection": [
+            {
+              "operationId": "read-active-evidence-continuation"
+            }
+          ],
+          "materialization": [
+            {
+              "operationId": "write-evidence-continuation"
+            },
+            {
+              "operationId": "promote-evidence-observation"
+            },
+            {
+              "operationId": "purge-evidence"
+            }
+          ]
+        },
+        "subjectKind": "character",
+        "eligibility": {
+          "kind": "current-managed-member-character"
+        },
+        "sectionId": "mail"
+      },
+      {
+        "id": "mail-details",
+        "operationId": "mail-headers",
+        "materializationIntervalSeconds": 900,
+        "exportName": "mailDetailsResource",
+        "coreDataProducts": [],
+        "dependentOperationIds": ["mail-message", "mail-lists", "universe-resolve-names"],
+        "persistence": {
+          "projection": [
+            {
+              "operationId": "read-active-evidence-continuation"
+            }
+          ],
+          "materialization": [
+            {
+              "operationId": "write-evidence-continuation"
+            },
+            {
+              "operationId": "promote-evidence-observation"
+            },
+            {
+              "operationId": "purge-evidence"
+            }
+          ]
+        },
+        "subjectKind": "character",
+        "eligibility": {
+          "kind": "current-managed-member-character"
+        },
+        "sectionId": "mail"
+      }
+    ],
+    "esiOperations": [],
+    "activityProviders": []
+  },
+  "nuxt": {
+    "package": "@eve-space/member-audit-nuxt",
+    "pages": [],
+    "navigation": []
+  }
+}

@@ -153,8 +153,16 @@ describe('corporation record routes', async () => {
     await page.getByText('2.5%', { exact: true }).waitFor()
     await page.getByText('ACTIVE', { exact: true }).waitFor()
     await page.getByText('WAR ELIGIBLE', { exact: true }).waitFor()
-    await page.getByText('FRIENDLY FIRE LEGAL', { exact: true }).waitFor()
-    expect(await page.getByText('NPC OWNED', { exact: true }).count()).toBe(0)
+    await expect
+      .poll(() => page.locator('.corporation-dossier-badge').allTextContents())
+      .toEqual(['ACTIVE', 'WAR ELIGIBLE', 'FF On'])
+    await page.getByText('FOUNDER', { exact: true }).waitFor()
+    const ceoField = page.locator('.corporation-profile-leader--ceo')
+    const founderField = page.locator('.corporation-profile-leader--founder')
+    await expect.poll(() => ceoField.boundingBox()).not.toBeNull()
+    await expect.poll(() => founderField.boundingBox()).not.toBeNull()
+    expect((await ceoField.boundingBox())?.y).toBe((await founderField.boundingBox())?.y)
+    expect(await page.getByText('NPC', { exact: true }).count()).toBe(0)
     await expect
       .poll(() => page.title())
       .toBe('Navigation Industries [NAV] // Corporation Overview // EVE Space')
@@ -246,7 +254,8 @@ describe('corporation record routes', async () => {
 
     await page.waitForURL((url) => url.pathname === `/corporation/${corporationId}`)
     await page.getByRole('heading', { name: 'Navigation Industries' }).waitFor()
-    await page.getByText('NPC OWNED', { exact: true }).waitFor()
+    await page.getByText('NPC', { exact: true }).waitFor()
+    expect(await page.locator('.corporation-dossier-badge').allTextContents()).toEqual(['NPC'])
 
     const navigation = page.getByRole('navigation', { name: 'Corporation record sections' })
     expect(await navigation.getByRole('link').allTextContents()).toEqual(['OVERVIEW'])

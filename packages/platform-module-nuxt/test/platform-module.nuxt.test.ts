@@ -66,6 +66,36 @@ describe('platform Nuxt module fixture', async () => {
     await page.getByText('Alpha record confirmed.', { exact: true }).waitFor({ state: 'attached' })
   })
 
+  it('loads only the reviewer panel selected by stable contribution identity', async () => {
+    const page = await createPage('/')
+
+    expect(await page.getByTestId('alpha-reviewer-panel').count()).toBe(0)
+    await page.getByRole('button', { name: 'Load reviewer panel' }).click()
+    await page.getByTestId('alpha-reviewer-panel').waitFor({ state: 'visible' })
+    expect(await page.getByTestId('beta-reviewer-panel').count()).toBe(0)
+    expect(await page.getByTestId('alpha-reviewer-panel').textContent()).toContain(
+      'user-1 at organization version 7',
+    )
+
+    await page.getByRole('button', { name: 'Load beta reviewer panel' }).click()
+    await page.getByTestId('beta-reviewer-panel').waitFor({ state: 'visible' })
+    expect(await page.getByTestId('alpha-reviewer-panel').count()).toBe(0)
+  })
+
+  it.each([
+    { height: 844, width: 390 },
+    { height: 900, width: 1440 },
+  ])('keeps synthetic reviewer panels inside the $width px viewport', async ({ height, width }) => {
+    const page = await createPage('/')
+    await page.setViewportSize({ height, width })
+    await page.getByRole('button', { name: 'Load reviewer panel', exact: true }).click()
+    await page.getByTestId('alpha-reviewer-panel').waitFor({ state: 'visible' })
+
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true)
+  })
+
   it('renders shared authorization and stale resource states', async () => {
     alphaEnabled = true
 
@@ -82,19 +112,16 @@ describe('platform Nuxt module fixture', async () => {
     expect(retainedAuthorization).not.toContain('Alpha authorization required')
   })
 
-  it('keeps retained feature data while distinguishing persistence provenance', async () => {
+  it('keeps retained feature data without duplicating the global persistence notice', async () => {
     const restored = await $fetch('/characters/7/alpha?retained=true&presentation=refresh-failed')
     expect(restored).toContain('Alpha nested page')
-    expect(restored).toContain('Historical data, refresh failed.')
-    expect(restored).toContain('datetime="2026-09-15T01:00:00.000Z"')
-    expect(restored).toContain('datetime="2026-09-15T01:05:00.000Z"')
+    expect(restored).not.toContain('Historical data, refresh failed.')
 
     const serverStale = await $fetch(
       '/characters/7/alpha?state=stale&retained=true&presentation=server-stale',
     )
     expect(serverStale).toContain('Alpha nested page')
-    expect(serverStale).toContain('Server-stale data.')
-    expect(serverStale).toContain('esi-cooldown')
+    expect(serverStale).not.toContain('Server-stale data.')
   })
 
   it('rejects direct disabled-page navigation and restores it without rebuilding', async () => {
@@ -146,10 +173,12 @@ describe('platform Nuxt module fixture', async () => {
     const vfs = useTestContext().nuxt!.vfs
     const navigation = vfs['#build/eve-space-platform/navigation.ts']
     const queryAdmissionScopes = vfs['#build/eve-space-platform/query-admission-scopes.ts']
+    const reviewerPanels = vfs['#build/eve-space-platform/reviewer-panels.ts']
     const pageMetaTypes = vfs['#build/types/eve-space-platform-page-meta.d.ts']
 
     expect(navigation).toBeTypeOf('string')
     expect(queryAdmissionScopes).toBeTypeOf('string')
+    expect(reviewerPanels).toBeTypeOf('string')
     expect(pageMetaTypes).toBeTypeOf('string')
     expect(navigation).toContain('"navigationId":"alpha-default-icon"')
     expect(navigation).toContain('"icon":"character"')
@@ -160,7 +189,17 @@ describe('platform Nuxt module fixture', async () => {
     )
     expect(pageMetaTypes).toContain('platformAudience?: PlatformNavigationAudience')
     expect(queryAdmissionScopes).toContain(
-      '[{"moduleId":"alpha","routeId":"alpha-summary","admissionScope":"organization:v1:alpha:member:alpha.view","authorization":"authenticated-session","audience":"member","requiredPermission":"alpha.view"},{"moduleId":"alpha","routeId":"alpha-record","admissionScope":"organization:v1:alpha:member:alpha.view","authorization":"owned-character","audience":"member","requiredPermission":"alpha.view"}]',
+      '[{"moduleId":"alpha","routeId":"alpha-summary","admissionScope":"organization:v1:alpha:member:alpha.view","authorization":"authenticated-session","audience":"member","requiredPermission":"alpha.view"},{"moduleId":"alpha","routeId":"alpha-record","admissionScope":"organization:v1:alpha:member:alpha.view","authorization":"owned-character","audience":"member","requiredPermission":"alpha.view"},{"moduleId":"beta","routeId":"beta-details","admissionScope":"organization:v1:beta:director:beta.review","authorization":"authenticated-session","audience":"director","requiredPermission":"beta.review","target":"managed-organization-character"}]',
     )
+    expect(reviewerPanels).toContain(
+      'load: () => import("@eve-space/alpha-nuxt/reviewer/overview")',
+    )
+    expect(reviewerPanels).toContain('load: () => import("@eve-space/beta-nuxt/reviewer/details")')
+    expect(reviewerPanels).toContain('"moduleId":"alpha","contributionId":"overview"')
+    expect(reviewerPanels).toContain('"moduleId":"beta","contributionId":"details"')
+    expect(reviewerPanels.indexOf('"moduleId":"alpha"')).toBeLessThan(
+      reviewerPanels.indexOf('"moduleId":"beta"'),
+    )
+    expect(reviewerPanels).not.toContain(rootDir)
   })
 })

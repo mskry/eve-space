@@ -1381,6 +1381,7 @@ function toCachedResult<Data>(
     ...(retryAt ? { retryAt } : {}),
     ...(refreshFailureClass ? { refreshFailureClass } : {}),
     quota,
+    ...(envelope.pagination ? { pagination: { ...envelope.pagination } } : {}),
   }
 }
 

@@ -672,6 +672,8 @@ export const organizationAuditEventTypes = [
   'group.revoked',
   'member.blocked',
   'member.unblocked',
+  'permission-bundle.created',
+  'permission-bundle.updated',
   'sensitive-access.decided',
 ] as const
 
@@ -696,6 +698,7 @@ export const organizationAuditSubjectTypes = [
   'corporation_source',
   'managed_corporation',
   'group',
+  'permission_bundle',
   'external_service',
 ] as const
 export const organizationAuditOutcomes = [
@@ -781,6 +784,8 @@ export const organizationAuditEvents = pgTable(
         'group.revoked',
         'member.blocked',
         'member.unblocked',
+        'permission-bundle.created',
+        'permission-bundle.updated',
         'sensitive-access.decided'
       )`,
     ),
@@ -801,6 +806,7 @@ export const organizationAuditEvents = pgTable(
         'corporation_source',
         'managed_corporation',
         'group',
+        'permission_bundle',
         'external_service'
       )`,
     ),
