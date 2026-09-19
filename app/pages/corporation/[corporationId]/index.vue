@@ -5,10 +5,15 @@ const { corporation } = useCorporationRecord()
 const formattedFounded = computed(() =>
   corporation.value?.dateFounded ? formatBirthday(corporation.value.dateFounded) : '—',
 )
-const creator = computed(() => {
+const founder = computed(() => {
   const record = corporation.value
   if (!record || record.creatorId === null || record.creatorId === record.ceoId) return undefined
   return { id: record.creatorId, name: record.creatorName ?? `ID ${record.creatorId}` }
+})
+const ceoLabel = computed(() => {
+  const record = corporation.value
+  if (!record || record.ceoId === null) return 'CEO'
+  return record.ceoId === record.creatorId ? 'CEO · FOUNDER' : 'CEO'
 })
 const statusBadges = computed(() => {
   const record = corporation.value
@@ -34,7 +39,7 @@ const statusBadges = computed(() => {
     },
     {
       id: 'friendly-fire',
-      label: `FRIENDLY FIRE ${record.friendlyFire.toUpperCase()}`,
+      label: `FF ${record.friendlyFire === 'legal' ? 'On' : 'Off'}`,
       tone: record.friendlyFire === 'legal' ? 'warn' : 'off',
     },
   )
@@ -77,41 +82,68 @@ function formatTaxRate(taxRate: number) {
             <span class="card-index">02</span>
             <h2>PROFILE</h2>
             <dl>
-              <div>
+              <div class="profile-col-start">
                 <dt>MEMBERS</dt>
                 <dd>{{ corporation.memberCount.toLocaleString('en-US') }}</dd>
               </div>
-              <div>
+              <div class="profile-col-end">
                 <dt>FOUNDED</dt>
                 <dd>{{ formattedFounded }}</dd>
               </div>
-              <div>
+              <div class="profile-col-start">
                 <dt>ISK TAX</dt>
                 <dd>{{ formatTaxRate(corporation.taxRate) }}%</dd>
               </div>
-              <div>
+              <div class="profile-col-end">
                 <dt>LP TAX</dt>
                 <dd>{{ formatTaxRate(corporation.loyaltyPointTaxRate) }}%</dd>
               </div>
-              <div v-if="corporation.shares !== null && corporation.shares !== 0">
+              <div
+                v-if="corporation.shares !== null && corporation.shares !== 0"
+                class="profile-wide"
+              >
                 <dt>SHARES</dt>
                 <dd>{{ corporation.shares.toLocaleString('en-US') }}</dd>
               </div>
-              <div v-if="creator" class="profile-wide">
-                <dt>CREATOR</dt>
+              <div
+                v-if="corporation.ceoId !== null"
+                class="profile-col-start corporation-profile-leader--ceo"
+              >
+                <dt>{{ ceoLabel }}</dt>
                 <dd>
-                  <NuxtLink class="corporation-character-link" :to="`/character/${creator.id}`">
+                  <NuxtLink
+                    class="corporation-character-link"
+                    :to="`/character/${corporation.ceoId}`"
+                  >
                     <UiEveImage
                       kind="character"
-                      :id="creator.id"
+                      :id="corporation.ceoId"
                       :dimension="32"
                       :width="32"
                       :height="32"
                       loading="lazy"
                       decoding="async"
-                      :alt="`${creator.name} portrait`"
+                      :alt="`${corporation.ceoName ?? `CEO ${corporation.ceoId}`} portrait`"
                     />
-                    <span>{{ creator.name }}</span>
+                    <span>{{ corporation.ceoName ?? `ID ${corporation.ceoId}` }}</span>
+                  </NuxtLink>
+                </dd>
+              </div>
+              <div v-if="founder" class="profile-col-end corporation-profile-leader--founder">
+                <dt>FOUNDER</dt>
+                <dd>
+                  <NuxtLink class="corporation-character-link" :to="`/character/${founder.id}`">
+                    <UiEveImage
+                      kind="character"
+                      :id="founder.id"
+                      :dimension="32"
+                      :width="32"
+                      :height="32"
+                      loading="lazy"
+                      decoding="async"
+                      :alt="`${founder.name} portrait`"
+                    />
+                    <span>{{ founder.name }}</span>
                   </NuxtLink>
                 </dd>
               </div>
@@ -200,11 +232,11 @@ function formatTaxRate(taxRate: number) {
   grid-template-columns: 1fr 1fr;
 }
 
-.character-detail-group--profile dl > div:nth-child(odd) {
+.character-detail-group--profile .profile-col-start {
   padding-right: 0.75rem;
 }
 
-.character-detail-group--profile dl > div:nth-child(even) {
+.character-detail-group--profile .profile-col-end {
   padding-left: 0.75rem;
 }
 

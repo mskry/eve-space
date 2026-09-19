@@ -44,7 +44,8 @@ const tone = computed(() => getCharacterSecurityStatusTone(props.value))
   align-items: center;
   gap: 4px;
   color: var(--security-status-color);
-  font: 10px/1.2 var(--ui-font-mono);
+  font-family: var(--ui-font-mono);
+  line-height: 1.2;
   letter-spacing: 0.02em;
 }
 

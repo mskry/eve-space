@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useQuery } from '@pinia/colada'
+import CharacterOverviewBioCard from '../../../components/character/CharacterOverviewBioCard.vue'
+import CharacterOverviewDetails from '../../../components/character/CharacterOverviewDetails.vue'
 import { characterOverviewQuery } from '../../../queries/characters'
 import { canRunProtectedCharacterQuery } from '../../../queries/protected-character-query-access'
 import { PRIVATE_QUERY_KEYS } from '../../../queries/query-keys'
@@ -29,11 +31,6 @@ const overviewPersistencePresentation = useQueryPersistencePresentation(() =>
   PRIVATE_QUERY_KEYS.characterOverview(characterId.value ?? 0),
 )
 const overview = overviewQuery.data
-const bioCard = ref<HTMLElement>()
-const bioCopy = ref<HTMLElement>()
-const operationsGroup = ref<HTMLElement>()
-const bioExpandedHeight = ref(0)
-const bioIsOverflowing = ref(false)
 const overviewMessage = computed(() =>
   overviewQuery.error.value instanceof Error ? overviewQuery.error.value.message : '',
 )
@@ -110,33 +107,6 @@ const sectionAuthorizationState = computed<EsiResourceState>(() => {
       : null,
   }
 })
-const formattedBirthday = computed(() =>
-  character.value ? formatBirthday(character.value.birthday) : '',
-)
-const genderSymbol = computed(() => {
-  const gender = character.value?.gender.toLowerCase()
-  if (gender === 'female') return '♀'
-  if (gender === 'male') return '♂'
-  return '—'
-})
-
-function measureBioExpansion() {
-  bioExpandedHeight.value =
-    (bioCard.value?.offsetHeight ?? 0) + (operationsGroup.value?.offsetHeight ?? 0)
-  bioIsOverflowing.value = (bioCopy.value?.scrollHeight ?? 0) > (bioCopy.value?.clientHeight ?? 0)
-}
-
-watch(character, async () => {
-  await nextTick()
-  measureBioExpansion()
-})
-
-onMounted(() => {
-  window.addEventListener('resize', measureBioExpansion)
-  measureBioExpansion()
-})
-
-onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
 </script>
 
 <template>
@@ -150,40 +120,25 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
     >
       <article v-if="character" class="dossier">
         <div class="identity-panel">
-          <div
-            class="character-record-grid"
-            :style="{ '--bio-expanded-height': `${bioExpandedHeight}px` }"
-          >
+          <div class="character-record-grid">
             <section
-              class="overview-summary-grid"
+              class="overview-summary-grid character-overview-record-grid"
               aria-label="Character biography, operations, identity, and progression"
             >
-              <div class="character-overview-primary-column">
-                <div
-                  ref="bioCard"
-                  class="overview-bio-card"
-                  :class="{ 'overview-bio-card--expandable': bioIsOverflowing }"
-                >
-                  <span class="card-index">01</span>
-                  <p>BIO</p>
-                  <div ref="bioCopy" class="overview-bio-copy">
-                    <EveFormattedText v-if="character.bio" :value="character.bio" />
-                    <template v-else>No biography recorded.</template>
-                  </div>
-                </div>
+              <div
+                class="character-overview-primary-column character-overview-primary-column--with-details"
+              >
+                <CharacterOverviewBioCard :bio="character.bio" />
                 <section
                   class="character-detail-groups character-detail-groups--operations-only"
                   aria-label="Character operations"
                 >
-                  <section
-                    ref="operationsGroup"
-                    class="character-detail-group character-detail-group--operations"
-                  >
+                  <section class="character-detail-group character-detail-group--operations">
                     <h2>OPERATIONS</h2>
                     <dl>
                       <div class="character-detail-wide">
                         <dt>LOCATION</dt>
-                        <dd class="character-system-detail" :title="locationLabel">
+                        <dd class="character-location-detail" :title="locationLabel">
                           <SystemSecurityStatus
                             v-if="
                               location?.status === 'ok' &&
@@ -215,75 +170,10 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
                   </section>
                 </section>
               </div>
-              <section class="character-overview-detail-card">
-                <span class="card-index">02</span>
-                <section
-                  class="character-overview-detail-section character-overview-detail-section--identity"
-                >
-                  <h2>IDENTITY</h2>
-                  <dl>
-                    <div class="character-detail-col-start">
-                      <dt>RACE</dt>
-                      <dd>{{ character.race }}</dd>
-                    </div>
-                    <div class="character-detail-col-end">
-                      <dt>BLOODLINE</dt>
-                      <dd>{{ character.bloodline }}</dd>
-                    </div>
-                    <div class="character-detail-col-start">
-                      <dt>DATE OF BIRTH</dt>
-                      <dd>{{ formattedBirthday }}</dd>
-                    </div>
-                    <div class="character-detail-col-end">
-                      <dt>GENDER</dt>
-                      <dd>
-                        <span class="gender-symbol" :title="character.gender" aria-hidden="true">
-                          {{ genderSymbol }}
-                        </span>
-                        <span class="sr-only">{{ character.gender }}</span>
-                      </dd>
-                    </div>
-                    <div v-if="character.factionId" class="character-detail-wide">
-                      <dt>FACTION</dt>
-                      <dd>
-                        <UiEveImage
-                          kind="faction"
-                          :id="character.factionId"
-                          :dimension="32"
-                          :width="32"
-                          :height="32"
-                          loading="lazy"
-                          decoding="async"
-                          alt="Faction militia emblem"
-                        />
-                      </dd>
-                    </div>
-                    <div v-if="character.corporationTitle" class="character-detail-wide">
-                      <dt>CORPORATION TITLE</dt>
-                      <dd>{{ character.corporationTitle }}</dd>
-                    </div>
-                    <div class="character-detail-wide">
-                      <dt>SECURITY STATUS</dt>
-                      <dd><SecurityStatus :value="character.securityStatus" /></dd>
-                    </div>
-                  </dl>
-                </section>
-                <section
-                  class="character-overview-detail-section character-overview-detail-section--progression"
-                >
-                  <h2>PROGRESSION</h2>
-                  <dl>
-                    <div class="character-detail-primary">
-                      <dt>TOTAL SKILL POINTS</dt>
-                      <dd>{{ skillPointsLabel }}</dd>
-                    </div>
-                    <div>
-                      <dt>ACHIEVEMENT SCORE</dt>
-                      <dd>{{ character.achievementScore }}</dd>
-                    </div>
-                  </dl>
-                </section>
-              </section>
+              <CharacterOverviewDetails
+                :profile="character"
+                :skill-points-label="skillPointsLabel"
+              />
             </section>
           </div>
 

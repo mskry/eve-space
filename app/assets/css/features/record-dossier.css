@@ -25,6 +25,10 @@
   border-right: 1px solid var(--line);
 }
 
+.character-overview-record-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.8fr);
+}
+
 .overview-bio-card {
   position: relative;
   min-width: 0;
@@ -37,6 +41,10 @@
   color: var(--ui-primary);
   font: 700 12px/1 monospace;
   letter-spacing: 0.14em;
+}
+
+.character-overview-record-grid .overview-bio-card > p {
+  color: var(--muted);
 }
 
 .overview-bio-copy {
@@ -140,13 +148,29 @@ a.affiliation-identity:focus-visible {
   min-width: 0;
 }
 
-.character-overview-primary-column > .overview-bio-card {
+.character-overview-primary-column--with-details > .overview-bio-card {
   border-bottom: 1px solid var(--ui-border);
 }
 
 .character-overview-detail-card {
   position: relative;
   min-width: 0;
+}
+
+.character-overview-record-detail-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+}
+
+.character-overview-record-detail-card
+  .character-overview-detail-section
+  + .character-overview-detail-section {
+  border-top: 0;
+  border-left: 1px solid var(--ui-border);
+}
+
+.character-overview-record-detail-card .character-overview-detail-section--progression dl {
+  grid-template-columns: 1fr;
 }
 
 .character-overview-detail-section {
@@ -232,6 +256,13 @@ a.affiliation-identity:focus-visible {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0 24px;
+}
+
+.character-overview-record-grid
+  .character-detail-groups--operations-only
+  .character-detail-group--operations
+  dl {
+  display: block;
 }
 
 .character-detail-groups--operations-only .character-detail-wide {
@@ -371,10 +402,24 @@ a.affiliation-identity:focus-visible {
   gap: 10px;
 }
 
+.character-location-detail,
 .character-system-detail {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .character-overview-record-detail-card {
+    grid-template-columns: 1fr;
+  }
+
+  .character-overview-record-detail-card
+    .character-overview-detail-section
+    + .character-overview-detail-section {
+    border-top: 1px solid var(--ui-border);
+    border-left: 0;
+  }
 }
 
 .character-ship-detail img {
