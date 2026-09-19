@@ -207,6 +207,9 @@ default privileges, and the `eve_module_*_runtime` role. Static uninstallation o
 stale settings and positions for a later reinstall. Never use `docker compose down --volumes` as a
 module-removal procedure.
 
+Member Audit has additional permission, retention, rollout, purge, and privacy-incident procedures
+in [Member Audit Operations](member-audit-operations.md).
+
 ## Hono Typecheck Baseline
 
 Measurements use Node.js 24.19.0 on an arm64 Apple M4 and five runs of:

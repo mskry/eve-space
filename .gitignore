@@ -6,9 +6,7 @@
 .cache
 dist
 !tests/fixtures/platform-module-conformance/features/conformance/server/dist/
-tests/fixtures/platform-module-conformance/features/conformance/server/dist/*
-!tests/fixtures/platform-module-conformance/features/conformance/server/dist/index.js
-!tests/fixtures/platform-module-conformance/features/conformance/server/dist/index.d.ts
+!tests/fixtures/platform-module-conformance/features/conformance/server/dist/**
 !tests/fixtures/platform-module-conformance/features/conformance/nuxt/dist/
 tests/fixtures/platform-module-conformance/features/conformance/nuxt/dist/*
 !tests/fixtures/platform-module-conformance/features/conformance/nuxt/dist/module.js

@@ -6,11 +6,9 @@ export {
   readAssetEvidenceOperation,
   readEvidenceContinuationOperation,
   readMailEvidenceOperation,
-  readSkillEvidenceOperation,
   readTrainedSkillsEvidenceOperation,
   readWalletEvidenceOperation,
   writeEvidenceContinuationOperation,
-  writeSkillSnapshotOperation,
 } from './persistence.js'
 export { trainedSkillsResource } from './skill-resources.js'
 export { assetsResource } from './asset-resource.js'

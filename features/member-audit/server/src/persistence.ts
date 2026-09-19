@@ -38,25 +38,6 @@ const trainedSkillsSchema = z.strictObject({
     }),
   ),
 })
-const queueEntrySchema = z.strictObject({
-  queuePosition: z.number().int().nonnegative(),
-  typeId: z.number().int().positive(),
-  name: z.string().min(1).max(500),
-  groupId: z.number().int().positive().nullable(),
-  groupName: z.string().min(1).max(500),
-  finishedLevel: z.number().int().min(1).max(5),
-  levelStartSp: z.number().int().nonnegative().nullable(),
-  levelEndSp: z.number().int().nonnegative().nullable(),
-  trainingStartSp: z.number().int().nonnegative().nullable(),
-  startDate: z.nullable(instantSchema),
-  finishDate: z.nullable(instantSchema),
-  primaryAttribute: z.nullable(skillAttributeSchema),
-  secondaryAttribute: z.nullable(skillAttributeSchema),
-})
-const skillQueueSchema = z.strictObject({
-  kind: z.literal('skill-queue'),
-  entries: z.array(queueEntrySchema).max(10_000),
-})
 const evidenceScalarSchema = z.union([z.string().max(100_000), z.number(), z.boolean(), z.null()])
 const intentionalEvidenceRecordSchema = z
   .record(
@@ -154,12 +135,6 @@ const trainedSkillsEnvelopeSchema = z.strictObject({
   validatedAt: instantSchema,
   snapshot: trainedSkillsSchema,
 })
-const skillQueueEnvelopeSchema = z.strictObject({
-  observationId: z.uuid(),
-  dtoRevision: z.number().int().positive(),
-  validatedAt: instantSchema,
-  snapshot: skillQueueSchema,
-})
 const assetEnvelopeSchema = z.strictObject({
   observationId: z.uuid(),
   dtoRevision: z.number().int().positive(),
@@ -172,10 +147,6 @@ const walletBalanceEnvelopeSchema = z.strictObject({
   dtoRevision: z.number().int().positive(),
   validatedAt: instantSchema,
   snapshot: walletBalanceSnapshotSchema,
-})
-const readSkillEvidenceOutputSchema = z.strictObject({
-  trainedSkills: z.nullable(trainedSkillsEnvelopeSchema),
-  skillQueue: z.nullable(skillQueueEnvelopeSchema),
 })
 const readTrainedSkillsEvidenceOutputSchema = z.strictObject({
   trainedSkills: z.nullable(trainedSkillsEnvelopeSchema),
@@ -310,41 +281,6 @@ const promoteEvidenceObservationInputSchema = z.intersection(
 )
 const operationOutcomeSchema = z.strictObject({ outcome: z.enum(['applied', 'obsolete']) })
 
-export const writeSkillSnapshotOperation = definePlatformPersistenceOperation({
-  id: 'write-skill-snapshot',
-  method: 'writeSkillSnapshot',
-  revision: 1,
-  mode: 'write',
-  inputSchema: z.strictObject({
-    resourceId: z.enum(['trained-skills', 'skill-queue']),
-    organizationVersion: z.number().int().positive(),
-    targetUserId: z.uuid(),
-    managedMemberLifecycleId: z.uuid(),
-    characterId: z.number().int().positive(),
-    characterLifecycleId: z.uuid(),
-    authorizationGeneration: z.number().int().nonnegative(),
-    disclosureVersion: z.number().int().positive(),
-    sectionActivationVersion: z.number().int().positive(),
-    dtoRevision: z.literal(1),
-    validatedAt: instantSchema,
-    snapshot: z.discriminatedUnion('kind', [trainedSkillsSchema, skillQueueSchema]),
-  }),
-  outputSchema: operationOutcomeSchema,
-  maximumInputBytes: platformPersistencePayloadMaximumBytes,
-  maximumOutputBytes: 256,
-})
-
-export const readSkillEvidenceOperation = definePlatformPersistenceOperation({
-  id: 'read-skill-evidence',
-  method: 'readSkillEvidence',
-  revision: 1,
-  mode: 'read',
-  inputSchema: authoritySchema,
-  outputSchema: readSkillEvidenceOutputSchema,
-  maximumInputBytes: 2_048,
-  maximumOutputBytes: platformPersistencePayloadMaximumBytes,
-})
-
 export const readTrainedSkillsEvidenceOperation = definePlatformPersistenceOperation({
   id: 'read-trained-skills-evidence',
   method: 'readTrainedSkillsEvidence',
@@ -446,9 +382,7 @@ export const promoteEvidenceObservationOperation = definePlatformPersistenceOper
 
 const purgeLimitSchema = z.number().int().min(1).max(1_000)
 const purgeStoreSchema = z.enum([
-  'legacy-skills',
   'trained-skills',
-  'skill-queue',
   'assets',
   'wallet-balance',
   'wallet-journal',
@@ -507,8 +441,6 @@ export const purgeEvidenceOperation = definePlatformPersistenceOperation({
 })
 
 const memberAuditPersistenceOperations = {
-  'write-skill-snapshot': writeSkillSnapshotOperation,
-  'read-skill-evidence': readSkillEvidenceOperation,
   'read-trained-skills-evidence': readTrainedSkillsEvidenceOperation,
   'read-asset-evidence': readAssetEvidenceOperation,
   'read-wallet-evidence': readWalletEvidenceOperation,

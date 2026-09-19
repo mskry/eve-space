@@ -3133,12 +3133,19 @@ describe('organization storage invariants', () => {
     `.finally(() => {
       updateSettled = true
     })
+    // Captured before the commit rejects it; a later assertion leaves it unhandled in between.
+    const managementFailure = managementUpdate.then(
+      () => null,
+      (error: unknown) => error,
+    )
     await new Promise((resolve) => setTimeout(resolve, 100))
     expect(updateSettled).toBe(false)
 
     releaseAssignment()
     await assignmentTransaction
-    await expect(managementUpdate).rejects.toThrow(
+    const managementError = await managementFailure
+    expect(managementError).toBeInstanceOf(Error)
+    expect((managementError as Error).message).toContain(
       'group management cannot change after assignment',
     )
   })

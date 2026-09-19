@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, extname, join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { resolveInstalledModuleReleases } from './module-registry/resolved-release.js'
@@ -35,7 +35,13 @@ for (const release of releases) {
 
   const pnpmPath = process.env.npm_execpath
   if (!pnpmPath) throw new Error('This command must run through pnpm')
-  const result = spawnSync(process.execPath, [pnpmPath, '--filter', packageName, 'run', script], {
+  const pnpmArguments = ['--filter', packageName, 'run', script]
+  let executable = pnpmPath
+  if (['.js', '.cjs', '.mjs'].includes(extname(pnpmPath))) {
+    executable = process.execPath
+    pnpmArguments.unshift(pnpmPath)
+  }
+  const result = spawnSync(executable, pnpmArguments, {
     cwd: root,
     env: process.env,
     stdio: 'inherit',

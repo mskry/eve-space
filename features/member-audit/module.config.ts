@@ -305,13 +305,7 @@ const manifest = {
         persistenceOperations: [],
       },
     ],
-    migrations: [
-      { name: 'member-audit-001-baseline.sql' },
-      { name: 'member-audit-002-evidence-storage.sql' },
-      { name: 'member-audit-003-persistence-operations.sql' },
-      { name: 'member-audit-004-purge-operation.sql' },
-      { name: 'member-audit-005-resource-collection.sql' },
-    ],
+    migrations: [{ name: 'member-audit-001-baseline.sql' }],
     persistenceOperations: [
       {
         id: 'read-trained-skills-evidence',
@@ -319,23 +313,7 @@ const manifest = {
         revision: 1,
         mode: 'read',
         exportName: 'readTrainedSkillsEvidenceOperation',
-        migration: 'member-audit-005-resource-collection.sql',
-      },
-      {
-        id: 'write-skill-snapshot',
-        method: 'writeSkillSnapshot',
-        revision: 1,
-        mode: 'write',
-        exportName: 'writeSkillSnapshotOperation',
         migration: 'member-audit-001-baseline.sql',
-      },
-      {
-        id: 'read-skill-evidence',
-        method: 'readSkillEvidence',
-        revision: 1,
-        mode: 'read',
-        exportName: 'readSkillEvidenceOperation',
-        migration: 'member-audit-003-persistence-operations.sql',
       },
       {
         id: 'read-asset-evidence',
@@ -343,7 +321,7 @@ const manifest = {
         revision: 1,
         mode: 'read',
         exportName: 'readAssetEvidenceOperation',
-        migration: 'member-audit-003-persistence-operations.sql',
+        migration: 'member-audit-001-baseline.sql',
       },
       {
         id: 'read-wallet-evidence',
@@ -351,7 +329,7 @@ const manifest = {
         revision: 1,
         mode: 'read',
         exportName: 'readWalletEvidenceOperation',
-        migration: 'member-audit-003-persistence-operations.sql',
+        migration: 'member-audit-001-baseline.sql',
       },
       {
         id: 'read-mail-evidence',
@@ -359,7 +337,7 @@ const manifest = {
         revision: 1,
         mode: 'read',
         exportName: 'readMailEvidenceOperation',
-        migration: 'member-audit-003-persistence-operations.sql',
+        migration: 'member-audit-001-baseline.sql',
       },
       {
         id: 'materialize-current-snapshot',
@@ -367,7 +345,7 @@ const manifest = {
         revision: 1,
         mode: 'write',
         exportName: 'materializeCurrentSnapshotOperation',
-        migration: 'member-audit-003-persistence-operations.sql',
+        migration: 'member-audit-001-baseline.sql',
       },
       {
         id: 'read-active-evidence-continuation',
@@ -375,7 +353,7 @@ const manifest = {
         revision: 1,
         mode: 'read',
         exportName: 'readActiveEvidenceContinuationOperation',
-        migration: 'member-audit-005-resource-collection.sql',
+        migration: 'member-audit-001-baseline.sql',
       },
       {
         id: 'read-evidence-continuation',
@@ -383,7 +361,7 @@ const manifest = {
         revision: 1,
         mode: 'read',
         exportName: 'readEvidenceContinuationOperation',
-        migration: 'member-audit-003-persistence-operations.sql',
+        migration: 'member-audit-001-baseline.sql',
       },
       {
         id: 'write-evidence-continuation',
@@ -391,7 +369,7 @@ const manifest = {
         revision: 1,
         mode: 'write',
         exportName: 'writeEvidenceContinuationOperation',
-        migration: 'member-audit-003-persistence-operations.sql',
+        migration: 'member-audit-001-baseline.sql',
       },
       {
         id: 'promote-evidence-observation',
@@ -399,7 +377,7 @@ const manifest = {
         revision: 1,
         mode: 'write',
         exportName: 'promoteEvidenceObservationOperation',
-        migration: 'member-audit-003-persistence-operations.sql',
+        migration: 'member-audit-001-baseline.sql',
       },
       {
         id: 'purge-evidence',
@@ -407,7 +385,7 @@ const manifest = {
         revision: 1,
         mode: 'write',
         exportName: 'purgeEvidenceOperation',
-        migration: 'member-audit-004-purge-operation.sql',
+        migration: 'member-audit-001-baseline.sql',
       },
     ],
     resources: [

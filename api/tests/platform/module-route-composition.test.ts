@@ -115,7 +115,7 @@ const reviewerEvidenceDeclaration = {
   reviewerEvidence: {
     routeId: 'skills-detail',
     resourceId: 'trained-skills',
-    operationId: 'read-skill-evidence',
+    operationId: 'read-trained-skills-evidence',
   },
 } as const
 const reviewerBlockDeclaration = {

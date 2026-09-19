@@ -1,20 +1,8 @@
 import { expect, test, vi } from 'vitest'
-import {
-  installedModulePersistenceCapabilityFactories,
-  installedModulePersistenceOperationCatalog,
-} from '../../src/generated/platform/installed-module-persistence.js'
+import { installedModulePersistenceCapabilityFactories } from '../../src/generated/platform/installed-module-persistence.js'
 import { installedModuleResources } from '../../src/generated/platform/installed-module-worker.js'
 
-test('keeps the legacy skill writer installed without granting it to active resources', () => {
-  expect(
-    installedModulePersistenceOperationCatalog['member-audit/write-skill-snapshot'].grants,
-  ).toEqual({
-    routes: [],
-    activityProviders: [],
-    resourceProjections: [],
-    resourceMaterializations: [],
-  })
-
+test('exposes only active persistence methods to trained skill resources', () => {
   const capability = installedModulePersistenceCapabilityFactories.resourceMaterializations[
     'member-audit/trained-skills'
   ](vi.fn())
