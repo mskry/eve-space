@@ -94,7 +94,7 @@ export const trainedSkillsResource: SkillResource<'skills', TrainedSkillsData> =
     return persistSkillSnapshot('trained-skills', context)
   },
   maintain(context) {
-    return maintainEvidence(['trained-skills', 'legacy-skills'], context, true)
+    return maintainEvidence('trained-skills', context, true)
   },
 }
 

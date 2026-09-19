@@ -34,21 +34,15 @@ export async function maintainEvidence(
 async function purgeExpiredEvidence(context: EvidenceMaintenanceContext) {
   const now = new Date(context.now)
   if (Number.isNaN(now.getTime())) throw new Error('Evidence maintenance time is invalid')
-  const retentionCutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1_000).toISOString()
   const transientCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1_000).toISOString()
   const purges: WithoutLimit<EvidencePurgeInput>[] = []
   for (const store of [
-    'legacy-skills',
     'wallet-journal',
     'wallet-transactions',
     'mail-headers',
     'mail-contents',
   ] as const)
-    purges.push({
-      mode: 'retention',
-      store,
-      cutoff: store === 'legacy-skills' ? retentionCutoff : context.now,
-    })
+    purges.push({ mode: 'retention', store, cutoff: context.now })
   for (const store of ['continuations', 'staging', 'promotions'] as const)
     purges.push({ mode: 'retention', store, cutoff: transientCutoff })
   for (const purge of purges) {

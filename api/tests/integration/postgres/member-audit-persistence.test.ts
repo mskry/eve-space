@@ -68,137 +68,7 @@ afterAll(async () => {
   await container?.stop()
 })
 
-test('migrates migration 001 skill evidence to RFC UUID observations accepted by readers', async () => {
-  const databaseName = `member_audit_upgrade_${randomUUID().replaceAll('-', '')}`
-  await connection`create database ${connection(databaseName)}`
-  const upgradeUrl = new URL(databaseUrl)
-  upgradeUrl.pathname = `/${databaseName}`
-  const upgradeConnection = postgres(upgradeUrl.toString())
-  const migration001 = [
-    {
-      moduleId: 'member-audit',
-      name: 'member-audit-001-baseline.sql',
-      packageName: '@eve-space/member-audit-server',
-      exportPath: './migrations/member-audit-001-baseline.sql',
-    },
-  ] as const
-  const migration001Operations = installedModulePersistenceOperations.filter(
-    ({ moduleId, migration }) =>
-      moduleId === 'member-audit' && migration === 'member-audit-001-baseline.sql',
-  )
-
-  try {
-    await runStartupMigrations(upgradeConnection, {
-      installed: migration001,
-      moduleIds: ['member-audit'],
-      persistenceOperations: migration001Operations,
-      persistenceContractFingerprint: persistenceContractFingerprintFor(migration001Operations, [
-        'member-audit',
-      ]),
-    })
-    const writeLegacySnapshot = bindPlatformPersistenceOperation(
-      installedModulePersistenceOperationCatalog['member-audit/write-skill-snapshot'],
-      createStandaloneModulePersistenceOperationInvoker(
-        upgradeConnection,
-        'member-audit',
-        migration001Operations,
-      ),
-    )
-    const authority = {
-      resourceId: 'trained-skills' as const,
-      organizationVersion: 1,
-      targetUserId: '11111111-1111-4111-8111-111111111111',
-      managedMemberLifecycleId: '22222222-2222-4222-8222-222222222222',
-      characterId: 90_000_009,
-      characterLifecycleId: '33333333-3333-4333-8333-333333333333',
-      authorizationGeneration: 1,
-      disclosureVersion: 1,
-      sectionActivationVersion: 1,
-      dtoRevision: 1 as const,
-      validatedAt: '2026-09-17T10:00:00Z',
-      snapshot: {
-        kind: 'trained-skills' as const,
-        totalSp: 0,
-        unallocatedSp: 0,
-        injectedSkillCount: 0,
-        groups: [],
-      },
-    }
-    await expect(writeLegacySnapshot(authority)).resolves.toEqual({ outcome: 'applied' })
-    await expect(
-      writeLegacySnapshot({
-        ...authority,
-        resourceId: 'skill-queue',
-        characterId: 90_000_010,
-        snapshot: { kind: 'skill-queue', entries: [] },
-      }),
-    ).resolves.toEqual({ outcome: 'applied' })
-
-    await runStartupMigrations(upgradeConnection)
-    const [queueState] = await upgradeConnection<{ queueRows: number }[]>`
-      select count(*)::integer as "queueRows"
-      from eve_module_member_audit.skill_queue_snapshots
-    `
-    expect(queueState).toEqual({ queueRows: 0 })
-    const readSkillEvidence = bindPlatformPersistenceOperation(
-      installedModulePersistenceOperationCatalog['member-audit/read-skill-evidence'],
-      createStandaloneModulePersistenceOperationInvoker(
-        upgradeConnection,
-        'member-audit',
-        installedModulePersistenceOperations,
-        { readOnly: true },
-      ),
-    )
-    const readTrainedSkillsEvidence = bindPlatformPersistenceOperation(
-      installedModulePersistenceOperationCatalog['member-audit/read-trained-skills-evidence'],
-      createStandaloneModulePersistenceOperationInvoker(
-        upgradeConnection,
-        'member-audit',
-        installedModulePersistenceOperations,
-        { readOnly: true },
-      ),
-    )
-
-    await expect(
-      readSkillEvidence({
-        organizationVersion: authority.organizationVersion,
-        targetUserId: authority.targetUserId,
-        managedMemberLifecycleId: authority.managedMemberLifecycleId,
-        characterId: authority.characterId,
-        characterLifecycleId: authority.characterLifecycleId,
-        authorizationGeneration: authority.authorizationGeneration,
-        disclosureVersion: authority.disclosureVersion,
-        sectionActivationVersion: authority.sectionActivationVersion,
-      }),
-    ).resolves.toMatchObject({
-      trainedSkills: {
-        observationId: expect.stringMatching(/^[0-9a-f]{8}-.{4}-4.{3}-8.{3}-.{12}$/),
-      },
-      skillQueue: null,
-    })
-    await expect(
-      readTrainedSkillsEvidence({
-        organizationVersion: authority.organizationVersion,
-        targetUserId: authority.targetUserId,
-        managedMemberLifecycleId: authority.managedMemberLifecycleId,
-        characterId: authority.characterId,
-        characterLifecycleId: authority.characterLifecycleId,
-        authorizationGeneration: authority.authorizationGeneration,
-        disclosureVersion: authority.disclosureVersion,
-        sectionActivationVersion: authority.sectionActivationVersion,
-      }),
-    ).resolves.toMatchObject({
-      trainedSkills: {
-        observationId: expect.stringMatching(/^[0-9a-f]{8}-.{4}-4.{3}-8.{3}-.{12}$/),
-      },
-    })
-  } finally {
-    await upgradeConnection.end()
-    await connection`drop database ${connection(databaseName)}`
-  }
-})
-
-test('keeps migrated legacy skill storage empty and replaces trained snapshots across authority revisions', async () => {
+test('replaces trained snapshots across authority revisions', async () => {
   const operation =
     installedModulePersistenceOperationCatalog['member-audit/materialize-current-snapshot']
   const materializeCurrentSnapshot = bindPlatformPersistenceOperation(
@@ -235,14 +105,14 @@ test('keeps migrated legacy skill storage empty and replaces trained snapshots a
       ...initial,
       authorizationGeneration: 2,
       observationId: '70000000-0000-4000-8000-000000000002',
-      validatedAt: '2026-09-17T10:01:00Z',
+      validatedAt: '2026-09-17T09:59:00Z',
     },
     {
       ...initial,
       authorizationGeneration: 2,
       managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
       observationId: '70000000-0000-4000-8000-000000000003',
-      validatedAt: '2026-09-17T10:02:00Z',
+      validatedAt: '2026-09-17T09:58:00Z',
     },
     {
       ...initial,
@@ -250,7 +120,7 @@ test('keeps migrated legacy skill storage empty and replaces trained snapshots a
       managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
       characterLifecycleId: '55555555-5555-4555-8555-555555555555',
       observationId: '70000000-0000-4000-8000-000000000004',
-      validatedAt: '2026-09-17T10:03:00Z',
+      validatedAt: '2026-09-17T09:57:00Z',
     },
     {
       ...initial,
@@ -259,7 +129,7 @@ test('keeps migrated legacy skill storage empty and replaces trained snapshots a
       characterLifecycleId: '55555555-5555-4555-8555-555555555555',
       disclosureVersion: 2,
       observationId: '70000000-0000-4000-8000-000000000005',
-      validatedAt: '2026-09-17T10:04:00Z',
+      validatedAt: '2026-09-17T09:56:00Z',
     },
     {
       ...initial,
@@ -269,7 +139,7 @@ test('keeps migrated legacy skill storage empty and replaces trained snapshots a
       disclosureVersion: 2,
       sectionActivationVersion: 2,
       observationId: '70000000-0000-4000-8000-000000000006',
-      validatedAt: '2026-09-17T10:05:00Z',
+      validatedAt: '2026-09-17T09:55:00Z',
     },
     {
       ...initial,
@@ -280,7 +150,7 @@ test('keeps migrated legacy skill storage empty and replaces trained snapshots a
       disclosureVersion: 2,
       sectionActivationVersion: 2,
       observationId: '70000000-0000-4000-8000-000000000007',
-      validatedAt: '2026-09-17T10:06:00Z',
+      validatedAt: '2026-09-17T09:54:00Z',
     },
     {
       ...initial,
@@ -292,7 +162,7 @@ test('keeps migrated legacy skill storage empty and replaces trained snapshots a
       disclosureVersion: 2,
       sectionActivationVersion: 2,
       observationId: '70000000-0000-4000-8000-000000000008',
-      validatedAt: '2026-09-17T10:07:00Z',
+      validatedAt: '2026-09-17T09:53:00Z',
     },
   ]
 
@@ -300,11 +170,12 @@ test('keeps migrated legacy skill storage empty and replaces trained snapshots a
   for (const revision of revisions)
     await expect(materializeCurrentSnapshot(revision)).resolves.toEqual({ outcome: 'applied' })
 
+  const finalRevision = revisions[6]!
   await expect(
     materializeCurrentSnapshot({
-      ...initial,
+      ...finalRevision,
       observationId: '70000000-0000-4000-8000-000000000009',
-      validatedAt: '2026-09-17T09:59:00Z',
+      validatedAt: '2026-09-17T09:52:00Z',
     }),
   ).resolves.toEqual({ outcome: 'obsolete' })
 
@@ -344,22 +215,67 @@ test('keeps migrated legacy skill storage empty and replaces trained snapshots a
       authorizationGeneration: 2,
       disclosureVersion: 2,
       sectionActivationVersion: 2,
-      validatedAt: new Date('2026-09-17T10:07:00Z'),
+      validatedAt: new Date('2026-09-17T09:53:00Z'),
     },
   ])
-  const [legacy] = await connection<
-    { legacyRows: number; routine: string | null; table: string | null }[]
-  >`
-    select
-      to_regprocedure('eve_module_member_audit.persist_write_skill_snapshot(jsonb)')::text as routine,
-      to_regclass('eve_module_member_audit.skill_snapshots')::text as table,
-      (select count(*)::integer from eve_module_member_audit.skill_snapshots) as "legacyRows"
-  `
-  expect(legacy).toEqual({
-    legacyRows: 0,
-    routine: 'eve_module_member_audit.persist_write_skill_snapshot(jsonb)',
-    table: 'eve_module_member_audit.skill_snapshots',
+})
+
+test('replaces a wallet balance after its authority changes despite an older cached response', async () => {
+  const materializeCurrentSnapshot = bindPlatformPersistenceOperation(
+    installedModulePersistenceOperationCatalog['member-audit/materialize-current-snapshot'],
+    memberAuditInvoker(),
+  )
+  const initial = {
+    resourceId: 'wallet-balance' as const,
+    organizationVersion: 1,
+    targetUserId: '88888888-8888-4888-8888-888888888888',
+    managedMemberLifecycleId: '89999999-9999-4999-8999-999999999999',
+    characterId: 90_000_008,
+    characterLifecycleId: '8aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    authorizationGeneration: 1,
+    disclosureVersion: 1,
+    sectionActivationVersion: 1,
+    observationId: '8bbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    dtoRevision: 1,
+    validatedAt: '2026-09-17T10:00:00Z',
+    snapshot: { kind: 'wallet-balance' as const, balance: 10 },
+  }
+  const changedAuthority = {
+    ...initial,
+    authorizationGeneration: 2,
+    observationId: '8ccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    validatedAt: '2026-09-17T09:59:00Z',
+    snapshot: { kind: 'wallet-balance' as const, balance: 20 },
+  }
+
+  await expect(materializeCurrentSnapshot(initial)).resolves.toEqual({ outcome: 'applied' })
+  await expect(
+    materializeCurrentSnapshot({
+      ...initial,
+      observationId: '8ddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      validatedAt: '2026-09-17T09:58:00Z',
+      snapshot: { kind: 'wallet-balance', balance: 15 },
+    }),
+  ).resolves.toEqual({ outcome: 'obsolete' })
+  await expect(materializeCurrentSnapshot(changedAuthority)).resolves.toEqual({
+    outcome: 'applied',
   })
+  await expect(
+    connection<{ authorizationGeneration: number; balance: number; validatedAt: Date }[]>`
+      select
+        authorization_generation as "authorizationGeneration",
+        (snapshot ->> 'balance')::integer as balance,
+        validated_at as "validatedAt"
+      from eve_module_member_audit.wallet_balance_snapshots
+      where character_id = ${changedAuthority.characterId}
+    `,
+  ).resolves.toEqual([
+    {
+      authorizationGeneration: 2,
+      balance: 20,
+      validatedAt: new Date('2026-09-17T09:59:00Z'),
+    },
+  ])
 })
 
 test('attests the declared routines and denies the runtime role direct table access', async () => {
@@ -401,8 +317,8 @@ test('attests the declared routines and denies the runtime role direct table acc
   `
 
   expect(state).toEqual({
-    attestationCount: 12,
-    migrationCount: 5,
+    attestationCount: 10,
+    migrationCount: 1,
     moduleTableAccess: false,
     publicTableAccess: false,
     routineAccess: true,
@@ -411,14 +327,6 @@ test('attests the declared routines and denies the runtime role direct table acc
     installedModulePersistenceOperationCatalog['member-audit/read-asset-evidence'].grants,
   ).toEqual({
     routes: ['assets-detail'],
-    activityProviders: [],
-    resourceProjections: [],
-    resourceMaterializations: [],
-  })
-  expect(
-    installedModulePersistenceOperationCatalog['member-audit/write-skill-snapshot'].grants,
-  ).toEqual({
-    routes: [],
     activityProviders: [],
     resourceProjections: [],
     resourceMaterializations: [],
@@ -1101,38 +1009,6 @@ test('bounds retention and authority purges without retaining evidence through a
       mode: 'retention',
       store: 'wallet-journal',
       cutoff: '2026-01-02T00:00:00Z',
-      limit: 100,
-    }),
-  ).resolves.toEqual({ deleted: 1, remaining: false })
-
-  const writeLegacySkillSnapshot = bindPlatformPersistenceOperation(
-    installedModulePersistenceOperationCatalog['member-audit/write-skill-snapshot'],
-    memberAuditInvoker(),
-  )
-  const legacyAuthority = {
-    organizationVersion: 10,
-    targetUserId: '70000000-0000-4000-8000-000000000027',
-    managedMemberLifecycleId: '70000000-0000-4000-8000-000000000028',
-    characterId: 90_000_107,
-    characterLifecycleId: '70000000-0000-4000-8000-000000000029',
-    authorizationGeneration: 1,
-    disclosureVersion: 1,
-    sectionActivationVersion: 1,
-  }
-  await expect(
-    writeLegacySkillSnapshot({
-      resourceId: 'skill-queue',
-      ...legacyAuthority,
-      dtoRevision: 1,
-      snapshot: { kind: 'skill-queue', entries: [] },
-      validatedAt: '2026-09-17T10:00:00Z',
-    }),
-  ).resolves.toEqual({ outcome: 'applied' })
-  await expect(
-    purgeEvidence({
-      mode: 'account',
-      store: 'legacy-skills',
-      targetUserId: legacyAuthority.targetUserId,
       limit: 100,
     }),
   ).resolves.toEqual({ deleted: 1, remaining: false })

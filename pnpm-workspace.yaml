@@ -6,6 +6,7 @@ packages:
   - 'features/*/nuxt'
 
 injectWorkspacePackages: true
+pmOnFail: ignore
 
 # Single source of truth for external dependency versions. Packages reference these with
 # `catalog:` so a version is declared once and inherited, never pinned per package.

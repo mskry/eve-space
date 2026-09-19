@@ -5,7 +5,7 @@ FROM node:24.20-alpine AS base
 ENV PNPM_HOME=/pnpm
 ENV COREPACK_HOME=/corepack
 ENV PATH=$PNPM_HOME:$PATH
-RUN corepack enable && corepack prepare pnpm@11.27.0 --activate
+RUN corepack enable && corepack prepare pnpm@12.4.2 --activate
 WORKDIR /workspace
 
 FROM base AS build
@@ -24,7 +24,7 @@ ENV NODE_ENV=production
 ENV PNPM_HOME=/pnpm
 ENV COREPACK_HOME=/corepack
 ENV PATH=$PNPM_HOME:$PATH
-RUN corepack enable && corepack prepare pnpm@11.27.0 --activate
+RUN corepack enable && corepack prepare pnpm@12.4.2 --activate
 WORKDIR /app
 
 COPY --from=build /prod/api ./

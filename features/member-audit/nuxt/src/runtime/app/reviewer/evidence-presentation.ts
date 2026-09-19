@@ -30,7 +30,11 @@ export function hasAssetEvidence(evidence: AssetEvidence | null | undefined) {
 }
 
 export function hasWalletEvidence(evidence: WalletEvidence | null | undefined) {
-  return Boolean(evidence?.balance || evidence?.journal.length || evidence?.transactions.length)
+  if (!evidence) return false
+
+  return (
+    evidence.balance !== null || evidence.journal.length > 0 || evidence.transactions.length > 0
+  )
 }
 
 export function hasMailEvidence(evidence: MailEvidence | null | undefined) {

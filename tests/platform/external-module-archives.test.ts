@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import {
   access,
   copyFile,
@@ -22,8 +23,10 @@ import {
   loadInstalledModuleManifests,
 } from '../../scripts/module-registry/generator'
 
-const packageManager = 'pnpm@11.27.0'
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+// Synthetic hosts install with the package manager this repository supports, so the pin cannot
+// drift behind it and reintroduce resolution defects the supported version already fixes.
+const packageManager = requiredPackageManager()
 const moduleId = 'synthetic'
 const version = '1.2.3'
 const packageNames = {
@@ -712,7 +715,13 @@ console.log(JSON.stringify({ artifact: '${artifact}', migration: migration.trim(
     'server.js': productionArtifact('api'),
     'worker.js': productionArtifact('worker'),
   })
-  await writeFile(join(root, 'pnpm-workspace.yaml'), "packages:\n  - 'api'\n")
+  await writeFile(
+    join(root, 'pnpm-workspace.yaml'),
+    // Hosts mirror this repository's pnpm settings. `pmOnFail: ignore` keeps the pinned package
+    // manager out of the lockfile, so the host writes the single-document lockfile the module
+    // registry resolver reads rather than one preceded by an env document.
+    "packages:\n  - 'api'\npmOnFail: ignore\n",
+  )
   await writeInstalledSelection(root, moduleId, packageNames.manifest)
   runPnpm(
     root,
@@ -777,6 +786,13 @@ async function rejectedHostMessage(root: string) {
     return message
   }
   throw new Error('Expected installed module host validation to fail')
+}
+
+function requiredPackageManager(): string {
+  const manifest: unknown = JSON.parse(readFileSync(join(repositoryRoot, 'package.json'), 'utf8'))
+  if (!isRecord(manifest) || typeof manifest.packageManager !== 'string')
+    throw new Error('The repository manifest must declare a packageManager')
+  return manifest.packageManager
 }
 
 function packageRoots(root: string): Record<PackageRole, string> {

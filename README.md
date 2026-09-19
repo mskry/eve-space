@@ -59,7 +59,7 @@ Roadmap items describe planned direction, not functionality available in the cur
 ## Requirements
 
 - Node.js 24.20 or newer
-- pnpm 11.27.0 through Corepack
+- pnpm 12.4.2 through Corepack
 - Docker Engine with Docker Compose (OrbStack and Docker Desktop are both suitable locally)
 - An EVE Developer application for the SSO flow
 

@@ -25,13 +25,7 @@ test('purges expired and invalid-authority evidence in bounded batches', async (
 
   await trainedSkillsResource.maintain?.(context)
 
-  expect(purgeEvidence).toHaveBeenCalledTimes(10)
-  expect(purgeEvidence).toHaveBeenCalledWith({
-    mode: 'retention',
-    store: 'legacy-skills',
-    cutoff: '2026-06-20T10:00:00.000Z',
-    limit: 1_000,
-  })
+  expect(purgeEvidence).toHaveBeenCalledTimes(8)
   expect(purgeEvidence).toHaveBeenCalledWith({
     mode: 'retention',
     store: 'continuations',
@@ -44,13 +38,6 @@ test('purges expired and invalid-authority evidence in bounded batches', async (
     ...invalidAuthority,
     limit: 1_000,
   })
-  expect(purgeEvidence).toHaveBeenCalledWith({
-    mode: 'authority',
-    store: 'legacy-skills',
-    ...invalidAuthority,
-    limit: 1_000,
-  })
-
   purgeEvidence.mockClear()
   await walletBalanceResource.maintain?.(context)
   expect(purgeEvidence).toHaveBeenCalledOnce()
@@ -68,16 +55,10 @@ test('purges expired and invalid-authority evidence in bounded batches', async (
     invalidAuthorities: [],
     purgeRetention: false,
   })
-  expect(purgeEvidence).toHaveBeenCalledTimes(2)
+  expect(purgeEvidence).toHaveBeenCalledOnce()
   expect(purgeEvidence).toHaveBeenCalledWith({
     mode: 'account',
     store: 'trained-skills',
-    targetUserId: invalidAuthority.targetUserId,
-    limit: 1_000,
-  })
-  expect(purgeEvidence).toHaveBeenCalledWith({
-    mode: 'account',
-    store: 'legacy-skills',
     targetUserId: invalidAuthority.targetUserId,
     limit: 1_000,
   })

@@ -112,9 +112,9 @@
     {
       "id": "overview",
       "routeId": "member-summary",
+      "directoryPermission": "member-audit.search",
       "audience": "hr",
       "requiredPermission": "member-audit.summary.read",
-      "directoryPermission": "member-audit.search",
       "target": "managed-organization-account",
       "panelExport": "./reviewer/overview",
       "label": "Member overview",
@@ -125,9 +125,9 @@
     {
       "id": "trained-skills",
       "routeId": "skills-detail",
+      "directoryPermission": "member-audit.search",
       "audience": "hr",
       "requiredPermission": "member-audit.skills.read",
-      "directoryPermission": "member-audit.search",
       "target": "managed-organization-character",
       "panelExport": "./reviewer/trained-skills",
       "label": "Trained skills",
@@ -138,9 +138,9 @@
     {
       "id": "assets",
       "routeId": "assets-detail",
+      "directoryPermission": "member-audit.search",
       "audience": "hr",
       "requiredPermission": "member-audit.assets.read",
-      "directoryPermission": "member-audit.search",
       "target": "managed-organization-character",
       "panelExport": "./reviewer/assets",
       "label": "Assets",
@@ -151,9 +151,9 @@
     {
       "id": "wallet",
       "routeId": "wallet-detail",
+      "directoryPermission": "member-audit.search",
       "audience": "hr",
       "requiredPermission": "member-audit.wallet.read",
-      "directoryPermission": "member-audit.search",
       "target": "managed-organization-character",
       "panelExport": "./reviewer/wallet",
       "label": "Wallet",
@@ -164,9 +164,9 @@
     {
       "id": "mail",
       "routeId": "mail-detail",
+      "directoryPermission": "member-audit.search",
       "audience": "hr",
       "requiredPermission": "member-audit.mail.read",
-      "directoryPermission": "member-audit.search",
       "target": "managed-organization-character",
       "panelExport": "./reviewer/mail",
       "label": "Mail",
@@ -177,9 +177,9 @@
     {
       "id": "ordinary-groups",
       "routeId": "group-actions",
+      "directoryPermission": "member-audit.search",
       "audience": "hr",
       "requiredPermission": "member-audit.groups.manage",
-      "directoryPermission": "member-audit.search",
       "target": "managed-organization-account",
       "panelExport": "./reviewer/ordinary-groups",
       "label": "Ordinary groups",
@@ -190,9 +190,9 @@
     {
       "id": "member-block",
       "routeId": "block-actions",
+      "directoryPermission": "member-audit.search",
       "audience": "hr",
       "requiredPermission": "member-audit.members.block",
-      "directoryPermission": "member-audit.search",
       "target": "managed-organization-account",
       "panelExport": "./reviewer/member-block",
       "label": "Member block",
@@ -350,18 +350,6 @@
     "migrations": [
       {
         "name": "member-audit-001-baseline.sql"
-      },
-      {
-        "name": "member-audit-002-evidence-storage.sql"
-      },
-      {
-        "name": "member-audit-003-persistence-operations.sql"
-      },
-      {
-        "name": "member-audit-004-purge-operation.sql"
-      },
-      {
-        "name": "member-audit-005-resource-collection.sql"
       }
     ],
     "persistenceOperations": [
@@ -371,23 +359,7 @@
         "revision": 1,
         "mode": "read",
         "exportName": "readTrainedSkillsEvidenceOperation",
-        "migration": "member-audit-005-resource-collection.sql"
-      },
-      {
-        "id": "write-skill-snapshot",
-        "method": "writeSkillSnapshot",
-        "revision": 1,
-        "mode": "write",
-        "exportName": "writeSkillSnapshotOperation",
         "migration": "member-audit-001-baseline.sql"
-      },
-      {
-        "id": "read-skill-evidence",
-        "method": "readSkillEvidence",
-        "revision": 1,
-        "mode": "read",
-        "exportName": "readSkillEvidenceOperation",
-        "migration": "member-audit-003-persistence-operations.sql"
       },
       {
         "id": "read-asset-evidence",
@@ -395,7 +367,7 @@
         "revision": 1,
         "mode": "read",
         "exportName": "readAssetEvidenceOperation",
-        "migration": "member-audit-003-persistence-operations.sql"
+        "migration": "member-audit-001-baseline.sql"
       },
       {
         "id": "read-wallet-evidence",
@@ -403,7 +375,7 @@
         "revision": 1,
         "mode": "read",
         "exportName": "readWalletEvidenceOperation",
-        "migration": "member-audit-003-persistence-operations.sql"
+        "migration": "member-audit-001-baseline.sql"
       },
       {
         "id": "read-mail-evidence",
@@ -411,7 +383,7 @@
         "revision": 1,
         "mode": "read",
         "exportName": "readMailEvidenceOperation",
-        "migration": "member-audit-003-persistence-operations.sql"
+        "migration": "member-audit-001-baseline.sql"
       },
       {
         "id": "materialize-current-snapshot",
@@ -419,7 +391,7 @@
         "revision": 1,
         "mode": "write",
         "exportName": "materializeCurrentSnapshotOperation",
-        "migration": "member-audit-003-persistence-operations.sql"
+        "migration": "member-audit-001-baseline.sql"
       },
       {
         "id": "read-active-evidence-continuation",
@@ -427,7 +399,7 @@
         "revision": 1,
         "mode": "read",
         "exportName": "readActiveEvidenceContinuationOperation",
-        "migration": "member-audit-005-resource-collection.sql"
+        "migration": "member-audit-001-baseline.sql"
       },
       {
         "id": "read-evidence-continuation",
@@ -435,7 +407,7 @@
         "revision": 1,
         "mode": "read",
         "exportName": "readEvidenceContinuationOperation",
-        "migration": "member-audit-003-persistence-operations.sql"
+        "migration": "member-audit-001-baseline.sql"
       },
       {
         "id": "write-evidence-continuation",
@@ -443,7 +415,7 @@
         "revision": 1,
         "mode": "write",
         "exportName": "writeEvidenceContinuationOperation",
-        "migration": "member-audit-003-persistence-operations.sql"
+        "migration": "member-audit-001-baseline.sql"
       },
       {
         "id": "promote-evidence-observation",
@@ -451,7 +423,7 @@
         "revision": 1,
         "mode": "write",
         "exportName": "promoteEvidenceObservationOperation",
-        "migration": "member-audit-003-persistence-operations.sql"
+        "migration": "member-audit-001-baseline.sql"
       },
       {
         "id": "purge-evidence",
@@ -459,7 +431,7 @@
         "revision": 1,
         "mode": "write",
         "exportName": "purgeEvidenceOperation",
-        "migration": "member-audit-004-purge-operation.sql"
+        "migration": "member-audit-001-baseline.sql"
       }
     ],
     "resources": [
