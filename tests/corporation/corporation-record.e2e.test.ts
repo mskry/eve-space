@@ -150,10 +150,11 @@ describe('corporation record routes', async () => {
     const page = await openPage(`/corporation/${corporationId}`)
     await page.getByRole('heading', { name: 'Navigation Industries' }).waitFor()
     await page.getByText('A corporation used to verify routed records.').waitFor()
-    await page.getByText('LP TAX 2.5%').waitFor()
-    await page.getByText('PLAYER CORP').waitFor()
-    await page.getByText('FRIENDLY FIRE').waitFor()
-    await page.getByText('LEGAL', { exact: true }).waitFor()
+    await page.getByText('2.5%', { exact: true }).waitFor()
+    await page.getByText('ACTIVE', { exact: true }).waitFor()
+    await page.getByText('WAR ELIGIBLE', { exact: true }).waitFor()
+    await page.getByText('FRIENDLY FIRE LEGAL', { exact: true }).waitFor()
+    expect(await page.getByText('NPC OWNED', { exact: true }).count()).toBe(0)
     await expect
       .poll(() => page.title())
       .toBe('Navigation Industries [NAV] // Corporation Overview // EVE Space')
@@ -245,7 +246,7 @@ describe('corporation record routes', async () => {
 
     await page.waitForURL((url) => url.pathname === `/corporation/${corporationId}`)
     await page.getByRole('heading', { name: 'Navigation Industries' }).waitFor()
-    await page.getByText('NPC CORP').waitFor()
+    await page.getByText('NPC OWNED', { exact: true }).waitFor()
 
     const navigation = page.getByRole('navigation', { name: 'Corporation record sections' })
     expect(await navigation.getByRole('link').allTextContents()).toEqual(['OVERVIEW'])

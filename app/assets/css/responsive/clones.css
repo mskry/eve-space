@@ -24,15 +24,9 @@
   .character-clones-section-heading,
   .character-clones-rack-columns,
   .character-clones-rack-unslotted,
-  .character-clones-home-details,
-  .character-clones-groups,
-  .character-clones-stored-footer {
+  .character-clones-groups {
     padding-right: 0.75rem;
     padding-left: 0.75rem;
-  }
-
-  .character-clones-home-details {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 

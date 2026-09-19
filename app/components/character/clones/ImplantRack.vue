@@ -40,10 +40,7 @@ const resourceState = computed(() =>
 <template>
   <section class="character-clones-rack" aria-labelledby="character-clones-rack-title">
     <header class="character-clones-section-heading">
-      <div>
-        <p class="ui-eyebrow">AUGMENTATIONS</p>
-        <h2 id="character-clones-rack-title">Active clone implants</h2>
-      </div>
+      <h2 id="character-clones-rack-title">Active clone implants</h2>
       <span v-if="implants">{{ slotSummaryLabel }}</span>
     </header>
 

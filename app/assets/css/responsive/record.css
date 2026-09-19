@@ -17,11 +17,17 @@
 }
 
 @media (max-width: 760px) {
+  .character-overview-detail-section--identity dl,
+  .character-overview-detail-section--progression dl,
+  .character-overview-detail-section--public-record dl,
+  .character-detail-groups--operations-only .character-detail-group--operations dl {
+    grid-template-columns: 1fr;
+  }
+
   .identity-panel {
     padding: 34px 20px 22px;
   }
-  .identity-panel .overview-summary-grid,
-  .identity-panel .overview-summary-grid--single-affiliation {
+  .identity-panel .overview-summary-grid {
     grid-template-columns: 1fr;
   }
   .identity-panel .overview-summary-grid > :not(:last-child) {

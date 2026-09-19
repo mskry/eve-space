@@ -107,6 +107,7 @@ const allowedCrossSubsystemImportsByModule: Readonly<Record<string, readonly str
     'api/src/type-guards',
     'api/src/universe/implant-attributes',
     'api/src/universe/names',
+    'api/src/universe/static-locations',
   ],
   'clones-routes': [
     'api/src/http/private-response',

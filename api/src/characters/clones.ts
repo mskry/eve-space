@@ -23,6 +23,7 @@ import {
   isImplantSlot,
 } from '../universe/implant-attributes.js'
 import { resolveUniverseNames } from '../universe/names.js'
+import { getStaticLocations } from '../universe/static-locations.js'
 
 interface CharacterCloneStateRepresentationInput {
   characterId: number
@@ -133,8 +134,12 @@ interface CloneLocation extends CloneLocationSnapshot {
   name: string | null
 }
 
+interface HomeLocation extends CloneLocation {
+  solarSystemSecurityStatus: number | null
+}
+
 interface CharacterClonesData {
-  homeLocation: CloneLocation | null
+  homeLocation: HomeLocation | null
   jumpClones: Array<{
     jumpCloneId: number
     name: string | null
@@ -177,13 +182,18 @@ export async function getCharacterClones(
   const snapshot = await getCharacterClonesData(characterId, subjectLifecycleId)
   const implantTypeIds = snapshot.data.jumpClones.flatMap((clone) => clone.implantTypeIds)
   const stationIds = collectStationIds(snapshot.data)
-  const [implantStaticData, stationNames] = await Promise.all([
+  const [implantStaticData, stationNames, stationSecurityStatuses] = await Promise.all([
     loadImplantStaticData(implantTypeIds),
     loadStationNames(stationIds),
+    loadStationSecurityStatuses(stationIds),
   ])
 
   return {
-    homeLocation: enrichLocation(snapshot.data.homeLocation, stationNames),
+    homeLocation: enrichHomeLocation(
+      snapshot.data.homeLocation,
+      stationNames,
+      stationSecurityStatuses,
+    ),
     jumpClones: snapshot.data.jumpClones.map((clone) => ({
       jumpCloneId: clone.jumpCloneId,
       name: clone.name,
@@ -352,11 +362,38 @@ async function loadStationNames(stationIds: readonly number[]) {
   }
 }
 
-function enrichLocation(
+async function loadStationSecurityStatuses(stationIds: readonly number[]) {
+  if (stationIds.length === 0) return new Map<number, number>()
+  try {
+    const locations = await getStaticLocations(
+      stationIds.map((id) => ({ id, type: 'station' as const })),
+    )
+    return new Map(
+      locations.flatMap((location) =>
+        location.solarSystemSecurityStatus === null
+          ? []
+          : [[location.id, location.solarSystemSecurityStatus] as const],
+      ),
+    )
+  } catch {
+    return new Map<number, number>()
+  }
+}
+
+function enrichHomeLocation(
   location: CloneLocationSnapshot | null,
   namesByStation: ReadonlyMap<number, string>,
-): CloneLocation | null {
-  return location ? { ...location, name: locationName(location, namesByStation) } : null
+  securityByStation: ReadonlyMap<number, number>,
+): HomeLocation | null {
+  if (!location) return null
+  return {
+    ...location,
+    name: locationName(location, namesByStation),
+    solarSystemSecurityStatus:
+      location.locationType === 'station' && location.locationId !== null
+        ? (securityByStation.get(location.locationId) ?? null)
+        : null,
+  }
 }
 
 function locationName(

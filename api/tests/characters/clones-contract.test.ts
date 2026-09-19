@@ -19,6 +19,7 @@ describe('mounted Clones AppType contract', () => {
       locationId: number | null
       locationType: 'station' | 'structure' | null
       name: string | null
+      solarSystemSecurityStatus: number | null
     } | null>()
     expectTypeOf<ClonesResponse['lastCloneJumpAt']>().toEqualTypeOf<string | null>()
     expectTypeOf<ClonesResponse['lastStationChangeAt']>().toEqualTypeOf<string | null>()

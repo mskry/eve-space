@@ -68,9 +68,6 @@ const locationLabel = computed(() => {
   if (data.structureId) return `${data.solarSystemName} // Private structure`
   return `${data.solarSystemName} // In space`
 })
-const systemLabel = computed(() =>
-  location.value?.status === 'ok' ? location.value.data.solarSystemName : '—',
-)
 const shipLabel = computed(() => (ship.value?.status === 'ok' ? ship.value.data.typeName : '—'))
 const shipNameLabel = computed(() => (ship.value?.status === 'ok' ? ship.value.data.name : ''))
 const skillPointsLabel = computed(() =>
@@ -159,176 +156,133 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
           >
             <section
               class="overview-summary-grid"
-              :class="{ 'overview-summary-grid--single-affiliation': !character.alliance }"
-              aria-label="Character biography and affiliations"
+              aria-label="Character biography, operations, identity, and progression"
             >
-              <div
-                ref="bioCard"
-                class="overview-bio-card"
-                :class="{ 'overview-bio-card--expandable': bioIsOverflowing }"
-              >
-                <span class="card-index">01</span>
-                <p>BIO</p>
-                <div ref="bioCopy" class="overview-bio-copy">
-                  <EveFormattedText v-if="character.bio" :value="character.bio" />
-                  <template v-else>No biography recorded.</template>
-                </div>
-              </div>
-              <section class="affiliation-card">
-                <span class="card-index">02</span>
-                <p>CORPORATION</p>
-                <NuxtLink
-                  class="affiliation-identity"
-                  :to="`/corporation/${character.corporation.id}`"
+              <div class="character-overview-primary-column">
+                <div
+                  ref="bioCard"
+                  class="overview-bio-card"
+                  :class="{ 'overview-bio-card--expandable': bioIsOverflowing }"
                 >
-                  <UiEveImage
-                    kind="corporation"
-                    :id="character.corporation.id"
-                    :dimension="48"
-                    :width="48"
-                    :height="48"
-                    loading="lazy"
-                    decoding="async"
-                    :alt="`${character.corporation.name} corporation logo`"
-                  />
-                  <div class="affiliation-copy">
-                    <h2>
-                      <span class="affiliation-ticker">[{{ character.corporation.ticker }}]</span>
-                      {{ character.corporation.name }}
-                    </h2>
-                    <div class="affiliation-meta">
-                      <span
-                        >{{
-                          character.corporation.memberCount.toLocaleString('en-US')
-                        }}
-                        MEMBERS</span
-                      >
-                    </div>
+                  <span class="card-index">01</span>
+                  <p>BIO</p>
+                  <div ref="bioCopy" class="overview-bio-copy">
+                    <EveFormattedText v-if="character.bio" :value="character.bio" />
+                    <template v-else>No biography recorded.</template>
                   </div>
-                </NuxtLink>
-              </section>
-              <section v-if="character.alliance" class="affiliation-card">
-                <span class="card-index">03</span>
-                <p>ALLIANCE</p>
-                <h2>
-                  <span class="affiliation-ticker">[{{ character.alliance.ticker }}]</span>
-                  {{ character.alliance.name }}
-                </h2>
-                <div class="affiliation-meta">
-                  <span>ACTIVE AFFILIATION</span>
                 </div>
-              </section>
-            </section>
-            <section class="character-detail-groups" aria-label="Character details">
-              <section
-                ref="operationsGroup"
-                class="character-detail-group character-detail-group--operations"
-              >
-                <h2>OPERATIONS</h2>
-                <dl>
-                  <div>
-                    <dt>CURRENT SYSTEM</dt>
-                    <dd class="character-system-detail">
-                      <SystemSecurityStatus
-                        v-if="
-                          location?.status === 'ok' &&
-                          typeof location.data.solarSystemSecurityStatus === 'number'
-                        "
-                        :value="location.data.solarSystemSecurityStatus"
-                      />
-                      <span>{{ systemLabel }}</span>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>DOCKED AT</dt>
-                    <dd :title="locationLabel">{{ locationLabel }}</dd>
-                  </div>
-                  <div>
-                    <dt>CURRENT SHIP</dt>
-                    <dd class="character-ship-detail" :title="shipNameLabel">
-                      <UiEveImage
-                        v-if="ship?.status === 'ok'"
-                        kind="type-icon"
-                        :id="ship.data.typeId"
-                        :dimension="40"
-                        :width="40"
-                        :height="40"
-                        loading="lazy"
-                        decoding="async"
-                        alt=""
-                      />
-                      <span>{{ shipLabel }}</span>
-                    </dd>
-                  </div>
-                </dl>
-              </section>
-              <section class="character-detail-group character-detail-group--identity">
-                <h2>IDENTITY</h2>
-                <dl>
-                  <div
-                    :class="
-                      character.factionId
-                        ? 'character-detail-col-start'
-                        : 'character-detail-wide character-detail-col-start'
-                    "
+                <section
+                  class="character-detail-groups character-detail-groups--operations-only"
+                  aria-label="Character operations"
+                >
+                  <section
+                    ref="operationsGroup"
+                    class="character-detail-group character-detail-group--operations"
                   >
-                    <dt>SECURITY STATUS</dt>
-                    <dd><SecurityStatus :value="character.securityStatus" /></dd>
-                  </div>
-                  <div v-if="character.factionId" class="character-detail-col-end">
-                    <dt>FACTION</dt>
-                    <dd>
-                      <UiEveImage
-                        kind="faction"
-                        :id="character.factionId"
-                        :dimension="32"
-                        :width="32"
-                        :height="32"
-                        loading="lazy"
-                        decoding="async"
-                        alt="Faction militia emblem"
-                      />
-                    </dd>
-                  </div>
-                  <div class="character-detail-col-start">
-                    <dt>RACE</dt>
-                    <dd>{{ character.race }}</dd>
-                  </div>
-                  <div class="character-detail-col-end">
-                    <dt>BLOODLINE</dt>
-                    <dd>{{ character.bloodline }}</dd>
-                  </div>
-                  <div class="character-detail-col-start">
-                    <dt>DATE OF BIRTH</dt>
-                    <dd>{{ formattedBirthday }}</dd>
-                  </div>
-                  <div class="character-detail-col-end">
-                    <dt>GENDER</dt>
-                    <dd>
-                      <span class="gender-symbol" :title="character.gender" aria-hidden="true">
-                        {{ genderSymbol }}
-                      </span>
-                      <span class="sr-only">{{ character.gender }}</span>
-                    </dd>
-                  </div>
-                  <div v-if="character.corporationTitle" class="character-detail-wide">
-                    <dt>CORPORATION TITLE</dt>
-                    <dd>{{ character.corporationTitle }}</dd>
-                  </div>
-                </dl>
-              </section>
-              <section class="character-detail-group character-detail-group--progression">
-                <h2>PROGRESSION</h2>
-                <dl>
-                  <div class="character-detail-primary">
-                    <dt>TOTAL SKILL POINTS</dt>
-                    <dd>{{ skillPointsLabel }}</dd>
-                  </div>
-                  <div>
-                    <dt>ACHIEVEMENT SCORE</dt>
-                    <dd>{{ character.achievementScore }}</dd>
-                  </div>
-                </dl>
+                    <h2>OPERATIONS</h2>
+                    <dl>
+                      <div class="character-detail-wide">
+                        <dt>LOCATION</dt>
+                        <dd class="character-system-detail" :title="locationLabel">
+                          <SystemSecurityStatus
+                            v-if="
+                              location?.status === 'ok' &&
+                              typeof location.data.solarSystemSecurityStatus === 'number'
+                            "
+                            :value="location.data.solarSystemSecurityStatus"
+                          />
+                          <span>{{ locationLabel }}</span>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>CURRENT SHIP</dt>
+                        <dd class="character-ship-detail" :title="shipNameLabel">
+                          <UiEveImage
+                            v-if="ship?.status === 'ok'"
+                            kind="type-icon"
+                            :id="ship.data.typeId"
+                            :dimension="40"
+                            :width="40"
+                            :height="40"
+                            loading="lazy"
+                            decoding="async"
+                            alt=""
+                          />
+                          <span>{{ shipLabel }}</span>
+                        </dd>
+                      </div>
+                    </dl>
+                  </section>
+                </section>
+              </div>
+              <section class="character-overview-detail-card">
+                <span class="card-index">02</span>
+                <section
+                  class="character-overview-detail-section character-overview-detail-section--identity"
+                >
+                  <h2>IDENTITY</h2>
+                  <dl>
+                    <div class="character-detail-col-start">
+                      <dt>RACE</dt>
+                      <dd>{{ character.race }}</dd>
+                    </div>
+                    <div class="character-detail-col-end">
+                      <dt>BLOODLINE</dt>
+                      <dd>{{ character.bloodline }}</dd>
+                    </div>
+                    <div class="character-detail-col-start">
+                      <dt>DATE OF BIRTH</dt>
+                      <dd>{{ formattedBirthday }}</dd>
+                    </div>
+                    <div class="character-detail-col-end">
+                      <dt>GENDER</dt>
+                      <dd>
+                        <span class="gender-symbol" :title="character.gender" aria-hidden="true">
+                          {{ genderSymbol }}
+                        </span>
+                        <span class="sr-only">{{ character.gender }}</span>
+                      </dd>
+                    </div>
+                    <div v-if="character.factionId" class="character-detail-wide">
+                      <dt>FACTION</dt>
+                      <dd>
+                        <UiEveImage
+                          kind="faction"
+                          :id="character.factionId"
+                          :dimension="32"
+                          :width="32"
+                          :height="32"
+                          loading="lazy"
+                          decoding="async"
+                          alt="Faction militia emblem"
+                        />
+                      </dd>
+                    </div>
+                    <div v-if="character.corporationTitle" class="character-detail-wide">
+                      <dt>CORPORATION TITLE</dt>
+                      <dd>{{ character.corporationTitle }}</dd>
+                    </div>
+                    <div class="character-detail-wide">
+                      <dt>SECURITY STATUS</dt>
+                      <dd><SecurityStatus :value="character.securityStatus" /></dd>
+                    </div>
+                  </dl>
+                </section>
+                <section
+                  class="character-overview-detail-section character-overview-detail-section--progression"
+                >
+                  <h2>PROGRESSION</h2>
+                  <dl>
+                    <div class="character-detail-primary">
+                      <dt>TOTAL SKILL POINTS</dt>
+                      <dd>{{ skillPointsLabel }}</dd>
+                    </div>
+                    <div>
+                      <dt>ACHIEVEMENT SCORE</dt>
+                      <dd>{{ character.achievementScore }}</dd>
+                    </div>
+                  </dl>
+                </section>
               </section>
             </section>
           </div>

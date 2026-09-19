@@ -13,7 +13,12 @@ const freshness = {
   stale: false,
 }
 const clones = {
-  homeLocation: { locationId: 60_000_001, locationType: 'station', name: 'Jita IV - Moon 4' },
+  homeLocation: {
+    locationId: 60_000_001,
+    locationType: 'station',
+    name: 'Jita IV - Moon 4',
+    solarSystemSecurityStatus: 0.9,
+  },
   jumpClones: [
     {
       jumpCloneId: 11,
@@ -55,6 +60,19 @@ afterEach(() => {
 })
 
 describe('character Clones workspace', () => {
+  it('keeps jump clones by location collapsed by default', async () => {
+    const wrapper = await mountWorkspace({ clones, implants, expandStoredClones: false })
+    const trigger = wrapper.get('.character-clones-stored .character-clones-section-heading')
+
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('.character-clones-group').exists()).toBe(false)
+
+    await trigger.trigger('click')
+
+    expect(trigger.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.find('.character-clones-group').exists()).toBe(true)
+  })
+
   it('presents the active clone, augmentations, and grouped jump clones', async () => {
     const wrapper = await mountWorkspace({ clones, implants, skills })
 
@@ -68,20 +86,17 @@ describe('character Clones workspace', () => {
     expect(wrapper.get('section[aria-labelledby="character-clones-rack-title"] h2').text()).toBe(
       'Active clone implants',
     )
-    expect(wrapper.get('.character-clones-rack .ui-eyebrow').text()).toBe('AUGMENTATIONS')
-    expect(wrapper.get('section[aria-labelledby="character-clones-home-title"] h2').text()).toBe(
-      'Home Station',
+    expect(wrapper.get('.character-clones-workspace').element.firstElementChild).toBe(
+      jumpClones.element,
     )
-    const homeLocation = wrapper.get('.character-clones-home')
-    expect(homeLocation.get('.character-clones-home-location').text()).toBe('Jita IV - Moon 4')
-    expect(homeLocation.findAll('dt').map((term) => term.text())).toEqual([
-      'Home Station',
-      'Last Home Station change',
+    expect(jumpClones.get('.character-clones-home-location').text()).toContain('Jita IV - Moon 4')
+    expect(jumpClones.get('.system-security-status').text()).toContain('0.9')
+    expect(jumpClones.findAll('dt').map((term) => term.text())).toEqual([
+      'HOME STATION',
+      'LAST HOME STATION CHANGE',
+      'LAST CLONE JUMP',
     ])
-    expect(homeLocation.get('dt').classes()).toContain('sr-only')
-    expect(wrapper.get('section[aria-labelledby="character-clones-stored-title"] h2').text()).toBe(
-      'Jump clones by location',
-    )
+    expect(wrapper.get('#character-clones-stored-title').text()).toBe('Jump clones by location')
     expect(wrapper.text()).toContain('Jita IV - Moon 4')
     expect(wrapper.text()).toContain('Industry clone')
     expect(wrapper.text()).toContain('Unnamed clone')
@@ -89,24 +104,25 @@ describe('character Clones workspace', () => {
     expect(wrapper.text()).toContain('No implants installed')
   })
 
-  it('racks active implants by slot and leaves unfilled slots addressable', async () => {
+  it('racks active implants by slot without rendering empty slots', async () => {
     const wrapper = await mountWorkspace({ clones, implants })
 
     const slots = wrapper.findAll('.character-clones-rack .character-clones-slot-list > li')
-    expect(slots).toHaveLength(10)
+    expect(slots).toHaveLength(2)
     expect(slots[0]?.get('.character-clones-slot-index').text()).toBe('01')
     expect(slots[0]?.text()).toContain('Ocular Filter')
     expect(slots[0]?.text()).toContain('+4 PER')
-    expect(slots[1]?.get('.character-clones-slot-empty').text()).toContain('Empty slot')
+    expect(slots[1]?.get('.character-clones-slot-index').text()).toBe('03')
+    expect(wrapper.text()).not.toContain('Empty slot')
     expect(
       wrapper.get('.character-clones-rack .character-clones-section-heading span').text(),
     ).toBe('2 / 10 SLOTS FILLED')
     expect(slots[0]?.get('.character-clones-implant-bonus').text()).toBe('+4 PER')
-    expect(slots[2]?.get('.character-clones-implant-bonus').text()).toBe('+4 WIL')
+    expect(slots[1]?.get('.character-clones-implant-bonus').text()).toBe('+4 WIL')
     expect(wrapper.find('.character-clones-attribute-totals').exists()).toBe(false)
   })
 
-  it('groups jump clones by location and reports derived capacity', async () => {
+  it('groups jump clones by location without repeating capacity below the list', async () => {
     const wrapper = await mountWorkspace({ clones, implants, skills })
 
     const groups = wrapper.findAll('.character-clones-group')
@@ -114,9 +130,7 @@ describe('character Clones workspace', () => {
     expect(groups[0]?.get('h3').text()).toBe('Jita IV - Moon 4')
     expect(groups[0]?.get('.character-clones-group-heading span').text()).toContain('STATION')
     expect(groups[1]?.get('.character-clones-group-heading span').text()).toContain('STRUCTURE')
-    expect(wrapper.get('.character-clones-stored-footer').text()).toBe(
-      '2 OF 8 JUMP CLONES INSTALLED',
-    )
+    expect(wrapper.find('.character-clones-stored-footer').exists()).toBe(false)
   })
 
   it('sorts location groups by clone count and labels unnamed clones positionally', async () => {
@@ -204,7 +218,6 @@ describe('character Clones workspace', () => {
   it('withholds a bay maximum when the skills resource is unavailable', async () => {
     const wrapper = await mountWorkspace({ clones, implants })
 
-    expect(wrapper.get('.character-clones-stored-footer').text()).toBe('2 JUMP CLONES INSTALLED')
     expect(wrapper.get('[aria-label="Jump clones"] h2').text()).toBe('2 INSTALLEDCAPACITY UNKNOWN')
     expect(wrapper.text()).toContain('Maximum needs the skills resource')
   })
@@ -219,20 +232,18 @@ describe('character Clones workspace', () => {
     expect(wrapper.get('[aria-label="Jump clones"] h2').text()).toBe(
       '2 OF 2 INSTALLEDCAPACITY REACHED',
     )
-    expect(wrapper.get('.character-clones-stored-footer').text()).toBe(
-      '2 OF 2 JUMP CLONES INSTALLED',
-    )
   })
 
   it('renders clone activity only as historical timestamps', async () => {
     const wrapper = await mountWorkspace({ clones, implants })
     const jumpClones = wrapper.get('[aria-label="Jump clones"]')
-    const home = wrapper.get('[aria-labelledby="character-clones-home-title"]')
 
     expect(jumpClones.text()).toContain('LAST CLONE JUMP')
-    expect(jumpClones.get('time').attributes('datetime')).toBe(clones.lastCloneJumpAt)
-    expect(home.text()).toContain('Last Home Station change')
-    expect(home.get('time').attributes('datetime')).toBe(clones.lastStationChangeAt)
+    expect(jumpClones.text()).toContain('LAST HOME STATION CHANGE')
+    expect(jumpClones.findAll('time').map((time) => time.attributes('datetime'))).toEqual([
+      clones.lastStationChangeAt,
+      clones.lastCloneJumpAt,
+    ])
     expect(wrapper.text()).not.toContain('Available')
     expect(wrapper.text()).not.toContain('Until the next jump is available')
   })
@@ -245,8 +256,8 @@ describe('character Clones workspace', () => {
 
     expect(wrapper.get('[aria-label="Jump clones"]').text()).not.toContain('LAST CLONE JUMP')
     expect(wrapper.get('[aria-label="Jump clones"]').text()).not.toContain('Unavailable')
-    expect(wrapper.get('[aria-labelledby="character-clones-home-title"]').text()).not.toContain(
-      'Last Home Station change',
+    expect(wrapper.get('[aria-label="Jump clones"]').text()).not.toContain(
+      'LAST HOME STATION CHANGE',
     )
   })
 
@@ -267,7 +278,7 @@ describe('character Clones workspace', () => {
     expect(wrapper.find('.character-clones-implant-bonus').exists()).toBe(false)
 
     expect(wrapper.find('.character-clones-rack-columns').exists()).toBe(true)
-    expect(wrapper.findAll('.character-clones-slot-empty')).toHaveLength(10)
+    expect(wrapper.findAll('.character-clones-slot-list > li')).toHaveLength(0)
     expect(wrapper.get('.character-clones-rack-unslotted').text()).toContain('SLOT UNKNOWN')
     expect(
       wrapper.get('.character-clones-rack .character-clones-section-heading span').text(),
@@ -292,30 +303,34 @@ describe('character Clones workspace', () => {
     ).toBe('1 / 10 SLOTS FILLED / 1 UNPLACED')
   })
 
-  it('still draws an empty rack when the character has no implants at all', async () => {
+  it('keeps the rack headings without drawing empty slots when there are no implants', async () => {
     const wrapper = await mountWorkspace({
       clones,
       implants: { implants: [], ...freshness } as unknown as CharacterImplants,
     })
 
     expect(wrapper.find('.character-clones-rack-columns').exists()).toBe(true)
-    expect(wrapper.findAll('.character-clones-slot-empty')).toHaveLength(10)
+    expect(wrapper.findAll('.character-clones-slot-list > li')).toHaveLength(0)
     expect(
       wrapper.get('.character-clones-rack .character-clones-section-heading span').text(),
     ).toBe('0 / 10 SLOTS FILLED')
   })
 
-  it('shows the Home Station in its own region when no jump clone shares it', async () => {
+  it('shows the Home Station in the summary when no jump clone shares it', async () => {
     const wrapper = await mountWorkspace({
       clones: {
         ...clones,
-        homeLocation: { locationId: 60_000_009, locationType: 'station', name: 'Amarr VIII' },
+        homeLocation: {
+          locationId: 60_000_009,
+          locationType: 'station',
+          name: 'Amarr VIII',
+          solarSystemSecurityStatus: 1,
+        },
       },
       implants,
     })
 
-    const home = wrapper.get('[aria-labelledby="character-clones-home-title"]')
-    expect(home.text()).toContain('Amarr VIII')
+    expect(wrapper.get('[aria-label="Jump clones"]').text()).toContain('Amarr VIII')
     expect(wrapper.findAll('.character-clones-group-list')).toHaveLength(2)
   })
 
@@ -370,7 +385,12 @@ describe('character Clones workspace', () => {
   it('retains stale, empty, incomplete, and unknown-slot data', async () => {
     const staleClones = {
       ...clones,
-      homeLocation: { locationId: null, locationType: 'station', name: null },
+      homeLocation: {
+        locationId: null,
+        locationType: 'station',
+        name: null,
+        solarSystemSecurityStatus: null,
+      },
       jumpClones: [],
       stale: true,
       refreshFailureClass: 'esi-unavailable',
@@ -383,7 +403,7 @@ describe('character Clones workspace', () => {
     } satisfies CharacterImplants
     const wrapper = await mountWorkspace({ clones: staleClones, implants: staleImplants })
 
-    expect(wrapper.get('.character-clones-home').text()).toContain('Home Station unavailable')
+    expect(wrapper.get('[aria-label="Jump clones"]').text()).toContain('Home Station unavailable')
     expect(wrapper.get('.character-clones-empty').text()).toBe('None installed')
     expect(wrapper.text()).toContain('Unknown implant 999')
     expect(wrapper.get('.character-clones-rack-unslotted').text()).toContain('SLOT UNKNOWN')
@@ -432,6 +452,7 @@ interface WorkspaceOverrides {
   implants?: CharacterImplants
   implantState?: CloneResourceState
   skills?: CharacterSkills
+  expandStoredClones?: boolean
 }
 
 async function mountWorkspace(overrides: WorkspaceOverrides) {
@@ -446,5 +467,10 @@ async function mountWorkspace(overrides: WorkspaceOverrides) {
     route: false,
   })
   mountedWrappers.push(wrapper)
+  const storedClonesTrigger = wrapper.find(
+    '.character-clones-stored .character-clones-section-heading',
+  )
+  if (overrides.expandStoredClones !== false && storedClonesTrigger.exists())
+    await storedClonesTrigger.trigger('click')
   return wrapper
 }

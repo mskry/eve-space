@@ -52,12 +52,11 @@ const navigation = computed<readonly RecordSectionNavigationEntry[]>(() => {
   ]
 })
 
-function formatTaxRate(taxRate: number) {
-  return taxRate.toLocaleString('en-US', {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 2,
-  })
-}
+const ceoLabel = computed(() => {
+  const record = corporation.value
+  if (!record || record.ceoId === null) return 'CEO'
+  return record.ceoId === record.creatorId ? 'CEO · FOUNDER' : 'CEO'
+})
 
 provideCorporationRecord({ corporationId, corporation, recordAccessAllowed })
 
@@ -109,33 +108,59 @@ useHead({
       <header class="character-shell-header">
         <button class="character-shell-back" type="button" @click="$router.back()">← BACK</button>
         <div class="character-shell-identity">
-          <UiEveImage
-            kind="corporation"
-            :id="corporation.corporationId"
-            :dimension="72"
-            :width="72"
-            :height="72"
-            loading="eager"
-            decoding="async"
-            :alt="`${corporation.name} corporation logo`"
-          />
+          <span class="character-shell-portrait character-shell-portrait--large">
+            <UiEveImage
+              kind="corporation"
+              :id="corporation.corporationId"
+              :dimension="96"
+              :width="96"
+              :height="96"
+              loading="eager"
+              decoding="async"
+              :alt="`${corporation.name} corporation logo`"
+            />
+          </span>
           <div>
             <p class="ui-eyebrow">CORPORATION / {{ corporation.ticker }}</p>
             <h1>{{ corporation.name }}</h1>
-            <p>
-              {{ corporation.memberCount.toLocaleString('en-US') }} MEMBERS · ISK TAX
-              {{ formatTaxRate(corporation.taxRate) }}% · LP TAX
-              {{ formatTaxRate(corporation.loyaltyPointTaxRate) }}%<template
-                v-if="corporation.allianceName"
+            <div class="character-shell-meta">
+              <span v-if="corporation.allianceId" class="character-shell-affiliation">
+                <UiEveImage
+                  kind="alliance"
+                  :id="corporation.allianceId"
+                  :dimension="32"
+                  :width="32"
+                  :height="32"
+                  loading="lazy"
+                  decoding="async"
+                  :alt="`${corporation.allianceName ?? `Alliance ${corporation.allianceId}`} logo`"
+                />
+                <span>
+                  <small>ALLIANCE</small>
+                  <strong>{{ corporation.allianceName ?? `ID ${corporation.allianceId}` }}</strong>
+                </span>
+              </span>
+              <NuxtLink
+                v-if="corporation.ceoId !== null"
+                class="character-shell-affiliation"
+                :to="`/character/${corporation.ceoId}`"
               >
-                · {{ corporation.allianceName }}</template
-              ><template v-else-if="corporation.allianceId">
-                · Alliance {{ corporation.allianceId }}</template
-              ><template v-if="corporation.factionId">
-                · Faction {{ corporation.factionId }}</template
-              >
-              · {{ corporation.type === 'player_owned' ? 'PLAYER CORP' : 'NPC CORP' }}
-            </p>
+                <UiEveImage
+                  kind="character"
+                  :id="corporation.ceoId"
+                  :dimension="32"
+                  :width="32"
+                  :height="32"
+                  loading="lazy"
+                  decoding="async"
+                  :alt="`${corporation.ceoName ?? `CEO ${corporation.ceoId}`} portrait`"
+                />
+                <span>
+                  <small>{{ ceoLabel }}</small>
+                  <strong>{{ corporation.ceoName ?? `ID ${corporation.ceoId}` }}</strong>
+                </span>
+              </NuxtLink>
+            </div>
           </div>
         </div>
       </header>
@@ -146,7 +171,7 @@ useHead({
   </div>
 </template>
 
-<style>
+<style lang="css">
 @import url('~/assets/css/features/character-record.css');
 @import url('~/assets/css/responsive/record.css');
 </style>

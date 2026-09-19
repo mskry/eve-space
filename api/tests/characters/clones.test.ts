@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
   cacheDel: vi.fn(),
   from: vi.fn(),
   getState: vi.fn(),
+  getStaticLocations: vi.fn(),
   leftJoin: vi.fn(),
   limit: vi.fn(),
   listActiveImplants: vi.fn(),
@@ -63,6 +64,9 @@ vi.mock('../../src/esi-gateway/feature-execution.js', () =>
 )
 vi.mock('../../src/universe/names.js', () => ({
   resolveUniverseNames: mocks.resolveUniverseNames,
+}))
+vi.mock('../../src/universe/static-locations.js', () => ({
+  getStaticLocations: mocks.getStaticLocations,
 }))
 
 const characterId = 1404328063
@@ -108,6 +112,7 @@ beforeEach(() => {
   mocks.where.mockReturnValue({ limit: mocks.limit })
   mocks.limit.mockImplementation(async () => mocks.staticRows)
   mocks.resolveUniverseNames.mockResolvedValue(new Map())
+  mocks.getStaticLocations.mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -147,6 +152,15 @@ describe('character clone state', () => {
     mocks.resolveUniverseNames.mockResolvedValue(
       new Map([[60_000_001, { id: 60_000_001, name: 'Jita IV - Moon 4', category: 'station' }]]),
     )
+    mocks.getStaticLocations.mockResolvedValue([
+      {
+        id: 60_000_001,
+        type: 'station',
+        name: null,
+        solarSystemId: 30_000_142,
+        solarSystemSecurityStatus: 0.9,
+      },
+    ])
     const { characterClonesScope, getCharacterClones } =
       await import('../../src/characters/clones.js')
 
@@ -157,6 +171,7 @@ describe('character clone state', () => {
         locationId: 60_000_001,
         locationType: 'station',
         name: 'Jita IV - Moon 4',
+        solarSystemSecurityStatus: 0.9,
       },
       jumpClones: [
         {
@@ -195,6 +210,7 @@ describe('character clone state', () => {
     expect(characterClonesScope).toBe(clonesScope)
     expect(mocks.getState).toHaveBeenCalledWith({ characterId, subjectLifecycleId })
     expect(mocks.resolveUniverseNames).toHaveBeenCalledWith([60_000_001])
+    expect(mocks.getStaticLocations).toHaveBeenCalledWith([{ id: 60_000_001, type: 'station' }])
     expect(mocks.select).toHaveBeenCalledOnce()
     expect(mocks.limit).toHaveBeenCalledWith(3000)
     expect(JSON.stringify(result)).not.toMatch(
@@ -221,7 +237,12 @@ describe('character clone state', () => {
     const { getCharacterClones } = await import('../../src/characters/clones.js')
 
     await expect(getCharacterClones(characterId, subjectLifecycleId)).resolves.toEqual({
-      homeLocation: { locationId: null, locationType: 'station', name: null },
+      homeLocation: {
+        locationId: null,
+        locationType: 'station',
+        name: null,
+        solarSystemSecurityStatus: null,
+      },
       jumpClones: [
         {
           jumpCloneId: 13,
@@ -251,7 +272,12 @@ describe('character clone state', () => {
     await vi.advanceTimersByTimeAsync(250)
 
     await expect(pending).resolves.toMatchObject({
-      homeLocation: { locationId: 60_000_001, locationType: 'station', name: null },
+      homeLocation: {
+        locationId: 60_000_001,
+        locationType: 'station',
+        name: null,
+        solarSystemSecurityStatus: null,
+      },
     })
   })
 

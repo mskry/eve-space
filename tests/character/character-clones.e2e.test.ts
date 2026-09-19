@@ -181,8 +181,9 @@ describe('character Clones production route', async () => {
       const requestsAfterIntent = cloneResourcePaths().length
       await clonesLink.click()
       await page.locator('.character-clones-workspace').waitFor()
-      await page.getByRole('region', { name: 'Jump clones', exact: true }).waitFor()
-      await page.getByRole('region', { name: 'Home Station', exact: true }).waitFor()
+      const summary = page.getByRole('region', { name: 'Jump clones', exact: true })
+      await summary.waitFor()
+      await summary.getByText('HOME STATION', { exact: true }).waitFor()
       await page.getByRole('region', { name: 'Jump clones by location', exact: true }).waitFor()
       expect(cloneResourcePaths()).toHaveLength(requestsAfterIntent)
       expect(await clonesLink.getAttribute('aria-current')).toBe('page')
@@ -204,7 +205,12 @@ describe('character Clones production route', async () => {
     apiMode = 'implants-scope-required'
     const page = await openPage(`/characters/${characterId}/clones`)
 
-    await page.getByRole('heading', { name: 'Jump clones by location' }).waitFor()
+    const storedClones = page.getByRole('region', {
+      name: 'Jump clones by location',
+      exact: true,
+    })
+    await storedClones.waitFor()
+    await storedClones.getByRole('button').click()
     await page.getByRole('heading', { name: 'Active implant authorization required' }).waitFor()
     expect(await page.getByText('Industry clone', { exact: true }).isVisible()).toBe(true)
     const authorizationState = page.locator('.character-clones-rack .esi-authorization-required')
@@ -343,7 +349,12 @@ function cloneState() {
   const name = apiMode === 'long-content' ? longValue : 'Industry clone'
   const locationName = apiMode === 'long-content' ? longValue : 'Jita IV - Moon 4'
   return {
-    homeLocation: { locationId: 60_000_001, locationType: 'station', name: locationName },
+    homeLocation: {
+      locationId: 60_000_001,
+      locationType: 'station',
+      name: locationName,
+      solarSystemSecurityStatus: 0.9,
+    },
     jumpClones: [
       {
         jumpCloneId: 11,
