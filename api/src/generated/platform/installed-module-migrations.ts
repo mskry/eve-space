@@ -11,12 +11,6 @@ export const installedModuleMigrations = [
     exportPath: './migrations/member-audit-001-baseline.sql',
   },
   {
-    moduleId: 'member-audit',
-    name: 'member-audit-002-evidence-persistence.sql',
-    packageName: '@eve-space/member-audit-server',
-    exportPath: './migrations/member-audit-002-evidence-persistence.sql',
-  },
-  {
     moduleId: 'organization-activity',
     name: 'organization-activity-001-baseline.sql',
     packageName: '@eve-space/organization-activity-server',

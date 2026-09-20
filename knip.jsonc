@@ -20,6 +20,8 @@
         "generated/platform/*.ts",
         "scripts/copy-platform-nuxt-runtime-assets.mjs",
         "scripts/module-registry/source-extensions.d.mts",
+        // Source-text fixtures read by the SSR boundary review tests, never executed.
+        "tests/fixtures/ssr-boundary-review/**/*.ts",
         // Standalone negative type fixture invoked through test:registry:types.
         "tests/fixtures/platform-module-registry-types/*.ts",
         "tests/fixtures/platform-module-conformance/{nuxt.config.ts,api/src/index.ts,app/**/*.{ts,vue}}",

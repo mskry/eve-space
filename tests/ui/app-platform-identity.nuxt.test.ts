@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   providePlatformIdentity: vi.fn(),
   providePlatformQueryPersistence: vi.fn(),
   readQueryPersistenceState: vi.fn(() => ({ value: { kind: 'fresh' } })),
+  useHead: vi.fn(),
   usePlatformModulePersistenceLifecycle: vi.fn(),
 }))
 
@@ -24,6 +25,7 @@ mockNuxtImport(
   'usePlatformModulePersistenceLifecycle',
   () => mocks.usePlatformModulePersistenceLifecycle,
 )
+mockNuxtImport('useHead', () => mocks.useHead)
 
 import App from '../../app/app.vue'
 
@@ -63,4 +65,33 @@ test('registers platform identity and query persistence host seams', async () =>
     kind: 'organization',
     admissionScope: 'organization:v1:organization-activity:member:organization-activity.view',
   })
+})
+
+test('preconnects to the configured API origin and EVE image host', async () => {
+  const wrapper = await mountSuspended(App, {
+    global: {
+      stubs: {
+        NuxtAnnouncer: true,
+        NuxtLayout: { template: '<main><slot /></main>' },
+        NuxtPage: true,
+        NuxtRouteAnnouncer: true,
+        UiProvider: { template: '<div><slot /></div>' },
+      },
+    },
+    route: false,
+  })
+  wrappers.push(wrapper)
+
+  const appHead = mocks.useHead.mock.calls.map(([head]) => head()).find((head) => head.link)
+
+  expect(appHead?.link).toEqual(
+    expect.arrayContaining([
+      {
+        rel: 'preconnect',
+        href: 'http://localhost:8788',
+        crossorigin: 'use-credentials',
+      },
+      { rel: 'preconnect', href: 'https://images.evetech.net' },
+    ]),
+  )
 })

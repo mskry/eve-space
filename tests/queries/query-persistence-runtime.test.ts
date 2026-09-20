@@ -66,6 +66,67 @@ afterEach(() => {
 })
 
 describe('query persistence runtime', () => {
+  it('admits bootstrap data once and requests fresh admission for renewal', async () => {
+    const runtime = createRuntime(
+      new MemoryQueryPersistenceStorage(envelopeWithPrivatePartitions()),
+    )
+    await readyRuntime(runtime)
+    const loadAdmission = vi.fn(async () => admission())
+
+    await expect(
+      applyVerifiedQueryIdentity(
+        runtime.queryCache,
+        authenticatedSession(),
+        loadAdmission,
+        undefined,
+        { context: admission(), requestedAt: NOW - 600 },
+      ),
+    ).resolves.toBe(true)
+
+    expect(loadAdmission).not.toHaveBeenCalled()
+    expect(
+      readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
+    ).toBe(true)
+    await refreshPrivateQueryAdmission(runtime.queryCache, { kind: 'character', characterId: 7 })
+    expect(loadAdmission).toHaveBeenCalledOnce()
+    runtime.dispose()
+  })
+
+  it.each(['unavailable', 'expired', 'wrong-owner'])(
+    'keeps retained data gated for %s bootstrap admission',
+    async (reason) => {
+      const runtime = createRuntime(
+        new MemoryQueryPersistenceStorage(envelopeWithPrivatePartitions()),
+      )
+      await readyRuntime(runtime)
+      const loadAdmission = vi.fn(async () => admission())
+      const context =
+        reason === 'unavailable'
+          ? null
+          : admission({
+              userId: reason === 'wrong-owner' ? 'another-user' : 'user-1',
+            })
+      await expect(
+        applyVerifiedQueryIdentity(
+          runtime.queryCache,
+          authenticatedSession(),
+          loadAdmission,
+          undefined,
+          { context, requestedAt: reason === 'expired' ? NOW - 30_001 : NOW },
+        ),
+      ).resolves.toBe(false)
+
+      expect(loadAdmission).not.toHaveBeenCalled()
+      expect(
+        readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
+      ).toBe(false)
+      expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(
+        authenticatedSession(),
+      )
+      runtime.dispose()
+    },
+  )
+
   it('settles without the persister when storage is unavailable', async () => {
     const runtime = createRuntime(unavailableStorage)
     await readyRuntime(runtime)

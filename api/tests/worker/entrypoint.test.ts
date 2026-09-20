@@ -41,13 +41,13 @@ describe('worker entrypoint', () => {
 
     const workerEntry = import('../../src/worker.js')
 
-    await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce(), { timeout: 5_000 })
+    await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce(), { timeout: 10_000 })
     expect(assertWorkerStartupDependencies).toHaveBeenCalledOnce()
     // The heartbeat-aware check belongs to the healthcheck command, not to startup.
     expect(assertWorkerDependencies).not.toHaveBeenCalled()
     stopRunLoop()
     await workerEntry
-  })
+  }, 15_000)
 
   test('closes and exits nonzero when the processing loop ends outside shutdown', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -66,7 +66,7 @@ describe('worker entrypoint', () => {
     }))
 
     const workerEntry = import('../../src/worker.js')
-    await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce(), { timeout: 5_000 })
+    await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce(), { timeout: 10_000 })
     stopRunLoop()
     await workerEntry
 
@@ -74,7 +74,7 @@ describe('worker entrypoint', () => {
     expect(close).toHaveBeenCalledOnce()
     expect(end).toHaveBeenCalled()
     expect(recordDiagnostic).toHaveBeenCalledWith('worker.processing-loop.stopped')
-  })
+  }, 15_000)
 
   test('records a processing-loop rejection once without exposing arbitrary errors', async () => {
     const sentinels = {

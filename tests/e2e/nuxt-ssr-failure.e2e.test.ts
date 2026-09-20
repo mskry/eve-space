@@ -26,6 +26,8 @@ let publicRequestCount = 0
 let publicBrowserRequestCount = 0
 let overviewRequestCount = 0
 let admissionRequestCount = 0
+let bootstrapAdmissionEnabled = false
+let sessionRequestCount = 0
 let overviewText = 'Cached capsuleer record.'
 let admissionGate: Deferred | undefined
 let overviewGate: Deferred | undefined
@@ -74,6 +76,15 @@ describe('Nuxt anonymous SSR boundary', async () => {
     expect(html).not.toContain('ApiQueryError')
   })
 
+  it('renders the public overview while account verification is pending', async () => {
+    const html = await $fetch('/')
+
+    expect(html).toContain('Verifying account identity...')
+    expect(html).toContain('Command overview')
+    expect(html).toContain('Identity link available')
+    expect(html).toContain('Public records are available now.')
+  })
+
   it('keeps the character route available when the API is down', async () => {
     apiAvailable = false
     apiServer.setAllowedOrigin(applicationOrigin())
@@ -84,6 +95,18 @@ describe('Nuxt anonymous SSR boundary', async () => {
     expect(new URL(page.url()).pathname).toBe('/characters')
     expect(await page.getByRole('heading', { name: 'All characters' }).isVisible()).toBe(true)
     expect(await page.locator('#main-content').count()).toBe(1)
+  })
+
+  it('loads a cold protected overview with bootstrap admission and no separate admission request', async () => {
+    configureAuthenticatedApi()
+    bootstrapAdmissionEnabled = true
+    const page = trackPage(await createPage('/characters/7'))
+
+    await page.getByText(overviewText, { exact: true }).waitFor()
+
+    expect(overviewRequestCount).toBeGreaterThan(0)
+    expect(admissionRequestCount).toBe(0)
+    expect(sessionRequestCount).toBe(1)
   })
 
   it('keeps successful public SSR data over a fast IndexedDB restore without a client fetch', async () => {
@@ -666,6 +689,7 @@ async function handleApiRequest(request: IncomingMessage) {
       : esiUnavailable()
   }
   if (path === '/auth/session') {
+    sessionRequestCount += 1
     return currentUserId
       ? {
           body: {
@@ -674,6 +698,10 @@ async function handleApiRequest(request: IncomingMessage) {
               userId: currentUserId,
               mainCharacter: { characterId: 7, name: 'Persistent Pilot' },
             },
+            ...(bootstrapAdmissionEnabled &&
+            new URL(request.url!, apiServer.origin).searchParams.get('includeAdmission') === 'true'
+              ? { cacheAdmission: cacheAdmission(currentUserId) }
+              : {}),
           },
         }
       : { body: { authenticated: false } }
@@ -731,6 +759,8 @@ function resetFixtureState() {
   publicBrowserRequestCount = 0
   overviewRequestCount = 0
   admissionRequestCount = 0
+  bootstrapAdmissionEnabled = false
+  sessionRequestCount = 0
   overviewText = 'Cached capsuleer record.'
   admissionGate = undefined
   overviewGate = undefined

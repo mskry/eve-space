@@ -69,7 +69,7 @@ afterAll(async () => {
   await container?.stop()
 })
 
-test('upgrades a database with the original member audit baseline', async () => {
+test('records the squashed member audit baseline once across repeated startup', async () => {
   const databaseName = 'member_audit_upgrade'
   await connection.unsafe(`create database ${databaseName}`).simple()
   const upgradeUrl = new URL(databaseUrl)
@@ -100,10 +100,7 @@ test('upgrades a database with the original member audit baseline', async () => 
       where module = 'member-audit'
       order by name
     `
-    expect(migrations).toEqual([
-      { name: 'member-audit-001-baseline.sql' },
-      { name: 'member-audit-002-evidence-persistence.sql' },
-    ])
+    expect(migrations).toEqual([{ name: 'member-audit-001-baseline.sql' }])
   } finally {
     await upgradeConnection.end()
   }
@@ -359,7 +356,7 @@ test('attests the declared routines and denies the runtime role direct table acc
 
   expect(state).toEqual({
     attestationCount: 11,
-    migrationCount: 2,
+    migrationCount: 1,
     moduleTableAccess: false,
     publicTableAccess: false,
     routineAccess: true,

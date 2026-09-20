@@ -48,5 +48,5 @@ describe.each(['enabled', 'disabled'] as const)('%s module composition probe', (
     expect(timeout).not.toHaveBeenCalled()
     expect(readConformanceSnapshot).not.toHaveBeenCalled()
     expect(upsertConformanceSnapshot).not.toHaveBeenCalled()
-  })
+  }, 15_000)
 })

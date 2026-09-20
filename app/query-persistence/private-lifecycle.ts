@@ -1,4 +1,4 @@
-import type { AuthSession, CacheAdmissionContext } from '../queries/auth'
+import type { AuthSession, CacheAdmissionContext, CacheAdmissionBootstrap } from '../queries/auth'
 import {
   emptyEnvelope,
   isExpired,
@@ -133,17 +133,18 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       session: AuthSession,
       loadAdmission?: AdmissionLoader,
       signal?: AbortSignal,
+      admission?: CacheAdmissionBootstrap,
     ): Promise<boolean> {
       if (identityCommitDepth > 0) {
         return Promise.resolve(hasRetainedPrivateAccess(undefined, now()))
       }
       const attempt = ++identityAttempt
       if (host.isRestorationSettled()) {
-        return applyRestoredVerifiedIdentity(session, loadAdmission, signal, attempt)
+        return applyRestoredVerifiedIdentity(session, loadAdmission, signal, attempt, admission)
       }
       return host.waitForRestoration().then(() => {
         if (!identityAttemptIsCurrent(attempt)) return false
-        return applyRestoredVerifiedIdentity(session, loadAdmission, signal, attempt)
+        return applyRestoredVerifiedIdentity(session, loadAdmission, signal, attempt, admission)
       })
     },
     applyRestoredEnvelope(envelope: EsiQueryCacheEnvelope) {
@@ -292,6 +293,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     loadAdmission: AdmissionLoader | undefined,
     signal: AbortSignal | undefined,
     attempt: number,
+    admission?: CacheAdmissionBootstrap,
   ): Promise<boolean> {
     const nextUserId = authenticatedUserId(session)
     const ownerChanged = commitVerifiedIdentity(session, nextUserId)
@@ -309,7 +311,13 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       await rejectAdmission()
       return false
     }
-    return requestAdmission(() => loadAdmission(signal), undefined, lastAcceptedAdmission, signal)
+    return requestAdmission(
+      () => loadAdmission(signal),
+      undefined,
+      lastAcceptedAdmission,
+      signal,
+      admission,
+    )
   }
 
   function commitVerifiedIdentity(session: AuthSession, nextOwner: string | null) {
@@ -338,6 +346,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     alreadyInvalidatedScope?: PrivateQueryInvalidationScope,
     previousAdmission = lastAcceptedAdmission,
     signal?: AbortSignal,
+    bootstrap?: CacheAdmissionBootstrap,
   ): Promise<boolean> {
     const epoch = privateLifecycleEpoch
     if (
@@ -357,13 +366,19 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       previousAdmission,
       previousDeadline: activeAdmissionDeadline,
       signal,
-      startedAt: now(),
+      startedAt: bootstrap?.requestedAt ?? now(),
     }
     let promise!: Promise<boolean>
     promise = (async () => {
       try {
-        const value = await Promise.resolve().then(loadAdmission)
+        const value = await Promise.resolve().then(() =>
+          bootstrap ? bootstrap.context : loadAdmission(),
+        )
         if (!admissionAttemptIsCurrent(attempt)) return false
+        if (value === null) {
+          suspendPrivateAdmission()
+          return false
+        }
         return await admitPrivateCache(value, attempt)
       } catch (error) {
         if (!admissionAttemptIsCurrent(attempt)) return false

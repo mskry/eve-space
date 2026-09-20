@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => {
     findOAuthState: vi.fn(),
     findOwnedCharacter: vi.fn(),
     findSession: vi.fn(),
+    loadCacheAdmissionContext: vi.fn(),
     renewSession: vi.fn(),
     getCharacterAffiliation: vi.fn(),
     observeCharacterAffiliation: vi.fn(),
@@ -38,6 +39,10 @@ const mocks = vi.hoisted(() => {
     verifyAccessToken: vi.fn(),
   }
 })
+
+vi.mock('../../src/cache-admission/service.js', () => ({
+  loadCacheAdmissionContext: mocks.loadCacheAdmissionContext,
+}))
 
 vi.mock('../../src/env.js', () => ({
   env: {
@@ -1414,12 +1419,12 @@ describe('account sessions', () => {
   })
 
   test('returns anonymous state without a cookie and clears expired cookies', async () => {
-    const anonymous = await client.auth.session.$get()
+    const anonymous = await client.auth.session.$get({ query: {} })
     expect(await anonymous.json()).toEqual({ authenticated: false })
     expect(mocks.findSession).not.toHaveBeenCalled()
 
     mocks.findSession.mockResolvedValueOnce(null)
-    const expired = await client.auth.session.$get({}, { headers: sessionHeader() })
+    const expired = await client.auth.session.$get({ query: {} }, { headers: sessionHeader() })
     expect(await expired.json()).toEqual({ authenticated: false })
     expect(expired.headers.get('set-cookie')).toContain('Max-Age=0')
     expect(mocks.renewSession).not.toHaveBeenCalled()
@@ -1429,7 +1434,7 @@ describe('account sessions', () => {
     const idleSeconds = 14 * 24 * 60 * 60
     mocks.renewSession.mockResolvedValueOnce(new Date(Date.now() + idleSeconds * 1_000))
 
-    const response = await client.auth.session.$get({}, { headers: sessionHeader() })
+    const response = await client.auth.session.$get({ query: {} }, { headers: sessionHeader() })
     const cookie = response.headers.get('set-cookie') ?? ''
     const maxAge = Number(/Max-Age=(\d+)/.exec(cookie)?.[1])
 
@@ -1448,19 +1453,65 @@ describe('account sessions', () => {
   test('leaves the session cookie untouched when renewal is not due', async () => {
     mocks.renewSession.mockResolvedValueOnce(null)
 
-    const response = await client.auth.session.$get({}, { headers: sessionHeader() })
+    const response = await client.auth.session.$get({ query: {} }, { headers: sessionHeader() })
 
     expect(await response.json()).toEqual({ authenticated: true, account })
     expect(response.headers.get('set-cookie')).toBeNull()
   })
 
   test('returns user identity with a nested current-main summary and private headers', async () => {
-    const response = await client.auth.session.$get({}, { headers: sessionHeader() })
+    const response = await client.auth.session.$get({ query: {} }, { headers: sessionHeader() })
 
     expect(await response.json()).toEqual({ authenticated: true, account })
     expect(response.headers.get('cache-control')).toBe('private, no-store')
     expect(response.headers.get('vary')).toBe('Cookie, Origin')
   })
+
+  test('bootstraps admission for the verified user without ESI work', async () => {
+    const cacheAdmission = { userId: account.userId, characters: [], organization: null }
+    mocks.loadCacheAdmissionContext.mockResolvedValueOnce(cacheAdmission)
+    const response = await client.auth.session.$get(
+      { query: { includeAdmission: 'true' } },
+      { headers: sessionHeader() },
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ authenticated: true, account, cacheAdmission })
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    expect(mocks.findSession).toHaveBeenCalledOnce()
+    expect(mocks.loadCacheAdmissionContext).toHaveBeenCalledWith(account.userId)
+    expect(mocks.getCharacterAffiliation).not.toHaveBeenCalled()
+    expect(mocks.getCharacterCorporationRoles).not.toHaveBeenCalled()
+  })
+
+  test('does not load bootstrap admission for an expired session', async () => {
+    mocks.findSession.mockResolvedValueOnce(null)
+    const response = await client.auth.session.$get(
+      { query: { includeAdmission: 'true' } },
+      { headers: sessionHeader() },
+    )
+
+    expect(await response.json()).toEqual({ authenticated: false })
+    expect(mocks.loadCacheAdmissionContext).not.toHaveBeenCalled()
+  })
+
+  test.each(['failed', 'timed out'])(
+    'preserves a verified session when bootstrap admission %s',
+    async (failure) => {
+      if (failure === 'failed') {
+        mocks.loadCacheAdmissionContext.mockRejectedValueOnce(new Error('Database unavailable'))
+      } else {
+        mocks.loadCacheAdmissionContext.mockReturnValueOnce(new Promise(() => {}))
+      }
+      const response = await client.auth.session.$get(
+        { query: { includeAdmission: 'true' } },
+        { headers: sessionHeader() },
+      )
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ authenticated: true, account, cacheAdmission: null })
+    },
+  )
 
   test('deletes persisted and browser sessions on logout', async () => {
     const response = await client.auth.logout.$post(

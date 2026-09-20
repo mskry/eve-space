@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import type { ApiClient } from '../utils/api-client'
-import { isAuthenticationDenial } from '../utils/authentication-denial'
 import { toApiQueryError } from '../utils/query-error'
 import {
   authConfigQuery,
@@ -9,56 +8,21 @@ import {
   unauthenticatedSession,
   unavailableAuthConfig,
 } from '../queries/auth'
-import { useAuthVerification } from './useAuthVerification'
+import { useAuthSessionInitialization } from './useAuthSessionInitialization'
 
 export function useAuthSession(apiClient: ApiClient, { autoLoad = true } = {}) {
   const route = useRoute()
   const queryCache = useQueryCache()
-  const authVerification = useAuthVerification()
+  const initialization = useAuthSessionInitialization(apiClient)
+  const authVerification = initialization.verification
   const configQuery = useQuery({
     ...authConfigQuery(apiClient),
     enabled: import.meta.client && autoLoad,
   })
-  const sessionOptions = authSessionQuery(apiClient)
+  const sessionOptions = initialization.options
   const sessionQuery = useQuery({
     ...sessionOptions,
     enabled: import.meta.client && autoLoad,
-    query: async (context) => {
-      const verificationGeneration = authVerification.beginVerification()
-      const settleCancellation = () => {
-        queueMicrotask(() => {
-          authVerification.markUnavailable(queryCache, verificationGeneration, {
-            retainPrivateData: true,
-          })
-        })
-      }
-      context.signal.addEventListener('abort', settleCancellation, { once: true })
-      try {
-        const session = await sessionOptions.query(context)
-        const accepted = await authVerification.markVerified(
-          queryCache,
-          verificationGeneration,
-          session,
-          (signal) => loadCacheAdmission(apiClient, signal),
-          context.signal,
-        )
-        if (!accepted) {
-          if (context.entry.pending?.abortController.signal === context.signal) {
-            queryCache.cancel(context.entry, new Error('Session verification superseded.'))
-          }
-        }
-        return session
-      } catch (error) {
-        if (!context.signal.aborted) {
-          authVerification.markUnavailable(queryCache, verificationGeneration, {
-            retainPrivateData: !isAuthenticationDenial(error),
-          })
-        }
-        throw error
-      } finally {
-        context.signal.removeEventListener('abort', settleCancellation)
-      }
-    },
   })
   const logoutMutation = useMutation({
     mutation: async () => {
@@ -90,10 +54,7 @@ export function useAuthSession(apiClient: ApiClient, { autoLoad = true } = {}) {
   async function initializeAuth(force = false) {
     if (!import.meta.client) return false
     const loadConfig = force ? configQuery.refetch : configQuery.refresh
-    const requiresVerification =
-      authVerificationStatus.value === 'idle' || authVerificationStatus.value === 'unavailable'
-    const loadSession = force || requiresVerification ? sessionQuery.refetch : sessionQuery.refresh
-    await Promise.all([loadConfig(), loadSession()])
+    await Promise.all([loadConfig(), initialization.initialize(force)])
     return authSession.value.authenticated
   }
 

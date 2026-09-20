@@ -63,6 +63,12 @@ export default defineNuxtConfig({
     [platformNuxtModule, { contributions: installedNuxtContributions }],
     ...installedNuxtModules,
   ],
+  nitro: {
+    compressPublicAssets: {
+      brotli: true,
+      gzip: true,
+    },
+  },
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8788',
@@ -71,5 +77,23 @@ export default defineNuxtConfig({
   },
   typescript: {
     typeCheck: true,
+  },
+  vite: {
+    build: {
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              {
+                name: 'reka-ui',
+                test: /node_modules[\\/]reka-ui/,
+                entriesAware: true,
+                entriesAwareMergeThreshold: 4_096,
+              },
+            ],
+          },
+        },
+      },
+    },
   },
 })
