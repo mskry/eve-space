@@ -13,6 +13,7 @@ import {
   installedModulePersistenceOperationCatalog,
   installedModulePersistenceOperations,
 } from '../../../src/generated/platform/installed-module-persistence.js'
+import { installedModuleMigrations } from '../../../src/generated/platform/installed-module-migrations.js'
 
 let container: StartedTestContainer
 let connection: postgres.Sql
@@ -66,6 +67,46 @@ beforeAll(async () => {
 afterAll(async () => {
   await connection?.end()
   await container?.stop()
+})
+
+test('upgrades a database with the original member audit baseline', async () => {
+  const databaseName = 'member_audit_upgrade'
+  await connection.unsafe(`create database ${databaseName}`).simple()
+  const upgradeUrl = new URL(databaseUrl)
+  upgradeUrl.pathname = `/${databaseName}`
+  const upgradeConnection = postgres(upgradeUrl.toString())
+  const legacyMigrations = installedModuleMigrations.filter(
+    ({ moduleId, name }) => moduleId === 'member-audit' && name.endsWith('001-baseline.sql'),
+  )
+  const legacyOperations = installedModulePersistenceOperations.filter(
+    ({ moduleId, migration }) =>
+      moduleId === 'member-audit' && migration.endsWith('001-baseline.sql'),
+  )
+
+  try {
+    await runStartupMigrations(upgradeConnection, {
+      installed: legacyMigrations,
+      moduleIds: ['member-audit'],
+      persistenceOperations: legacyOperations,
+      persistenceContractFingerprint: persistenceContractFingerprintFor(legacyOperations, [
+        'member-audit',
+      ]),
+    })
+    await runStartupMigrations(upgradeConnection)
+
+    const migrations = await upgradeConnection<{ name: string }[]>`
+      select name
+      from public.schema_migrations
+      where module = 'member-audit'
+      order by name
+    `
+    expect(migrations).toEqual([
+      { name: 'member-audit-001-baseline.sql' },
+      { name: 'member-audit-002-evidence-persistence.sql' },
+    ])
+  } finally {
+    await upgradeConnection.end()
+  }
 })
 
 test('replaces trained snapshots across authority revisions', async () => {
@@ -317,8 +358,8 @@ test('attests the declared routines and denies the runtime role direct table acc
   `
 
   expect(state).toEqual({
-    attestationCount: 10,
-    migrationCount: 1,
+    attestationCount: 11,
+    migrationCount: 2,
     moduleTableAccess: false,
     publicTableAccess: false,
     routineAccess: true,

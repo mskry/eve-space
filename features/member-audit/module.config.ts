@@ -305,15 +305,26 @@ const manifest = {
         persistenceOperations: [],
       },
     ],
-    migrations: [{ name: 'member-audit-001-baseline.sql' }],
+    migrations: [
+      { name: 'member-audit-001-baseline.sql' },
+      { name: 'member-audit-002-evidence-persistence.sql' },
+    ],
     persistenceOperations: [
+      {
+        id: 'write-skill-snapshot',
+        method: 'writeSkillSnapshot',
+        revision: 1,
+        mode: 'write',
+        exportName: 'writeSkillSnapshotOperation',
+        migration: 'member-audit-001-baseline.sql',
+      },
       {
         id: 'read-trained-skills-evidence',
         method: 'readTrainedSkillsEvidence',
         revision: 1,
         mode: 'read',
         exportName: 'readTrainedSkillsEvidenceOperation',
-        migration: 'member-audit-001-baseline.sql',
+        migration: 'member-audit-002-evidence-persistence.sql',
       },
       {
         id: 'read-asset-evidence',
@@ -321,7 +332,7 @@ const manifest = {
         revision: 1,
         mode: 'read',
         exportName: 'readAssetEvidenceOperation',
-        migration: 'member-audit-001-baseline.sql',
+        migration: 'member-audit-002-evidence-persistence.sql',
       },
       {
         id: 'read-wallet-evidence',
@@ -329,7 +340,7 @@ const manifest = {
         revision: 1,
         mode: 'read',
         exportName: 'readWalletEvidenceOperation',
-        migration: 'member-audit-001-baseline.sql',
+        migration: 'member-audit-002-evidence-persistence.sql',
       },
       {
         id: 'read-mail-evidence',
@@ -337,7 +348,7 @@ const manifest = {
         revision: 1,
         mode: 'read',
         exportName: 'readMailEvidenceOperation',
-        migration: 'member-audit-001-baseline.sql',
+        migration: 'member-audit-002-evidence-persistence.sql',
       },
       {
         id: 'materialize-current-snapshot',
@@ -345,7 +356,7 @@ const manifest = {
         revision: 1,
         mode: 'write',
         exportName: 'materializeCurrentSnapshotOperation',
-        migration: 'member-audit-001-baseline.sql',
+        migration: 'member-audit-002-evidence-persistence.sql',
       },
       {
         id: 'read-active-evidence-continuation',
@@ -353,7 +364,7 @@ const manifest = {
         revision: 1,
         mode: 'read',
         exportName: 'readActiveEvidenceContinuationOperation',
-        migration: 'member-audit-001-baseline.sql',
+        migration: 'member-audit-002-evidence-persistence.sql',
       },
       {
         id: 'read-evidence-continuation',
@@ -361,7 +372,7 @@ const manifest = {
         revision: 1,
         mode: 'read',
         exportName: 'readEvidenceContinuationOperation',
-        migration: 'member-audit-001-baseline.sql',
+        migration: 'member-audit-002-evidence-persistence.sql',
       },
       {
         id: 'write-evidence-continuation',
@@ -369,7 +380,7 @@ const manifest = {
         revision: 1,
         mode: 'write',
         exportName: 'writeEvidenceContinuationOperation',
-        migration: 'member-audit-001-baseline.sql',
+        migration: 'member-audit-002-evidence-persistence.sql',
       },
       {
         id: 'promote-evidence-observation',
@@ -377,7 +388,7 @@ const manifest = {
         revision: 1,
         mode: 'write',
         exportName: 'promoteEvidenceObservationOperation',
-        migration: 'member-audit-001-baseline.sql',
+        migration: 'member-audit-002-evidence-persistence.sql',
       },
       {
         id: 'purge-evidence',
@@ -385,7 +396,7 @@ const manifest = {
         revision: 1,
         mode: 'write',
         exportName: 'purgeEvidenceOperation',
-        migration: 'member-audit-001-baseline.sql',
+        migration: 'member-audit-002-evidence-persistence.sql',
       },
     ],
     resources: [

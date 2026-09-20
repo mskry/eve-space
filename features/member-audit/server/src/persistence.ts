@@ -38,6 +38,25 @@ const trainedSkillsSchema = z.strictObject({
     }),
   ),
 })
+const queueEntrySchema = z.strictObject({
+  queuePosition: z.number().int().nonnegative(),
+  typeId: z.number().int().positive(),
+  name: z.string().min(1).max(500),
+  groupId: z.number().int().positive().nullable(),
+  groupName: z.string().min(1).max(500),
+  finishedLevel: z.number().int().min(1).max(5),
+  levelStartSp: z.number().int().nonnegative().nullable(),
+  levelEndSp: z.number().int().nonnegative().nullable(),
+  trainingStartSp: z.number().int().nonnegative().nullable(),
+  startDate: z.nullable(instantSchema),
+  finishDate: z.nullable(instantSchema),
+  primaryAttribute: z.nullable(skillAttributeSchema),
+  secondaryAttribute: z.nullable(skillAttributeSchema),
+})
+const skillQueueSchema = z.strictObject({
+  kind: z.literal('skill-queue'),
+  entries: z.array(queueEntrySchema).max(10_000),
+})
 const evidenceScalarSchema = z.union([z.string().max(100_000), z.number(), z.boolean(), z.null()])
 const intentionalEvidenceRecordSchema = z
   .record(
@@ -325,6 +344,30 @@ export const readMailEvidenceOperation = definePlatformPersistenceOperation({
   maximumOutputBytes: platformPersistencePayloadMaximumBytes,
 })
 
+export const writeSkillSnapshotOperation = definePlatformPersistenceOperation({
+  id: 'write-skill-snapshot',
+  method: 'writeSkillSnapshot',
+  revision: 1,
+  mode: 'write',
+  inputSchema: z.strictObject({
+    resourceId: z.enum(['trained-skills', 'skill-queue']),
+    organizationVersion: z.number().int().positive(),
+    targetUserId: z.uuid(),
+    managedMemberLifecycleId: z.uuid(),
+    characterId: z.number().int().positive(),
+    characterLifecycleId: z.uuid(),
+    authorizationGeneration: z.number().int().nonnegative(),
+    disclosureVersion: z.number().int().positive(),
+    sectionActivationVersion: z.number().int().positive(),
+    dtoRevision: z.literal(1),
+    validatedAt: instantSchema,
+    snapshot: z.discriminatedUnion('kind', [trainedSkillsSchema, skillQueueSchema]),
+  }),
+  outputSchema: z.strictObject({ outcome: z.enum(['applied', 'obsolete']) }),
+  maximumInputBytes: platformPersistencePayloadMaximumBytes,
+  maximumOutputBytes: 256,
+})
+
 export const materializeCurrentSnapshotOperation = definePlatformPersistenceOperation({
   id: 'materialize-current-snapshot',
   method: 'materializeCurrentSnapshot',
@@ -441,6 +484,7 @@ export const purgeEvidenceOperation = definePlatformPersistenceOperation({
 })
 
 const memberAuditPersistenceOperations = {
+  'write-skill-snapshot': writeSkillSnapshotOperation,
   'read-trained-skills-evidence': readTrainedSkillsEvidenceOperation,
   'read-asset-evidence': readAssetEvidenceOperation,
   'read-wallet-evidence': readWalletEvidenceOperation,
