@@ -27,15 +27,11 @@ RUN pnpm --config.ignore-scripts=true --filter @eve-space/api --prod deploy /pro
 FROM node:24.20-alpine AS runtime
 
 ENV NODE_ENV=production
-ENV PNPM_HOME=/pnpm
-ENV COREPACK_HOME=/corepack
-ENV PATH=$PNPM_HOME:$PATH
-RUN corepack enable && corepack prepare pnpm@12.4.2 --activate
 WORKDIR /app
 
 COPY --from=build /prod/api ./
 
 USER node
 
-# The Compose worker service overrides this with start:worker; only the API runs migrations.
-CMD ["pnpm", "--config.verify-deps-before-run=false", "start:container"]
+# The worker service overrides this command; only the API runs migrations.
+CMD ["sh", "-c", "node dist/db/migrate.js && exec node dist/server.js"]
