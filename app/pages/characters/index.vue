@@ -197,13 +197,17 @@ useHead({ title: 'Characters // EVE Space' })
       <p v-if="rosterMessage" class="ui-inline-error" role="alert">{{ rosterMessage }}</p>
       <section class="character-roster" aria-label="All characters">
         <UiContextMenu
-          v-for="character in characters"
+          v-for="(character, index) in characters"
           :key="character.characterId"
           :accessible-label="`Character actions for ${character.name}`"
           label="Character actions"
         >
           <template #trigger>
-            <CharacterRosterCard :character="character" @prefetch="prefetchCharacterOverview" />
+            <CharacterRosterCard
+              :character="character"
+              :priority="index === 0"
+              @prefetch="prefetchCharacterOverview"
+            />
           </template>
 
           <UiContextMenuItem

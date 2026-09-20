@@ -97,14 +97,23 @@ const selectedContributionIdentity = computed(
 
     <template v-else-if="workspace.entryQuery.data.value">
       <OrganizationReviewDirectory
+        v-model:audit-state="workspace.auditState.value"
+        v-model:blocked="workspace.blocked.value"
+        v-model:compliance-state="workspace.complianceState.value"
         v-model:corporation-text="workspace.corporationText.value"
+        v-model:group-id="workspace.groupId.value"
         v-model:limit="workspace.limit.value"
         v-model:search-text="workspace.searchText.value"
+        :direction="workspace.direction.value"
+        :group-facets="workspace.groupFacets.value"
         :has-next-page="Boolean(workspace.directoryQuery.data.value?.nextCursor)"
         :has-previous-page="workspace.cursorHistory.value.length > 0"
         :loading="workspace.directoryQuery.asyncStatus.value === 'loading'"
         :members="workspace.members.value"
+        :page="workspace.cursorHistory.value.length + 1"
         :selected-user-id="workspace.selectedMember.value?.account.userId"
+        :sort="workspace.sort.value"
+        @change-sort="workspace.changeDirectorySort"
         @next="workspace.nextDirectoryPage"
         @previous="workspace.previousDirectoryPage"
         @search="workspace.submitSearch"

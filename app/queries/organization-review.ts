@@ -1,3 +1,4 @@
+import type { PlatformReviewerDirectoryInput } from '@eve-space/platform-module-contract/reviewer-directory'
 import { defineEsiQueryOptions } from '@eve-space/platform-module-nuxt/runtime'
 import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
@@ -14,17 +15,16 @@ type OrganizationReviewDirectory = InferResponseType<
   200
 >
 export type OrganizationReviewDirectoryMember = OrganizationReviewDirectory['items'][number]
+export type OrganizationReviewDirectoryGroupFacet =
+  OrganizationReviewDirectory['groupFacets'][number]
 type OrganizationReviewTarget = InferResponseType<
   OrganizationReviewClient['members'][':userId']['$get'],
   200
 >
 export type OrganizationReviewTargetMember = OrganizationReviewTarget['member']
 
-export interface OrganizationReviewDirectoryInput {
+export interface OrganizationReviewDirectoryInput extends PlatformReviewerDirectoryInput {
   readonly organizationVersion: number
-  readonly query?: string
-  readonly corporationId?: number
-  readonly cursor?: string
   readonly limit: number
 }
 
@@ -66,19 +66,21 @@ export const organizationReviewDirectoryQuery = defineEsiQueryOptions(
     enabled: boolean
     input: OrganizationReviewDirectoryInput
   }) => ({
-    key: PRIVATE_QUERY_KEYS.organizationReviewerDirectory(
-      input.organizationVersion,
-      input.query,
-      input.corporationId,
-      input.cursor,
-      input.limit,
-    ),
+    key: PRIVATE_QUERY_KEYS.organizationReviewerDirectory(input.organizationVersion, input),
     query: async ({ signal }) => {
       const response = await apiClient.api.organization.review.members.$get(
         {
           query: {
             ...(input.query ? { query: input.query } : {}),
             ...(input.corporationId ? { corporationId: String(input.corporationId) } : {}),
+            ...(input.groupId ? { groupId: input.groupId } : {}),
+            ...(input.complianceState ? { complianceState: input.complianceState } : {}),
+            ...(input.blocked === undefined
+              ? {}
+              : { blocked: input.blocked ? ('true' as const) : ('false' as const) }),
+            ...(input.auditState ? { auditState: input.auditState } : {}),
+            ...(input.sort ? { sort: input.sort } : {}),
+            ...(input.direction ? { direction: input.direction } : {}),
             ...(input.cursor ? { cursor: input.cursor } : {}),
             limit: String(input.limit),
           },

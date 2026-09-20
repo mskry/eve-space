@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
+import { clientRequestIn } from '../../scripts/ssr-boundary-review/client-request'
 import { classifySite, formatReport } from '../../scripts/ssr-boundary-review/findings'
 import type { SiteJudgment, SiteState } from '../../scripts/ssr-boundary-review/judgments'
 import { loadLabelledRequests } from '../../scripts/ssr-boundary-review/labelled-requests'
@@ -21,6 +22,24 @@ import { loadRootMountTable, resolveMount } from '../../scripts/ssr-boundary-rev
 
 const fixtures = new URL('../fixtures/ssr-boundary-review/', import.meta.url)
 const run = promisify(execFile)
+
+describe('client request parsing', () => {
+  it.each([
+    [
+      "apiClient.api.me.characters[':characterId'].mail.$get()",
+      { method: 'GET', requestPath: '/api/me/characters/:characterId/mail' },
+    ],
+    ["client\n  .api\n  ['status']\n  .$post()", { method: 'POST', requestPath: '/api/status' }],
+  ])('parses Hono client chains', (source, expected) => {
+    expect(clientRequestIn(source)).toEqual(expected)
+  })
+
+  it('rejects an adversarial unterminated chain', () => {
+    const source = `apiClient${'.segment'.repeat(500)}['unterminated`
+
+    expect(clientRequestIn(source)).toBeNull()
+  })
+})
 
 const site = (overrides: Partial<SiteState['site']> = {}) =>
   ({

@@ -25,6 +25,7 @@ const esiClient = parse(source('.github/workflows/esi-client.yml')) as Workflow
 const rustToolchain = tomlSection(source('rust-toolchain.toml'), 'toolchain')
 const sonarTrustCondition =
   "(github.event_name == 'push' || github.event.pull_request.head.repo.fork == false) && github.actor != 'dependabot[bot]'"
+const rootSonarTrustCondition = "github.event_name == 'push' && github.actor != 'dependabot[bot]'"
 
 describe('repository quality workflow contracts', () => {
   it('runs dead-code and pinned Rust quality gates in trusted CI', () => {
@@ -49,12 +50,12 @@ describe('repository quality workflow contracts', () => {
     })
   })
 
-  it('requires root Sonar credentials for trusted events and skips untrusted analysis', () => {
+  it('requires root Sonar credentials for trusted pushes and skips other analysis', () => {
     const requireToken = workflowStep(coverage, 'coverage', 'Require root Sonar token')
     const analyze = workflowStep(coverage, 'coverage', 'Analyze with SonarQube Cloud')
 
     expect(requireToken.if).toBe(analyze.if)
-    expect(normalizeExpression(requireToken.if)).toBe(sonarTrustCondition)
+    expect(normalizeExpression(requireToken.if)).toBe(rootSonarTrustCondition)
     expect(requireToken.env?.SONAR_TOKEN).toBe('${{ secrets.SONAR_TOKEN }}')
     expect(requireToken.run).toContain(
       '::error::SONAR_TOKEN is required for trusted root Sonar analysis.',

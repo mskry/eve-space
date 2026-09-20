@@ -8,6 +8,8 @@
         "tests/fixtures/platform-module-conformance/features/conformance/{server,nuxt}/dist/*.{js,d.ts}",
       ],
       "entry": [
+        // Railway discovers this infrastructure-as-code entrypoint by convention.
+        ".railway/railway.ts",
         // Resolved by path at build time by @pinia/colada-nuxt, never imported.
         "colada.options.ts",
         // Ambient module augmentation, picked up by tsconfig include rather than an import.

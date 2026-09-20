@@ -192,6 +192,7 @@ describe('full-root Member Audit routes', () => {
       organizationVersion: 7,
       status: 'available',
       items: [],
+      groupFacets: [],
       nextCursor: null,
     })
     mocks.evidenceSummaryRead.mockResolvedValue([

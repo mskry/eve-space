@@ -55,6 +55,10 @@
       "types": "./dist/resources.d.ts",
       "import": "./dist/resources.js"
     },
+    "./reviewer-directory": {
+      "types": "./dist/reviewer-directory.d.ts",
+      "import": "./dist/reviewer-directory.js"
+    },
     "./server": {
       "types": "./dist/server.d.ts",
       "import": "./dist/server.js"

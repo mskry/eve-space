@@ -157,10 +157,9 @@ function closeMobileNavigationForRoute(destinationPath: string) {
       <!-- Standard topbar -->
       <header v-if="!props.hideTopbar" class="dashboard-topbar">
         <div class="topbar-heading">
-          <LazyUiDrawer
+          <UiDrawer
             v-model:open="mobileNavigationOpen"
             :restore-focus="mobileNavigationRestoreFocus"
-            hydrate-on-interaction="click"
             title="Dashboard navigation"
             description="Navigate between EVE Space dashboard sections"
           >
@@ -182,7 +181,7 @@ function closeMobileNavigationForRoute(destinationPath: string) {
               @navigate="closeMobileNavigationForRoute"
               @logout="handleLogout"
             />
-          </LazyUiDrawer>
+          </UiDrawer>
 
           <div class="topbar-title">
             <span class="topbar-kicker">EVE SPACE / OPERATIONS</span>
@@ -224,11 +223,10 @@ function closeMobileNavigationForRoute(destinationPath: string) {
       </header>
 
       <!-- Floating mobile trigger when topbar is hidden -->
-      <LazyUiDrawer
+      <UiDrawer
         v-else
         v-model:open="mobileNavigationOpen"
         :restore-focus="mobileNavigationRestoreFocus"
-        hydrate-on-interaction="click"
         title="Dashboard navigation"
         description="Navigate between EVE Space dashboard sections"
       >
@@ -250,7 +248,7 @@ function closeMobileNavigationForRoute(destinationPath: string) {
           @navigate="closeMobileNavigationForRoute"
           @logout="handleLogout"
         />
-      </LazyUiDrawer>
+      </UiDrawer>
 
       <main
         id="main-content"

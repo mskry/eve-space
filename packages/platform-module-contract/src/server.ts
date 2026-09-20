@@ -285,11 +285,34 @@ export interface PlatformAuthorizedOrganizationContext {
   readonly entitlementScope: 'all' | 'review'
 }
 
-export interface PlatformReviewerTargetCharacter {
+export interface PlatformReviewerCharacterIdentity {
   readonly characterId: number
+  readonly name: string
+}
+
+export interface PlatformReviewerAccountIdentity {
+  readonly userId: string
+  readonly mainCharacter: PlatformReviewerCharacterIdentity | null
+}
+
+export interface PlatformReviewerManagedAffiliation extends PlatformReviewerCharacterIdentity {
+  readonly corporationId: number
+  readonly allianceId: number | null
+  readonly checkedAt: string
+}
+
+export type PlatformReviewerMemberBlock =
+  | { readonly blocked: false }
+  | { readonly blocked: true; readonly blockedAt: string }
+
+export interface PlatformReviewerGroupIdentity {
+  readonly groupId: string
+  readonly name: string
+}
+
+export interface PlatformReviewerTargetCharacter extends PlatformReviewerCharacterIdentity {
   readonly subjectLifecycleId: string
   readonly authorizationGeneration: number | null
-  readonly name: string
   readonly isMain: boolean
   readonly affiliation: {
     readonly corporationId: number
@@ -309,10 +332,8 @@ export interface PlatformReviewerTargetCompliance {
   readonly evaluatedAt: string | null
 }
 
-export interface PlatformReviewerTargetGroup {
-  readonly groupId: string
+export interface PlatformReviewerTargetGroup extends PlatformReviewerGroupIdentity {
   readonly assignmentId: string
-  readonly name: string
   readonly restricted: boolean
   readonly managementMode: 'manual' | 'compliance'
   readonly readOnly: boolean
@@ -330,19 +351,11 @@ export interface PlatformReviewerTargetContext {
         readonly characterId: number
         readonly subjectLifecycleId: string
       }
-  readonly account: {
-    readonly userId: string
-    readonly mainCharacter: {
-      readonly characterId: number
-      readonly name: string
-    } | null
-  }
+  readonly account: PlatformReviewerAccountIdentity
   readonly characters: readonly PlatformReviewerTargetCharacter[]
   readonly compliance: PlatformReviewerTargetCompliance
   readonly groups: readonly PlatformReviewerTargetGroup[]
-  readonly block:
-    | { readonly blocked: false }
-    | { readonly blocked: true; readonly blockedAt: string }
+  readonly block: PlatformReviewerMemberBlock
 }
 
 export interface PlatformReviewerAccountSearchInput {
@@ -356,24 +369,10 @@ export interface PlatformReviewerAccountSearchInput {
 
 export interface PlatformReviewerAccountSearchItem {
   readonly managedMemberLifecycleId: string
-  readonly account: {
-    readonly userId: string
-    readonly mainCharacter: {
-      readonly characterId: number
-      readonly name: string
-    } | null
-  }
-  readonly managedAffiliation: {
-    readonly characterId: number
-    readonly name: string
-    readonly corporationId: number
-    readonly allianceId: number | null
-    readonly checkedAt: string
-  }
+  readonly account: PlatformReviewerAccountIdentity
+  readonly managedAffiliation: PlatformReviewerManagedAffiliation
   readonly compliance: PlatformReviewerTargetCompliance
-  readonly block:
-    | { readonly blocked: false }
-    | { readonly blocked: true; readonly blockedAt: string }
+  readonly block: PlatformReviewerMemberBlock
   readonly evidenceSections: readonly PlatformReviewerEvidenceSectionSummary[]
 }
 

@@ -26,26 +26,103 @@ describe('navigation accessibility', () => {
     main.tabIndex = -1
     document.body.append(main)
     const focus = vi.spyOn(main, 'focus')
-    const manager = createMainContentFocusManager(document)
+    let currentPath = '/characters/7'
+    const scheduled: (() => void)[] = []
+    const manager = createMainContentFocusManager(document, {
+      currentPath: () => currentPath,
+      schedule: (callback) => {
+        scheduled.push(callback)
+        return callback
+      },
+      cancelScheduled: vi.fn(),
+    })
 
-    manager.recordNavigation('/characters/7', '/characters', true)
+    manager.recordNavigation('/characters/7', '/characters', {
+      applicationMounted: true,
+      replacesMain: false,
+    })
     manager.focusFinishedPage('/characters/8')
     manager.focusFinishedPage('/characters/7')
     expect(focus).not.toHaveBeenCalled()
 
-    manager.recordNavigation('/characters/7', '/characters', true)
-    manager.recordNavigation('/characters/7', '/characters/7', true)
+    manager.recordNavigation('/characters/7', '/characters', {
+      applicationMounted: true,
+      replacesMain: false,
+    })
+    manager.recordNavigation('/characters/7', '/characters/7', {
+      applicationMounted: true,
+      replacesMain: false,
+    })
     manager.focusFinishedPage('/characters/7')
     expect(focus).not.toHaveBeenCalled()
 
-    manager.recordNavigation('/characters/7', '/characters', false)
+    manager.recordNavigation('/characters/7', '/characters', {
+      applicationMounted: false,
+      replacesMain: false,
+    })
     manager.focusFinishedPage('/characters/7')
     expect(focus).not.toHaveBeenCalled()
 
-    manager.recordNavigation('/characters/7', '/characters', true)
+    manager.recordNavigation('/characters/7', '/characters', {
+      applicationMounted: true,
+      replacesMain: false,
+    })
+    manager.focusFinishedPage('/characters/7')
+    scheduled.at(-1)?.()
+    expect(focus).toHaveBeenCalledOnce()
+
+    currentPath = '/characters/8'
+    manager.recordNavigation('/characters/8', '/characters/7', {
+      applicationMounted: true,
+      replacesMain: false,
+    })
     manager.focusFinishedPage('/characters/7')
     expect(focus).toHaveBeenCalledOnce()
     main.remove()
+  })
+
+  it('waits for a replaced main target and tears down replacement observers', () => {
+    const oldMain = document.createElement('main')
+    oldMain.id = MAIN_CONTENT_ID
+    oldMain.tabIndex = -1
+    document.body.append(oldMain)
+    let currentPath = '/settings'
+    let observeReplacement: () => void = vi.fn()
+    const disconnect = vi.fn()
+    const observe = vi.fn()
+    const cancelScheduled = vi.fn()
+    const manager = createMainContentFocusManager(document, {
+      currentPath: () => currentPath,
+      createObserver: (callback) => {
+        observeReplacement = callback
+        return { disconnect, observe }
+      },
+      schedule: (callback) => callback,
+      cancelScheduled,
+    })
+
+    manager.recordNavigation('/settings', '/characters/7', {
+      applicationMounted: true,
+      replacesMain: true,
+    })
+    manager.focusFinishedPage('/settings')
+    expect(observe).toHaveBeenCalledWith(document.body, { childList: true, subtree: true })
+
+    const newMain = document.createElement('main')
+    newMain.id = MAIN_CONTENT_ID
+    newMain.tabIndex = -1
+    const focus = vi.spyOn(newMain, 'focus')
+    oldMain.replaceWith(newMain)
+    observeReplacement()
+
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+    expect(disconnect).toHaveBeenCalledOnce()
+    expect(cancelScheduled).toHaveBeenCalledOnce()
+
+    currentPath = '/characters'
+    observeReplacement()
+    expect(focus).toHaveBeenCalledOnce()
+    newMain.remove()
   })
 
   it('composes unique nested record titles from route metadata and loaded identity', () => {

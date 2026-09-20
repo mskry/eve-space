@@ -55,6 +55,7 @@ vi.mock('../../src/platform/reviewer-contributions.js', () => ({
 }))
 
 import { organizationReviewerPlatformRoutes } from '../../src/platform/organization-review-routes.js'
+import { ReviewerAccountSearchInputError } from '../../src/organization/reviewer-account-search.js'
 
 const alpha = contribution('alpha', 'overview', 10)
 const beta = contribution('beta', 'details', 20)
@@ -64,9 +65,16 @@ const directoryPage = {
   items: [
     {
       managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+      managedSince: '2026-01-01T00:00:00.000Z',
+      siteRegisteredAt: '2025-12-01T00:00:00.000Z',
       account: {
         userId: '00000000-0000-4000-8000-000000000002',
         mainCharacter: { characterId: 90_000_001, name: 'Target Main' },
+      },
+      portraitCharacter: {
+        characterId: 90_000_001,
+        name: 'Target Main',
+        source: 'main-character' as const,
       },
       managedAffiliation: {
         characterId: 90_000_001,
@@ -75,8 +83,26 @@ const directoryPage = {
         allianceId: null,
         checkedAt: '2026-09-18T12:00:00.000Z',
       },
+      disclosedCharacterCount: 1,
+      groups: [{ groupId: '00000000-0000-4000-8000-000000000030', name: 'Audited' }],
+      compliance: {
+        state: 'compliant' as const,
+        evidenceFreshness: 'fresh' as const,
+        evidenceAt: '2026-09-18T12:00:00.000Z',
+        reviewDeadline: null,
+        accessValidUntil: '2026-09-19T12:00:00.000Z',
+        evaluatedAt: '2026-09-18T12:00:00.000Z',
+      },
+      block: { blocked: false as const },
+      auditData: {
+        state: 'current' as const,
+        expected: 7,
+        covered: 7,
+        asOf: '2026-09-18T12:00:00.000Z',
+      },
     },
   ],
+  groupFacets: [{ groupId: '00000000-0000-4000-8000-000000000030', name: 'Audited' }],
   nextCursor: null,
 }
 
@@ -181,17 +207,61 @@ describe('platform organization review routes', () => {
   })
 
   test('returns only the bounded core directory after entry authorization', async () => {
-    const response = await request('/members?query=Target&corporationId=98000001&limit=10')
+    const response = await request(
+      '/members?query=Target&corporationId=98000001&groupId=00000000-0000-4000-8000-000000000030&complianceState=compliant&blocked=false&auditState=current&sort=managed_since&direction=desc&limit=10',
+    )
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual(directoryPage)
     expect(mocks.searchManagedOrganizationDirectory).toHaveBeenCalledWith({
       organizationVersion: 7,
-      filters: { query: 'Target', corporationId: 98_000_001, limit: 10 },
+      filters: {
+        query: 'Target',
+        corporationId: 98_000_001,
+        groupId: '00000000-0000-4000-8000-000000000030',
+        complianceState: 'compliant',
+        blocked: false,
+        auditState: 'current',
+        sort: 'managed_since',
+        direction: 'desc',
+        limit: 10,
+      },
     })
-    expect(JSON.stringify(directoryPage)).not.toContain('evidenceSections')
-    expect(JSON.stringify(directoryPage)).not.toContain('compliance')
-    expect(JSON.stringify(directoryPage)).not.toContain('block')
+    const serialized = JSON.stringify(directoryPage)
+    for (const forbidden of [
+      'evidenceSections',
+      'resourceId',
+      'snapshot',
+      'records',
+      'accessToken',
+      'refreshToken',
+      'sessionToken',
+      'undisclosed',
+      'hiddenCharacter',
+      'lastSiteActivity',
+      'lastSiteLogin',
+      'lastLogin',
+      'lastLogout',
+      'loginCount',
+      'exportUrl',
+      'csv',
+    ])
+      expect(serialized).not.toContain(forbidden)
+  })
+
+  test('returns the JSON error contract when an opaque cursor no longer matches', async () => {
+    mocks.searchManagedOrganizationDirectory.mockRejectedValue(
+      new ReviewerAccountSearchInputError(),
+    )
+
+    const response = await request('/members?cursor=syntactically-valid-cursor')
+
+    expect(response.status).toBe(400)
+    expectPrivateResponsePolicy(response)
+    await expect(response.json()).resolves.toEqual({
+      code: 'INVALID_REVIEWER_DIRECTORY_INPUT',
+      message: 'Invalid reviewer directory input.',
+    })
   })
 
   test.each(['/members', '/members/00000000-0000-4000-8000-000000000002'])(
@@ -228,6 +298,39 @@ describe('platform organization review routes', () => {
     },
   )
 
+  test.each(['directory search', 'member-audit.summary.read'] as const)(
+    'requires the exact %s permission before directory enrichment',
+    async (missingPermission) => {
+      mocks.authorizeOrganizationReviewerContribution.mockImplementation(
+        async (
+          _userId,
+          _organization,
+          descriptor: PlatformInstalledOrganizationContributionAuthorization,
+        ) =>
+          descriptor.additionalRequiredPermissions?.some((permission) =>
+            missingPermission === 'directory search'
+              ? permission.endsWith('.search')
+              : permission === missingPermission,
+          )
+            ? { authorized: false, reason: 'permission' }
+            : {
+                authorized: true,
+                context: {
+                  organizationVersion: 7,
+                  audience: 'hr',
+                  requiredPermission: descriptor.requiredPermission,
+                  entitlementScope: 'all',
+                },
+              },
+      )
+
+      const response = await request('/members')
+
+      expect(response.status).toBe(403)
+      expect(mocks.searchManagedOrganizationDirectory).not.toHaveBeenCalled()
+    },
+  )
+
   test('does not accept a deployment administrator session as reviewer identity', async () => {
     const response = await organizationReviewerPlatformRoutes.request('/', {
       headers: { cookie: 'eve_space_admin_session=administrator-token' },
@@ -259,6 +362,16 @@ describe('platform organization review routes', () => {
       organizationVersion: 7,
       targetUserId: '00000000-0000-4000-8000-000000000002',
     })
+  })
+
+  test('returns no out-of-scope target details after the directory gate', async () => {
+    mocks.resolveOrganizationReviewerTarget.mockResolvedValue(null)
+
+    const response = await request('/members/00000000-0000-4000-8000-000000000099')
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toEqual({ message: 'Route not found' })
+    expect(mocks.searchManagedOrganizationDirectory).not.toHaveBeenCalled()
   })
 
   test.each([

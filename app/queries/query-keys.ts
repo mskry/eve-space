@@ -1,3 +1,4 @@
+import type { PlatformReviewerDirectoryInput } from '@eve-space/platform-module-contract/reviewer-directory'
 import {
   platformModuleQueryKey,
   platformModuleSubjectQueryKey,
@@ -114,18 +115,21 @@ export const PRIVATE_QUERY_KEYS = {
   organizationReviewerEntry: () => [...PRIVATE_QUERY_KEYS.organizationReviewer(), 'entry'] as const,
   organizationReviewerDirectory: (
     organizationVersion: number,
-    query: string | undefined,
-    corporationId: number | undefined,
-    cursor: string | undefined,
-    limit: number,
+    input: PlatformReviewerDirectoryInput & { readonly limit: number },
   ) =>
     [
       ...PRIVATE_QUERY_KEYS.organizationReviewerVersion(organizationVersion),
       'members',
-      query ?? null,
-      corporationId ?? null,
-      cursor ?? null,
-      limit,
+      input.query ?? null,
+      input.corporationId ?? null,
+      input.groupId ?? null,
+      input.complianceState ?? null,
+      input.blocked ?? null,
+      input.auditState ?? null,
+      input.sort ?? null,
+      input.direction ?? null,
+      input.cursor ?? null,
+      input.limit,
     ] as const,
   organizationReviewerTarget: (
     organizationVersion: number,

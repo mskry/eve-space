@@ -1,5 +1,11 @@
 import type { PlatformInstalledReviewerContributionDescriptor } from '@eve-space/platform-module-contract/installed'
 import {
+  platformReviewerDirectoryAuditStates,
+  platformReviewerDirectoryComplianceStates,
+  platformReviewerDirectorySortDirections,
+  platformReviewerDirectorySortFields,
+} from '@eve-space/platform-module-contract/reviewer-directory'
+import {
   isPlatformReviewerAccountSearchCursor,
   isPlatformReviewerAccountSearchQuery,
 } from '@eve-space/platform-module-contract/server'
@@ -29,6 +35,15 @@ const reviewerDirectorySummaryPermission = 'member-audit.summary.read'
 const reviewerDirectoryQuery = z.object({
   query: z.string().trim().refine(isPlatformReviewerAccountSearchQuery).optional(),
   corporationId: z.coerce.number().int().positive().optional(),
+  groupId: z.uuid().optional(),
+  complianceState: z.enum(platformReviewerDirectoryComplianceStates).optional(),
+  blocked: z
+    .enum(['true', 'false'])
+    .transform((value) => value === 'true')
+    .optional(),
+  auditState: z.enum(platformReviewerDirectoryAuditStates).optional(),
+  sort: z.enum(platformReviewerDirectorySortFields).optional(),
+  direction: z.enum(platformReviewerDirectorySortDirections).optional(),
   cursor: z.string().refine(isPlatformReviewerAccountSearchCursor).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(25),
 })

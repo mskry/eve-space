@@ -419,3 +419,8 @@ export type PlatformInstalledResourceDescriptor<
       readonly subjectKind: 'alliance'
       readonly eligibility: { readonly kind: 'current-managed-alliance' }
     })
+
+export type PlatformInstalledResourceDeclaration = Pick<
+  PlatformInstalledResourceDescriptor,
+  'eligibility' | 'moduleId' | 'operationId' | 'resourceId' | 'sectionId' | 'subjectKind'
+>

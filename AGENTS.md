@@ -16,8 +16,10 @@ These instructions apply to the entire repository. Preserve the architecture and
 Apply these rules while first writing code or while changing the relevant lines. They are preventive authoring guidance, not a request to scan for, refactor, or rewrite existing code. Do not start a repository-wide cleanup, run Sonar solely to recheck these rules, or enter repeated scan-and-rewrite cycles unless the user explicitly asks. Normal task verification may report a finding in changed code; address that scoped finding without expanding into unrelated cleanup.
 
 - Keep TypeScript unions and intersections meaningful. Do not combine `unknown` or `any` with other union members, add `never` to a union, add `unknown` to an intersection, or include a literal/subtype already covered by a wider constituent.
+- Give reusable or non-trivial TypeScript union and intersection types a named type alias instead of repeating them inline in properties or signatures.
 - Give every `sort()` and `toSorted()` call an explicit comparator. Use `left.localeCompare(right)` for strings and a numeric comparator for numbers; choose a domain-specific comparator for records.
 - Do not nest ternary expressions. Use an early return, an `if` statement, or a named intermediate value when a choice contains another choice.
+- Do not nest template literals. Assign the inner interpolated value or tagged-template fragment to a named variable before using it in another template literal.
 - Keep each newly authored or materially changed function at or below Sonar's cognitive-complexity limit of 15 by designing flat control flow from the start. Prefer guard clauses, named predicates, and focused helpers over deep nesting or mixed multi-stage branching.
 - Merge imports from the same module into one declaration, using inline `type` specifiers when type and value imports share a source.
 - Use optional chaining for nullable property, element, and method access when it preserves the existing falsy-value semantics.

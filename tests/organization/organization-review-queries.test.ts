@@ -20,6 +20,12 @@ describe('organization review queries', () => {
         organizationVersion: 7,
         query: 'pilot',
         corporationId: 98_000_001,
+        groupId: '00000000-0000-4000-8000-000000000099',
+        complianceState: 'review_required',
+        blocked: false,
+        auditState: 'stale',
+        sort: 'managed_since',
+        direction: 'desc',
         cursor: 'opaque_cursor',
         limit: 50,
       },
@@ -33,6 +39,12 @@ describe('organization review queries', () => {
       'members',
       'pilot',
       98_000_001,
+      '00000000-0000-4000-8000-000000000099',
+      'review_required',
+      false,
+      'stale',
+      'managed_since',
+      'desc',
       'opaque_cursor',
       50,
     ])
@@ -227,9 +239,16 @@ function directoryResponse() {
     items: [
       {
         managedMemberLifecycleId: 'member-lifecycle-1',
+        managedSince: '2026-01-01T00:00:00.000Z',
+        siteRegisteredAt: '2025-12-01T00:00:00.000Z',
         account: {
           userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
           mainCharacter: { characterId: 90_000_001, name: 'Review Pilot' },
+        },
+        portraitCharacter: {
+          characterId: 90_000_001,
+          name: 'Review Pilot',
+          source: 'main-character' as const,
         },
         managedAffiliation: {
           characterId: 90_000_001,
@@ -238,8 +257,26 @@ function directoryResponse() {
           allianceId: null,
           checkedAt: '2026-09-18T00:00:00.000Z',
         },
+        disclosedCharacterCount: 1,
+        groups: [],
+        compliance: {
+          state: 'compliant' as const,
+          evidenceFreshness: 'fresh' as const,
+          evidenceAt: '2026-09-18T00:00:00.000Z',
+          reviewDeadline: null,
+          accessValidUntil: '2026-09-19T00:00:00.000Z',
+          evaluatedAt: '2026-09-18T00:00:00.000Z',
+        },
+        block: { blocked: false as const },
+        auditData: {
+          state: 'current' as const,
+          expected: 7,
+          covered: 7,
+          asOf: '2026-09-18T00:00:00.000Z',
+        },
       },
     ],
+    groupFacets: [{ groupId: 'group-remote', name: 'Remote reviewers' }],
     nextCursor: null,
   }
 }

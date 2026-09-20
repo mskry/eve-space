@@ -447,6 +447,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     apiServer.setAllowedOrigin(applicationOrigin())
     const page = await createPage('/')
     await page.setViewportSize({ width: 390, height: 844 })
+    await waitForNuxtHydration(page)
 
     const persistentSidebar = page.locator('.dashboard-sidebar--persistent')
     const trigger = page.getByRole('button', { name: 'Open navigation' })
@@ -456,7 +457,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
 
     await trigger.focus()
     await page.keyboard.press('Enter')
-    expect(await page.getByRole('button', { name: 'Close navigation' }).isVisible()).toBe(true)
+    await page.getByRole('button', { name: 'Close navigation' }).waitFor({ state: 'visible' })
     await page.keyboard.press('Escape')
     await page.getByRole('button', { name: 'Open navigation' }).waitFor({ state: 'visible' })
     expect(await page.getByRole('button', { name: 'Close navigation' }).isHidden()).toBe(true)
@@ -473,6 +474,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     apiServer.setAllowedOrigin(applicationOrigin())
     const page = await createPage('/')
     await page.setViewportSize({ width: 390, height: 844 })
+    await waitForNuxtHydration(page)
     const trigger = page.getByRole('button', { name: 'Open navigation' })
 
     await trigger.click()
@@ -567,6 +569,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     apiAvailable = true
     apiServer.setAllowedOrigin(applicationOrigin())
     const page = await createPage('/admin/login')
+    await waitForNuxtHydration(page)
     const skipLink = page.getByRole('link', { name: 'Skip to main content' })
     const main = page.locator('#main-content')
 
@@ -623,12 +626,14 @@ describe('Nuxt anonymous SSR boundary', async () => {
     expect(await dashboardLink.evaluate((element) => document.activeElement === element)).toBe(true)
 
     await dashboardLink.click()
+    await expect.poll(() => page.title(), { timeout: 5_000 }).toBe('Overview // EVE Space')
     await expect
-      .poll(() =>
-        page.locator('#main-content').evaluate((element) => document.activeElement === element),
+      .poll(
+        () =>
+          page.locator('#main-content').evaluate((element) => document.activeElement === element),
+        { timeout: 5_000 },
       )
       .toBe(true)
-    await expect.poll(() => page.title()).toBe('Overview // EVE Space')
     await expect
       .poll(() => page.locator('.nuxt-route-announcer [role="status"]').textContent())
       .toBe('Overview // EVE Space')

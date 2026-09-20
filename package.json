@@ -108,6 +108,7 @@
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "postgres": "catalog:",
+    "railway": "^3.11.0",
     "testcontainers": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:tsapi",

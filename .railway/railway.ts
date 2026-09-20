@@ -1,0 +1,232 @@
+import {
+  database,
+  defineRailway,
+  github,
+  postgres,
+  preserve,
+  project,
+  service,
+  volume,
+} from 'railway/iac'
+
+const deploymentRegion = 'europe-west4-drams3a'
+
+export default defineRailway(() => {
+  const eveSpace = github('mskry/eve-space', { checkSuites: true })
+
+  const queueRedis = database('queue-redis', 'redis', {
+    image: 'redis:7.4.7-alpine',
+    output: 'REDIS_URL',
+    defaultMountPath: '/data',
+    region: deploymentRegion,
+  })
+  queueRedis.deploy = {
+    ...queueRedis.deploy,
+    startCommand:
+      'redis-server --appendonly yes --appendfsync always --maxmemory 512mb --maxmemory-policy noeviction',
+    restartPolicyType: 'ALWAYS',
+  }
+  const postgresDatabase = postgres('Postgres', { region: deploymentRegion })
+  const cacheRedis = database('cache-redis', 'redis', {
+    image: 'redis:7.4.7-alpine',
+    output: 'REDIS_URL',
+    defaultMountPath: '/data',
+    region: deploymentRegion,
+  })
+  cacheRedis.deploy = {
+    ...cacheRedis.deploy,
+    startCommand:
+      'redis-server --appendonly no --save "" --maxmemory 256mb --maxmemory-policy allkeys-lfu',
+    restartPolicyType: 'ALWAYS',
+  }
+  const postgresVolume = volume('postgres-volume', {
+    alerts: { usage: { '100': {}, '80': {}, '95': {} } },
+    allowOnlineResize: true,
+    region: deploymentRegion,
+    sizeMB: 5000,
+  })
+  const queueRedisVolume = volume('queue-redis-volume', {
+    alerts: { usage: { '100': {}, '80': {}, '95': {} } },
+    allowOnlineResize: true,
+    region: deploymentRegion,
+    sizeMB: 5000,
+  })
+  const api = service('api', {
+    source: eveSpace,
+    build: {
+      buildEnvironment: 'V3',
+      builder: 'DOCKERFILE',
+      dockerfilePath: 'api/Dockerfile',
+      watchPatterns: [
+        '/api/Dockerfile',
+        '/.dockerignore',
+        '/package.json',
+        '/pnpm-lock.yaml',
+        '/pnpm-workspace.yaml',
+        '/.npmrc',
+        '/.pnpmfile.*',
+        '/api/package.json',
+        '/api/tsconfig.json',
+        '/api/src/**',
+        '/api/migrations/**',
+        '/packages/platform-module-contract/**',
+        '/packages/platform-module-server/**',
+        '/features/installed-modules.json',
+        '/features/*/module.config.*',
+        '/features/*/server/**',
+        '/scripts/run-installed-module-package-script.ts',
+        '!/**/*.md',
+        '!/**/README*',
+        '!/**/docs/**',
+        '!/**/test/**',
+        '!/**/tests/**',
+        '!/**/*.test.*',
+        '!/**/*.spec.*',
+      ],
+    },
+    healthcheck: '/health',
+    healthcheckTimeout: 300,
+    replicas: { [deploymentRegion]: 1 },
+    deploy: { restartPolicyType: 'ALWAYS' },
+    domains: ['api.eve-space.com'],
+    env: {
+      ADMIN_SETUP_SECRET: preserve(),
+      CACHE_REDIS_URL: preserve(),
+      DATABASE_URL: preserve(),
+      ESI_COMPATIBILITY_DATE: preserve(),
+      ESI_USER_AGENT: preserve(),
+      EVE_CALLBACK_URL: preserve(),
+      EVE_CLIENT_ID: preserve(),
+      EVE_CLIENT_SECRET: preserve(),
+      EVE_SCOPES: preserve(),
+      NODE_ENV: preserve(),
+      QUEUE_REDIS_URL: preserve(),
+      SESSION_COOKIE_SECURE: preserve(),
+      TOKEN_ENCRYPTION_KEY: preserve(),
+      WEB_ORIGIN: preserve(),
+    },
+  })
+  const sdeIngest = service('sde-ingest', {
+    replicas: { [deploymentRegion]: 1 },
+    env: { DATABASE_URL: preserve(), RAILWAY_DOCKERFILE_PATH: preserve() },
+  })
+  const web = service('web', {
+    source: eveSpace,
+    build: {
+      buildEnvironment: 'V3',
+      builder: 'DOCKERFILE',
+      dockerfilePath: 'Dockerfile',
+      watchPatterns: [
+        '/Dockerfile',
+        '/.dockerignore',
+        '/package.json',
+        '/pnpm-lock.yaml',
+        '/pnpm-workspace.yaml',
+        '/.npmrc',
+        '/.pnpmfile.*',
+        '/.nuxtrc',
+        '/nuxt.config.*',
+        '/tsconfig*.json',
+        '/colada.options.*',
+        '/app.config.*',
+        '/nitro.config.*',
+        '/vite.config.*',
+        '/postcss.config.*',
+        '/tailwind.config.*',
+        '/app/**',
+        '/server/**',
+        '/public/**',
+        '/layers/**',
+        '/generated/platform/**',
+        '/api/package.json',
+        '/api/src/**',
+        '/packages/platform-module-contract/**',
+        '/packages/platform-module-server/**',
+        '/packages/platform-module-nuxt/**',
+        '/features/**',
+        '/scripts/run-installed-module-package-script.ts',
+        '!/**/*.md',
+        '!/**/README*',
+        '!/**/docs/**',
+        '!/**/test/**',
+        '!/**/tests/**',
+        '!/**/*.test.*',
+        '!/**/*.spec.*',
+      ],
+    },
+    healthcheck: '/health',
+    healthcheckTimeout: 300,
+    replicas: { [deploymentRegion]: 1 },
+    deploy: { restartPolicyType: 'ALWAYS' },
+    domains: ['eve-space.com'],
+    env: {
+      NODE_ENV: preserve(),
+      NUXT_PUBLIC_API_BASE: preserve(),
+      NUXT_PUBLIC_EVE_IMAGE_BASE: preserve(),
+    },
+  })
+  const worker = service('worker', {
+    source: eveSpace,
+    build: {
+      buildEnvironment: 'V3',
+      builder: 'DOCKERFILE',
+      dockerfilePath: 'api/Dockerfile',
+      watchPatterns: [
+        '/api/Dockerfile',
+        '/.dockerignore',
+        '/package.json',
+        '/pnpm-lock.yaml',
+        '/pnpm-workspace.yaml',
+        '/.npmrc',
+        '/.pnpmfile.*',
+        '/api/package.json',
+        '/api/tsconfig.json',
+        '/api/src/**',
+        '/api/migrations/**',
+        '/packages/platform-module-contract/**',
+        '/packages/platform-module-server/**',
+        '/features/installed-modules.json',
+        '/features/*/module.config.*',
+        '/features/*/server/**',
+        '/scripts/run-installed-module-package-script.ts',
+        '!/**/*.md',
+        '!/**/README*',
+        '!/**/docs/**',
+        '!/**/test/**',
+        '!/**/tests/**',
+        '!/**/*.test.*',
+        '!/**/*.spec.*',
+      ],
+    },
+    start: 'node dist/worker.js',
+    replicas: { [deploymentRegion]: 1 },
+    deploy: { drainingSeconds: 40, restartPolicyType: 'ALWAYS' },
+    env: {
+      CACHE_REDIS_URL: preserve(),
+      DATABASE_URL: preserve(),
+      ESI_COMPATIBILITY_DATE: preserve(),
+      ESI_USER_AGENT: preserve(),
+      EVE_CLIENT_ID: preserve(),
+      EVE_CLIENT_SECRET: preserve(),
+      EVE_SCOPES: preserve(),
+      NODE_ENV: preserve(),
+      QUEUE_REDIS_URL: preserve(),
+      RAILWAY_DEPLOYMENT_DRAINING_SECONDS: preserve(),
+      TOKEN_ENCRYPTION_KEY: preserve(),
+    },
+  })
+
+  return project('eve-space', {
+    resources: [
+      queueRedis,
+      api,
+      postgresDatabase,
+      sdeIngest,
+      cacheRedis,
+      web,
+      worker,
+      postgresVolume,
+      queueRedisVolume,
+    ],
+  })
+})

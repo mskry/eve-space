@@ -1,5 +1,13 @@
 import { useQuery, useQueryCache } from '@pinia/colada'
 import {
+  platformReviewerDirectoryDefaultSortDirection,
+  platformReviewerDirectoryDefaultSortField,
+  type PlatformReviewerDirectoryAuditState,
+  type PlatformReviewerDirectoryComplianceState,
+  type PlatformReviewerDirectorySortDirection,
+  type PlatformReviewerDirectorySortField,
+} from '@eve-space/platform-module-contract/reviewer-directory'
+import {
   removePlatformQueryScope,
   removePlatformReviewerContributionTargetQueries,
   type PlatformReviewerContributionTargetIdentity,
@@ -48,6 +56,14 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   const panelCatalog = usePlatformReviewerPanels()
   const searchText = ref('')
   const corporationText = ref('')
+  const groupId = ref<string>()
+  const complianceState = ref<PlatformReviewerDirectoryComplianceState>()
+  const blocked = ref<boolean>()
+  const auditState = ref<PlatformReviewerDirectoryAuditState>()
+  const sort = ref<PlatformReviewerDirectorySortField>(platformReviewerDirectoryDefaultSortField)
+  const direction = ref<PlatformReviewerDirectorySortDirection>(
+    platformReviewerDirectoryDefaultSortDirection,
+  )
   const limit = ref(defaultDirectoryLimit)
   const cursor = ref<string>()
   const cursorHistory = ref<string[]>([])
@@ -85,6 +101,12 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     organizationVersion: organizationVersion.value,
     query: appliedQuery.value,
     corporationId: appliedCorporationId.value,
+    groupId: groupId.value,
+    complianceState: complianceState.value,
+    blocked: blocked.value,
+    auditState: auditState.value,
+    sort: sort.value,
+    direction: direction.value,
     cursor: cursor.value,
     limit: limit.value,
   }))
@@ -100,6 +122,9 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   )
   const members = computed(() =>
     directoryQuery.error.value ? [] : (directoryQuery.data.value?.items ?? []),
+  )
+  const groupFacets = computed(() =>
+    directoryQuery.error.value ? [] : (directoryQuery.data.value?.groupFacets ?? []),
   )
   const browseSelectedMember = computed(() =>
     members.value.find(({ account }) => account.userId === urlState.value.targetUserId),
@@ -180,10 +205,27 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     () => canonicalizeLocation(),
     { flush: 'post' },
   )
-  watch(limit, () => {
-    cursor.value = undefined
-    cursorHistory.value = []
-  })
+  watch(
+    [groupId, complianceState, blocked, auditState, sort, direction, limit],
+    resetDirectoryCursor,
+    { flush: 'sync' },
+  )
+  watch(
+    () => directoryQuery.error.value,
+    async (error) => {
+      if (
+        !cursor.value ||
+        !(error instanceof ApiQueryError) ||
+        error.code !== 'INVALID_REVIEWER_DIRECTORY_INPUT'
+      )
+        return
+      resetDirectoryCursor()
+      await nextTick()
+      await directoryQuery.refresh()
+      announcer.polite('The directory page expired. Returned to the first page.')
+    },
+    { flush: 'sync' },
+  )
   watch(
     () => currentTargetQueryIdentity(),
     (current, previous) => {
@@ -215,12 +257,19 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   async function submitSearch() {
     appliedQuery.value = normalizedSearch(searchText.value)
     appliedCorporationId.value = positiveInteger(corporationText.value)
-    cursor.value = undefined
-    cursorHistory.value = []
+    resetDirectoryCursor()
     await nextTick()
     const result = await directoryQuery.refresh()
     const count = result.data?.items.length ?? 0
     announcer.polite(`${count} managed ${count === 1 ? 'member' : 'members'} found.`)
+  }
+
+  function changeDirectorySort(input: {
+    readonly sort: PlatformReviewerDirectorySortField
+    readonly direction: PlatformReviewerDirectorySortDirection
+  }) {
+    sort.value = input.sort
+    direction.value = input.direction
   }
 
   async function nextDirectoryPage() {
@@ -340,6 +389,11 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     void router.replace({ query })
   }
 
+  function resetDirectoryCursor() {
+    cursor.value = undefined
+    cursorHistory.value = []
+  }
+
   function currentTargetQueryIdentity(): PlatformReviewerContributionTargetIdentity | undefined {
     const contribution = selectedContribution.value
     const target = selectedTarget.value
@@ -356,12 +410,19 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   return {
     authLoading,
     authSession,
+    auditState,
     availableContributions,
+    blocked,
+    changeDirectorySort,
+    complianceState,
     corporationText,
     cursorHistory,
+    direction,
     directoryQuery,
     entryError,
     entryQuery,
+    groupFacets,
+    groupId,
     limit,
     members,
     nextDirectoryPage,
@@ -378,6 +439,7 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     selectedMember,
     selectedTarget,
     selectMember,
+    sort,
     submitSearch,
     targetQuery,
   }

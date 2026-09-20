@@ -1,12 +1,11 @@
 import { readdir, readFile } from 'node:fs/promises'
+import { clientRequestIn } from './client-request.js'
 
 const DEFINITION_DIRECTORIES = ['app/queries/']
 const DECLARATION_PATTERN = /^(?:export )?(?:const|function) (\w+)/gm
 const DEFINITION_LINES = 40
 const SPREAD_PATTERN = /\.\.\.(\w+)\s*\(/g
 const CALL_PATTERN = /\b(\w+)\s*\(/g
-const CLIENT_CHAIN_PATTERN =
-  /\b(?:apiClient|client)((?:\s*\.\s*\w+|\s*\[\s*'[^']*'\s*\])+)\s*\.\s*\$(get|post|put|patch|delete)\b/
 
 export interface QueryDefinition {
   name: string
@@ -102,23 +101,15 @@ const declarationsIn = (source: string, contents: string): Declaration[] => {
 }
 
 const queryDefinitionIn = (name: string, source: string, body: string) => {
-  const chain = CLIENT_CHAIN_PATTERN.exec(body)
+  const request = clientRequestIn(body)
 
-  if (!chain) return null
+  if (!request) return null
 
   return {
     name,
     source,
-    method: chain[2].toUpperCase(),
-    requestPath: toRequestPath(chain[1]),
+    method: request.method,
+    requestPath: request.requestPath,
     excerpt: body.split('\n').slice(0, DEFINITION_LINES).join('\n').trim(),
   }
 }
-
-const toRequestPath = (chain: string) =>
-  `/${chain
-    .replaceAll(/\s+/g, '')
-    .replaceAll(/\[\s*'([^']*)'\s*\]/g, '.$1')
-    .split('.')
-    .filter(Boolean)
-    .join('/')}`

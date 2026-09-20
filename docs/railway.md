@@ -2,6 +2,8 @@
 
 EVE Space normally runs as six Railway services in one region:
 
+The production topology is defined in `.railway/railway.ts`. Keep `deploymentRegion` aligned with the region that owns the PostgreSQL and queue Redis volumes so API and worker traffic does not cross regions. Preview changes with `railway config plan` and apply a reviewed plan with `railway config apply`; do not apply region changes from an unreviewed working tree.
+
 | Service       | Source               | Persistent | Public |
 | ------------- | -------------------- | ---------- | ------ |
 | `web`         | root `Dockerfile`    | no         | yes    |

@@ -11,7 +11,12 @@ const modulesByTier = {
     'resource-identity',
     'resource-subject',
   ],
-  declaration: ['core-resources', 'resource-declarations', 'resources'],
+  declaration: [
+    'core-resources',
+    'resource-classifier-input',
+    'resource-declarations',
+    'resources',
+  ],
   state: ['module-runtime-cache'],
   adapter: [
     'collection-state-store',
