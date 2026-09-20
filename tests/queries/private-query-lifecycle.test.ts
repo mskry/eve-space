@@ -5,6 +5,7 @@ import { flushPromises } from '@vue/test-utils'
 import { computed, defineComponent, h, nextTick, ref, watch } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthSession } from '../../app/composables/useAuthSession'
+import { useAuthSessionInitialization } from '../../app/composables/useAuthSessionInitialization'
 import { useCharacterRoster } from '../../app/composables/useCharacterRoster'
 import { unauthenticatedSession } from '../../app/queries/auth'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
@@ -51,6 +52,75 @@ afterEach(() => {
 })
 
 describe('private query lifecycle', () => {
+  it('shares hydration verification with middleware and reuses its completed result', async () => {
+    const response = Promise.withResolvers<Response>()
+    const sessionRequest = vi.fn(() => response.promise)
+    queryServer.use(http.get('http://localhost/auth/session', sessionRequest))
+    let initialization!: ReturnType<typeof useAuthSessionInitialization>
+    let authState!: ReturnType<typeof useAuthSession>
+    const Host = defineComponent({
+      setup() {
+        const api = createApiClient('http://localhost')
+        initialization = useAuthSessionInitialization(api)
+        authState = useAuthSession(api)
+        return () => h('span')
+      },
+    })
+    const { queryCache, wrapper } = mountWithQueryPlugins(Host)
+    const componentVerification = queryCache.refresh(queryCache.get(PRIVATE_QUERY_KEYS.session())!)
+    await vi.waitFor(() => expect(sessionRequest).toHaveBeenCalledOnce())
+    const middlewareVerification = initialization.initialize()
+    const concurrentNavigation = initialization.initialize(true)
+    expect(initialization.verification.state.value.generation).toBe(1)
+
+    response.resolve(
+      HttpResponse.json({ ...authenticatedSession(), cacheAdmission: cacheAdmission() }),
+    )
+    await expect(middlewareVerification).resolves.toEqual(authenticatedSession())
+    await expect(concurrentNavigation).resolves.toEqual(authenticatedSession())
+    await componentVerification
+    await expect(initialization.initialize()).resolves.toEqual(authenticatedSession())
+    expect(sessionRequest).toHaveBeenCalledOnce()
+    expect(initialization.verification.state.value).toEqual({ generation: 1, status: 'verified' })
+    expect(authState.authSession.value).toEqual(authenticatedSession())
+    wrapper.unmount()
+  })
+
+  it.each([true, false])(
+    'bootstraps session with admission available=%s in one request',
+    async (available) => {
+      const admissionRequest = vi.fn(() => HttpResponse.json(cacheAdmission()))
+      const sessionRequest = vi.fn(({ request }: { request: Request }) => {
+        expect(new URL(request.url).searchParams.get('includeAdmission')).toBe('true')
+        return HttpResponse.json({
+          ...authenticatedSession(),
+          cacheAdmission: available ? cacheAdmission() : null,
+        })
+      })
+      queryServer.use(
+        http.get('http://localhost/auth/session', sessionRequest),
+        http.get('http://localhost/api/me/cache-admission', admissionRequest),
+      )
+      let authState!: ReturnType<typeof useAuthSession>
+      const Host = defineComponent({
+        setup() {
+          authState = useAuthSession(createApiClient('http://localhost'))
+          return () => h('span')
+        },
+      })
+      const { queryCache, wrapper } = mountWithQueryPlugins(Host)
+      await queryCache.refresh(queryCache.get(PRIVATE_QUERY_KEYS.session())!)
+      await flushPromises()
+
+      expect(sessionRequest).toHaveBeenCalledOnce()
+      expect(admissionRequest).not.toHaveBeenCalled()
+      expect(authState.authSession.value).toEqual(authenticatedSession())
+      expect(authState.authLoading.value).toBe(false)
+      expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(authenticatedSession())
+      wrapper.unmount()
+    },
+  )
+
   it('keeps authenticated data gated until cache admission resolves', async () => {
     let releaseAdmission!: () => void
     const admissionPending = new Promise<void>((resolve) => {

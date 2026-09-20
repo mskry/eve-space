@@ -18,7 +18,7 @@ import {
   type EsiQueryPersistencePresentation,
 } from '@eve-space/platform-module-nuxt/runtime'
 import { computed, onScopeDispose, toValue, type ComputedRef, type MaybeRefOrGetter } from 'vue'
-import type { AuthSession, CacheAdmissionContext } from '../queries/auth'
+import type { AuthSession, CacheAdmissionContext, CacheAdmissionBootstrap } from '../queries/auth'
 import { PRIVATE_QUERY_KEYS } from '../queries/query-keys'
 import { isAuthenticationDenial } from '../utils/authentication-denial'
 import { ApiQueryError } from '../utils/query-error'
@@ -96,6 +96,7 @@ interface QueryPersistenceRuntime {
     session: AuthSession,
     loadAdmission?: AdmissionLoader,
     signal?: AbortSignal,
+    admission?: CacheAdmissionBootstrap,
   ): Promise<boolean>
   awaitRestoration(): Promise<void>
   dispose(): void
@@ -162,8 +163,9 @@ export function applyVerifiedQueryIdentity(
   session: AuthSession,
   loadAdmission?: AdmissionLoader,
   signal?: AbortSignal,
+  admission?: CacheAdmissionBootstrap,
 ): Promise<boolean> {
-  return requireRuntime(queryCache).applyVerifiedIdentity(session, loadAdmission, signal)
+  return requireRuntime(queryCache).applyVerifiedIdentity(session, loadAdmission, signal, admission)
 }
 
 export function invalidatePrivateQueryScope(
@@ -354,8 +356,8 @@ function createQueryPersistenceRuntime(
   const runtime: QueryPersistenceRuntime & {
     installOfficialPlugin: (context: Parameters<PiniaColadaPlugin>[0]) => void
   } = {
-    applyVerifiedIdentity(session, loadAdmission, signal) {
-      return privateLifecycle.applyVerifiedIdentity(session, loadAdmission, signal)
+    applyVerifiedIdentity(session, loadAdmission, signal, admission) {
+      return privateLifecycle.applyVerifiedIdentity(session, loadAdmission, signal, admission)
     },
     awaitRestoration() {
       return waitForRestoration()

@@ -1,7 +1,11 @@
 import type { QueryCache } from '@pinia/colada'
 import { computed } from 'vue'
-import type { AuthSession, CacheAdmissionContext } from '../queries/auth'
-import { unauthenticatedSession } from '../queries/auth'
+import {
+  unauthenticatedSession,
+  type AuthSession,
+  type CacheAdmissionContext,
+  type CacheAdmissionBootstrap,
+} from '../queries/auth'
 import { clearAuthenticatedQueriesAfterSessionTransition } from '../queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../queries/query-keys'
 import {
@@ -63,6 +67,7 @@ export function useAuthVerification() {
     session: AuthSession,
     loadAdmission: (signal?: AbortSignal) => Promise<CacheAdmissionContext>,
     signal?: AbortSignal,
+    admission?: CacheAdmissionBootstrap,
   ) {
     if (!ownsVerification(state.value, currentGeneration) || signal?.aborted) return false
     const previousSession = queryCache.getQueryData<AuthSession>(PRIVATE_QUERY_KEYS.session())
@@ -74,7 +79,7 @@ export function useAuthVerification() {
     ) {
       state.value = { generation: currentGeneration, status: 'verifying' }
     }
-    await applyVerifiedQueryIdentity(queryCache, session, loadAdmission, signal)
+    await applyVerifiedQueryIdentity(queryCache, session, loadAdmission, signal, admission)
     if (!ownsVerification(state.value, currentGeneration) || signal?.aborted) return false
     state.value = { generation: currentGeneration, status: 'verified' }
     return true

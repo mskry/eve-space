@@ -1,5 +1,4 @@
-import { Hono } from 'hono'
-import type { Context } from 'hono'
+import { Hono, type Context } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import {
@@ -16,6 +15,10 @@ import {
   type OAuthStateIntentContext,
 } from './oauth-state-store.js'
 import { deleteSession, findSession, renewSession } from './session-store.js'
+import {
+  loadCacheAdmissionContext,
+  type CacheAdmissionContext,
+} from '../cache-admission/service.js'
 import { getCharacterAffiliation } from '../characters/profile.js'
 import { observeCharacterAffiliation } from '../characters/affiliation-sync.js'
 import { env, isSsoConfigured } from '../env.js'
@@ -59,6 +62,8 @@ const sessionLifetime = {
   renewalIntervalSeconds: 24 * 60 * 60,
 }
 const maxReturnPathDecodeDepth = 4
+const bootstrapAdmissionTimeoutMs = 1_000
+const sessionQuery = z.object({ includeAdmission: z.literal('true').optional() })
 type CharacterAuthorization = Omit<Parameters<typeof attachCharacter>[0], 'userId'>
 const callbackQuery = z.object({
   code: z.string().min(1, 'EVE SSO returned an empty authorization code.').optional(),
@@ -306,8 +311,7 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       return context.redirect(new URL('/', env.WEB_ORIGIN).toString(), 303)
     },
   )
-  .get('/session', async (context) => {
-    setPrivateHeaders(context)
+  .get('/session', privateNoStore, zValidator('query', sessionQuery), async (context) => {
     const sessionToken = readAuthCookie(context, sessionCookie)
     if (!sessionToken) return context.json({ authenticated: false as const })
 
@@ -320,7 +324,11 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
     if (renewedExpiry) {
       setAuthCookie(context, sessionCookie, sessionToken, secondsUntil(renewedExpiry))
     }
-    return context.json({ authenticated: true as const, account: session })
+    const bootstrap: { cacheAdmission?: CacheAdmissionContext | null } = {}
+    if (context.req.valid('query').includeAdmission) {
+      bootstrap.cacheAdmission = await loadBootstrapAdmission(session.userId)
+    }
+    return context.json({ authenticated: true as const, account: session, ...bootstrap })
   })
   .post('/logout', async (context) => {
     setPrivateHeaders(context)
@@ -329,6 +337,23 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
     deleteAuthCookie(context, sessionCookie)
     return context.body(null, 204)
   })
+
+async function loadBootstrapAdmission(userId: string): Promise<CacheAdmissionContext | null> {
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      loadCacheAdmissionContext(userId),
+      new Promise<null>((resolve) => {
+        timeout = setTimeout(() => resolve(null), bootstrapAdmissionTimeoutMs)
+      }),
+    ])
+  } catch {
+    recordDiagnostic('auth.cache-admission.unavailable')
+    return null
+  } finally {
+    clearTimeout(timeout)
+  }
+}
 
 function redirectForCallbackError(
   context: Context,

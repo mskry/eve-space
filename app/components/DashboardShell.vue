@@ -157,9 +157,10 @@ function closeMobileNavigationForRoute(destinationPath: string) {
       <!-- Standard topbar -->
       <header v-if="!props.hideTopbar" class="dashboard-topbar">
         <div class="topbar-heading">
-          <UiDrawer
+          <LazyUiDrawer
             v-model:open="mobileNavigationOpen"
             :restore-focus="mobileNavigationRestoreFocus"
+            hydrate-on-interaction="click"
             title="Dashboard navigation"
             description="Navigate between EVE Space dashboard sections"
           >
@@ -181,7 +182,7 @@ function closeMobileNavigationForRoute(destinationPath: string) {
               @navigate="closeMobileNavigationForRoute"
               @logout="handleLogout"
             />
-          </UiDrawer>
+          </LazyUiDrawer>
 
           <div class="topbar-title">
             <span class="topbar-kicker">EVE SPACE / OPERATIONS</span>
@@ -189,8 +190,8 @@ function closeMobileNavigationForRoute(destinationPath: string) {
           </div>
         </div>
         <div class="topbar-status">
-          <UiThemeSwitcher />
-          <UiStatusPopover v-model:open="statusPopoverOpen">
+          <LazyUiThemeSwitcher hydrate-on-interaction="click" />
+          <LazyUiStatusPopover v-model:open="statusPopoverOpen" hydrate-on-interaction="click">
             <template #trigger>
               <button
                 class="topbar-system-status"
@@ -212,7 +213,7 @@ function closeMobileNavigationForRoute(destinationPath: string) {
               :error="statusError"
               @retry="statusQuery.refetch()"
             />
-          </UiStatusPopover>
+          </LazyUiStatusPopover>
           <NuxtLink
             v-if="!authLoading && !authUnavailable && !authSession.authenticated"
             to="/auth"
@@ -223,10 +224,11 @@ function closeMobileNavigationForRoute(destinationPath: string) {
       </header>
 
       <!-- Floating mobile trigger when topbar is hidden -->
-      <UiDrawer
+      <LazyUiDrawer
         v-else
         v-model:open="mobileNavigationOpen"
         :restore-focus="mobileNavigationRestoreFocus"
+        hydrate-on-interaction="click"
         title="Dashboard navigation"
         description="Navigate between EVE Space dashboard sections"
       >
@@ -248,7 +250,7 @@ function closeMobileNavigationForRoute(destinationPath: string) {
           @navigate="closeMobileNavigationForRoute"
           @logout="handleLogout"
         />
-      </UiDrawer>
+      </LazyUiDrawer>
 
       <main
         id="main-content"

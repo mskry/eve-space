@@ -7,11 +7,19 @@ import { AUTH_QUERY_KEYS, PRIVATE_QUERY_KEYS } from './query-keys'
 import { QUERY_POLICY } from './query-policy'
 
 export type AuthConfig = InferResponseType<ApiClient['auth']['config']['$get'], 200>
-export type AuthSession = InferResponseType<ApiClient['auth']['session']['$get'], 200>
+export type AuthSessionResponse = InferResponseType<ApiClient['auth']['session']['$get'], 200>
+export type AuthSession =
+  | Pick<Extract<AuthSessionResponse, { authenticated: true }>, 'authenticated' | 'account'>
+  | Extract<AuthSessionResponse, { authenticated: false }>
 export type CacheAdmissionContext = InferResponseType<
   ApiClient['api']['me']['cache-admission']['$get'],
   200
 >
+
+export interface CacheAdmissionBootstrap {
+  readonly context: CacheAdmissionContext | null
+  readonly requestedAt: number
+}
 
 export const unauthenticatedSession: AuthSession = { authenticated: false }
 export const unavailableAuthConfig: AuthConfig = {
@@ -39,9 +47,12 @@ export const authConfigQuery = defineEsiQueryOptions((apiClient: ApiClient) => (
 export const authSessionQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
   key: PRIVATE_QUERY_KEYS.session(),
   query: async ({ signal }) => {
-    const response = await apiClient.auth.session.$get(undefined, {
-      init: { signal: createRequestSignal(API_BOOTSTRAP_TIMEOUT_MS, signal) },
-    })
+    const response = await apiClient.auth.session.$get(
+      { query: {} },
+      {
+        init: { signal: createRequestSignal(API_BOOTSTRAP_TIMEOUT_MS, signal) },
+      },
+    )
     if (response.status !== 200) {
       throw await toApiQueryError(response, 'EVE session is unavailable.')
     }
@@ -51,6 +62,29 @@ export const authSessionQuery = defineEsiQueryOptions((apiClient: ApiClient) => 
   esiPersistence: { kind: 'none' },
   meta: { globalErrorMessage: 'Session verification is unavailable.' },
 }))
+
+export async function loadAuthBootstrap(apiClient: ApiClient, signal?: AbortSignal) {
+  const requestedAt = Date.now()
+  const response = await apiClient.auth.session.$get(
+    { query: { includeAdmission: 'true' } },
+    { init: { signal: createRequestSignal(API_BOOTSTRAP_TIMEOUT_MS, signal) } },
+  )
+  if (response.status !== 200) {
+    throw await toApiQueryError(response, 'EVE session is unavailable.')
+  }
+  return readAuthBootstrap(await response.json(), requestedAt)
+}
+
+function readAuthBootstrap(response: AuthSessionResponse, requestedAt: number) {
+  const session: AuthSession = response.authenticated
+    ? { authenticated: true, account: response.account }
+    : unauthenticatedSession
+  const admission: CacheAdmissionBootstrap | undefined =
+    response.authenticated && response.cacheAdmission !== undefined
+      ? { context: response.cacheAdmission, requestedAt }
+      : undefined
+  return { session, admission }
+}
 
 export async function loadCacheAdmission(apiClient: ApiClient, signal?: AbortSignal) {
   const response = await apiClient.api.me['cache-admission'].$get(undefined, {

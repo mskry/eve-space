@@ -175,6 +175,7 @@ useHead({
               :height="72"
               loading="eager"
               decoding="async"
+              fetch-priority="high"
               alt=""
             />
           </span>

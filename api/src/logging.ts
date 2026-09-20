@@ -37,6 +37,7 @@ const diagnosticCatalog = {
   'api.shutdown.failed': diagnostic('error', ['component'], 'shutdown-failure'),
   'api.shutdown.timed-out': diagnostic('error', [], 'shutdown-timeout'),
   'api.startup.failed': diagnostic('error', [], 'startup-failure'),
+  'auth.cache-admission.unavailable': diagnostic('warn', [], 'dependency-unavailable'),
   'auth.sso-callback.failed': diagnostic('error', [], 'unexpected-failure'),
   'command.domain-event-redrive.failed': diagnostic('error', [], 'unexpected-failure'),
   'command.esi-call-rate-report.failed': diagnostic('error', [], 'unexpected-failure'),

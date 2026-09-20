@@ -21,11 +21,16 @@ const siteTitle = 'EVE Space // Capsuleer Operations'
 const siteDescription =
   'Secure EVE Online operations for character identity, skills, mail, wallets, markets, contracts, and corporations.'
 const socialImage = `${siteUrl}/social-card.png`
+const apiOrigin = new URL(useRuntimeConfig().public.apiBase).origin
 const route = useRoute()
 const canonicalUrl = computed(() => new URL(route.path, siteUrl).toString())
 
 useHead(() => ({
-  link: [{ rel: 'canonical', href: canonicalUrl.value }],
+  link: [
+    { rel: 'canonical', href: canonicalUrl.value },
+    { rel: 'preconnect', href: apiOrigin, crossorigin: 'use-credentials' },
+    { rel: 'preconnect', href: 'https://images.evetech.net' },
+  ],
 }))
 
 useSeoMeta({
