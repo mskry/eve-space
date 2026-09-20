@@ -16,6 +16,7 @@ const publicModules = new Set([
   'persistence',
   'publisher',
   'resources',
+  'reviewer-directory',
   'server',
 ])
 const internalModules = new Set([...publicModules, 'validation'])
@@ -40,6 +41,7 @@ const allowedInternalImports: Readonly<Record<string, ReadonlySet<string>>> = {
   persistence: new Set(),
   publisher: new Set(['compiler', 'esi', 'identifiers', 'manifest', 'nuxt']),
   resources: new Set(['persistence', 'server']),
+  'reviewer-directory': new Set(['server']),
   server: new Set(),
   validation: new Set([
     'identifiers',
@@ -89,9 +91,10 @@ const hostApiModules = new Set([
   'nuxt',
   'persistence',
   'resources',
+  'reviewer-directory',
   'server',
 ])
-const hostNuxtModules = new Set(['nuxt', 'server'])
+const hostNuxtModules = new Set(['nuxt', 'reviewer-directory', 'server'])
 const nonCompositionModules = new Set(
   [...publicModules].filter((name) => name !== 'compiler' && name !== 'manifest'),
 )

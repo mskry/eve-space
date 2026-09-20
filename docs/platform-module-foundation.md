@@ -56,6 +56,26 @@ Feature-local infrastructure, authentication, network, or query-lifecycle substi
 accepted bridge. `pnpm lint` and `pnpm test:module-conformance` enforce the no-bypass side of this
 sequence; review must confirm the platform-first ordering when a new capability is introduced.
 
+## Reviewer Directory Ownership
+
+Core owns the organization-review target directory end to end: authorization, current-organization
+target bounds, canonical row fields, search/filter/sort inputs, opaque pagination, target selection,
+column preferences, and accessible table behavior. Installed modules may contribute reviewer panels
+and declare the exact `directoryPermission` needed to discover those panels. A panel's own required
+permission remains independently enforced.
+
+The reviewer-contribution manifest has no field-provider, row-renderer, search-route, or directory
+model extension. Unknown contribution properties such as `directoryFields` or `searchRoute` are
+rejected during manifest compilation. Feature packages must not export a reusable directory or add a
+parallel member-search route; a new shared summary value first requires an accepted core contract and
+host-owned bounded projection.
+
+Selecting a core directory row establishes only a bounded target identity. It does not execute a
+feature route, preload private evidence, or authorize a panel. The browser loads a contribution only
+after the reviewer explicitly selects it and the platform rechecks its module, section, audience,
+permission, organization-version, and target gates. Registry and Member Audit adoption tests preserve
+these constraints alongside the general unknown-manifest-key checks.
+
 ## Core EVE Data Products
 
 The core-data coverage manifest records ownership and implementation state; it is not an access

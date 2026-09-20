@@ -55,6 +55,7 @@ export const generatedRegistryPaths = [
   'api/src/generated/platform/installed-module-inventory.ts',
   'api/src/generated/platform/installed-permission-catalog.ts',
   'api/src/generated/platform/installed-reviewer-contributions.ts',
+  'api/src/generated/platform/installed-module-resource-declarations.ts',
 ] as const
 
 interface ReviewedPersistenceRoutine extends CanonicalPersistenceRoutine {
@@ -140,6 +141,7 @@ export const generateRegistryFiles = function generateRegistryFiles(
     [generatedRegistryPaths[10], renderInstalledInventory(compiled, releases)],
     [generatedRegistryPaths[11], renderInstalledPermissionCatalog(compiled)],
     [generatedRegistryPaths[12], renderInstalledReviewerContributions(compiled)],
+    [generatedRegistryPaths[13], renderResourceDeclarations(compiled)],
   ])
 } satisfies PlatformRegistryRenderer
 
@@ -334,6 +336,18 @@ function renderWorkerResources(compiled: CompiledPlatformModules) {
     ? "import type { InstalledModuleResourceMaterializationPersistence, InstalledModuleResourceProjectionPersistence } from './installed-module-persistence.js'\n"
     : ''
   return `${generatedHeader}import type { ${importedTypes} } from '@eve-space/platform-module-contract/resources'\n${persistenceTypes}${imports}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor[]\n`
+}
+
+function renderResourceDeclarations(compiled: CompiledPlatformModules) {
+  const manifests = readCompiledPlatformModules(compiled)
+  const descriptors = manifests.flatMap((manifest) =>
+    manifest.server.resources.map((resource) => {
+      const sectionId = resource.sectionId ? ` sectionId: ${quote(resource.sectionId)},` : ''
+      return `{ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId} subjectKind: ${quote(resource.subjectKind)}, eligibility: { kind: ${quote(resource.eligibility.kind)} } }`
+    }),
+  )
+  const rendered = descriptors.length ? `[${descriptors.join(', ')}]` : '[]'
+  return `${generatedHeader}import type { PlatformInstalledResourceDeclaration } from '@eve-space/platform-module-contract/resources'\n\nexport const installedModuleResourceDeclarations =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDeclaration[]\n`
 }
 
 function renderMigrations(

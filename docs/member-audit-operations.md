@@ -81,6 +81,77 @@ Audit presents compliance-group membership as read-only because its declared sou
 membership automatically. To remove protected access immediately, use the separately authorized
 block action; unblock reevaluates current assignments and does not recreate an expired grant.
 
+## Reviewer Directory
+
+The managed-member directory is owned and served by core. Member Audit declares the permissions
+that make its reviewer contributions discoverable, but it does not own a search endpoint, directory
+model, row renderer, or directory storage read. A caller must have a current HR or director grant,
+current organization compliance, `member-audit.search`, and `member-audit.summary.read` before core
+loads any enriched row. Deployment-administrator or organization-owner authority alone is not
+sufficient.
+
+The directory exposes one canonical bounded row. Column visibility does not change the response or
+act as a data-access control.
+
+| Field                | Operational meaning                                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Member               | Permitted main-character identity and portrait, falling back to the current managed-affiliation character  |
+| Corporation          | Current managed-affiliation corporation ID; serving the row performs no live ESI name lookup               |
+| Managed since        | Start of the current managed-member lifecycle; an earlier ended lifecycle is not continuous tenure         |
+| Audit data           | Aggregate state and safe counts derived from core collection metadata, never raw Member Audit evidence     |
+| Groups               | Deterministically ordered current visible core assignments only                                            |
+| Access status        | Current compliance state with an active member block taking precedence                                     |
+| Disclosed characters | Count of current attached in-scope character lifecycles; it does not imply undisclosed-character discovery |
+| Affiliation checked  | Time at which the current managed affiliation was validated                                                |
+| Site registered      | Creation time of the EVE Space user record, not corporation tenure or site activity                        |
+| Review deadline      | Current compliance review deadline, or no recorded value                                                   |
+| Access valid until   | Current compliance access boundary, or no recorded value                                                   |
+| Blocked since        | Start of the current active block, or no recorded value                                                    |
+
+Aggregate audit state is conservative across every expected enabled Member Audit resource:
+
+1. `not-enabled` means no evidence resource is enabled.
+2. `authorization-required` means at least one expected resource lacks current authorization or
+   disclosure acceptance.
+3. `unavailable` means at least one expected resource has a current unavailable or failed state.
+4. `never-collected` means at least one expected resource has no successful validation.
+5. `stale` means every resource has succeeded but at least one validation is stale.
+6. `current` means every expected resource is current.
+
+The aggregate `asOf` value is present only when every expected resource has succeeded. It is the
+oldest validation in that complete set, not the newest resource timestamp. Resource identities,
+failure details, and evidence remain behind explicit target and contribution selection.
+
+Browser preferences contain only a schema version and ordered stable field IDs. They do not contain
+members, identifiers, names, groups, status or date values, search/filter/sort inputs, cursors, or
+selected targets. Directory results remain private, memory-only query data and are fetched again
+through current authorization.
+
+This directory has no CSV endpoint or download control. It does not store, infer, request, or show
+last site activity, last site login, EVE last-login/logout, online state, or login counts. Those
+fields require separate source, scope, disclosure, permission, freshness, and retention decisions.
+
+## Directory Rollout And Rollback
+
+Deploy the API and Nuxt directory from the same release. The canonical row shape, filter and sort
+inputs, and opaque cursor version are one contract; do not intentionally operate mismatched server
+and Nuxt versions. This release requires no data migration or backfill. Its maximum-size query plan
+uses the existing schema, and directory preferences remain browser-local presentation state.
+
+In-flight cursors are ephemeral and memory-only. A server change may reject an older cursor with the
+typed invalid-directory-input response, after which the workspace returns to the first page and
+announces the reset. Do not translate or persist old cursors. Saved column layouts carry their own
+schema version; an old version, unknown or duplicate field, missing locked field, corrupt value, or
+storage failure falls back to or repairs against the current field catalogue without member data.
+
+For rollback, restore the prior API and Nuxt pair together. Do not reverse a database migration,
+because this directory adds none. The newer browser preference key may remain: the prior client
+ignores it, and a later compatible client validates its version before use. Existing session,
+organization-version, compliance, block, reviewer-role, exact-permission, module, and section gates
+remain authoritative across rollout and rollback. Authorization loss, logout, organization changes,
+or module disablement must continue to remove the affected private queries and selected target before
+another directory or contribution request runs.
+
 ## Retention And SLOs
 
 Member Audit stores intentional reviewer DTOs, not raw ESI responses.

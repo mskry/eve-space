@@ -3,7 +3,6 @@ import type postgres from 'postgres'
 import { sql } from '../db/client.js'
 import {
   assertRegisteredEsiOperation,
-  getOptionalCharacterEsiScope,
   type EsiOperation,
 } from '../esi-gateway/catalog-interface.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
@@ -13,8 +12,10 @@ import {
   type PlatformCollectionFailureClass,
   type PlatformCollectionStateIdentity,
 } from './collection-state.js'
-import { installedResourceIdentityKey } from './resource-identity.js'
+import { createPlatformResourceClassifierInput } from './resource-classifier-input.js'
 import { platformResources } from './resources.js'
+
+export { createPlatformResourceClassifierInput } from './resource-classifier-input.js'
 
 const platformResourceDueReasons = [
   'never-collected',
@@ -181,7 +182,7 @@ export async function resolveInstalledResourceEligibility(
       validated_at as "validatedAt",
       last_failure_class as "lastFailureClass"
     from platform_classify_resources(
-      ${JSON.stringify(toPlanningResources([resource]))}::text::jsonb,
+      ${JSON.stringify(createPlatformResourceClassifierInput([resource]))}::text::jsonb,
       ${(options.now ?? new Date()).toISOString()}::text::timestamptz,
       ${parsed.moduleId},
       ${parsed.resourceId},
@@ -232,7 +233,7 @@ export async function selectDueInstalledResources(
       validated_at as "validatedAt",
       last_failure_class as "lastFailureClass"
     from platform_classify_resources(
-      ${JSON.stringify(toPlanningResources(resources))}::text::jsonb,
+      ${JSON.stringify(createPlatformResourceClassifierInput(resources))}::text::jsonb,
       ${(options.now ?? new Date()).toISOString()}::text::timestamptz
     )
     where eligibility_status = 'eligible'
@@ -263,28 +264,6 @@ export async function selectDueInstalledResources(
           authorizationCharacterId: parseAuthorizationCharacterId(row.authorizationCharacterId),
         })
       : due
-  })
-}
-
-function toPlanningResources(resources: readonly PlatformInstalledResourceDescriptor[]) {
-  const seen = new Set<string>()
-  return resources.map((resource) => {
-    const identity = installedResourceIdentityKey(resource)
-    if (seen.has(identity))
-      throw new Error(
-        `Duplicate installed resource planning identity: ${resource.moduleId}/${resource.resourceId}/${resource.subjectKind}`,
-      )
-    seen.add(identity)
-    assertRegisteredEsiOperation(resource.operationId)
-    return {
-      module_id: resource.moduleId,
-      section_id: resource.sectionId,
-      resource_id: resource.resourceId,
-      subject_kind: resource.subjectKind,
-      operation_id: resource.operationId,
-      required_scope: getOptionalCharacterEsiScope(resource.operationId),
-      eligibility_kind: resource.eligibility.kind,
-    }
   })
 }
 

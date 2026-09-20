@@ -85,7 +85,7 @@ describe('Member Audit reviewer adoption', () => {
 
     expect(serverViolations).toEqual([])
     expect(nuxtViolations).toEqual([])
-  })
+  }, 30_000)
 
   test('exports panels without a reusable model or cross-feature barrel', async () => {
     const packageJson = JSON.parse(

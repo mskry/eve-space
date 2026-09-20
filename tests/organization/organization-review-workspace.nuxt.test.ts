@@ -122,6 +122,10 @@ beforeEach(() => {
           query === secondaryMember().account.userId || query === '90000002'
             ? [secondaryMember()]
             : [member()],
+        groupFacets: [
+          { groupId: 'group-alpha', name: 'Alpha' },
+          { groupId: 'group-remote', name: 'Remote reviewers' },
+        ],
         nextCursor: null,
       })
     }),
@@ -156,6 +160,10 @@ describe('useOrganizationReviewWorkspace', () => {
     const wrapper = await mountSuspended(Host, { route: '/organization/review' })
     mountedWrappers.push(wrapper)
     await expectWorkspaceReady(workspace)
+    expect(workspace.groupFacets.value).toEqual([
+      { groupId: 'group-alpha', name: 'Alpha' },
+      { groupId: 'group-remote', name: 'Remote reviewers' },
+    ])
 
     await workspace.selectMember(member())
 
@@ -446,13 +454,7 @@ describe('useOrganizationReviewWorkspace', () => {
     await workspace.directoryQuery.refetch()
     await vi.waitFor(() => expect(queryCache.getQueryData(lifecycleKey)).toBeUndefined())
 
-    const oldDirectoryKey = PRIVATE_QUERY_KEYS.organizationReviewerDirectory(
-      7,
-      undefined,
-      undefined,
-      undefined,
-      25,
-    )
+    const oldDirectoryKey = PRIVATE_QUERY_KEYS.organizationReviewerDirectory(7, { limit: 25 })
     organizationVersion.value = 8
     await workspace.entryQuery.refetch()
     await vi.waitFor(() => expect(workspace.organizationVersion.value).toBe(8))
@@ -598,6 +600,159 @@ describe('useOrganizationReviewWorkspace', () => {
     enabledModuleIds.value = new Set(['alpha'])
     await flushPromises()
     expect(workspace.selectedContribution.value).toBeUndefined()
+  })
+
+  it.each([
+    {
+      name: 'search',
+      change: async (workspace: ReturnType<typeof useOrganizationReviewWorkspace>) => {
+        workspace.searchText.value = '  Review Pilot  '
+        await workspace.submitSearch()
+      },
+      expected: { query: 'Review Pilot' },
+    },
+    {
+      name: 'corporation',
+      change: async (workspace: ReturnType<typeof useOrganizationReviewWorkspace>) => {
+        workspace.corporationText.value = '98000002'
+        await workspace.submitSearch()
+      },
+      expected: { corporationId: '98000002' },
+    },
+    {
+      name: 'group',
+      change: (workspace: ReturnType<typeof useOrganizationReviewWorkspace>) => {
+        workspace.groupId.value = '00000000-0000-4000-8000-000000000099'
+      },
+      expected: { groupId: '00000000-0000-4000-8000-000000000099' },
+    },
+    {
+      name: 'compliance state',
+      change: (workspace: ReturnType<typeof useOrganizationReviewWorkspace>) => {
+        workspace.complianceState.value = 'review_required'
+      },
+      expected: { complianceState: 'review_required' },
+    },
+    {
+      name: 'block state',
+      change: (workspace: ReturnType<typeof useOrganizationReviewWorkspace>) => {
+        workspace.blocked.value = false
+      },
+      expected: { blocked: 'false' },
+    },
+    {
+      name: 'audit state',
+      change: (workspace: ReturnType<typeof useOrganizationReviewWorkspace>) => {
+        workspace.auditState.value = 'stale'
+      },
+      expected: { auditState: 'stale' },
+    },
+    {
+      name: 'sort field',
+      change: (workspace: ReturnType<typeof useOrganizationReviewWorkspace>) => {
+        workspace.sort.value = 'managed_since'
+      },
+      expected: { sort: 'managed_since' },
+    },
+    {
+      name: 'sort direction',
+      change: (workspace: ReturnType<typeof useOrganizationReviewWorkspace>) => {
+        workspace.direction.value = 'desc'
+      },
+      expected: { direction: 'desc' },
+    },
+    {
+      name: 'page size',
+      change: (workspace: ReturnType<typeof useOrganizationReviewWorkspace>) => {
+        workspace.limit.value = 50
+      },
+      expected: { limit: '50' },
+    },
+  ])('resets the cursor before a changed $name request', async ({ change, expected }) => {
+    const requests: URL[] = []
+    queryServer.use(
+      http.get('*/api/organization/review/members', ({ request }) => {
+        const url = new URL(request.url)
+        requests.push(url)
+        return HttpResponse.json({
+          organizationVersion: organizationVersion.value,
+          status: 'available',
+          items: [member()],
+          groupFacets: [],
+          nextCursor: url.searchParams.has('cursor') ? null : 'opaque-next-cursor',
+        })
+      }),
+    )
+    let workspace!: ReturnType<typeof useOrganizationReviewWorkspace>
+    const Host = defineComponent({
+      setup() {
+        workspace = useOrganizationReviewWorkspace({ route: routeState, router: testRouter })
+        return () => h('span')
+      },
+    })
+    const wrapper = await mountSuspended(Host, { route: '/organization/review' })
+    mountedWrappers.push(wrapper)
+    await expectWorkspaceReady(workspace)
+
+    await workspace.nextDirectoryPage()
+    expect(workspace.cursorHistory.value).toEqual([''])
+    expect(requests.at(-1)?.searchParams.get('cursor')).toBe('opaque-next-cursor')
+    requests.length = 0
+
+    const pendingChange = change(workspace)
+    expect(workspace.cursorHistory.value).toEqual([])
+    await pendingChange
+
+    await vi.waitFor(() => expect(requests.length).toBeGreaterThan(0))
+    const changedRequest = requests.at(-1)!
+    expect(changedRequest.searchParams.has('cursor')).toBe(false)
+    for (const [name, value] of Object.entries(expected)) {
+      expect(changedRequest.searchParams.get(name)).toBe(value)
+    }
+  })
+
+  it('returns to the first page when an opaque cursor is rejected', async () => {
+    const requests: URL[] = []
+    queryServer.use(
+      http.get('*/api/organization/review/members', ({ request }) => {
+        const url = new URL(request.url)
+        requests.push(url)
+        if (url.searchParams.has('cursor'))
+          return HttpResponse.json(
+            {
+              code: 'INVALID_REVIEWER_DIRECTORY_INPUT',
+              message: 'Invalid reviewer directory input.',
+            },
+            { status: 400 },
+          )
+        return HttpResponse.json({
+          organizationVersion: organizationVersion.value,
+          status: 'available',
+          items: [member()],
+          groupFacets: [],
+          nextCursor: 'opaque-next-cursor',
+        })
+      }),
+    )
+    let workspace!: ReturnType<typeof useOrganizationReviewWorkspace>
+    const Host = defineComponent({
+      setup() {
+        workspace = useOrganizationReviewWorkspace({ route: routeState, router: testRouter })
+        return () => h('span')
+      },
+    })
+    const wrapper = await mountSuspended(Host, { route: '/organization/review' })
+    mountedWrappers.push(wrapper)
+    await expectWorkspaceReady(workspace)
+
+    await workspace.nextDirectoryPage()
+
+    await vi.waitFor(() => expect(workspace.cursorHistory.value).toEqual([]))
+    expect(requests.some((request) => request.searchParams.has('cursor'))).toBe(true)
+    expect(workspace.members.value).toHaveLength(1)
+    expect(mocks.announcePolite).toHaveBeenCalledWith(
+      'The directory page expired. Returned to the first page.',
+    )
   })
 })
 

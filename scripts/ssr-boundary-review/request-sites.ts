@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import ts from 'typescript'
+import { clientRequestIn } from './client-request.js'
 import { indexQueryDefinitions, referencedDefinition } from './query-definitions.js'
 
 const run = promisify(execFile)
@@ -15,8 +16,6 @@ const HELPER_ENTRY_PATTERN =
   /\b(useQuery|useFetch|useAsyncData|useMutation|prefetchQuery|prefetchProtectedQuery|ensureQuery|refetchQueries)\s*[(<]/
 const FETCH_ENTRY_PATTERN = /\$fetch\s*[(<]/
 const SIBLING_PATTERN = /^\s*(?:const|let|var|function|async function|return)\b/
-const CLIENT_CHAIN_PATTERN =
-  /\b(?:apiClient|client)((?:\s*\.\s*\w+|\s*\[\s*'[^']*'\s*\])+)\s*\.\s*\$(get|post|put|patch|delete)\b/
 const FETCH_REQUEST_PATTERN = /\$fetch\s*\(\s*['"]([^'"]+)['"]/
 const FETCH_METHOD_PATTERN = /\bmethod\s*:\s*['"](get|post|put|patch|delete)['"]/i
 const ENTRY_HELPER_DECLARATIONS = new Map([
@@ -164,8 +163,8 @@ const entryIn = (line: string) =>
 const fetchEntryIn = (line: string) => (FETCH_ENTRY_PATTERN.test(line) ? '$fetch' : null)
 
 const clientEntryIn = (line: string) => {
-  const client = CLIENT_CHAIN_PATTERN.exec(line)
-  return client ? `$${client[2].toLowerCase()}` : null
+  const request = clientRequestIn(line)
+  return request ? `$${request.method.toLowerCase()}` : null
 }
 
 const excerptAround = (lines: readonly string[], index: number) =>
@@ -242,13 +241,13 @@ const resolveDefinitionRequest = (scope: string, definitions: DefinitionIndex) =
 }
 
 const resolveClientRequest = (scope: string) => {
-  const chain = CLIENT_CHAIN_PATTERN.exec(scope)
+  const request = clientRequestIn(scope)
 
-  if (!chain) return null
+  if (!request) return null
 
   return {
-    method: chain[2].toUpperCase(),
-    requestPath: toRequestPath(chain[1]),
+    method: request.method,
+    requestPath: request.requestPath,
     definitionSource: null,
     definitionExcerpt: null,
   }
@@ -266,11 +265,3 @@ const resolveFetchRequest = (scope: string) => {
     definitionExcerpt: null,
   }
 }
-
-const toRequestPath = (chain: string) =>
-  `/${chain
-    .replaceAll(/\s+/g, '')
-    .replaceAll(/\[\s*'([^']*)'\s*\]/g, '.$1')
-    .split('.')
-    .filter(Boolean)
-    .join('/')}`

@@ -1,5 +1,19 @@
 import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from 'node:crypto'
 import {
+  platformReviewerDirectoryAuditStates,
+  platformReviewerDirectoryComplianceStates,
+  platformReviewerDirectoryDefaultSortDirection,
+  platformReviewerDirectoryDefaultSortField,
+  platformReviewerDirectorySortDirections,
+  platformReviewerDirectorySortFields,
+  type PlatformReviewerDirectoryAuditState,
+  type PlatformReviewerDirectoryInput,
+  type PlatformReviewerDirectoryPage,
+  type PlatformReviewerDirectoryRow,
+  type PlatformReviewerDirectorySortDirection,
+  type PlatformReviewerDirectorySortField,
+} from '@eve-space/platform-module-contract/reviewer-directory'
+import {
   isPlatformReviewerAccountSearchCursor,
   isPlatformReviewerAccountSearchQuery,
   type PlatformReviewerAccountSearchInput,
@@ -7,7 +21,20 @@ import {
   type PlatformReviewerAccountSearchPage,
   type PlatformReviewerTargetCompliance,
 } from '@eve-space/platform-module-contract/server'
-import { and, asc, desc, eq, gt, ilike, inArray, isNotNull, isNull, or } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { db, type DatabaseTransaction } from '../db/client.js'
 import {
@@ -15,12 +42,16 @@ import {
   deploymentSettings,
   organizationAccountCompliance,
   organizationCharacterExceptions,
+  organizationGroupAssignments,
+  organizationGroups,
   organizationManagedCorporations,
   organizationManagedMemberLifecycles,
   organizationMemberBlocks,
   platformSubjectLifecycles,
 } from '../db/schema.js'
 import { env } from '../env.js'
+import { installedModuleResourceDeclarations } from '../generated/platform/installed-module-resource-declarations.js'
+import { createPlatformResourceClassifierInput } from '../platform/resource-classifier-input.js'
 import { hasCurrentReviewerOrganizationSnapshot } from './reviewer-organization-snapshot.js'
 
 const defaultPageSize = 25
@@ -29,6 +60,8 @@ const cursorVersion = 1
 const cursorNonceLength = 12
 const cursorTagLength = 16
 const cursorAdditionalData = Buffer.from('eve-space:reviewer-account-search:v1')
+const directoryCursorVersion = 2
+const directoryCursorAdditionalData = Buffer.from('eve-space:reviewer-directory:v2')
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const complianceStates = new Set<PlatformReviewerTargetCompliance['state']>([
   'pending',
@@ -57,19 +90,18 @@ const pendingCompliance: PlatformReviewerTargetCompliance = {
   accessValidUntil: null,
   evaluatedAt: null,
 }
-
-export interface OrganizationReviewerDirectoryItem {
-  readonly managedMemberLifecycleId: string
-  readonly account: PlatformReviewerAccountSearchItem['account']
-  readonly managedAffiliation: PlatformReviewerAccountSearchItem['managedAffiliation']
-}
-
-export interface OrganizationReviewerDirectoryPage {
-  readonly organizationVersion: number
-  readonly status: PlatformReviewerAccountSearchPage['status']
-  readonly items: readonly OrganizationReviewerDirectoryItem[]
-  readonly nextCursor: string | null
-}
+const nullableDirectorySortFields = new Set<PlatformReviewerDirectorySortField>([
+  'audit_data',
+  'review_deadline',
+  'access_valid_until',
+  'blocked_since',
+])
+const memberAuditDirectoryResources = installedModuleResourceDeclarations.filter(
+  ({ eligibility, moduleId, subjectKind }) =>
+    moduleId === 'member-audit' &&
+    subjectKind === 'character' &&
+    eligibility.kind === 'current-managed-member-character',
+)
 
 export async function searchManagedOrganizationAccounts(input: {
   readonly organizationVersion: number
@@ -92,23 +124,21 @@ export async function searchManagedOrganizationAccounts(input: {
 
 export async function searchManagedOrganizationDirectory(input: {
   readonly organizationVersion: number
-  readonly filters: Pick<
-    PlatformReviewerAccountSearchInput,
-    'query' | 'corporationId' | 'cursor' | 'limit'
-  >
+  readonly filters: PlatformReviewerDirectoryInput
   readonly now?: Date
-}): Promise<OrganizationReviewerDirectoryPage> {
-  const page = await searchManagedOrganizationAccounts(input)
-  return {
-    organizationVersion: page.organizationVersion,
-    status: page.status,
-    items: page.items.map(({ managedMemberLifecycleId, account, managedAffiliation }) => ({
-      managedMemberLifecycleId,
-      account,
-      managedAffiliation,
-    })),
-    nextCursor: page.nextCursor,
-  }
+}): Promise<PlatformReviewerDirectoryPage> {
+  const filters = normalizeDirectoryFilters(input.filters)
+  const now = input.now ?? new Date()
+  return db.transaction(
+    (transaction) =>
+      searchManagedOrganizationDirectoryInTransaction(
+        transaction,
+        input.organizationVersion,
+        filters,
+        now,
+      ),
+    { isolationLevel: 'repeatable read' },
+  )
 }
 
 export class ReviewerAccountSearchInputError extends TypeError {
@@ -116,6 +146,837 @@ export class ReviewerAccountSearchInputError extends TypeError {
     super('Invalid reviewer account search input.')
     this.name = 'ReviewerAccountSearchInputError'
   }
+}
+
+type DirectorySortValue = string | number | null
+
+interface NormalizedDirectoryFilters {
+  readonly query?: string
+  readonly corporationId?: number
+  readonly groupId?: string
+  readonly complianceState?: PlatformReviewerTargetCompliance['state']
+  readonly blocked?: boolean
+  readonly auditState?: PlatformReviewerDirectoryAuditState
+  readonly sort: PlatformReviewerDirectorySortField
+  readonly direction: PlatformReviewerDirectorySortDirection
+  readonly cursor?: string
+  readonly limit: number
+}
+
+interface DirectoryCursorPosition {
+  readonly sortValue: DirectorySortValue
+  readonly userId: string
+}
+
+interface DirectoryDatabaseRow extends Record<string, unknown> {
+  readonly userId: string
+  readonly managedMemberLifecycleId: string
+  readonly managedSince: DatabaseDate
+  readonly siteRegisteredAt: DatabaseDate
+  readonly characterId: number | string
+  readonly characterName: string
+  readonly corporationId: number | string
+  readonly allianceId: number | string | null
+  readonly affiliationCheckedAt: DatabaseDate
+  readonly mainCharacterId: number | string | null
+  readonly mainCharacterName: string | null
+  readonly complianceState: PlatformReviewerTargetCompliance['state'] | null
+  readonly complianceEvidenceFreshness: PlatformReviewerTargetCompliance['evidenceFreshness'] | null
+  readonly complianceEvidenceAt: DatabaseDate
+  readonly complianceReviewDeadline: DatabaseDate
+  readonly complianceAccessValidUntil: DatabaseDate
+  readonly complianceEvaluatedAt: DatabaseDate
+  readonly blockedAt: DatabaseDate
+  readonly disclosedCharacterCount: number | string
+  readonly auditState: PlatformReviewerDirectoryAuditState
+  readonly auditExpected: number | string
+  readonly auditCovered: number | string
+  readonly auditAsOf: DatabaseDate
+  readonly sortValue: DirectorySortValue
+}
+
+type DatabaseDate = Date | string | null
+
+async function searchManagedOrganizationDirectoryInTransaction(
+  transaction: DatabaseTransaction,
+  organizationVersion: number,
+  filters: NormalizedDirectoryFilters,
+  now: Date,
+): Promise<PlatformReviewerDirectoryPage> {
+  const fingerprint = directoryFingerprint(filters)
+  const cursorPosition = filters.cursor
+    ? decodeDirectoryCursor(filters.cursor, organizationVersion, filters, fingerprint)
+    : null
+  if (!(await hasCurrentReviewerOrganizationSnapshot(transaction, organizationVersion, now)))
+    return unavailableDirectoryPage(organizationVersion)
+
+  const rows = await loadDirectoryPage(
+    transaction,
+    organizationVersion,
+    filters,
+    cursorPosition,
+    now,
+  )
+  const page = rows.slice(0, filters.limit)
+  const groupData = await loadDirectoryGroupData(
+    transaction,
+    organizationVersion,
+    page.map(({ userId }) => userId),
+    now,
+  )
+  if (!(await isCurrentDirectoryOrganizationVersion(transaction, organizationVersion)))
+    return unavailableDirectoryPage(organizationVersion)
+
+  return {
+    organizationVersion,
+    status: 'available',
+    items: page.map((row) =>
+      projectDirectoryRow(row, groupData.groupsByUserId.get(row.userId) ?? []),
+    ),
+    groupFacets: groupData.facets,
+    nextCursor:
+      rows.length > filters.limit
+        ? encodeDirectoryCursor(
+            directoryCursorPosition(page.at(-1)!, filters.sort),
+            organizationVersion,
+            filters,
+            fingerprint,
+          )
+        : null,
+  }
+}
+
+async function loadDirectoryPage(
+  transaction: DatabaseTransaction,
+  organizationVersion: number,
+  filters: NormalizedDirectoryFilters,
+  cursorPosition: DirectoryCursorPosition | null,
+  now: Date,
+) {
+  const sortExpression = directorySortExpression(filters.sort)
+  const filterCondition = directoryFilterCondition(filters, organizationVersion, now)
+  const cursorCondition = directoryCursorCondition(sortExpression, filters, cursorPosition)
+  const direction = sql.raw(filters.direction)
+  const classifierInput = JSON.stringify(
+    createPlatformResourceClassifierInput(memberAuditDirectoryResources),
+  )
+  const rows = await transaction.execute<DirectoryDatabaseRow>(sql`
+    with resource_classification as (
+      select *
+      from platform_classify_resources(
+        ${classifierInput}::text::jsonb,
+        ${now.toISOString()}::text::timestamptz,
+        ${'member-audit'}::text,
+        null::text,
+        ${'character'}::text,
+        null::uuid,
+        null::text
+      )
+    ), disclosed_characters as (
+      select
+        member.user_id as target_user_id,
+        member.managed_member_lifecycle_id,
+        count(distinct lifecycle.subject_lifecycle_id)::integer as character_count
+      from deployment_settings settings
+      join organization_managed_member_lifecycles member
+        on member.deployment_id = settings.id
+        and member.organization_version = settings.organization_version
+        and member.ended_at is null
+      join characters character on character.user_id = member.user_id
+      join platform_subject_lifecycles lifecycle
+        on lifecycle.character_id = character.character_id
+        and lifecycle.subject_kind = 'character'
+      where settings.id = 1
+        and settings.organization_version = ${organizationVersion}
+        and (
+          (
+            character.affiliation_resolution_state = 'resolved'
+            and character.affiliation_checked_at is not null
+            and character.next_affiliation_check > ${now.toISOString()}::text::timestamptz
+            and exists (
+              select 1
+              from organization_managed_corporations managed
+              where managed.deployment_id = settings.id
+                and managed.organization_version = settings.organization_version
+                and managed.corporation_id = character.corporation_id
+                and managed.is_current
+            )
+          ) or exists (
+            select 1
+            from organization_character_exceptions exception
+            where exception.deployment_id = settings.id
+              and exception.organization_version = settings.organization_version
+              and exception.user_id = member.user_id
+              and exception.character_id = character.character_id
+              and exception.revoked_at is null
+              and exception.expired_at is null
+              and (
+                exception.expires_at is null
+                or exception.expires_at > ${now.toISOString()}::text::timestamptz
+              )
+          )
+        )
+      group by member.user_id, member.managed_member_lifecycle_id
+    ), enabled_audit_resources as (
+      select *
+      from resource_classification
+      where organization_version = ${organizationVersion}
+        and target_user_id is not null
+        and managed_member_lifecycle_id is not null
+        and eligibility_status <> 'disabled'
+    ), audit_summary as (
+      select
+        target_user_id,
+        managed_member_lifecycle_id,
+        count(*)::integer as expected,
+        count(*) filter (where validated_at is not null)::integer as covered,
+        case
+          when bool_or(eligibility_status = 'authorization-required')
+            then 'authorization-required'
+          when bool_or(
+            validated_at is null
+            and (eligibility_status = 'suppressed' or last_failure_class is not null)
+          ) then 'unavailable'
+          when bool_or(validated_at is null) then 'never-collected'
+          when bool_or(
+            eligibility_status = 'suppressed'
+            or last_failure_class is not null
+            or due_reason is distinct from 'future'
+          ) then 'stale'
+          else 'current'
+        end as state,
+        case
+          when count(*) = count(validated_at) then min(validated_at)
+          else null
+        end as as_of
+      from enabled_audit_resources
+      group by target_user_id, managed_member_lifecycle_id
+    ), managed_affiliations as (
+      select distinct on (character.user_id)
+        character.user_id,
+        member.managed_member_lifecycle_id,
+        member.started_at as managed_since,
+        account.created_at as site_registered_at,
+        character.character_id,
+        character.name as character_name,
+        character.corporation_id,
+        character.alliance_id,
+        character.affiliation_checked_at
+      from deployment_settings settings
+      join organization_managed_member_lifecycles member
+        on member.deployment_id = settings.id
+        and member.organization_version = settings.organization_version
+        and member.ended_at is null
+      join users account on account.id = member.user_id
+      join characters character on character.user_id = member.user_id
+      join platform_subject_lifecycles lifecycle
+        on lifecycle.character_id = character.character_id
+        and lifecycle.subject_kind = 'character'
+      join organization_managed_corporations managed
+        on managed.deployment_id = settings.id
+        and managed.organization_version = settings.organization_version
+        and managed.corporation_id = character.corporation_id
+        and managed.is_current
+      where settings.id = 1
+        and settings.organization_version = ${organizationVersion}
+        and character.affiliation_resolution_state = 'resolved'
+        and character.affiliation_checked_at is not null
+        and character.next_affiliation_check > ${now.toISOString()}::text::timestamptz
+      order by
+        character.user_id,
+        character.is_main desc,
+        lower(character.name),
+        character.character_id
+    )
+    select
+      affiliation.user_id as "userId",
+      affiliation.managed_member_lifecycle_id as "managedMemberLifecycleId",
+      affiliation.managed_since as "managedSince",
+      affiliation.site_registered_at as "siteRegisteredAt",
+      affiliation.character_id as "characterId",
+      affiliation.character_name as "characterName",
+      affiliation.corporation_id as "corporationId",
+      affiliation.alliance_id as "allianceId",
+      affiliation.affiliation_checked_at as "affiliationCheckedAt",
+      main_character.character_id as "mainCharacterId",
+      main_character.name as "mainCharacterName",
+      compliance.state as "complianceState",
+      compliance.evidence_freshness as "complianceEvidenceFreshness",
+      compliance.evidence_at as "complianceEvidenceAt",
+      compliance.review_deadline as "complianceReviewDeadline",
+      compliance.access_valid_until as "complianceAccessValidUntil",
+      compliance.evaluated_at as "complianceEvaluatedAt",
+      block.blocked_at as "blockedAt",
+      coalesce(disclosed.character_count, 0)::integer as "disclosedCharacterCount",
+      coalesce(audit.state, 'not-enabled') as "auditState",
+      coalesce(audit.expected, 0)::integer as "auditExpected",
+      coalesce(audit.covered, 0)::integer as "auditCovered",
+      audit.as_of as "auditAsOf",
+      ${sortExpression} as "sortValue"
+    from managed_affiliations affiliation
+    left join lateral (
+      select character.character_id, character.name
+      from characters character
+      join platform_subject_lifecycles lifecycle
+        on lifecycle.character_id = character.character_id
+        and lifecycle.subject_kind = 'character'
+      where character.user_id = affiliation.user_id
+        and character.is_main
+        and (
+          (
+            character.affiliation_resolution_state = 'resolved'
+            and character.affiliation_checked_at is not null
+            and character.next_affiliation_check > ${now.toISOString()}::text::timestamptz
+            and exists (
+              select 1
+              from organization_managed_corporations managed
+              where managed.deployment_id = 1
+                and managed.organization_version = ${organizationVersion}
+                and managed.corporation_id = character.corporation_id
+                and managed.is_current
+            )
+          ) or exists (
+            select 1
+            from organization_character_exceptions exception
+            where exception.deployment_id = 1
+              and exception.organization_version = ${organizationVersion}
+              and exception.user_id = affiliation.user_id
+              and exception.character_id = character.character_id
+              and exception.revoked_at is null
+              and exception.expired_at is null
+              and (
+                exception.expires_at is null
+                or exception.expires_at > ${now.toISOString()}::text::timestamptz
+              )
+          )
+        )
+      order by lower(character.name), character.character_id
+      limit 1
+    ) main_character on true
+    left join organization_account_compliance compliance
+      on compliance.deployment_id = 1
+      and compliance.organization_version = ${organizationVersion}
+      and compliance.user_id = affiliation.user_id
+      and compliance.authoritative
+    left join organization_member_blocks block
+      on block.deployment_id = 1
+      and block.organization_version = ${organizationVersion}
+      and block.user_id = affiliation.user_id
+      and block.unblocked_at is null
+    left join disclosed_characters disclosed
+      on disclosed.target_user_id = affiliation.user_id
+      and disclosed.managed_member_lifecycle_id = affiliation.managed_member_lifecycle_id
+    left join audit_summary audit
+      on audit.target_user_id = affiliation.user_id
+      and audit.managed_member_lifecycle_id = affiliation.managed_member_lifecycle_id
+    where ${filterCondition}
+      and ${cursorCondition}
+    order by ${sortExpression} ${direction} nulls last, affiliation.user_id asc
+    limit ${filters.limit + 1}
+  `)
+  return [...rows]
+}
+
+function directoryFilterCondition(
+  filters: NormalizedDirectoryFilters,
+  organizationVersion: number,
+  now: Date,
+) {
+  const conditions: SQL[] = []
+  if (filters.query)
+    conditions.push(directorySearchCondition(filters.query, organizationVersion, now))
+  if (filters.corporationId)
+    conditions.push(sql`affiliation.corporation_id = ${filters.corporationId}`)
+  if (filters.groupId)
+    conditions.push(sql`
+      exists (
+        select 1
+        from organization_group_assignments assignment
+        where assignment.deployment_id = 1
+          and assignment.organization_version = ${organizationVersion}
+          and assignment.user_id = affiliation.user_id
+          and assignment.group_id = ${filters.groupId}::uuid
+          and assignment.revoked_at is null
+          and (
+            assignment.expires_at is null
+            or assignment.expires_at > ${now.toISOString()}::text::timestamptz
+          )
+      )
+    `)
+  if (filters.complianceState) {
+    if (filters.complianceState === 'pending')
+      conditions.push(sql`coalesce(compliance.state, 'pending') = 'pending'`)
+    else conditions.push(sql`compliance.state = ${filters.complianceState}`)
+  }
+  if (filters.blocked !== undefined)
+    conditions.push(filters.blocked ? sql`block.block_id is not null` : sql`block.block_id is null`)
+  if (filters.auditState)
+    conditions.push(sql`coalesce(audit.state, 'not-enabled') = ${filters.auditState}`)
+  return conditions.length > 0 ? sql.join(conditions, sql` and `) : sql`true`
+}
+
+function directorySearchCondition(query: string, organizationVersion: number, now: Date) {
+  const characterId = parseCharacterId(query)
+  const queryPattern = `%${escapeLikePattern(query)}%`
+  const identityConditions: SQL[] = [sql`character.name ilike ${queryPattern}`]
+  if (characterId) identityConditions.push(sql`character.character_id = ${characterId}`)
+  const identityCondition = sql.join(identityConditions, sql` or `)
+  const accountCondition = uuidPattern.test(query)
+    ? sql`or affiliation.user_id = ${query}::uuid`
+    : sql``
+  return sql`
+    (
+      exists (
+        select 1
+        from characters character
+        join platform_subject_lifecycles lifecycle
+          on lifecycle.character_id = character.character_id
+          and lifecycle.subject_kind = 'character'
+        where character.user_id = affiliation.user_id
+          and (${identityCondition})
+          and (
+            (
+              character.affiliation_resolution_state = 'resolved'
+              and character.affiliation_checked_at is not null
+              and character.next_affiliation_check > ${now.toISOString()}::text::timestamptz
+              and exists (
+                select 1
+                from organization_managed_corporations managed
+                where managed.deployment_id = 1
+                  and managed.organization_version = ${organizationVersion}
+                  and managed.corporation_id = character.corporation_id
+                  and managed.is_current
+              )
+            ) or exists (
+              select 1
+              from organization_character_exceptions exception
+              where exception.deployment_id = 1
+                and exception.organization_version = ${organizationVersion}
+                and exception.user_id = affiliation.user_id
+                and exception.character_id = character.character_id
+                and exception.revoked_at is null
+                and exception.expired_at is null
+                and (
+                  exception.expires_at is null
+                  or exception.expires_at > ${now.toISOString()}::text::timestamptz
+                )
+            )
+          )
+      )
+      ${accountCondition}
+    )
+  `
+}
+
+function directorySortExpression(sort: PlatformReviewerDirectorySortField): SQL {
+  switch (sort) {
+    case 'member':
+      return sql`lower(coalesce(main_character.name, affiliation.character_name))`
+    case 'corporation':
+      return sql`affiliation.corporation_id::double precision`
+    case 'managed_since':
+      return sql`extract(epoch from affiliation.managed_since)::double precision`
+    case 'audit_data':
+      return sql`extract(epoch from audit.as_of)::double precision`
+    case 'access_status':
+      return sql`(
+        case
+          when block.block_id is not null then 4
+          when compliance.state = 'suspended' then 3
+          when compliance.state = 'review_required' then 2
+          when compliance.state is null or compliance.state = 'pending' then 1
+          else 0
+        end
+      )::double precision`
+    case 'disclosed_characters':
+      return sql`coalesce(disclosed.character_count, 0)::double precision`
+    case 'affiliation_checked_at':
+      return sql`extract(epoch from affiliation.affiliation_checked_at)::double precision`
+    case 'site_registered_at':
+      return sql`extract(epoch from affiliation.site_registered_at)::double precision`
+    case 'review_deadline':
+      return sql`extract(epoch from compliance.review_deadline)::double precision`
+    case 'access_valid_until':
+      return sql`extract(epoch from compliance.access_valid_until)::double precision`
+    case 'blocked_since':
+      return sql`extract(epoch from block.blocked_at)::double precision`
+  }
+}
+
+function directoryCursorCondition(
+  sortExpression: SQL,
+  filters: NormalizedDirectoryFilters,
+  position: DirectoryCursorPosition | null,
+) {
+  if (!position) return sql`true`
+  if (position.sortValue === null)
+    return sql`${sortExpression} is null and affiliation.user_id > ${position.userId}::uuid`
+
+  const comparisons: SQL[] = [
+    filters.direction === 'asc'
+      ? sql`${sortExpression} > ${position.sortValue}`
+      : sql`${sortExpression} < ${position.sortValue}`,
+    sql`(${sortExpression} = ${position.sortValue} and affiliation.user_id > ${position.userId}::uuid)`,
+  ]
+  if (nullableDirectorySortFields.has(filters.sort))
+    comparisons.push(sql`${sortExpression} is null`)
+  const comparisonCondition = sql.join(comparisons, sql` or `)
+  return sql`(${comparisonCondition})`
+}
+
+async function loadDirectoryGroupData(
+  transaction: DatabaseTransaction,
+  organizationVersion: number,
+  userIds: readonly string[],
+  now: Date,
+) {
+  const rows = await transaction
+    .select({
+      userId: organizationGroupAssignments.userId,
+      groupId: organizationGroups.groupId,
+      name: organizationGroups.name,
+    })
+    .from(organizationGroups)
+    .leftJoin(
+      organizationGroupAssignments,
+      and(
+        eq(organizationGroups.groupId, organizationGroupAssignments.groupId),
+        eq(organizationGroups.deploymentId, organizationGroupAssignments.deploymentId),
+        eq(
+          organizationGroups.organizationVersion,
+          organizationGroupAssignments.organizationVersion,
+        ),
+        userIds.length > 0
+          ? inArray(organizationGroupAssignments.userId, [...userIds])
+          : sql`false`,
+        isNull(organizationGroupAssignments.revokedAt),
+        or(
+          isNull(organizationGroupAssignments.expiresAt),
+          gt(organizationGroupAssignments.expiresAt, now),
+        ),
+      ),
+    )
+    .where(
+      and(
+        eq(organizationGroups.deploymentId, 1),
+        eq(organizationGroups.organizationVersion, organizationVersion),
+      ),
+    )
+    .orderBy(
+      asc(organizationGroups.name),
+      asc(organizationGroups.groupId),
+      asc(organizationGroupAssignments.userId),
+      asc(organizationGroupAssignments.assignmentId),
+    )
+  const facets: { groupId: string; name: string }[] = []
+  const groupsByUserId = new Map<string, { groupId: string; name: string }[]>()
+  for (const row of rows) {
+    if (!facets.some(({ groupId }) => groupId === row.groupId))
+      facets.push({ groupId: row.groupId, name: row.name })
+    if (!row.userId) continue
+    const groups = groupsByUserId.get(row.userId) ?? []
+    if (!groups.some(({ groupId }) => groupId === row.groupId))
+      groups.push({ groupId: row.groupId, name: row.name })
+    groupsByUserId.set(row.userId, groups)
+  }
+  return { facets, groupsByUserId }
+}
+
+async function isCurrentDirectoryOrganizationVersion(
+  transaction: DatabaseTransaction,
+  organizationVersion: number,
+) {
+  const [current] = await transaction
+    .select({ organizationVersion: deploymentSettings.organizationVersion })
+    .from(deploymentSettings)
+    .where(
+      and(
+        eq(deploymentSettings.id, 1),
+        eq(deploymentSettings.organizationVersion, organizationVersion),
+      ),
+    )
+  return current !== undefined
+}
+
+function projectDirectoryRow(
+  row: DirectoryDatabaseRow,
+  groups: readonly { readonly groupId: string; readonly name: string }[],
+): PlatformReviewerDirectoryRow {
+  const mainCharacter =
+    row.mainCharacterId === null || row.mainCharacterName === null
+      ? null
+      : { characterId: databaseInteger(row.mainCharacterId), name: row.mainCharacterName }
+  const managedAffiliation = {
+    characterId: databaseInteger(row.characterId),
+    name: row.characterName,
+    corporationId: databaseInteger(row.corporationId),
+    allianceId: row.allianceId === null ? null : databaseInteger(row.allianceId),
+    checkedAt: databaseDate(row.affiliationCheckedAt),
+  }
+  return {
+    managedMemberLifecycleId: row.managedMemberLifecycleId,
+    managedSince: databaseDate(row.managedSince),
+    siteRegisteredAt: databaseDate(row.siteRegisteredAt),
+    account: { userId: row.userId, mainCharacter },
+    portraitCharacter: mainCharacter
+      ? { ...mainCharacter, source: 'main-character' }
+      : {
+          characterId: managedAffiliation.characterId,
+          name: managedAffiliation.name,
+          source: 'managed-affiliation',
+        },
+    managedAffiliation,
+    disclosedCharacterCount: databaseInteger(row.disclosedCharacterCount),
+    groups,
+    compliance: row.complianceState
+      ? {
+          state: row.complianceState,
+          evidenceFreshness: row.complianceEvidenceFreshness!,
+          evidenceAt: optionalDatabaseDate(row.complianceEvidenceAt),
+          reviewDeadline: optionalDatabaseDate(row.complianceReviewDeadline),
+          accessValidUntil: optionalDatabaseDate(row.complianceAccessValidUntil),
+          evaluatedAt: optionalDatabaseDate(row.complianceEvaluatedAt),
+        }
+      : pendingCompliance,
+    block: row.blockedAt
+      ? { blocked: true, blockedAt: databaseDate(row.blockedAt) }
+      : { blocked: false },
+    auditData: {
+      state: row.auditState,
+      expected: databaseInteger(row.auditExpected),
+      covered: databaseInteger(row.auditCovered),
+      asOf: optionalDatabaseDate(row.auditAsOf),
+    },
+  }
+}
+
+function normalizeDirectoryFilters(
+  input: PlatformReviewerDirectoryInput,
+): NormalizedDirectoryFilters {
+  const query = input.query?.trim()
+  validateSearchQuery(query)
+  validateDirectoryFilterValues(input)
+  const limit = input.limit ?? defaultPageSize
+  validateDirectoryLimit(limit)
+  validateSearchCursor(input.cursor)
+  return {
+    ...(query ? { query } : {}),
+    ...(input.corporationId ? { corporationId: input.corporationId } : {}),
+    ...(input.groupId ? { groupId: input.groupId } : {}),
+    ...(input.complianceState ? { complianceState: input.complianceState } : {}),
+    ...(input.blocked === undefined ? {} : { blocked: input.blocked }),
+    ...(input.auditState ? { auditState: input.auditState } : {}),
+    sort: input.sort ?? platformReviewerDirectoryDefaultSortField,
+    direction: input.direction ?? platformReviewerDirectoryDefaultSortDirection,
+    ...(input.cursor ? { cursor: input.cursor } : {}),
+    limit,
+  }
+}
+
+function validateDirectoryFilterValues(input: PlatformReviewerDirectoryInput) {
+  validateOptionalDirectoryFilter(input.corporationId, isPositiveCorporationId)
+  validateOptionalDirectoryFilter(input.groupId, isDirectoryGroupId)
+  validateOptionalDirectoryFilter(input.complianceState, isDirectoryComplianceState)
+  validateOptionalDirectoryFilter(input.blocked, isBoolean)
+  validateOptionalDirectoryFilter(input.auditState, isDirectoryAuditState)
+  validateOptionalDirectoryFilter(input.sort, isDirectorySortField)
+  validateOptionalDirectoryFilter(input.direction, isDirectorySortDirection)
+}
+
+function validateOptionalDirectoryFilter<T>(value: T | undefined, isValid: (value: T) => boolean) {
+  if (value === undefined) return
+  if (!isValid(value)) invalidInput()
+}
+
+function validateDirectoryLimit(limit: number) {
+  if (!Number.isInteger(limit) || limit < 1 || limit > maximumPageSize) invalidInput()
+}
+
+function isPositiveCorporationId(value: number) {
+  return Number.isSafeInteger(value) && value > 0
+}
+
+function isDirectoryGroupId(value: string) {
+  return uuidPattern.test(value)
+}
+
+function isDirectoryComplianceState(value: PlatformReviewerTargetCompliance['state']) {
+  return platformReviewerDirectoryComplianceStates.includes(value)
+}
+
+function isBoolean(value: boolean) {
+  return typeof value === 'boolean'
+}
+
+function isDirectoryAuditState(value: PlatformReviewerDirectoryAuditState) {
+  return platformReviewerDirectoryAuditStates.includes(value)
+}
+
+function isDirectorySortField(value: PlatformReviewerDirectorySortField) {
+  return platformReviewerDirectorySortFields.includes(value)
+}
+
+function isDirectorySortDirection(value: PlatformReviewerDirectorySortDirection) {
+  return platformReviewerDirectorySortDirections.includes(value)
+}
+
+function encodeDirectoryCursor(
+  position: DirectoryCursorPosition,
+  organizationVersion: number,
+  filters: NormalizedDirectoryFilters,
+  fingerprint: string,
+) {
+  const nonce = randomBytes(cursorNonceLength)
+  const cipher = createCipheriv('aes-256-gcm', reviewerDirectoryCursorKey(), nonce)
+  cipher.setAAD(directoryCursorAdditionalData)
+  const ciphertext = Buffer.concat([
+    cipher.update(
+      JSON.stringify({
+        v: directoryCursorVersion,
+        o: organizationVersion,
+        s: filters.sort,
+        d: filters.direction,
+        p: position.sortValue,
+        u: position.userId,
+        f: fingerprint,
+      }),
+    ),
+    cipher.final(),
+  ])
+  return Buffer.concat([nonce, cipher.getAuthTag(), ciphertext]).toString('base64url')
+}
+
+function decodeDirectoryCursor(
+  cursor: string,
+  organizationVersion: number,
+  filters: NormalizedDirectoryFilters,
+  expectedFingerprint: string,
+): DirectoryCursorPosition {
+  const key = reviewerDirectoryCursorKey()
+  try {
+    const encoded = Buffer.from(cursor, 'base64url')
+    if (
+      encoded.length <= cursorNonceLength + cursorTagLength ||
+      encoded.toString('base64url') !== cursor
+    )
+      invalidInput()
+    const nonce = encoded.subarray(0, cursorNonceLength)
+    const tag = encoded.subarray(cursorNonceLength, cursorNonceLength + cursorTagLength)
+    const decipher = createDecipheriv('aes-256-gcm', key, nonce)
+    decipher.setAAD(directoryCursorAdditionalData)
+    decipher.setAuthTag(tag)
+    const decoded: unknown = JSON.parse(
+      Buffer.concat([
+        decipher.update(encoded.subarray(cursorNonceLength + cursorTagLength)),
+        decipher.final(),
+      ]).toString('utf8'),
+    )
+    if (
+      !isRecord(decoded) ||
+      decoded.v !== directoryCursorVersion ||
+      decoded.o !== organizationVersion ||
+      decoded.s !== filters.sort ||
+      decoded.d !== filters.direction ||
+      typeof decoded.u !== 'string' ||
+      !uuidPattern.test(decoded.u) ||
+      decoded.f !== expectedFingerprint ||
+      !isDirectoryCursorSortValue(decoded.p, filters.sort)
+    )
+      invalidInput()
+    return { sortValue: decoded.p, userId: decoded.u }
+  } catch {
+    return invalidInput()
+  }
+}
+
+function directoryCursorPosition(
+  row: DirectoryDatabaseRow,
+  sort: PlatformReviewerDirectorySortField,
+): DirectoryCursorPosition {
+  const sortValue = row.sortValue === null ? null : normalizedDatabaseSortValue(row.sortValue, sort)
+  return { sortValue, userId: row.userId }
+}
+
+function isDirectoryCursorSortValue(
+  value: unknown,
+  sort: PlatformReviewerDirectorySortField,
+): value is DirectorySortValue {
+  if (value === null) return nullableDirectorySortFields.has(sort)
+  if (sort === 'member') return typeof value === 'string' && value.length > 0 && value.length <= 512
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+function normalizedDatabaseSortValue(
+  value: string | number,
+  sort: PlatformReviewerDirectorySortField,
+) {
+  if (sort === 'member') {
+    if (typeof value !== 'string' || value.length === 0) invalidInput()
+    return value
+  }
+  const number = Number(value)
+  if (!Number.isFinite(number)) invalidInput()
+  return number
+}
+
+function reviewerDirectoryCursorKey() {
+  if (!env.TOKEN_ENCRYPTION_KEY) throw new Error('Reviewer directory is unavailable.')
+  return Buffer.from(
+    hkdfSync(
+      'sha256',
+      Buffer.from(env.TOKEN_ENCRYPTION_KEY, 'base64'),
+      Buffer.alloc(0),
+      directoryCursorAdditionalData,
+      32,
+    ),
+  )
+}
+
+function directoryFingerprint(filters: NormalizedDirectoryFilters) {
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        q: filters.query ?? null,
+        c: filters.corporationId ?? null,
+        g: filters.groupId ?? null,
+        cs: filters.complianceState ?? null,
+        b: filters.blocked ?? null,
+        a: filters.auditState ?? null,
+        s: filters.sort,
+        d: filters.direction,
+        l: filters.limit,
+      }),
+    )
+    .digest('base64url')
+    .slice(0, 16)
+}
+
+function unavailableDirectoryPage(organizationVersion: number): PlatformReviewerDirectoryPage {
+  return {
+    organizationVersion,
+    status: 'unavailable',
+    items: [],
+    groupFacets: [],
+    nextCursor: null,
+  }
+}
+
+function databaseInteger(value: number | string) {
+  const parsed = Number(value)
+  if (!Number.isSafeInteger(parsed) || parsed < 0)
+    throw new Error('Reviewer directory returned an invalid integer')
+  return parsed
+}
+
+function databaseDate(value: DatabaseDate) {
+  if (value === null) throw new Error('Reviewer directory returned a missing date')
+  const parsed = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(parsed.getTime())) throw new Error('Reviewer directory returned an invalid date')
+  return parsed.toISOString()
+}
+
+function optionalDatabaseDate(value: DatabaseDate) {
+  return value === null ? null : databaseDate(value)
 }
 
 async function searchManagedOrganizationAccountsInTransaction(

@@ -2,13 +2,19 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   hasCurrentSnapshot: vi.fn(),
+  directoryRows: [] as unknown[][],
   mainCharacterRows: [] as unknown[][],
   searchRows: [] as unknown[][],
+  execute: vi.fn(() => Promise.resolve(mocks.directoryRows.shift() ?? [])),
   select: vi.fn(() => query(mocks.mainCharacterRows.shift() ?? [])),
   selectDistinctOn: vi.fn(() => query(mocks.searchRows.shift() ?? [], true)),
   tokenEncryptionKey: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' as string | undefined,
   transaction: vi.fn((callback: (transaction: FakeTransaction) => Promise<unknown>) =>
-    callback({ select: mocks.select, selectDistinctOn: mocks.selectDistinctOn }),
+    callback({
+      execute: mocks.execute,
+      select: mocks.select,
+      selectDistinctOn: mocks.selectDistinctOn,
+    }),
   ),
 }))
 
@@ -42,6 +48,7 @@ describe('reviewer account search', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.hasCurrentSnapshot.mockResolvedValue(true)
+    mocks.directoryRows = []
     mocks.mainCharacterRows = []
     mocks.searchRows = []
     mocks.tokenEncryptionKey = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
@@ -139,11 +146,10 @@ describe('reviewer account search', () => {
     })
   })
 
-  test('applies supported filters and returns the reduced directory projection', async () => {
-    mocks.searchRows = [[], [], [], [searchRow()]]
-    mocks.mainCharacterRows = [
-      [{ userId: firstUserId, characterId: 90_000_010, name: 'Main Pilot' }],
-    ]
+  test('applies supported filters and returns the canonical directory projection', async () => {
+    mocks.searchRows = [[], [], []]
+    mocks.directoryRows = [[directoryRow()]]
+    mocks.mainCharacterRows = [[], [{ organizationVersion: 7 }]]
 
     await searchManagedOrganizationAccounts({
       organizationVersion: 7,
@@ -169,9 +175,16 @@ describe('reviewer account search', () => {
       items: [
         {
           managedMemberLifecycleId: '00000000-0000-4000-8000-000000000010',
+          managedSince: '2026-01-01T00:00:00.000Z',
+          siteRegisteredAt: '2025-12-01T00:00:00.000Z',
           account: {
             userId: firstUserId,
             mainCharacter: { characterId: 90_000_010, name: 'Main Pilot' },
+          },
+          portraitCharacter: {
+            characterId: 90_000_010,
+            name: 'Main Pilot',
+            source: 'main-character',
           },
           managedAffiliation: {
             characterId: 90_000_001,
@@ -180,10 +193,184 @@ describe('reviewer account search', () => {
             allianceId: 99_000_001,
             checkedAt: '2026-09-18T11:00:00.000Z',
           },
+          disclosedCharacterCount: 2,
+          groups: [],
+          compliance: {
+            state: 'compliant',
+            evidenceFreshness: 'fresh',
+            evidenceAt: '2026-09-18T10:00:00.000Z',
+            reviewDeadline: null,
+            accessValidUntil: '2026-09-19T12:00:00.000Z',
+            evaluatedAt: '2026-09-18T11:00:00.000Z',
+          },
+          block: { blocked: false },
+          auditData: {
+            state: 'current',
+            expected: 7,
+            covered: 7,
+            asOf: '2026-09-18T09:00:00.000Z',
+          },
         },
       ],
+      groupFacets: [],
       nextCursor: null,
     })
+  })
+
+  test('enriches a directory page with a constant number of database reads', async () => {
+    mocks.directoryRows = [
+      [
+        directoryRow({
+          mainCharacterId: null,
+          mainCharacterName: null,
+          disclosedCharacterCount: 0,
+        }),
+        directoryRow({
+          userId: secondUserId,
+          managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+          characterId: 90_000_002,
+          characterName: 'Second Pilot',
+          sortValue: 'second pilot',
+        }),
+        directoryRow({ userId: '00000000-0000-4000-8000-000000000003' }),
+      ],
+    ]
+    mocks.mainCharacterRows = [
+      [
+        {
+          userId: firstUserId,
+          groupId: '00000000-0000-4000-8000-000000000101',
+          name: 'Alpha Group',
+        },
+        {
+          userId: secondUserId,
+          groupId: '00000000-0000-4000-8000-000000000102',
+          name: 'Beta Group',
+        },
+      ],
+      [{ organizationVersion: 7 }],
+    ]
+
+    const page = await searchManagedOrganizationDirectory({
+      organizationVersion: 7,
+      filters: { limit: 2 },
+      now,
+    })
+
+    expect(page.items).toHaveLength(2)
+    expect(page.items[0]).toMatchObject({
+      portraitCharacter: {
+        characterId: 90_000_001,
+        name: 'Managed Pilot',
+        source: 'managed-affiliation',
+      },
+      disclosedCharacterCount: 0,
+      groups: [{ groupId: '00000000-0000-4000-8000-000000000101', name: 'Alpha Group' }],
+    })
+    expect(page.groupFacets).toEqual([
+      { groupId: '00000000-0000-4000-8000-000000000101', name: 'Alpha Group' },
+      { groupId: '00000000-0000-4000-8000-000000000102', name: 'Beta Group' },
+    ])
+    expect(page.nextCursor).toEqual(expect.any(String))
+    expect(mocks.execute).toHaveBeenCalledOnce()
+    expect(mocks.select).toHaveBeenCalledTimes(2)
+    expect(mocks.selectDistinctOn).not.toHaveBeenCalled()
+  })
+
+  test('continues directory ordering with a cursor bound to every normalized input', async () => {
+    mocks.directoryRows = [
+      [
+        directoryRow(),
+        directoryRow({
+          userId: secondUserId,
+          managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+          characterId: 90_000_002,
+          characterName: 'Second Pilot',
+          sortValue: 'second pilot',
+        }),
+      ],
+    ]
+    mocks.mainCharacterRows = [[], [{ organizationVersion: 7 }]]
+    const firstPage = await searchManagedOrganizationDirectory({
+      organizationVersion: 7,
+      filters: { limit: 1 },
+      now,
+    })
+    expect(firstPage.nextCursor).toEqual(expect.any(String))
+    expect(Buffer.from(firstPage.nextCursor!, 'base64url').toString('utf8')).not.toContain(
+      firstUserId,
+    )
+
+    mocks.directoryRows = [
+      [
+        directoryRow({
+          userId: secondUserId,
+          managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+          characterId: 90_000_002,
+          characterName: 'Second Pilot',
+          sortValue: 'second pilot',
+        }),
+      ],
+    ]
+    mocks.mainCharacterRows = [[], [{ organizationVersion: 7 }]]
+    await expect(
+      searchManagedOrganizationDirectory({
+        organizationVersion: 7,
+        filters: { cursor: firstPage.nextCursor!, limit: 1 },
+        now,
+      }),
+    ).resolves.toMatchObject({
+      items: [{ account: { userId: secondUserId } }],
+      nextCursor: null,
+    })
+
+    const changedInputs = [
+      { organizationVersion: 8, filters: { limit: 1 } },
+      { organizationVersion: 7, filters: { limit: 1, query: 'pilot' } },
+      { organizationVersion: 7, filters: { limit: 1, corporationId: 98_000_001 } },
+      {
+        organizationVersion: 7,
+        filters: { limit: 1, groupId: '00000000-0000-4000-8000-000000000101' },
+      },
+      { organizationVersion: 7, filters: { limit: 1, complianceState: 'compliant' as const } },
+      { organizationVersion: 7, filters: { limit: 1, blocked: true } },
+      { organizationVersion: 7, filters: { limit: 1, auditState: 'current' as const } },
+      { organizationVersion: 7, filters: { limit: 1, sort: 'corporation' as const } },
+      { organizationVersion: 7, filters: { limit: 1, direction: 'desc' as const } },
+      { organizationVersion: 7, filters: { limit: 2 } },
+    ]
+    for (const changed of changedInputs)
+      await expect(
+        searchManagedOrganizationDirectory({
+          ...changed,
+          filters: { ...changed.filters, cursor: firstPage.nextCursor! },
+          now,
+        }),
+      ).rejects.toBeInstanceOf(ReviewerAccountSearchInputError)
+
+    const tampered = `${firstPage.nextCursor!.startsWith('A') ? 'B' : 'A'}${firstPage.nextCursor!.slice(1)}`
+    await expect(
+      searchManagedOrganizationDirectory({
+        organizationVersion: 7,
+        filters: { limit: 1, cursor: tampered },
+        now,
+      }),
+    ).rejects.toBeInstanceOf(ReviewerAccountSearchInputError)
+  })
+
+  test.each([
+    { groupId: 'not-a-uuid' },
+    { complianceState: 'unknown' },
+    { blocked: 'yes' },
+    { auditState: 'unknown' },
+    { sort: 'unknown' },
+    { direction: 'sideways' },
+  ])('rejects invalid directory filters %#', async (filters) => {
+    await expect(
+      searchManagedOrganizationDirectory({ organizationVersion: 7, filters, now } as Parameters<
+        typeof searchManagedOrganizationDirectory
+      >[0]),
+    ).rejects.toBeInstanceOf(ReviewerAccountSearchInputError)
   })
 
   test.each([
@@ -248,8 +435,39 @@ describe('reviewer account search', () => {
 })
 
 interface FakeTransaction {
+  execute: typeof mocks.execute
   select: typeof mocks.select
   selectDistinctOn: typeof mocks.selectDistinctOn
+}
+
+function directoryRow(overrides: Record<string, unknown> = {}) {
+  return {
+    userId: firstUserId,
+    managedMemberLifecycleId: '00000000-0000-4000-8000-000000000010',
+    managedSince: new Date('2026-01-01T00:00:00.000Z'),
+    siteRegisteredAt: new Date('2025-12-01T00:00:00.000Z'),
+    characterId: 90_000_001,
+    characterName: 'Managed Pilot',
+    corporationId: 98_000_001,
+    allianceId: 99_000_001,
+    affiliationCheckedAt: new Date('2026-09-18T11:00:00.000Z'),
+    mainCharacterId: 90_000_010,
+    mainCharacterName: 'Main Pilot',
+    complianceState: 'compliant',
+    complianceEvidenceFreshness: 'fresh',
+    complianceEvidenceAt: new Date('2026-09-18T10:00:00.000Z'),
+    complianceReviewDeadline: null,
+    complianceAccessValidUntil: new Date('2026-09-19T12:00:00.000Z'),
+    complianceEvaluatedAt: new Date('2026-09-18T11:00:00.000Z'),
+    blockedAt: null,
+    disclosedCharacterCount: 2,
+    auditState: 'current',
+    auditExpected: 7,
+    auditCovered: 7,
+    auditAsOf: new Date('2026-09-18T09:00:00.000Z'),
+    sortValue: 'main pilot',
+    ...overrides,
+  }
 }
 
 function searchRow(overrides: Record<string, unknown> = {}) {

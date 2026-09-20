@@ -206,6 +206,7 @@ describe('SSR and authentication query boundaries', () => {
           organizationVersion: 7,
           status: 'available',
           items: [],
+          groupFacets: [],
           nextCursor: null,
         })
       }),

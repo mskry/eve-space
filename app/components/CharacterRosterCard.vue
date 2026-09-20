@@ -5,8 +5,9 @@ import {
   characterPortraitViewTransitionName,
 } from '../utils/view-transition'
 
-defineProps<{
+const { priority = false } = defineProps<{
   character: CharacterRosterEntry
+  priority?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -58,7 +59,8 @@ function locationLabel(location: CharacterRosterEntry['location']) {
           :dimension="84"
           :width="84"
           :height="84"
-          loading="lazy"
+          :loading="priority ? 'eager' : 'lazy'"
+          :fetch-priority="priority ? 'high' : 'auto'"
           decoding="async"
           :alt="`${character.name} character portrait`"
         />

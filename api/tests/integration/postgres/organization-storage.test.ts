@@ -68,6 +68,7 @@ const databasePassword = randomUUID()
 const adminId = randomUUID()
 const userId = randomUUID()
 const characterId = 1_404_328_063
+const directoryNow = new Date('2026-09-18T12:00:00.000Z')
 let subjectLifecycleId: string
 
 beforeAll(async () => {
@@ -504,7 +505,7 @@ describe('organization storage invariants', () => {
       })
   })
 
-  test('projects the core reviewer directory without compliance, block, or module evidence', async () => {
+  test('projects the canonical core reviewer directory without module evidence', async () => {
     const page = await searchManagedOrganizationDirectory({
       organizationVersion: 1,
       filters: { query: 'Organization Pilot' },
@@ -512,22 +513,622 @@ describe('organization storage invariants', () => {
 
     expect(page.status).toBe('available')
     expect(page.items).toHaveLength(1)
-    expect(Object.keys(page.items[0]!).toSorted()).toEqual([
-      'account',
-      'managedAffiliation',
-      'managedMemberLifecycleId',
-    ])
-    expect(page.items[0]).not.toHaveProperty('compliance')
-    expect(page.items[0]).not.toHaveProperty('block')
+    expect(page.items[0]).toMatchObject({
+      managedMemberLifecycleId: expect.any(String),
+      managedSince: expect.any(String),
+      siteRegisteredAt: expect.any(String),
+      account: {
+        userId,
+        mainCharacter: { characterId, name: 'Organization Pilot' },
+      },
+      portraitCharacter: {
+        characterId,
+        name: 'Organization Pilot',
+        source: 'main-character',
+      },
+      managedAffiliation: {
+        characterId,
+        name: 'Organization Pilot',
+        corporationId: 98_000_001,
+      },
+      disclosedCharacterCount: 1,
+      groups: [],
+      compliance: { state: 'pending' },
+      block: { blocked: false },
+      auditData: { state: 'not-enabled', expected: 0, covered: 0, asOf: null },
+    })
     expect(page.items[0]).not.toHaveProperty('evidenceSections')
+    expect(page.items[0]).not.toHaveProperty('resources')
     await expect(
       searchManagedOrganizationDirectory({ organizationVersion: 2, filters: {} }),
     ).resolves.toEqual({
       organizationVersion: 2,
       status: 'unavailable',
       items: [],
+      groupFacets: [],
       nextCursor: null,
     })
+  })
+
+  test('projects the current lifecycle, fallback identity, disclosed characters, and current groups', async () => {
+    await connection`
+      update users set created_at = '2025-04-03T10:00:00Z' where id = ${userId}
+    `
+    await connection`
+      update organization_managed_member_lifecycles
+      set started_at = '2025-05-01T00:00:00Z', ended_at = '2025-06-01T00:00:00Z'
+      where deployment_id = 1 and organization_version = 1 and user_id = ${userId}
+    `
+    await connection`
+      insert into organization_managed_member_lifecycles (
+        deployment_id, organization_version, user_id, started_at
+      ) values (1, 1, ${userId}, '2026-02-04T09:30:00Z')
+    `
+    await connection`
+      update characters
+      set corporation_id = 98000002, next_affiliation_check = '2026-09-19T00:00:00Z'
+      where character_id = ${characterId}
+    `
+    await seedAdditionalDirectoryCharacter(userId, 90_000_101, 'Zulu Managed', false)
+    await seedAdditionalDirectoryCharacter(userId, 90_000_102, 'Alpha Managed', false)
+    const groups = await seedDirectoryGroups()
+
+    const page = await searchManagedOrganizationDirectory({
+      organizationVersion: 1,
+      filters: {},
+      now: directoryNow,
+    })
+
+    expect(page.items).toHaveLength(1)
+    expect(page.items[0]).toMatchObject({
+      managedSince: '2026-02-04T09:30:00.000Z',
+      siteRegisteredAt: '2025-04-03T10:00:00.000Z',
+      account: { userId, mainCharacter: null },
+      portraitCharacter: {
+        characterId: 90_000_102,
+        name: 'Alpha Managed',
+        source: 'managed-affiliation',
+      },
+      managedAffiliation: { characterId: 90_000_102, name: 'Alpha Managed' },
+      disclosedCharacterCount: 2,
+      groups: [
+        { groupId: groups.alpha, name: 'Alpha current' },
+        { groupId: groups.compliance, name: 'Compliance current' },
+        { groupId: groups.restricted, name: 'Restricted current' },
+        { groupId: groups.zulu, name: 'Zulu current' },
+      ],
+    })
+    expect(page.groupFacets).toEqual([
+      { groupId: groups.alpha, name: 'Alpha current' },
+      { groupId: groups.compliance, name: 'Compliance current' },
+      { groupId: groups.expired, name: 'Expired assignment' },
+      { groupId: groups.restricted, name: 'Restricted current' },
+      { groupId: groups.revoked, name: 'Revoked assignment' },
+      { groupId: groups.zulu, name: 'Zulu current' },
+    ])
+
+    await expect(
+      searchManagedOrganizationDirectory({
+        organizationVersion: 1,
+        filters: { groupId: groups.restricted },
+        now: directoryNow,
+      }),
+    ).resolves.toMatchObject({ items: [{ account: { userId } }] })
+    await expect(
+      searchManagedOrganizationDirectory({
+        organizationVersion: 1,
+        filters: { groupId: groups.expired },
+        now: directoryNow,
+      }),
+    ).resolves.toMatchObject({ items: [] })
+    await expect(
+      searchManagedOrganizationDirectory({
+        organizationVersion: 1,
+        filters: { groupId: groups.revoked },
+        now: directoryNow,
+      }),
+    ).resolves.toMatchObject({ items: [] })
+  })
+
+  test('derives every aggregate audit state with conservative mixed-resource precedence', async () => {
+    await enableDirectoryAuditSections(['skills', 'assets'])
+
+    await expect(loadDirectoryAuditData()).resolves.toEqual({
+      state: 'authorization-required',
+      expected: 2,
+      covered: 0,
+      asOf: null,
+    })
+
+    await authorizeDirectoryAuditSections(['skills', 'assets'])
+    await expect(loadDirectoryAuditData()).resolves.toEqual({
+      state: 'never-collected',
+      expected: 2,
+      covered: 0,
+      asOf: null,
+    })
+
+    await seedDirectoryAuditState({
+      resourceId: 'trained-skills',
+      sectionId: 'skills',
+      validatedAt: '2026-09-18T10:00:00Z',
+      nextEligibleAt: '2026-09-18T13:00:00Z',
+    })
+    await expect(loadDirectoryAuditData()).resolves.toEqual({
+      state: 'never-collected',
+      expected: 2,
+      covered: 1,
+      asOf: null,
+    })
+
+    await seedDirectoryAuditState({
+      resourceId: 'assets',
+      sectionId: 'assets',
+      validatedAt: null,
+      nextEligibleAt: '2026-09-18T13:00:00Z',
+      lastFailureClass: 'esi-unavailable',
+    })
+    await expect(loadDirectoryAuditData()).resolves.toEqual({
+      state: 'unavailable',
+      expected: 2,
+      covered: 1,
+      asOf: null,
+    })
+
+    await connection`
+      update platform_collection_state
+      set validated_at = '2026-09-18T09:00:00Z', next_eligible_at = '2026-09-18T13:00:00Z'
+      where module_id = 'member-audit' and resource_id = 'assets'
+    `
+    await expect(loadDirectoryAuditData()).resolves.toEqual({
+      state: 'stale',
+      expected: 2,
+      covered: 2,
+      asOf: '2026-09-18T09:00:00.000Z',
+    })
+
+    await connection`
+      update platform_collection_state
+      set last_failure_class = null, failure_started_at = null,
+        next_eligible_at = '2026-09-18T11:00:00Z'
+      where module_id = 'member-audit' and resource_id = 'assets'
+    `
+    await expect(loadDirectoryAuditData()).resolves.toEqual({
+      state: 'stale',
+      expected: 2,
+      covered: 2,
+      asOf: '2026-09-18T09:00:00.000Z',
+    })
+
+    await connection`
+      update platform_collection_state
+      set next_eligible_at = '2026-09-18T13:00:00Z'
+      where module_id = 'member-audit' and resource_id = 'assets'
+    `
+    await expect(loadDirectoryAuditData()).resolves.toEqual({
+      state: 'current',
+      expected: 2,
+      covered: 2,
+      asOf: '2026-09-18T09:00:00.000Z',
+    })
+
+    await connection`
+      delete from character_reviewer_disclosure_acceptances
+      where character_id = ${characterId} and module_id = 'member-audit' and section_id = 'skills'
+    `
+    await expect(loadDirectoryAuditData()).resolves.toMatchObject({
+      state: 'authorization-required',
+      expected: 2,
+    })
+
+    await connection`
+      update deployment_module_sections set enabled = false where module_id = 'member-audit'
+    `
+    await expect(loadDirectoryAuditData()).resolves.toEqual({
+      state: 'not-enabled',
+      expected: 0,
+      covered: 0,
+      asOf: null,
+    })
+  })
+
+  test('filters and sorts the complete directory before stable cursor pagination', async () => {
+    const alphaUserId = '10000000-0000-4000-8000-000000000001'
+    const bravoUserId = '20000000-0000-4000-8000-000000000002'
+    const charlieUserId = '30000000-0000-4000-8000-000000000003'
+    const echoUserId = '40000000-0000-4000-8000-000000000004'
+    await connection`
+      insert into organization_managed_corporations (
+        deployment_id, organization_version, corporation_id, first_observed_at, last_observed_at
+      ) values (1, 1, 98000004, '2026-01-01T00:00:00Z', '2026-09-18T10:04:00Z')
+    `
+    await connection`
+      update users set created_at = '2025-04-04T00:00:00Z' where id = ${userId}
+    `
+    await connection`
+      update characters
+      set name = 'Delta Pilot', corporation_id = 98000004,
+        affiliation_checked_at = '2026-09-18T10:04:00Z',
+        next_affiliation_check = '2026-09-19T00:00:00Z'
+      where character_id = ${characterId}
+    `
+    await connection`
+      update organization_managed_member_lifecycles
+      set started_at = '2026-01-04T00:00:00Z'
+      where deployment_id = 1 and organization_version = 1 and user_id = ${userId}
+        and ended_at is null
+    `
+    await seedDirectoryAccount({
+      targetUserId: alphaUserId,
+      targetCharacterId: 90_000_201,
+      name: 'Alpha Pilot',
+      corporationId: 98_000_002,
+      siteRegisteredAt: '2025-04-01T00:00:00Z',
+      managedSince: '2026-01-01T00:00:00Z',
+      affiliationCheckedAt: '2026-09-18T10:01:00Z',
+    })
+    await seedAdditionalDirectoryCharacter(alphaUserId, 90_000_211, 'Alpha Alt', false)
+    await seedDirectoryAccount({
+      targetUserId: bravoUserId,
+      targetCharacterId: 90_000_202,
+      name: 'Bravo Pilot',
+      corporationId: 98_000_001,
+      siteRegisteredAt: '2025-04-02T00:00:00Z',
+      managedSince: '2026-01-02T00:00:00Z',
+      affiliationCheckedAt: '2026-09-18T10:02:00Z',
+    })
+    await seedDirectoryAccount({
+      targetUserId: charlieUserId,
+      targetCharacterId: 90_000_203,
+      name: 'Charlie Pilot',
+      corporationId: 98_000_003,
+      siteRegisteredAt: '2025-04-03T00:00:00Z',
+      managedSince: '2026-01-03T00:00:00Z',
+      affiliationCheckedAt: '2026-09-18T10:03:00Z',
+    })
+    await seedDirectoryAccount({
+      targetUserId: echoUserId,
+      targetCharacterId: 90_000_205,
+      name: 'Echo Pilot',
+      corporationId: 98_000_005,
+      siteRegisteredAt: '2025-04-05T00:00:00Z',
+      managedSince: '2026-01-05T00:00:00Z',
+      affiliationCheckedAt: '2026-09-18T10:05:00Z',
+    })
+    await seedDirectoryCompliance({
+      targetUserId: userId,
+      state: 'compliant',
+      evidenceFreshness: 'fresh',
+      evidenceAt: '2026-09-18T10:00:00Z',
+      accessValidUntil: '2026-09-24T00:00:00Z',
+    })
+    await seedDirectoryCompliance({
+      targetUserId: alphaUserId,
+      state: 'pending',
+      evidenceFreshness: 'unavailable',
+    })
+    await seedDirectoryCompliance({
+      targetUserId: bravoUserId,
+      state: 'review_required',
+      evidenceFreshness: 'stale',
+      evidenceAt: '2026-09-18T09:00:00Z',
+      reviewDeadline: '2026-09-21T00:00:00Z',
+      accessValidUntil: '2026-09-20T00:00:00Z',
+      establishedCompliantAt: '2026-09-01T00:00:00Z',
+    })
+    await seedDirectoryCompliance({
+      targetUserId: charlieUserId,
+      state: 'suspended',
+      evidenceFreshness: 'stale',
+      evidenceAt: '2026-09-18T08:00:00Z',
+      reviewDeadline: '2026-09-22T00:00:00Z',
+    })
+    await seedDirectoryCompliance({
+      targetUserId: echoUserId,
+      state: 'compliant',
+      evidenceFreshness: 'fresh',
+      evidenceAt: '2026-09-18T07:00:00Z',
+      accessValidUntil: '2026-09-25T00:00:00Z',
+    })
+    await seedDirectoryBlock(echoUserId, '2026-09-15T00:00:00Z')
+    await enableDirectoryAuditSections(['skills', 'assets'])
+    await authorizeDirectoryAuditSections(['skills', 'assets'])
+    await authorizeDirectoryAuditSections(['skills', 'assets'], 90_000_202)
+    for (const state of [
+      {
+        targetUserId: userId,
+        targetCharacterId: characterId,
+        resourceId: 'trained-skills',
+        sectionId: 'skills',
+        validatedAt: '2026-09-18T10:00:00Z',
+      },
+      {
+        targetUserId: userId,
+        targetCharacterId: characterId,
+        resourceId: 'assets',
+        sectionId: 'assets',
+        validatedAt: '2026-09-18T09:00:00Z',
+      },
+      {
+        targetUserId: bravoUserId,
+        targetCharacterId: 90_000_202,
+        resourceId: 'trained-skills',
+        sectionId: 'skills',
+        validatedAt: '2026-09-18T09:00:00Z',
+      },
+      {
+        targetUserId: bravoUserId,
+        targetCharacterId: 90_000_202,
+        resourceId: 'assets',
+        sectionId: 'assets',
+        validatedAt: '2026-09-18T08:00:00Z',
+      },
+    ])
+      await seedDirectoryAuditState({
+        ...state,
+        nextEligibleAt: '2026-09-18T13:00:00Z',
+      })
+
+    await expect(directoryUserIds({ query: 'Alpha' })).resolves.toEqual([alphaUserId])
+    await expect(directoryUserIds({ query: '90000201' })).resolves.toEqual([alphaUserId])
+    await expect(directoryUserIds({ query: alphaUserId })).resolves.toEqual([alphaUserId])
+    await expect(directoryUserIds({ query: '%' })).resolves.toEqual([])
+    await expect(directoryUserIds({ corporationId: 98_000_004 })).resolves.toEqual([userId])
+    await expect(directoryUserIds({ complianceState: 'pending' })).resolves.toEqual([alphaUserId])
+    await expect(directoryUserIds({ complianceState: 'review_required' })).resolves.toEqual([
+      bravoUserId,
+    ])
+    await expect(directoryUserIds({ blocked: true })).resolves.toEqual([echoUserId])
+    await expect(directoryUserIds({ blocked: false })).resolves.toEqual([
+      alphaUserId,
+      bravoUserId,
+      charlieUserId,
+      userId,
+    ])
+    await expect(directoryUserIds({ auditState: 'current' })).resolves.toEqual([
+      bravoUserId,
+      userId,
+    ])
+    await expect(directoryUserIds({ auditState: 'authorization-required' })).resolves.toEqual([
+      alphaUserId,
+      charlieUserId,
+      echoUserId,
+    ])
+
+    const nullAuditIds = [alphaUserId, charlieUserId, echoUserId].toSorted((left, right) =>
+      left.localeCompare(right),
+    )
+    const singleCharacterIds = [bravoUserId, charlieUserId, echoUserId, userId].toSorted(
+      (left, right) => left.localeCompare(right),
+    )
+    const nullDeadlineIds = [alphaUserId, echoUserId, userId].toSorted((left, right) =>
+      left.localeCompare(right),
+    )
+    const nullAccessIds = [alphaUserId, charlieUserId].toSorted((left, right) =>
+      left.localeCompare(right),
+    )
+    const unblockedIds = [alphaUserId, bravoUserId, charlieUserId, userId].toSorted((left, right) =>
+      left.localeCompare(right),
+    )
+    const sortCases = [
+      {
+        sort: 'member' as const,
+        asc: [alphaUserId, bravoUserId, charlieUserId, userId, echoUserId],
+        desc: [echoUserId, userId, charlieUserId, bravoUserId, alphaUserId],
+      },
+      {
+        sort: 'corporation' as const,
+        asc: [bravoUserId, alphaUserId, charlieUserId, userId, echoUserId],
+        desc: [echoUserId, userId, charlieUserId, alphaUserId, bravoUserId],
+      },
+      {
+        sort: 'managed_since' as const,
+        asc: [alphaUserId, bravoUserId, charlieUserId, userId, echoUserId],
+        desc: [echoUserId, userId, charlieUserId, bravoUserId, alphaUserId],
+      },
+      {
+        sort: 'audit_data' as const,
+        asc: [bravoUserId, userId, ...nullAuditIds],
+        desc: [userId, bravoUserId, ...nullAuditIds],
+      },
+      {
+        sort: 'access_status' as const,
+        asc: [userId, alphaUserId, bravoUserId, charlieUserId, echoUserId],
+        desc: [echoUserId, charlieUserId, bravoUserId, alphaUserId, userId],
+      },
+      {
+        sort: 'disclosed_characters' as const,
+        asc: [...singleCharacterIds, alphaUserId],
+        desc: [alphaUserId, ...singleCharacterIds],
+      },
+      {
+        sort: 'affiliation_checked_at' as const,
+        asc: [alphaUserId, bravoUserId, charlieUserId, userId, echoUserId],
+        desc: [echoUserId, userId, charlieUserId, bravoUserId, alphaUserId],
+      },
+      {
+        sort: 'site_registered_at' as const,
+        asc: [alphaUserId, bravoUserId, charlieUserId, userId, echoUserId],
+        desc: [echoUserId, userId, charlieUserId, bravoUserId, alphaUserId],
+      },
+      {
+        sort: 'review_deadline' as const,
+        asc: [bravoUserId, charlieUserId, ...nullDeadlineIds],
+        desc: [charlieUserId, bravoUserId, ...nullDeadlineIds],
+      },
+      {
+        sort: 'access_valid_until' as const,
+        asc: [bravoUserId, userId, echoUserId, ...nullAccessIds],
+        desc: [echoUserId, userId, bravoUserId, ...nullAccessIds],
+      },
+      {
+        sort: 'blocked_since' as const,
+        asc: [echoUserId, ...unblockedIds],
+        desc: [echoUserId, ...unblockedIds],
+      },
+    ]
+    for (const { sort, asc: ascending, desc: descending } of sortCases) {
+      await expect(directoryUserIds({ sort, direction: 'asc' })).resolves.toEqual(ascending)
+      await expect(directoryUserIds({ sort, direction: 'desc' })).resolves.toEqual(descending)
+    }
+
+    const firstPage = await searchManagedOrganizationDirectory({
+      organizationVersion: 1,
+      filters: { sort: 'member', direction: 'asc', limit: 2 },
+      now: directoryNow,
+    })
+    expect(firstPage.items.map(({ account }) => account.userId)).toEqual([alphaUserId, bravoUserId])
+    const lateUserId = '05000000-0000-4000-8000-000000000005'
+    await seedDirectoryAccount({
+      targetUserId: lateUserId,
+      targetCharacterId: 90_000_206,
+      name: 'Aardvark Pilot',
+      corporationId: 98_000_001,
+      siteRegisteredAt: '2025-03-01T00:00:00Z',
+      managedSince: '2025-12-01T00:00:00Z',
+      affiliationCheckedAt: '2026-09-18T10:00:00Z',
+    })
+    const remainingIds: string[] = []
+    let cursor = firstPage.nextCursor
+    while (cursor) {
+      const page = await searchManagedOrganizationDirectory({
+        organizationVersion: 1,
+        filters: { sort: 'member', direction: 'asc', limit: 2, cursor },
+        now: directoryNow,
+      })
+      remainingIds.push(...page.items.map(({ account }) => account.userId))
+      cursor = page.nextCursor
+    }
+    expect(remainingIds).toEqual([charlieUserId, userId, echoUserId])
+    expect(
+      new Set([...firstPage.items.map(({ account }) => account.userId), ...remainingIds]).size,
+    ).toBe(5)
+  })
+
+  test('preserves every compliance and active-block combination', async () => {
+    const complianceCases = [
+      {
+        state: 'pending' as const,
+        evidenceFreshness: 'unavailable' as const,
+      },
+      {
+        state: 'compliant' as const,
+        evidenceFreshness: 'fresh' as const,
+        evidenceAt: '2026-09-18T10:00:00Z',
+        accessValidUntil: '2026-09-24T00:00:00Z',
+      },
+      {
+        state: 'review_required' as const,
+        evidenceFreshness: 'stale' as const,
+        evidenceAt: '2026-09-18T10:00:00Z',
+        reviewDeadline: '2026-09-21T00:00:00Z',
+      },
+      {
+        state: 'suspended' as const,
+        evidenceFreshness: 'stale' as const,
+        evidenceAt: '2026-09-18T10:00:00Z',
+        reviewDeadline: '2026-09-21T00:00:00Z',
+      },
+    ]
+
+    for (const compliance of complianceCases) {
+      await seedDirectoryCompliance({ targetUserId: userId, ...compliance })
+      const unblocked = await searchManagedOrganizationDirectory({
+        organizationVersion: 1,
+        filters: { complianceState: compliance.state, blocked: false },
+        now: directoryNow,
+      })
+      expect(unblocked.items[0]).toMatchObject({
+        account: { userId },
+        compliance: { state: compliance.state },
+        block: { blocked: false },
+      })
+
+      await seedDirectoryBlock(userId, '2026-09-17T00:00:00Z')
+      const blocked = await searchManagedOrganizationDirectory({
+        organizationVersion: 1,
+        filters: { complianceState: compliance.state, blocked: true },
+        now: directoryNow,
+      })
+      expect(blocked.items[0]).toMatchObject({
+        account: { userId },
+        compliance: { state: compliance.state },
+        block: { blocked: true, blockedAt: '2026-09-17T00:00:00.000Z' },
+      })
+      await connection`delete from organization_member_blocks where user_id = ${userId}`
+      await connection`delete from organization_account_compliance where user_id = ${userId}`
+    }
+  })
+
+  test('keeps the maximum-size directory query plan bounded without a new index', async () => {
+    await connection`
+      insert into users (id, created_at)
+      select ('50000000-0000-4000-8000-' || lpad(value::text, 12, '0'))::uuid,
+        '2025-01-01T00:00:00Z'::timestamptz + value * interval '1 minute'
+      from generate_series(1, 60) value
+    `
+    await connection`
+      insert into characters (
+        character_id, user_id, name, corporation_id, affiliation_checked_at,
+        next_affiliation_check, affiliation_resolution_state, is_main
+      )
+      select 920000000 + value,
+        ('50000000-0000-4000-8000-' || lpad(value::text, 12, '0'))::uuid,
+        'Plan Member ' || lpad(value::text, 3, '0'), 98000001,
+        '2026-09-18T10:00:00Z'::timestamptz, '2026-09-19T00:00:00Z'::timestamptz,
+        'resolved', true
+      from generate_series(1, 60) value
+    `
+    await connection`
+      insert into eve_tokens (character_id, encrypted_tokens, access_token_expires_at, scopes)
+      select 920000000 + value, 'encrypted-test-token', '2026-09-19T00:00:00Z'::timestamptz,
+        '["esi-characters.read_corporation_roles.v1"]'::jsonb
+      from generate_series(1, 60) value
+    `
+    await connection`
+      insert into platform_subject_lifecycles (subject_kind, subject_id, character_id)
+      select 'character', (920000000 + value)::text, 920000000 + value
+      from generate_series(1, 60) value
+    `
+    await connection`
+      insert into organization_managed_member_lifecycles (
+        deployment_id, organization_version, user_id, started_at
+      )
+      select 1, 1, ('50000000-0000-4000-8000-' || lpad(value::text, 12, '0'))::uuid,
+        '2026-01-01T00:00:00Z'::timestamptz + value * interval '1 minute'
+      from generate_series(1, 60) value
+    `
+
+    type UnsafeParameters = NonNullable<Parameters<typeof connection.unsafe>[1]>
+    const capture: {
+      value: { query: string; parameters: UnsafeParameters } | null
+    } = { value: null }
+    const options = dbClient.sql.options
+    const previousDebug = options.debug
+    options.debug = (_connection, query, parameters) => {
+      if (query.includes('with resource_classification'))
+        capture.value = { query, parameters: parameters as UnsafeParameters }
+    }
+    let page
+    try {
+      page = await searchManagedOrganizationDirectory({
+        organizationVersion: 1,
+        filters: { limit: 50, sort: 'managed_since', direction: 'desc' },
+        now: directoryNow,
+      })
+    } finally {
+      options.debug = previousDebug
+    }
+    expect(page.items).toHaveLength(50)
+    expect(page.nextCursor).toEqual(expect.any(String))
+    const captured = capture.value
+    if (!captured) throw new Error('Directory query was not captured for plan inspection')
+    const [explained] = await connection.unsafe<{ 'QUERY PLAN': unknown }[]>(
+      `explain (analyze, buffers, format json) ${captured.query}`,
+      captured.parameters,
+    )
+    expect(explained?.['QUERY PLAN']).toBeDefined()
+    expect(JSON.stringify(explained?.['QUERY PLAN'])).toContain('Actual Rows')
   })
 
   test('does not expose or match an unclassified main character', async () => {
@@ -3580,6 +4181,251 @@ async function establishRosterObservation() {
     )
   `
   return { observedCharacterId }
+}
+
+async function seedAdditionalDirectoryCharacter(
+  targetUserId: string,
+  targetCharacterId: number,
+  name: string,
+  isMain: boolean,
+) {
+  await connection`
+    insert into characters (
+      character_id, user_id, name, corporation_id, affiliation_checked_at,
+      next_affiliation_check, affiliation_resolution_state, is_main
+    ) values (
+      ${targetCharacterId}, ${targetUserId}, ${name}, 98000001,
+      '2026-09-18T10:00:00Z', '2026-09-19T00:00:00Z', 'resolved', ${isMain}
+    )
+  `
+  await connection`
+    insert into platform_subject_lifecycles (subject_kind, subject_id, character_id)
+    values ('character', ${String(targetCharacterId)}, ${targetCharacterId})
+  `
+}
+
+async function seedDirectoryGroups() {
+  const groups = {
+    alpha: randomUUID(),
+    compliance: randomUUID(),
+    expired: randomUUID(),
+    restricted: randomUUID(),
+    revoked: randomUUID(),
+    zulu: randomUUID(),
+  }
+  await connection`
+    insert into organization_groups (
+      group_id, deployment_id, organization_version, name, restricted,
+      management_mode, compliance_source, created_by_user_id
+    ) values
+      (${groups.alpha}, 1, 1, 'Alpha current', false, 'manual', null, ${userId}),
+      (${groups.compliance}, 1, 1, 'Compliance current', false, 'compliance',
+        'core.registration', ${userId}),
+      (${groups.expired}, 1, 1, 'Expired assignment', false, 'manual', null, ${userId}),
+      (${groups.restricted}, 1, 1, 'Restricted current', true, 'manual', null, ${userId}),
+      (${groups.revoked}, 1, 1, 'Revoked assignment', false, 'manual', null, ${userId}),
+      (${groups.zulu}, 1, 1, 'Zulu current', false, 'manual', null, ${userId})
+  `
+  await connection`
+    insert into organization_group_assignments (
+      assignment_id, group_id, deployment_id, organization_version, user_id,
+      assignment_source, compliance_source, assigned_actor_type, assigned_by_user_id,
+      reason, assigned_at, expires_at, revoked_at, revoked_actor_type,
+      revoked_by_user_id, revocation_reason
+    ) values
+      (${randomUUID()}, ${groups.alpha}, 1, 1, ${userId}, 'manual', null, 'user', ${userId},
+        'Current assignment', '2026-09-16T00:00:00Z', null, null, null, null, null),
+      (${randomUUID()}, ${groups.compliance}, 1, 1, ${userId}, 'compliance',
+        'core.registration', 'system', null, 'Current compliance assignment',
+        '2026-09-16T00:00:00Z', null, null, null, null, null),
+      (${randomUUID()}, ${groups.expired}, 1, 1, ${userId}, 'manual', null, 'user', ${userId},
+        'Expired assignment', '2026-09-16T00:00:00Z', '2026-09-17T00:00:00Z',
+        null, null, null, null),
+      (${randomUUID()}, ${groups.restricted}, 1, 1, ${userId}, 'manual', null, 'user',
+        ${userId}, 'Current restricted assignment', '2026-09-16T00:00:00Z',
+        null, null, null, null, null),
+      (${randomUUID()}, ${groups.revoked}, 1, 1, ${userId}, 'manual', null, 'user', ${userId},
+        'Revoked assignment', '2026-09-16T00:00:00Z', null, '2026-09-17T00:00:00Z',
+        'user', ${userId}, 'No longer assigned'),
+      (${randomUUID()}, ${groups.zulu}, 1, 1, ${userId}, 'manual', null, 'user', ${userId},
+        'Current assignment', '2026-09-16T00:00:00Z', null, null, null, null, null)
+  `
+  return groups
+}
+
+async function enableDirectoryAuditSections(sections: readonly string[]) {
+  for (const sectionId of sections)
+    await connection`
+      insert into deployment_module_sections (
+        module_id, section_id, kind, enabled, declaration_revision,
+        disclosure_version, activation_version
+      ) values ('member-audit', ${sectionId}, 'sensitive-evidence', true, 1, 1, 1)
+      on conflict (module_id, section_id) do update set
+        kind = excluded.kind,
+        enabled = excluded.enabled,
+        declaration_revision = excluded.declaration_revision,
+        disclosure_version = excluded.disclosure_version,
+        activation_version = excluded.activation_version
+    `
+}
+
+async function authorizeDirectoryAuditSections(
+  sections: readonly string[],
+  targetCharacterId = characterId,
+) {
+  await connection`
+    update eve_tokens
+    set scopes = ${connection.json([
+      'esi-characters.read_corporation_roles.v1',
+      'esi-skills.read_skills.v1',
+      'esi-assets.read_assets.v1',
+    ])}
+    where character_id = ${targetCharacterId}
+  `
+  for (const sectionId of sections)
+    await connection`
+      insert into character_reviewer_disclosure_acceptances (
+        character_id, module_id, section_id, disclosure_version, authorization_generation
+      ) values (${targetCharacterId}, 'member-audit', ${sectionId}, 1, 0)
+    `
+}
+
+async function seedDirectoryAuditState(input: {
+  resourceId: string
+  sectionId: string
+  validatedAt: string | null
+  nextEligibleAt: string
+  lastFailureClass?: 'esi-unavailable'
+  targetUserId?: string
+  targetCharacterId?: number
+}) {
+  const targetUserId = input.targetUserId ?? userId
+  const targetCharacterId = input.targetCharacterId ?? characterId
+  const managedMemberLifecycleId = await loadActiveManagedMemberLifecycleId(targetUserId)
+  const [lifecycle] = await connection<{ subject_lifecycle_id: string }[]>`
+    select subject_lifecycle_id
+    from platform_subject_lifecycles
+    where character_id = ${targetCharacterId}
+  `
+  if (!lifecycle) throw new Error('Directory audit character lifecycle is missing')
+  await connection`
+    insert into platform_collection_state (
+      module_id, resource_id, subject_kind, subject_lifecycle_id, subject_id,
+      next_eligible_at, authorization_generation, organization_deployment_id,
+      organization_version, target_user_id, managed_member_lifecycle_id, section_id,
+      disclosure_version, section_activation_version, validated_at, last_failure_class,
+      failure_started_at
+    ) values (
+      'member-audit', ${input.resourceId}, 'character', ${lifecycle.subject_lifecycle_id},
+      ${String(targetCharacterId)}, ${input.nextEligibleAt}, 0, 1, 1, ${targetUserId},
+      ${managedMemberLifecycleId}, ${input.sectionId}, 1, 1, ${input.validatedAt},
+      ${input.lastFailureClass ?? null},
+      ${input.lastFailureClass ? '2026-09-18T11:00:00Z' : null}
+    )
+  `
+}
+
+async function loadDirectoryAuditData(targetUserId = userId) {
+  const page = await searchManagedOrganizationDirectory({
+    organizationVersion: 1,
+    filters: {},
+    now: directoryNow,
+  })
+  const item = page.items.find(({ account }) => account.userId === targetUserId)
+  if (!item) throw new Error('Seeded directory member is missing')
+  return item.auditData
+}
+
+async function directoryUserIds(
+  filters: Parameters<typeof searchManagedOrganizationDirectory>[0]['filters'],
+) {
+  const page = await searchManagedOrganizationDirectory({
+    organizationVersion: 1,
+    filters,
+    now: directoryNow,
+  })
+  return page.items.map(({ account }) => account.userId)
+}
+
+async function seedDirectoryAccount(input: {
+  targetUserId: string
+  targetCharacterId: number
+  name: string
+  corporationId: number
+  siteRegisteredAt: string
+  managedSince: string
+  affiliationCheckedAt: string
+}) {
+  await connection`
+    insert into organization_managed_corporations (
+      deployment_id, organization_version, corporation_id, first_observed_at, last_observed_at
+    ) values (1, 1, ${input.corporationId}, ${input.managedSince}, ${input.affiliationCheckedAt})
+    on conflict (deployment_id, organization_version, corporation_id)
+    do update set is_current = true, removed_at = null,
+      last_observed_at = greatest(
+        organization_managed_corporations.last_observed_at,
+        excluded.last_observed_at
+      )
+  `
+  await connection`
+    insert into users (id, created_at) values (${input.targetUserId}, ${input.siteRegisteredAt})
+  `
+  await connection`
+    insert into characters (
+      character_id, user_id, name, corporation_id, affiliation_checked_at,
+      next_affiliation_check, affiliation_resolution_state, is_main
+    ) values (
+      ${input.targetCharacterId}, ${input.targetUserId}, ${input.name}, ${input.corporationId},
+      ${input.affiliationCheckedAt}, '2026-09-19T00:00:00Z', 'resolved', true
+    )
+  `
+  await connection`
+    insert into eve_tokens (character_id, encrypted_tokens, access_token_expires_at, scopes)
+    values (
+      ${input.targetCharacterId}, 'encrypted-test-token', '2026-09-19T00:00:00Z',
+      '["esi-characters.read_corporation_roles.v1"]'::jsonb
+    )
+  `
+  await connection`
+    insert into platform_subject_lifecycles (subject_kind, subject_id, character_id)
+    values ('character', ${String(input.targetCharacterId)}, ${input.targetCharacterId})
+  `
+  await connection`
+    insert into organization_managed_member_lifecycles (
+      deployment_id, organization_version, user_id, started_at
+    ) values (1, 1, ${input.targetUserId}, ${input.managedSince})
+  `
+}
+
+async function seedDirectoryCompliance(input: {
+  targetUserId: string
+  state: 'pending' | 'compliant' | 'review_required' | 'suspended'
+  evidenceFreshness: 'fresh' | 'stale' | 'unavailable'
+  evidenceAt?: string
+  reviewDeadline?: string
+  accessValidUntil?: string
+  establishedCompliantAt?: string
+}) {
+  await connection`
+    insert into organization_account_compliance (
+      deployment_id, organization_version, user_id, state, evidence_freshness,
+      evidence_at, review_deadline, access_valid_until, established_compliant_at,
+      evaluated_at
+    ) values (
+      1, 1, ${input.targetUserId}, ${input.state}, ${input.evidenceFreshness},
+      ${input.evidenceAt ?? null}, ${input.reviewDeadline ?? null},
+      ${input.accessValidUntil ?? null}, ${input.establishedCompliantAt ?? null},
+      '2026-09-18T11:00:00Z'
+    )
+  `
+}
+
+async function seedDirectoryBlock(targetUserId: string, blockedAt: string) {
+  await connection`
+    insert into organization_member_blocks (
+      deployment_id, organization_version, user_id, blocked_by_user_id, reason, blocked_at
+    ) values (1, 1, ${targetUserId}, ${userId}, 'Directory fixture block', ${blockedAt})
+  `
 }
 
 async function seedDeployment() {

@@ -434,6 +434,25 @@ describe('platform module declarations', () => {
     )
   })
 
+  it.each([
+    ['directoryFields', ['member', 'module-private-value']],
+    ['searchRoute', '/api/modules/alpha/members'],
+  ])('rejects reviewer contribution %s extensions', (field, value) => {
+    const declaration = authoringManifest('alpha')
+    Object.assign(declaration.reviewerContributions![0]!, { [field]: value })
+
+    expect(() =>
+      compilePlatformModules(
+        [{ expectedModuleId: 'alpha', declaration }],
+        coreModuleValidationAuthorities,
+      ),
+    ).toThrowError(
+      expect.objectContaining({
+        issues: [`installed module alpha reviewerContributions[0].${field} is not allowed`],
+      }),
+    )
+  })
+
   it('enforces contract caller roles for hosts, generated registries, scripts, and tests', () => {
     for (const [path, subpath] of [
       ['api/src/admin/routes.ts', 'compiler'],
