@@ -72,7 +72,10 @@ WORKER_SHUTDOWN_TIMEOUT_MS=30000
 
 The API additionally needs `WEB_ORIGIN`, an `https://` `EVE_CALLBACK_URL`, and an initial `ADMIN_SETUP_SECRET`. Generate secrets with `openssl rand -base64 32`. Remove `ADMIN_SETUP_SECRET` after the first administrator is created if bootstrap should be disabled.
 
-The web needs `NUXT_PUBLIC_API_BASE`. The SDE ingestion deployment needs only `${{postgres.DATABASE_URL}}`.
+The web needs `NUXT_PUBLIC_API_BASE`. When installed modules come from a private npm registry, set a
+read-only `NPM_TOKEN` on `web`, `api`, and `worker`; the Docker build removes its temporary registry
+configuration in the install layer. The SDE ingestion deployment needs only
+`${{postgres.DATABASE_URL}}`.
 
 ## Credential rotation
 

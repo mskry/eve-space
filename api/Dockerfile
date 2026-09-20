@@ -10,10 +10,15 @@ WORKDIR /workspace
 
 FROM base AS build
 
+ARG NPM_TOKEN
+
 COPY . .
 # The steps below build every installed module package, so a filter would omit newer features.
-RUN --mount=type=secret,id=npmrc,target=/root/.npmrc,required=false \
-    pnpm install --frozen-lockfile --ignore-scripts
+RUN if [ -n "${NPM_TOKEN:-}" ]; then \
+      printf '%s\n' "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > /root/.npmrc; \
+    fi \
+    && pnpm install --frozen-lockfile --ignore-scripts \
+    && rm -f /root/.npmrc
 RUN pnpm build:nuxt:dependencies
 RUN pnpm registry:check
 RUN pnpm --filter @eve-space/api exec tsc

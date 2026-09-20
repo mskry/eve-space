@@ -155,17 +155,18 @@ regeneration and a rebuild.
 ### Private Registries
 
 Keep registry credentials in the deployment secret manager. Never commit `.npmrc`, put a token in a
-package URL, Docker build argument, environment baked into an image, generated registry, or CI log.
-Both production Dockerfiles accept an optional BuildKit secret:
+package URL, environment baked into a runtime image, generated registry, or CI log. Railway's Metal
+builder does not support BuildKit secret mounts, so both production Dockerfiles accept Railway's
+optional `NPM_TOKEN` build variable:
 
 ```bash
-docker build --secret id=npmrc,src=/secure/path/npmrc -t eve-space-web .
-docker build --secret id=npmrc,src=/secure/path/npmrc -f api/Dockerfile -t eve-space-api .
+NPM_TOKEN="$(cat /secure/path/npm-token)" docker build --build-arg NPM_TOKEN -t eve-space-web .
+NPM_TOKEN="$(cat /secure/path/npm-token)" docker build --build-arg NPM_TOKEN -f api/Dockerfile -t eve-space-api .
 ```
 
-The secret exists only for `pnpm install`; `.dockerignore` excludes `.npmrc`, and the runtime images
-contain no registry configuration. Use a read-only, package-scoped token and revoke it after a
-suspected registry or publisher compromise.
+The build stage writes the token to a temporary `.npmrc` only for `pnpm install` and removes it in the
+same layer. The runtime images contain no registry configuration. Use a read-only, package-scoped
+token and revoke it after a suspected registry or publisher compromise.
 
 Production images install with lifecycle scripts disabled, build every package whose exports the
 registry validator inspects, and only then run `pnpm registry:check`. A publisher package must not
