@@ -43,6 +43,24 @@ describe('asset workspace controller', () => {
     expect(controller.isLocationExpanded(group.key)).toBe(true)
   })
 
+  it('rebinds automatic expansion when groups reorder without changing manual choices', () => {
+    const groups = buildAssetHierarchy([
+      asset(1, { locationId: 60_003_760, locationName: 'Alpha' }),
+      asset(2, { locationId: 60_003_761, locationName: 'Bravo' }),
+      asset(3, { locationId: 60_003_762, locationName: 'Charlie' }),
+    ])
+    const controller = createAssetWorkspaceController()
+    controller.sync(groups)
+    controller.toggleLocation(groups[0]!.key)
+    controller.toggleLocation(groups[2]!.key)
+
+    controller.sync([groups[1]!, groups[2]!, groups[0]!])
+
+    expect(controller.isLocationExpanded(groups[0]!.key)).toBe(false)
+    expect(controller.isLocationExpanded(groups[1]!.key)).toBe(true)
+    expect(controller.isLocationExpanded(groups[2]!.key)).toBe(true)
+  })
+
   it('caps mounted rows per location and reveals fixed increments', () => {
     const group = buildAssetHierarchy(Array.from({ length: 9 }, (_, index) => asset(index + 1)))[0]!
     const controller = createAssetWorkspaceController({

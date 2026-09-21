@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import AssetsToolbar from '../../app/components/assets/Toolbar.vue'
-import AssetsWorkspace from '../../app/components/assets/Workspace.vue'
+import AssetsInventory from '../../app/components/assets/Inventory.vue'
 import type { AssetCollection, AssetRecord, AssetResourceState } from '../../app/types/assets'
 import { queryServer } from '../support/query-server'
 
@@ -152,7 +152,7 @@ describe('Assets workspace resource states', () => {
     ).not.toContain('Route:')
   })
 
-  it('sorts locations by route jumps and leaves unavailable routes last', async () => {
+  it('sorts locations by route jumps in both directions and leaves unavailable routes last', async () => {
     const wrapper = await mountWorkspace(
       collection([
         asset(1, {
@@ -183,9 +183,23 @@ describe('Assets workspace resource states', () => {
         [30_000_143, 1],
         [30_000_144, 2],
       ]),
+      new Map([
+        [30_000_145, 0],
+        [30_000_144, 1],
+        [30_000_142, 2],
+        [30_000_143, 3],
+      ]),
     )
 
     const sort = wrapper.get('button[aria-label="Sort by"]')
+    expect(sort.text()).toContain('Jumps ascending')
+    expect(wrapper.findAll('.assets-location-name').map((location) => location.text())).toEqual([
+      'Charlie same system',
+      'Delta one jump',
+      'Bravo two jumps',
+      'Alpha unavailable',
+    ])
+
     await sort.trigger('pointerdown', {
       button: 0,
       ctrlKey: false,
@@ -196,7 +210,7 @@ describe('Assets workspace resource states', () => {
     })
     await settle()
     const jumpsOption = [...document.querySelectorAll<HTMLElement>('[role="option"]')].find(
-      (option) => option.textContent?.includes('Jumps'),
+      (option) => option.textContent?.includes('Jumps descending'),
     )
     expect(jumpsOption).toBeDefined()
     jumpsOption?.dispatchEvent(
@@ -204,11 +218,11 @@ describe('Assets workspace resource states', () => {
     )
     await settle()
 
-    expect(sort.text()).toContain('Jumps')
+    expect(sort.text()).toContain('Jumps descending')
     expect(wrapper.findAll('.assets-location-name').map((location) => location.text())).toEqual([
-      'Charlie same system',
-      'Delta one jump',
       'Bravo two jumps',
+      'Delta one jump',
+      'Charlie same system',
       'Alpha unavailable',
     ])
   })
@@ -545,6 +559,73 @@ describe('Assets workspace inventory interactions', () => {
     expect((search.element as HTMLInputElement).value).toBe('Inventory')
   })
 
+  it('paginates locations in groups of 50', async () => {
+    const wrapper = await mountWorkspace(
+      collection(
+        Array.from({ length: 51 }, (_, index) =>
+          asset(index + 1, {
+            customName: index === 0 ? 'qzxvbnm-target' : null,
+            locationId: 60_000_001 + index,
+            locationName: `Location ${String(index + 1).padStart(3, '0')}`,
+          }),
+        ),
+      ),
+      state(),
+    )
+
+    expect(wrapper.findAll('.assets-location')).toHaveLength(50)
+    expect(wrapper.text()).toContain('Location 001')
+    expect(wrapper.text()).not.toContain('Location 051')
+
+    await wrapper.get('button[aria-label="Next location page"]').trigger('click')
+
+    expect(wrapper.findAll('.assets-location')).toHaveLength(1)
+    expect(wrapper.text()).toContain('Location 051')
+    expect(
+      wrapper.get('[aria-label="Asset location pages"] [aria-current="page"]').text(),
+    ).toContain('2')
+
+    await wrapper.get('#assets-search').setValue('qzxvbnm-target')
+
+    expect(wrapper.findAll('.assets-location')).toHaveLength(1)
+    expect(wrapper.text()).toContain('Location 001')
+    expect(wrapper.find('[aria-label="Asset location pages"]').exists()).toBe(false)
+  })
+
+  it('expands the first location after asynchronous route ranks reorder pages', async () => {
+    const assets = Array.from({ length: 51 }, (_, index) =>
+      asset(index + 1, {
+        locationId: 60_000_001 + index,
+        locationName: `Location ${String(index + 1).padStart(3, '0')}`,
+        solarSystemId: 30_000_001 + index,
+      }),
+    )
+    const wrapper = await mountWorkspace(collection(assets), state())
+    const nearestFirstSystemIds = [
+      30_000_051,
+      ...Array.from({ length: 49 }, (_, index) => 30_000_002 + index),
+      30_000_001,
+    ]
+
+    await wrapper.setProps({
+      routeJumpsBySystemId: new Map(
+        nearestFirstSystemIds.map((systemId, index) => [systemId, index]),
+      ),
+      routeRankBySystemId: new Map(
+        nearestFirstSystemIds.map((systemId, index) => [systemId, index]),
+      ),
+    })
+    await settle()
+
+    expect(wrapper.findAll('.assets-location-name')[0]?.text()).toBe('Location 051')
+    expect(
+      wrapper
+        .findAll('.assets-location-toggle')
+        .map((toggle) => toggle.attributes('aria-expanded')),
+    ).toEqual(['true', ...Array.from({ length: 49 }, () => 'false')])
+    expect(wrapper.text()).not.toContain('Location 001')
+  })
+
   it('loads only activated public item detail and restores focus without resetting workspace state', async () => {
     const requests: string[] = []
     queryServer.use(
@@ -646,10 +727,11 @@ async function mountWorkspace(
   resourceState: AssetResourceState,
   attachToBody = false,
   routeJumpsBySystemId?: ReadonlyMap<number, number>,
+  routeRankBySystemId?: ReadonlyMap<number, number>,
 ) {
-  const wrapper = await mountSuspended(AssetsWorkspace, {
+  const wrapper = await mountSuspended(AssetsInventory, {
     attachTo: attachToBody ? document.body : undefined,
-    props: { collection: data, routeJumpsBySystemId, state: resourceState },
+    props: { collection: data, routeJumpsBySystemId, routeRankBySystemId, state: resourceState },
     route: false,
   })
   mountedWrappers.push(wrapper)

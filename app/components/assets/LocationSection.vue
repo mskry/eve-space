@@ -103,6 +103,7 @@ const jumpLabel = computed(() => {
             :current-page="page"
             :label="`${group.label} asset pages`"
             show-pages
+            :show-status="false"
             :total-pages="totalPages"
             @change-page="page = $event"
           />
@@ -212,6 +213,7 @@ const jumpLabel = computed(() => {
 }
 
 .assets-location-footer :deep(.ui-pagination) {
-  justify-content: flex-end;
+  width: 100%;
+  justify-content: center;
 }
 </style>

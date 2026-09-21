@@ -28,7 +28,7 @@ describe('universe route calculation', () => {
     await expect(
       calculateUniverseRoutes({
         originSystemId: 1,
-        destinationSystemIds: [1, 2, 3, 5, 6, 99],
+        destinationSystemIds: [99, 5, 3, 1, 6, 2],
         policy: { kind: 'shortest' },
       }),
     ).resolves.toEqual({

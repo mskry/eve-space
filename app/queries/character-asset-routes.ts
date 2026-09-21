@@ -63,14 +63,16 @@ export const characterAssetRoutesQuery = defineEsiQueryOptions(
         }
 
         const result = await response.json()
+        const returnedDestinations = result.routes
+          .map((route) => route.destinationSystemId)
+          .toSorted((left, right) => left - right)
         if (
           result.originSystemId !== originSystemId ||
           result.policy.kind !== 'shortest' ||
-          result.routes.length !== destinations.length ||
+          returnedDestinations.length !== destinations.length ||
+          returnedDestinations.some((destination, index) => destination !== destinations[index]) ||
           result.routes.some(
-            (route, index) =>
-              route.destinationSystemId !== destinations[index] ||
-              (route.jumps !== null && !isNonnegativeSafeInteger(route.jumps)),
+            (route) => route.jumps !== null && !isNonnegativeSafeInteger(route.jumps),
           )
         ) {
           throw new ApiQueryError('Asset routes response did not match the requested identity.', {

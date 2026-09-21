@@ -84,6 +84,13 @@ export function useCharacterAssets(options: CharacterAssetsOptions) {
         ) ?? [],
       ),
   )
+  const routeRankBySystemId = computed<ReadonlyMap<number, number>>(
+    () =>
+      new Map(
+        routesQuery.data.value?.routes.map((route, index) => [route.destinationSystemId, index]) ??
+          [],
+      ),
+  )
   const loading = computed(() => assetsQuery.asyncStatus.value === 'loading')
   const parked = computed(
     () =>
@@ -129,6 +136,7 @@ export function useCharacterAssets(options: CharacterAssetsOptions) {
     hierarchy,
     refreshAssets,
     routeJumpsBySystemId,
+    routeRankBySystemId,
     routesQuery,
     state,
   }

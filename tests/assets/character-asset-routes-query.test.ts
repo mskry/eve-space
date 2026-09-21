@@ -118,8 +118,8 @@ describe('character asset route query', () => {
           policy: { kind: 'shortest' },
           sdeBuildNumber: 1234,
           routes: [
-            { destinationSystemId: 2, jumps: 1 },
-            { destinationSystemId: 3, jumps: null },
+            { destinationSystemId: 3, jumps: 1 },
+            { destinationSystemId: 2, jumps: 2 },
           ],
         })
       }),
@@ -150,7 +150,12 @@ describe('character asset route query', () => {
       destinationSystemIds: [2, 3],
       policy: { kind: 'shortest' },
     })
-    expect(result).toMatchObject({ routes: [{ jumps: 1 }, { jumps: null }] })
+    expect(result).toMatchObject({
+      routes: [
+        { destinationSystemId: 3, jumps: 1 },
+        { destinationSystemId: 2, jumps: 2 },
+      ],
+    })
     wrapper.unmount()
   })
 

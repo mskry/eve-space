@@ -32,11 +32,12 @@ function authorizeAssets(action: AssetResourceAction) {
 
 <template>
   <section class="character-assets-route" aria-label="Character assets">
-    <AssetsWorkspace
+    <AssetsInventory
       :collection="assetsService.assets.value"
       :hierarchy="assetsService.hierarchy.value"
       :presentation="assetsPersistencePresentation"
       :route-jumps-by-system-id="assetsService.routeJumpsBySystemId.value"
+      :route-rank-by-system-id="assetsService.routeRankBySystemId.value"
       :state="assetsService.state.value"
       @authorize="authorizeAssets"
       @retry="assetsService.refreshAssets"

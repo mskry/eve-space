@@ -19,7 +19,8 @@ import { buildAssetHierarchy } from '../../utils/assets-hierarchy'
 
 type AssetSortKey =
   | 'item'
-  | 'jumps'
+  | 'jumpsAscending'
+  | 'jumpsDescending'
   | 'quantity'
   | 'group'
   | 'category'
@@ -27,11 +28,14 @@ type AssetSortKey =
   | 'totalVolume'
   | 'unitVolume'
 
+const LOCATION_PAGE_SIZE = 50
+
 const props = defineProps<{
   collection: AssetCollection | null
   hierarchy?: readonly AssetLocationGroup[]
   presentation?: EsiQueryPersistencePresentation
   routeJumpsBySystemId?: ReadonlyMap<number, number>
+  routeRankBySystemId?: ReadonlyMap<number, number>
   state: AssetResourceState
 }>()
 
@@ -51,8 +55,9 @@ const columns: { key: AssetSortKey; label: string; numeric?: boolean }[] = [
   { key: 'unitVolume', label: 'Unit vol.', numeric: true },
 ]
 const sortOptions = [
+  { value: 'jumpsAscending', label: 'Jumps ascending' },
+  { value: 'jumpsDescending', label: 'Jumps descending' },
   ...columns.map((column) => ({ value: column.key, label: column.label })),
-  { value: 'jumps', label: 'Jumps' },
 ]
 const identityProperties = {
   type: { id: 'typeId', label: 'typeName' },
@@ -62,18 +67,51 @@ const identityProperties = {
 
 const filters = ref<AssetFilterState>({ ...EMPTY_ASSET_FILTERS })
 const controller = shallowRef(createAssetWorkspaceController())
-const sortKey = ref<AssetSortKey>('item')
+const sortKey = ref<AssetSortKey>('jumpsAscending')
 const sortDescending = ref(false)
+const locationPage = ref(1)
 const hierarchy = computed(
   () => props.hierarchy ?? buildAssetHierarchy(props.collection?.assets ?? []),
 )
 const filtered = computed(() => filterAssetHierarchy(hierarchy.value, filters.value))
-const sortedGroups = computed(() =>
-  sortKey.value === 'jumps'
-    ? filtered.value.groups.toSorted(compareLocationGroups)
-    : filtered.value.groups,
+const sortedGroups = computed(() => {
+  if (sortKey.value === 'jumpsAscending') {
+    const compare = hasNearestFirstRouteRanks.value
+      ? compareLocationRouteRanks
+      : compareLocationGroups
+    return filtered.value.groups.toSorted(compare)
+  }
+  if (sortKey.value === 'jumpsDescending')
+    return filtered.value.groups.toSorted(compareLocationGroups)
+  return filtered.value.groups
+})
+const totalLocationPages = computed(() =>
+  Math.max(1, Math.ceil(sortedGroups.value.length / LOCATION_PAGE_SIZE)),
+)
+const paginatedGroups = computed(() =>
+  sortedGroups.value.slice(
+    (locationPage.value - 1) * LOCATION_PAGE_SIZE,
+    locationPage.value * LOCATION_PAGE_SIZE,
+  ),
 )
 const activeFilters = computed(() => hasActiveAssetFilters(filters.value))
+const hasNearestFirstRouteRanks = computed(() => {
+  if (!props.routeRankBySystemId || !props.routeJumpsBySystemId) return false
+  let previousJumps = -1
+  let unavailableReached = false
+  for (const [systemId] of [...props.routeRankBySystemId].toSorted(
+    (left, right) => left[1] - right[1],
+  )) {
+    const jumps = props.routeJumpsBySystemId.get(systemId)
+    if (jumps === undefined) {
+      unavailableReached = true
+      continue
+    }
+    if (unavailableReached || jumps < previousJumps) return false
+    previousJumps = jumps
+  }
+  return true
+})
 const containerExpansion = computed<ReadonlySet<number>>(() => {
   return new Set(
     props.collection?.assets
@@ -108,11 +146,12 @@ const sortModel = computed<string>({
   set: (value) => {
     sortKey.value = value as AssetSortKey
     sortDescending.value = false
+    locationPage.value = 1
   },
 })
 
 watch(
-  hierarchy,
+  sortedGroups,
   (groups) => {
     controller.value.sync(groups)
     triggerRef(controller)
@@ -124,9 +163,14 @@ watch(
   filters,
   (value) => {
     if (controller.value.setCriteria(value)) triggerRef(controller)
+    locationPage.value = 1
   },
   { deep: true },
 )
+
+watch(totalLocationPages, (totalPages) => {
+  locationPage.value = Math.min(locationPage.value, totalPages)
+})
 
 function changeFilters(value: AssetFilterState) {
   filters.value = value
@@ -166,6 +210,7 @@ function toggleSort(key: AssetSortKey) {
     sortKey.value = key
     sortDescending.value = false
   }
+  locationPage.value = 1
 }
 
 function sortIndicator(key: AssetSortKey) {
@@ -205,11 +250,33 @@ function compareLocationGroups(left: AssetLocationGroup, right: AssetLocationGro
     return left.label.localeCompare(right.label, 'en') || left.key.localeCompare(right.key, 'en')
   if (leftJumps === null) return 1
   if (rightJumps === null) return -1
+  const jumpOrder =
+    sortKey.value === 'jumpsDescending' ? rightJumps - leftJumps : leftJumps - rightJumps
   return (
-    leftJumps - rightJumps ||
+    jumpOrder ||
     left.label.localeCompare(right.label, 'en') ||
     left.key.localeCompare(right.key, 'en')
   )
+}
+
+function compareLocationRouteRanks(left: AssetLocationGroup, right: AssetLocationGroup) {
+  const leftRank = routeRank(left)
+  const rightRank = routeRank(right)
+  if (leftRank === null && rightRank === null)
+    return left.label.localeCompare(right.label, 'en') || left.key.localeCompare(right.key, 'en')
+  if (leftRank === null) return 1
+  if (rightRank === null) return -1
+  return (
+    leftRank - rightRank ||
+    left.label.localeCompare(right.label, 'en') ||
+    left.key.localeCompare(right.key, 'en')
+  )
+}
+
+function routeRank(group: AssetLocationGroup) {
+  return group.solarSystemId === null
+    ? null
+    : (props.routeRankBySystemId?.get(group.solarSystemId) ?? null)
 }
 
 function routeJumps(group: AssetLocationGroup) {
@@ -220,7 +287,11 @@ function routeJumps(group: AssetLocationGroup) {
 
 function sortValue(row: AssetHierarchyRow) {
   const asset = row.asset
-  if (sortKey.value === 'item' || sortKey.value === 'jumps')
+  if (
+    sortKey.value === 'item' ||
+    sortKey.value === 'jumpsAscending' ||
+    sortKey.value === 'jumpsDescending'
+  )
     return asset.customName?.trim() || asset.typeName
   if (sortKey.value === 'quantity') return asset.quantity
   if (sortKey.value === 'group') return asset.groupName
@@ -247,7 +318,7 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
 </script>
 
 <template>
-  <div class="assets-workspace">
+  <div class="assets-inventory">
     <AssetsResourceState
       :has-data="Boolean(collection)"
       :presentation="presentation"
@@ -327,7 +398,7 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
                 </thead>
 
                 <AssetsLocationSection
-                  v-for="group in sortedGroups"
+                  v-for="group in paginatedGroups"
                   :key="group.key"
                   :container-expansion="containerExpansion"
                   :expanded="isLocationExpanded(group.key)"
@@ -338,6 +409,22 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
                   @toggle-container="toggleContainer"
                   @toggle-location="toggleLocation"
                 />
+                <tfoot v-if="totalLocationPages > 1" class="assets-locations-footer">
+                  <tr>
+                    <td colspan="7">
+                      <UiPagination
+                        :current-page="locationPage"
+                        label="Asset location pages"
+                        next-label="Next location page"
+                        previous-label="Previous location page"
+                        show-pages
+                        :show-status="false"
+                        :total-pages="totalLocationPages"
+                        @change-page="locationPage = $event"
+                      />
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </UiScrollArea>
           </section>
@@ -358,7 +445,7 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
 </template>
 
 <style scoped>
-.assets-workspace {
+.assets-inventory {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -367,7 +454,7 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
   overflow: clip;
 }
 
-.assets-workspace :deep(.character-summary-card + *) {
+.assets-inventory :deep(.character-summary-card + *) {
   margin-top: var(--character-summary-gap);
   border-top: 0.0625rem solid var(--ui-border);
 }
@@ -461,6 +548,17 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
 
 .assets-manifest thead th[aria-sort] {
   color: var(--ui-primary);
+}
+
+.assets-locations-footer > tr > td {
+  padding: 0.6rem 0.875rem;
+  border-top: 0.0625rem solid var(--ui-border);
+  background: color-mix(in srgb, var(--ui-surface-solid) 60%, transparent);
+}
+
+.assets-locations-footer :deep(.ui-pagination) {
+  width: 100%;
+  justify-content: center;
 }
 
 .assets-filtered-empty,

@@ -116,7 +116,7 @@ const resourceState = computed<EsiResourceState>(() => {
       <template v-if="skillQueue && queueState === 'training' && activeQueueEntry">
         <div class="skill-queue-current">
           <span class="skill-queue-chevron-field" aria-hidden="true">
-            <i v-for="chevron in 32" :key="chevron"></i>
+            <i v-for="chevron in 10" :key="chevron"></i>
           </span>
           <p class="skill-queue-current-identity">
             <span
