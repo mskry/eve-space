@@ -58,10 +58,11 @@ export function queryAutoRefetchViolations(sources: readonly EsiQuerySource[]) {
       }
       if (source.path !== SYSTEM_STATUS_QUERY_PATH) {
         violations.push(`${source.path} must not enable query auto-refetch`)
-      } else if (node.initializer.kind !== ts.SyntaxKind.TrueKeyword) {
-        violations.push(`${SYSTEM_STATUS_QUERY_PATH} must enable auto-refetch with true`)
       } else {
         systemStatusOptIns += 1
+        if (!ts.isArrowFunction(node.initializer) && !ts.isFunctionExpression(node.initializer)) {
+          violations.push(`${SYSTEM_STATUS_QUERY_PATH} must use conditional auto-refetch`)
+        }
       }
     })
   }

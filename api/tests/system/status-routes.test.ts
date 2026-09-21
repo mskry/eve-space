@@ -12,6 +12,23 @@ vi.mock('../../src/system/status.js', () => ({
 import { statusRoutes } from '../../src/system/status-routes.js'
 
 const client = testClient(statusRoutes)
+const checkedAt = '2026-08-20T12:00:00.000Z'
+const esiResilience = {
+  checkedAt,
+  cache: { status: 'operational', checkedAt },
+  coordination: { status: 'operational', checkedAt },
+  cooldown: {
+    status: 'inactive',
+    checkedAt,
+    globalRetryAt: null,
+    activeOperations: [],
+  },
+  upstream: {
+    status: 'operational',
+    checkedAt,
+    operations: [{ operation: 'status' }],
+  },
+}
 
 describe('system status route', () => {
   test('returns replica-local private telemetry', async () => {
@@ -78,22 +95,7 @@ describe('system status route', () => {
             recordedAt: '2026-08-20T11:59:58.000Z',
           },
         },
-        esiResilience: {
-          checkedAt: '2026-08-20T12:00:00.000Z',
-          cache: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
-          coordination: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
-          cooldown: {
-            status: 'inactive',
-            checkedAt: '2026-08-20T12:00:00.000Z',
-            globalRetryAt: null,
-            activeOperations: [],
-          },
-          upstream: {
-            status: 'operational',
-            checkedAt: '2026-08-20T12:00:00.000Z',
-            operations: [],
-          },
-        },
+        esiResilience,
       },
     })
 
@@ -179,7 +181,6 @@ describe('system status route', () => {
           upstream: {
             status: 'operational',
             checkedAt: '2026-08-20T12:00:00.000Z',
-            operations: [],
           },
         },
       },
@@ -232,6 +233,7 @@ describe('system status route', () => {
         esi: { status: 'operational' },
         queue: { status: 'operational' },
         eventRelay,
+        esiResilience,
       },
     })
 

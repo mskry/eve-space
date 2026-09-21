@@ -92,13 +92,13 @@ const apiServer = await startCorsJsonApi(async (request) => {
         authenticated: true,
         account: {
           userId: 'mail-e2e-user',
-          mainCharacter: { characterId, name: 'Reading Pilot' },
+          mainCharacter: { characterId: sessionCharacterId(), name: 'Reading Pilot' },
         },
       },
     }
   }
   if (url.pathname === '/api/me/cache-admission') {
-    return { body: cacheAdmissionForCharacter('mail-e2e-user', characterId) }
+    return { body: cacheAdmissionForCharacter('mail-e2e-user', sessionCharacterId()) }
   }
   if (url.pathname === '/api/admin/session') return { body: { authenticated: false } }
   if (url.pathname === '/api/modules') {
@@ -127,7 +127,7 @@ const apiServer = await startCorsJsonApi(async (request) => {
     if (apiMode === 'roster-error') {
       return { status: 503, body: { code: 'ROSTER_UNAVAILABLE', message: 'Roster unavailable.' } }
     }
-    return { body: { characters: apiMode === 'unowned' ? [] : [ownedCharacter()] } }
+    return { body: { characters: [{ ...ownedCharacter(), characterId: sessionCharacterId() }] } }
   }
   if (url.pathname.startsWith(`/api/me/characters/${characterId}/mail`)) {
     if (apiMode === 'scope-required') {
@@ -443,7 +443,9 @@ describe('character mail reading', async () => {
     apiMode = 'unowned'
     recordedRequests.length = 0
     const unownedPage = await openPage(`/characters/${characterId}/mail`)
-    await unownedPage.getByRole('heading', { name: 'Character not found' }).waitFor()
+    await unownedPage
+      .getByRole('heading', { name: 'Character not found' })
+      .waitFor({ timeout: 5_000 })
 
     expect(mailRequests()).toHaveLength(0)
   })
@@ -1325,6 +1327,10 @@ function mailHeader(mailId: number, subject: string, labelIds = [1]) {
     labelIds,
     isRead: mailId % 2 === 0,
   }
+}
+
+function sessionCharacterId() {
+  return apiMode === 'unowned' ? characterId + 1 : characterId
 }
 
 function ownedCharacter() {

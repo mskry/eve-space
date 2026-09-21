@@ -152,7 +152,6 @@ const mainCharacter = {
   name: 'Bandera Primary',
   corporationId: 1000166,
   allianceId: null,
-  isMain: true,
 }
 const account = { userId, mainCharacter }
 const transferApprovalId = '66503848-72b8-4fa3-8af5-de056001a37e'

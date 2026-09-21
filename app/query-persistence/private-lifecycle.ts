@@ -189,6 +189,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       parkedRefetchPending = false
       retainedPrivateAccessOpen = false
       clearAdmissionTimers()
+      host.touch()
       for (const dispose of cleanup) dispose()
       cleanup.clear()
       notifications.dispose()
@@ -201,6 +202,14 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       const currentTime = now()
       host.reconcileRetainedData()
       return hasRetainedPrivateAccess(persistence, currentTime)
+    },
+    ownsCharacter(characterId: number | undefined) {
+      return (
+        !disposed &&
+        admissionIsCurrent(now()) &&
+        activeAdmission?.userId === verifiedUserId &&
+        activeAdmission.characters.some((character) => character.characterId === characterId)
+      )
     },
     installListeners() {
       if (listenersInstalled || disposed) return
@@ -478,7 +487,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     lastAcceptedAdmission = admission
     activeAdmissionDeadline = deadline
     retainedPrivateAccessOpen = false
-    clearAdmissionTimers()
+    scheduleAdmissionExpiry()
     host.touch()
     scheduleParkedQueryRefetch()
   }
@@ -797,7 +806,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
 
   function scheduleAdmissionExpiry() {
     clearAdmissionTimers()
-    if (disposed || !activeAdmission || !host.hasRetainedPrivateData(false)) return
+    if (disposed || !activeAdmission) return
     const deadline = activeAdmissionDeadline
     const epoch = privateLifecycleEpoch
     const expiryDelay = Math.min(Math.max(0, deadline - now()), MAX_TIMEOUT_MS)
@@ -809,6 +818,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
         scheduleAdmissionExpiry()
         return
       }
+      host.touch()
       if (activeAdmissionMayRenew && admissionLoader && host.hasRetainedPrivateData(true)) {
         void requestAdmission(admissionLoader)
         return

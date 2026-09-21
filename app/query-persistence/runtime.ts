@@ -106,6 +106,7 @@ interface QueryPersistenceRuntime {
   reportAuthorizationDenial(scope: PrivateQueryInvalidationScope, error: unknown): boolean
   refreshAdmission(scope: PrivateQueryInvalidationScope): Promise<boolean>
   readActiveState(): ComputedRef<EsiQueryPersistencePresentation | undefined>
+  readCharacterOwnership(characterId: MaybeRefOrGetter<number | undefined>): ComputedRef<boolean>
   readState(key: MaybeRefOrGetter<EntryKey>): ComputedRef<QueryPersistencePresentation>
   subscribeInvalidation(
     scope: MaybeRefOrGetter<PrivateQueryInvalidationScope>,
@@ -221,6 +222,13 @@ export function readQueryPersistenceState(queryCache: QueryCache, key: MaybeRefO
 
 export function readActiveQueryPersistenceState(queryCache: QueryCache) {
   return requireRuntime(queryCache).readActiveState()
+}
+
+export function readQueryCharacterOwnership(
+  queryCache: QueryCache,
+  characterId: MaybeRefOrGetter<number | undefined>,
+) {
+  return requireRuntime(queryCache).readCharacterOwnership(characterId)
 }
 
 function createQueryPersistenceRuntime(
@@ -459,6 +467,9 @@ function createQueryPersistenceRuntime(
             privateLifecycle.hasCurrentAdmission(persistence),
         }
       })
+    },
+    readCharacterOwnership(characterId) {
+      return computedPresentation(state, () => privateLifecycle.ownsCharacter(toValue(characterId)))
     },
     subscribeInvalidation(scope, listener) {
       const subscription = { listener, scope }

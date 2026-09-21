@@ -17,9 +17,7 @@ const { characters } = useCharacterRoster(apiClient)
 const characterId = computed(() => parseRouteId(route.params.characterId))
 const authenticated = computed(() => authSession.value.authenticated)
 const authenticationReady = computed(() => !authLoading.value)
-const ownsCharacter = computed(() =>
-  characters.value.some((character) => character.characterId === characterId.value),
-)
+const ownsCharacter = useCharacterOwnership(characterId, characters)
 const mutations = useMailOrganizationMutations(apiClient)
 const mailbox = useCharacterMailbox({
   apiClient,

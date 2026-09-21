@@ -16,6 +16,7 @@ import {
   awaitQueryPersistenceRestoration,
   installQueryPersistence,
   invalidatePrivateQueryScope,
+  readQueryCharacterOwnership,
   readQueryPersistenceState,
   refreshPrivateQueryAdmission,
   reportPrivateQueryAuthorizationDenial,
@@ -66,6 +67,85 @@ afterEach(() => {
 })
 
 describe('query persistence runtime', () => {
+  it('reactively reads bootstrap membership independently of token admission', async () => {
+    const runtime = createRuntime(
+      new MemoryQueryPersistenceStorage(envelopeWithPrivatePartitions()),
+    )
+    await readyRuntime(runtime)
+    const characterId = ref<number | undefined>(7)
+    const ownership = readQueryCharacterOwnership(runtime.queryCache, characterId)
+    expect(ownership.value).toBe(false)
+
+    await applyVerifiedQueryIdentity(
+      runtime.queryCache,
+      authenticatedSession(),
+      async () => admission(),
+      undefined,
+      { context: admission({ characterRevision: null }), requestedAt: NOW },
+    )
+
+    expect(ownership.value).toBe(true)
+    expect(
+      readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
+    ).toBe(false)
+    characterId.value = 8
+    expect(ownership.value).toBe(false)
+    characterId.value = undefined
+    expect(ownership.value).toBe(false)
+    characterId.value = 7
+    expect(ownership.value).toBe(true)
+    suspendPrivateQueryAdmission(runtime.queryCache)
+    expect(ownership.value).toBe(false)
+    runtime.dispose()
+  })
+
+  it.each(['invalidate', 'logout', 'owner-change', 'dispose'])(
+    'withdraws reactive ownership on %s',
+    async (transition) => {
+      const runtime = createRuntime(new MemoryQueryPersistenceStorage())
+      await readyRuntime(runtime)
+      const ownership = readQueryCharacterOwnership(runtime.queryCache, 7)
+      await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
+        admission(),
+      )
+      expect(ownership.value).toBe(true)
+
+      if (transition === 'invalidate') {
+        await invalidatePrivateQueryScope(runtime.queryCache, { kind: 'character', characterId: 7 })
+      } else if (transition === 'logout') {
+        await applyVerifiedQueryIdentity(runtime.queryCache, { authenticated: false })
+      } else if (transition === 'owner-change') {
+        await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession('user-2'))
+      } else {
+        runtime.dispose()
+      }
+
+      expect(ownership.value).toBe(false)
+      if (transition !== 'dispose') runtime.dispose()
+    },
+  )
+
+  it.each([true, false])(
+    'expires ownership without retained queries (storage available: %s)',
+    async (available) => {
+      vi.useFakeTimers()
+      vi.setSystemTime(NOW)
+      const storage = available ? new MemoryQueryPersistenceStorage() : unavailableStorage
+      const runtime = createRuntime(storage, undefined, Date.now)
+      await readyRuntime(runtime)
+      const ownership = readQueryCharacterOwnership(runtime.queryCache, 7)
+      const loadAdmission = vi.fn(async () => admission())
+      await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
+      expect(ownership.value).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(30_001)
+
+      expect(ownership.value).toBe(false)
+      expect(loadAdmission).toHaveBeenCalledOnce()
+      runtime.dispose()
+    },
+  )
+
   it('admits bootstrap data once and requests fresh admission for renewal', async () => {
     const runtime = createRuntime(
       new MemoryQueryPersistenceStorage(envelopeWithPrivatePartitions()),
@@ -117,6 +197,7 @@ describe('query persistence runtime', () => {
       ).resolves.toBe(false)
 
       expect(loadAdmission).not.toHaveBeenCalled()
+      expect(readQueryCharacterOwnership(runtime.queryCache, 7).value).toBe(false)
       expect(
         readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
       ).toBe(false)

@@ -29,7 +29,7 @@ const authenticationReady = computed(() => !authLoading.value)
 const selectedCharacter = computed(() =>
   characters.value.find((character) => character.characterId === characterId.value),
 )
-const ownsCharacter = computed(() => selectedCharacter.value !== undefined)
+const ownsCharacter = useCharacterOwnership(characterId, characters)
 const {
   breadcrumbLabel: characterSectionLabel,
   entries: characterNavigation,
@@ -118,16 +118,12 @@ useHead({
       </div>
       <NuxtLink class="ui-action-primary" to="/auth">OPEN IDENTITY GATEWAY</NuxtLink>
     </section>
-    <UiStatePanel
-      v-else-if="rosterStatus === 'loading' && characters.length === 0"
-      compact
-      role="status"
-    >
+    <UiStatePanel v-else-if="rosterStatus === 'loading' && !ownsCharacter" compact role="status">
       <template #icon><div class="app-scanner" aria-hidden="true" /></template>
       <p>Resolving character authorization...</p>
     </UiStatePanel>
     <UiStatePanel
-      v-else-if="rosterRetryPanel && characterId && !selectedCharacter"
+      v-else-if="rosterRetryPanel && characterId && !ownsCharacter"
       :code="rosterRetryPanel.code"
       :title="rosterRetryPanel.title"
       compact
@@ -142,7 +138,7 @@ useHead({
       </template>
     </UiStatePanel>
     <UiStatePanel
-      v-else-if="!characterId || (rosterStatus === 'idle' && !selectedCharacter)"
+      v-else-if="!characterId || (rosterStatus === 'idle' && !ownsCharacter)"
       code="404 / CHARACTER"
       title="Character not found"
       compact
@@ -155,10 +151,13 @@ useHead({
       </template>
     </UiStatePanel>
 
-    <template v-else-if="selectedCharacter">
+    <template v-else-if="ownsCharacter">
       <header class="character-shell-header">
         <NuxtLink class="character-shell-back" to="/characters">← ALL CHARACTERS</NuxtLink>
-        <div class="character-shell-identity character-shell-identity--record">
+        <div
+          v-if="selectedCharacter"
+          class="character-shell-identity character-shell-identity--record"
+        >
           <span
             class="character-shell-portrait"
             :style="{
@@ -203,6 +202,7 @@ useHead({
             </p>
           </div>
         </div>
+        <h1 v-else>Character {{ characterId }}</h1>
       </header>
 
       <p

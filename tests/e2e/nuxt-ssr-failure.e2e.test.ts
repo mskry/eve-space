@@ -15,6 +15,14 @@ const INVALIDATION_CONTROL_KEY = 'eve-space-esi-query-cache-control'
 const PUBLIC_QUERY_KEY = ['public', 'e2e', 'query-persistence'] as const
 const PRIVATE_QUERY_KEY = ['private', 'characters', 7, 'overview-v2'] as const
 const PUBLIC_FIXTURE_PATH = '/__e2e/query-persistence'
+const CHARACTER_CHILD_REQUESTS = [
+  { section: 'skills', resources: ['skills', 'attributes', 'skill-queue'] },
+  { section: 'history', resources: ['history'] },
+  { section: 'clones', resources: ['clones', 'implants', 'skills'] },
+  { section: 'mail', resources: ['mail', 'mail/labels', 'mail/lists'] },
+  { section: 'assets', resources: ['assets'] },
+  { section: 'finance', resources: ['wallet', 'wallet/journal'] },
+] as const
 
 let apiAvailable = false
 let characterDataAvailable = true
@@ -27,12 +35,16 @@ let publicBrowserRequestCount = 0
 let overviewRequestCount = 0
 let admissionRequestCount = 0
 let bootstrapAdmissionEnabled = false
+let bootstrapAdmissionUnavailable = false
 let sessionRequestCount = 0
 let overviewText = 'Cached capsuleer record.'
 let admissionGate: Deferred | undefined
 let overviewGate: Deferred | undefined
+let rosterGate: Deferred | undefined
 let overviewDeferredUserId: string | undefined
 let rosterCharacters: ReturnType<typeof ownedCharacter>[] = []
+const childRequestPaths: string[] = []
+const rosterResponseStatuses: number[] = []
 const managedPages = new Set<Page>()
 const managedContexts = new Set<BrowserContext>()
 
@@ -44,6 +56,7 @@ beforeEach(resetFixtureState)
 afterEach(async () => {
   admissionGate?.resolve()
   overviewGate?.resolve()
+  rosterGate?.resolve()
   await Promise.all([...managedPages].map((page) => page.close()))
   managedPages.clear()
   await Promise.all([...managedContexts].map((context) => context.close()))
@@ -107,6 +120,74 @@ describe('Nuxt anonymous SSR boundary', async () => {
     expect(overviewRequestCount).toBeGreaterThan(0)
     expect(admissionRequestCount).toBe(0)
     expect(sessionRequestCount).toBe(1)
+  })
+
+  it('loads the overview before roster enrichment completes', async () => {
+    configureAuthenticatedApi()
+    bootstrapAdmissionEnabled = true
+    rosterGate = deferred()
+    const page = trackPage(await createPage('/characters/7'))
+
+    await page.getByText(overviewText, { exact: true }).waitFor()
+
+    expect(overviewRequestCount).toBe(1)
+    expect(admissionRequestCount).toBe(0)
+    rosterGate.resolve()
+    await page.getByRole('heading', { name: 'Persistent Pilot' }).waitFor()
+    expect(overviewRequestCount).toBe(1)
+  })
+
+  it('falls back to the roster when bootstrap admission is unavailable', async () => {
+    configureAuthenticatedApi()
+    bootstrapAdmissionEnabled = true
+    bootstrapAdmissionUnavailable = true
+    rosterGate = deferred()
+    const page = trackPage(await createPage('/characters/7'))
+
+    await page.getByText('Resolving character authorization...', { exact: true }).waitFor()
+    expect(overviewRequestCount).toBe(0)
+    rosterGate.resolve()
+    await page.getByText(overviewText, { exact: true }).waitFor()
+    expect(overviewRequestCount).toBe(1)
+  })
+
+  describe.each([
+    { rosterState: 'pending', expectedStatus: undefined },
+    { rosterState: 'failed', expectedStatus: 503 },
+  ])('character admission with a $rosterState roster', ({ rosterState, expectedStatus }) => {
+    beforeEach(() => {
+      configureAuthenticatedApi()
+      bootstrapAdmissionEnabled = true
+      if (rosterState === 'pending') rosterGate = deferred()
+      else rosterDataAvailable = false
+    })
+
+    it.each(CHARACTER_CHILD_REQUESTS)(
+      'requests $section resources',
+      async ({ section, resources }) => {
+        const route = `/characters/7/${section}`
+
+        await $fetch(route)
+        expect(childRequestPaths).toEqual([])
+        trackPage(await createPage(route))
+
+        await expect
+          .poll(() => childRequestPaths, { timeout: 5_000 })
+          .toEqual(
+            expect.arrayContaining(resources.map((resource) => `/api/me/characters/7/${resource}`)),
+          )
+        await expect.poll(() => rosterResponseStatuses[0], { timeout: 5_000 }).toBe(expectedStatus)
+      },
+    )
+
+    it('renders employment history without a false empty state', async () => {
+      const page = trackPage(await createPage('/characters/7/history'))
+      await page
+        .getByText('Admission Corporation', { exact: true })
+        .first()
+        .waitFor({ timeout: 5_000 })
+      expect(await page.getByRole('heading', { name: 'No employment history' }).count()).toBe(0)
+    })
   })
 
   it('keeps successful public SSR data over a fast IndexedDB restore without a client fetch', async () => {
@@ -705,7 +786,7 @@ async function handleApiRequest(request: IncomingMessage) {
             },
             ...(bootstrapAdmissionEnabled &&
             new URL(request.url!, apiServer.origin).searchParams.get('includeAdmission') === 'true'
-              ? { cacheAdmission: cacheAdmission(currentUserId) }
+              ? { cacheAdmission: bootstrapCacheAdmission(currentUserId) }
               : {}),
           },
         }
@@ -730,6 +811,8 @@ async function handleApiRequest(request: IncomingMessage) {
     return { body: cacheAdmission(admittedUserId) }
   }
   if (path === '/api/me/characters') {
+    if (rosterGate) await rosterGate.promise
+    rosterResponseStatuses.push(rosterDataAvailable ? 200 : 503)
     return rosterDataAvailable ? { body: { characters: rosterCharacters } } : esiUnavailable()
   }
   if (path === '/api/me/characters/7') {
@@ -738,6 +821,10 @@ async function handleApiRequest(request: IncomingMessage) {
     const responseText = overviewText
     if (overviewGate && requestingUserId === overviewDeferredUserId) await overviewGate.promise
     return characterDataAvailable ? { body: overviewResponse(responseText) } : esiUnavailable()
+  }
+  if (path?.startsWith('/api/me/characters/7/')) {
+    childRequestPaths.push(path)
+    return path === '/api/me/characters/7/history' ? { body: historyResponse() } : esiUnavailable()
   }
   if (path === '/api/status') return { body: systemStatusResponse() }
   if (path === '/api/modules') {
@@ -751,7 +838,30 @@ async function handleApiRequest(request: IncomingMessage) {
   return { status: 404, body: { code: 'NOT_FOUND', message: 'Not found.' } }
 }
 
+function bootstrapCacheAdmission(userId: string) {
+  return bootstrapAdmissionUnavailable ? null : cacheAdmission(userId)
+}
+
+function historyResponse() {
+  return {
+    characterId: 7,
+    history: [
+      {
+        recordId: 1,
+        startDate: '2020-01-01T00:00:00.000Z',
+        isDeleted: false,
+        corporation: { id: 98_000_001, name: 'Admission Corporation', isNpc: false },
+      },
+    ],
+  }
+}
+
 function resetFixtureState() {
+  childRequestPaths.length = 0
+  rosterResponseStatuses.length = 0
+  rosterGate?.resolve()
+  rosterGate = undefined
+  bootstrapAdmissionUnavailable = false
   admissionGate?.resolve()
   overviewGate?.resolve()
   apiAvailable = false

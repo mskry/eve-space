@@ -14,9 +14,12 @@ afterEach(() => {
 })
 
 describe('ESI query recovery', () => {
-  it('auto-refetches only the opted-in system-status query', async () => {
+  it('polls system status only while ESI is unavailable', async () => {
     vi.useFakeTimers()
-    const statusQuery = vi.fn().mockResolvedValue(systemStatusResult('operational'))
+    const statusQuery = vi
+      .fn()
+      .mockResolvedValueOnce(systemStatusResult('unavailable'))
+      .mockResolvedValue(systemStatusResult('operational'))
     const ordinaryQuery = vi.fn().mockResolvedValue('ordinary')
     const statusOptions = systemStatusQuery({} as ApiClient)
     const Consumer = defineComponent({
@@ -34,15 +37,26 @@ describe('ESI query recovery', () => {
     const { wrapper } = mountWithQueryPlugins(Consumer)
     await flushPromises()
 
-    expect(statusOptions.autoRefetch).toBe(true)
+    expect(statusOptions.autoRefetch).toEqual(expect.any(Function))
     expect(statusQuery).toHaveBeenCalledOnce()
     expect(ordinaryQuery).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(statusOptions.staleTime ?? 0)
     await flushPromises()
 
+    expect(statusQuery).toHaveBeenCalledOnce()
+    expect(ordinaryQuery).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(60_000 - (statusOptions.staleTime ?? 0))
+    await flushPromises()
+
     expect(statusQuery).toHaveBeenCalledTimes(2)
     expect(ordinaryQuery).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(60_000)
+    await flushPromises()
+
+    expect(statusQuery).toHaveBeenCalledTimes(2)
     wrapper.unmount()
   })
 

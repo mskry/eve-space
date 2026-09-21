@@ -6,6 +6,8 @@ import { API_BOOTSTRAP_TIMEOUT_MS, createRequestSignal } from '../utils/request-
 import { PUBLIC_QUERY_KEYS } from './query-keys'
 import { QUERY_POLICY } from './query-policy'
 
+const SYSTEM_STATUS_OUTAGE_REFETCH_INTERVAL_MS = 60_000
+
 export type SystemStatusTelemetry = InferResponseType<ApiClient['api']['status']['$get'], 200>
 
 export const systemStatusQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
@@ -24,7 +26,13 @@ export const systemStatusQuery = defineEsiQueryOptions((apiClient: ApiClient) =>
     }
   },
   ...QUERY_POLICY.systemStatus,
-  autoRefetch: true,
+  refetchOnMount: true,
+  refetchOnReconnect: true,
+  refetchOnWindowFocus: true,
+  autoRefetch: (state) =>
+    state.data?.telemetry.services.esi.status === 'unavailable'
+      ? SYSTEM_STATUS_OUTAGE_REFETCH_INTERVAL_MS
+      : false,
   esiPersistence: { kind: 'none' },
   ssrCatchError: true,
 }))
