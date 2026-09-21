@@ -91,10 +91,9 @@ afterEach(() => {
 describe('character skills route behavior', () => {
   it('gates every protected request and refetches all three after reauthorization', async () => {
     const authSession = ref({ authenticated: true })
-    authenticationLoading.value = false
+    authenticationLoading.value = true
     characters.value = [{ characterId }]
     useAuthSession.mockReturnValue({ authLoading: authenticationLoading, authSession })
-    vi.mocked(canRunProtectedCharacterQuery).mockReturnValue(false)
     const wrapper = await mountSuspended(SkillsPage, { route: false })
     mountedWrappers.push(wrapper)
     expect(createApiClient).toHaveBeenCalled()
@@ -104,7 +103,7 @@ describe('character skills route behavior', () => {
     expect(vi.mocked(canRunProtectedCharacterQuery).mock.calls.at(-1)).toEqual([
       {
         authenticated: true,
-        authenticationReady: true,
+        authenticationReady: false,
         isClient: true,
         ownsCharacter: true,
       },
@@ -113,8 +112,7 @@ describe('character skills route behavior', () => {
     await flushPromises()
     expect(protectedRequestCounts()).toEqual([0, 0, 0])
 
-    vi.mocked(canRunProtectedCharacterQuery).mockReturnValue(true)
-    characters.value = [...characters.value]
+    authenticationLoading.value = false
     await vi.waitFor(() => expect(protectedRequestCounts()).toEqual([1, 1, 1]))
     expect(wrapper.text()).toContain('CHARACTER SKILLS')
     expect(wrapper.text()).toContain('Training Queue')

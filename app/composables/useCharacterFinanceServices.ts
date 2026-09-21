@@ -12,6 +12,7 @@ import type { ProtectedCharacterQueryAccess } from '../queries/protected-charact
 import type { FinanceOrderMode } from '../types/finance'
 import type { ApiClient } from '../utils/api-client'
 import { isPositiveSafeInteger } from '../utils/number-guards'
+import { useCharacterOwnership } from './useCharacterOwnership'
 
 export type CharacterFinanceService = 'journal' | 'transactions' | 'orders' | 'contracts'
 export type CharacterFinancePageResource = 'journal' | 'order-history' | 'contracts'
@@ -27,6 +28,7 @@ interface CharacterFinanceServicesOptions {
 
 export function useCharacterFinanceServices(options: CharacterFinanceServicesOptions) {
   const isClient = options.isClient ?? import.meta.client
+  const ownsCharacter = useCharacterOwnership(options.characterId, options.characters)
   const journalRequested = ref(true)
   const transactionsRequested = ref(false)
   const openOrdersRequested = ref(false)
@@ -42,9 +44,7 @@ export function useCharacterFinanceServices(options: CharacterFinanceServicesOpt
     isClient,
     authenticated: options.authenticated.value,
     authenticationReady: options.authenticationReady.value,
-    ownsCharacter: options.characters.value.some(
-      (character) => character.characterId === options.characterId.value,
-    ),
+    ownsCharacter: ownsCharacter.value,
   }))
   const transactionFromId = computed(
     () => transactionContinuations.value[transactionRangeIndex.value] ?? null,

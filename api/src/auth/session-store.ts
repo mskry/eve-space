@@ -11,9 +11,11 @@ export interface CharacterSummary {
   isMain: boolean
 }
 
+export type MainCharacterSummary = Omit<CharacterSummary, 'isMain'>
+
 export interface SessionAccount {
   userId: string
-  mainCharacter: CharacterSummary
+  mainCharacter: MainCharacterSummary
 }
 
 export interface SessionLifetime {
@@ -30,7 +32,6 @@ export async function findSession(sessionToken: string): Promise<SessionAccount 
       name: characters.name,
       corporationId: characters.corporationId,
       allianceId: characters.allianceId,
-      isMain: characters.isMain,
     })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
@@ -47,7 +48,6 @@ export async function findSession(sessionToken: string): Promise<SessionAccount 
       name: record.name,
       corporationId: record.corporationId,
       allianceId: record.allianceId,
-      isMain: record.isMain,
     },
   }
 }

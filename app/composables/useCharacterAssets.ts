@@ -13,6 +13,7 @@ import {
   mapCharacterAssetsResourceState,
 } from '../utils/character-assets-mapper'
 import { useCharacterReauthorization } from './useCharacterReauthorization'
+import { useCharacterOwnership } from './useCharacterOwnership'
 
 interface CharacterAssetsOptions {
   apiClient: ApiClient
@@ -33,13 +34,12 @@ interface CharacterAssetsOptions {
 
 export function useCharacterAssets(options: CharacterAssetsOptions) {
   const isClient = options.isClient ?? import.meta.client
+  const ownsCharacter = useCharacterOwnership(options.characterId, options.characters)
   const access = computed<ProtectedCharacterQueryAccess>(() => ({
     isClient,
     authenticated: options.authenticated.value,
     authenticationReady: options.authenticationReady.value,
-    ownsCharacter: options.characters.value.some(
-      (entry) => entry.characterId === options.characterId.value,
-    ),
+    ownsCharacter: ownsCharacter.value,
   }))
   const assetsQuery = useQuery(() =>
     characterAssetsQuery({

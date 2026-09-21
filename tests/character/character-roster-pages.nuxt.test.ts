@@ -1,9 +1,15 @@
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { RouterLinkStub } from '@vue/test-utils'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CharacterPage from '../../app/pages/characters/[characterId].vue'
 import CharactersPage from '../../app/pages/characters/index.vue'
+import { readQueryCharacterOwnership } from '../../app/query-persistence/runtime'
+
+vi.mock('../../app/query-persistence/runtime', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../app/query-persistence/runtime')>()),
+  readQueryCharacterOwnership: vi.fn(),
+}))
 
 const {
   createApiClient,
@@ -43,6 +49,7 @@ const authLoading = ref(false)
 const authSession = ref({ authenticated: true })
 const authUnavailable = ref(false)
 const characters = ref<never[]>([])
+const admissionOwnership = ref(false)
 const rosterMessage = ref('')
 const rosterRetryPanel = ref<{
   code: string
@@ -53,6 +60,8 @@ const rosterStatus = ref<'idle' | 'loading' | 'error' | 'unavailable'>('unavaila
 const mountedWrappers: { unmount: () => void }[] = []
 
 beforeEach(() => {
+  admissionOwnership.value = false
+  vi.mocked(readQueryCharacterOwnership).mockReturnValue(computed(() => admissionOwnership.value))
   authLoading.value = false
   authSession.value = { authenticated: true }
   authUnavailable.value = false
@@ -99,6 +108,31 @@ afterEach(() => {
 })
 
 describe('character roster page states', () => {
+  it('mounts the character route from admission while roster enrichment is pending', async () => {
+    rosterRetryPanel.value = null
+    rosterStatus.value = 'loading'
+    const wrapper = await mountSuspended(CharacterPage, {
+      route: false,
+      global: {
+        stubs: {
+          NuxtLink: RouterLinkStub,
+          NuxtPage: { template: '<div data-testid="character-child">Character detail</div>' },
+        },
+      },
+    })
+    mountedWrappers.push(wrapper)
+
+    expect(wrapper.find('[data-testid="character-child"]').exists()).toBe(false)
+    admissionOwnership.value = true
+    await nextTick()
+    expect(wrapper.find('[data-testid="character-child"]').exists()).toBe(true)
+    expect(characters.value).toEqual([])
+    expect(wrapper.text()).not.toContain('Resolving character authorization')
+    admissionOwnership.value = false
+    await nextTick()
+    expect(wrapper.find('[data-testid="character-child"]').exists()).toBe(false)
+  })
+
   it('renders the parked roster retry panel on the roster page', async () => {
     const wrapper = await mountSuspended(CharactersPage, {
       route: false,

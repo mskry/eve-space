@@ -211,12 +211,12 @@ describe('ESI query persistence verifier', () => {
     ])
   })
 
-  it('reserves the sole auto-refetch opt-in for system status', () => {
+  it('reserves conditional auto-refetch for system status', () => {
     const sources: EsiQuerySource[] = [
       {
         kind: 'core',
         path: 'app/queries/system-status.ts',
-        source: 'const status = { autoRefetch: true }',
+        source: 'const status = { autoRefetch: (state) => state.data ? 60_000 : false }',
       },
       {
         kind: 'core',
@@ -228,5 +228,15 @@ describe('ESI query persistence verifier', () => {
     expect(queryAutoRefetchViolations(sources)).toEqual([
       'app/queries/characters.ts must not enable query auto-refetch',
     ])
+
+    expect(
+      queryAutoRefetchViolations([
+        {
+          kind: 'core',
+          path: 'app/queries/system-status.ts',
+          source: 'const status = { autoRefetch: true }',
+        },
+      ]),
+    ).toEqual(['app/queries/system-status.ts must use conditional auto-refetch'])
   })
 })

@@ -19,11 +19,12 @@ const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const { authLoading, authSession } = useAuthSession(apiClient)
 const { characters } = useCharacterRoster(apiClient)
 const characterId = computed(() => parseRouteId(route.params.characterId))
+const ownsCharacter = useCharacterOwnership(characterId, characters)
 const protectedQueryAccess = computed(() => ({
   authenticated: authSession.value.authenticated,
   authenticationReady: !authLoading.value,
   isClient: import.meta.client,
-  ownsCharacter: characters.value.some((character) => character.characterId === characterId.value),
+  ownsCharacter: ownsCharacter.value,
 }))
 const protectedQueryEnabled = computed(() =>
   canRunProtectedCharacterQuery(protectedQueryAccess.value, characterId.value ?? 0),
