@@ -582,18 +582,46 @@
 .skill-queue-chevron-field > i {
   height: 100%;
   flex: 0 0 2.5rem;
+  opacity: 0.02;
   background: var(--ui-primary);
   clip-path: polygon(0 0, 38% 0, 100% 50%, 38% 100%, 0 100%, 62% 50%);
-  animation: skill-queue-chevron-alternate 8s ease-in-out infinite;
+  animation: skill-queue-chevron-flow 1.4s linear infinite;
 }
 
-.skill-queue-chevron-field > i:nth-child(odd) {
-  opacity: 0.08;
+.skill-queue-chevron-field > i:nth-child(2) {
+  animation-delay: 0.1s;
 }
 
-.skill-queue-chevron-field > i:nth-child(even) {
-  opacity: 0.02;
-  animation-delay: -4s;
+.skill-queue-chevron-field > i:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.skill-queue-chevron-field > i:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.skill-queue-chevron-field > i:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+.skill-queue-chevron-field > i:nth-child(6) {
+  animation-delay: 0.5s;
+}
+
+.skill-queue-chevron-field > i:nth-child(7) {
+  animation-delay: 0.6s;
+}
+
+.skill-queue-chevron-field > i:nth-child(8) {
+  animation-delay: 0.7s;
+}
+
+.skill-queue-chevron-field > i:nth-child(9) {
+  animation-delay: 0.8s;
+}
+
+.skill-queue-chevron-field > i:nth-child(10) {
+  animation-delay: 0.9s;
 }
 
 .skill-queue-current-identity {
@@ -636,14 +664,15 @@
   font: 0.75rem/1 var(--ui-font-mono);
 }
 
-@keyframes skill-queue-chevron-alternate {
+@keyframes skill-queue-chevron-flow {
   0%,
+  30%,
   100% {
-    opacity: 0.08;
+    opacity: 0.02;
   }
 
-  50% {
-    opacity: 0.02;
+  12% {
+    opacity: 0.12;
   }
 }
 

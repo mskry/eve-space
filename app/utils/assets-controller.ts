@@ -14,18 +14,28 @@ export function createAssetWorkspaceController(options: AssetWorkspaceController
   const revealIncrement = positiveInteger(options.revealIncrement, ASSET_REVEAL_INCREMENT)
   const initiallyExpandedLocations = nonnegativeInteger(options.initiallyExpandedLocations, 1)
   const expandedLocations = new Set<string>()
+  const defaultExpandedLocations = new Set<string>()
+  const manuallyToggledLocations = new Set<string>()
   const expandedContainers = new Set<number>()
   const revealLimits = new Map<string, number>()
-  let initialized = false
   let activeFilters = false
   let criteriaSignature = assetFilterSignature(EMPTY_ASSET_FILTERS)
 
   function sync(groups: readonly AssetLocationGroup[]) {
-    if (initialized || groups.length === 0) return
-    for (const group of groups.slice(0, initiallyExpandedLocations)) {
-      expandedLocations.add(group.key)
+    if (groups.length === 0) return
+    const nextDefaults = new Set(
+      groups.slice(0, initiallyExpandedLocations).map((group) => group.key),
+    )
+    for (const key of defaultExpandedLocations) {
+      if (!nextDefaults.has(key) && !manuallyToggledLocations.has(key)) {
+        expandedLocations.delete(key)
+      }
     }
-    initialized = true
+    for (const key of nextDefaults) {
+      if (!manuallyToggledLocations.has(key)) expandedLocations.add(key)
+    }
+    defaultExpandedLocations.clear()
+    for (const key of nextDefaults) defaultExpandedLocations.add(key)
   }
 
   function setCriteria(filters: AssetFilterState) {
@@ -38,6 +48,7 @@ export function createAssetWorkspaceController(options: AssetWorkspaceController
   }
 
   function toggleLocation(key: string) {
+    manuallyToggledLocations.add(key)
     if (expandedLocations.has(key)) expandedLocations.delete(key)
     else expandedLocations.add(key)
   }

@@ -30,7 +30,11 @@ function cloneDisplayName(clone: JumpClone, group: JumpClone[]) {
 </script>
 
 <template>
-  <section class="character-clones-stored" aria-labelledby="character-clones-stored-title">
+  <section
+    v-if="jumpClones.length > 0"
+    class="character-clones-stored"
+    aria-labelledby="character-clones-stored-title"
+  >
     <UiCollapsible>
       <template #trigger>
         <button class="character-clones-section-heading" type="button">
@@ -45,8 +49,6 @@ function cloneDisplayName(clone: JumpClone, group: JumpClone[]) {
       </template>
 
       <div class="character-clones-groups">
-        <p v-if="jumpClones.length === 0" class="character-clones-empty">None installed</p>
-
         <section v-for="group in groups" :key="group.key" class="character-clones-group">
           <header class="character-clones-group-heading" :data-location-type="group.locationType">
             <h3>{{ group.label }}</h3>

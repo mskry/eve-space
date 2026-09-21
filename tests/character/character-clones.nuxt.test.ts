@@ -404,7 +404,7 @@ describe('character Clones workspace', () => {
     const wrapper = await mountWorkspace({ clones: staleClones, implants: staleImplants })
 
     expect(wrapper.get('[aria-label="Jump clones"]').text()).toContain('Home Station unavailable')
-    expect(wrapper.get('.character-clones-empty').text()).toBe('None installed')
+    expect(wrapper.find('.character-clones-stored').exists()).toBe(false)
     expect(wrapper.text()).toContain('Unknown implant 999')
     expect(wrapper.get('.character-clones-rack-unslotted').text()).toContain('SLOT UNKNOWN')
     expect(wrapper.findAll('.character-clones-stale')).toHaveLength(2)

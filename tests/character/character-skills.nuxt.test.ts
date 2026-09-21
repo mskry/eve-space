@@ -526,6 +526,7 @@ describe('character Skills components', () => {
     expect(wrapper.find('.skill-queue-sp-summary').exists()).toBe(true)
     expect(wrapper.find('.skill-queue-sp-summary strong').exists()).toBe(false)
     expect(wrapper.text()).toContain('3/50')
+    expect(wrapper.findAll('.skill-queue-chevron-field > i')).toHaveLength(10)
 
     await wrapper.setProps({
       authorizeUrl: '/reauthorize',

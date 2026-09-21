@@ -42,8 +42,18 @@ function shortestRoutes(
     }
   }
 
-  return destinationSystemIds.map((destinationSystemId) => ({
-    destinationSystemId,
-    jumps: distances.get(destinationSystemId) ?? null,
-  }))
+  return destinationSystemIds
+    .map((destinationSystemId) => ({
+      destinationSystemId,
+      jumps: distances.get(destinationSystemId) ?? null,
+    }))
+    .toSorted(compareRouteDistance)
+}
+
+function compareRouteDistance(left: UniverseRouteEntry, right: UniverseRouteEntry) {
+  if (left.jumps === null && right.jumps === null)
+    return left.destinationSystemId - right.destinationSystemId
+  if (left.jumps === null) return 1
+  if (right.jumps === null) return -1
+  return left.jumps - right.jumps || left.destinationSystemId - right.destinationSystemId
 }
