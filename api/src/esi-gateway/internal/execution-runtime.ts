@@ -246,6 +246,42 @@ class EsiExecutionRuntimeImplementation {
   }
 
   async executeRepresentation<
+    Operation extends EsiOperation,
+    Input,
+    Arguments extends OperationRequestArguments,
+    WireResult,
+    Result,
+  >(
+    representation: EsiReadRepresentation<
+      'public',
+      Operation,
+      Input,
+      Arguments,
+      WireResult,
+      Result
+    >,
+    input: Input,
+    options?: EsiExecutionOptions,
+  ): Promise<EsiCachedResult<Result>>
+  async executeRepresentation<
+    Operation extends EsiOperation,
+    Input,
+    Arguments extends OperationRequestArguments,
+    WireResult,
+    Result,
+  >(
+    representation: EsiReadRepresentation<
+      'character',
+      Operation,
+      Input,
+      Arguments,
+      WireResult,
+      Result
+    >,
+    input: Input,
+    options: CharacterEsiExecutionOptions,
+  ): Promise<CharacterEsiExecutionResult<Result>>
+  async executeRepresentation<
     Authorization extends 'public' | 'character',
     Operation extends EsiOperation,
     Input,
@@ -263,7 +299,7 @@ class EsiExecutionRuntimeImplementation {
     >,
     input: Input,
     options?: EsiExecutionOptions | CharacterEsiExecutionOptions,
-  ): Promise<EsiCachedResult<Result>> {
+  ): Promise<EsiCachedResult<Result> | CharacterEsiExecutionResult<Result>> {
     this.#assertOpen()
     const signal = options?.signal
     signal?.throwIfAborted()
@@ -709,7 +745,7 @@ class EsiExecutionRuntimeImplementation {
       ),
       resource.signal,
     )
-    return execution.result
+    return execution
   }
 
   #getCharacterCacheAuthorization(

@@ -54,6 +54,12 @@ interface ResourceExecutionGuardOptions {
   readonly resolveEligibility?: typeof resolveInstalledResourceEligibility
   readonly loadCharacterCacheAuthorization?: typeof getCharacterCacheAuthorizationForLifecycle
   readonly loadCharacterAuthorization?: typeof getCharacterAuthorizationForLifecycle
+  readonly isCorporationSourceCurrent?: (input: {
+    corporationSubjectLifecycleId: string
+    characterId: number
+    characterSubjectLifecycleId: string
+    authorizationGeneration: number
+  }) => Promise<boolean>
 }
 
 export async function guardInstalledResourceExecution(
@@ -92,6 +98,16 @@ export async function guardInstalledResourceExecution(
     resolveAuthorizationIdentity(eligibility, subject)
   if (!authorizationCharacterId || !authorizationCharacterLifecycleId)
     return { outcome: 'noop', reason: 'authorization-required' }
+  if (
+    subject.kind === 'corporation' &&
+    !(await isCorporationAuthorizationCurrent(options, {
+      subject,
+      characterId: authorizationCharacterId,
+      characterLifecycleId: authorizationCharacterLifecycleId,
+      authorizationGeneration: eligibility.authorizationGeneration ?? -1,
+    }))
+  )
+    return { outcome: 'noop', reason: 'obsolete' }
 
   let authorization: CharacterAuthorization
   try {
@@ -116,6 +132,17 @@ export async function guardInstalledResourceExecution(
     options.signal?.throwIfAborted()
     return mapCharacterAuthorizationError(error, subject.kind)
   }
+
+  if (
+    subject.kind === 'corporation' &&
+    !(await isCorporationAuthorizationCurrent(options, {
+      subject,
+      characterId: authorizationCharacterId,
+      characterLifecycleId: authorizationCharacterLifecycleId,
+      authorizationGeneration: authorization.tokenVersion,
+    }))
+  )
+    return { outcome: 'noop', reason: 'obsolete' }
 
   const ready = createReadyResourceExecution(
     resource,
@@ -144,6 +171,24 @@ export async function guardInstalledResourceExecution(
     return { outcome: 'noop', reason: 'obsolete' }
 
   return ready
+}
+
+async function isCorporationAuthorizationCurrent(
+  options: ResourceExecutionGuardOptions,
+  input: {
+    subject: Extract<PlatformResourceSubject, { kind: 'corporation' }>
+    characterId: number
+    characterLifecycleId: string
+    authorizationGeneration: number
+  },
+) {
+  if (!options.isCorporationSourceCurrent) return false
+  return options.isCorporationSourceCurrent({
+    corporationSubjectLifecycleId: input.subject.lifecycleId,
+    characterId: input.characterId,
+    characterSubjectLifecycleId: input.characterLifecycleId,
+    authorizationGeneration: input.authorizationGeneration,
+  })
 }
 
 function classifyExecutionEligibility(

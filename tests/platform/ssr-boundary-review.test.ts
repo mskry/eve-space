@@ -1,19 +1,14 @@
 // @vitest-environment node
-import { execFile } from 'node:child_process'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
 import { clientRequestIn } from '../../scripts/ssr-boundary-review/client-request'
-import { classifySite, formatReport } from '../../scripts/ssr-boundary-review/findings'
+import { classifySite } from '../../scripts/ssr-boundary-review/findings'
 import type { SiteJudgment, SiteState } from '../../scripts/ssr-boundary-review/judgments'
 import { loadLabelledRequests } from '../../scripts/ssr-boundary-review/labelled-requests'
-import {
-  changedFrontendFiles,
-  collectRequestSites,
-} from '../../scripts/ssr-boundary-review/request-sites'
+import { collectRequestSites } from '../../scripts/ssr-boundary-review/request-sites'
 import {
   applicableRouteMiddleware,
   findRouteDefinition,
@@ -21,7 +16,6 @@ import {
 import { loadRootMountTable, resolveMount } from '../../scripts/ssr-boundary-review/route-mounts'
 
 const fixtures = new URL('../fixtures/ssr-boundary-review/', import.meta.url)
-const run = promisify(execFile)
 
 describe('client request parsing', () => {
   it.each([
@@ -195,6 +189,12 @@ describe('request site resolution', () => {
     expect(spread.method).not.toBe('POST')
   })
 
+  it('excludes requests inside inline mutation callbacks', async () => {
+    const sites = await sitesInComposable()
+
+    expect(sites.map(({ entry }) => entry)).toEqual(['useQuery', 'useQuery'])
+  })
+
   it('resolves a query definition returned from a factory arrow', async () => {
     const sites = await sitesInComposable()
     const returned = sites.at(-1)
@@ -209,53 +209,17 @@ describe('request site resolution', () => {
     expect(spread.definitionExcerpt).toContain('apiClient.api.me.characters')
   })
 
-  it('collects mutations, protected prefetches, direct Hono calls, and $fetch', async () => {
+  it('collects protected prefetches, direct Hono calls, and $fetch beside mutations', async () => {
     const sites = await collectRequestSites(fixtures, ['app/composables/requestForms.ts'])
 
-    expect(sites.map(({ entry }) => entry)).toEqual([
-      'useMutation',
-      'prefetchProtectedQuery',
-      '$get',
-      '$fetch',
-    ])
+    expect(sites.map(({ entry }) => entry)).toEqual(['prefetchProtectedQuery', '$get', '$fetch'])
     expect(sites.map(({ method, requestPath }) => ({ method, requestPath }))).toEqual([
-      { method: null, requestPath: null },
       { method: 'GET', requestPath: '/api/status' },
       { method: 'GET', requestPath: '/api/status' },
       { method: 'GET', requestPath: '/api/status' },
     ])
-    expect(sites[1].localHelpers).toContain('canRunProtectedCharacterQuery')
-    expect(sites[1].localHelpers).toContain('access.isClient')
-  })
-})
-
-describe('changed frontend files', () => {
-  it('includes staged and non-ignored untracked files', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'eve-space-ssr-review-'))
-
-    try {
-      await run('git', ['init'], { cwd: root })
-      await mkdir(join(root, 'app'), { recursive: true })
-      await writeFile(join(root, 'app', 'baseline.ts'), 'export const baseline = true\n')
-      await run('git', ['add', '.'], { cwd: root })
-      await run(
-        'git',
-        ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-m', 'baseline'],
-        { cwd: root },
-      )
-
-      await writeFile(join(root, 'app', 'staged.ts'), 'export const staged = true\n')
-      await run('git', ['add', 'app/staged.ts'], { cwd: root })
-      await mkdir(join(root, 'layers'), { recursive: true })
-      await writeFile(join(root, 'layers', 'untracked.vue'), '<template><main /></template>\n')
-
-      await expect(changedFrontendFiles(root, 'HEAD')).resolves.toEqual([
-        'app/staged.ts',
-        'layers/untracked.vue',
-      ])
-    } finally {
-      await rm(root, { recursive: true, force: true })
-    }
+    expect(sites[0].localHelpers).toContain('canRunProtectedCharacterQuery')
+    expect(sites[0].localHelpers).toContain('access.isClient')
   })
 })
 
@@ -328,16 +292,12 @@ describe('finding classification', () => {
     expect(finding.reason).toContain("credentials: 'include'")
   })
 
-  it('names both the call site and the route mount', () => {
+  it('provides the call site and route mount to the shared formatter', () => {
     const finding = classifySite(state(), judgment())
 
-    expect(formatReport([finding])).toContain('app/pages/thing.vue:10')
-    expect(formatReport([finding])).toContain('api/src/characters/core-routes.ts')
-  })
-
-  it('summarises a clean review', () => {
-    const clean = classifySite(state(), judgment({ ssrCapable: 0.05 }))
-
-    expect(formatReport([clean])).toContain('No SSR boundary findings')
+    expect(finding.location).toBe('app/pages/thing.vue:10')
+    expect(finding.details).toContain(
+      'route: GET /:characterId (api/src/characters/core-routes.ts)',
+    )
   })
 })

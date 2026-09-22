@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
   bigint,
+  boolean,
   check,
   foreignKey,
   index,
@@ -80,6 +81,12 @@ export const deploymentSettings = pgTable(
     registrationPolicyVersion: bigint('registration_policy_version', { mode: 'number' })
       .default(1)
       .notNull(),
+    derivedDirectorAuthorityEnabled: boolean('derived_director_authority_enabled')
+      .default(true)
+      .notNull(),
+    authorityEvidenceFreshDurationSeconds: integer('authority_evidence_fresh_duration_seconds')
+      .default(3600)
+      .notNull(),
     ...auditTimestamps(),
   },
   (table) => [
@@ -119,6 +126,10 @@ export const deploymentSettings = pgTable(
     check(
       'deployment_settings_registration_policy_version_check',
       sql`registration_policy_version > 0`,
+    ),
+    check(
+      'deployment_settings_authority_evidence_fresh_duration_check',
+      sql`authority_evidence_fresh_duration_seconds between 300 and 86400`,
     ),
   ],
 )

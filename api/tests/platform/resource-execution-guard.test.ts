@@ -150,6 +150,7 @@ describe('platform resource execution guard', () => {
     const loadCharacterAuthorization = vi
       .fn()
       .mockResolvedValue({ accessToken: 'private', tokenVersion: 7 })
+    const isCorporationSourceCurrent = vi.fn().mockResolvedValue(true)
 
     await expect(
       guardInstalledResourceExecution(corporationIdentity, {
@@ -160,6 +161,7 @@ describe('platform resource execution guard', () => {
           authorizationCharacterLifecycleId: sourceLifecycleId,
         }),
         loadCharacterAuthorization,
+        isCorporationSourceCurrent,
       }),
     ).resolves.toMatchObject({
       outcome: 'ready',
@@ -171,6 +173,13 @@ describe('platform resource execution guard', () => {
       sourceLifecycleId,
       'esi-corporations.read_corporation_membership.v1',
     )
+    expect(isCorporationSourceCurrent).toHaveBeenCalledTimes(2)
+    expect(isCorporationSourceCurrent).toHaveBeenCalledWith({
+      corporationSubjectLifecycleId: corporationIdentity.subjectLifecycleId,
+      characterId: 1_404_328_063,
+      characterSubjectLifecycleId: sourceLifecycleId,
+      authorizationGeneration: 7,
+    })
   })
 
   test('runs managed-alliance discovery without character authorization', async () => {

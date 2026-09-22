@@ -23,6 +23,37 @@ snapshot storage, activity providers, and detail pages belong to an installed mo
 deployment administrator controls deployment settings and module enablement but receives no private
 organization permission from that authority.
 
+### Authority Policy Planes
+
+Core policy keeps five facts separate and composes them only for a declared operation:
+
+1. Account registration evaluates every attached character for disclosure, scope, affiliation, and
+   exception policy. Compliance grants membership access, never elevated authority.
+2. Explicit application grants record an audited owner decision for HR or Director authority. They
+   remain independent from EVE-derived evidence.
+3. Derived Director sources evaluate every current character lifecycle independently. A qualifying
+   character must satisfy the complete affiliation, authorization generation, required scope, role,
+   organization-version, freshness, and block predicate; partial facts from different characters are
+   never combined.
+4. Organization-owner evidence is bound to one designated character lifecycle. Replacement is an
+   explicit, audited remediation operation and never follows the display main automatically.
+5. Corporation operation sources are selected per managed corporation and remain bound to that exact
+   corporation, character lifecycle, authorization generation, and evidence revision. Collection work
+   never substitutes another eligible character.
+
+The selected main character is display and explicitly main-scoped feature state only. Changing it has
+no effect on compliance, explicit grants, derived authority, owner evidence, or corporation sources.
+
+In an alliance deployment, global owner and derived Director authority require a complete source in
+the executor corporation. A Director in another member corporation may back only that corporation's
+explicitly selected resource source; it does not gain alliance-wide Director authority.
+
+Fresh evidence may authorize privilege-changing mutations. Degraded evidence is bounded by the
+original successful observation and may support only declared read continuity and source remediation.
+Invalid evidence grants nothing. A transient ESI, SSO, quota, or executor-discovery failure may enter
+degraded state, but confirmed lifecycle, owner, authorization, scope, affiliation, role, block, or
+organization-version failure invalidates immediately.
+
 ## Local Organization Fixture
 
 The organization fixture is a one-shot development aid for exercising member, HR, director, owner,
@@ -124,6 +155,24 @@ must never be substituted.
 9. Enable organization activity, verify member-safe activity and exact-character participation, then
    monitor `/api/status`, queue age, collection freshness, compliance transitions, and provider
    degradation through the rollout window.
+
+### Authority Operations
+
+- Inspect the administration source ledger before changing policy or delegated access. Confirm the
+  source type, character, lifecycle, freshness deadline, degraded deadline, and safe failure class.
+- Reauthorize the exact designated character when its authorization generation or required scope is
+  obsolete. Do not attach or select another character as an implicit replacement.
+- Use owner-source replacement only with a fresh, complete replacement character owned by the same
+  user. The operation atomically makes the old source historical and records the new source; changing
+  display main is unrelated.
+- Replace a corporation source explicitly for the exact managed corporation. In alliance deployments,
+  repeat this independently for each corporation that needs private roster or resource coverage.
+- Treat `ORGANIZATION_AUTHORITY_DEGRADED` as a read-continuity/remediation condition and
+  `ORGANIZATION_AUTHORITY_SOURCE_INVALID` as a hard denial. Do not retry privilege expansion until a
+  fresh source exists.
+- Queued source work carries organization version, lifecycle, authorization generation, and evidence
+  revision. A superseded result is expected after replacement or reauthorization and must not be
+  replayed under a newer source.
 
 ## Rollback
 

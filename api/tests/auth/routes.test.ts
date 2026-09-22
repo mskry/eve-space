@@ -26,13 +26,13 @@ const mocks = vi.hoisted(() => {
     renewSession: vi.fn(),
     getCharacterAffiliation: vi.fn(),
     observeCharacterAffiliation: vi.fn(),
-    getCharacterCorporationRoles: vi.fn(),
+    getCharacterCorporationRolesEvidence: vi.fn(),
     loadCurrentOrganizationIdentity: vi.fn(),
     loadEnabledReviewerUseDisclosures: vi.fn(),
     loadTransferApprovalForStart: vi.fn(),
     isSsoConfigured: vi.fn(),
     reauthorizeCharacter: vi.fn(),
-    resolveOrganizationAuthorityCorporation: vi.fn(),
+    resolveOrganizationAuthorityCorporationEvidence: vi.fn(),
     saveLogin: vi.fn(),
     storeOAuthState: vi.fn(),
     transferCharacter: vi.fn(),
@@ -112,7 +112,7 @@ vi.mock('../../src/characters/affiliation-sync.js', () => ({
 
 vi.mock('../../src/characters/corporation-roles.js', () => ({
   characterCorporationRolesScope: 'esi-characters.read_corporation_roles.v1',
-  getCharacterCorporationRoles: mocks.getCharacterCorporationRoles,
+  getCharacterCorporationRolesEvidence: mocks.getCharacterCorporationRolesEvidence,
 }))
 
 vi.mock('../../src/organization/context.js', () => ({
@@ -120,11 +120,12 @@ vi.mock('../../src/organization/context.js', () => ({
 }))
 
 vi.mock('../../src/organization/authority.js', () => ({
-  resolveOrganizationAuthorityCorporation: mocks.resolveOrganizationAuthorityCorporation,
+  resolveOrganizationAuthorityCorporationEvidence:
+    mocks.resolveOrganizationAuthorityCorporationEvidence,
 }))
 
-vi.mock('../../src/organization/authority-policy.js', () => ({
-  OrganizationAuthorityError: class OrganizationAuthorityError extends Error {},
+vi.mock('../../src/organization/authority-policy.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/organization/authority-policy.js')>()),
   assertOrganizationOwnerDirectorRole: mocks.assertOrganizationOwnerDirectorRole,
   assertOrganizationOwnerScope: mocks.assertOrganizationOwnerScope,
 }))
@@ -177,6 +178,7 @@ beforeEach(() => {
   mocks.verifyAccessToken.mockResolvedValue({
     characterId: mainCharacter.characterId,
     characterName: mainCharacter.name,
+    ownerHash: 'main-owner',
     scopes: ['esi-wallet.read_character_wallet.v1'],
   })
   mocks.getCharacterAffiliation.mockResolvedValue({
@@ -188,19 +190,29 @@ beforeEach(() => {
     corporationId: mainCharacter.corporationId,
     allianceId: mainCharacter.allianceId,
     affiliationCheckedAt: new Date('2026-08-31T12:00:00Z'),
+    affiliationFreshUntil: new Date('2026-08-31T13:00:00Z'),
     stale: false,
   })
-  mocks.getCharacterCorporationRoles.mockResolvedValue({
+  mocks.getCharacterCorporationRolesEvidence.mockResolvedValue({
     roles: ['Director'],
     rolesAtBase: [],
     rolesAtHeadquarters: [],
     rolesAtOther: [],
+    authorizationGeneration: 4,
+    roleEvidenceRevision: '2026-08-31T12:00:00.000Z',
+    observedAt: new Date('2026-08-31T12:00:00Z'),
+    freshUntil: new Date('2026-08-31T13:00:00Z'),
+    stale: false,
   })
   mocks.reauthorizeCharacter.mockResolvedValue({
     affiliationCheckedAt: new Date('2026-08-31T12:00:00Z'),
     subjectLifecycleId: ownerClaimSubjectLifecycleId,
+    authorizationGeneration: 4,
   })
-  mocks.resolveOrganizationAuthorityCorporation.mockResolvedValue(mainCharacter.corporationId)
+  mocks.resolveOrganizationAuthorityCorporationEvidence.mockResolvedValue({
+    corporationId: mainCharacter.corporationId,
+    freshUntil: new Date('2026-08-31T13:00:00Z'),
+  })
   mocks.findSession.mockResolvedValue(account)
   mocks.findOwnedCharacter.mockResolvedValue(mainCharacter)
   mocks.loadCurrentOrganizationIdentity.mockResolvedValue({
@@ -680,6 +692,7 @@ describe('EVE SSO callback intents', () => {
     mocks.verifyAccessToken.mockResolvedValueOnce({
       characterId: 2_112_625_428,
       characterName: 'Bandera Alt',
+      ownerHash: 'alt-owner',
       scopes: ['esi-skills.read_skills.v1'],
     })
     const secondCallback = await callbackRequest(
@@ -797,6 +810,7 @@ describe('EVE SSO callback intents', () => {
     mocks.verifyAccessToken.mockResolvedValue({
       characterId: 2_112_625_428,
       characterName: 'Bandera Alt',
+      ownerHash: 'alt-owner',
       scopes: ['esi-skills.read_skills.v1'],
     })
 
@@ -962,6 +976,7 @@ describe('EVE SSO callback intents', () => {
     mocks.verifyAccessToken.mockResolvedValue({
       characterId: 2112625428,
       characterName: 'Bandera Alt',
+      ownerHash: 'alt-owner',
       scopes: ['esi-skills.read_skills.v1'],
     })
 
@@ -1057,6 +1072,7 @@ describe('EVE SSO callback intents', () => {
     mocks.verifyAccessToken.mockResolvedValue({
       characterId: 2112625428,
       characterName: 'Wrong Character',
+      ownerHash: 'wrong-owner',
       scopes: [],
     })
 
@@ -1080,6 +1096,7 @@ describe('EVE SSO callback intents', () => {
     mocks.verifyAccessToken.mockResolvedValue({
       characterId: 2_112_625_428,
       characterName: 'Wrong Character',
+      ownerHash: 'wrong-owner',
       scopes: [],
     })
 
@@ -1103,6 +1120,7 @@ describe('EVE SSO callback intents', () => {
     mocks.verifyAccessToken.mockResolvedValue({
       characterId: mainCharacter.characterId,
       characterName: mainCharacter.name,
+      ownerHash: 'main-owner',
       scopes: ['esi-characters.read_corporation_roles.v1'],
     })
 
@@ -1121,7 +1139,7 @@ describe('EVE SSO callback intents', () => {
       }),
     )
     expect(mocks.observeCharacterAffiliation).toHaveBeenCalledWith(mainCharacter.characterId)
-    expect(mocks.getCharacterCorporationRoles).toHaveBeenCalledWith(
+    expect(mocks.getCharacterCorporationRolesEvidence).toHaveBeenCalledWith(
       mainCharacter.characterId,
       ownerClaimSubjectLifecycleId,
     )
@@ -1198,6 +1216,7 @@ describe('EVE SSO callback intents', () => {
     mocks.verifyAccessToken.mockResolvedValue({
       characterId: mainCharacter.characterId,
       characterName: mainCharacter.name,
+      ownerHash: 'main-owner',
       scopes: ['esi-characters.read_corporation_roles.v1'],
     })
     mocks.assertOrganizationOwnerDirectorRole.mockImplementationOnce(() => {
@@ -1480,7 +1499,7 @@ describe('account sessions', () => {
     expect(mocks.findSession).toHaveBeenCalledOnce()
     expect(mocks.loadCacheAdmissionContext).toHaveBeenCalledWith(account.userId)
     expect(mocks.getCharacterAffiliation).not.toHaveBeenCalled()
-    expect(mocks.getCharacterCorporationRoles).not.toHaveBeenCalled()
+    expect(mocks.getCharacterCorporationRolesEvidence).not.toHaveBeenCalled()
   })
 
   test('does not load bootstrap admission for an expired session', async () => {

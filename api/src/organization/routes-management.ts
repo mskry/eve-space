@@ -26,6 +26,8 @@ import { OrganizationGroupMutationError } from './group-mutation-error.js'
 import {
   requireOrganizationManager,
   requireOrganizationOwner,
+  requireFreshOrganizationManager,
+  requireFreshOrganizationOwner,
   requireTrustedOrigin,
 } from './route-middleware.js'
 import {
@@ -142,7 +144,7 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
   .put(
     '/corporations/:corporationId/source',
     requireTrustedOrigin,
-    requireOrganizationManager,
+    requireFreshOrganizationManager,
     zValidator('param', corporationParamsSchema),
     zValidator('json', corporationSourceSchema),
     async (context) => {
@@ -173,7 +175,7 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
   .post(
     '/permission-bundles',
     requireTrustedOrigin,
-    requireOrganizationOwner,
+    requireFreshOrganizationOwner,
     zValidator('json', permissionBundleCreateSchema),
     async (context) => {
       try {
@@ -190,7 +192,7 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
   .put(
     '/permission-bundles/:bundleId',
     requireTrustedOrigin,
-    requireOrganizationOwner,
+    requireFreshOrganizationOwner,
     zValidator('param', permissionBundleParamsSchema),
     zValidator('json', permissionBundleUpdateSchema),
     async (context) => {
@@ -209,7 +211,7 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
   .post(
     '/permission-profile-preview',
     requireTrustedOrigin,
-    requireOrganizationOwner,
+    requireFreshOrganizationOwner,
     zValidator('json', permissionProfilePreviewSchema),
     async (context) => {
       try {
@@ -226,7 +228,7 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
   .post(
     '/groups',
     requireTrustedOrigin,
-    requireOrganizationOwner,
+    requireFreshOrganizationOwner,
     zValidator('json', groupSchema),
     async (context) => {
       try {
@@ -243,7 +245,7 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
   .post(
     '/groups/:groupId/assignments',
     requireTrustedOrigin,
-    requireOrganizationManager,
+    requireFreshOrganizationManager,
     zValidator('param', groupParamsSchema),
     zValidator('json', assignGroupSchema),
     async (context) => {
@@ -265,7 +267,7 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
   .post(
     '/groups/:groupId/assignments/:assignmentId/revoke',
     requireTrustedOrigin,
-    requireOrganizationManager,
+    requireFreshOrganizationManager,
     zValidator('param', assignmentParamsSchema),
     zValidator('json', revokeSchema),
     async (context) => {
@@ -285,7 +287,7 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
   .post(
     '/members/:userId/block',
     requireTrustedOrigin,
-    requireOrganizationManager,
+    requireFreshOrganizationManager,
     zValidator('param', memberParamsSchema),
     zValidator('json', revokeSchema),
     async (context) => {
@@ -304,7 +306,7 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
   .post(
     '/members/:userId/unblock',
     requireTrustedOrigin,
-    requireOrganizationManager,
+    requireFreshOrganizationManager,
     zValidator('param', memberParamsSchema),
     zValidator('json', revokeSchema),
     async (context) => {
@@ -449,6 +451,14 @@ function corporationSourceMutationFailure(context: Context, error: unknown) {
       return context.json(
         { code: 'ORGANIZATION_MANAGER_REQUIRED', message: 'Organization management is required.' },
         403,
+      )
+    case 'manager-authority-degraded':
+      return context.json(
+        {
+          code: 'ORGANIZATION_AUTHORITY_DEGRADED',
+          message: 'Fresh organization authority is required for this operation.',
+        },
+        409,
       )
     case 'corporation-not-managed':
       return context.json(

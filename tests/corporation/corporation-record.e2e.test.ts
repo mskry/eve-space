@@ -124,7 +124,7 @@ describe('corporation record routes', async () => {
     rootDir: fileURLToPath(new URL('../..', import.meta.url)),
     build: false,
     nuxtConfig: {
-      nitro: { output: { dir: fileURLToPath(new URL('../../.output', import.meta.url)) } },
+      nitro: { output: { dir: fileURLToPath(new URL('../../.output-e2e', import.meta.url)) } },
     },
     browser: true,
     server: true,

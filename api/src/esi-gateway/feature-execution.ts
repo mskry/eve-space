@@ -98,6 +98,10 @@ export interface EsiReadResult<Data> extends EsiReadResultMetadata {
   readonly quota: EsiReadQuota
 }
 
+export interface EsiCharacterReadResult<Data> extends EsiReadResult<Data> {
+  readonly authorizationGeneration: number
+}
+
 export interface RegisteredPublicEsiRead<Operation extends ReadEsiOperation, Input, Result> {
   readonly [registeredEsiCallableBrand]: true
   readonly operation: Operation
@@ -113,7 +117,7 @@ export interface RegisteredCharacterEsiRead<
   readonly [registeredEsiCallableBrand]: true
   readonly operation: Operation
   readonly requiredScope: string
-  execute(input: Input): Promise<EsiReadResult<Result>>
+  execute(input: Input): Promise<EsiCharacterReadResult<Result>>
 }
 
 export interface RegisteredCharacterEsiMutation<
@@ -188,15 +192,18 @@ export function createCharacterEsiRead<
   return Object.freeze({
     operation: representation.operation,
     requiredScope,
-    execute: async (input: Input) =>
-      toEsiReadResult(
-        await (
-          await getProductionEsiExecutionRuntime()
-        ).executeRepresentation(representation, input, {
-          subjectLifecycleId: input.subjectLifecycleId,
-          ...(input.signal ? { signal: input.signal } : {}),
-        }),
-      ),
+    execute: async (input: Input) => {
+      const execution = await (
+        await getProductionEsiExecutionRuntime()
+      ).executeRepresentation(representation, input, {
+        subjectLifecycleId: input.subjectLifecycleId,
+        ...(input.signal ? { signal: input.signal } : {}),
+      })
+      return {
+        ...toEsiReadResult(execution.result),
+        authorizationGeneration: execution.authorizationGeneration,
+      }
+    },
   }) as RegisteredCharacterEsiRead<Operation, Input, Result>
 }
 

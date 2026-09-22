@@ -141,6 +141,7 @@ describe('affiliation persistence', () => {
       await characterLifecycle.saveLogin({
         characterId: 1,
         characterName: 'Login Pilot',
+        ownerHash: 'login-owner',
         corporationId: 98_000_001,
         allianceId: null,
         affiliationCheckedAt: firstObservedAt,
@@ -156,6 +157,7 @@ describe('affiliation persistence', () => {
       await characterLifecycle.saveLogin({
         characterId: 1,
         characterName: 'Login Pilot',
+        ownerHash: 'login-owner',
         corporationId: 98_000_001,
         allianceId: null,
         affiliationCheckedAt: secondObservedAt,
@@ -227,6 +229,7 @@ describe('affiliation persistence', () => {
     await characterLifecycle.saveLogin({
       characterId: 1,
       characterName: 'Login Pilot',
+      ownerHash: 'login-owner',
       corporationId: 100,
       allianceId: 200,
       accessToken: 'access-token',
@@ -302,12 +305,13 @@ describe('affiliation persistence', () => {
     await connection`insert into users (id) values (${id})`
     await connection`
       insert into characters (
-        character_id, user_id, name, corporation_id, is_main,
+        character_id, user_id, owner_hash, name, corporation_id, is_main,
         affiliation_resolution_state, next_affiliation_check
       )
       select
         value,
         ${id},
+        'owner-' || value,
         'Character ' || value,
         10,
         false,
@@ -336,6 +340,7 @@ describe('affiliation persistence', () => {
       corporationId: 101,
       allianceId: 201,
       affiliationCheckedAt: validatedAt,
+      affiliationFreshUntil: new Date(validatedAt.getTime() + 60 * 60 * 1_000),
       stale: false,
     })
     const [record] = await connection<
@@ -532,10 +537,10 @@ async function insertCharacter(
   await connection`insert into users (id) values (${id}) on conflict do nothing`
   await connection`
     insert into characters (
-      character_id, user_id, name, corporation_id, alliance_id, is_main,
+      character_id, user_id, owner_hash, name, corporation_id, alliance_id, is_main,
       affiliation_resolution_state, next_affiliation_check
     ) values (
-      ${characterId}, ${id}, ${`Character ${characterId}`}, ${options.corporationId ?? 10},
+      ${characterId}, ${id}, ${`owner-${characterId}`}, ${`Character ${characterId}`}, ${options.corporationId ?? 10},
       ${options.allianceId ?? null}, ${options.isMain ?? true}, 'pending', ${options.nextCheck ?? new Date()}
     )
   `

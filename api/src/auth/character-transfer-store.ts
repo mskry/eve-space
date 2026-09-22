@@ -3,6 +3,7 @@ import type { DatabaseTransaction } from '../db/client.js'
 import {
   organizationCharacterExceptions,
   organizationCorporationSources,
+  organizationDerivedAuthoritySources,
   organizationGroupAssignments,
   organizationGroups,
   organizationMemberBlocks,
@@ -82,8 +83,13 @@ async function hasRetainedUserDependency(transaction: DatabaseTransaction, userI
         )
         or exists (
           select 1 from ${organizationCorporationSources}
-          where ${organizationCorporationSources.registeredByUserId} = ${userId}
+          where ${organizationCorporationSources.sourceUserId} = ${userId}
+            or ${organizationCorporationSources.registeredByUserId} = ${userId}
             or ${organizationCorporationSources.revokedByUserId} = ${userId}
+        )
+        or exists (
+          select 1 from ${organizationDerivedAuthoritySources}
+          where ${organizationDerivedAuthoritySources.userId} = ${userId}
         )
         or exists (
           select 1 from ${organizationGroups}

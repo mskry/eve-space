@@ -1,0 +1,73 @@
+import type { ChoiceResponse, EntryType } from '@typesafe-ai/sdk'
+import { evaluateSystemOne, type JevClient } from '../jev/client.js'
+import {
+  platformContractPolicy,
+  platformContractQuestions,
+} from '../jev/policies/platform-contracts.js'
+import type { PlatformContractEvidence } from './evidence.js'
+
+export interface ChoiceJudgment {
+  readonly choice: string
+  readonly confidence: number
+}
+
+export interface PlatformContractJudgment {
+  readonly purposeFit: ChoiceJudgment
+  readonly audienceFit: ChoiceJudgment
+  readonly permissionFit: ChoiceJudgment
+  readonly targetFit: ChoiceJudgment
+  readonly sensitivityFit: ChoiceJudgment
+}
+
+export async function judgePlatformContract(
+  client: JevClient,
+  evidence: PlatformContractEvidence,
+): Promise<PlatformContractJudgment> {
+  const answers = await evaluateSystemOne(client, toModelState(evidence), platformContractQuestions)
+  return {
+    purposeFit: choice(answers.purpose_fit),
+    audienceFit: choice(answers.audience_fit),
+    permissionFit: choice(answers.permission_fit),
+    targetFit: choice(answers.target_fit),
+    sensitivityFit: choice(answers.sensitivity_fit),
+  }
+}
+
+function toModelState(evidence: PlatformContractEvidence): EntryType {
+  return {
+    contract: {
+      module_id: evidence.moduleId,
+      manifest_source: `${evidence.manifestFile}:${evidence.manifestLine}`,
+      route: {
+        id: evidence.route.id,
+        namespace: evidence.route.namespace,
+        export_name: evidence.route.exportName,
+        authorization: evidence.route.authorization,
+        audience: evidence.route.audience,
+        required_permission: evidence.route.requiredPermission,
+        section_id: evidence.route.sectionId,
+        target: evidence.route.target,
+        exposure: evidence.route.exposure,
+        code: evidence.route.code,
+      },
+      permission: evidence.permission ?? 'No matching permission declaration was found.',
+      section: evidence.section ?? 'No section is declared for this route.',
+      reviewer_contribution:
+        evidence.reviewerContribution ?? 'No reviewer contribution is declared for this route.',
+    },
+    implementation: {
+      source:
+        evidence.implementation.file && evidence.implementation.line
+          ? `${evidence.implementation.file}:${evidence.implementation.line}`
+          : 'No route implementation was found.',
+      code: evidence.implementation.code ?? 'No route implementation was found.',
+    },
+    host_composition:
+      evidence.composition || 'No applicable host route composer implementation was found.',
+    policy: platformContractPolicy,
+  }
+}
+
+function choice(answer: ChoiceResponse): ChoiceJudgment {
+  return { choice: answer.choice, confidence: answer.confidence }
+}

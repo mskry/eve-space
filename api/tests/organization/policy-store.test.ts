@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   updated: [] as unknown[],
   authority: vi.fn(),
   appendAudit: vi.fn(),
+  invalidateDerived: vi.fn(),
+  reconcileDeadlines: vi.fn(),
   recomputeAll: vi.fn(),
   transaction: vi.fn(),
 }))
@@ -18,6 +20,10 @@ vi.mock('../../src/organization/audit.js', () => ({
 }))
 vi.mock('../../src/organization/compliance.js', () => ({
   recomputeAllOrganizationAccountsInTransaction: mocks.recomputeAll,
+}))
+vi.mock('../../src/organization/authority-convergence.js', () => ({
+  invalidateDerivedAuthorityPolicySourcesInTransaction: mocks.invalidateDerived,
+  reconcileAuthorityPolicyDeadlinesInTransaction: mocks.reconcileDeadlines,
 }))
 vi.mock('../../src/organization/role-store.js', () => ({
   hasCurrentOrganizationOwnerAuthorityInTransaction: mocks.authority,
@@ -38,6 +44,8 @@ describe('organization registration policy store', () => {
     mocks.updated = []
     mocks.authority.mockResolvedValue(true)
     mocks.appendAudit.mockResolvedValue(undefined)
+    mocks.invalidateDerived.mockResolvedValue(undefined)
+    mocks.reconcileDeadlines.mockResolvedValue(undefined)
     mocks.recomputeAll.mockResolvedValue(undefined)
     mocks.transaction.mockImplementation(async (operation) => operation(transaction()))
   })
@@ -58,6 +66,8 @@ describe('organization registration policy store', () => {
         requiredScopes: [' scope-b ', 'scope-a', 'scope-a'],
         strictRemediationDurationSeconds: 7200,
         staleEvidenceGraceDurationSeconds: 1800,
+        derivedDirectorAuthorityEnabled: true,
+        authorityEvidenceFreshDurationSeconds: 3600,
         reason: 'Policy review',
       }),
     ).resolves.toEqual({
@@ -66,6 +76,8 @@ describe('organization registration policy store', () => {
       requiredScopes: ['scope-a', 'scope-b'],
       strictRemediationDurationSeconds: 7200,
       staleEvidenceGraceDurationSeconds: 1800,
+      derivedDirectorAuthorityEnabled: true,
+      authorityEvidenceFreshDurationSeconds: 3600,
     })
     expect(mocks.appendAudit).toHaveBeenCalledWith(
       expect.anything(),
@@ -90,6 +102,8 @@ describe('organization registration policy store', () => {
         requiredScopes: ['scope-a'],
         strictRemediationDurationSeconds: 3600,
         staleEvidenceGraceDurationSeconds: 900,
+        derivedDirectorAuthorityEnabled: true,
+        authorityEvidenceFreshDurationSeconds: 3600,
         reason: 'No effective change',
       }),
     ).resolves.toMatchObject({ policyVersion: 3, requiredScopes: ['scope-a'] })
@@ -119,6 +133,9 @@ describe('organization registration policy store', () => {
     { staleEvidenceGraceDurationSeconds: 1.5, reason: 'fractional stale duration' },
     { staleEvidenceGraceDurationSeconds: -1, reason: 'negative stale duration' },
     { staleEvidenceGraceDurationSeconds: 24 * 60 * 60 + 1, reason: 'long stale duration' },
+    { authorityEvidenceFreshDurationSeconds: 1.5, reason: 'fractional authority duration' },
+    { authorityEvidenceFreshDurationSeconds: 299, reason: 'short authority duration' },
+    { authorityEvidenceFreshDurationSeconds: 86_401, reason: 'long authority duration' },
     { reason: ' ', label: 'missing reason' },
   ])('rejects invalid policy input: $reason', async (overrides) => {
     await expect(
@@ -133,6 +150,38 @@ describe('organization registration policy store', () => {
     expect(mocks.appendAudit).not.toHaveBeenCalled()
   })
 
+  test('invalidates derived sources and reconciles shortened evidence windows', async () => {
+    mocks.updated = [
+      settings({
+        registrationPolicyVersion: 4,
+        derivedDirectorAuthorityEnabled: false,
+        authorityEvidenceFreshDurationSeconds: 1800,
+        staleEvidenceGraceDurationSeconds: 600,
+      }),
+    ]
+
+    await updateOrganizationRegistrationPolicy({
+      ...validInput(),
+      derivedDirectorAuthorityEnabled: false,
+      authorityEvidenceFreshDurationSeconds: 1800,
+      staleEvidenceGraceDurationSeconds: 600,
+    })
+
+    expect(mocks.invalidateDerived).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ organizationVersion: 8 }),
+    )
+    expect(mocks.reconcileDeadlines).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        organizationVersion: 8,
+        policyVersion: 4,
+        freshDurationSeconds: 1800,
+        staleGraceDurationSeconds: 600,
+      }),
+    )
+  })
+
   test('rejects a policy that would leave its owner noncompliant', async () => {
     mocks.updated = [settings({ registrationPolicyVersion: 4 })]
     mocks.actorCompliance = [{ state: 'suspended' }]
@@ -142,6 +191,25 @@ describe('organization registration policy store', () => {
     )
     expect(mocks.recomputeAll).toHaveBeenCalledOnce()
   })
+
+  test('rolls back a policy that expires the acting owner source', async () => {
+    mocks.updated = [
+      settings({
+        registrationPolicyVersion: 4,
+        authorityEvidenceFreshDurationSeconds: 1800,
+      }),
+    ]
+    mocks.authority.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+
+    await expect(
+      updateOrganizationRegistrationPolicy({
+        ...validInput(),
+        authorityEvidenceFreshDurationSeconds: 1800,
+      }),
+    ).rejects.toEqual(new OrganizationRegistrationPolicyMutationError('owner-policy-noncompliant'))
+    expect(mocks.appendAudit).not.toHaveBeenCalled()
+    expect(mocks.recomputeAll).not.toHaveBeenCalled()
+  })
 })
 
 function validInput() {
@@ -150,6 +218,8 @@ function validInput() {
     requiredScopes: ['scope-b'],
     strictRemediationDurationSeconds: 7200,
     staleEvidenceGraceDurationSeconds: 1800,
+    derivedDirectorAuthorityEnabled: true,
+    authorityEvidenceFreshDurationSeconds: 3600,
     reason: 'Policy review',
   }
 }
@@ -161,6 +231,8 @@ function settings(overrides: Record<string, unknown> = {}) {
     requiredRegistrationScopes: ['scope-a'],
     strictRemediationDurationSeconds: 3600,
     staleEvidenceGraceDurationSeconds: 900,
+    derivedDirectorAuthorityEnabled: true,
+    authorityEvidenceFreshDurationSeconds: 3600,
     ...overrides,
   }
 }

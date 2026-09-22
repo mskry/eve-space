@@ -11,8 +11,10 @@
   "ignorePatterns": [
     ".claude/**",
     ".nuxt/**",
+    ".nuxt-e2e/**",
     ".opencode/**",
     ".output/**",
+    ".output-e2e/**",
     "coverage/**",
     "**/coverage/**",
     "dist/**",

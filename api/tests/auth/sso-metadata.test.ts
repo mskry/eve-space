@@ -404,6 +404,7 @@ describe('EVE SSO requests', () => {
     const publicJwk = await exportJWK(publicKey)
     const token = await new SignJWT({
       sub: 'CHARACTER:EVE:1404328063',
+      owner: 'test-owner-hash',
       name: 'Test Character',
       scp: 'scope.one scope.two',
     })
@@ -430,6 +431,7 @@ describe('EVE SSO requests', () => {
     await expect(verifyAccessToken(token)).resolves.toEqual({
       characterId: 1404328063,
       characterName: 'Test Character',
+      ownerHash: 'test-owner-hash',
       scopes: ['scope.one', 'scope.two'],
     })
   })

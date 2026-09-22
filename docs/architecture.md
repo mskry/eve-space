@@ -88,6 +88,7 @@ Organization membership and governance:
 - `GET /api/organization/compliance` returns only the caller's attached-character compliance details and remediation state.
 - `GET /api/organization/roster-coverage` and `/exceptions` expose HR-scoped registration coverage and external-character exceptions.
 - `/api/organization/roles`, `/registration-policy`, `/corporations/:corporationId/source`, `/groups`, and `/members/:userId/block` expose reasoned, audited organization-management operations to their required roles.
+- `PUT /api/organization/owner-source` atomically replaces the designated owner character with a fresh complete source; it is a remediation operation and does not change the account main.
 - `GET /api/organization/activities` aggregates enabled member-safe activity providers.
 - `GET /auth/eve/claim-organization-owner/:characterId` starts the separate EVE-backed organization-owner verification flow.
 
@@ -140,6 +141,11 @@ trusted target authorization. Product promotion and rollback requirements are do
 - CORS allows credentials only from `WEB_ORIGIN`.
 - Deployment-administrator authority grants no organization membership, HR, director, owner, or private organization-data access. It permits only the minimal source/destination identity and blocker preview needed for an explicit character transfer; this does not create a general character-lookup permission.
 - Organization grants, compliance, groups, blocks, corporation sources, and roster observations are bound to the current organization version; changing the configured organization prevents old-version state from authorizing current access.
+- Registration compliance, explicit application grants, EVE-derived Director sources, designated owner evidence, and designated corporation-operation sources remain separate policy planes. Compliance never grants elevated authority, and explicit grants are not represented as EVE evidence.
+- Every character-backed authority fact is bound to its source character, ownership lifecycle, account, organization version, authorization generation, required scope, role-evidence revision, and absolute freshness deadline. Owner hashes remain server-only continuity inputs and never enter APIs, audits, telemetry, domain events, or queue payloads.
+- Privilege-changing mutations require fresh authority. Degraded evidence permits only explicitly classified read continuity and source remediation; definitive lifecycle, owner, authorization, scope, affiliation, role, block, or organization-version failures invalidate without grace.
+- Main-character selection is authority-neutral. Derived Director authority unions independently complete character sources, while owner and corporation sources require explicit replacement and queued work becomes obsolete when its immutable source identity no longer matches.
+- Alliance-wide owner and derived Director authority is restricted to the executor corporation. A member-corporation Director can authorize only exact-corporation work through that corporation's designated source.
 - Protected organization routes apply current compliance, role, group, and explicit-block decisions before module handlers or private data reads execute.
 - Organization authority, exception, compliance, group, block, and entitlement decisions append immutable audit records without token or raw private ESI fields.
 - Wallet responses use private browser caching and generation-bound server-side shared envelopes; token or scope generation changes invalidate warm private entries before they can be read.

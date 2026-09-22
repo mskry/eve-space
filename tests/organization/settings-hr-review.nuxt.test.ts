@@ -178,6 +178,9 @@ const contextResponse = {
   capabilities: { reviewRegistration: true, viewRosterCoverage: true },
   claimAvailable: false,
   ownerStatus: 'fresh',
+  ownerFailureClass: null,
+  freshUntil: '2026-09-10T13:00:00.000Z',
+  graceUntil: null,
   reviewDeadline: null,
   authorityCharacter: null,
 } satisfies OrganizationContext

@@ -172,7 +172,7 @@ Start Nuxt on the host:
 pnpm dev
 ```
 
-`pnpm stack:up` starts PostgreSQL, durable queue Redis, disposable cache Redis, the Hono API, and the worker. The API container applies pending core and installed-module migrations before opening its HTTP socket. `pnpm dev` runs Nuxt separately on the host.
+`pnpm stack:up` starts PostgreSQL, durable queue Redis, disposable cache Redis, the Hono API, and the worker. The API container applies pending core and installed-module migrations before opening its HTTP socket. `pnpm dev` runs Nuxt separately on the host without a second TypeScript checker; use `pnpm typecheck:nuxt` for an explicit frontend type check. Normal production builds still type-check.
 
 Open `http://localhost:3000`. The API is available at `http://localhost:8788`.
 
@@ -218,7 +218,7 @@ cargo clippy --manifest-path sde-ingest/Cargo.toml --all-targets --all-features 
 cargo test --manifest-path sde-ingest/Cargo.toml --all-features --locked
 ```
 
-Run `pnpm test:e2e` for the production-server browser suite, `pnpm lint:fix` for safe lint fixes, and `pnpm format` to format supported files. `pnpm build` builds installed module dependencies and the Nuxt application.
+Run `pnpm test:e2e` for the production-server browser suite. It builds into isolated `.nuxt-e2e` and `.output-e2e` directories so a running development server is not disturbed, and leaves the duplicate build-time type check to the separate `pnpm typecheck` command. After that build, use `pnpm test:e2e:built` to repeat the browser suite without rebuilding Nuxt; rerun `pnpm test:e2e:build` after application or build-configuration changes. Run `pnpm lint:fix` for safe lint fixes and `pnpm format` to format supported files. `pnpm build` builds installed module dependencies and the Nuxt application.
 
 Coverage suites exercise SSO, administrator and organization authorization, compliance, character, corporation and mail resources, module composition, status telemetry, ESI cache/quota behavior, and queue scheduling. `test:redis` runs a thresholded Testcontainers suite against Redis 7.4 Alpine; `test:postgres` exercises real PostgreSQL migrations and coordination behavior.
 

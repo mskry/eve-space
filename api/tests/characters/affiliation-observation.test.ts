@@ -43,6 +43,7 @@ describe('character affiliation observation', () => {
       corporationId: 98_000_001,
       allianceId: 99_000_001,
       affiliationCheckedAt: new Date(validatedAt),
+      affiliationFreshUntil: new Date('2026-08-31T13:00:00.000Z'),
       stale: true,
     })
     expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({

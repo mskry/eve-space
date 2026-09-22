@@ -179,11 +179,6 @@ function storedEvent() {
     payload: {
       userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
       characterId: 1404328063,
-      characterName: 'Bandera Primary',
-      corporationId: 1000166,
-      allianceId: null,
-      isMain: true,
-      scopes: [],
     },
     occurredAt: new Date('2026-08-23T12:00:00.000Z'),
   }

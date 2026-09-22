@@ -5,6 +5,7 @@ import {
   createCharacterEsiMutation,
   createCharacterEsiRead,
   createPublicEsiRead,
+  type EsiCharacterReadResult,
   type EsiReadResult,
   type RegisteredPublicEsiRead,
 } from '../../src/esi-gateway/feature-execution.js'
@@ -44,7 +45,7 @@ const skills = createCharacterEsiRead({
 })
 
 expectTypeOf(skills.execute({ characterId: 1, subjectLifecycleId: 'lifecycle' })).toEqualTypeOf<
-  Promise<EsiReadResult<{ totalSp: number }>>
+  Promise<EsiCharacterReadResult<{ totalSp: number }>>
 >()
 
 // @ts-expect-error character callables require lifecycle authority in their single input

@@ -307,11 +307,6 @@ describe('approved character transfer', () => {
       payload: {
         userId: sourceUserId,
         characterId: sourceCharacterId,
-        characterName: 'Source Pilot',
-        corporationId: 1_000_166,
-        allianceId: null,
-        isMain: true,
-        scopes: [],
       },
       published_at: null,
     })
@@ -323,11 +318,6 @@ describe('approved character transfer', () => {
       payload: {
         userId: destinationUserId,
         characterId: sourceCharacterId,
-        characterName: 'Transferred Pilot',
-        corporationId: 1_000_166,
-        allianceId: null,
-        isMain: false,
-        scopes: ['scope.new'],
       },
       published_at: null,
     })
@@ -511,8 +501,8 @@ describe('approved character transfer', () => {
     expect(result.subjectLifecycleId).not.toBe(transfer.sourceSubjectLifecycleId)
     const events = await transferCharacterEvents()
     expect(events).toEqual([
-      { event_type: 'character.detached', user_id: transfer.sourceUserId, is_main: false },
-      { event_type: 'character.attached', user_id: transfer.destinationUserId, is_main: false },
+      { event_type: 'character.detached', user_id: transfer.sourceUserId },
+      { event_type: 'character.attached', user_id: transfer.destinationUserId },
     ])
   })
 
@@ -1768,6 +1758,7 @@ describe('approved character transfer', () => {
     ssoMocks.verifyAccessToken.mockResolvedValue({
       characterId: sourceAlternateCharacterId,
       characterName: 'Source Alt',
+      ownerHash: `owner-${sourceAlternateCharacterId}`,
       scopes: ['scope.old'],
     })
 
@@ -1839,6 +1830,12 @@ describe('approved character transfer', () => {
       userId: transfer.sourceUserId,
       sessionToken: transfer.sourceSession,
     })
+    const ownerAuthorization =
+      await characterTokenStore.findCharacterCacheAuthorizationForLifecycle(
+        sourceAlternateCharacterId,
+        transfer.sourceSubjectLifecycleId,
+      )
+    if (!ownerAuthorization) throw new Error('Owner authorization is missing')
 
     const [claim, redemption] = await raceBehindDeploymentSettingsLock([
       () =>
@@ -1846,6 +1843,10 @@ describe('approved character transfer', () => {
           userId: transfer.sourceUserId,
           characterId: sourceAlternateCharacterId,
           subjectLifecycleId: transfer.sourceSubjectLifecycleId,
+          authorizationGeneration: ownerAuthorization.tokenVersion,
+          roleEvidenceRevision: new Date().toISOString(),
+          evidenceAuthorizationGeneration: ownerAuthorization.tokenVersion,
+          evidenceFreshUntil: new Date(Date.now() + 60_000),
           organizationId: 1_000_166,
           organizationVersion: 1,
           authorityCorporationId: 1_000_166,
@@ -1880,15 +1881,18 @@ describe('approved character transfer', () => {
 
   test('serializes production corporation-source creation with transfer revalidation', async () => {
     const transfer = await prepareNonMainTransfer()
-    await prepareCorporationSourceCandidate(transfer, sourceAlternateCharacterId)
+    const evidence = await prepareCorporationSourceCandidate(transfer, sourceAlternateCharacterId)
 
     const [registration, redemption] = await raceBehindDeploymentSettingsLock([
       () =>
-        corporationSources.registerOrganizationCorporationSource({
-          actorUserId: transfer.sourceUserId,
-          corporationId: 1_000_166,
-          characterId: sourceAlternateCharacterId,
-        }),
+        corporationSources.registerOrganizationCorporationSource(
+          {
+            actorUserId: transfer.sourceUserId,
+            corporationId: 1_000_166,
+            characterId: sourceAlternateCharacterId,
+          },
+          { evidence },
+        ),
       () => redeemPreparedTransfer(transfer),
     ])
 
@@ -1922,21 +1926,30 @@ describe('approved character transfer', () => {
 
   test('allows transfer only after production source replacement revokes the blocker', async () => {
     const transfer = await prepareNonMainTransfer()
-    await prepareCorporationSourceCandidate(transfer, sourceAlternateCharacterId)
-    const original = await corporationSources.registerOrganizationCorporationSource({
-      actorUserId: transfer.sourceUserId,
-      corporationId: 1_000_166,
-      characterId: sourceAlternateCharacterId,
-    })
-    await prepareCorporationSourceCandidate(transfer, sourceCharacterId)
+    const originalEvidence = await prepareCorporationSourceCandidate(
+      transfer,
+      sourceAlternateCharacterId,
+    )
+    const original = await corporationSources.registerOrganizationCorporationSource(
+      {
+        actorUserId: transfer.sourceUserId,
+        corporationId: 1_000_166,
+        characterId: sourceAlternateCharacterId,
+      },
+      { evidence: originalEvidence },
+    )
+    const replacementEvidence = await prepareCorporationSourceCandidate(transfer, sourceCharacterId)
 
     const [replacement, redemption] = await raceBehindDeploymentSettingsLock([
       () =>
-        corporationSources.registerOrganizationCorporationSource({
-          actorUserId: transfer.sourceUserId,
-          corporationId: 1_000_166,
-          characterId: sourceCharacterId,
-        }),
+        corporationSources.registerOrganizationCorporationSource(
+          {
+            actorUserId: transfer.sourceUserId,
+            corporationId: 1_000_166,
+            characterId: sourceCharacterId,
+          },
+          { evidence: replacementEvidence },
+        ),
       () => redeemPreparedTransfer(transfer),
     ])
 
@@ -2552,6 +2565,7 @@ function redeemPreparedTransfer(transfer: Awaited<ReturnType<typeof prepareNonMa
 
 async function insertOwnerEvidence(userId: string, characterId: number) {
   const grantId = randomUUID()
+  const binding = await loadCharacterAuthorityBinding(characterId)
   await connection`
     insert into organization_role_grants (
       grant_id, deployment_id, organization_version, user_id, role, granted_by_user_id, reason
@@ -2562,18 +2576,21 @@ async function insertOwnerEvidence(userId: string, characterId: number) {
   await connection`
     insert into organization_authority_evidence (
       grant_id, deployment_id, organization_version, user_id, role, character_id,
+      source_subject_lifecycle_id, authorization_generation, role_evidence_revision,
       authority_corporation_id, observed_corporation_id, observed_alliance_id,
-      required_scope, director_role_present, status, verified_at, last_checked_at
+      required_scope, director_role_present, status, observed_at, fresh_until, last_checked_at
     ) values (
       ${grantId}, 1, 1, ${userId}, 'organization_owner', ${characterId},
+      ${binding.subjectLifecycleId}, ${binding.authorizationGeneration}, 'roles-1',
       1000166, 1000166, null, 'esi-characters.read_corporation_roles.v1',
-      true, 'fresh', now(), now()
+      true, 'fresh', now(), now() + interval '1 hour', now()
     )
   `
   return grantId
 }
 
 async function insertCorporationSource(userId: string, characterId: number) {
+  const binding = await loadCharacterAuthorityBinding(characterId)
   await connection`
     insert into organization_managed_corporations (
       deployment_id, organization_version, corporation_id, is_current,
@@ -2586,16 +2603,39 @@ async function insertCorporationSource(userId: string, characterId: number) {
   await connection`
     insert into organization_corporation_sources (
       source_id, deployment_id, organization_version, corporation_id,
-      character_id, evidence_character_id, registered_by_user_id
-    ) values (${sourceId}, 1, 1, 1000166, ${characterId}, ${characterId}, ${userId})
+      character_id, evidence_character_id, source_user_id, source_subject_lifecycle_id,
+      authorization_generation, role_evidence_revision, observed_corporation_id,
+      required_scope, director_role_present, observed_at, fresh_until, status,
+      registered_by_user_id
+    ) values (
+      ${sourceId}, 1, 1, 1000166, ${characterId}, ${characterId}, ${userId},
+      ${binding.subjectLifecycleId}, ${binding.authorizationGeneration}, 'roles-1', 1000166,
+      'esi-corporations.read_corporation_membership.v1', true, now(),
+      now() + interval '1 hour', 'fresh', ${userId}
+    )
   `
   return sourceId
 }
 
+async function loadCharacterAuthorityBinding(characterId: number) {
+  const [binding] = await connection<
+    { subject_lifecycle_id: string; authorization_generation: number }[]
+  >`
+    select lifecycle.subject_lifecycle_id, token.token_version as authorization_generation
+    from platform_subject_lifecycles lifecycle
+    join eve_tokens token on token.character_id = lifecycle.character_id
+    where lifecycle.character_id = ${characterId}
+  `
+  if (!binding) throw new Error('Character authority binding is missing')
+  return {
+    subjectLifecycleId: binding.subject_lifecycle_id,
+    authorizationGeneration: binding.authorization_generation,
+  }
+}
+
 async function transferCharacterEvents() {
-  return connection<{ event_type: string; user_id: string; is_main: boolean }[]>`
-    select event_type, payload ->> 'userId' as user_id,
-      (payload ->> 'isMain')::boolean as is_main
+  return connection<{ event_type: string; user_id: string }[]>`
+    select event_type, payload ->> 'userId' as user_id
     from domain_events
     where event_type in ('character.detached', 'character.attached')
     order by event_sequence
@@ -2906,6 +2946,7 @@ function authorization(
   return {
     characterId,
     characterName,
+    ownerHash: `owner-${characterId}`,
     corporationId: 1_000_166,
     allianceId: null,
     accessToken: `${credentialLabel}-access-token`,
@@ -3201,8 +3242,9 @@ async function prepareCorporationSourceCandidate(
   characterId: number,
 ) {
   const membershipScope = 'esi-corporations.read_corporation_membership.v1'
+  const rolesScope = 'esi-characters.read_corporation_roles.v1'
   await characterLifecycle.attachCharacter({
-    ...authorization(characterId, `Source ${characterId}`, [membershipScope]),
+    ...authorization(characterId, `Source ${characterId}`, [membershipScope, rolesScope]),
     userId: transfer.sourceUserId,
     sessionToken: transfer.sourceSession,
   })
@@ -3240,6 +3282,38 @@ async function prepareCorporationSourceCandidate(
     where deployment_id = 1 and organization_version = 1
       and user_id = ${transfer.sourceUserId}
   `
+  const [binding] = await connection<
+    { subject_lifecycle_id: string; token_version: number; affiliation_checked_at: Date }[]
+  >`
+    select lifecycle.subject_lifecycle_id, token.token_version, character.affiliation_checked_at
+    from characters character
+    join eve_tokens token on token.character_id = character.character_id
+    join platform_subject_lifecycles lifecycle on lifecycle.character_id = character.character_id
+    where character.character_id = ${characterId}
+  `
+  if (!binding) throw new Error('Corporation-source candidate binding is missing')
+  const observedAt = new Date()
+  return {
+    affiliation: {
+      characterId,
+      corporationId: 1_000_166,
+      allianceId: null,
+      affiliationCheckedAt: binding.affiliation_checked_at,
+      affiliationFreshUntil: new Date(observedAt.getTime() + 60 * 60 * 1_000),
+      stale: false,
+    },
+    roles: {
+      roles: ['Director'],
+      rolesAtBase: [],
+      rolesAtHeadquarters: [],
+      rolesAtOther: [],
+      authorizationGeneration: binding.token_version,
+      roleEvidenceRevision: observedAt.toISOString(),
+      observedAt,
+      freshUntil: new Date(observedAt.getTime() + 60 * 60 * 1_000),
+      stale: false,
+    },
+  }
 }
 
 async function prepareCharacterResourceObservation(

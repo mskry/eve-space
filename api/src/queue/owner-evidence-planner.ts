@@ -7,14 +7,13 @@ export async function runOrganizationOwnerEvidencePlanner(context: QueuePlanning
   const due = await selectDueOrganizationOwnerEvidence()
   signal?.throwIfAborted()
   let planned = 0
-  for (const { grantId } of due) {
+  for (const candidate of due) {
     signal?.throwIfAborted()
-    const payload = { operationId: organizationOwnerEvidenceJobId(grantId), grantId }
     // oxlint-disable-next-line no-await-in-loop
     const admission = await producer.enqueue(
       {
         name: 'organization-owner-evidence',
-        payload,
+        payload: candidate,
         source: 'planner',
       },
       { signal },
@@ -26,8 +25,4 @@ export async function runOrganizationOwnerEvidencePlanner(context: QueuePlanning
     planned += 1
   }
   return { planned, reason: planned === 0 ? ('idle' as const) : ('scheduled' as const) }
-}
-
-export function organizationOwnerEvidenceJobId(grantId: string) {
-  return `organization-owner-evidence-${grantId}`
 }

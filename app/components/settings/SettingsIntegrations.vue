@@ -8,13 +8,18 @@ const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const {
   authenticated,
   authorityContext,
+  corporationSources,
   deploymentConfigured,
+  derivedSources,
   errorMessage,
   grantRole,
   initialize,
   invalidationRevision,
   loading,
   mutationPending,
+  ownerSources,
+  replaceCorporationSource,
+  replaceOwnerSource,
   revokeRole,
   roleGrants,
 } = useOrganizationAuthority(apiClient)
@@ -27,6 +32,10 @@ const grantReason = ref('')
 const revokeGrantId = ref<string | null>(null)
 const revokeReason = ref('')
 const actionMessage = ref('')
+const ownerReplacementCharacterId = ref<number | null>(null)
+const ownerReplacementReason = ref('')
+const corporationReplacementId = ref<number | null>(null)
+const corporationReplacementCharacterId = ref<number | null>(null)
 const organizationAccessAvailable = computed(
   () =>
     authenticated.value &&
@@ -85,13 +94,47 @@ onMounted(async () => {
   await loadCharacterRoster()
 })
 
-async function startOwnerClaim() {
-  if (!claimCharacterId.value) return
+async function startOwnerClaim(characterId = claimCharacterId.value) {
+  if (!characterId) return
   const destination = new URL(
-    `/auth/eve/claim-organization-owner/${claimCharacterId.value}`,
+    `/auth/eve/claim-organization-owner/${characterId}`,
     runtimeConfig.public.apiBase,
   )
   await navigateTo(destination.toString(), { external: true })
+}
+
+async function submitOwnerReplacement() {
+  if (!ownerReplacementCharacterId.value) return
+  actionMessage.value = ''
+  try {
+    const replaced = await replaceOwnerSource({
+      characterId: ownerReplacementCharacterId.value,
+      reason: ownerReplacementReason.value.trim(),
+    })
+    if (!replaced) return
+    ownerReplacementCharacterId.value = null
+    ownerReplacementReason.value = ''
+    actionMessage.value = 'Organization-owner source replaced.'
+  } catch {
+    actionMessage.value = ''
+  }
+}
+
+async function submitCorporationReplacement() {
+  if (!corporationReplacementId.value || !corporationReplacementCharacterId.value) return
+  actionMessage.value = ''
+  try {
+    const replaced = await replaceCorporationSource({
+      corporationId: corporationReplacementId.value,
+      characterId: corporationReplacementCharacterId.value,
+    })
+    if (!replaced) return
+    corporationReplacementId.value = null
+    corporationReplacementCharacterId.value = null
+    actionMessage.value = 'Corporation source replaced.'
+  } catch {
+    actionMessage.value = ''
+  }
 }
 
 async function submitGrant() {
@@ -140,10 +183,22 @@ function resetRoleAdministrationState() {
   grantReason.value = ''
   closeRevocation()
   actionMessage.value = ''
+  ownerReplacementCharacterId.value = null
+  ownerReplacementReason.value = ''
+  corporationReplacementId.value = null
+  corporationReplacementCharacterId.value = null
 }
 
 function roleLabel(role: DelegatedOrganizationRole) {
   return role === 'hr_auditor' ? 'HR / Auditor' : 'Director'
+}
+
+function sourceFailureLabel(failureClass: string | null) {
+  if (!failureClass) return 'None'
+  const label = failureClass.replace(/^(?:strict|transient):/, '').replaceAll('-', ' ')
+  if (label.startsWith('esi ')) return `ESI ${label.slice(4)}`
+  if (label.startsWith('sso ')) return `SSO ${label.slice(4)}`
+  return `${label.charAt(0).toUpperCase()}${label.slice(1)}`
 }
 </script>
 
@@ -174,7 +229,7 @@ function roleLabel(role: DelegatedOrganizationRole) {
         {{ ownerFeedback }}
       </output>
       <p v-if="errorMessage" class="ui-inline-error" role="alert">{{ errorMessage }}</p>
-      <p class="sr-only" aria-live="polite">{{ actionMessage }}</p>
+      <output class="sr-only" aria-live="polite">{{ actionMessage }}</output>
 
       <div v-if="!loading && deploymentConfigured === false" class="authority-loading">
         Deployment organization is not configured. Organization authority becomes available after
@@ -223,7 +278,39 @@ function roleLabel(role: DelegatedOrganizationRole) {
                 }}
               </dd>
             </div>
+            <div>
+              <dt>Fresh until</dt>
+              <dd>{{ formatSettingsTimestamp(authorityContext.freshUntil, 'Expired') }}</dd>
+            </div>
+            <div v-if="authorityContext.graceUntil">
+              <dt>Grace until</dt>
+              <dd>{{ formatSettingsTimestamp(authorityContext.graceUntil, 'Expired') }}</dd>
+            </div>
+            <div v-if="authorityContext.ownerFailureClass">
+              <dt>Failure</dt>
+              <dd>{{ sourceFailureLabel(authorityContext.ownerFailureClass) }}</dd>
+            </div>
           </dl>
+          <form
+            v-if="authorityContext.claimAvailable"
+            class="authority-claim-form"
+            @submit.prevent="startOwnerClaim()"
+          >
+            <label for="authority-recovery-character">Replacement authority character</label>
+            <select id="authority-recovery-character" v-model="claimCharacterId" required>
+              <option :value="null" disabled>Select a character</option>
+              <option
+                v-for="character in characters"
+                :key="character.characterId"
+                :value="character.characterId"
+              >
+                {{ character.name }} / {{ character.corporation.name }}
+              </option>
+            </select>
+            <button class="ui-action-primary" type="submit" :disabled="!claimCharacterId">
+              REVERIFY OR REPLACE SOURCE
+            </button>
+          </form>
         </article>
 
         <div v-else-if="authorityContext.claimAvailable" class="authority-claim-panel">
@@ -235,7 +322,7 @@ function roleLabel(role: DelegatedOrganizationRole) {
               verify current affiliation and the Director role.
             </p>
           </div>
-          <form class="authority-claim-form" @submit.prevent="startOwnerClaim">
+          <form class="authority-claim-form" @submit.prevent="startOwnerClaim()">
             <label for="authority-character">Authority character</label>
             <select id="authority-character" v-model="claimCharacterId" required>
               <option :value="null" disabled>Select a character</option>
@@ -286,6 +373,183 @@ function roleLabel(role: DelegatedOrganizationRole) {
           ledger.
         </p>
       </header>
+
+      <div class="authority-source-ledger">
+        <div class="authority-source-ledger__heading">
+          <span class="authority-step">SOURCE LEDGER</span>
+          <p>Bounded provenance only. Private EVE evidence and credentials are never shown.</p>
+        </div>
+
+        <article v-for="source in ownerSources" :key="source.sourceId" class="authority-source-row">
+          <div class="authority-source-row__identity">
+            <span>DESIGNATED OWNER</span>
+            <strong>{{ source.characterName ?? `Character ${source.characterId}` }}</strong>
+            <p>User {{ source.userId }} / Corporation {{ source.authorityCorporationId }}</p>
+          </div>
+          <dl>
+            <div>
+              <dt>Status</dt>
+              <dd>{{ source.status }}</dd>
+            </div>
+            <div>
+              <dt>{{ source.status === 'degraded' ? 'Grace until' : 'Fresh until' }}</dt>
+              <dd>
+                {{
+                  formatSettingsTimestamp(
+                    source.status === 'degraded' ? source.graceUntil : source.freshUntil,
+                    'Expired',
+                  )
+                }}
+              </dd>
+            </div>
+            <div>
+              <dt>Failure</dt>
+              <dd>{{ sourceFailureLabel(source.failureClass) }}</dd>
+            </div>
+          </dl>
+          <button
+            v-if="!source.grantRevokedAt && source.status !== 'fresh'"
+            class="ui-action-secondary"
+            type="button"
+            @click="ownerReplacementCharacterId = source.characterId"
+          >
+            REPLACE SOURCE
+          </button>
+        </article>
+
+        <form
+          v-if="ownerReplacementCharacterId"
+          class="authority-source-remediation"
+          @submit.prevent="submitOwnerReplacement"
+        >
+          <label for="owner-replacement-character">Replacement owner character</label>
+          <select id="owner-replacement-character" v-model="ownerReplacementCharacterId" required>
+            <option
+              v-for="character in characters"
+              :key="character.characterId"
+              :value="character.characterId"
+            >
+              {{ character.name }} / {{ character.corporation.name }}
+            </option>
+          </select>
+          <label for="owner-replacement-reason">Reason</label>
+          <textarea
+            id="owner-replacement-reason"
+            v-model="ownerReplacementReason"
+            maxlength="2000"
+            required
+          ></textarea>
+          <button class="ui-action-primary" type="submit" :disabled="mutationPending">
+            CONFIRM OWNER SOURCE
+          </button>
+        </form>
+
+        <article
+          v-for="source in derivedSources"
+          :key="source.sourceId"
+          class="authority-source-row"
+        >
+          <div class="authority-source-row__identity">
+            <span>DERIVED DIRECTOR</span>
+            <strong>{{ source.characterName ?? `Character ${source.characterId}` }}</strong>
+            <p>User {{ source.userId }} / Corporation {{ source.authorityCorporationId }}</p>
+          </div>
+          <dl>
+            <div>
+              <dt>Status</dt>
+              <dd>{{ source.status }}</dd>
+            </div>
+            <div>
+              <dt>{{ source.status === 'degraded' ? 'Grace until' : 'Fresh until' }}</dt>
+              <dd>
+                {{
+                  formatSettingsTimestamp(
+                    source.status === 'degraded' ? source.graceUntil : source.freshUntil,
+                    'Expired',
+                  )
+                }}
+              </dd>
+            </div>
+            <div>
+              <dt>Failure</dt>
+              <dd>{{ sourceFailureLabel(source.failureClass) }}</dd>
+            </div>
+          </dl>
+          <NuxtLink
+            v-if="source.status !== 'fresh'"
+            class="ui-action-secondary"
+            :to="`/characters/${source.characterId}`"
+          >
+            REAUTHORIZE CHARACTER
+          </NuxtLink>
+        </article>
+
+        <article
+          v-for="source in corporationSources"
+          :key="source.sourceId"
+          class="authority-source-row"
+        >
+          <div class="authority-source-row__identity">
+            <span>CORPORATION {{ source.corporationId }}</span>
+            <strong>{{ source.characterName ?? `Character ${source.characterId}` }}</strong>
+            <p>Designated corporation operation source</p>
+          </div>
+          <dl>
+            <div>
+              <dt>Status</dt>
+              <dd>{{ source.status }}</dd>
+            </div>
+            <div>
+              <dt>{{ source.status === 'degraded' ? 'Grace until' : 'Fresh until' }}</dt>
+              <dd>
+                {{
+                  formatSettingsTimestamp(
+                    source.status === 'degraded' ? source.graceUntil : source.freshUntil,
+                    'Expired',
+                  )
+                }}
+              </dd>
+            </div>
+            <div>
+              <dt>Failure</dt>
+              <dd>{{ sourceFailureLabel(source.failureClass) }}</dd>
+            </div>
+          </dl>
+          <button
+            v-if="!source.revokedAt && source.status !== 'fresh'"
+            class="ui-action-secondary"
+            type="button"
+            @click="corporationReplacementId = source.corporationId"
+          >
+            REPLACE SOURCE
+          </button>
+        </article>
+
+        <form
+          v-if="corporationReplacementId"
+          class="authority-source-remediation"
+          @submit.prevent="submitCorporationReplacement"
+        >
+          <label for="corporation-replacement-character">Replacement corporation character</label>
+          <select
+            id="corporation-replacement-character"
+            v-model="corporationReplacementCharacterId"
+            required
+          >
+            <option :value="null" disabled>Select a character</option>
+            <option
+              v-for="character in characters"
+              :key="character.characterId"
+              :value="character.characterId"
+            >
+              {{ character.name }} / {{ character.corporation.name }}
+            </option>
+          </select>
+          <button class="ui-action-primary" type="submit" :disabled="mutationPending">
+            CONFIRM CORPORATION SOURCE
+          </button>
+        </form>
+      </div>
 
       <div class="role-management-grid">
         <form class="role-grant-form" @submit.prevent="submitGrant">

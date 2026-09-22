@@ -53,12 +53,17 @@ describe('domain event registry', () => {
   test('normalizes scopes deterministically during producer validation', () => {
     expect(normalizeScopeSet(['scope-z', 'scope-a', 'scope-z'])).toEqual(['scope-a', 'scope-z'])
     const event = validateDomainEventInput({
-      type: 'character.attached',
+      type: 'character.scopes-changed',
       payloadVersion: 1,
       aggregateId: '1404328063',
-      payload: characterSnapshot([' scope-z ', 'scope-a', 'scope-z']),
+      payload: {
+        userId,
+        characterId: 1404328063,
+        addedScopes: [' scope-z ', 'scope-a', 'scope-z'],
+        removedScopes: [],
+      },
     })
-    expect(event).toMatchObject({ payload: { scopes: ['scope-a', 'scope-z'] } })
+    expect(event).toMatchObject({ payload: { addedScopes: ['scope-a', 'scope-z'] } })
   })
 
   test.each([
@@ -66,7 +71,7 @@ describe('domain event registry', () => {
       type: 'character.detached',
       payloadVersion: 1,
       aggregateId: '1404328063',
-      payload: characterSnapshot([]),
+      payload: characterLifecyclePayload(),
     },
     {
       type: 'character.main-changed',
@@ -113,7 +118,7 @@ describe('domain event registry', () => {
         type: 'character.attached',
         payloadVersion: 2,
         aggregateId: '1404328063',
-        payload: characterSnapshot([]),
+        payload: characterLifecyclePayload(),
       }),
     ).toThrow(DomainEventValidationError)
     expect(() =>
@@ -159,14 +164,6 @@ describe('domain event registry', () => {
     'accepts player-controlled display text: %s',
     (characterName) => {
       expect(() => assertSecretFreePayload({ characterName })).not.toThrow()
-      expect(
-        validateDomainEventInput({
-          type: 'character.attached',
-          payloadVersion: 1,
-          aggregateId: '1404328063',
-          payload: { ...characterSnapshot([]), characterName },
-        }),
-      ).toMatchObject({ payload: { characterName } })
     },
   )
 
@@ -252,7 +249,7 @@ describe('outbox operation guards', () => {
           type: 'character.attached',
           payloadVersion: 1,
           aggregateId: '1404328063',
-          payload: { ...characterSnapshot([]), clientSecret: 'no' },
+          payload: { ...characterLifecyclePayload(), clientSecret: 'no' },
         } as never,
       ),
     ).rejects.toThrow(DomainEventValidationError)
@@ -260,16 +257,8 @@ describe('outbox operation guards', () => {
   })
 })
 
-function characterSnapshot(scopes: string[]) {
-  return {
-    userId,
-    characterId: 1404328063,
-    characterName: 'Bandera Primary',
-    corporationId: 1000166,
-    allianceId: null,
-    isMain: true,
-    scopes,
-  }
+function characterLifecyclePayload() {
+  return { userId, characterId: 1404328063 }
 }
 
 function storedAttachedEvent() {
@@ -280,7 +269,7 @@ function storedAttachedEvent() {
     payloadVersion: 1,
     aggregateType: 'character',
     aggregateId: '1404328063',
-    payload: characterSnapshot(['scope-a']),
+    payload: characterLifecyclePayload(),
     occurredAt: new Date('2026-08-23T12:00:00.000Z'),
   }
 }

@@ -7,17 +7,29 @@ describe('organization owner claim policy', () => {
   test.each([
     { owner: undefined, expected: true },
     {
-      owner: { failureClass: 'strict:not-director', reviewDeadline: null },
-      expected: true,
-    },
-    {
-      owner: { failureClass: 'grace:esi-unavailable', reviewDeadline: now },
+      owner: {
+        status: 'invalid' as const,
+        freshUntil: new Date('2026-09-01T13:00:00Z'),
+        graceUntil: null,
+        invalidatedAt: null,
+      },
       expected: true,
     },
     {
       owner: {
-        failureClass: null,
-        reviewDeadline: new Date('2026-09-01T13:00:00Z'),
+        status: 'degraded' as const,
+        freshUntil: new Date('2026-09-01T11:00:00Z'),
+        graceUntil: now,
+        invalidatedAt: null,
+      },
+      expected: true,
+    },
+    {
+      owner: {
+        status: 'fresh' as const,
+        freshUntil: new Date('2026-09-01T13:00:00Z'),
+        graceUntil: null,
+        invalidatedAt: null,
       },
       expected: false,
     },

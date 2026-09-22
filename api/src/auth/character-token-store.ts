@@ -16,6 +16,7 @@ const characterCacheAuthorizationSelection = {
 
 export interface StoredCharacterToken {
   userId: string
+  ownerHash: string
   encryptedTokens: string
   accessTokenExpiresAt: Date
   scopes: string[]
@@ -46,6 +47,7 @@ export async function findCharacterToken(
   const [record] = await connection
     .select({
       userId: characters.userId,
+      ownerHash: characters.ownerHash,
       encryptedTokens: eveTokens.encryptedTokens,
       accessTokenExpiresAt: eveTokens.accessTokenExpiresAt,
       scopes: eveTokens.scopes,
@@ -77,6 +79,7 @@ export async function findCharacterTokenForLifecycle(
   const [record] = await connection
     .select({
       userId: characters.userId,
+      ownerHash: characters.ownerHash,
       encryptedTokens: eveTokens.encryptedTokens,
       accessTokenExpiresAt: eveTokens.accessTokenExpiresAt,
       scopes: eveTokens.scopes,

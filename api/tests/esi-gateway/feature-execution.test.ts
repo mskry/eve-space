@@ -261,6 +261,7 @@ describe('callable ESI feature execution', () => {
     )
     await expect(wallet.execute(input)).resolves.toStrictEqual({
       data: 10,
+      authorizationGeneration: 1,
       source: 'cache',
       validatedAt: '2026-09-02T11:00:00.000Z',
       cachedUntil: '2026-09-02T11:01:00.000Z',

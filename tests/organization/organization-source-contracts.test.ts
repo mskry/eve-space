@@ -40,6 +40,19 @@ describe('organization frontend source contracts', () => {
     expect(composable).toContain('capabilities.viewRosterCoverage === true')
   })
 
+  it('presents bounded authority provenance and mobile remediation controls', () => {
+    const component = readWorkspaceFile('app/components/settings/SettingsIntegrations.vue')
+    const responsive = readWorkspaceFile('app/assets/css/responsive/settings.css')
+
+    expect(component).toContain('SOURCE LEDGER')
+    expect(component).toContain('DESIGNATED OWNER')
+    expect(component).toContain('DERIVED DIRECTOR')
+    expect(component).toContain('CONFIRM CORPORATION SOURCE')
+    expect(component).not.toContain('ownerHash')
+    expect(responsive).toContain('.authority-source-row')
+    expect(responsive).toContain('.authority-source-remediation')
+  })
+
   it('keeps HR exception and audit reads behind current review capability', () => {
     const component = readWorkspaceFile('app/components/settings/SettingsOrganizationHrReview.vue')
     const composable = readWorkspaceFile('app/composables/useOrganizationHrReview.ts')

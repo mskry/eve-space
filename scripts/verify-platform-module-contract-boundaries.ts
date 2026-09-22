@@ -67,8 +67,10 @@ const sourceExtensions = new Set([
 const ignoredDirectories = new Set([
   '.git',
   '.nuxt',
+  '.nuxt-e2e',
   '.opencode',
   '.output',
+  '.output-e2e',
   '.pnpm-store',
   'coverage',
   'dist',

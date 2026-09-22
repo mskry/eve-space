@@ -24,6 +24,14 @@ export class SsoTokenRejectedError extends Error {
   }
 }
 
+export class CharacterOwnerMismatchError extends SsoTokenRejectedError {
+  constructor() {
+    super(401)
+    this.message = 'EVE character ownership changed'
+    this.name = 'CharacterOwnerMismatchError'
+  }
+}
+
 export function isTransientSsoError(error: unknown) {
   return (
     error instanceof SsoTransportError ||

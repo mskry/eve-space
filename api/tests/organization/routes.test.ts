@@ -31,6 +31,11 @@ const mocks = vi.hoisted(() => {
       super(code)
     }
   }
+  class OwnerSourceReplacementError extends Error {
+    constructor(readonly code: string) {
+      super(code)
+    }
+  }
   class PermissionCatalogError extends Error {
     constructor(readonly code: string) {
       super(code)
@@ -61,6 +66,7 @@ const mocks = vi.hoisted(() => {
     GroupMutationError,
     MemberBlockMutationError,
     PermissionCatalogError,
+    OwnerSourceReplacementError,
     RoleMutationError,
     RegistrationPolicyMutationError,
     aggregateOrganizationActivities: vi.fn(),
@@ -85,6 +91,7 @@ const mocks = vi.hoisted(() => {
     listCurrentOrganizationCharacterExceptions: vi.fn(),
     listCurrentOrganizationMemberBlocks: vi.fn(),
     listCurrentOrganizationRoles: vi.fn(),
+    loadCurrentOrganizationAuthorityForUser: vi.fn(),
     loadOrganizationSession: vi.fn(
       async (
         context: { set: (key: string, value: unknown) => void },
@@ -99,6 +106,7 @@ const mocks = vi.hoisted(() => {
     revokeOrganizationCharacterException: vi.fn(),
     revokeOrganizationGroupAssignment: vi.fn(),
     registerOrganizationCorporationSource: vi.fn(),
+    replaceOrganizationOwnerSource: vi.fn(),
     listEnabledPermissionCatalog: vi.fn(),
     previewEnabledPermissionProfile: vi.fn(),
     unblockOrganizationMember: vi.fn(),
@@ -170,7 +178,12 @@ vi.mock('../../src/organization/role-store.js', () => ({
   hasCurrentOrganizationOwnerAuthority: mocks.hasCurrentOrganizationOwnerAuthority,
   hasCurrentOrganizationHrAuthority: mocks.hasCurrentOrganizationHrAuthority,
   listCurrentOrganizationRoles: mocks.listCurrentOrganizationRoles,
+  loadCurrentOrganizationAuthorityForUser: mocks.loadCurrentOrganizationAuthorityForUser,
   revokeOrganizationRole: mocks.revokeOrganizationRole,
+}))
+vi.mock('../../src/organization/owner-source-replacement.js', () => ({
+  OrganizationOwnerSourceReplacementError: mocks.OwnerSourceReplacementError,
+  replaceOrganizationOwnerSource: mocks.replaceOrganizationOwnerSource,
 }))
 vi.mock('../../src/organization/policy-store.js', () => ({
   OrganizationRegistrationPolicyMutationError: mocks.RegistrationPolicyMutationError,
@@ -234,6 +247,19 @@ beforeEach(() => {
   mocks.hasCurrentOrganizationOwnerAuthority.mockResolvedValue(true)
   mocks.hasCurrentOrganizationManagerAuthority.mockResolvedValue(true)
   mocks.hasCurrentOrganizationHrAuthority.mockResolvedValue(true)
+  mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValue({
+    organizationOwner: true,
+    explicitDirector: false,
+    derivedDirector: false,
+    director: false,
+    degraded: false,
+    ownerSource: {
+      sourceId: 'cc83840d-47c2-4c76-aed4-94d3e51407f7',
+      characterId: 1_404_328_063,
+      state: 'fresh',
+    },
+    derivedSources: [],
+  })
   mocks.listCurrentOrganizationGroups.mockResolvedValue({ groups: [] })
   mocks.listCurrentOrganizationPermissionBundles.mockResolvedValue({ bundles: [] })
   mocks.listEnabledPermissionCatalog.mockResolvedValue({ permissions: [], profiles: [] })
@@ -251,16 +277,27 @@ beforeEach(() => {
     capabilities: { reviewRegistration: true, viewRosterCoverage: true },
     claimAvailable: false,
     ownerStatus: 'fresh',
+    ownerFailureClass: null,
+    freshUntil: '2026-08-31T13:00:00.000Z',
+    graceUntil: null,
     reviewDeadline: null,
     authorityCharacter: {
       characterId: 1_404_328_063,
       name: 'Owner',
+      sourceType: 'designated-owner',
       corporationId: 98_000_001,
-      verifiedAt: '2026-08-31T12:00:00.000Z',
+      observedAt: '2026-08-31T12:00:00.000Z',
+      freshUntil: '2026-08-31T13:00:00.000Z',
+      graceUntil: null,
       lastCheckedAt: '2026-08-31T12:00:00.000Z',
     },
   })
-  mocks.listCurrentOrganizationRoles.mockResolvedValue({ grants: [grant] })
+  mocks.listCurrentOrganizationRoles.mockResolvedValue({
+    grants: [grant],
+    ownerSources: [],
+    derivedSources: [],
+    corporationSources: [],
+  })
   mocks.getOrganizationAccountComplianceDetails.mockResolvedValue({
     organizationVersion: 1,
     state: 'compliant',
@@ -372,12 +409,21 @@ beforeEach(() => {
       registeredAt: '2026-09-01T12:00:00.000Z',
     },
   })
+  mocks.replaceOrganizationOwnerSource.mockResolvedValue({
+    grantId,
+    sourceCharacterId: 1_404_328_063,
+    sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+    status: 'fresh',
+    freshUntil: '2026-09-01T13:00:00.000Z',
+  })
   mocks.updateOrganizationRegistrationPolicy.mockResolvedValue({
     organizationVersion: 1,
     policyVersion: 2,
     requiredScopes: ['esi-skills.read_skills.v1'],
     strictRemediationDurationSeconds: 0,
     staleEvidenceGraceDurationSeconds: 3600,
+    derivedDirectorAuthorityEnabled: true,
+    authorityEvidenceFreshDurationSeconds: 3600,
   })
   const exception = {
     exceptionId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
@@ -552,6 +598,8 @@ describe('organization compliance management routes', () => {
       requiredScopes: ['esi-skills.read_skills.v1'],
       strictRemediationDurationSeconds: 0,
       staleEvidenceGraceDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
+      authorityEvidenceFreshDurationSeconds: 3600,
       reason: 'Require current skills authorization.',
     })
 
@@ -561,6 +609,8 @@ describe('organization compliance management routes', () => {
       requiredScopes: ['esi-skills.read_skills.v1'],
       strictRemediationDurationSeconds: 0,
       staleEvidenceGraceDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
+      authorityEvidenceFreshDurationSeconds: 3600,
       reason: 'Require current skills authorization.',
     })
   })
@@ -573,6 +623,8 @@ describe('organization compliance management routes', () => {
       requiredScopes: [],
       strictRemediationDurationSeconds: 0,
       staleEvidenceGraceDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
+      authorityEvidenceFreshDurationSeconds: 3600,
       reason: 'Remove the policy that suspended the owner.',
     })
 
@@ -583,12 +635,14 @@ describe('organization compliance management routes', () => {
   test('still requires verified owner authority for policy recovery', async () => {
     mocks.organizationSession.context.state = 'suspended'
     mocks.organizationSession.context.accessValidUntil = null
-    mocks.hasCurrentOrganizationOwnerAuthority.mockResolvedValueOnce(false)
+    mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValueOnce(null)
 
     const response = await mutate('PUT', '/registration-policy', {
       requiredScopes: [],
       strictRemediationDurationSeconds: 0,
       staleEvidenceGraceDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
+      authorityEvidenceFreshDurationSeconds: 3600,
       reason: 'Unauthorized recovery attempt.',
     })
 
@@ -605,6 +659,8 @@ describe('organization compliance management routes', () => {
       requiredScopes: ['esi-wallet.read_character_wallet.v1'],
       strictRemediationDurationSeconds: 0,
       staleEvidenceGraceDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
+      authorityEvidenceFreshDurationSeconds: 3600,
       reason: 'Unsafe owner policy.',
     })
 
@@ -744,6 +800,8 @@ describe('organization compliance management routes', () => {
       requiredScopes: [],
       strictRemediationDurationSeconds: 0,
       staleEvidenceGraceDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
+      authorityEvidenceFreshDurationSeconds: 3600,
       reason: 'Reviewed policy update.',
     })
 
@@ -776,7 +834,12 @@ describe('organization role routes', () => {
   test('returns active role grants only to the current organization owner', async () => {
     const authorized = await get('/roles')
     expect(authorized.status).toBe(200)
-    expect(await authorized.json()).toEqual({ grants: [grant] })
+    expect(await authorized.json()).toEqual({
+      grants: [grant],
+      ownerSources: [],
+      derivedSources: [],
+      corporationSources: [],
+    })
 
     mocks.hasCurrentOrganizationOwnerAuthority.mockResolvedValueOnce(false)
     const unauthorized = await get('/roles')
@@ -794,7 +857,7 @@ describe('organization role routes', () => {
     expect(unauthenticated.status).toBe(401)
     expect(mocks.hasCurrentOrganizationOwnerAuthority).not.toHaveBeenCalled()
 
-    mocks.hasCurrentOrganizationOwnerAuthority.mockResolvedValueOnce(false)
+    mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValueOnce(null)
     const unauthorized = await request('/roles', {
       userId: targetUserId,
       role: 'director',
@@ -844,6 +907,68 @@ describe('organization role routes', () => {
       reason: 'Duty ended.',
     })
   })
+
+  test.each([
+    ['degraded', 'ORGANIZATION_AUTHORITY_DEGRADED'],
+    ['invalid', 'ORGANIZATION_AUTHORITY_SOURCE_INVALID'],
+  ] as const)(
+    'returns a stable %s authority refusal for privilege expansion',
+    async (state, code) => {
+      mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValueOnce(
+        effectiveOwnerAuthority(state),
+      )
+
+      const response = await request('/roles', {
+        userId: targetUserId,
+        role: 'director',
+        reason: 'Leadership duty.',
+      })
+
+      expect(response.status).toBe(409)
+      expect(await response.json()).toMatchObject({ code })
+      expect(mocks.grantOrganizationRole).not.toHaveBeenCalled()
+    },
+  )
+
+  test('replaces an owner source through the remediation-only mutation', async () => {
+    mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValueOnce(
+      effectiveOwnerAuthority('degraded'),
+    )
+
+    const response = await mutate('PUT', '/owner-source', {
+      characterId: 1_404_328_063,
+      reason: 'Move authority to a current source.',
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.replaceOrganizationOwnerSource).toHaveBeenCalledWith({
+      actorUserId,
+      characterId: 1_404_328_063,
+      reason: 'Move authority to a current source.',
+    })
+  })
+
+  test.each([
+    ['owner-authority-required', 409, 'ORGANIZATION_OWNER_REPLACEMENT_REQUIRED'],
+    ['replacement-not-owned', 404, 'CHARACTER_NOT_FOUND'],
+    ['replacement-ineligible', 409, 'ORGANIZATION_AUTHORITY_SOURCE_INVALID'],
+    ['replacement-stale', 409, 'ORGANIZATION_AUTHORITY_SOURCE_STALE'],
+  ] as const)(
+    'maps owner-source replacement failure %s',
+    async (errorCode, status, responseCode) => {
+      mocks.replaceOrganizationOwnerSource.mockRejectedValueOnce(
+        new mocks.OwnerSourceReplacementError(errorCode),
+      )
+
+      const response = await mutate('PUT', '/owner-source', {
+        characterId: 1_404_328_063,
+        reason: 'Move authority to a current source.',
+      })
+
+      expect(response.status).toBe(status)
+      expect(await response.json()).toMatchObject({ code: responseCode })
+    },
+  )
 
   test('maps current-version store conflicts without leaking unrelated records', async () => {
     mocks.grantOrganizationRole.mockRejectedValueOnce(
@@ -1167,7 +1292,7 @@ describe('organization group routes', () => {
   })
 
   test('requires owner authority for definitions and maps restricted and compliance refusals', async () => {
-    mocks.hasCurrentOrganizationOwnerAuthority.mockResolvedValueOnce(false)
+    mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValueOnce(null)
     const unauthorized = await request('/permission-bundles', {
       name: 'Operations',
       reason: 'Create operations access.',
@@ -1411,6 +1536,7 @@ describe('organization member block routes', () => {
 
   test('preserves authenticated context while refusing block mutations without manager authority', async () => {
     mocks.hasCurrentOrganizationManagerAuthority.mockResolvedValue(false)
+    mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValue(null)
 
     const context = await get('/context')
     const blocked = await request(`/members/${targetUserId}/block`, { reason: 'Denied.' })
@@ -1515,6 +1641,22 @@ describe('organization corporation roster routes', () => {
     expect(response.status).toBe(200)
   })
 
+  test('requires fresh authority before registering or replacing a corporation source', async () => {
+    mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValueOnce(
+      effectiveOwnerAuthority('degraded'),
+    )
+
+    const response = await mutate('PUT', '/corporations/98000001/source', {
+      characterId: 1_404_328_063,
+    })
+
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toMatchObject({
+      code: 'ORGANIZATION_AUTHORITY_DEGRADED',
+    })
+    expect(mocks.registerOrganizationCorporationSource).not.toHaveBeenCalled()
+  })
+
   test('reports stale source affiliation as a transient conflict', async () => {
     mocks.registerOrganizationCorporationSource.mockRejectedValueOnce(
       new mocks.CorporationSourceMutationError('source-character-affiliation-stale'),
@@ -1538,6 +1680,12 @@ describe('organization corporation roster routes', () => {
 
   test.each([
     ['manager authority', 'manager-authority-required', 403, 'ORGANIZATION_MANAGER_REQUIRED'],
+    [
+      'degraded manager authority',
+      'manager-authority-degraded',
+      409,
+      'ORGANIZATION_AUTHORITY_DEGRADED',
+    ],
     ['missing corporation', 'corporation-not-managed', 404, 'MANAGED_CORPORATION_NOT_FOUND'],
     ['ineligible character', 'source-character-ineligible', 409, 'CORPORATION_SOURCE_INELIGIBLE'],
   ])('maps %s corporation-source failures', async (_name, errorCode, status, responseCode) => {
@@ -1648,6 +1796,22 @@ function get(path: string) {
   return organizationRoutes.request(path, {
     headers: { Cookie: 'eve_space_session=session-token' },
   })
+}
+
+function effectiveOwnerAuthority(state: 'fresh' | 'degraded' | 'invalid') {
+  return {
+    organizationOwner: state !== 'invalid',
+    explicitDirector: false,
+    derivedDirector: false,
+    director: false,
+    degraded: state === 'degraded',
+    ownerSource: {
+      sourceId: 'cc83840d-47c2-4c76-aed4-94d3e51407f7',
+      characterId: 1_404_328_063,
+      state,
+    },
+    derivedSources: [],
+  }
 }
 
 function expectPrivateResponsePolicy(response: Response) {

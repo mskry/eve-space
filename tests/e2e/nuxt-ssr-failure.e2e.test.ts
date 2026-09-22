@@ -70,7 +70,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     nuxtConfig: {
       nitro: {
         output: {
-          dir: fileURLToPath(new URL('../../.output', import.meta.url)),
+          dir: fileURLToPath(new URL('../../.output-e2e', import.meta.url)),
         },
       },
     },

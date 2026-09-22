@@ -99,11 +99,133 @@ describe('platform collection state PostgreSQL persistence', () => {
         ) values (1, 1, 98000001, true, now(), now())
       `
 
-      await runMigrations(connection, migrations.slice(3))
+      await runMigrations(connection, migrations.slice(3, -1))
 
       await expect(connection<{ user_id: string; ended_at: Date | null }[]>`
         select user_id, ended_at from organization_managed_member_lifecycles
       `).resolves.toEqual([{ user_id: userId, ended_at: null }])
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('invalidates legacy authority rows before enforcing required provenance', async () => {
+    const connection = postgres(databaseUrl)
+    const userId = randomUUID()
+    const lifecycleId = randomUUID()
+    const sourceId = randomUUID()
+    const characterId = 1_404_328_070
+    const migrations = await loadMigrations()
+    try {
+      await connection.unsafe('drop schema public cascade; create schema public;').simple()
+      await runMigrations(connection, migrations.slice(0, -1))
+      await connection`insert into users (id) values (${userId})`
+      await connection`
+        insert into characters (character_id, user_id, name, corporation_id, is_main)
+        values (${characterId}, ${userId}, 'Legacy Pilot', 98000001, true)
+      `
+      await connection`
+        insert into eve_tokens (
+          character_id, encrypted_tokens, access_token_expires_at, scopes, token_version
+        ) values (
+          ${characterId}, 'encrypted-legacy-token', now() + interval '1 hour',
+          ${connection.json(['esi-corporations.read_corporation_membership.v1'])}, 4
+        )
+      `
+      await connection`
+        insert into platform_subject_lifecycles (
+          subject_lifecycle_id, subject_kind, subject_id, character_id
+        ) values (${lifecycleId}, 'character', ${String(characterId)}, ${characterId})
+      `
+      await connection`
+        insert into organization_epochs (
+          deployment_id, organization_version, organization_type, organization_id,
+          organization_name, organization_ticker
+        ) values (1, 1, 'corporation', 98000001, 'Legacy Corporation', 'OLD')
+      `
+      await connection`
+        insert into organization_managed_corporations (
+          deployment_id, organization_version, corporation_id,
+          first_observed_at, last_observed_at
+        ) values (1, 1, 98000001, now(), now())
+      `
+      const [grant] = await connection<{ grant_id: string }[]>`
+        insert into organization_role_grants (
+          deployment_id, organization_version, user_id, role, granted_by_user_id, reason
+        ) values (1, 1, ${userId}, 'organization_owner', ${userId}, 'Legacy owner grant')
+        returning grant_id
+      `
+      if (!grant) throw new Error('Legacy owner grant fixture is missing')
+      await connection`
+        insert into organization_authority_evidence (
+          grant_id, deployment_id, organization_version, user_id, character_id,
+          authority_corporation_id, observed_corporation_id, required_scope,
+          director_role_present, status, verified_at, last_checked_at
+        ) values (
+          ${grant.grant_id}, 1, 1, ${userId}, ${characterId}, 98000001, 98000001,
+          'esi-characters.read_corporation_roles.v1', true, 'fresh', now(), now()
+        )
+      `
+      await connection`
+        insert into organization_corporation_sources (
+          source_id, deployment_id, organization_version, corporation_id, character_id,
+          evidence_character_id, registered_by_user_id
+        ) values (${sourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId})
+      `
+
+      await runMigrations(connection, migrations.slice(-1))
+
+      const [character] = await connection<{ unresolved: boolean }[]>`
+        select owner_hash like 'legacy-unresolved:%' as unresolved
+        from characters
+        where character_id = ${characterId}
+      `
+      const [evidence] = await connection<
+        {
+          authorization_generation: number
+          failure_class: string
+          invalidation_outcome: string
+          source_subject_lifecycle_id: string
+          status: string
+        }[]
+      >`
+        select authorization_generation, failure_class, invalidation_outcome,
+          source_subject_lifecycle_id, status
+        from organization_authority_evidence
+        where grant_id = ${grant.grant_id}
+      `
+      const [source] = await connection<
+        {
+          authorization_generation: number
+          failure_class: string
+          invalidation_outcome: string
+          source_subject_lifecycle_id: string
+          source_user_id: string
+          status: string
+        }[]
+      >`
+        select authorization_generation, failure_class, invalidation_outcome,
+          source_subject_lifecycle_id, source_user_id, status
+        from organization_corporation_sources
+        where source_id = ${sourceId}
+      `
+
+      expect(character).toEqual({ unresolved: true })
+      expect(evidence).toEqual({
+        authorization_generation: 4,
+        failure_class: 'strict:authorization-missing',
+        invalidation_outcome: 'authorization-missing',
+        source_subject_lifecycle_id: lifecycleId,
+        status: 'invalid',
+      })
+      expect(source).toEqual({
+        authorization_generation: 4,
+        failure_class: 'strict:authorization-missing',
+        invalidation_outcome: 'authorization-missing',
+        source_subject_lifecycle_id: lifecycleId,
+        source_user_id: userId,
+        status: 'invalid',
+      })
     } finally {
       await connection.end()
     }
@@ -926,10 +1048,10 @@ describe('platform collection state PostgreSQL persistence', () => {
       await connection`insert into users (id) values (${userId})`
       await connection`
         insert into characters (
-          character_id, user_id, name, corporation_id, is_main,
+          character_id, user_id, owner_hash, name, corporation_id, is_main,
           affiliation_checked_at, next_affiliation_check, affiliation_resolution_state
         ) values (
-          ${characterId}, ${userId}, 'Managed Pilot', 98000001, true,
+          ${characterId}, ${userId}, 'managed-owner', 'Managed Pilot', 98000001, true,
           '2026-09-01T11:00:00Z', '2026-09-01T13:00:00Z', 'resolved'
         )
       `
@@ -976,10 +1098,10 @@ describe('platform collection state PostgreSQL persistence', () => {
       const externalLifecycleId = randomUUID()
       await connection`
         insert into characters (
-          character_id, user_id, name, corporation_id, is_main,
+          character_id, user_id, owner_hash, name, corporation_id, is_main,
           affiliation_checked_at, next_affiliation_check, affiliation_resolution_state
         ) values (
-          ${externalCharacterId}, ${userId}, 'External Pilot', 98000002, false,
+          ${externalCharacterId}, ${userId}, 'external-owner', 'External Pilot', 98000002, false,
           '2026-09-01T11:00:00Z', '2026-09-01T13:00:00Z', 'resolved'
         )
       `
@@ -1229,9 +1351,9 @@ describe('platform collection state PostgreSQL persistence', () => {
         from generate_series(1, 250) value
       `
       await connection`
-        insert into characters (character_id, user_id, name, corporation_id, is_main)
+        insert into characters (character_id, user_id, owner_hash, name, corporation_id, is_main)
         select 1500000000 + value, md5('plan-user-' || value::text)::uuid,
-          'Plan Character ' || value::text, 98000001, true
+          'plan-owner-' || value::text, 'Plan Character ' || value::text, 98000001, true
         from generate_series(1, 250) value
       `
       await connection`
@@ -1509,10 +1631,10 @@ describe('platform collection state PostgreSQL persistence', () => {
       await connection`insert into users (id) values (${userId})`
       await connection`
         insert into characters (
-          character_id, user_id, name, corporation_id, is_main,
+          character_id, user_id, owner_hash, name, corporation_id, is_main,
           affiliation_resolution_state, affiliation_checked_at, next_affiliation_check
         ) values (
-          ${characterId}, ${userId}, 'Source Pilot', 98000001, true,
+          ${characterId}, ${userId}, 'source-owner', 'Source Pilot', 98000001, true,
           'resolved', now(), now() + interval '1 hour'
         )
       `
@@ -1532,8 +1654,16 @@ describe('platform collection state PostgreSQL persistence', () => {
       await connection`
         insert into organization_corporation_sources (
           source_id, deployment_id, organization_version, corporation_id,
-          character_id, evidence_character_id, registered_by_user_id
-        ) values (${sourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId})
+          character_id, evidence_character_id, source_user_id, source_subject_lifecycle_id,
+          authorization_generation, role_evidence_revision, observed_corporation_id,
+          required_scope, director_role_present, observed_at, fresh_until, status,
+          registered_by_user_id
+        ) values (
+          ${sourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId},
+          ${characterLifecycleId}, 7, 'roles-1', 98000001,
+          'esi-corporations.read_corporation_membership.v1', true, now(),
+          now() + interval '1 hour', 'fresh', ${userId}
+        )
       `
       await connection`
         insert into platform_subject_lifecycles (
@@ -1639,9 +1769,15 @@ describe('platform collection state PostgreSQL persistence', () => {
       await connection`
         insert into organization_corporation_sources (
           source_id, deployment_id, organization_version, corporation_id,
-          character_id, evidence_character_id, registered_by_user_id
+          character_id, evidence_character_id, source_user_id, source_subject_lifecycle_id,
+          authorization_generation, role_evidence_revision, observed_corporation_id,
+          required_scope, director_role_present, observed_at, fresh_until, status,
+          registered_by_user_id
         ) values (
-          ${replacementSourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId}
+          ${replacementSourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId},
+          ${characterLifecycleId}, 7, 'roles-2', 98000001,
+          'esi-corporations.read_corporation_membership.v1', true, now(),
+          now() + interval '1 hour', 'fresh', ${userId}
         )
       `
       await connection`
@@ -1757,8 +1893,8 @@ async function createCharacterLifecycle(
   const userId = randomUUID()
   await connection`insert into users (id) values (${userId})`
   await connection`
-    insert into characters (character_id, user_id, name, corporation_id, is_main)
-    values (${characterId}, ${userId}, 'Lifecycle Character', 98000001, true)
+    insert into characters (character_id, user_id, owner_hash, name, corporation_id, is_main)
+    values (${characterId}, ${userId}, ${`owner-${characterId}`}, 'Lifecycle Character', 98000001, true)
   `
   const [lifecycle] = subjectLifecycleId
     ? await connection<{ subject_lifecycle_id: string }[]>`

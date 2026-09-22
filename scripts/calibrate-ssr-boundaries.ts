@@ -1,4 +1,5 @@
 import { readdir } from 'node:fs/promises'
+import { createJevClient } from './jev/client.js'
 import { classifySite } from './ssr-boundary-review/findings.js'
 import { judgeSite, type SiteState } from './ssr-boundary-review/judgments.js'
 import { loadLabelledRequests } from './ssr-boundary-review/labelled-requests.js'
@@ -10,9 +11,7 @@ import {
 import { loadRootMountTable, resolveMount } from './ssr-boundary-review/route-mounts.js'
 
 const repository = new URL('../', import.meta.url)
-const apiKey = process.env.TYPESAFE_API_KEY
-
-if (!apiKey) throw new Error('TYPESAFE_API_KEY is required to calibrate the SSR boundary review.')
+const client = createJevClient()
 
 const table = await loadRootMountTable(repository)
 const labelled = await loadLabelledRequests(repository)
@@ -29,7 +28,7 @@ const results = await Promise.all(
   matched.map(async ({ label, site }) => {
     const state = await toSiteState(site)
 
-    const judgment = await judgeSite(apiKey, state)
+    const judgment = await judgeSite(client, state)
 
     return { label, judgment, verdict: classifySite(state, judgment) }
   }),

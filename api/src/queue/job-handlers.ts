@@ -3,8 +3,10 @@ import { DomainEventValidationError } from '../domain-events/definitions.js'
 import { DomainEventNotFoundError, dispatchDomainEvent } from '../domain-events/handlers.js'
 import { deletePublishedDomainEvents } from '../domain-events/store.js'
 import { env } from '../env.js'
+import { refreshDerivedDirectorAuthority } from '../organization/derived-authority.js'
+import { refreshOrganizationCorporationSource } from '../organization/corporation-sources.js'
 import { refreshOrganizationOwnerEvidence } from '../organization/owner-evidence.js'
-import { convergeCurrentManagedMemberLifecyclesInTransaction } from '../organization/managed-member-lifecycle.js'
+import { convergeObservedAffiliationInTransaction } from '../organization/authority-convergence.js'
 import { processInstalledResourceRefresh } from '../platform/resource-refresh.js'
 import { processAffiliationBatch } from '../characters/affiliation-sync.js'
 import {
@@ -89,19 +91,29 @@ const jobHandlers = {
       await processAffiliationBatch(
         characterIds,
         context.signal,
-        (transaction, userIds, observedAt) =>
-          convergeCurrentManagedMemberLifecyclesInTransaction(transaction, {
-            userIds,
-            now: observedAt,
-          }),
+        convergeObservedAffiliationInTransaction,
       )
     },
   }),
   'organization-owner-evidence': handler({
     name: 'organization-owner-evidence',
     classifyError: retryable,
-    async process({ grantId }, context) {
-      await refreshOrganizationOwnerEvidence(grantId, { signal: context.signal })
+    async process(payload, context) {
+      await refreshOrganizationOwnerEvidence(payload, { signal: context.signal })
+    },
+  }),
+  'corporation-source-evidence': handler({
+    name: 'corporation-source-evidence',
+    classifyError: retryable,
+    async process(payload, context) {
+      await refreshOrganizationCorporationSource(payload, { signal: context.signal })
+    },
+  }),
+  'derived-authority': handler({
+    name: 'derived-authority',
+    classifyError: retryable,
+    async process(payload, context) {
+      await refreshDerivedDirectorAuthority(payload, { signal: context.signal })
     },
   }),
   'resource-refresh': handler({

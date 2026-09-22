@@ -7,6 +7,9 @@ const mocks = vi.hoisted(() => ({
   sql: vi.fn(),
   affiliation: vi.fn(),
   domainEvent: vi.fn(),
+  derivedAuthority: vi.fn(),
+  corporationSource: vi.fn(),
+  ownerEvidence: vi.fn(),
   planner: vi.fn(),
   resourceRefresh: vi.fn(),
 }))
@@ -24,7 +27,13 @@ vi.mock('../../src/domain-events/handlers.js', () => ({
 }))
 vi.mock('../../src/domain-events/store.js', () => ({ deletePublishedDomainEvents: vi.fn() }))
 vi.mock('../../src/organization/owner-evidence.js', () => ({
-  refreshOrganizationOwnerEvidence: vi.fn(),
+  refreshOrganizationOwnerEvidence: mocks.ownerEvidence,
+}))
+vi.mock('../../src/organization/derived-authority.js', () => ({
+  refreshDerivedDirectorAuthority: mocks.derivedAuthority,
+}))
+vi.mock('../../src/organization/corporation-sources.js', () => ({
+  refreshOrganizationCorporationSource: mocks.corporationSource,
 }))
 vi.mock('../../src/platform/resource-refresh.js', () => ({
   processInstalledResourceRefresh: mocks.resourceRefresh,

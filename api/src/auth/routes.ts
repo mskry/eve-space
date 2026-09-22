@@ -34,7 +34,7 @@ import { requireTrustedMutationOrigin } from '../http/trusted-origin.js'
 import { zValidator } from '../http/validation.js'
 import { recordDiagnostic } from '../logging.js'
 import { loadCurrentOrganizationIdentity } from '../organization/context.js'
-import { resolveOrganizationAuthorityCorporation } from '../organization/authority.js'
+import { resolveOrganizationAuthorityCorporationEvidence } from '../organization/authority.js'
 import {
   assertOrganizationOwnerDirectorRole,
   assertOrganizationOwnerScope,
@@ -42,7 +42,7 @@ import {
 } from '../organization/authority-policy.js'
 import {
   characterCorporationRolesScope,
-  getCharacterCorporationRoles,
+  getCharacterCorporationRolesEvidence,
 } from '../characters/corporation-roles.js'
 import {
   claimOrganizationOwnership,
@@ -492,30 +492,45 @@ async function saveOrganizationOwnerClaim(
     throw new OrganizationOwnerClaimError('stale-organization')
 
   assertOrganizationOwnerScope(characterCorporationRolesScope, authorization.scopes)
-  const authorityCorporationId = await resolveOrganizationAuthorityCorporation(
+  const authorityCorporation = await resolveOrganizationAuthorityCorporationEvidence(
     organization,
     authorization,
   )
-  const { affiliationCheckedAt, subjectLifecycleId } = await reauthorizeCharacter({
-    ...authorization,
-    userId: state.userId,
-    expectedCharacterId: state.characterId,
-    sessionToken,
-  })
-  const roles = await getCharacterCorporationRoles(state.characterId, subjectLifecycleId)
+  const { affiliationCheckedAt, subjectLifecycleId, authorizationGeneration } =
+    await reauthorizeCharacter({
+      ...authorization,
+      userId: state.userId,
+      expectedCharacterId: state.characterId,
+      sessionToken,
+    })
+  const roles = await getCharacterCorporationRolesEvidence(state.characterId, subjectLifecycleId)
+  if (roles.stale) throw new OrganizationOwnerClaimError('stale-affiliation')
   assertOrganizationOwnerDirectorRole(roles)
   await claimOrganizationOwnership({
     userId: state.userId,
     characterId: state.characterId,
     subjectLifecycleId,
+    authorizationGeneration,
+    roleEvidenceRevision: roles.roleEvidenceRevision,
+    evidenceAuthorizationGeneration: roles.authorizationGeneration,
+    evidenceFreshUntil: earliestDate(roles.freshUntil, authorityCorporation.freshUntil),
     organizationId: state.organizationId,
     organizationVersion: state.organizationVersion,
-    authorityCorporationId,
+    authorityCorporationId: authorityCorporation.corporationId,
     observedCorporationId: authorization.corporationId,
     observedAllianceId: authorization.allianceId,
     affiliationCheckedAt,
     requiredScope: characterCorporationRolesScope,
   })
+}
+
+function earliestDate(first: Date, ...dates: readonly (Date | null)[]) {
+  return new Date(
+    Math.min(
+      first.getTime(),
+      ...dates.filter((date): date is Date => date !== null).map((date) => date.getTime()),
+    ),
+  )
 }
 
 function redirectForIntent(

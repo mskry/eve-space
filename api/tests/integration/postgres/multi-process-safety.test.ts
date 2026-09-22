@@ -514,6 +514,7 @@ describe('multi-process safety', () => {
         insert into characters (
           character_id,
           user_id,
+          owner_hash,
           name,
           corporation_id,
           alliance_id,
@@ -523,6 +524,7 @@ describe('multi-process safety', () => {
         ) values (
           ${characterId},
           ${ownerId},
+          'bound-owner',
           'Bound Character',
           98_000_001,
           99_000_001,
@@ -2264,8 +2266,8 @@ describe('multi-process safety', () => {
 
     await connection`insert into users (id) values (${userId})`
     await connection`
-      insert into characters (character_id, user_id, name, corporation_id, is_main)
-      values (${characterId}, ${userId}, 'Refresh Test', 1000166, true)
+      insert into characters (character_id, user_id, owner_hash, name, corporation_id, is_main)
+      values (${characterId}, ${userId}, 'refresh-owner', 'Refresh Test', 1000166, true)
     `
     await connection`
       insert into platform_subject_lifecycles (subject_kind, subject_id, character_id)
@@ -2309,6 +2311,7 @@ describe('multi-process safety', () => {
     const verifyAccessToken = vi.fn(async () => ({
       characterId,
       characterName: 'Refresh Test',
+      ownerHash: 'refresh-owner',
       scopes: [scope],
     }))
 
