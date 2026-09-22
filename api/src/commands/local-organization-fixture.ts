@@ -1,5 +1,6 @@
 import { createDeployment } from '../admin/store.js'
 import { findOwnedCharacter, saveLogin } from '../auth/character-lifecycle.js'
+import { findCharacterCacheAuthorizationForLifecycle } from '../auth/character-token-store.js'
 import { createOpaqueToken, hashPassword } from '../auth/security.js'
 import { findSession } from '../auth/session-store.js'
 import { sql } from '../db/client.js'
@@ -90,6 +91,7 @@ export async function seedLocalOrganizationFixture({
     await saveLogin({
       characterId: localOrganizationFixture.directorCharacterId,
       characterName: localOrganizationFixture.directorCharacterName,
+      ownerHash: 'local-organization-fixture-owner',
       corporationId: localOrganizationFixture.corporationId,
       allianceId: null,
       affiliationCheckedAt: now,
@@ -107,11 +109,21 @@ export async function seedLocalOrganizationFixture({
       localOrganizationFixture.directorCharacterId,
     )
     if (!character) throw new Error('Local organization fixture character was not persisted')
+    const authorization = await findCharacterCacheAuthorizationForLifecycle(
+      localOrganizationFixture.directorCharacterId,
+      character.subjectLifecycleId,
+    )
+    if (!authorization)
+      throw new Error('Local organization fixture authorization was not persisted')
 
     await claimOrganizationOwnership({
       userId: account.userId,
       characterId: localOrganizationFixture.directorCharacterId,
       subjectLifecycleId: character.subjectLifecycleId,
+      authorizationGeneration: authorization.tokenVersion,
+      roleEvidenceRevision: now.toISOString(),
+      evidenceAuthorizationGeneration: authorization.tokenVersion,
+      evidenceFreshUntil: sessionExpiresAt,
       organizationId: localOrganizationFixture.corporationId,
       organizationVersion,
       authorityCorporationId: localOrganizationFixture.corporationId,
@@ -125,6 +137,8 @@ export async function seedLocalOrganizationFixture({
       requiredScopes: [...localOrganizationFixtureScopes],
       strictRemediationDurationSeconds: 86_400,
       staleEvidenceGraceDurationSeconds: 86_400,
+      derivedDirectorAuthorityEnabled: true,
+      authorityEvidenceFreshDurationSeconds: 3600,
       reason: 'Establish the local organization fixture registration policy.',
     })
     await grantOrganizationRole({
@@ -160,13 +174,38 @@ export async function seedLocalOrganizationFixture({
       complianceSource: 'core.registration',
       bundleIds: [bundle.bundleId],
     })
-    await registerOrganizationCorporationSource({
-      actorUserId: account.userId,
-      corporationId: localOrganizationFixture.corporationId,
-      characterId: localOrganizationFixture.directorCharacterId,
-    })
+    await registerOrganizationCorporationSource(
+      {
+        actorUserId: account.userId,
+        corporationId: localOrganizationFixture.corporationId,
+        characterId: localOrganizationFixture.directorCharacterId,
+      },
+      {
+        evidence: {
+          affiliation: {
+            characterId: localOrganizationFixture.directorCharacterId,
+            corporationId: localOrganizationFixture.corporationId,
+            allianceId: null,
+            affiliationCheckedAt: now,
+            affiliationFreshUntil: sessionExpiresAt,
+            stale: false,
+          },
+          roles: {
+            roles: ['Director'],
+            rolesAtBase: [],
+            rolesAtHeadquarters: [],
+            rolesAtOther: [],
+            authorizationGeneration: authorization.tokenVersion,
+            roleEvidenceRevision: now.toISOString(),
+            observedAt: now,
+            freshUntil: sessionExpiresAt,
+            stale: false,
+          },
+        },
+      },
+    )
 
-    const seededResourceCount = await seedFixtureResources(now)
+    const seededResourceCount = await seedFixtureResources(new Date())
     await deliverSession(applicationSessionToken)
     return {
       organizationVersion,
@@ -234,6 +273,8 @@ async function seedFixtureResources(validatedAt: Date) {
           resource: installed,
           subject,
           authorizationGeneration: eligibility.authorizationGeneration,
+          authorizationCharacterId: eligibility.authorizationCharacterId,
+          authorizationCharacterLifecycleId: eligibility.authorizationCharacterLifecycleId,
           managedAuthority: eligibility.managedAuthority,
           validatedAt: validatedAt.toISOString(),
           organizationVersion,

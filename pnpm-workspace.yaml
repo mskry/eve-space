@@ -33,6 +33,7 @@ catalog:
   '@scalar/openapi-parser': 0.28.14
   '@sonar/scan': ^5.0.0
   '@types/node': ^24.13.3
+  '@typesafe-ai/sdk': 0.6.0
   '@typescript/native': 'npm:typescript@^7.0.2'
   '@vue/server-renderer': ^3.5.41
   '@vue/compiler-sfc': ^3.5.41

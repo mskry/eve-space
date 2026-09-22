@@ -23,6 +23,28 @@ import { characters, users } from './identity.js'
 import { organizationEpochs } from './organization-epochs.js'
 import { auditTimestamps } from './shared.js'
 
+export type OrganizationAuthorityEvidenceStatus = 'fresh' | 'degraded' | 'invalid'
+
+export type OrganizationAuthorityInvalidationOutcome =
+  | 'affiliation-changed'
+  | 'authorization-generation-changed'
+  | 'authorization-missing'
+  | 'authorization-rejected'
+  | 'authorization-revoked'
+  | 'blocked'
+  | 'detached'
+  | 'expired'
+  | 'lifecycle-replaced'
+  | 'missing-scope'
+  | 'not-director'
+  | 'organization-replaced'
+  | 'owner-mismatch'
+  | 'policy-disabled'
+  | 'source-replaced'
+  | 'transferred'
+  | 'wrong-alliance'
+  | 'wrong-corporation'
+
 export const organizationManagedCorporations = pgTable(
   'organization_managed_corporations',
   {
@@ -111,6 +133,22 @@ export const organizationCorporationSources = pgTable(
     corporationId: bigint('corporation_id', { mode: 'number' }).notNull(),
     characterId: bigint('character_id', { mode: 'number' }),
     evidenceCharacterId: bigint('evidence_character_id', { mode: 'number' }).notNull(),
+    sourceUserId: uuid('source_user_id').notNull(),
+    sourceSubjectLifecycleId: uuid('source_subject_lifecycle_id').notNull(),
+    authorizationGeneration: integer('authorization_generation').notNull(),
+    roleEvidenceRevision: text('role_evidence_revision').notNull(),
+    observedCorporationId: bigint('observed_corporation_id', { mode: 'number' }).notNull(),
+    observedAllianceId: bigint('observed_alliance_id', { mode: 'number' }),
+    requiredScope: text('required_scope').notNull(),
+    directorRolePresent: boolean('director_role_present').notNull(),
+    observedAt: timestamp('observed_at', { withTimezone: true, mode: 'date' }).notNull(),
+    freshUntil: timestamp('fresh_until', { withTimezone: true, mode: 'date' }).notNull(),
+    graceUntil: timestamp('grace_until', { withTimezone: true, mode: 'date' }),
+    status: text().$type<OrganizationAuthorityEvidenceStatus>().notNull(),
+    failureClass: text('failure_class'),
+    invalidatedAt: timestamp('invalidated_at', { withTimezone: true, mode: 'date' }),
+    invalidationOutcome:
+      text('invalidation_outcome').$type<OrganizationAuthorityInvalidationOutcome>(),
     registeredByUserId: uuid('registered_by_user_id').notNull(),
     registeredAt: timestamp('registered_at', { withTimezone: true, mode: 'date' })
       .defaultNow()
@@ -142,6 +180,11 @@ export const organizationCorporationSources = pgTable(
       name: 'organization_corporation_sources_character_id_fkey',
     }).onDelete('set null'),
     foreignKey({
+      columns: [table.sourceUserId],
+      foreignColumns: [users.id],
+      name: 'organization_corporation_sources_source_user_fkey',
+    }).onDelete('restrict'),
+    foreignKey({
       columns: [table.registeredByUserId],
       foreignColumns: [users.id],
       name: 'organization_corporation_sources_registered_by_user_id_fkey',
@@ -165,12 +208,74 @@ export const organizationCorporationSources = pgTable(
       'organization_corporation_sources_evidence_character_id_check',
       sql`evidence_character_id > 0`,
     ),
+    check(
+      'organization_corporation_sources_authorization_generation_check',
+      sql`authorization_generation >= 0`,
+    ),
+    check(
+      'organization_corporation_sources_observed_corporation_check',
+      sql`(character_id is null or character_id = evidence_character_id)
+        and observed_corporation_id = corporation_id`,
+    ),
+    check(
+      'organization_corporation_sources_required_scope_check',
+      sql`length(trim(required_scope)) > 0`,
+    ),
+    check(
+      'organization_corporation_sources_role_evidence_revision_check',
+      sql`length(trim(role_evidence_revision)) > 0`,
+    ),
+    check(
+      'organization_corporation_sources_failure_class_check',
+      sql`failure_class is null or failure_class ~ '^(strict|transient):[a-z][a-z0-9-]{0,99}$'`,
+    ),
+    check(
+      'organization_corporation_sources_invalidation_outcome_check',
+      sql`invalidation_outcome is null or invalidation_outcome in ('affiliation-changed', 'authorization-generation-changed', 'authorization-missing', 'authorization-rejected', 'authorization-revoked', 'blocked', 'detached', 'expired', 'lifecycle-replaced', 'missing-scope', 'not-director', 'organization-replaced', 'owner-mismatch', 'policy-disabled', 'source-replaced', 'transferred', 'wrong-alliance', 'wrong-corporation')`,
+    ),
+    check(
+      'organization_corporation_sources_status_check',
+      sql`status in ('fresh', 'degraded', 'invalid')`,
+    ),
+    check(
+      'organization_corporation_sources_deadline_check',
+      sql`fresh_until > observed_at and (grace_until is null or grace_until >= fresh_until)`,
+    ),
+    check(
+      'organization_corporation_sources_state_check',
+      sql`(
+          status = 'fresh'
+          and director_role_present
+          and failure_class is null
+          and grace_until is null
+          and invalidated_at is null
+          and invalidation_outcome is null
+        ) or (
+          status = 'degraded'
+          and director_role_present
+          and failure_class is not null
+          and grace_until is not null
+          and invalidated_at is null
+          and invalidation_outcome is null
+        ) or (
+          status = 'invalid'
+          and failure_class is not null
+          and grace_until is null
+          and invalidated_at is not null
+          and invalidation_outcome is not null
+        )`,
+    ),
     uniqueIndex('organization_corporation_sources_active_key')
       .on(table.deploymentId, table.organizationVersion, table.corporationId)
       .where(sql`revoked_at is null`),
     index('organization_corporation_sources_character_idx')
       .on(table.characterId)
       .where(sql`revoked_at is null`),
+    index('organization_corporation_sources_source_binding_idx').on(
+      table.sourceSubjectLifecycleId,
+      table.authorizationGeneration,
+      table.roleEvidenceRevision,
+    ),
   ],
 )
 
@@ -503,6 +608,9 @@ export const organizationRoleGrants = pgTable(
     uniqueIndex('organization_role_grants_active_key')
       .on(table.deploymentId, table.organizationVersion, table.userId, table.role)
       .where(sql`revoked_at is null`),
+    uniqueIndex('organization_role_grants_active_owner_key')
+      .on(table.deploymentId, table.organizationVersion)
+      .where(sql`role = 'organization_owner' and revoked_at is null`),
     index('organization_role_grants_active_role_idx')
       .on(table.deploymentId, table.organizationVersion, table.role, table.userId)
       .where(sql`revoked_at is null`),
@@ -574,8 +682,6 @@ export const organizationMemberBlocks = pgTable(
   ],
 )
 
-export type OrganizationAuthorityEvidenceStatus = 'fresh' | 'review_required' | 'invalid'
-
 export const organizationAuthorityEvidence = pgTable(
   'organization_authority_evidence',
   {
@@ -586,16 +692,23 @@ export const organizationAuthorityEvidence = pgTable(
     userId: uuid('user_id').notNull(),
     role: text().$type<'organization_owner'>().default('organization_owner').notNull(),
     characterId: bigint('character_id', { mode: 'number' }).notNull(),
+    sourceSubjectLifecycleId: uuid('source_subject_lifecycle_id').notNull(),
     authorityCorporationId: bigint('authority_corporation_id', { mode: 'number' }).notNull(),
     observedCorporationId: bigint('observed_corporation_id', { mode: 'number' }).notNull(),
     observedAllianceId: bigint('observed_alliance_id', { mode: 'number' }),
     requiredScope: text('required_scope').notNull(),
+    authorizationGeneration: integer('authorization_generation').notNull(),
+    roleEvidenceRevision: text('role_evidence_revision').notNull(),
     directorRolePresent: boolean('director_role_present').notNull(),
     status: text().$type<OrganizationAuthorityEvidenceStatus>().notNull(),
-    verifiedAt: timestamp('verified_at', { withTimezone: true, mode: 'date' }),
+    observedAt: timestamp('observed_at', { withTimezone: true, mode: 'date' }).notNull(),
+    freshUntil: timestamp('fresh_until', { withTimezone: true, mode: 'date' }).notNull(),
+    graceUntil: timestamp('grace_until', { withTimezone: true, mode: 'date' }),
     lastCheckedAt: timestamp('last_checked_at', { withTimezone: true, mode: 'date' }).notNull(),
-    reviewDeadline: timestamp('review_deadline', { withTimezone: true, mode: 'date' }),
     failureClass: text('failure_class'),
+    invalidatedAt: timestamp('invalidated_at', { withTimezone: true, mode: 'date' }),
+    invalidationOutcome:
+      text('invalidation_outcome').$type<OrganizationAuthorityInvalidationOutcome>(),
     ...auditTimestamps(),
   },
   (table) => [
@@ -626,31 +739,196 @@ export const organizationAuthorityEvidence = pgTable(
     check('organization_authority_evidence_scope_check', sql`length(trim(required_scope)) > 0`),
     check(
       'organization_authority_evidence_status_check',
-      sql`status in ('fresh', 'review_required', 'invalid')`,
+      sql`status in ('fresh', 'degraded', 'invalid')`,
     ),
     check(
-      'organization_authority_evidence_verified_at_check',
+      'organization_authority_evidence_authorization_generation_check',
+      sql`authorization_generation >= 0`,
+    ),
+    check(
+      'organization_authority_evidence_role_evidence_revision_check',
+      sql`length(trim(role_evidence_revision)) > 0`,
+    ),
+    check(
+      'organization_authority_evidence_failure_class_check',
+      sql`failure_class is null or failure_class ~ '^(strict|transient):[a-z][a-z0-9-]{0,99}$'`,
+    ),
+    check(
+      'organization_authority_evidence_invalidation_outcome_check',
+      sql`invalidation_outcome is null or invalidation_outcome in ('affiliation-changed', 'authorization-generation-changed', 'authorization-missing', 'authorization-rejected', 'authorization-revoked', 'blocked', 'detached', 'expired', 'lifecycle-replaced', 'missing-scope', 'not-director', 'organization-replaced', 'owner-mismatch', 'policy-disabled', 'source-replaced', 'transferred', 'wrong-alliance', 'wrong-corporation')`,
+    ),
+    check(
+      'organization_authority_evidence_deadline_check',
+      sql`fresh_until > observed_at and (grace_until is null or grace_until >= fresh_until)`,
+    ),
+    check('organization_authority_evidence_checked_at_check', sql`last_checked_at >= observed_at`),
+    check(
+      'organization_authority_evidence_state_check',
       sql`(
           status = 'fresh'
-          and verified_at is not null
           and director_role_present
           and failure_class is null
-        )
-        or (status <> 'fresh' and failure_class is not null)`,
-    ),
-    check(
-      'organization_authority_evidence_review_check',
-      sql`review_deadline is null or status = 'review_required'`,
-    ),
-    check(
-      'organization_authority_evidence_checked_at_check',
-      sql`verified_at is null or last_checked_at >= verified_at`,
+          and grace_until is null
+          and invalidated_at is null
+          and invalidation_outcome is null
+        ) or (
+          status = 'degraded'
+          and director_role_present
+          and failure_class is not null
+          and grace_until is not null
+          and invalidated_at is null
+          and invalidation_outcome is null
+        ) or (
+          status = 'invalid'
+          and failure_class is not null
+          and grace_until is null
+          and invalidated_at is not null
+          and invalidation_outcome is not null
+        )`,
     ),
     index('organization_authority_evidence_refresh_idx').on(
       table.status,
       table.lastCheckedAt,
       table.grantId,
     ),
+    index('organization_authority_evidence_source_idx').on(
+      table.sourceSubjectLifecycleId,
+      table.authorizationGeneration,
+      table.roleEvidenceRevision,
+    ),
+    index('organization_authority_evidence_deadline_idx')
+      .on(table.freshUntil, table.graceUntil, table.grantId)
+      .where(sql`status <> 'invalid'`),
+  ],
+)
+
+export const organizationDerivedAuthoritySources = pgTable(
+  'organization_derived_authority_sources',
+  {
+    sourceId: uuid('source_id').defaultRandom().primaryKey().notNull(),
+    deploymentId: smallint('deployment_id').default(1).notNull(),
+    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
+    userId: uuid('user_id').notNull(),
+    role: text().$type<'director'>().default('director').notNull(),
+    characterId: bigint('character_id', { mode: 'number' }).notNull(),
+    sourceSubjectLifecycleId: uuid('source_subject_lifecycle_id').notNull(),
+    authorityCorporationId: bigint('authority_corporation_id', { mode: 'number' }).notNull(),
+    observedCorporationId: bigint('observed_corporation_id', { mode: 'number' }).notNull(),
+    observedAllianceId: bigint('observed_alliance_id', { mode: 'number' }),
+    authorizationGeneration: integer('authorization_generation').notNull(),
+    requiredScope: text('required_scope').notNull(),
+    roleEvidenceRevision: text('role_evidence_revision').notNull(),
+    directorRolePresent: boolean('director_role_present').notNull(),
+    observedAt: timestamp('observed_at', { withTimezone: true, mode: 'date' }).notNull(),
+    freshUntil: timestamp('fresh_until', { withTimezone: true, mode: 'date' }).notNull(),
+    graceUntil: timestamp('grace_until', { withTimezone: true, mode: 'date' }),
+    status: text().$type<OrganizationAuthorityEvidenceStatus>().notNull(),
+    failureClass: text('failure_class'),
+    invalidatedAt: timestamp('invalidated_at', { withTimezone: true, mode: 'date' }),
+    invalidationOutcome:
+      text('invalidation_outcome').$type<OrganizationAuthorityInvalidationOutcome>(),
+    ...auditTimestamps(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.deploymentId, table.organizationVersion],
+      foreignColumns: [organizationEpochs.deploymentId, organizationEpochs.organizationVersion],
+      name: 'organization_derived_authority_sources_epoch_fkey',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'organization_derived_authority_sources_user_fkey',
+    }).onDelete('restrict'),
+    check('organization_derived_authority_sources_role_check', sql`role = 'director'`),
+    check(
+      'organization_derived_authority_sources_character_check',
+      sql`character_id > 0
+        and authority_corporation_id > 0
+        and observed_corporation_id = authority_corporation_id`,
+    ),
+    check(
+      'organization_derived_authority_sources_authorization_generation_check',
+      sql`authorization_generation >= 0`,
+    ),
+    check(
+      'organization_derived_authority_sources_required_scope_check',
+      sql`length(trim(required_scope)) > 0`,
+    ),
+    check(
+      'organization_derived_authority_sources_role_evidence_revision_check',
+      sql`length(trim(role_evidence_revision)) > 0`,
+    ),
+    check(
+      'organization_derived_authority_sources_failure_class_check',
+      sql`failure_class is null or failure_class ~ '^(strict|transient):[a-z][a-z0-9-]{0,99}$'`,
+    ),
+    check(
+      'organization_derived_authority_sources_invalidation_outcome_check',
+      sql`invalidation_outcome is null or invalidation_outcome in ('affiliation-changed', 'authorization-generation-changed', 'authorization-missing', 'authorization-rejected', 'authorization-revoked', 'blocked', 'detached', 'expired', 'lifecycle-replaced', 'missing-scope', 'not-director', 'organization-replaced', 'owner-mismatch', 'policy-disabled', 'source-replaced', 'transferred', 'wrong-alliance', 'wrong-corporation')`,
+    ),
+    check(
+      'organization_derived_authority_sources_status_check',
+      sql`status in ('fresh', 'degraded', 'invalid')`,
+    ),
+    check(
+      'organization_derived_authority_sources_deadline_check',
+      sql`fresh_until > observed_at and (grace_until is null or grace_until >= fresh_until)`,
+    ),
+    check(
+      'organization_derived_authority_sources_state_check',
+      sql`(
+          status = 'fresh'
+          and director_role_present
+          and failure_class is null
+          and grace_until is null
+          and invalidated_at is null
+          and invalidation_outcome is null
+        ) or (
+          status = 'degraded'
+          and director_role_present
+          and failure_class is not null
+          and grace_until is not null
+          and invalidated_at is null
+          and invalidation_outcome is null
+        ) or (
+          status = 'invalid'
+          and failure_class is not null
+          and grace_until is null
+          and invalidated_at is not null
+          and invalidation_outcome is not null
+        )`,
+    ),
+    unique('organization_derived_authority_sources_lifecycle_key').on(
+      table.deploymentId,
+      table.organizationVersion,
+      table.userId,
+      table.role,
+      table.sourceSubjectLifecycleId,
+      table.roleEvidenceRevision,
+    ),
+    uniqueIndex('organization_derived_authority_sources_current_idx')
+      .on(
+        table.deploymentId,
+        table.organizationVersion,
+        table.userId,
+        table.role,
+        table.sourceSubjectLifecycleId,
+      )
+      .where(sql`invalidated_at is null`),
+    index('organization_derived_authority_sources_effective_idx')
+      .on(
+        table.deploymentId,
+        table.organizationVersion,
+        table.userId,
+        table.role,
+        table.status,
+        table.freshUntil,
+      )
+      .where(sql`invalidated_at is null`),
+    index('organization_derived_authority_sources_refresh_idx')
+      .on(table.freshUntil, table.graceUntil, table.sourceId)
+      .where(sql`invalidated_at is null`),
   ],
 )
 
@@ -668,6 +946,8 @@ export const organizationAuditEventTypes = [
   'corporation-source.registered',
   'corporation-source.replaced',
   'corporation-source.revoked',
+  'authority-source.observed',
+  'authority-source.invalidated',
   'group.assigned',
   'group.revoked',
   'member.blocked',
@@ -693,6 +973,7 @@ export const organizationAuditSubjectTypes = [
   'user',
   'character',
   'role_grant',
+  'authority_source',
   'exception',
   'compliance',
   'corporation_source',
@@ -780,6 +1061,8 @@ export const organizationAuditEvents = pgTable(
         'corporation-source.registered',
         'corporation-source.replaced',
         'corporation-source.revoked',
+        'authority-source.observed',
+        'authority-source.invalidated',
         'group.assigned',
         'group.revoked',
         'member.blocked',
@@ -801,6 +1084,7 @@ export const organizationAuditEvents = pgTable(
         'user',
         'character',
         'role_grant',
+        'authority_source',
         'exception',
         'compliance',
         'corporation_source',

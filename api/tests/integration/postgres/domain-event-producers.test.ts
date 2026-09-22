@@ -91,14 +91,15 @@ beforeEach(async () => {
 })
 
 describe('transactional domain event producers', () => {
-  test('accepts player-controlled names containing sensitive marker words', async () => {
+  test('does not retain player-controlled display names', async () => {
     const characterName = 'Bearer of Top Secret Sessions'
     await saveLogin({ ...authorizationInput(mainCharacterId, []), characterName }, 'marker-session')
+    const userId = await findCharacterUserId(mainCharacterId)
 
     expect(await readEvents()).toEqual([
       expect.objectContaining({
         event_type: 'character.attached',
-        payload: expect.objectContaining({ characterName }),
+        payload: characterLifecyclePayload(userId, mainCharacterId),
       }),
     ])
   })
@@ -112,7 +113,7 @@ describe('transactional domain event producers', () => {
       expect.objectContaining({
         event_type: 'character.attached',
         aggregate_id: String(mainCharacterId),
-        payload: characterSnapshot(userId, mainCharacterId, true, ['a.scope', 'z.scope']),
+        payload: characterLifecyclePayload(userId, mainCharacterId),
       }),
     ])
     expect(JSON.stringify(await readEvents())).not.toContain('access-token')
@@ -138,6 +139,20 @@ describe('transactional domain event producers', () => {
 
     await sessionStore.deleteSession('third-session')
     expect(await readEvents()).toHaveLength(2)
+  })
+
+  test('login owner mismatch revokes authorization without detaching the character', async () => {
+    const scopes = ['old.scope', 'z.scope']
+    const input = authorizationInput(mainCharacterId, scopes)
+    await saveLogin(input, 'main-session')
+    const userId = await findCharacterUserId(mainCharacterId)
+    await clearEvents()
+
+    await expect(
+      saveLogin({ ...input, ownerHash: 'changed-owner' }, 'mismatched-session'),
+    ).rejects.toThrow('Character is not owned by this user')
+
+    await expectOwnerMismatchInvalidation(userId, mainCharacterId, scopes)
   })
 
   test('reads minimal cache authorization for the current character lifecycle', async () => {
@@ -186,7 +201,7 @@ describe('transactional domain event producers', () => {
     expect(await readEvents()).toEqual([
       expect.objectContaining({
         event_type: 'character.attached',
-        payload: characterSnapshot(userId, altCharacterId, false, ['a.scope', 'z.scope']),
+        payload: characterLifecyclePayload(userId, altCharacterId),
       }),
     ])
 
@@ -214,6 +229,24 @@ describe('transactional domain event producers', () => {
     ).rejects.toBeInstanceOf(characterLifecycle.CharacterTransferApprovalRequiredError)
     await expect(readEvents()).resolves.toEqual([])
     await expect(findCharacterUserId(altCharacterId)).resolves.toBe(userId)
+  })
+
+  test('attachment owner mismatch requires approval and revokes authorization', async () => {
+    const scopes = ['old.scope', 'z.scope']
+    const input = authorizationInput(mainCharacterId, scopes)
+    await saveLogin(input, 'main-session')
+    const userId = await findCharacterUserId(mainCharacterId)
+    await clearEvents()
+
+    await expect(
+      characterLifecycle.attachCharacter({
+        ...input,
+        ownerHash: 'changed-owner',
+        userId,
+      }),
+    ).rejects.toBeInstanceOf(characterLifecycle.CharacterTransferApprovalRequiredError)
+
+    await expectOwnerMismatchInvalidation(userId, mainCharacterId, scopes)
   })
 
   test('reauthorization emits only a normalized material scope delta', async () => {
@@ -251,6 +284,25 @@ describe('transactional domain event producers', () => {
       }),
     ).rejects.toThrow('Reauthorization returned a different character')
     expect(await readEvents()).toHaveLength(1)
+  })
+
+  test('reauthorization owner mismatch revokes the existing authorization', async () => {
+    const scopes = ['old.scope', 'z.scope']
+    const input = authorizationInput(mainCharacterId, scopes)
+    await saveLogin(input, 'main-session')
+    const userId = await findCharacterUserId(mainCharacterId)
+    await clearEvents()
+
+    await expect(
+      characterLifecycle.reauthorizeCharacter({
+        ...input,
+        ownerHash: 'changed-owner',
+        userId,
+        expectedCharacterId: mainCharacterId,
+      }),
+    ).rejects.toThrow('Character is not owned by this user')
+
+    await expectOwnerMismatchInvalidation(userId, mainCharacterId, scopes)
   })
 
   test('main selection emits only an actual transition with its prior character', async () => {
@@ -302,7 +354,7 @@ describe('transactional domain event producers', () => {
     await expect(readEvents()).resolves.toEqual([])
   })
 
-  test('successful non-main deletion emits the complete pre-delete snapshot', async () => {
+  test('successful non-main deletion emits stable convergence identity', async () => {
     await saveLogin(authorizationInput(mainCharacterId, ['main.scope']), 'main-session')
     const userId = await findCharacterUserId(mainCharacterId)
     await characterLifecycle.attachCharacter({
@@ -328,7 +380,7 @@ describe('transactional domain event producers', () => {
       expect.objectContaining({
         event_type: 'character.detached',
         aggregate_id: String(altCharacterId),
-        payload: characterSnapshot(userId, altCharacterId, false, ['a.scope', 'z.scope']),
+        payload: characterLifecyclePayload(userId, altCharacterId),
       }),
     ])
     await expect(characterAndTokenCounts(altCharacterId)).resolves.toEqual({
@@ -383,6 +435,7 @@ describe('transactional domain event producers', () => {
     ssoMocks.verifyAccessToken.mockResolvedValue({
       characterId: mainCharacterId,
       characterName: `Character ${mainCharacterId}`,
+      ownerHash: `owner-${mainCharacterId}`,
       scopes: ['z.scope', requiredScope, 'a.scope', 'z.scope'],
     })
 
@@ -418,6 +471,7 @@ describe('transactional domain event producers', () => {
     ssoMocks.verifyAccessToken.mockResolvedValue({
       characterId: mainCharacterId,
       characterName: `Character ${mainCharacterId}`,
+      ownerHash: `owner-${mainCharacterId}`,
       scopes: ['z.scope', 'a.scope', requiredScope],
     })
     await tokenService.getCharacterAccessToken(mainCharacterId, subjectLifecycleId, requiredScope)
@@ -449,6 +503,7 @@ describe('transactional domain event producers', () => {
     ssoMocks.verifyAccessToken.mockResolvedValue({
       characterId: mainCharacterId,
       characterName: `Character ${mainCharacterId}`,
+      ownerHash: `owner-${mainCharacterId}`,
       scopes: [requiredScope, 'new.scope'],
     })
     await dbClient.sql.unsafe(
@@ -559,6 +614,7 @@ describe('transactional domain event producers', () => {
     ssoMocks.verifyAccessToken.mockResolvedValue({
       characterId: mainCharacterId,
       characterName: `Character ${mainCharacterId}`,
+      ownerHash: `owner-${mainCharacterId}`,
       scopes: [requiredScope],
     })
 
@@ -587,6 +643,7 @@ function authorizationInput(characterId: number, scopes: string[]) {
   return {
     characterId,
     characterName: `Character ${characterId}`,
+    ownerHash: `owner-${characterId}`,
     corporationId: 1000166,
     allianceId: 99000001,
     accessToken: `access-token-${characterId}`,
@@ -668,16 +725,8 @@ function readDisclosureAcceptances(characterId: number) {
   `
 }
 
-function characterSnapshot(userId: string, characterId: number, isMain: boolean, scopes: string[]) {
-  return {
-    userId,
-    characterId,
-    characterName: `Character ${characterId}`,
-    corporationId: 1000166,
-    allianceId: 99000001,
-    isMain,
-    scopes,
-  }
+function characterLifecyclePayload(userId: string, characterId: number) {
+  return { userId, characterId }
 }
 
 async function findCharacterUserId(characterId: number) {
@@ -717,6 +766,24 @@ async function sessionCount() {
 
 function clearEvents() {
   return dbClient.sql`delete from domain_events`
+}
+
+async function expectOwnerMismatchInvalidation(
+  userId: string,
+  characterId: number,
+  removedScopes: string[],
+) {
+  await expect(characterAndTokenCounts(characterId)).resolves.toEqual({
+    characters: 1,
+    tokens: 0,
+  })
+  await expect(readEvents()).resolves.toEqual([
+    expect.objectContaining({
+      event_type: 'character.scopes-changed',
+      aggregate_id: String(characterId),
+      payload: { userId, characterId, addedScopes: [], removedScopes },
+    }),
+  ])
 }
 
 async function characterAndTokenCounts(characterId: number) {

@@ -29,11 +29,19 @@ const characterCorporationRolesRead = createCharacterEsiRead({
 
 export const characterCorporationRolesScope = characterCorporationRolesRead.requiredScope
 
-interface CharacterCorporationRoles {
+export interface CharacterCorporationRoles {
   roles: string[]
   rolesAtBase: string[]
   rolesAtHeadquarters: string[]
   rolesAtOther: string[]
+}
+
+export interface CharacterCorporationRolesEvidence extends CharacterCorporationRoles {
+  authorizationGeneration: number
+  roleEvidenceRevision: string
+  observedAt: Date
+  freshUntil: Date
+  stale: boolean
 }
 
 export async function getCharacterCorporationRoles(
@@ -41,13 +49,37 @@ export async function getCharacterCorporationRoles(
   subjectLifecycleId: string,
   signal?: AbortSignal,
 ): Promise<CharacterCorporationRoles> {
-  return (
-    await characterCorporationRolesRead.execute({
-      characterId,
-      subjectLifecycleId,
-      ...(signal ? { signal } : {}),
-    })
-  ).data
+  const evidence = await getCharacterCorporationRolesEvidence(
+    characterId,
+    subjectLifecycleId,
+    signal,
+  )
+  return {
+    roles: evidence.roles,
+    rolesAtBase: evidence.rolesAtBase,
+    rolesAtHeadquarters: evidence.rolesAtHeadquarters,
+    rolesAtOther: evidence.rolesAtOther,
+  }
+}
+
+export async function getCharacterCorporationRolesEvidence(
+  characterId: number,
+  subjectLifecycleId: string,
+  signal?: AbortSignal,
+): Promise<CharacterCorporationRolesEvidence> {
+  const result = await characterCorporationRolesRead.execute({
+    characterId,
+    subjectLifecycleId,
+    ...(signal ? { signal } : {}),
+  })
+  return {
+    ...result.data,
+    authorizationGeneration: result.authorizationGeneration,
+    roleEvidenceRevision: result.validatedAt,
+    observedAt: new Date(result.validatedAt),
+    freshUntil: new Date(result.cachedUntil),
+    stale: result.stale,
+  }
 }
 
 function mapCharacterCorporationRoles(

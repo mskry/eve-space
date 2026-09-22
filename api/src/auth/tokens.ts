@@ -13,10 +13,19 @@ import {
   lockCurrentOrganizationVersionForCompliance,
   recomputeOrganizationAccountCompliance,
 } from '../organization/compliance.js'
+import {
+  advanceCharacterAuthorityAuthorizationGenerationInTransaction,
+  invalidateCharacterAuthoritySourcesInTransaction,
+} from '../organization/authority-convergence.js'
+import { enqueueInstalledResourceLifecyclePurges } from '../platform/resource-purge.js'
 import { normalizeScopeSet } from '../scopes.js'
 import { env } from '../env.js'
 import { EveSsoTokenRefreshError, refreshAccessToken, verifyAccessToken } from './sso.js'
-import { isTransientSsoError, SsoTokenRejectedError } from './sso-errors.js'
+import {
+  CharacterOwnerMismatchError,
+  isTransientSsoError,
+  SsoTokenRejectedError,
+} from './sso-errors.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from './token-errors.js'
 import { decryptTokens, encryptTokens } from './security.js'
 
@@ -130,6 +139,7 @@ export async function getCharacterAuthorizationForLifecycle(
           return toRefreshedCharacterAuthorization(stored, requiredScope)
         return refreshLockedCharacterToken(
           characterId,
+          subjectLifecycleId,
           requiredScope,
           stored,
           stored,
@@ -249,6 +259,7 @@ function waitForRefreshSlot(deadline: number, signal?: AbortSignal) {
 
 async function refreshLockedCharacterToken(
   characterId: number,
+  subjectLifecycleId: string,
   requiredScope: string,
   original: StoredCharacterToken,
   stored: StoredCharacterToken,
@@ -265,7 +276,12 @@ async function refreshLockedCharacterToken(
     refreshed = await refreshAccessToken(currentTokens.refreshToken)
   } catch (error) {
     if (isDefinitiveTokenRejection(error)) {
-      await deleteRevokedCharacterAuthorization(characterId, stored, transaction)
+      await deleteRevokedCharacterAuthorization(
+        characterId,
+        subjectLifecycleId,
+        stored,
+        transaction,
+      )
       return { authorizationRevoked: error }
     }
     rethrowRefreshError(error)
@@ -278,6 +294,17 @@ async function refreshLockedCharacterToken(
   }
   if (identity.characterId !== characterId)
     throw new Error('Refreshed token belongs to a different character')
+  if (identity.ownerHash !== stored.ownerHash) {
+    const ownerMismatch = new CharacterOwnerMismatchError()
+    await deleteRevokedCharacterAuthorization(
+      characterId,
+      subjectLifecycleId,
+      stored,
+      transaction,
+      'owner-mismatch',
+    )
+    return { authorizationRevoked: ownerMismatch }
+  }
   const previousScopes = new Set(normalizeScopeSet(stored.scopes))
   const nextScopes = normalizeScopeSet(identity.scopes)
   const nextScopeSet = new Set(nextScopes)
@@ -314,6 +341,11 @@ async function refreshLockedCharacterToken(
       organizationVersion,
       transaction,
     )
+  else
+    await advanceCharacterAuthorityAuthorizationGenerationInTransaction(transaction, {
+      characterId,
+      authorizationGeneration: stored.tokenVersion + 1,
+    })
   return {
     authorization: { accessToken: refreshed.access_token, tokenVersion: stored.tokenVersion + 1 },
     scopes: nextScopes,
@@ -353,12 +385,18 @@ async function recordRefreshedScopeChange(
       { deploymentId: 1, organizationVersion, userId: stored.userId },
       transaction,
     )
+  await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
+    characterId,
+    outcome: 'authorization-generation-changed',
+  })
 }
 
 async function deleteRevokedCharacterAuthorization(
   characterId: number,
+  subjectLifecycleId: string,
   stored: StoredCharacterToken,
   transaction: Parameters<Parameters<typeof withCharacterTokenLifecycleLock>[2]>[1],
+  outcome: 'authorization-revoked' | 'owner-mismatch' = 'authorization-revoked',
 ) {
   const deleted = await deleteCharacterTokenAuthorization(
     characterId,
@@ -366,6 +404,9 @@ async function deleteRevokedCharacterAuthorization(
     transaction,
   )
   if (!deleted) return
+
+  if (outcome === 'owner-mismatch')
+    await enqueueInstalledResourceLifecyclePurges(transaction, subjectLifecycleId)
 
   const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
   const removedScopes = normalizeScopeSet(stored.scopes)
@@ -386,6 +427,10 @@ async function deleteRevokedCharacterAuthorization(
       { deploymentId: 1, organizationVersion, userId: stored.userId },
       transaction,
     )
+  await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
+    characterId,
+    outcome,
+  })
 }
 
 async function mapRefreshLockError<T>(locked: Promise<T>) {

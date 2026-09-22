@@ -339,6 +339,8 @@ describe('installed resource operation policy', () => {
       resource: collectingResource,
       characterId: 1404328063,
       authorization: { tokenVersion: 4 },
+      authorizationCharacterId: 1404328063,
+      authorizationCharacterLifecycleId: identity.subjectLifecycleId,
     })
     const options = {
       resources: [collectingResource],
@@ -417,6 +419,8 @@ describe('installed resource operation policy', () => {
       resource: collectingResource,
       characterId: 1404328063,
       authorization: { tokenVersion: 4 },
+      authorizationCharacterId: 1404328063,
+      authorizationCharacterLifecycleId: identity.subjectLifecycleId,
     })
     const executeEsiOperation = vi
       .fn()

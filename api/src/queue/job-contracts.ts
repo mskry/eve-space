@@ -27,12 +27,56 @@ const affiliationJobPayload = z
     characterIds: z.array(z.number().int().positive()).min(1).max(affiliationJobBatchLimit),
   })
   .strict()
+  .superRefine((payload, context) => {
+    if (new Set(payload.characterIds).size !== payload.characterIds.length)
+      context.addIssue({
+        code: 'custom',
+        path: ['characterIds'],
+        message: 'Affiliation job character IDs must be unique',
+      })
+    const refreshSeparator = payload.operationId.indexOf('--')
+    const refreshId =
+      refreshSeparator === -1 ? undefined : payload.operationId.slice(refreshSeparator + 2)
+    if (payload.operationId !== buildAffiliationJobId(payload.characterIds, refreshId))
+      context.addIssue({
+        code: 'custom',
+        path: ['operationId'],
+        message: 'Affiliation job identity does not match its character IDs',
+      })
+  })
 const organizationOwnerEvidenceJobPayload = z
   .object({
-    operationId: z.string().regex(/^organization-owner-evidence-[\da-f-]{36}$/i),
     grantId: z.uuid(),
+    organizationVersion: z.number().int().positive(),
+    sourceSubjectLifecycleId: z.uuid(),
+    authorizationGeneration: z.number().int().nonnegative(),
+    roleEvidenceRevision: z.string().trim().min(1).max(200),
   })
   .strict()
+const corporationSourceEvidenceJobPayload = z
+  .object({
+    sourceId: z.uuid(),
+    organizationVersion: z.number().int().positive(),
+    sourceSubjectLifecycleId: z.uuid(),
+    authorizationGeneration: z.number().int().nonnegative(),
+    roleEvidenceRevision: z.string().trim().min(1).max(200),
+  })
+  .strict()
+const derivedAuthorityJobPayload = z
+  .object({
+    organizationVersion: z.number().int().positive(),
+    userId: z.uuid(),
+    characterId: z.number().int().positive(),
+    subjectLifecycleId: z.uuid(),
+    authorizationGeneration: z.number().int().nonnegative(),
+    sourceId: z.uuid().nullable(),
+    roleEvidenceRevision: z.string().trim().min(1).max(200).nullable(),
+  })
+  .strict()
+  .refine(
+    ({ sourceId, roleEvidenceRevision }) => (sourceId === null) === (roleEvidenceRevision === null),
+    { message: 'Source identity and evidence revision must both be present or absent' },
+  )
 const resourceRefreshJobPayload = platformCollectionStateIdentitySchema
 const resourceBatchJobPayload = platformResourceBatchPayloadSchema.safeExtend({
   subjects: platformResourceBatchPayloadSchema.shape.subjects.max(
@@ -48,6 +92,8 @@ export interface JobPayloadByName {
   'domain-event-retention': z.infer<typeof domainEventRetentionJobPayload>
   affiliation: z.infer<typeof affiliationJobPayload>
   'organization-owner-evidence': z.infer<typeof organizationOwnerEvidenceJobPayload>
+  'corporation-source-evidence': z.infer<typeof corporationSourceEvidenceJobPayload>
+  'derived-authority': z.infer<typeof derivedAuthorityJobPayload>
   'resource-refresh': PlatformCollectionStateIdentity
   'resource-batch': PlatformResourceBatchPayload
 }
@@ -155,7 +201,27 @@ const jobContracts = {
     activeWorkDeduplication: 'simple',
     delay: 'none',
     priority: 'none',
-    operationIdentity: ({ operationId }) => operationId,
+    operationIdentity: organizationOwnerEvidenceJobId,
+  }),
+  'corporation-source-evidence': contract({
+    name: 'corporation-source-evidence',
+    payload: corporationSourceEvidenceJobPayload,
+    attempts: 3,
+    durability: { kind: 'derived' },
+    activeWorkDeduplication: 'simple',
+    delay: 'none',
+    priority: 'none',
+    operationIdentity: corporationSourceEvidenceJobId,
+  }),
+  'derived-authority': contract({
+    name: 'derived-authority',
+    payload: derivedAuthorityJobPayload,
+    attempts: 3,
+    durability: { kind: 'derived' },
+    activeWorkDeduplication: 'simple',
+    delay: 'none',
+    priority: 'none',
+    operationIdentity: derivedAuthorityJobId,
   }),
   'resource-refresh': contract({
     name: 'resource-refresh',
@@ -226,9 +292,57 @@ export function domainEventJobId(eventId: string) {
 }
 
 export function affiliationJobId(characterIds: readonly number[], refreshId?: string) {
-  const ordered = characterIds.toSorted((left, right) => left - right)
-  const refreshSuffix = refreshId ? `--${z.uuid().parse(refreshId)}` : ''
-  return `affiliation-${ordered.join('-')}${refreshSuffix}`
+  return buildAffiliationJobId(characterIds, refreshId ? z.uuid().parse(refreshId) : undefined)
+}
+
+export function corporationSourceEvidenceJobId(
+  candidate: z.infer<typeof corporationSourceEvidenceJobPayload>,
+) {
+  const revisionDigest = createHash('sha256')
+    .update(candidate.roleEvidenceRevision)
+    .digest('hex')
+    .slice(0, 16)
+  return [
+    'corporation-source-evidence',
+    candidate.organizationVersion,
+    candidate.authorizationGeneration,
+    candidate.sourceId,
+    candidate.sourceSubjectLifecycleId,
+    revisionDigest,
+  ].join('-')
+}
+
+export function organizationOwnerEvidenceJobId(
+  candidate: z.infer<typeof organizationOwnerEvidenceJobPayload>,
+) {
+  const revisionDigest = createHash('sha256')
+    .update(candidate.roleEvidenceRevision)
+    .digest('hex')
+    .slice(0, 16)
+  return [
+    'organization-owner-evidence',
+    candidate.organizationVersion,
+    candidate.authorizationGeneration,
+    candidate.grantId,
+    candidate.sourceSubjectLifecycleId,
+    revisionDigest,
+  ].join('-')
+}
+
+export function derivedAuthorityJobId(candidate: z.infer<typeof derivedAuthorityJobPayload>) {
+  const revisionDigest = createHash('sha256')
+    .update(candidate.roleEvidenceRevision ?? 'initial')
+    .digest('hex')
+    .slice(0, 16)
+  return [
+    'derived-authority',
+    candidate.organizationVersion,
+    candidate.characterId,
+    candidate.authorizationGeneration,
+    candidate.subjectLifecycleId,
+    candidate.sourceId ?? 'initial',
+    revisionDigest,
+  ].join('-')
 }
 
 export function resourceRefreshJobId(identity: PlatformCollectionStateIdentity) {
@@ -259,4 +373,10 @@ function contract<Name extends JobName>(
   value: Omit<JobContract<Name>, 'retention'>,
 ): JobContract<Name> {
   return { ...value, retention }
+}
+
+function buildAffiliationJobId(characterIds: readonly number[], refreshId?: string) {
+  const ordered = characterIds.toSorted((left, right) => left - right)
+  const refreshSuffix = refreshId ? `--${refreshId}` : ''
+  return `affiliation-${ordered.join('-')}${refreshSuffix}`
 }

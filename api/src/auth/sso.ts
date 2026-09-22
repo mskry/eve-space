@@ -33,6 +33,7 @@ const scopesSchema = z
 
 const claimsSchema = z.looseObject({
   sub: z.string().regex(/^CHARACTER:EVE:\d+$/),
+  owner: z.string().min(1),
   name: z.string().min(1),
   scp: scopesSchema,
 })
@@ -154,6 +155,7 @@ export async function verifyAccessToken(accessToken: string, signal?: AbortSigna
   return {
     characterId: Number(claims.sub.split(':').at(-1)),
     characterName: claims.name,
+    ownerHash: claims.owner,
     scopes: claims.scp,
   }
 }

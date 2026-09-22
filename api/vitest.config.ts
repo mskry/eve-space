@@ -24,6 +24,7 @@ export default defineConfig({
         'src/domain-events/store.ts',
         'src/cache-redis.ts',
         'src/esi-gateway/internal/{coordination,types}.ts',
+        'src/organization/{authority-convergence,corporation-sources,derived-authority,effective-authority,owner-claim,owner-source-replacement,role-store}.ts',
         'src/queue/{platform,redis,worker-identity}.ts',
         'src/worker/health.ts',
       ],

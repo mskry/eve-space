@@ -233,6 +233,16 @@
   color: var(--ui-primary);
 }
 
+.authority-evidence-card > .ui-action-primary {
+  grid-column: 2 / -1;
+  justify-self: start;
+}
+
+.authority-evidence-card > .authority-claim-form {
+  grid-column: 2 / -1;
+  width: min(100%, 520px);
+}
+
 .authority-claim-panel {
   padding: 30px;
   display: grid;
@@ -242,14 +252,16 @@
 
 .authority-claim-form,
 .role-grant-form,
-.role-revoke-form {
+.role-revoke-form,
+.authority-source-remediation {
   display: grid;
   gap: 10px;
 }
 
 .authority-claim-form label,
 .role-grant-form label,
-.role-revoke-form label {
+.role-revoke-form label,
+.authority-source-remediation label {
   color: var(--ui-text-faint);
   font: 12px/1.2 var(--ui-font-mono);
   letter-spacing: 0.1em;
@@ -260,7 +272,9 @@
 .role-grant-form select,
 .role-grant-form input,
 .role-grant-form textarea,
-.role-revoke-form textarea {
+.role-revoke-form textarea,
+.authority-source-remediation select,
+.authority-source-remediation textarea {
   width: 100%;
   min-height: 42px;
   padding: 10px 12px;
@@ -273,7 +287,8 @@
 }
 
 .role-grant-form textarea,
-.role-revoke-form textarea {
+.role-revoke-form textarea,
+.authority-source-remediation textarea {
   min-height: 84px;
   resize: vertical;
 }
@@ -282,7 +297,9 @@
 .role-grant-form select:focus,
 .role-grant-form input:focus,
 .role-grant-form textarea:focus,
-.role-revoke-form textarea:focus {
+.role-revoke-form textarea:focus,
+.authority-source-remediation select:focus,
+.authority-source-remediation textarea:focus {
   border-color: var(--ui-primary);
 }
 
@@ -295,6 +312,93 @@
 .role-management-grid {
   display: grid;
   grid-template-columns: minmax(280px, 0.75fr) minmax(0, 1.5fr);
+}
+
+.authority-source-ledger {
+  border-bottom: 1px solid var(--line);
+}
+
+.authority-source-ledger__heading {
+  padding: 18px 24px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ui-primary) 3%, transparent);
+}
+
+.authority-source-ledger__heading p,
+.authority-source-row p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.authority-source-row {
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(290px, 1.2fr) auto;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.authority-source-row__identity {
+  min-width: 0;
+}
+
+.authority-source-row__identity > span {
+  color: var(--ui-primary);
+  font: 11px/1 var(--ui-font-mono);
+  letter-spacing: 0.12em;
+}
+
+.authority-source-row__identity strong {
+  margin: 7px 0;
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.authority-source-row dl {
+  margin: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.authority-source-row dl div {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.authority-source-row dt,
+.authority-source-row dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font: 11px/1.4 var(--ui-font-mono);
+}
+
+.authority-source-row dt {
+  color: var(--ui-text-faint);
+  text-transform: uppercase;
+}
+
+.authority-source-row dd {
+  color: var(--ui-primary);
+  text-transform: capitalize;
+}
+
+.authority-source-remediation {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ui-warning) 5%, transparent);
+}
+
+.authority-source-remediation .ui-action-primary {
+  justify-self: start;
 }
 
 .role-grant-form {

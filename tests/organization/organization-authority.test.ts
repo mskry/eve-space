@@ -61,7 +61,7 @@ describe('organization authority', () => {
       ),
       http.get('http://localhost/api/organization/context', () => HttpResponse.json(context)),
       http.get('http://localhost/api/organization/roles', () =>
-        HttpResponse.json({ grants: [roleGrant()] }),
+        HttpResponse.json(organizationRoles()),
       ),
       http.post('http://localhost/api/organization/roles', async ({ request }) => {
         grantRequests.push(await request.json())
@@ -88,7 +88,7 @@ describe('organization authority', () => {
       setup() {
         const queryCache = useQueryCache()
         queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationContext(), context)
-        queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationRoles(), { grants: [roleGrant()] })
+        queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationRoles(), organizationRoles())
         invalidateQueries = vi.spyOn(queryCache, 'invalidateQueries')
         authority = useOrganizationAuthority(apiClient)
         onMounted(authority.initialize)
@@ -139,7 +139,7 @@ describe('organization authority', () => {
       ),
       http.get('http://localhost/api/organization/context', () => HttpResponse.json(context)),
       http.get('http://localhost/api/organization/roles', () =>
-        HttpResponse.json({ grants: [roleGrant()] }),
+        HttpResponse.json(organizationRoles()),
       ),
       http.post('http://localhost/api/organization/roles', async () => {
         await grantCanFinish
@@ -159,7 +159,7 @@ describe('organization authority', () => {
       setup() {
         queryCache = useQueryCache()
         queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationContext(), context)
-        queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationRoles(), { grants: [roleGrant()] })
+        queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationRoles(), organizationRoles())
         authority = useOrganizationAuthority(apiClient)
         return () => h('span')
       },
@@ -235,6 +235,15 @@ function roleGrant() {
   }
 }
 
+function organizationRoles() {
+  return {
+    grants: [roleGrant()],
+    ownerSources: [],
+    derivedSources: [],
+    corporationSources: [],
+  }
+}
+
 function organizationOwnerContext() {
   return {
     organization: {
@@ -250,6 +259,9 @@ function organizationOwnerContext() {
     capabilities: { reviewRegistration: true, viewRosterCoverage: true },
     claimAvailable: false,
     ownerStatus: 'fresh' as const,
+    ownerFailureClass: null,
+    freshUntil: '2026-09-01T13:00:00.000Z',
+    graceUntil: null,
     reviewDeadline: null,
     authorityCharacter: null,
   }

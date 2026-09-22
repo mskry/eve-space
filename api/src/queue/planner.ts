@@ -2,6 +2,8 @@ import { repairPlatformCollectionState } from '../platform/collection-state-repa
 import { runInstalledResourceMaintenance } from '../platform/resource-maintenance.js'
 import { repairOrganizationCompliance } from '../organization/compliance-repair.js'
 import { runAffiliationPlanner } from './affiliation-planner.js'
+import { runDerivedAuthorityPlanner } from './derived-authority-planner.js'
+import { runCorporationSourcePlanner } from './corporation-source-planner.js'
 import { runOrganizationOwnerEvidencePlanner } from './owner-evidence-planner.js'
 import type { QueuePlanningContext } from './planning-context.js'
 import { runResourcePlanner } from './resource-planner.js'
@@ -18,6 +20,8 @@ export async function runQueuePlanner(context: QueuePlanningContext) {
     { signal },
   )
   await runAffiliationPlanner(context)
+  await runDerivedAuthorityPlanner(context)
+  await runCorporationSourcePlanner(context)
   await runOrganizationOwnerEvidencePlanner(context)
   await repairPlatformCollectionState({ signal })
   await runInstalledResourceMaintenance({ signal })

@@ -6,6 +6,7 @@ import { hasCurrentOrganizationManagerAuthority } from './management-authority.j
 import {
   hasCurrentOrganizationHrAuthority,
   hasCurrentOrganizationOwnerAuthority,
+  loadCurrentOrganizationAuthorityForUser,
 } from './role-store.js'
 
 export const requireTrustedOrigin: MiddlewareHandler<OrganizationSessionEnv> = async (
@@ -35,10 +36,43 @@ export const requireRegistrationPolicyOwner: MiddlewareHandler<OrganizationSessi
   context,
   next,
 ) => {
-  if (!(await hasCurrentOrganizationOwnerAuthority(context.var.session!.userId)))
+  const userId = context.var.session!.userId
+  const authority = await loadCurrentOrganizationAuthorityForUser(userId)
+  const refusal = freshOwnerRefusal(context, authority)
+  if (refusal) return refusal
+  return next()
+}
+
+export const requireFreshOrganizationOwner: MiddlewareHandler<OrganizationSessionEnv> = async (
+  context,
+  next,
+) => {
+  const refusal = organizationComplianceRefusal(context)
+  if (refusal) return refusal
+  const userId = context.var.session!.userId
+  const authority = await loadCurrentOrganizationAuthorityForUser(userId)
+  const authorityRefusal = freshOwnerRefusal(context, authority)
+  if (authorityRefusal) return authorityRefusal
+  return next()
+}
+
+export const requireOrganizationOwnerRemediation: MiddlewareHandler<
+  OrganizationSessionEnv
+> = async (context, next) => {
+  const refusal = organizationComplianceRefusal(context)
+  if (refusal) return refusal
+  const authority = await loadCurrentOrganizationAuthorityForUser(
+    context.var.session!.userId,
+    new Date(),
+    'remediate',
+  )
+  if (!authority?.organizationOwner)
     return context.json(
-      { code: 'ORGANIZATION_OWNER_REQUIRED', message: 'Organization-owner authority is required.' },
-      403,
+      {
+        code: 'ORGANIZATION_OWNER_REPLACEMENT_REQUIRED',
+        message: 'A current organization-owner source must authorize replacement.',
+      },
+      409,
     )
   return next()
 }
@@ -55,6 +89,61 @@ export const requireOrganizationManager: MiddlewareHandler<OrganizationSessionEn
       403,
     )
   return next()
+}
+
+export const requireFreshOrganizationManager: MiddlewareHandler<OrganizationSessionEnv> = async (
+  context,
+  next,
+) => {
+  const refusal = organizationComplianceRefusal(context)
+  if (refusal) return refusal
+  const userId = context.var.session!.userId
+  const authority = await loadCurrentOrganizationAuthorityForUser(userId)
+  if (!authority)
+    return context.json(
+      { code: 'ORGANIZATION_MANAGER_REQUIRED', message: 'Organization management is required.' },
+      403,
+    )
+  if (
+    authority.explicitDirector ||
+    authority.ownerSource?.state === 'fresh' ||
+    authority.derivedSources.some(({ state }) => state === 'fresh')
+  )
+    return next()
+  if (authority.organizationOwner || authority.director) return degradedAuthorityRefusal(context)
+  if (
+    authority.ownerSource?.state === 'invalid' ||
+    authority.derivedSources.some(({ state }) => state === 'invalid')
+  )
+    return invalidAuthoritySourceRefusal(context)
+  if (!(await hasCurrentOrganizationManagerAuthority(userId, 'mutate')))
+    return context.json(
+      { code: 'ORGANIZATION_MANAGER_REQUIRED', message: 'Organization management is required.' },
+      403,
+    )
+  return next()
+}
+
+export const requireOrganizationManagerRemediation: MiddlewareHandler<
+  OrganizationSessionEnv
+> = async (context, next) => {
+  const refusal = organizationComplianceRefusal(context)
+  if (refusal) return refusal
+  const authority = await loadCurrentOrganizationAuthorityForUser(
+    context.var.session!.userId,
+    new Date(),
+    'remediate',
+  )
+  if (authority?.organizationOwner || authority?.director) return next()
+  if (
+    authority?.ownerSource?.state === 'invalid' ||
+    authority?.derivedSources.some(({ state }) => state === 'invalid')
+  )
+    return invalidAuthoritySourceRefusal(context)
+  return context.json(
+    { code: 'ORGANIZATION_MANAGER_REQUIRED', message: 'Organization management is required.' },
+    403,
+  )
 }
 
 export const requireOrganizationHr: MiddlewareHandler<OrganizationSessionEnv> = async (
@@ -120,6 +209,39 @@ function organizationComplianceRefusal(context: Context<OrganizationSessionEnv>)
       state: organization?.state ?? ('pending' as const),
       reviewDeadline: organization?.reviewDeadline?.toISOString() ?? null,
     },
+    403,
+  )
+}
+
+function degradedAuthorityRefusal(context: Context<OrganizationSessionEnv>) {
+  return context.json(
+    {
+      code: 'ORGANIZATION_AUTHORITY_DEGRADED',
+      message: 'Fresh organization authority is required for this operation.',
+    },
+    409,
+  )
+}
+
+function invalidAuthoritySourceRefusal(context: Context<OrganizationSessionEnv>) {
+  return context.json(
+    {
+      code: 'ORGANIZATION_AUTHORITY_SOURCE_INVALID',
+      message: 'The designated organization authority source is no longer valid.',
+    },
+    409,
+  )
+}
+
+function freshOwnerRefusal(
+  context: Context<OrganizationSessionEnv>,
+  authority: Awaited<ReturnType<typeof loadCurrentOrganizationAuthorityForUser>>,
+) {
+  if (authority?.ownerSource?.state === 'fresh') return null
+  if (authority?.ownerSource?.state === 'degraded') return degradedAuthorityRefusal(context)
+  if (authority?.ownerSource?.state === 'invalid') return invalidAuthoritySourceRefusal(context)
+  return context.json(
+    { code: 'ORGANIZATION_OWNER_REQUIRED', message: 'Organization-owner authority is required.' },
     403,
   )
 }

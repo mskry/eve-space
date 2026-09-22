@@ -36,6 +36,7 @@ export const characters = pgTable(
   {
     characterId: bigint('character_id', { mode: 'number' }).primaryKey().notNull(),
     userId: uuid('user_id').notNull(),
+    ownerHash: text('owner_hash').notNull(),
     name: text().notNull(),
     corporationId: bigint('corporation_id', { mode: 'number' }).notNull(),
     allianceId: bigint('alliance_id', { mode: 'number' }),
@@ -65,6 +66,7 @@ export const characters = pgTable(
       'characters_affiliation_resolution_state_check',
       sql`affiliation_resolution_state in ('pending', 'resolved', 'unresolvable')`,
     ),
+    check('characters_owner_hash_check', sql`length(trim(owner_hash)) > 0`),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [users.id],

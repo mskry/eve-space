@@ -2,11 +2,13 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { db, type DatabaseTransaction } from '../db/client.js'
 import {
   deploymentSettings,
+  characters,
   organizationMemberBlocks,
   organizationRoleGrants,
   users,
 } from '../db/schema.js'
 import { appendOrganizationAuditEvent } from './audit.js'
+import { invalidateCharacterAuthoritySourcesInTransaction } from './authority-convergence.js'
 import { appendDomainEvent } from '../domain-events/store.js'
 import { loadCurrentEntitlementScope } from './compliance-access.js'
 import { appendExternalServiceEntitlementTransitions } from './entitlement-transitions.js'
@@ -144,6 +146,18 @@ export async function blockOrganizationMemberInTransaction(
       permissionScope: targetEntitlementScope,
       ignoreBlock: true,
     })
+  const targetCharacters = await transaction
+    .select({ characterId: characters.characterId })
+    .from(characters)
+    .where(eq(characters.userId, input.targetUserId))
+  for (const { characterId } of targetCharacters) {
+    // oxlint-disable-next-line no-await-in-loop
+    await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
+      characterId,
+      outcome: 'blocked',
+      now,
+    })
+  }
   await appendDomainEvent(transaction, {
     type: 'organization.member-blocked',
     payloadVersion: 1,
@@ -265,7 +279,9 @@ async function requireManager(
   organizationVersion: number,
   userId: string,
 ) {
-  if (!(await loadManagementAuthority(transaction, organizationVersion, userId)))
+  if (
+    !(await loadManagementAuthority(transaction, organizationVersion, userId, new Date(), 'mutate'))
+  )
     throw new OrganizationMemberBlockMutationError('manager-authority-required')
 }
 

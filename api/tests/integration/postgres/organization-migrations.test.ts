@@ -10,6 +10,7 @@ const databasePassword = randomUUID()
 const adminId = randomUUID()
 const userId = randomUUID()
 const sourceId = randomUUID()
+const characterSubjectLifecycleId = randomUUID()
 const characterId = 1_404_328_063
 const encryptedTokens = 'v1.encrypted-token-envelope'
 const scopes = ['esi-location.read_location.v1', 'esi-skills.read_skills.v1']
@@ -202,6 +203,254 @@ describe('organization foundation migration', () => {
     })
   })
 
+  test('requires complete authority provenance and coherent freshness deadlines', async () => {
+    const nullability = await connection<{ table_name: string; column_name: string }[]>`
+      select table_name, column_name
+      from information_schema.columns
+      where table_schema = 'public'
+        and (
+           (table_name = 'organization_authority_evidence'
+             and column_name = 'director_role_present')
+           or (table_name = 'organization_corporation_sources'
+             and column_name = 'director_role_present')
+        )
+        and is_nullable = 'NO'
+      order by table_name, column_name
+    `
+    expect(nullability).toEqual([
+      {
+        table_name: 'organization_authority_evidence',
+        column_name: 'director_role_present',
+      },
+      {
+        table_name: 'organization_corporation_sources',
+        column_name: 'director_role_present',
+      },
+    ])
+
+    await expect(
+      connection`
+        insert into organization_derived_authority_sources (
+          deployment_id,
+          organization_version,
+          user_id,
+          character_id,
+          source_subject_lifecycle_id,
+          authority_corporation_id,
+          observed_corporation_id,
+          authorization_generation,
+          required_scope,
+          role_evidence_revision,
+          director_role_present,
+          observed_at,
+          fresh_until,
+          status
+        ) values (
+          1, 1, ${userId}, ${characterId}, ${characterSubjectLifecycleId}, 98000001,
+          98000001, 7, 'esi-characters.read_corporation_roles.v1', 'deadline-test', true,
+          now(), now(), 'fresh'
+        )
+      `,
+    ).rejects.toMatchObject({
+      code: '23514',
+      constraint_name: 'organization_derived_authority_sources_deadline_check',
+    })
+
+    await expect(
+      connection`
+        insert into organization_authority_evidence (
+          grant_id, deployment_id, organization_version, user_id, character_id
+        ) values (${randomUUID()}, 1, 1, ${userId}, ${characterId})
+      `,
+    ).rejects.toMatchObject({
+      code: '23514',
+      constraint_name: 'authority_source_character_lifecycle_check',
+    })
+
+    await expect(
+      connection`
+        insert into organization_derived_authority_sources (
+          deployment_id,
+          organization_version,
+          user_id,
+          character_id,
+          source_subject_lifecycle_id,
+          authority_corporation_id,
+          observed_corporation_id,
+          authorization_generation,
+          required_scope,
+          role_evidence_revision,
+          director_role_present,
+          observed_at,
+          fresh_until,
+          status
+        ) values (
+          1, 1, ${userId}, ${characterId}, ${randomUUID()}, 98000001,
+          98000001, 7, 'esi-characters.read_corporation_roles.v1', 'invalid-lifecycle', true,
+          now(), now() + interval '1 hour', 'fresh'
+        )
+      `,
+    ).rejects.toMatchObject({
+      code: '23514',
+      constraint_name: 'authority_source_character_lifecycle_check',
+    })
+
+    await expect(
+      connection`
+        insert into organization_derived_authority_sources (
+          deployment_id,
+          organization_version,
+          user_id,
+          character_id,
+          source_subject_lifecycle_id,
+          authority_corporation_id,
+          observed_corporation_id,
+          authorization_generation,
+          required_scope,
+          role_evidence_revision,
+          director_role_present,
+          observed_at,
+          fresh_until,
+          status,
+          failure_class,
+          invalidated_at
+        ) values (
+          1, 1, ${userId}, ${characterId}, ${characterSubjectLifecycleId}, 98000001,
+          98000001, 7, 'esi-characters.read_corporation_roles.v1', 'missing-outcome', false,
+          now(), now() + interval '1 hour', 'invalid', 'strict:not-director', now()
+        )
+      `,
+    ).rejects.toMatchObject({
+      code: '23514',
+      constraint_name: 'organization_derived_authority_sources_state_check',
+    })
+  })
+
+  test('retains historical derived-source attribution while enforcing one current lifecycle source', async () => {
+    const insertDerivedSource = (roleEvidenceRevision: string) =>
+      connection<{ source_id: string }[]>`
+        insert into organization_derived_authority_sources (
+          deployment_id,
+          organization_version,
+          user_id,
+          character_id,
+          source_subject_lifecycle_id,
+          authority_corporation_id,
+          observed_corporation_id,
+          authorization_generation,
+          required_scope,
+          role_evidence_revision,
+          director_role_present,
+          observed_at,
+          fresh_until,
+          status
+        ) values (
+          1,
+          1,
+          ${userId},
+          ${characterId},
+          ${characterSubjectLifecycleId},
+          98000001,
+          98000001,
+          7,
+          'esi-characters.read_corporation_roles.v1',
+          ${roleEvidenceRevision},
+          true,
+          now(),
+          now() + interval '1 hour',
+          'fresh'
+        )
+        returning source_id
+      `
+    const revision = 'roles-observed-at-2026-09-21T00:00:00.000Z'
+    const [source] = await insertDerivedSource(revision)
+    if (!source) throw new Error('Derived authority source fixture is missing')
+
+    await expect(insertDerivedSource(revision)).rejects.toMatchObject({ code: '23505' })
+
+    await connection`
+      update organization_derived_authority_sources
+      set status = 'invalid',
+          failure_class = 'strict:source-replaced',
+          invalidated_at = now(),
+          invalidation_outcome = 'source-replaced'
+      where source_id = ${source.source_id}
+    `
+    await expect(insertDerivedSource(revision)).rejects.toMatchObject({
+      code: '23505',
+      constraint_name: 'organization_derived_authority_sources_lifecycle_key',
+    })
+    const [replacement] = await insertDerivedSource('roles-observed-at-2026-09-21T01:00:00.000Z')
+    expect(replacement?.source_id).toBeDefined()
+    await expect(
+      insertDerivedSource('roles-observed-at-2026-09-21T02:00:00.000Z'),
+    ).rejects.toMatchObject({ code: '23505' })
+    const [history] = await connection<{ current_count: number; historical_count: number }[]>`
+      select
+        count(*) filter (where invalidated_at is null)::integer as current_count,
+        count(*) filter (where invalidated_at is not null)::integer as historical_count
+      from organization_derived_authority_sources
+      where user_id = ${userId} and source_subject_lifecycle_id = ${characterSubjectLifecycleId}
+    `
+    expect(history).toEqual({ current_count: 1, historical_count: 1 })
+  })
+
+  test('retains immutable corporation-source attribution after its live character is deleted', async () => {
+    const historicalUserId = randomUUID()
+    const historicalCharacterId = characterId + 1
+    const historicalLifecycleId = randomUUID()
+    const historicalSourceId = randomUUID()
+    await connection`insert into users (id) values (${historicalUserId})`
+    await connection`
+      insert into characters (character_id, user_id, owner_hash, name, corporation_id, is_main)
+      values (
+        ${historicalCharacterId}, ${historicalUserId}, 'historical-owner', 'Historical Pilot',
+        98000001, true
+      )
+    `
+    await connection`
+      insert into platform_subject_lifecycles (
+        subject_lifecycle_id, subject_kind, subject_id, character_id
+      ) values (
+        ${historicalLifecycleId}, 'character', ${String(historicalCharacterId)},
+        ${historicalCharacterId}
+      )
+    `
+    await connection`
+      insert into organization_corporation_sources (
+        source_id, deployment_id, organization_version, corporation_id, character_id,
+        evidence_character_id, source_user_id, source_subject_lifecycle_id,
+        authorization_generation, role_evidence_revision, observed_corporation_id,
+        required_scope, director_role_present, observed_at, fresh_until, status,
+        failure_class, invalidated_at, invalidation_outcome, registered_by_user_id,
+        revoked_at, revoked_by_user_id, revocation_reason
+      ) values (
+        ${historicalSourceId}, 1, 1, 98000001, ${historicalCharacterId},
+        ${historicalCharacterId}, ${historicalUserId}, ${historicalLifecycleId}, 3,
+        'historical-role-evidence', 98000001,
+        'esi-corporations.read_corporation_membership.v1', true,
+        now() - interval '2 hours', now() - interval '1 hour', 'invalid',
+        'strict:source-replaced', now(), 'source-replaced', ${userId}, now(), ${userId},
+        'Explicitly replaced before character deletion.'
+      )
+    `
+
+    await connection`delete from characters where character_id = ${historicalCharacterId}`
+
+    const [historical] = await connection<
+      { character_id: string | null; evidence_character_id: string; source_user_id: string }[]
+    >`
+      select character_id, evidence_character_id, source_user_id
+      from organization_corporation_sources
+      where source_id = ${historicalSourceId}
+    `
+    expect(historical).toEqual({
+      character_id: null,
+      evidence_character_id: String(historicalCharacterId),
+      source_user_id: historicalUserId,
+    })
+  })
+
   test('stores roster collection state for the current source lifecycle', async () => {
     const [source] = await connection<{ source_id: string }[]>`
       select source_id
@@ -271,8 +520,23 @@ describe('organization foundation migration', () => {
           corporation_id,
           character_id,
           evidence_character_id,
+          source_user_id,
+          source_subject_lifecycle_id,
+          authorization_generation,
+          role_evidence_revision,
+          observed_corporation_id,
+          required_scope,
+          director_role_present,
+          observed_at,
+          fresh_until,
+          status,
           registered_by_user_id
-        ) values (1, 2, 98000001, ${characterId}, ${characterId}, ${userId})
+        ) values (
+          1, 2, 98000001, ${characterId}, ${characterId}, ${userId},
+          ${characterSubjectLifecycleId}, 7, 'foreign-version-evidence', 98000001,
+          'esi-corporations.read_corporation_membership.v1', true, now(),
+          now() + interval '1 hour', 'fresh', ${userId}
+        )
       `,
     ).rejects.toMatchObject({
       code: '23503',
@@ -390,8 +654,8 @@ async function seedCurrentDeployment() {
   `
   await connection`insert into users (id) values (${userId})`
   await connection`
-    insert into characters (character_id, user_id, name, corporation_id, is_main)
-    values (${characterId}, ${userId}, 'Current Pilot', 98000001, true)
+    insert into characters (character_id, user_id, owner_hash, name, corporation_id, is_main)
+    values (${characterId}, ${userId}, 'current-owner', 'Current Pilot', 98000001, true)
   `
   await connection`
     insert into eve_tokens (
@@ -407,6 +671,14 @@ async function seedCurrentDeployment() {
       ${connection.json(scopes)},
       7
     )
+  `
+  await connection`
+    insert into platform_subject_lifecycles (
+      subject_lifecycle_id,
+      subject_kind,
+      subject_id,
+      character_id
+    ) values (${characterSubjectLifecycleId}, 'character', ${String(characterId)}, ${characterId})
   `
   await connection`
     insert into organization_epochs (
@@ -444,8 +716,23 @@ async function seedCurrentDeployment() {
       corporation_id,
       character_id,
       evidence_character_id,
+      source_user_id,
+      source_subject_lifecycle_id,
+      authorization_generation,
+      role_evidence_revision,
+      observed_corporation_id,
+      required_scope,
+      director_role_present,
+      observed_at,
+      fresh_until,
+      status,
       registered_by_user_id
-    ) values (${sourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId})
+    ) values (
+      ${sourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId},
+      ${characterSubjectLifecycleId}, 7, 'seed-role-evidence-v1', 98000001,
+      'esi-corporations.read_corporation_membership.v1', true, now(),
+      now() + interval '1 hour', 'fresh', ${userId}
+    )
   `
 }
 

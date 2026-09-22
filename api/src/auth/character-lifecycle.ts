@@ -10,6 +10,7 @@ import {
 import { enqueueInstalledResourceLifecyclePurges } from '../platform/resource-purge.js'
 import { normalizeScopeSet } from '../scopes.js'
 import { findCharacterDetachmentBlocker } from '../organization/character-detachment-guards.js'
+import { invalidateCharacterAuthoritySourcesInTransaction } from '../organization/authority-convergence.js'
 import type { ReviewerUseDisclosure } from '../reviewer-use-disclosure.js'
 import { replaceCharacterReviewerDisclosureAcceptances } from './character-disclosure-store.js'
 import { lockCharacter, setAuthTransactionLockTimeout } from './character-lock.js'
@@ -32,6 +33,7 @@ const ownedCharacterSelection = {
 
 const authorizationCharacterSelection = {
   userId: characters.userId,
+  ownerHash: characters.ownerHash,
   ...characterSelection,
   scopes: eveTokens.scopes,
 }
@@ -54,7 +56,7 @@ export async function saveLogin(
 ) {
   const token = prepareToken(input)
 
-  await db.transaction(async (transaction) => {
+  const ownerMismatch = await db.transaction(async (transaction) => {
     await setAuthTransactionLockTimeout(transaction)
     await lockCharacter(transaction, input.characterId)
     const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
@@ -65,15 +67,20 @@ export async function saveLogin(
       .leftJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
       .where(eq(characters.characterId, input.characterId))
 
-    let userId = existingCharacter?.userId
-    if (!userId) {
+    let userId: string
+    if (!existingCharacter) {
       const [user] = await transaction.insert(users).values({}).returning({ id: users.id })
       if (!user) throw new Error('Failed to create user')
       userId = user.id
       await transaction.insert(characters).values(characterValues(input, userId, true))
       await createCharacterSubjectLifecycle(transaction, input.characterId)
     } else {
+      userId = existingCharacter.userId
       if (!(await lockUserRow(transaction, userId))) throw new Error('User is missing')
+      if (existingCharacter.ownerHash !== input.ownerHash) {
+        await invalidateCharacterOwnerMismatch(transaction, existingCharacter, organizationVersion)
+        return true
+      }
       if (organizationVersion)
         await recomputeOrganizationAccountCompliance(
           {
@@ -93,6 +100,11 @@ export async function saveLogin(
       scopes,
       ...token,
     })
+    if (existingCharacter)
+      await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
+        characterId: input.characterId,
+        outcome: 'authorization-generation-changed',
+      })
     await replaceCharacterReviewerDisclosureAcceptances(transaction, {
       characterId: input.characterId,
       authorizationGeneration,
@@ -111,7 +123,7 @@ export async function saveLogin(
         type: 'character.attached',
         payloadVersion: 1,
         aggregateId: String(input.characterId),
-        payload: characterSnapshotFromInput(input, userId, true, scopes),
+        payload: { userId, characterId: input.characterId },
       })
     }
     await saveSession(transaction, {
@@ -124,7 +136,9 @@ export async function saveLogin(
         { deploymentId: 1, organizationVersion, userId },
         transaction,
       )
+    return false
   })
+  if (ownerMismatch) throw new CharacterOwnershipError()
 }
 
 export async function attachCharacter(
@@ -132,7 +146,7 @@ export async function attachCharacter(
 ) {
   const token = prepareToken(input)
 
-  await db.transaction(async (transaction) => {
+  const ownerMismatch = await db.transaction(async (transaction) => {
     await setAuthTransactionLockTimeout(transaction)
     await lockCharacter(transaction, input.characterId)
     const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
@@ -148,6 +162,10 @@ export async function attachCharacter(
       .leftJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
       .where(eq(characters.characterId, input.characterId))
 
+    if (existingCharacter && existingCharacter.ownerHash !== input.ownerHash) {
+      await invalidateCharacterOwnerMismatch(transaction, existingCharacter, organizationVersion)
+      return true
+    }
     if (existingCharacter && existingCharacter.userId !== input.userId)
       throw new CharacterTransferApprovalRequiredError()
 
@@ -173,6 +191,10 @@ export async function attachCharacter(
       scopes,
       ...token,
     })
+    await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
+      characterId: input.characterId,
+      outcome: 'authorization-generation-changed',
+    })
     await replaceCharacterReviewerDisclosureAcceptances(transaction, {
       characterId: input.characterId,
       authorizationGeneration,
@@ -191,7 +213,7 @@ export async function attachCharacter(
         type: 'character.attached',
         payloadVersion: 1,
         aggregateId: String(input.characterId),
-        payload: characterSnapshotFromInput(input, input.userId, false, scopes),
+        payload: { userId: input.userId, characterId: input.characterId },
       })
     }
     if (organizationVersion)
@@ -199,7 +221,9 @@ export async function attachCharacter(
         { deploymentId: 1, organizationVersion, userId: input.userId },
         transaction,
       )
+    return false
   })
+  if (ownerMismatch) throw new CharacterTransferApprovalRequiredError()
 }
 
 export async function reauthorizeCharacter(
@@ -213,7 +237,7 @@ export async function reauthorizeCharacter(
     throw new ReauthorizationCharacterMismatchError()
 
   const token = prepareToken(input)
-  return db.transaction(async (transaction) => {
+  const result = await db.transaction(async (transaction) => {
     await setAuthTransactionLockTimeout(transaction)
     await lockCharacter(transaction, input.characterId)
     const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
@@ -239,6 +263,10 @@ export async function reauthorizeCharacter(
       )
 
     if (!ownedCharacter) throw new CharacterOwnershipError()
+    if (ownedCharacter.ownerHash !== input.ownerHash) {
+      await invalidateCharacterOwnerMismatch(transaction, ownedCharacter, organizationVersion)
+      return { outcome: 'owner-mismatch' as const }
+    }
     if (organizationVersion)
       await recomputeOrganizationAccountCompliance(
         {
@@ -255,6 +283,10 @@ export async function reauthorizeCharacter(
       characterId: input.characterId,
       scopes,
       ...token,
+    })
+    await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
+      characterId: input.characterId,
+      outcome: 'authorization-generation-changed',
     })
     await replaceCharacterReviewerDisclosureAcceptances(transaction, {
       characterId: input.characterId,
@@ -273,8 +305,15 @@ export async function reauthorizeCharacter(
         { deploymentId: 1, organizationVersion, userId: input.userId },
         transaction,
       )
-    return { affiliationCheckedAt, subjectLifecycleId: ownedCharacter.subjectLifecycleId }
+    return {
+      outcome: 'reauthorized' as const,
+      affiliationCheckedAt,
+      subjectLifecycleId: ownedCharacter.subjectLifecycleId,
+      authorizationGeneration,
+    }
   })
+  if (result.outcome === 'owner-mismatch') throw new CharacterOwnershipError()
+  return result
 }
 
 export async function listUserCharacters(userId: string): Promise<OwnedCharacterSummary[]> {
@@ -379,6 +418,10 @@ export async function deleteCharacter(
     if (blocker) return blocker
 
     await enqueueInstalledResourceLifecyclePurges(transaction, subjectLifecycleId)
+    await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
+      characterId,
+      outcome: 'detached',
+    })
 
     const [deleted] = await transaction
       .delete(characters)
@@ -389,7 +432,7 @@ export async function deleteCharacter(
       type: 'character.detached',
       payloadVersion: 1,
       aggregateId: String(characterId),
-      payload: characterSnapshotFromRecord(target),
+      payload: { userId, characterId },
     })
     if (organizationVersion)
       await recomputeOrganizationAccountCompliance(
@@ -403,6 +446,7 @@ export async function deleteCharacter(
 export interface CharacterAuthorizationInput {
   characterId: number
   characterName: string
+  ownerHash: string
   corporationId: number
   allianceId: number | null
   affiliationCheckedAt?: Date
@@ -430,6 +474,7 @@ function characterValues(input: CharacterAuthorizationInput, userId: string, isM
   return {
     characterId: input.characterId,
     userId,
+    ownerHash: input.ownerHash,
     name: input.characterName,
     corporationId: input.corporationId,
     allianceId: input.allianceId,
@@ -437,43 +482,6 @@ function characterValues(input: CharacterAuthorizationInput, userId: string, isM
     affiliationResolutionState: 'resolved' as const,
     nextAffiliationCheck: nextActiveAffiliationCheck(affiliationObservedAt),
     isMain,
-  }
-}
-
-function characterSnapshotFromInput(
-  input: CharacterAuthorizationInput,
-  userId: string,
-  isMain: boolean,
-  scopes: string[],
-) {
-  return {
-    userId,
-    characterId: input.characterId,
-    characterName: input.characterName,
-    corporationId: input.corporationId,
-    allianceId: input.allianceId,
-    isMain,
-    scopes,
-  }
-}
-
-function characterSnapshotFromRecord(record: {
-  userId: string
-  characterId: number
-  name: string
-  corporationId: number
-  allianceId: number | null
-  isMain: boolean
-  scopes: string[] | null
-}) {
-  return {
-    userId: record.userId,
-    characterId: record.characterId,
-    characterName: record.name,
-    corporationId: record.corporationId,
-    allianceId: record.allianceId,
-    isMain: record.isMain,
-    scopes: normalizeScopeSet(record.scopes ?? []),
   }
 }
 
@@ -545,6 +553,36 @@ async function updateCharacterIdentity(
     .where(eq(characters.characterId, input.characterId))
   if (!current?.affiliationCheckedAt) throw new Error('Character affiliation is missing')
   return current.affiliationCheckedAt
+}
+
+async function invalidateCharacterOwnerMismatch(
+  transaction: DatabaseTransaction,
+  character: { userId: string; characterId: number; scopes: string[] | null },
+  organizationVersion: number | null,
+) {
+  const [lifecycle] = await transaction
+    .select({ subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId })
+    .from(platformSubjectLifecycles)
+    .where(eq(platformSubjectLifecycles.characterId, character.characterId))
+  if (lifecycle)
+    await enqueueInstalledResourceLifecyclePurges(transaction, lifecycle.subjectLifecycleId)
+  await transaction.delete(eveTokens).where(eq(eveTokens.characterId, character.characterId))
+  await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
+    characterId: character.characterId,
+    outcome: 'owner-mismatch',
+  })
+  await appendScopeChangeEvent(
+    transaction,
+    character.userId,
+    character.characterId,
+    character.scopes ?? [],
+    [],
+  )
+  if (organizationVersion)
+    await recomputeOrganizationAccountCompliance(
+      { deploymentId: 1, organizationVersion, userId: character.userId },
+      transaction,
+    )
 }
 
 function nextActiveAffiliationCheck(observedAt: Date) {

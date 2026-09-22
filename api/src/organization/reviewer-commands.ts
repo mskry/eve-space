@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, isNull, or } from 'drizzle-orm'
+import { and, eq, gt, isNull, or } from 'drizzle-orm'
 import { db, type DatabaseTransaction } from '../db/client.js'
 import {
   organizationGroupAssignments,
@@ -16,6 +16,7 @@ import {
   unblockOrganizationMemberInTransaction,
 } from './block-store.js'
 import { hasCurrentComplianceAccess } from './compliance-access.js'
+import { loadEffectiveOrganizationAuthority } from './effective-authority.js'
 import {
   loadCurrentGroupForUpdate,
   loadUnrevokedGroupAssignmentByIdForUpdate,
@@ -250,7 +251,7 @@ async function authorizeCommand(
     )
     .for('key share')
   if (actorBlock) throw new OrganizationReviewerCommandError('reviewer-authority-required')
-  const [reviewerGrant] = await transaction
+  const [hrGrant] = await transaction
     .select({ id: organizationRoleGrants.grantId })
     .from(organizationRoleGrants)
     .where(
@@ -258,12 +259,20 @@ async function authorizeCommand(
         eq(organizationRoleGrants.deploymentId, input.organizationDeploymentId),
         eq(organizationRoleGrants.organizationVersion, input.organizationVersion),
         eq(organizationRoleGrants.userId, input.actorUserId),
-        inArray(organizationRoleGrants.role, ['hr_auditor', 'director']),
+        eq(organizationRoleGrants.role, 'hr_auditor'),
         isNull(organizationRoleGrants.revokedAt),
       ),
     )
     .for('key share')
-  if (!reviewerGrant) throw new OrganizationReviewerCommandError('reviewer-authority-required')
+  const authority = await loadEffectiveOrganizationAuthority(
+    transaction,
+    input.organizationVersion,
+    input.actorUserId,
+    'mutate',
+    now,
+  )
+  if (!hrGrant && !authority.director)
+    throw new OrganizationReviewerCommandError('reviewer-authority-required')
 
   const [permission] = await transaction
     .select({ assignmentId: organizationGroupAssignments.assignmentId })
@@ -365,7 +374,7 @@ async function requireNonReviewerTarget(
   transaction: DatabaseTransaction,
   input: OrganizationReviewerCommandBinding,
 ) {
-  const [reviewerGrant] = await transaction
+  const [hrGrant] = await transaction
     .select({ id: organizationRoleGrants.grantId })
     .from(organizationRoleGrants)
     .where(
@@ -373,12 +382,19 @@ async function requireNonReviewerTarget(
         eq(organizationRoleGrants.deploymentId, input.organizationDeploymentId),
         eq(organizationRoleGrants.organizationVersion, input.organizationVersion),
         eq(organizationRoleGrants.userId, input.targetUserId),
-        inArray(organizationRoleGrants.role, ['hr_auditor', 'director', 'organization_owner']),
+        eq(organizationRoleGrants.role, 'hr_auditor'),
         isNull(organizationRoleGrants.revokedAt),
       ),
     )
     .for('key share')
-  if (reviewerGrant) throw new OrganizationReviewerCommandError('reviewer-target-not-allowed')
+  const authority = await loadEffectiveOrganizationAuthority(
+    transaction,
+    input.organizationVersion,
+    input.targetUserId,
+    'read-continuity',
+  )
+  if (hrGrant || authority.director || authority.organizationOwner)
+    throw new OrganizationReviewerCommandError('reviewer-target-not-allowed')
 }
 
 function requireDifferentTarget(input: OrganizationReviewerCommandBinding) {

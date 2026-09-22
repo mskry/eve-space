@@ -5,18 +5,9 @@ const positiveIdentifier = z.number().int().positive()
 const scope = z.string().trim().min(1)
 const scopeSet = z.array(scope).transform(normalizeScopeSet)
 
-const characterSnapshot = {
-  userId: z.uuid(),
-  characterId: positiveIdentifier,
-  characterName: z.string().trim().min(1),
-  corporationId: positiveIdentifier,
-  allianceId: positiveIdentifier.nullable(),
-  isMain: z.boolean(),
-  scopes: scopeSet,
-}
-
-const characterAttachedPayloadSchema = z.object(characterSnapshot).strict()
-const characterDetachedPayloadSchema = z.object(characterSnapshot).strict()
+const characterLifecyclePayloadSchema = z
+  .object({ userId: z.uuid(), characterId: positiveIdentifier })
+  .strict()
 const characterMainChangedPayloadSchema = z
   .object({
     userId: z.uuid(),
@@ -101,11 +92,11 @@ export type DomainEventAggregateType = 'character' | 'user' | 'deployment'
 const domainEventRegistry = {
   'character.attached': {
     aggregateType: 'character',
-    versions: { 1: characterAttachedPayloadSchema },
+    versions: { 1: characterLifecyclePayloadSchema },
   },
   'character.detached': {
     aggregateType: 'character',
-    versions: { 1: characterDetachedPayloadSchema },
+    versions: { 1: characterLifecyclePayloadSchema },
   },
   'character.main-changed': {
     aggregateType: 'user',

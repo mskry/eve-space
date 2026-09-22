@@ -18,6 +18,7 @@ import {
   findCharacterDetachmentBlocker,
   type CharacterDetachmentBlocker,
 } from '../organization/character-detachment-guards.js'
+import { invalidateCharacterAuthoritySourcesInTransaction } from '../organization/authority-convergence.js'
 import {
   enqueueInstalledResourceAccountPurges,
   enqueueInstalledResourceLifecyclePurges,
@@ -111,12 +112,8 @@ export async function transferCharacter(input: {
       .select({
         userId: characters.userId,
         characterId: characters.characterId,
-        name: characters.name,
-        corporationId: characters.corporationId,
-        allianceId: characters.allianceId,
         isMain: characters.isMain,
         subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
-        scopes: eveTokens.scopes,
         tokenVersion: eveTokens.tokenVersion,
       })
       .from(characters)
@@ -174,19 +171,20 @@ export async function transferCharacter(input: {
       payload: {
         userId: source.userId,
         characterId: source.characterId,
-        characterName: source.name,
-        corporationId: source.corporationId,
-        allianceId: source.allianceId,
-        isMain: source.isMain,
-        scopes: normalizeScopeSet(source.scopes ?? []),
       },
       occurredAt: now,
     })
     await enqueueInstalledResourceLifecyclePurges(transaction, input.sourceSubjectLifecycleId)
+    await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
+      characterId: input.characterId,
+      outcome: 'transferred',
+      now,
+    })
     await transaction.delete(characters).where(eq(characters.characterId, input.characterId))
     await transaction.insert(characters).values({
       characterId: input.characterId,
       userId: input.destinationUserId,
+      ownerHash: input.authorization.ownerHash,
       name: input.authorization.characterName,
       corporationId: input.authorization.corporationId,
       allianceId: input.authorization.allianceId,
@@ -228,11 +226,6 @@ export async function transferCharacter(input: {
       payload: {
         userId: input.destinationUserId,
         characterId: input.characterId,
-        characterName: input.authorization.characterName,
-        corporationId: input.authorization.corporationId,
-        allianceId: input.authorization.allianceId,
-        isMain: false,
-        scopes,
       },
       occurredAt: now,
     })

@@ -8,6 +8,7 @@ import {
   organizationAccountCompliance,
   organizationAuditEvents,
   organizationAuthorityEvidence,
+  organizationDerivedAuthoritySources,
   organizationGroupAssignments,
   organizationGroupPermissionBundles,
   organizationGroups,
@@ -47,6 +48,7 @@ export interface OrganizationRevisionFacts {
     readonly grantedAt: string
     readonly evidenceStatus: string | null
     readonly evidenceReviewDeadline: string | null
+    readonly evidenceValidUntil: string | null
   }[]
   readonly groups: readonly {
     readonly assignmentId: string
@@ -158,7 +160,7 @@ export async function loadOrganizationRevisionFacts(
   organizationVersion: number,
   now: Date,
 ): Promise<OrganizationRevisionFacts> {
-  const [auditRows, roleRows, groupRows] = await Promise.all([
+  const [auditRows, roleRows, derivedRows, groupRows] = await Promise.all([
     db
       .select({ auditSequence: organizationAuditEvents.auditSequence })
       .from(organizationAuditEvents)
@@ -177,7 +179,8 @@ export async function loadOrganizationRevisionFacts(
         role: organizationRoleGrants.role,
         grantedAt: organizationRoleGrants.grantedAt,
         evidenceStatus: organizationAuthorityEvidence.status,
-        evidenceReviewDeadline: organizationAuthorityEvidence.reviewDeadline,
+        evidenceReviewDeadline: organizationAuthorityEvidence.graceUntil,
+        evidenceFreshUntil: organizationAuthorityEvidence.freshUntil,
       })
       .from(organizationRoleGrants)
       .leftJoin(
@@ -193,6 +196,24 @@ export async function loadOrganizationRevisionFacts(
         ),
       )
       .orderBy(asc(organizationRoleGrants.role), asc(organizationRoleGrants.grantId)),
+    db
+      .select({
+        sourceId: organizationDerivedAuthoritySources.sourceId,
+        observedAt: organizationDerivedAuthoritySources.observedAt,
+        evidenceStatus: organizationDerivedAuthoritySources.status,
+        evidenceReviewDeadline: organizationDerivedAuthoritySources.graceUntil,
+        evidenceFreshUntil: organizationDerivedAuthoritySources.freshUntil,
+      })
+      .from(organizationDerivedAuthoritySources)
+      .where(
+        and(
+          eq(organizationDerivedAuthoritySources.deploymentId, 1),
+          eq(organizationDerivedAuthoritySources.organizationVersion, organizationVersion),
+          eq(organizationDerivedAuthoritySources.userId, userId),
+          isNull(organizationDerivedAuthoritySources.invalidatedAt),
+        ),
+      )
+      .orderBy(asc(organizationDerivedAuthoritySources.sourceId)),
     db
       .select({
         assignmentId: organizationGroupAssignments.assignmentId,
@@ -272,13 +293,24 @@ export async function loadOrganizationRevisionFacts(
   ])
   return {
     latestAuditSequence: auditRows[0]?.auditSequence.toString() ?? null,
-    roles: roleRows.map((role) => ({
-      grantId: role.grantId,
-      role: role.role,
-      grantedAt: role.grantedAt.toISOString(),
-      evidenceStatus: role.evidenceStatus,
-      evidenceReviewDeadline: role.evidenceReviewDeadline?.toISOString() ?? null,
-    })),
+    roles: [
+      ...roleRows.map((role) => ({
+        grantId: role.grantId,
+        role: role.role,
+        grantedAt: role.grantedAt.toISOString(),
+        evidenceStatus: role.evidenceStatus,
+        evidenceReviewDeadline: role.evidenceReviewDeadline?.toISOString() ?? null,
+        evidenceValidUntil: authorityEvidenceValidUntil(role),
+      })),
+      ...derivedRows.map((source) => ({
+        grantId: source.sourceId,
+        role: 'derived:director',
+        grantedAt: source.observedAt.toISOString(),
+        evidenceStatus: source.evidenceStatus,
+        evidenceReviewDeadline: source.evidenceReviewDeadline?.toISOString() ?? null,
+        evidenceValidUntil: authorityEvidenceValidUntil(source),
+      })),
+    ],
     groups: groupRows.map((group) => ({
       assignmentId: group.assignmentId,
       groupId: group.groupId,
@@ -292,4 +324,15 @@ export async function loadOrganizationRevisionFacts(
       reviewAllowed: group.reviewAllowed,
     })),
   }
+}
+
+function authorityEvidenceValidUntil(evidence: {
+  evidenceStatus: string | null
+  evidenceFreshUntil: Date | null
+  evidenceReviewDeadline: Date | null
+}) {
+  if (evidence.evidenceStatus === 'fresh') return evidence.evidenceFreshUntil?.toISOString() ?? null
+  if (evidence.evidenceStatus === 'degraded')
+    return evidence.evidenceReviewDeadline?.toISOString() ?? null
+  return null
 }

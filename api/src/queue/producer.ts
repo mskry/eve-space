@@ -1,4 +1,4 @@
-import type { JobPayloadByName } from './job-contracts.js'
+import { resolveJobContract, type JobPayloadByName } from './job-contracts.js'
 
 export type QueueSource = 'planner' | 'on-demand' | 'outbox'
 
@@ -21,6 +21,16 @@ export type QueueCommand =
   | {
       readonly name: 'organization-owner-evidence'
       readonly payload: JobPayloadByName['organization-owner-evidence']
+      readonly source: 'planner'
+    }
+  | {
+      readonly name: 'derived-authority'
+      readonly payload: JobPayloadByName['derived-authority']
+      readonly source: 'planner'
+    }
+  | {
+      readonly name: 'corporation-source-evidence'
+      readonly payload: JobPayloadByName['corporation-source-evidence']
       readonly source: 'planner'
     }
   | {
@@ -170,7 +180,8 @@ export function rejectionReason(source: QueueSource) {
 }
 
 function inMemoryIdentity(command: QueueCommand) {
-  if (command.name === 'domain-event') return undefined
   if (command.name === 'diagnostic' && command.source === 'on-demand') return undefined
-  return JSON.stringify([command.name, command.payload])
+  const resolved = resolveJobContract(command.name, command.payload)
+  if (resolved.contract.activeWorkDeduplication === 'none') return undefined
+  return `${command.name}:${resolved.operationIdentity}`
 }

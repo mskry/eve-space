@@ -2,6 +2,8 @@ import { expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   affiliation: vi.fn(),
+  corporationSource: vi.fn(),
+  derivedAuthority: vi.fn(),
   ownerEvidence: vi.fn(),
   repairCollection: vi.fn(),
   maintenance: vi.fn(),
@@ -14,6 +16,12 @@ vi.mock('../../src/queue/affiliation-planner.js', () => ({
 }))
 vi.mock('../../src/queue/owner-evidence-planner.js', () => ({
   runOrganizationOwnerEvidencePlanner: mocks.ownerEvidence,
+}))
+vi.mock('../../src/queue/corporation-source-planner.js', () => ({
+  runCorporationSourcePlanner: mocks.corporationSource,
+}))
+vi.mock('../../src/queue/derived-authority-planner.js', () => ({
+  runDerivedAuthorityPlanner: mocks.derivedAuthority,
 }))
 vi.mock('../../src/platform/collection-state-repair.js', () => ({
   repairPlatformCollectionState: mocks.repairCollection,
@@ -34,6 +42,8 @@ test('runs installed resource maintenance from the production planner', async ()
 
   await runQueuePlanner({ producer, outcomes: {} as never, signal } as never)
 
+  expect(mocks.derivedAuthority).toHaveBeenCalledWith(expect.objectContaining({ signal }))
+  expect(mocks.corporationSource).toHaveBeenCalledWith(expect.objectContaining({ signal }))
   expect(mocks.maintenance).toHaveBeenCalledWith({ signal })
   expect(mocks.repairCollection.mock.invocationCallOrder[0]).toBeLessThan(
     mocks.maintenance.mock.invocationCallOrder[0]!,

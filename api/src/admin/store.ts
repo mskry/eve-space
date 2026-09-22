@@ -7,7 +7,6 @@ import {
   deploymentInstallationSettings,
   deploymentSettings,
   organizationAccountCompliance,
-  organizationAuthorityEvidence,
   organizationEpochs,
   organizationManagedCorporations,
   organizationRoleGrants,
@@ -16,6 +15,7 @@ import {
 import { hashToken } from '../auth/security.js'
 import { appendDomainEvent } from '../domain-events/store.js'
 import { appendOrganizationAuditEvent } from '../organization/audit.js'
+import { invalidateOrganizationAuthoritySourcesInTransaction } from '../organization/authority-convergence.js'
 import { recomputeAllOrganizationAccountsInTransaction } from '../organization/compliance.js'
 import { endManagedMemberLifecyclesForOrganizationVersionInTransaction } from '../organization/managed-member-lifecycle.js'
 import { initializeManagedOrganization } from '../organization/managed-corporations.js'
@@ -240,20 +240,11 @@ export async function updateDeploymentOrganization(
           isNull(organizationRoleGrants.revokedAt),
         ),
       )
-    await transaction
-      .update(organizationAuthorityEvidence)
-      .set({
-        status: 'invalid',
-        reviewDeadline: null,
-        failureClass: 'strict:organization-changed',
-        updatedAt: now,
-      })
-      .where(
-        and(
-          eq(organizationAuthorityEvidence.deploymentId, current.id),
-          eq(organizationAuthorityEvidence.organizationVersion, current.organizationVersion),
-        ),
-      )
+    await invalidateOrganizationAuthoritySourcesInTransaction(transaction, {
+      organizationVersion: current.organizationVersion,
+      policyVersion: current.registrationPolicyVersion,
+      now,
+    })
     await transaction
       .update(organizationAccountCompliance)
       .set({ authoritative: false, invalidatedAt: now, updatedAt: now })

@@ -1,4 +1,5 @@
 import type { SiteJudgment, SiteState } from './judgments.js'
+import type { JevReviewFinding } from '../jev/review.js'
 
 // Thresholds measured against the 39 human-labelled requests in
 // docs/fetching-layer-review-frontend.md; see scripts/calibrate-ssr-boundaries.ts.
@@ -17,14 +18,10 @@ const CREDENTIALED_REQUIREMENTS = new Set([
   'administrator_session',
 ])
 
-type FindingVerdict = 'report' | 'review' | 'pass'
-
-export interface Finding {
-  verdict: FindingVerdict
+export interface Finding extends JevReviewFinding {
   callSite: string
   routeMount: string
   requirement: string
-  reason: string
   signals: SiteJudgment
 }
 
@@ -34,6 +31,8 @@ export const classifySite = (state: SiteState, judgment: SiteJudgment): Finding 
     ? `${state.route.method} ${state.route.path} (${state.route.source})`
     : 'unresolved route mount'
   const base = {
+    location: callSite,
+    details: [`route: ${routeMount}`],
     callSite,
     routeMount,
     requirement: judgment.credentialRequirement.choice,
@@ -66,20 +65,6 @@ export const classifySite = (state: SiteState, judgment: SiteJudgment): Finding 
         : 'review',
     reason: `Request reaches a route requiring ${judgment.credentialRequirement.choice} with no SSR gate or cookie forwarding (ssr_capable ${format(judgment.ssrCapable)}).${cookieTrap}`,
   }
-}
-
-export const formatReport = (findings: readonly Finding[]) => {
-  const reportable = findings.filter((finding) => finding.verdict !== 'pass')
-
-  if (reportable.length === 0)
-    return `No SSR boundary findings across ${findings.length} reviewed request site(s).`
-
-  return reportable
-    .map(
-      (finding) =>
-        `[${finding.verdict.toUpperCase()}] ${finding.callSite}\n  route: ${finding.routeMount}\n  ${finding.reason}`,
-    )
-    .join('\n\n')
 }
 
 const skipReason = (judgment: SiteJudgment) => {

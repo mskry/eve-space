@@ -47,6 +47,8 @@ type PlatformResourceOperationExecution =
       readonly resource: PlatformInstalledResourceDescriptor
       readonly subject: PlatformResourceSubject
       readonly authorizationGeneration: number | null
+      readonly authorizationCharacterId?: number | null
+      readonly authorizationCharacterLifecycleId?: string | null
       readonly managedAuthority: PlatformManagedCollectionAuthority | null
       readonly organizationVersion?: number
       readonly complete?: boolean
@@ -168,6 +170,8 @@ async function executeCollectedResourceOperation(
     resource: guarded.resource,
     subject,
     authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
+    authorizationCharacterId: guarded.authorizationCharacterId,
+    authorizationCharacterLifecycleId: guarded.authorizationCharacterLifecycleId,
     managedAuthority: guarded.managedAuthority,
     organizationVersion: collectionContext.organizationVersion,
     complete: collected.complete,
@@ -282,6 +286,8 @@ async function executeSingleResourceOperation(
       operationAuthorization.kind === 'character'
         ? execution.authorizationGeneration
         : (guarded.authorization?.tokenVersion ?? execution.authorizationGeneration),
+    authorizationCharacterId,
+    authorizationCharacterLifecycleId,
     managedAuthority: guarded.managedAuthority,
     result: await mapResourceResult(
       execution,
@@ -381,6 +387,8 @@ function assertCollectionAuthority(
   if (
     result.outcome !== 'loaded' ||
     result.authorizationGeneration !== (guarded.authorization?.tokenVersion ?? null) ||
+    result.authorizationCharacterId !== guarded.authorizationCharacterId ||
+    result.authorizationCharacterLifecycleId !== guarded.authorizationCharacterLifecycleId ||
     !managedCollectionAuthorityEquals(result.managedAuthority, guarded.managedAuthority)
   )
     throw new Error('Resource collection authority changed')

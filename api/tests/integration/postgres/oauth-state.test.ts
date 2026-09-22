@@ -292,8 +292,8 @@ describe('OAuth state return path persistence', () => {
     const destinationCharacterId = 2_112_625_428
     await connection`insert into users (id) values (${destinationUserId})`
     await connection`
-      insert into characters (character_id, user_id, name, corporation_id, is_main)
-      values (${destinationCharacterId}, ${destinationUserId}, 'Destination Pilot', 1000166, true)
+      insert into characters (character_id, user_id, owner_hash, name, corporation_id, is_main)
+      values (${destinationCharacterId}, ${destinationUserId}, 'destination-owner', 'Destination Pilot', 1000166, true)
     `
     const approvalId = await insertTransferApproval({
       sourceUserId,
@@ -347,8 +347,8 @@ describe('OAuth state return path persistence', () => {
     const destinationCharacterId = 2_112_625_428
     await connection`insert into users (id) values (${destinationUserId})`
     await connection`
-      insert into characters (character_id, user_id, name, corporation_id, is_main)
-      values (${destinationCharacterId}, ${destinationUserId}, 'Destination Pilot', 1000166, true)
+      insert into characters (character_id, user_id, owner_hash, name, corporation_id, is_main)
+      values (${destinationCharacterId}, ${destinationUserId}, 'destination-owner', 'Destination Pilot', 1000166, true)
     `
     const approvalId = await insertTransferApproval({
       sourceUserId,
@@ -397,8 +397,8 @@ async function insertOwnedCharacter() {
   const userId = randomUUID()
   await connection`insert into users (id) values (${userId})`
   await connection`
-    insert into characters (character_id, user_id, name, corporation_id, is_main)
-    values (${characterId}, ${userId}, 'OAuth Pilot', 1000166, true)
+    insert into characters (character_id, user_id, owner_hash, name, corporation_id, is_main)
+    values (${characterId}, ${userId}, 'oauth-owner', 'OAuth Pilot', 1000166, true)
   `
   return userId
 }

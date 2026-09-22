@@ -102,7 +102,7 @@ describe('domain event PostgreSQL persistence', () => {
           event_type, payload_version, aggregate_type, aggregate_id, payload
         ) values (
           'character.attached', 1, 'character', '1404328063',
-          ${connection.json(characterSnapshot([]))}
+          ${connection.json(characterLifecyclePayload())}
         ) returning event_id
       `
       await expect(
@@ -142,7 +142,7 @@ describe('domain event PostgreSQL persistence', () => {
           await appendDomainEvent(transaction, {
             ...attachedEventInput(),
             aggregateId: '1404328064',
-            payload: { ...characterSnapshot([]), userId: rollbackUserId, characterId: 1404328064 },
+            payload: { userId: rollbackUserId, characterId: 1404328064 },
           })
           throw new Error('rollback probe')
         }),
@@ -579,21 +579,13 @@ function attachedEventInput(characterId = 1404328063, occurredAt?: Date) {
     type: 'character.attached' as const,
     payloadVersion: 1 as const,
     aggregateId: String(characterId),
-    payload: characterSnapshot([], characterId),
+    payload: characterLifecyclePayload(characterId),
     occurredAt,
   }
 }
 
-function characterSnapshot(scopes: string[], characterId = 1404328063) {
-  return {
-    userId,
-    characterId,
-    characterName: `Character ${characterId}`,
-    corporationId: 1000166,
-    allianceId: null,
-    isMain: characterId === 1404328063,
-    scopes,
-  }
+function characterLifecyclePayload(characterId = 1404328063) {
+  return { userId, characterId }
 }
 
 async function appendEvents(

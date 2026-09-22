@@ -49,4 +49,32 @@ describe('in-memory queue producer', () => {
     await producer.enqueue(onDemand)
     expect(producer.commands).toEqual([onDemand, onDemand])
   })
+
+  test('coalesces immutable authority work by the production contract identity', async () => {
+    const producer = createInMemoryQueueProducer()
+    const payload = {
+      grantId: '35acd527-9539-44ad-aacf-9f8e45232267',
+      organizationVersion: 3,
+      sourceSubjectLifecycleId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+      authorizationGeneration: 7,
+      roleEvidenceRevision: 'revision-1',
+    }
+
+    await expect(
+      producer.enqueue({ name: 'organization-owner-evidence', source: 'planner', payload }),
+    ).resolves.toEqual({ status: 'accepted', depth: 0 })
+    await expect(
+      producer.enqueue({
+        name: 'organization-owner-evidence',
+        source: 'planner',
+        payload: {
+          roleEvidenceRevision: payload.roleEvidenceRevision,
+          authorizationGeneration: payload.authorizationGeneration,
+          sourceSubjectLifecycleId: payload.sourceSubjectLifecycleId,
+          organizationVersion: payload.organizationVersion,
+          grantId: payload.grantId,
+        },
+      }),
+    ).resolves.toEqual({ status: 'rejected', depth: 1, reason: 'coalesced' })
+  })
 })

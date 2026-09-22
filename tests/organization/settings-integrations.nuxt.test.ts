@@ -17,9 +17,12 @@ import { queryServer } from '../support/query-server'
 const mountedWrappers: { unmount: () => void }[] = []
 const grantRequests: unknown[] = []
 const revokeRequests: unknown[] = []
+const ownerReplacementRequests: unknown[] = []
+const corporationReplacementRequests: unknown[] = []
 let permissionReadCount = 0
 let sessionAuthenticated = true
 let context = ownerContext()
+let rolesResponse = emptyRoles()
 let grantFails = false
 let revokeFails = false
 
@@ -29,11 +32,14 @@ afterAll(() => queryServer.close())
 beforeEach(() => {
   clearQueryCache()
   context = ownerContext()
+  rolesResponse = emptyRoles()
   sessionAuthenticated = true
   grantFails = false
   revokeFails = false
   grantRequests.length = 0
   revokeRequests.length = 0
+  ownerReplacementRequests.length = 0
+  corporationReplacementRequests.length = 0
   permissionReadCount = 0
   installHandlers()
 })
@@ -107,6 +113,28 @@ describe('SettingsIntegrations', () => {
     expect(wrapper.get('.authority-claim-form button').attributes('disabled')).toBeUndefined()
   })
 
+  it('offers any attached character when an existing owner source is invalid', async () => {
+    context = {
+      ...ownerContext(),
+      isOrganizationOwner: false,
+      claimAvailable: true,
+      ownerStatus: 'invalid',
+      ownerFailureClass: 'strict:not-director',
+      freshUntil: '2026-09-01T11:00:00.000Z',
+    }
+    const wrapper = await mountSettingsIntegrations()
+
+    await vi.waitFor(() =>
+      expect(wrapper.get('#authority-recovery-character').element).toHaveProperty(
+        'value',
+        '1404328063',
+      ),
+    )
+    expect(wrapper.get('.authority-evidence-card .ui-action-primary').text()).toBe(
+      'REVERIFY OR REPLACE SOURCE',
+    )
+  })
+
   it('keeps action feedback empty when role changes fail', async () => {
     grantFails = true
     revokeFails = true
@@ -146,15 +174,44 @@ describe('SettingsIntegrations', () => {
     expect(wrapper.find('.role-revoke-form').exists()).toBe(false)
     expect(wrapper.get('[aria-live="polite"]').text()).toBe('')
   })
+
+  it('renders authority provenance and submits explicit source replacements', async () => {
+    const wrapper = await mountSettingsIntegrations(authorityRoles())
+
+    expect(wrapper.text()).toContain('DESIGNATED OWNER')
+    expect(wrapper.text()).toContain('DERIVED DIRECTOR')
+    expect(wrapper.text()).toContain('CORPORATION 98000001')
+    expect(wrapper.text()).toContain('ESI unavailable')
+
+    await wrapper.get('.authority-source-row button').trigger('click')
+    await wrapper.get('#owner-replacement-reason').setValue(' Restore verified authority ')
+    await wrapper.get('.authority-source-remediation').trigger('submit')
+    await flushPromises()
+
+    expect(ownerReplacementRequests).toEqual([
+      { characterId: 1_404_328_063, reason: 'Restore verified authority' },
+    ])
+
+    const corporationButton = wrapper.findAll('.authority-source-row button').at(-1)!
+    await corporationButton.trigger('click')
+    await wrapper.get('#corporation-replacement-character').setValue('1404328063')
+    await wrapper.findAll('.authority-source-remediation').at(-1)!.trigger('submit')
+    await flushPromises()
+
+    expect(corporationReplacementRequests).toEqual([
+      { corporationId: 98_000_001, characterId: 1_404_328_063 },
+    ])
+  })
 })
 
-async function mountSettingsIntegrations() {
+async function mountSettingsIntegrations(roles: OrganizationRoles = emptyRoles()) {
+  rolesResponse = roles
   const Host = defineComponent({
     async setup() {
       const queryCache = useQueryCache()
       await useAuthSession(createApiClient('http://localhost:8788')).initializeAuth(true)
       queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationContext(), context)
-      queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationRoles(), { grants: [roleGrant()] })
+      queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationRoles(), roles)
       return () => h(SettingsIntegrations)
     },
   })
@@ -200,7 +257,7 @@ function installHandlers() {
     ),
     http.get('http://localhost:8788/api/organization/context', () => HttpResponse.json(context)),
     http.get('http://localhost:8788/api/organization/roles', () =>
-      HttpResponse.json({ grants: [roleGrant()] } satisfies OrganizationRoles),
+      HttpResponse.json(rolesResponse satisfies OrganizationRoles),
     ),
     http.get('http://localhost:8788/api/organization/permission-catalog', () => {
       permissionReadCount += 1
@@ -231,6 +288,21 @@ function installHandlers() {
           )
         }
         return HttpResponse.json({ grant: roleGrant() })
+      },
+    ),
+    http.put('http://localhost:8788/api/organization/owner-source', async ({ request }) => {
+      ownerReplacementRequests.push(await request.json())
+      return HttpResponse.json({ source: authorityRoles().ownerSources[0] })
+    }),
+    http.put(
+      'http://localhost:8788/api/organization/corporations/:corporationId/source',
+      async ({ params, request }) => {
+        const body = (await request.json()) as { characterId: number }
+        corporationReplacementRequests.push({
+          corporationId: Number(params.corporationId),
+          characterId: body.characterId,
+        })
+        return HttpResponse.json({ source: authorityRoles().corporationSources[0] })
       },
     ),
     http.get('http://localhost:8788/api/me/characters', () => {
@@ -277,13 +349,88 @@ function ownerContext(): OrganizationContext {
     capabilities: { reviewRegistration: true, viewRosterCoverage: true },
     claimAvailable: false,
     ownerStatus: 'fresh',
+    ownerFailureClass: null,
+    freshUntil: '2026-09-01T13:00:00.000Z',
+    graceUntil: null,
     reviewDeadline: null,
     authorityCharacter: {
       characterId: 1_404_328_063,
       corporationId: 98_000_001,
       name: 'Authority Pilot',
+      sourceType: 'designated-owner',
+      observedAt: '2026-09-01T12:00:00.000Z',
+      freshUntil: '2026-09-01T13:00:00.000Z',
+      graceUntil: null,
       lastCheckedAt: '2026-09-01T12:00:00.000Z',
     },
+  }
+}
+
+function emptyRoles(): OrganizationRoles {
+  return {
+    grants: [roleGrant()],
+    ownerSources: [],
+    derivedSources: [],
+    corporationSources: [],
+  }
+}
+
+function authorityRoles(): OrganizationRoles {
+  const shared = {
+    userId: 'owner-user',
+    characterId: 1_404_328_063,
+    characterName: 'Authority Pilot',
+    sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+    authorizationGeneration: 3,
+    observedCorporationId: 98_000_001,
+    observedAllianceId: null,
+    requiredScope: 'esi-characters.read_corporation_roles.v1',
+    roleEvidenceRevision: '2026-09-01T12:00:00.000Z',
+    observedAt: '2026-09-01T12:00:00.000Z',
+    freshUntil: '2026-09-01T13:00:00.000Z',
+    graceUntil: '2026-09-01T14:00:00.000Z',
+    failureClass: 'transient:esi-unavailable',
+    invalidatedAt: null,
+    invalidationOutcome: null,
+  }
+  return {
+    grants: [roleGrant()],
+    ownerSources: [
+      {
+        ...shared,
+        sourceId: '98a782d2-e042-47d7-9659-03b218121a1a',
+        grantId: '35acd527-9539-44ad-aacf-9f8e45232267',
+        role: 'organization_owner',
+        origin: 'designated-owner',
+        authorityCorporationId: 98_000_001,
+        status: 'degraded',
+        grantRevokedAt: null,
+        remediationAction: 'replace-or-reauthorize-owner-source',
+      },
+    ],
+    derivedSources: [
+      {
+        ...shared,
+        sourceId: '66503848-72b8-4fa3-8af5-de056001a37e',
+        role: 'director',
+        origin: 'eve-derived',
+        authorityCorporationId: 98_000_001,
+        status: 'degraded',
+        remediationAction: null,
+      },
+    ],
+    corporationSources: [
+      {
+        ...shared,
+        sourceId: '72f03848-72b8-4fa3-8af5-de056001a37e',
+        corporationId: 98_000_001,
+        origin: 'designated-corporation',
+        status: 'degraded',
+        registeredAt: '2026-09-01T12:00:00.000Z',
+        revokedAt: null,
+        remediationAction: 'replace-corporation-source',
+      },
+    ],
   }
 }
 

@@ -193,6 +193,9 @@ describe('organization queries', () => {
       capabilities: { reviewRegistration: true, viewRosterCoverage: true },
       claimAvailable: false,
       ownerStatus: 'fresh',
+      ownerFailureClass: null,
+      freshUntil: '2026-09-10T13:00:00.000Z',
+      graceUntil: null,
       reviewDeadline: null,
       authorityCharacter: null,
     } satisfies OrganizationContext
@@ -227,6 +230,9 @@ describe('organization queries', () => {
           mainCharacterName: 'Director',
         },
       ],
+      ownerSources: [],
+      derivedSources: [],
+      corporationSources: [],
     } satisfies OrganizationRoles
     queryServer.use(
       http.get('http://localhost/api/organization/roles', () => HttpResponse.json(response)),

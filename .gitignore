@@ -1,7 +1,10 @@
 # Nuxt dev/build outputs
 .output
+.output-e2e
 .data
 .nuxt
+.nuxt-e2e
+.nuxt-test
 .nitro
 .cache
 dist
@@ -34,6 +37,7 @@ sde-ingest/target
 
 # Logs
 logs
+.quality-logs
 *.log
 
 # Misc

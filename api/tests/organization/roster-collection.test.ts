@@ -24,6 +24,13 @@ describe('corporation roster materialization', () => {
         nextAffiliationCheck: new Date('2099-09-01T12:00:00.000Z'),
         tokenVersion: input.tokenVersion,
         scopes: [corporationMembershipScope],
+        sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+        sourceAuthorizationGeneration: input.tokenVersion,
+        sourceStatus: 'fresh',
+        sourceFreshUntil: new Date('2099-09-01T13:00:00.000Z'),
+        sourceGraceUntil: null,
+        sourceInvalidatedAt: null,
+        currentSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
       },
     ])
 
@@ -64,6 +71,13 @@ describe('corporation roster materialization', () => {
         nextAffiliationCheck: new Date(0),
         tokenVersion: input.tokenVersion,
         scopes: [corporationMembershipScope],
+        sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+        sourceAuthorizationGeneration: input.tokenVersion,
+        sourceStatus: 'fresh',
+        sourceFreshUntil: new Date('2099-09-01T13:00:00.000Z'),
+        sourceGraceUntil: null,
+        sourceInvalidatedAt: null,
+        currentSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
       },
     ])
 
@@ -85,6 +99,13 @@ describe('corporation roster materialization', () => {
         nextAffiliationCheck: new Date('2099-09-01T12:00:00.000Z'),
         tokenVersion: input.tokenVersion,
         scopes: [corporationMembershipScope],
+        sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+        sourceAuthorizationGeneration: input.tokenVersion,
+        sourceStatus: 'fresh',
+        sourceFreshUntil: new Date('2099-09-01T13:00:00.000Z'),
+        sourceGraceUntil: null,
+        sourceInvalidatedAt: null,
+        currentSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
       },
     ])
 

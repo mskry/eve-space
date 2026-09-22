@@ -20,6 +20,16 @@ interface GrantOrganizationRoleInput {
   reason: string
 }
 
+interface ReplaceOwnerSourceInput {
+  characterId: number
+  reason: string
+}
+
+interface ReplaceCorporationSourceInput {
+  corporationId: number
+  characterId: number
+}
+
 export function useOrganizationAuthority(apiClient: ApiClient) {
   const queryCache = useQueryCache()
   const { authLoading, authSession, authUnavailable, initializeAuth } = useAuthSession(apiClient)
@@ -66,6 +76,27 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
       return response.json()
     },
   })
+  const replaceOwnerSourceMutation = useMutation({
+    mutation: async (input: ReplaceOwnerSourceInput) => {
+      const response = await apiClient.api.organization['owner-source'].$put({ json: input })
+      if (response.status !== 200) {
+        throw await toApiQueryError(response, 'Organization-owner source could not be replaced.')
+      }
+      return response.json()
+    },
+  })
+  const replaceCorporationSourceMutation = useMutation({
+    mutation: async ({ corporationId, characterId }: ReplaceCorporationSourceInput) => {
+      const response = await apiClient.api.organization.corporations[':corporationId'].source.$put({
+        param: { corporationId: String(corporationId) },
+        json: { characterId },
+      })
+      if (response.status !== 200 && response.status !== 201) {
+        throw await toApiQueryError(response, 'Corporation source could not be replaced.')
+      }
+      return response.json()
+    },
+  })
   const invalidationRevision = ref(0)
   const actionError = shallowRef<unknown>()
 
@@ -73,6 +104,19 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
 
   const roleGrants = computed(() =>
     authorityContext.value?.isOrganizationOwner ? (rolesQuery.data.value?.grants ?? []) : [],
+  )
+  const ownerSources = computed(() =>
+    authorityContext.value?.isOrganizationOwner ? (rolesQuery.data.value?.ownerSources ?? []) : [],
+  )
+  const derivedSources = computed(() =>
+    authorityContext.value?.isOrganizationOwner
+      ? (rolesQuery.data.value?.derivedSources ?? [])
+      : [],
+  )
+  const corporationSources = computed(() =>
+    authorityContext.value?.isOrganizationOwner
+      ? (rolesQuery.data.value?.corporationSources ?? [])
+      : [],
   )
   const loading = computed(
     () =>
@@ -84,7 +128,9 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
   const mutationPending = computed(
     () =>
       grantMutation.asyncStatus.value === 'loading' ||
-      revokeMutation.asyncStatus.value === 'loading',
+      revokeMutation.asyncStatus.value === 'loading' ||
+      replaceOwnerSourceMutation.asyncStatus.value === 'loading' ||
+      replaceCorporationSourceMutation.asyncStatus.value === 'loading',
   )
   const errorMessage = computed(() => {
     if (authUnavailable.value) return 'Session verification is unavailable.'
@@ -92,6 +138,8 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
       actionError.value ??
       grantMutation.error.value ??
       revokeMutation.error.value ??
+      replaceOwnerSourceMutation.error.value ??
+      replaceCorporationSourceMutation.error.value ??
       setupQuery.error.value ??
       contextQuery.error.value ??
       rolesQuery.error.value
@@ -141,23 +189,64 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
     return true
   }
 
+  async function replaceOwnerSource(input: ReplaceOwnerSourceInput) {
+    const operationRevision = invalidationRevision.value
+    actionError.value = undefined
+    try {
+      await replaceOwnerSourceMutation.mutateAsync(input)
+    } catch (error) {
+      const current = operationRevision === invalidationRevision.value
+      if (reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)) {
+        if (current) actionError.value = error
+      }
+      throw error
+    }
+    if (operationRevision !== invalidationRevision.value) return false
+    await refreshRoles()
+    return true
+  }
+
+  async function replaceCorporationSource(input: ReplaceCorporationSourceInput) {
+    const operationRevision = invalidationRevision.value
+    actionError.value = undefined
+    try {
+      await replaceCorporationSourceMutation.mutateAsync(input)
+    } catch (error) {
+      const current = operationRevision === invalidationRevision.value
+      if (reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)) {
+        if (current) actionError.value = error
+      }
+      throw error
+    }
+    if (operationRevision !== invalidationRevision.value) return false
+    await refreshRoles()
+    return true
+  }
+
   function resetAuthorityState() {
     invalidationRevision.value += 1
     actionError.value = undefined
     grantMutation.reset()
     revokeMutation.reset()
+    replaceOwnerSourceMutation.reset()
+    replaceCorporationSourceMutation.reset()
   }
 
   return {
     authenticated: computed(() => authSession.value.authenticated),
     authorityContext,
+    corporationSources,
     deploymentConfigured,
+    derivedSources,
     errorMessage,
     grantRole,
     initialize,
     invalidationRevision: readonly(invalidationRevision),
     loading,
     mutationPending,
+    ownerSources,
+    replaceCorporationSource,
+    replaceOwnerSource,
     revokeRole,
     roleGrants,
   }

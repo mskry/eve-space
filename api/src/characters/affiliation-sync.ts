@@ -55,6 +55,7 @@ export async function observeCharacterAffiliation(characterId: number, signal?: 
   return {
     ...observation,
     affiliationCheckedAt: new Date(result.validatedAt),
+    affiliationFreshUntil: new Date(result.cachedUntil),
     stale: result.stale,
   }
 }

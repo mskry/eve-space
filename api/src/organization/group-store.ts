@@ -585,7 +585,13 @@ async function requireManager(
   organizationVersion: number,
   userId: string,
 ) {
-  const authority = await loadManagementAuthority(transaction, organizationVersion, userId)
+  const authority = await loadManagementAuthority(
+    transaction,
+    organizationVersion,
+    userId,
+    new Date(),
+    'mutate',
+  )
   if (!authority) throw new OrganizationGroupMutationError('manager-authority-required')
   return authority
 }

@@ -2,12 +2,17 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   currentCatalogPermission: vi.fn(),
+  effectiveAuthority: { organizationOwner: false, director: false },
   getOrganizationGroupPermissions: vi.fn(),
   grants: [] as unknown[],
+  loadEffectiveOrganizationAuthority: vi.fn(),
 }))
 
 vi.mock('../../src/organization/group-permissions.js', () => ({
   getOrganizationGroupPermissions: mocks.getOrganizationGroupPermissions,
+}))
+vi.mock('../../src/organization/effective-authority.js', () => ({
+  loadEffectiveOrganizationAuthority: mocks.loadEffectiveOrganizationAuthority,
 }))
 vi.mock('../../src/organization/permission-catalog-store.js', () => ({
   currentCatalogPermission: mocks.currentCatalogPermission,
@@ -34,7 +39,11 @@ const organization = {
 describe('organization module contribution authorization', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.effectiveAuthority = { organizationOwner: false, director: false }
     mocks.grants = []
+    mocks.loadEffectiveOrganizationAuthority.mockImplementation(() =>
+      Promise.resolve(mocks.effectiveAuthority),
+    )
     mocks.currentCatalogPermission.mockImplementation((value) => value)
     mocks.getOrganizationGroupPermissions.mockResolvedValue({
       modules: ['alpha.view'],
@@ -150,7 +159,8 @@ describe('organization module contribution authorization', () => {
       ),
     ).resolves.toMatchObject({ authorized: true })
 
-    mocks.grants = [{ role: 'organization_owner', evidenceStatus: 'fresh', reviewDeadline: null }]
+    mocks.grants = []
+    mocks.effectiveAuthority = { organizationOwner: true, director: false }
     await expect(
       authorizeOrganizationContribution(
         'user-1',
@@ -165,7 +175,11 @@ describe('organization module contribution authorization', () => {
 describe('organization reviewer contribution authorization', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.effectiveAuthority = { organizationOwner: false, director: false }
     mocks.grants = []
+    mocks.loadEffectiveOrganizationAuthority.mockImplementation(() =>
+      Promise.resolve(mocks.effectiveAuthority),
+    )
     mocks.currentCatalogPermission.mockImplementation((value) => value)
     mocks.getOrganizationGroupPermissions.mockResolvedValue({
       modules: ['member-audit.skills.read'],
@@ -176,7 +190,11 @@ describe('organization reviewer contribution authorization', () => {
   test.each(['hr_auditor', 'director'] as const)(
     'authorizes an explicit %s reviewer with the exact permission',
     async (role) => {
-      mocks.grants = [{ role }]
+      mocks.grants = role === 'hr_auditor' ? [{ role }] : []
+      mocks.effectiveAuthority = {
+        organizationOwner: false,
+        director: role === 'director',
+      }
 
       await expect(
         authorizeOrganizationReviewerContribution(
@@ -199,7 +217,7 @@ describe('organization reviewer contribution authorization', () => {
   )
 
   test('does not treat organization-owner authority as a reviewer grant', async () => {
-    mocks.grants = [{ role: 'organization_owner' }]
+    mocks.effectiveAuthority = { organizationOwner: true, director: false }
 
     await expect(
       authorizeOrganizationReviewerContribution(
@@ -225,7 +243,8 @@ describe('organization reviewer contribution authorization', () => {
     ).resolves.toEqual({ authorized: false, reason: 'audience' })
     expect(mocks.getOrganizationGroupPermissions).not.toHaveBeenCalled()
 
-    mocks.grants = [{ role: 'director' }]
+    mocks.grants = []
+    mocks.effectiveAuthority = { organizationOwner: false, director: true }
     await expect(
       authorizeOrganizationReviewerContribution(
         'user-1',
@@ -255,7 +274,7 @@ describe('organization reviewer contribution authorization', () => {
   })
 
   test('refuses a blocked reviewer before role and permission reads', async () => {
-    mocks.grants = [{ role: 'director' }]
+    mocks.effectiveAuthority = { organizationOwner: false, director: true }
 
     await expect(
       authorizeOrganizationReviewerContribution(
@@ -274,7 +293,7 @@ describe('organization reviewer contribution authorization', () => {
     ['wallet', 'mail'],
     ['mail', 'skills'],
   ] as const)('does not let %s permission authorize the %s section', async (granted, requested) => {
-    mocks.grants = [{ role: 'director' }]
+    mocks.effectiveAuthority = { organizationOwner: false, director: true }
     mocks.getOrganizationGroupPermissions.mockResolvedValue({
       modules: [`member-audit.${granted}.read`],
       services: [],
@@ -291,7 +310,7 @@ describe('organization reviewer contribution authorization', () => {
   })
 
   test('requires the exact permission and a reviewer audience', async () => {
-    mocks.grants = [{ role: 'director' }]
+    mocks.effectiveAuthority = { organizationOwner: false, director: true }
     mocks.getOrganizationGroupPermissions.mockResolvedValue({
       modules: ['member-audit.assets.read'],
       services: [],
@@ -356,7 +375,8 @@ function moduleDeclaration(audience: 'member' | 'hr' | 'director', requiredPermi
 
 function query(result: unknown[]) {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'innerJoin', 'leftJoin', 'where']) builder[method] = () => builder
+  for (const method of ['from', 'innerJoin', 'leftJoin', 'where', 'limit'])
+    builder[method] = () => builder
   // oxlint-disable-next-line unicorn/no-thenable -- Drizzle query builders are awaitable.
   builder.then = (resolve: (value: unknown[]) => unknown, reject: (error: unknown) => unknown) =>
     Promise.resolve(result).then(resolve, reject)

@@ -16,12 +16,15 @@ const mocks = vi.hoisted(() => {
     EveSsoTokenRefreshError,
     TokenRefreshLockUnavailableError,
     appendDomainEvent: vi.fn(),
+    advanceCharacterAuthorityAuthorizationGenerationInTransaction: vi.fn(),
     decryptTokens: vi.fn(),
     deleteCharacterTokenAuthorization: vi.fn(),
     encryptTokens: vi.fn(),
+    enqueueInstalledResourceLifecyclePurges: vi.fn(),
     findCharacterCacheAuthorizationForLifecycle: vi.fn(),
     findCharacterTokenForLifecycle: vi.fn(),
     lockCurrentOrganizationVersionForCompliance: vi.fn(),
+    invalidateCharacterAuthoritySourcesInTransaction: vi.fn(),
     recomputeOrganizationAccountCompliance: vi.fn(),
     refreshAccessToken: vi.fn(),
     updateCharacterToken: vi.fn(),
@@ -47,6 +50,17 @@ vi.mock('../../src/domain-events/store.js', () => ({
 vi.mock('../../src/organization/compliance.js', () => ({
   lockCurrentOrganizationVersionForCompliance: mocks.lockCurrentOrganizationVersionForCompliance,
   recomputeOrganizationAccountCompliance: mocks.recomputeOrganizationAccountCompliance,
+}))
+
+vi.mock('../../src/organization/authority-convergence.js', () => ({
+  advanceCharacterAuthorityAuthorizationGenerationInTransaction:
+    mocks.advanceCharacterAuthorityAuthorizationGenerationInTransaction,
+  invalidateCharacterAuthoritySourcesInTransaction:
+    mocks.invalidateCharacterAuthoritySourcesInTransaction,
+}))
+
+vi.mock('../../src/platform/resource-purge.js', () => ({
+  enqueueInstalledResourceLifecyclePurges: mocks.enqueueInstalledResourceLifecyclePurges,
 }))
 
 vi.mock('../../src/auth/sso.js', () => ({
@@ -77,6 +91,7 @@ const scope = 'esi-wallet.read_character_wallet.v1'
 const subjectLifecycleId = '35acd527-9539-44ad-aacf-9f8e45232267'
 const expired = {
   userId,
+  ownerHash: 'test-owner',
   encryptedTokens: 'original',
   accessTokenExpiresAt: new Date(0),
   scopes: [scope],
@@ -135,7 +150,12 @@ beforeEach(() => {
     expires_in: 1200,
     token_type: 'Bearer',
   })
-  mocks.verifyAccessToken.mockResolvedValue({ characterId, characterName: 'Test', scopes: [scope] })
+  mocks.verifyAccessToken.mockResolvedValue({
+    characterId,
+    characterName: 'Test',
+    ownerHash: 'test-owner',
+    scopes: [scope],
+  })
 })
 
 describe('token refresh', () => {
@@ -400,6 +420,7 @@ describe('token refresh', () => {
     mocks.verifyAccessToken.mockImplementation((accessToken: string) => ({
       characterId: Number(accessToken.replace('new-access-', '')),
       characterName: 'Test',
+      ownerHash: 'test-owner',
       scopes: [scope],
     }))
     mocks.updateCharacterToken.mockResolvedValue(true)
@@ -473,6 +494,7 @@ describe('token refresh', () => {
     mocks.verifyAccessToken.mockResolvedValue({
       characterId,
       characterName: 'Test',
+      ownerHash: 'test-owner',
       scopes: ['z.scope', scope, 'a.scope', 'z.scope'],
     })
     mocks.withCharacterTokenLifecycleLock.mockImplementation(
@@ -562,6 +584,7 @@ describe('token refresh', () => {
     mocks.verifyAccessToken.mockResolvedValueOnce({
       characterId: characterId + 1,
       characterName: 'Other',
+      ownerHash: 'test-owner',
       scopes: [scope],
     })
     await expect(getCharacterAccessToken(characterId, scope)).rejects.toThrow(
@@ -571,6 +594,7 @@ describe('token refresh', () => {
     mocks.verifyAccessToken.mockResolvedValueOnce({
       characterId,
       characterName: 'Test',
+      ownerHash: 'test-owner',
       scopes: [],
     })
     mocks.updateCharacterToken.mockResolvedValueOnce(true)
@@ -611,6 +635,36 @@ describe('token refresh', () => {
       }),
     )
     expect(mocks.recomputeOrganizationAccountCompliance).toHaveBeenCalledOnce()
+  })
+
+  test('invalidates authorization when the verified EVE owner changes', async () => {
+    mocks.withCharacterTokenLifecycleLock.mockImplementation(
+      async (_characterId, _subjectLifecycleId, operation) => operation(expired, {}),
+    )
+    mocks.verifyAccessToken.mockResolvedValue({
+      characterId,
+      characterName: 'Test',
+      ownerHash: 'different-owner',
+      scopes: [scope],
+    })
+
+    await expect(getCharacterAccessToken(characterId, scope)).rejects.toMatchObject({
+      name: 'CharacterOwnerMismatchError',
+    })
+    expect(mocks.deleteCharacterTokenAuthorization).toHaveBeenCalledWith(
+      characterId,
+      expired.tokenVersion,
+      expect.anything(),
+    )
+    expect(mocks.invalidateCharacterAuthoritySourcesInTransaction).toHaveBeenCalledWith(
+      expect.anything(),
+      { characterId, outcome: 'owner-mismatch' },
+    )
+    expect(mocks.enqueueInstalledResourceLifecyclePurges).toHaveBeenCalledWith(
+      expect.anything(),
+      subjectLifecycleId,
+    )
+    expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
   })
 
   test.each([
@@ -709,6 +763,7 @@ describe('token refresh', () => {
     mocks.verifyAccessToken.mockImplementation((accessToken: string) => ({
       characterId: Number(accessToken.replace('new-access-', '')),
       characterName: 'Test',
+      ownerHash: 'test-owner',
       scopes: [scope],
     }))
     mocks.updateCharacterToken.mockResolvedValue(true)
@@ -750,6 +805,7 @@ describe('token refresh', () => {
       mocks.verifyAccessToken.mockImplementation((accessToken: string) => ({
         characterId: Number(accessToken.replace('new-access-', '')),
         characterName: 'Test',
+        ownerHash: 'test-owner',
         scopes: [scope],
       }))
       mocks.updateCharacterToken.mockResolvedValue(true)

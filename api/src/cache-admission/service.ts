@@ -189,10 +189,18 @@ function earliestAuthorizationDeadline(
   const deadlines = [
     organization.accessValidUntil,
     organization.state === 'review_required' ? organization.reviewDeadline : null,
-    ...facts.roles.map(({ evidenceReviewDeadline }) =>
-      evidenceReviewDeadline ? new Date(evidenceReviewDeadline) : null,
-    ),
+    effectiveAuthorityDeadline(facts, now),
     ...facts.groups.map(({ expiresAt }) => (expiresAt ? new Date(expiresAt) : null)),
   ].filter((deadline): deadline is Date => deadline !== null && deadline > now)
   return deadlines.toSorted((left, right) => left.getTime() - right.getTime())[0] ?? null
+}
+
+function effectiveAuthorityDeadline(facts: OrganizationRevisionFacts, now: Date) {
+  if (facts.roles.some(({ role, evidenceStatus }) => role === 'director' && !evidenceStatus))
+    return null
+  const deadlines = facts.roles
+    .filter(({ role }) => role === 'organization_owner' || role === 'derived:director')
+    .map(({ evidenceValidUntil }) => (evidenceValidUntil ? new Date(evidenceValidUntil) : null))
+    .filter((deadline): deadline is Date => deadline !== null && deadline > now)
+  return deadlines.toSorted((left, right) => right.getTime() - left.getTime())[0] ?? null
 }

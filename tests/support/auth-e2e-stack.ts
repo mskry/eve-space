@@ -9,6 +9,7 @@ import { GenericContainer, Wait } from 'testcontainers'
 export interface FakeEveCharacter {
   characterId: number
   characterName: string
+  ownerHash: string
   corporationId: number
   allianceId: number | null
   scopes: string[]
@@ -112,6 +113,7 @@ async function startFakeEveSso(apiOrigin: string) {
       return {
         characterId: character.characterId,
         characterName: character.characterName,
+        ownerHash: character.ownerHash,
         scopes: character.scopes,
       }
     },

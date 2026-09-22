@@ -7,6 +7,7 @@ const queryPersistenceFixtureEnabled = process.env.EVE_SPACE_E2E_PERSISTENCE_FIX
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  buildDir: queryPersistenceFixtureEnabled ? '.nuxt-e2e' : undefined,
   compatibilityDate: '2025-07-15',
   app: {
     viewTransition: false,
@@ -68,6 +69,7 @@ export default defineNuxtConfig({
       brotli: true,
       gzip: true,
     },
+    output: queryPersistenceFixtureEnabled ? { dir: '.output-e2e' } : undefined,
   },
   runtimeConfig: {
     public: {
@@ -76,7 +78,7 @@ export default defineNuxtConfig({
     },
   },
   typescript: {
-    typeCheck: true,
+    typeCheck: queryPersistenceFixtureEnabled ? false : 'build',
   },
   vite: {
     build: {
@@ -93,6 +95,19 @@ export default defineNuxtConfig({
             ],
           },
         },
+      },
+    },
+    server: {
+      watch: {
+        ignored: [
+          '**/.nuxt-e2e/**',
+          '**/.nuxt-test/**',
+          '**/.output-e2e/**',
+          '**/.quality-logs/**',
+          '**/.scannerwork/**',
+          '**/coverage/**',
+          '**/coverage-*/**',
+        ],
       },
     },
   },

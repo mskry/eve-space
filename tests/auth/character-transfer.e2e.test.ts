@@ -25,7 +25,7 @@ describe('explicit character transfer production journeys', async () => {
     rootDir: fileURLToPath(new URL('../..', import.meta.url)),
     build: false,
     nuxtConfig: {
-      nitro: { output: { dir: fileURLToPath(new URL('../../.output', import.meta.url)) } },
+      nitro: { output: { dir: fileURLToPath(new URL('../../.output-e2e', import.meta.url)) } },
     },
     browser: true,
     server: true,
@@ -420,12 +420,16 @@ async function seedOrganizationOwner(sourceUserId: string, destinationUserId: st
   await infrastructure.connection`
     insert into organization_authority_evidence (
       grant_id, deployment_id, organization_version, user_id, character_id,
+      source_subject_lifecycle_id, authorization_generation, role_evidence_revision,
       authority_corporation_id, observed_corporation_id, required_scope,
-      director_role_present, status, verified_at, last_checked_at
+      director_role_present, status, observed_at, fresh_until, last_checked_at
     ) values (
       ${grant!.grant_id}, 1, 1, ${sourceUserId}, ${sourceMain.characterId},
+      (select subject_lifecycle_id from platform_subject_lifecycles where character_id = ${sourceMain.characterId}),
+      (select token_version from eve_tokens where character_id = ${sourceMain.characterId}),
+      'browser-role-evidence',
       ${sourceMain.corporationId}, ${sourceMain.corporationId}, 'scope.owner',
-      true, 'fresh', now(), now()
+      true, 'fresh', now(), now() + interval '1 hour', now()
     )
   `
   await recomputeOrganizationAccountCompliance({
@@ -499,6 +503,7 @@ function character(characterId: number, characterName: string): FakeEveCharacter
   return {
     characterId,
     characterName,
+    ownerHash: `browser-owner-${characterId}`,
     corporationId: 10_001_166,
     allianceId: null,
     scopes: ['scope.owner'],

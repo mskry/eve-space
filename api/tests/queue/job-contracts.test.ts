@@ -4,9 +4,12 @@ import { env } from '../../src/env.js'
 import {
   affiliationJobId,
   assertSafeJobPayload,
+  corporationSourceEvidenceJobId,
+  derivedAuthorityJobId,
   domainEventJobId,
   getJobContract,
   listJobContracts,
+  organizationOwnerEvidenceJobId,
   parseJobPayload,
   resourceBatchJobId,
   resourceRefreshJobId,
@@ -17,6 +20,14 @@ import {
 
 const eventId = '98a782d2-e042-47d7-9659-03b218121a1a'
 const grantId = '35acd527-9539-44ad-aacf-9f8e45232267'
+const sourceId = '66503848-72b8-4fa3-8af5-de056001a37e'
+const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
+const sourceContext = {
+  organizationVersion: 3,
+  sourceSubjectLifecycleId: grantId,
+  authorizationGeneration: 7,
+  roleEvidenceRevision: '2026-09-21T12:00:00.000Z',
+} as const
 const resourceIdentity = {
   moduleId: 'member-audit',
   resourceId: 'trained-skills',
@@ -43,8 +54,18 @@ const fixtures = {
   'domain-event-retention': { operationId: 'domain-event-retention' },
   affiliation: { operationId: `affiliation-1--${eventId}`, characterIds: [1] },
   'organization-owner-evidence': {
-    operationId: `organization-owner-evidence-${grantId}`,
     grantId,
+    ...sourceContext,
+  },
+  'corporation-source-evidence': { sourceId, ...sourceContext },
+  'derived-authority': {
+    organizationVersion: sourceContext.organizationVersion,
+    userId,
+    characterId: 1404328063,
+    subjectLifecycleId: sourceContext.sourceSubjectLifecycleId,
+    authorizationGeneration: sourceContext.authorizationGeneration,
+    sourceId: null,
+    roleEvidenceRevision: null,
   },
   'resource-refresh': resourceIdentity,
   'resource-batch': resourceBatch,
@@ -58,6 +79,8 @@ const expected = [
   ['domain-event-retention', 3, 'derived', undefined, 'scheduler', 'none', 'none'],
   ['affiliation', 5, 'derived', undefined, 'job-id', 'none', 'none'],
   ['organization-owner-evidence', 3, 'derived', undefined, 'simple', 'none', 'none'],
+  ['corporation-source-evidence', 3, 'derived', undefined, 'simple', 'none', 'none'],
+  ['derived-authority', 3, 'derived', undefined, 'simple', 'none', 'none'],
   ['resource-refresh', 1, 'derived', undefined, 'simple', 'planner-stagger', 'resource'],
   ['resource-batch', 1, 'derived', undefined, 'simple', 'planner-stagger', 'resource'],
 ] as const
@@ -95,6 +118,13 @@ describe('job contracts', () => {
     expect(affiliationJobId([3, 1, 2])).toBe('affiliation-1-2-3')
     expect(affiliationJobId([3, 1, 2], eventId)).toBe(`affiliation-1-2-3--${eventId}`)
     expect(domainEventJobId(eventId)).toBe(`domain-event-${eventId}`)
+    expect(organizationOwnerEvidenceJobId(fixtures['organization-owner-evidence'])).toMatch(
+      /^organization-owner-evidence-3-7-/,
+    )
+    expect(corporationSourceEvidenceJobId(fixtures['corporation-source-evidence'])).toMatch(
+      /^corporation-source-evidence-3-7-/,
+    )
+    expect(derivedAuthorityJobId(fixtures['derived-authority'])).toContain('-initial-')
     expect(resourceRefreshJobId(resourceIdentity)).toMatch(/^resource-refresh-[0-9a-f]{64}$/)
     expect(resourceBatchJobId(resourceBatch)).toMatch(/^resource-batch-[0-9a-f]{64}$/)
     expect(
@@ -114,6 +144,21 @@ describe('job contracts', () => {
     ).not.toThrow()
     expect(() =>
       parseJobPayload('affiliation', affiliationPayload(affiliationMaximumBatchSize + 1)),
+    ).toThrow('Invalid affiliation')
+  })
+
+  test('rejects affiliation identities that do not match unique payload characters', () => {
+    expect(() =>
+      parseJobPayload('affiliation', {
+        operationId: 'affiliation-1-2',
+        characterIds: [1, 3],
+      }),
+    ).toThrow('Invalid affiliation')
+    expect(() =>
+      parseJobPayload('affiliation', {
+        operationId: 'affiliation-1-1',
+        characterIds: [1, 1],
+      }),
     ).toThrow('Invalid affiliation')
   })
 
@@ -146,8 +191,9 @@ describe('job contracts', () => {
 })
 
 function affiliationPayload(size: number) {
+  const characterIds = Array.from({ length: size }, (_, index) => index + 1)
   return {
-    operationId: 'affiliation-1',
-    characterIds: Array.from({ length: size }, (_, index) => index + 1),
+    operationId: affiliationJobId(characterIds),
+    characterIds,
   }
 }

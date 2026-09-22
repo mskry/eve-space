@@ -5,7 +5,7 @@ import type {
 } from '@eve-space/platform-module-contract/resources'
 import { sql as drizzleSql } from 'drizzle-orm'
 import type postgres from 'postgres'
-import { db, sql } from '../db/client.js'
+import { db, sql, type DatabaseTransaction } from '../db/client.js'
 import {
   characterLockKey,
   characterLockNamespace,
@@ -19,6 +19,10 @@ import {
   recomputeAllOrganizationAccountsInTransaction,
   recomputeComplianceForManagedCorporationsInTransaction,
 } from '../organization/compliance.js'
+import {
+  isCorporationSourceExecutionCurrent,
+  lockCorporationSourceExecutionCurrent,
+} from '../organization/roster-collection.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import {
   loadPlatformCollectionState,
@@ -32,6 +36,7 @@ import {
   type PlatformManagedCollectionAuthority,
 } from './resource-eligibility.js'
 import { executeInstalledResourceOperation } from './resource-operation-executor.js'
+import { guardInstalledResourceExecution } from './resource-execution-guard.js'
 import {
   PlatformResourcePersistenceError,
   recordInstalledResourceCollectionFailure,
@@ -59,6 +64,7 @@ export async function processInstalledResourceRefresh(
   try {
     execution = await (options.executeOperation ?? executeInstalledResourceOperation)(identity, {
       signal: options.signal,
+      guardExecution: guardCoreInstalledResourceExecution,
       onAuthorityResolved(authority) {
         attemptAuthority = authority
       },
@@ -86,6 +92,8 @@ export async function processInstalledResourceRefresh(
       resource: execution.resource,
       subject: execution.subject,
       authorizationGeneration: execution.authorizationGeneration,
+      authorizationCharacterId: execution.authorizationCharacterId,
+      authorizationCharacterLifecycleId: execution.authorizationCharacterLifecycleId,
       managedAuthority: execution.managedAuthority,
       validatedAt: execution.result.validatedAt,
       organizationVersion: execution.organizationVersion,
@@ -105,11 +113,23 @@ export async function processInstalledResourceRefresh(
   }
 }
 
+function guardCoreInstalledResourceExecution(
+  identity: PlatformCollectionStateIdentity,
+  options: Parameters<typeof guardInstalledResourceExecution>[1] = {},
+) {
+  return guardInstalledResourceExecution(identity, {
+    ...options,
+    isCorporationSourceCurrent: isCorporationSourceExecutionCurrent,
+  })
+}
+
 type PlatformResourceObservation = {
   readonly identity: PlatformCollectionStateIdentity
   readonly resource: PlatformInstalledResourceDescriptor
   readonly subject: PlatformResourceSubject
   readonly authorizationGeneration: number | null
+  readonly authorizationCharacterId?: number | null
+  readonly authorizationCharacterLifecycleId?: string | null
   readonly managedAuthority: PlatformManagedCollectionAuthority | null
   readonly validatedAt: string
   readonly organizationVersion?: number
@@ -173,6 +193,11 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
       !eligibility.due ||
       eligibility.authorizationGeneration !== observation.authorizationGeneration ||
       !managedCollectionAuthorityEquals(eligibility.managedAuthority, observation.managedAuthority)
+    )
+      return
+    if (
+      observation.subject.kind === 'corporation' &&
+      !(await lockCurrentCorporationSource(transaction, observation, eligibility))
     )
       return
 
@@ -266,6 +291,33 @@ async function materializeInstalledResourceObservation(
   }
 }
 
+async function lockCurrentCorporationSource(
+  transaction: postgres.TransactionSql,
+  observation: PlatformResourceObservation,
+  eligibility: Extract<
+    Awaited<ReturnType<typeof resolveInstalledResourceEligibility>>,
+    { status: 'eligible' }
+  >,
+) {
+  if (observation.subject.kind !== 'corporation') return true
+  const characterId = observation.authorizationCharacterId
+  const characterSubjectLifecycleId = observation.authorizationCharacterLifecycleId
+  const authorizationGeneration = observation.authorizationGeneration
+  if (!characterId || !characterSubjectLifecycleId || authorizationGeneration === null) return false
+  if (
+    eligibility.authorizationCharacterId !== characterId ||
+    eligibility.authorizationCharacterLifecycleId !== characterSubjectLifecycleId ||
+    eligibility.authorizationGeneration !== authorizationGeneration
+  )
+    return false
+  return lockCorporationSourceExecutionCurrent(transaction, {
+    corporationSubjectLifecycleId: observation.subject.lifecycleId,
+    characterId,
+    characterSubjectLifecycleId,
+    authorizationGeneration,
+  })
+}
+
 function materializationContext(
   observation: Extract<PlatformResourceObservation, { outcome: 'complete' }>,
 ) {
@@ -297,6 +349,11 @@ async function applyCoreResourceObservation(observation: PlatformResourceObserva
     const currentState = await loadPlatformCollectionState(observation.identity, transaction)
     observation.signal?.throwIfAborted()
     if (currentState?.validatedAt && currentState.validatedAt >= validatedAt) return
+    if (
+      observation.subject.kind === 'corporation' &&
+      !(await lockCoreCorporationSource(transaction, observation))
+    )
+      return
 
     const applied = await materializeCoreResourceObservation(transaction, {
       resourceId: observation.resource.resourceId,
@@ -342,4 +399,26 @@ async function applyCoreResourceObservation(observation: PlatformResourceObserva
       })
     observation.signal?.throwIfAborted()
   })
+}
+
+async function lockCoreCorporationSource(
+  transaction: DatabaseTransaction,
+  observation: PlatformResourceObservation,
+) {
+  if (observation.subject.kind !== 'corporation') return true
+  if (
+    !observation.authorizationCharacterId ||
+    !observation.authorizationCharacterLifecycleId ||
+    observation.authorizationGeneration === null
+  )
+    return false
+  return isCorporationSourceExecutionCurrent(
+    {
+      corporationSubjectLifecycleId: observation.subject.lifecycleId,
+      characterId: observation.authorizationCharacterId,
+      characterSubjectLifecycleId: observation.authorizationCharacterLifecycleId,
+      authorizationGeneration: observation.authorizationGeneration,
+    },
+    transaction,
+  )
 }

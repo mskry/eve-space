@@ -1,5 +1,7 @@
 import { fileURLToPath } from 'node:url'
-import { classifySite, formatReport, type Finding } from './ssr-boundary-review/findings.js'
+import { createJevClient } from './jev/client.js'
+import { runJevReview } from './jev/review.js'
+import { classifySite } from './ssr-boundary-review/findings.js'
 import { judgeSite, type SiteState } from './ssr-boundary-review/judgments.js'
 import {
   changedFrontendFiles,
@@ -15,20 +17,21 @@ import { loadRootMountTable, resolveMount } from './ssr-boundary-review/route-mo
 const repository = new URL('../', import.meta.url)
 const root = fileURLToPath(repository)
 const base = process.argv[2] ?? 'origin/main'
-const apiKey = process.env.TYPESAFE_API_KEY
-
-if (!apiKey) throw new Error('TYPESAFE_API_KEY is required to run the SSR boundary review.')
+const client = createJevClient()
 
 const table = await loadRootMountTable(repository)
 const sites = await collectRequestSites(repository, await changedFrontendFiles(root, base))
 const states = await Promise.all(sites.map(toSiteState))
-const findings: readonly Finding[] = await Promise.all(
-  states.map(async (state) => classifySite(state, await judgeSite(apiKey, state))),
-)
+const review = await runJevReview({
+  findingName: 'SSR boundary',
+  reviewedName: 'request site(s)',
+  states,
+  judge: (state) => judgeSite(client, state),
+  classify: classifySite,
+})
 
-process.stdout.write(`${formatReport(findings)}\n`)
-
-if (findings.some((finding) => finding.verdict === 'report')) process.exitCode = 1
+process.stdout.write(`${review.output}\n`)
+if (review.failed) process.exitCode = 1
 
 async function toSiteState(site: RequestSite): Promise<SiteState> {
   const resolved = site.requestPath ? resolveMount(site.requestPath, table) : null

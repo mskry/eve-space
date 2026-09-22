@@ -514,9 +514,19 @@ describe('private query lifecycle', () => {
     seedCharacterQuery(queryCache, 7)
     queryCache.ensure({
       key: PRIVATE_QUERY_KEYS.organizationRoles(),
-      query: async () => ({ grants: [] }),
+      query: async () => ({
+        grants: [],
+        ownerSources: [],
+        derivedSources: [],
+        corporationSources: [],
+      }),
     })
-    queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationRoles(), { grants: [] })
+    queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationRoles(), {
+      grants: [],
+      ownerSources: [],
+      derivedSources: [],
+      corporationSources: [],
+    })
 
     const nextSession = authenticatedSession('user-2', 8)
     queryServer.use(

@@ -3,6 +3,10 @@ import { z } from 'zod'
 import { zValidator } from '../http/validation.js'
 import type { OrganizationSessionEnv } from '../middleware/organization-session.js'
 import {
+  maximumAuthorityEvidenceFreshDurationSeconds,
+  minimumAuthorityEvidenceFreshDurationSeconds,
+} from './authority-policy.js'
+import {
   maximumStaleEvidenceGraceDurationSeconds,
   maximumStrictRemediationDurationSeconds,
 } from './registration-policy.js'
@@ -11,6 +15,10 @@ import {
   updateOrganizationRegistrationPolicy,
 } from './policy-store.js'
 import {
+  OrganizationOwnerSourceReplacementError,
+  replaceOrganizationOwnerSource,
+} from './owner-source-replacement.js'
+import {
   grantOrganizationRole,
   listCurrentOrganizationRoles,
   OrganizationRoleMutationError,
@@ -18,6 +26,8 @@ import {
 } from './role-store.js'
 import {
   requireOrganizationOwner,
+  requireFreshOrganizationOwner,
+  requireOrganizationOwnerRemediation,
   requireRegistrationPolicyOwner,
   requireTrustedOrigin,
 } from './route-middleware.js'
@@ -32,6 +42,9 @@ const grantRoleSchema = z
   .strict()
 const grantParamsSchema = z.object({ grantId: z.uuid('Enter a valid role grant ID.') })
 const revokeRoleSchema = z.object({ reason: reasonSchema }).strict()
+const replaceOwnerSourceSchema = z
+  .object({ characterId: z.number().int().positive(), reason: reasonSchema })
+  .strict()
 const registrationPolicySchema = z
   .object({
     requiredScopes: z.array(z.string().trim().min(1).max(200)).max(100),
@@ -45,6 +58,12 @@ const registrationPolicySchema = z
       .int()
       .min(0)
       .max(maximumStaleEvidenceGraceDurationSeconds),
+    derivedDirectorAuthorityEnabled: z.boolean(),
+    authorityEvidenceFreshDurationSeconds: z
+      .number()
+      .int()
+      .min(minimumAuthorityEvidenceFreshDurationSeconds)
+      .max(maximumAuthorityEvidenceFreshDurationSeconds),
     reason: reasonSchema,
   })
   .strict()
@@ -56,7 +75,7 @@ export const organizationGovernanceRoutes = new Hono<OrganizationSessionEnv>()
   .post(
     '/roles',
     requireTrustedOrigin,
-    requireOrganizationOwner,
+    requireFreshOrganizationOwner,
     zValidator('json', grantRoleSchema),
     async (context) => {
       try {
@@ -90,10 +109,27 @@ export const organizationGovernanceRoutes = new Hono<OrganizationSessionEnv>()
       }
     },
   )
+  .put(
+    '/owner-source',
+    requireTrustedOrigin,
+    requireOrganizationOwnerRemediation,
+    zValidator('json', replaceOwnerSourceSchema),
+    async (context) => {
+      try {
+        const replacement = await replaceOrganizationOwnerSource({
+          actorUserId: context.var.session!.userId,
+          ...context.req.valid('json'),
+        })
+        return context.json({ replacement })
+      } catch (error) {
+        return ownerSourceReplacementFailure(context, error)
+      }
+    },
+  )
   .post(
     '/roles/:grantId/revoke',
     requireTrustedOrigin,
-    requireOrganizationOwner,
+    requireFreshOrganizationOwner,
     zValidator('param', grantParamsSchema),
     zValidator('json', revokeRoleSchema),
     async (context) => {
@@ -149,4 +185,28 @@ function registrationPolicyMutationFailure(context: Context, error: unknown) {
       409,
     )
   return context.json({ code: 'INVALID_REGISTRATION_POLICY', message: 'Policy is invalid.' }, 400)
+}
+
+function ownerSourceReplacementFailure(context: Context, error: unknown) {
+  if (!(error instanceof OrganizationOwnerSourceReplacementError)) throw error
+  if (error.code === 'owner-authority-required')
+    return context.json(
+      {
+        code: 'ORGANIZATION_OWNER_REPLACEMENT_REQUIRED',
+        message: 'A current organization-owner source must authorize replacement.',
+      },
+      409,
+    )
+  if (error.code === 'replacement-not-owned')
+    return context.json({ code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' }, 404)
+  return context.json(
+    {
+      code:
+        error.code === 'replacement-stale'
+          ? 'ORGANIZATION_AUTHORITY_SOURCE_STALE'
+          : 'ORGANIZATION_AUTHORITY_SOURCE_INVALID',
+      message: 'The replacement authority source is not currently eligible.',
+    },
+    409,
+  )
 }

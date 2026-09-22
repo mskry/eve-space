@@ -1,11 +1,8 @@
 import { readFile } from 'node:fs/promises'
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
 import ts from 'typescript'
+import { changedRepositoryFiles } from '../jev/changed-files.js'
 import { clientRequestIn } from './client-request.js'
 import { indexQueryDefinitions, referencedDefinition } from './query-definitions.js'
-
-const run = promisify(execFile)
 
 const REVIEWED_DIRECTORIES = ['app/', 'layers/']
 const REVIEWED_EXTENSIONS = ['.ts', '.vue']
@@ -13,7 +10,7 @@ const EXCERPT_LINES_BEFORE = 14
 const HELPER_LINES = 20
 const EXCERPT_LINES_AFTER = 10
 const HELPER_ENTRY_PATTERN =
-  /\b(useQuery|useFetch|useAsyncData|useMutation|prefetchQuery|prefetchProtectedQuery|ensureQuery|refetchQueries)\s*[(<]/
+  /\b(useQuery|useFetch|useAsyncData|prefetchQuery|prefetchProtectedQuery|ensureQuery|refetchQueries)\s*[(<]/
 const FETCH_ENTRY_PATTERN = /\$fetch\s*[(<]/
 const SIBLING_PATTERN = /^\s*(?:const|let|var|function|async function|return)\b/
 const FETCH_REQUEST_PATTERN = /\$fetch\s*\(\s*['"]([^'"]+)['"]/
@@ -45,22 +42,7 @@ export interface RequestSite {
 }
 
 export const changedFrontendFiles = async (root: string, base: string) => {
-  const [branch, workingTree, staged, untracked] = await Promise.all([
-    run('git', ['diff', '--name-only', `${base}...HEAD`], { cwd: root }),
-    run('git', ['diff', '--name-only'], { cwd: root }),
-    run('git', ['diff', '--cached', '--name-only'], { cwd: root }),
-    run('git', ['ls-files', '--others', '--exclude-standard'], { cwd: root }),
-  ])
-
-  return [
-    ...new Set(
-      [branch.stdout, workingTree.stdout, staged.stdout, untracked.stdout].flatMap((output) =>
-        output.split('\n'),
-      ),
-    ),
-  ]
-    .map((file) => file.trim())
-    .filter(isReviewedFile)
+  return (await changedRepositoryFiles(root, base)).filter(isReviewedFile)
 }
 
 export const collectRequestSites = async (root: URL, files: readonly string[]) => {
@@ -97,10 +79,60 @@ const sitesInSource = (
   entryHelpers: EntryHelperIndex,
 ): RequestSite[] => {
   const lines = source.split('\n')
+  const excludedLines = inlineMutationCallbackLines(file, source)
 
   return lines.flatMap((line, index) => {
+    if (excludedLines.has(index)) return []
     return requestSiteOnLine(file, lines, line, index, definitions, entryHelpers)
   })
+}
+
+const inlineMutationCallbackLines = (file: string, source: string) => {
+  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
+  const excludedLines = new Set<number>()
+
+  const visit = (node: ts.Node) => {
+    if (isUseMutationCall(node)) {
+      const callback = inlineMutationCallback(node.arguments[0])
+      if (callback) addNodeLines(excludedLines, sourceFile, callback)
+    }
+    ts.forEachChild(node, visit)
+  }
+
+  visit(sourceFile)
+  return excludedLines
+}
+
+const isUseMutationCall = (node: ts.Node): node is ts.CallExpression =>
+  ts.isCallExpression(node) &&
+  ts.isIdentifier(node.expression) &&
+  node.expression.text === 'useMutation'
+
+const inlineMutationCallback = (argument: ts.Expression | undefined) => {
+  if (!argument || !ts.isObjectLiteralExpression(argument)) return null
+
+  const property = argument.properties.find((candidate) => propertyName(candidate) === 'mutation')
+  if (property && ts.isMethodDeclaration(property)) return property
+  if (!property || !ts.isPropertyAssignment(property)) return null
+
+  const { initializer } = property
+  return ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer)
+    ? initializer
+    : null
+}
+
+const propertyName = (property: ts.ObjectLiteralElementLike) => {
+  const { name } = property
+  return name && (ts.isIdentifier(name) || ts.isStringLiteral(name)) ? name.text : null
+}
+
+const addNodeLines = (lines: Set<number>, sourceFile: ts.SourceFile, node: ts.Node) => {
+  const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line
+  const end = sourceFile.getLineAndCharacterOfPosition(
+    Math.max(node.getStart(sourceFile), node.end - 1),
+  ).line
+
+  for (let line = start; line <= end; line += 1) lines.add(line)
 }
 
 const requestSiteOnLine = (

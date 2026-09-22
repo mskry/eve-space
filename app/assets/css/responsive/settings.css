@@ -37,6 +37,11 @@
     grid-column: 1 / -1;
   }
 
+  .authority-evidence-card > .authority-claim-form {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
   .authority-claim-panel {
     padding: 22px 18px;
     gap: 24px;
@@ -53,6 +58,28 @@
 
   .role-grant-row {
     grid-template-columns: 1fr;
+  }
+
+  .authority-source-ledger__heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .authority-source-row {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .authority-source-row dl div {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+
+  .authority-source-row .ui-action-secondary {
+    justify-self: start;
+  }
+
+  .authority-source-remediation {
+    padding: 18px;
   }
 
   .organization-access__panel-heading,
