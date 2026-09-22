@@ -8,7 +8,7 @@ export default defineConfig({
     env: {
       DATABASE_URL: 'postgres://localhost:5432/eve_space',
     },
-    maxWorkers: 4,
+    fileParallelism: false,
     include: ['tests/integration/postgres/**/*.test.ts'],
     testTimeout: 60_000,
     hookTimeout: 60_000,

@@ -68,6 +68,7 @@ const ignoredDirectories = new Set([
   '.git',
   '.nuxt',
   '.nuxt-e2e',
+  '.nuxt-test',
   '.opencode',
   '.output',
   '.output-e2e',

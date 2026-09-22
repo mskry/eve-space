@@ -85,10 +85,6 @@ export async function collectDomainEventEvidence(
     .toSorted((left, right) => left.id.localeCompare(right.id))
 }
 
-function isDomainEventProducerSource(file: string) {
-  return file.startsWith('api/src/') && file.endsWith('.ts')
-}
-
 function affectedConsumerEventTypes(
   consumers: ReadonlyMap<string, readonly DomainEventConsumerEvidence[]>,
   changedFiles: ReadonlySet<string>,

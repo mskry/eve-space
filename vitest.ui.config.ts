@@ -9,6 +9,15 @@ export default defineVitestConfig({
       reportsDirectory: 'coverage/ui',
     },
     environment: 'nuxt',
+    environmentOptions: {
+      nuxt: {
+        overrides: {
+          buildDir: '.nuxt-test',
+          devtools: { enabled: false },
+          typescript: { typeCheck: false },
+        },
+      },
+    },
     include: [
       'tests/assets/**/*.nuxt.test.ts',
       'tests/auth/**/*.nuxt.test.ts',
@@ -18,6 +27,7 @@ export default defineVitestConfig({
       'tests/ui/**/*.nuxt.test.ts',
     ],
     maxWorkers: 1,
+    fileParallelism: false,
     pool: 'forks',
   },
 })

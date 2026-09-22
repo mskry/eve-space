@@ -503,6 +503,7 @@ function character(characterId: number, characterName: string): FakeEveCharacter
   return {
     characterId,
     characterName,
+    ownerHash: `browser-owner-${characterId}`,
     corporationId: 10_001_166,
     allianceId: null,
     scopes: ['scope.owner'],

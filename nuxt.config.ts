@@ -99,7 +99,15 @@ export default defineNuxtConfig({
     },
     server: {
       watch: {
-        ignored: ['**/.nuxt-e2e/**', '**/.output-e2e/**'],
+        ignored: [
+          '**/.nuxt-e2e/**',
+          '**/.nuxt-test/**',
+          '**/.output-e2e/**',
+          '**/.quality-logs/**',
+          '**/.scannerwork/**',
+          '**/coverage/**',
+          '**/coverage-*/**',
+        ],
       },
     },
   },

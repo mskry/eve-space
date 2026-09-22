@@ -222,6 +222,8 @@ Run `pnpm test:e2e` for the production-server browser suite. It builds into isol
 
 Coverage suites exercise SSO, administrator and organization authorization, compliance, character, corporation and mail resources, module composition, status telemetry, ESI cache/quota behavior, and queue scheduling. `test:redis` runs a thresholded Testcontainers suite against Redis 7.4 Alpine; `test:postgres` exercises real PostgreSQL migrations and coordination behavior.
 
+`pnpm quality:sonar` runs coverage and analysis sequentially with at most four Vitest workers by default. PostgreSQL integration files run serially so only one Testcontainers database is active at a time. The command records step boundaries and Nuxt, Vitest, pnpm, and Sonar process snapshots in `.quality-logs/sonar-*.jsonl`. Set `QUALITY_MAX_WORKERS` to lower the general CPU cap or `QUALITY_SAMPLE_INTERVAL_MS` to change the snapshot interval.
+
 ## Architecture
 
 Detailed service boundaries, API routes, security decisions, persistence, Redis operations, ESI
