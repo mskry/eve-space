@@ -1,8 +1,9 @@
 import {
-  definePlatformResourceOperation,
+  definePlatformSingleRequestResource,
   type PlatformCharacterResourceSubject,
   type PlatformInstalledResourceDescriptor,
-  type PlatformResourceOperationImplementation,
+  type PlatformResourceImplementation,
+  type PlatformResourceOperationContract,
 } from '@eve-space/platform-module-contract/resources'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { PlatformEsiRequestError } from '../../src/esi-gateway/platform-execution.js'
@@ -40,10 +41,22 @@ beforeEach(() => {
 
 describe('platform resource batch processing', () => {
   test('infers typed scalar and batch response data through the contract helper', () => {
-    const typed = definePlatformResourceOperation({
+    const typed = definePlatformSingleRequestResource<
+      'typed-detail',
+      {
+        readonly 'typed-detail': PlatformResourceOperationContract<
+          { readonly characterId: number },
+          { readonly score: number }
+        >
+      },
+      { readonly score: number },
+      'typed-batch',
+      { readonly changedCharacterIds: number[] }
+    >({
+      mode: 'single-request',
       operation: 'typed-detail',
       request: ({ characterId }) => ({ characterId }),
-      map: ({ data }: { data: { score: number } }) => data,
+      map: ({ data }) => data,
       materialize: async ({ data }) => {
         expect(data.score).toBe(10)
       },
@@ -51,13 +64,7 @@ describe('platform resource batch processing', () => {
         mode: 'change-hint',
         operation: 'typed-batch',
         request: (subjects) => ({ ids: subjects.map(({ characterId }) => characterId) }),
-        classify: ({
-          subjects,
-          data,
-        }: {
-          subjects: readonly PlatformCharacterResourceSubject[]
-          data: { changedCharacterIds: number[] }
-        }) =>
+        classify: ({ subjects, data }) =>
           subjects.map((batchSubject) => ({
             subject: batchSubject,
             outcome: data.changedCharacterIds.includes(batchSubject.characterId)
@@ -300,6 +307,7 @@ function baseImplementation(batch: {
   readonly classify: ReturnType<typeof vi.fn>
 }) {
   return {
+    mode: 'single-request' as const,
     operation: 'skills',
     request: vi.fn(),
     map: vi.fn(),
@@ -328,7 +336,7 @@ function descriptor(
     materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-owned-character' },
     implementation,
-  } as PlatformInstalledResourceDescriptor<PlatformResourceOperationImplementation> & {
+  } as PlatformInstalledResourceDescriptor<PlatformResourceImplementation> & {
     readonly implementation: typeof implementation
   }
 }

@@ -33,27 +33,22 @@ const emptyRevision = {
 }
 
 describe('member-audit evidence resources', () => {
-  test('binds root collection requests to the exact character', () => {
-    expect(assetsResource.request(subject)).toEqual({
-      path: { character_id: subject.characterId },
-      query: { page: 1 },
-    })
+  test('declares exact execution modes and binds single requests to the character', () => {
+    expect(walletBalanceResource).toMatchObject({ mode: 'single-request' })
     expect(walletBalanceResource.request(subject)).toEqual({
       path: { character_id: subject.characterId },
     })
-    expect(walletJournalResource.request(subject)).toEqual({
-      path: { character_id: subject.characterId },
-      query: { page: 1 },
-    })
-    expect(walletTransactionsResource.request(subject)).toEqual({
-      path: { character_id: subject.characterId },
-    })
-    expect(mailHeadersResource.request(subject)).toEqual({
-      path: { character_id: subject.characterId },
-    })
-    expect(mailDetailsResource.request(subject)).toEqual({
-      path: { character_id: subject.characterId },
-    })
+    for (const resource of [
+      assetsResource,
+      walletJournalResource,
+      walletTransactionsResource,
+      mailHeadersResource,
+      mailDetailsResource,
+    ]) {
+      expect(resource.mode).toBe('bounded-collection')
+      expect(resource).not.toHaveProperty('request')
+      expect(resource).not.toHaveProperty('map')
+    }
   })
 
   test('stages each asset page atomically before advancing its continuation', async () => {
@@ -63,13 +58,13 @@ describe('member-audit evidence resources', () => {
       validatedAt: '2026-09-17T10:00:00Z',
       pagination: { pages: 2 },
     }))
-    const first = await assetsResource.collect!(collectionContext({ execute }))
+    const first = await assetsResource.collect(collectionContext({ execute }))
     expect(first).toMatchObject({
       complete: false,
       data: { expectedRevision: 0, checkpoint: { page: 2 }, records: { length: 501 } },
     })
 
-    const second = await assetsResource.collect!(
+    const second = await assetsResource.collect(
       collectionContext({
         execute,
         continuation: {
@@ -95,7 +90,7 @@ describe('member-audit evidence resources', () => {
 
   test('uses X-Pages for an exact-full final asset page and enforces the readable bound', async () => {
     const fullPage = Array.from({ length: 1_000 }, (_, index) => asset(index + 1))
-    const collected = await assetsResource.collect!(
+    const collected = await assetsResource.collect(
       collectionContext({
         execute: vi.fn().mockResolvedValue({
           data: fullPage,
@@ -110,7 +105,7 @@ describe('member-audit evidence resources', () => {
     })
 
     await expect(
-      assetsResource.collect!(
+      assetsResource.collect(
         collectionContext({
           execute: vi.fn().mockResolvedValue({
             data: [],
@@ -133,7 +128,7 @@ describe('member-audit evidence resources', () => {
       }
     })
 
-    await expect(assetsResource.collect!(collectionContext({ execute }))).resolves.toMatchObject({
+    await expect(assetsResource.collect(collectionContext({ execute }))).resolves.toMatchObject({
       complete: true,
       data: { records: { length: 1 } },
     })
@@ -141,7 +136,7 @@ describe('member-audit evidence resources', () => {
   })
 
   test('promotes a complete empty asset observation atomically', async () => {
-    const collected = await assetsResource.collect!(collectionContext())
+    const collected = await assetsResource.collect(collectionContext())
     expect(collected).toMatchObject({
       complete: true,
       data: { checkpoint: { complete: true }, records: [] },
@@ -216,7 +211,7 @@ describe('member-audit evidence resources', () => {
       walletBalanceResource.map({ subject, data: 42.5, capabilities: { coreData: {} } }),
     ).toEqual({ kind: 'wallet-balance', balance: 42.5 })
 
-    const journal = await walletJournalResource.collect!(
+    const journal = await walletJournalResource.collect(
       collectionContext({
         sectionId: 'wallet',
         execute: vi.fn().mockResolvedValue({
@@ -256,7 +251,7 @@ describe('member-audit evidence resources', () => {
       ref_type: 'player_donation',
       description: 'Donation',
     }))
-    const result = await walletJournalResource.collect!(
+    const result = await walletJournalResource.collect(
       collectionContext({
         sectionId: 'wallet',
         execute: vi.fn().mockResolvedValue({
@@ -284,7 +279,7 @@ describe('member-audit evidence resources', () => {
       is_personal: true,
       location_id: 60_000_001,
     }))
-    const result = await walletTransactionsResource.collect!(
+    const result = await walletTransactionsResource.collect(
       collectionContext({
         sectionId: 'wallet',
         continuation: {
@@ -323,7 +318,7 @@ describe('member-audit evidence resources', () => {
         }
       throw Object.assign(new Error('Ensure all IDs are valid before resolving'), { status: 404 })
     })
-    const result = await mailHeadersResource.collect!(
+    const result = await mailHeadersResource.collect(
       collectionContext({ sectionId: 'mail', execute }),
     )
 
@@ -354,7 +349,7 @@ describe('member-audit evidence resources', () => {
         validatedAt: '2026-09-17T10:00:00Z',
       }
     })
-    const headers = await mailHeadersResource.collect!(
+    const headers = await mailHeadersResource.collect(
       collectionContext({ sectionId: 'mail', execute: headerExecute }),
     )
     expect(headers.data.records[0]?.evidence).toMatchObject({
@@ -381,7 +376,7 @@ describe('member-audit evidence resources', () => {
         validatedAt: '2026-09-17T10:00:00Z',
       }
     })
-    const details = await mailDetailsResource.collect!(
+    const details = await mailDetailsResource.collect(
       collectionContext({ sectionId: 'mail', execute: detailExecute }),
     )
     expect(details).toMatchObject({
@@ -402,7 +397,7 @@ describe('member-audit evidence resources', () => {
           : { body: '<p>Body</p>', timestamp: '2026-09-17T09:00:00Z' },
       validatedAt: '2026-09-17T10:00:00Z',
     }))
-    const result = await mailDetailsResource.collect!(
+    const result = await mailDetailsResource.collect(
       collectionContext({ sectionId: 'mail', execute }),
     )
 
@@ -474,13 +469,14 @@ function collectionContext(
     authorizationGeneration: 8,
     managedAuthority: { ...authority, sectionId: options.sectionId ?? 'assets' },
     requestBudget: 32,
-    execute:
+    operations: operationMethods(
       options.execute ??
-      vi.fn().mockResolvedValue({
-        data: [],
-        validatedAt: '2026-09-17T10:00:00Z',
-        pagination: { pages: 1 },
-      }),
+        vi.fn().mockResolvedValue({
+          data: [],
+          validatedAt: '2026-09-17T10:00:00Z',
+          pagination: { pages: 1 },
+        }),
+    ),
     capabilities: {
       logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
       persistence: {
@@ -496,6 +492,13 @@ function collectionContext(
       },
     },
   } as never
+}
+
+function operationMethods(execute: ReturnType<typeof vi.fn>) {
+  return new Proxy(
+    {},
+    { get: (_target, operationId) => (inputs: unknown) => execute(operationId, inputs) },
+  )
 }
 
 function asset(itemId: number) {

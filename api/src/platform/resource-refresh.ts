@@ -1,6 +1,6 @@
 import type {
   PlatformInstalledResourceDescriptor,
-  PlatformResourceOperationImplementation,
+  PlatformResourceImplementation,
   PlatformResourceSubject,
 } from '@eve-space/platform-module-contract/resources'
 import { sql as drizzleSql } from 'drizzle-orm'
@@ -143,15 +143,7 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
     await applyCoreResourceObservation(observation)
     return
   }
-  const implementation = observation.resource
-    .implementation as PlatformResourceOperationImplementation<
-    string,
-    unknown,
-    unknown,
-    string,
-    unknown,
-    PlatformResourceSubject
-  >
+  const implementation = observation.resource.implementation as PlatformResourceImplementation
   await sql.begin(async (transaction) => {
     await transaction`
       select pg_advisory_xact_lock(
@@ -260,14 +252,7 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
 async function materializeInstalledResourceObservation(
   transaction: postgres.TransactionSql,
   observation: Extract<PlatformResourceObservation, { outcome: 'complete' }>,
-  implementation: PlatformResourceOperationImplementation<
-    string,
-    unknown,
-    unknown,
-    string,
-    unknown,
-    PlatformResourceSubject
-  >,
+  implementation: PlatformResourceImplementation,
 ) {
   const persistence = createPlatformResourceMaterializationPersistence(
     transaction,

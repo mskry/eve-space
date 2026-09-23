@@ -1,6 +1,12 @@
-import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract/esi'
+import type {
+  PlatformCoreEsiOperationId,
+  PlatformEsiOperationContract,
+  platformCoreEsiOperationSdkIdentities,
+} from '@eve-space/platform-module-contract/esi'
+import type { PlatformResourceOperationContract } from '@eve-space/platform-module-contract/resources'
 import {
   operationRegistry,
+  type CallOperationArguments,
   type ExecutableOperationRegistryEntry,
   type StableOperationId,
   type CallOperationResult,
@@ -13,6 +19,37 @@ export * from './validation.js'
 
 export type PlatformEsiOperationData<Operation extends StableOperationId> =
   CallOperationResult<Operation>
+
+export type PlatformEsiOperationInput<Operation extends StableOperationId> = Omit<
+  CallOperationArguments<Operation>,
+  'headers'
+>
+
+export type PlatformEsiOperationIdentities = Readonly<Record<string, StableOperationId>>
+
+export type PlatformEsiOperationProtocol<
+  Identities extends PlatformEsiOperationIdentities,
+  Operations extends keyof Identities & string,
+> = {
+  readonly [Operation in Operations]: PlatformResourceOperationContract<
+    PlatformEsiOperationInput<Identities[Operation]>,
+    PlatformEsiOperationData<Identities[Operation]>
+  >
+}
+
+export type PlatformCoreEsiOperationProtocol<Operations extends PlatformCoreEsiOperationId> =
+  PlatformEsiOperationProtocol<typeof platformCoreEsiOperationSdkIdentities, Operations>
+
+export type PlatformExecutableEsiOperationIdentities<
+  Definitions extends Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,
+> = {
+  readonly [Operation in keyof Definitions]: Definitions[Operation]['sdkOperationId']
+}
+
+export type PlatformExecutableEsiOperationProtocol<
+  Definitions extends Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,
+  Operations extends keyof Definitions & string,
+> = PlatformEsiOperationProtocol<PlatformExecutableEsiOperationIdentities<Definitions>, Operations>
 
 export type PlatformEsiOperationPolicy = Omit<PlatformEsiOperationContract, 'audit'> & {
   readonly audit: Omit<PlatformEsiOperationContract['audit'], 'esiOperationId'>

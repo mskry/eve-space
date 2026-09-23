@@ -1787,11 +1787,33 @@ describe('platform module registry generation', () => {
       'coreDataProducts: ["published-type-groups"] as const',
     )
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      "implementation: module0Resource0 satisfies PlatformResourceImplementationForCapabilities<typeof module0Resource0, readonly [\"published-type-groups\"], InstalledModuleResourceProjectionPersistence<'alpha/alpha-resource'>, InstalledModuleResourceMaterializationPersistence<'alpha/alpha-resource'>>",
+      "implementation: module0Resource0 satisfies PlatformResourceImplementationForContract<typeof module0Resource0, 'alpha-operation', PlatformEsiOperationProtocol<'alpha-operation'>, readonly [\"published-type-groups\"], InstalledModuleResourceProjectionPersistence<'alpha/alpha-resource'>, InstalledModuleResourceMaterializationPersistence<'alpha/alpha-resource'>>",
     )
     expect(
       files.get('api/src/generated/platform/installed-module-activity-providers.ts'),
     ).toContain('coreDataProducts: [] as const')
+  })
+
+  it('binds each resource to its exact catalog-derived root and dependent protocol', () => {
+    const declaration = manifest('alpha', {
+      resource: { dependentOperationIds: ['universe-resolve-names', 'alpha-operation'] },
+    })
+    const worker = generateRegistryFiles([declaration]).get(
+      'api/src/generated/platform/installed-module-worker.ts',
+    )
+
+    expect(worker).toContain(
+      "import type { PlatformEsiOperationProtocol } from '../../esi-gateway/catalog-interface.js'",
+    )
+    expect(worker).toContain(
+      "implementation: module0Resource0 satisfies PlatformResourceImplementationForContract<typeof module0Resource0, 'alpha-operation', PlatformEsiOperationProtocol<'alpha-operation' | 'universe-resolve-names'>, readonly [], ",
+    )
+    expect(worker).not.toContain('PlatformResourceImplementationForCapabilities')
+    expect(
+      generateRegistryFiles([declaration]).get(
+        'api/src/generated/platform/installed-module-worker.ts',
+      ),
+    ).toBe(worker)
   })
 
   it('generates lazy activity providers with authorization and same-module pages', () => {
@@ -1899,10 +1921,10 @@ describe('platform module registry generation', () => {
       "import { routes as module1Route0Factory } from '@eve-space/beta-server'",
     )
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      "({ moduleId: 'alpha', resourceId: 'alpha-resource', operationId: 'alpha-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"projection\":[],\"materialization\":[]} as const, implementation: module0Resource0 satisfies PlatformResourceImplementationForCapabilities<typeof module0Resource0, readonly [], InstalledModuleResourceProjectionPersistence<'alpha/alpha-resource'>, InstalledModuleResourceMaterializationPersistence<'alpha/alpha-resource'>> } as const)",
+      "({ moduleId: 'alpha', resourceId: 'alpha-resource', operationId: 'alpha-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"projection\":[],\"materialization\":[]} as const, implementation: module0Resource0 satisfies PlatformResourceImplementationForContract<typeof module0Resource0, 'alpha-operation', PlatformEsiOperationProtocol<'alpha-operation'>, readonly [], InstalledModuleResourceProjectionPersistence<'alpha/alpha-resource'>, InstalledModuleResourceMaterializationPersistence<'alpha/alpha-resource'>> } as const)",
     )
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      "({ moduleId: 'beta', resourceId: 'beta-resource', operationId: 'beta-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"projection\":[],\"materialization\":[]} as const, implementation: module1Resource0 satisfies PlatformResourceImplementationForCapabilities<typeof module1Resource0, readonly [], InstalledModuleResourceProjectionPersistence<'beta/beta-resource'>, InstalledModuleResourceMaterializationPersistence<'beta/beta-resource'>> } as const)",
+      "({ moduleId: 'beta', resourceId: 'beta-resource', operationId: 'beta-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"projection\":[],\"materialization\":[]} as const, implementation: module1Resource0 satisfies PlatformResourceImplementationForContract<typeof module1Resource0, 'beta-operation', PlatformEsiOperationProtocol<'beta-operation'>, readonly [], InstalledModuleResourceProjectionPersistence<'beta/beta-resource'>, InstalledModuleResourceMaterializationPersistence<'beta/beta-resource'>> } as const)",
     )
     expect(files.get('api/src/generated/platform/installed-module-esi.ts')).toContain(
       "'alpha-operation': module0EsiOperation0.contract,\n  'beta-operation': module1EsiOperation0.contract,",

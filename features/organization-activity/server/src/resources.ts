@@ -1,7 +1,12 @@
 import type {
-  PlatformResourceOperationImplementation,
+  PlatformBoundedCollectionResourceImplementation,
   PlatformResourceSubject,
 } from '@eve-space/platform-module-contract/resources'
+import type {
+  ActivityEsiOperation,
+  ActivityOperationId,
+  ActivityProtocol,
+} from './activity-protocol.js'
 import { collectActivityResource } from './collection.js'
 import { materializeActivityResource } from './collection-store.js'
 import type { ActivityObservation } from './collection-types.js'
@@ -10,9 +15,12 @@ import type {
   ActivityMaterializationPersistence,
 } from './persistence.js'
 
-type ActivityResource = PlatformResourceOperationImplementation<
-  string,
-  unknown,
+type ActivityResource<
+  Root extends ActivityOperationId,
+  Dependents extends ActivityOperationId = never,
+> = PlatformBoundedCollectionResourceImplementation<
+  ActivityEsiOperation<Root>,
+  ActivityProtocol<Root | Dependents>,
   ActivityObservation,
   string,
   unknown,
@@ -23,14 +31,12 @@ type ActivityResource = PlatformResourceOperationImplementation<
   object
 >
 
-export const campaignsResource: ActivityResource = {
+export const campaignsResource: ActivityResource<
+  'campaign-list',
+  'campaign-detail' | 'objective-list' | 'objective-detail'
+> = {
+  mode: 'bounded-collection',
   operation: 'organization-activity-campaign-list',
-  request() {
-    return {}
-  },
-  map() {
-    throw new Error('Activity resources require bounded collection')
-  },
   collect(context) {
     return collectActivityResource(
       { id: 'campaigns', rootOperation: 'campaign-list', paginated: false },
@@ -40,14 +46,9 @@ export const campaignsResource: ActivityResource = {
   materialize: materializeActivityResource,
 }
 
-export const publicJobsResource: ActivityResource = {
+export const publicJobsResource: ActivityResource<'job-list', 'job-detail'> = {
+  mode: 'bounded-collection',
   operation: 'organization-activity-job-list',
-  request() {
-    return {}
-  },
-  map() {
-    throw new Error('Activity resources require bounded collection')
-  },
   collect(context) {
     return collectActivityResource(
       { id: 'public-jobs', rootOperation: 'job-list', paginated: true },
@@ -57,14 +58,9 @@ export const publicJobsResource: ActivityResource = {
   materialize: materializeActivityResource,
 }
 
-export const corporationJobsResource: ActivityResource = {
+export const corporationJobsResource: ActivityResource<'corporation-jobs'> = {
+  mode: 'bounded-collection',
   operation: 'organization-activity-corporation-jobs',
-  request() {
-    return {}
-  },
-  map() {
-    throw new Error('Activity resources require bounded collection')
-  },
   collect(context) {
     return collectActivityResource(
       { id: 'corporation-jobs', rootOperation: 'corporation-jobs', paginated: true },
@@ -74,14 +70,9 @@ export const corporationJobsResource: ActivityResource = {
   materialize: materializeActivityResource,
 }
 
-export const corporationProjectsResource: ActivityResource = {
+export const corporationProjectsResource: ActivityResource<'project-list', 'project-detail'> = {
+  mode: 'bounded-collection',
   operation: 'organization-activity-project-list',
-  request() {
-    return {}
-  },
-  map() {
-    throw new Error('Activity resources require bounded collection')
-  },
   collect(context) {
     return collectActivityResource(
       { id: 'corporation-projects', rootOperation: 'project-list', paginated: true },
@@ -91,14 +82,9 @@ export const corporationProjectsResource: ActivityResource = {
   materialize: materializeActivityResource,
 }
 
-export const characterJobsResource: ActivityResource = {
+export const characterJobsResource: ActivityResource<'character-jobs', 'job-participation'> = {
+  mode: 'bounded-collection',
   operation: 'organization-activity-character-jobs',
-  request() {
-    return {}
-  },
-  map() {
-    throw new Error('Activity resources require bounded collection')
-  },
   collect(context) {
     return collectActivityResource(
       { id: 'character-jobs', rootOperation: 'character-jobs', paginated: false },
@@ -108,14 +94,12 @@ export const characterJobsResource: ActivityResource = {
   materialize: materializeActivityResource,
 }
 
-export const characterCampaignsResource: ActivityResource = {
+export const characterCampaignsResource: ActivityResource<
+  'character-objectives',
+  'objective-participation'
+> = {
+  mode: 'bounded-collection',
   operation: 'organization-activity-character-objectives',
-  request() {
-    return {}
-  },
-  map() {
-    throw new Error('Activity resources require bounded collection')
-  },
   collect(context) {
     return collectActivityResource(
       { id: 'character-campaigns', rootOperation: 'character-objectives', paginated: true },
@@ -125,14 +109,9 @@ export const characterCampaignsResource: ActivityResource = {
   materialize: materializeActivityResource,
 }
 
-export const characterProjectsResource: ActivityResource = {
+export const characterProjectsResource: ActivityResource<'project-list', 'project-contribution'> = {
+  mode: 'bounded-collection',
   operation: 'organization-activity-project-list',
-  request() {
-    return {}
-  },
-  map() {
-    throw new Error('Activity resources require bounded collection')
-  },
   collect(context) {
     return collectActivityResource(
       { id: 'character-projects', rootOperation: 'project-list', paginated: true },

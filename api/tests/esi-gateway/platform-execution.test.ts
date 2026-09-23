@@ -130,7 +130,7 @@ describe('platform ESI execution', () => {
       const operation = 'organization-activity-campaign-list'
       const execution = executePlatformEsiOperation({
         operation,
-        inputs: { headers: { [headerName]: 'caller-value' } },
+        inputs: { headers: { [headerName]: 'caller-value' } } as never,
         authorization: { kind: 'public' },
       })
 
@@ -177,10 +177,10 @@ describe('platform ESI execution', () => {
   test('rejects an unregistered operation before SDK construction or network activity', async () => {
     await expect(
       executePlatformEsiOperation({
-        operation: 'not-a-registered-operation' as never,
+        operation: 'not-a-registered-operation',
         inputs: {},
         authorization: { kind: 'public' },
-      }),
+      } as never),
     ).rejects.toThrow('Unregistered ESI operation')
     expect(mocks.clientOptions).not.toHaveBeenCalled()
     expect(mocks.callOperation).not.toHaveBeenCalled()

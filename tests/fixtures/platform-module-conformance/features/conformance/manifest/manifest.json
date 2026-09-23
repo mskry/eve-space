@@ -31,8 +31,12 @@
       }
     ],
     "migrations": [
-      { "name": "conformance-001-initial.sql" },
-      { "name": "conformance-002-persistence-operations.sql" }
+      {
+        "name": "conformance-001-initial.sql"
+      },
+      {
+        "name": "conformance-002-persistence-operations.sql"
+      }
     ],
     "persistenceOperations": [
       {
@@ -59,12 +63,42 @@
         "coreDataProducts": ["published-type-groups"],
         "subjectKind": "character",
         "materializationIntervalSeconds": 300,
-        "eligibility": { "kind": "current-owned-character" },
+        "eligibility": {
+          "kind": "current-owned-character"
+        },
         "persistence": {
           "projection": [],
-          "materialization": [{ "operationId": "upsert-conformance-snapshot" }]
+          "materialization": [
+            {
+              "operationId": "upsert-conformance-snapshot"
+            }
+          ]
         },
         "exportName": "conformanceStatusResource"
+      },
+      {
+        "id": "conformance-collection",
+        "operationId": "conformance-status-operation",
+        "coreDataProducts": [],
+        "dependentOperationIds": ["universe-resolve-names"],
+        "subjectKind": "character",
+        "materializationIntervalSeconds": 300,
+        "eligibility": {
+          "kind": "current-owned-character"
+        },
+        "persistence": {
+          "projection": [
+            {
+              "operationId": "read-conformance-snapshot"
+            }
+          ],
+          "materialization": [
+            {
+              "operationId": "upsert-conformance-snapshot"
+            }
+          ]
+        },
+        "exportName": "conformanceCollectionResource"
       }
     ],
     "esiOperations": [
@@ -79,8 +113,14 @@
         "exportName": "conformanceActivityProvider",
         "audience": "member",
         "requiredPermission": "conformance.view",
-        "persistenceOperations": [{ "operationId": "read-conformance-snapshot" }],
-        "freshness": { "staleAfterSeconds": 300 }
+        "persistenceOperations": [
+          {
+            "operationId": "read-conformance-snapshot"
+          }
+        ],
+        "freshness": {
+          "staleAfterSeconds": 300
+        }
       }
     ]
   },

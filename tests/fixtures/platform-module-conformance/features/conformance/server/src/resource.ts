@@ -1,55 +1,93 @@
 import {
-  definePlatformResourceOperation,
+  definePlatformBoundedCollectionResource,
+  definePlatformSingleRequestResource,
   type PlatformCharacterResourceSubject,
   type PlatformResourceMaterializationContext,
 } from '@eve-space/platform-module-contract/resources'
-import type { ConformanceSnapshotWritePersistence } from './persistence.js'
+import type {
+  PlatformCoreEsiOperationProtocol,
+  PlatformExecutableEsiOperationProtocol,
+} from '@eve-space/platform-module-server'
+import type { conformanceStatusOperation } from './operation.js'
+import type {
+  ConformanceSnapshotReadPersistence,
+  ConformanceSnapshotWritePersistence,
+} from './persistence.js'
 
-interface ConformanceStatusData {
+interface ConformanceStatusProjection {
   readonly players: number
-}
-
-interface ConformanceStatusProjection extends ConformanceStatusData {
   readonly publishedTypeCount?: number
   readonly sdeBuildNumber?: number
+  readonly characterName?: string | null
+  readonly previousPlayers?: number | null
 }
 
+type ConformanceStatusProtocol = PlatformExecutableEsiOperationProtocol<
+  { readonly 'conformance-status-operation': typeof conformanceStatusOperation },
+  'conformance-status-operation'
+>
+type ConformanceCollectionProtocol = ConformanceStatusProtocol &
+  PlatformCoreEsiOperationProtocol<'universe-resolve-names'>
 type ConformanceMaterializationContext = PlatformResourceMaterializationContext<
   ConformanceStatusProjection,
   PlatformCharacterResourceSubject,
   ConformanceSnapshotWritePersistence
 >
 
-export const conformanceStatusResource = definePlatformResourceOperation<
+export const conformanceStatusResource = definePlatformSingleRequestResource<
   'conformance-status-operation',
-  ConformanceStatusData,
+  ConformanceStatusProtocol,
   ConformanceStatusProjection,
   string,
   unknown,
+  PlatformCharacterResourceSubject,
   readonly ['published-type-groups'],
-  object,
-  ConformanceSnapshotWritePersistence,
-  object
+  ConformanceSnapshotWritePersistence
 >({
+  mode: 'single-request',
+  operation: 'conformance-status-operation',
+  request: () => ({}),
+  async map({ data, capabilities }) {
+    const typeGroups = await capabilities.coreData.publishedTypeGroups({ typeIds: [34] })
+    return {
+      players: data.players,
+      publishedTypeCount: typeGroups.rows.length,
+      sdeBuildNumber: typeGroups.revision.buildNumber,
+    }
+  },
+  materialize: materializeConformanceStatus,
+})
+
+export const conformanceCollectionResource = definePlatformBoundedCollectionResource<
+  'conformance-status-operation',
+  ConformanceCollectionProtocol,
+  ConformanceStatusProjection,
+  string,
+  unknown,
+  PlatformCharacterResourceSubject,
+  readonly [],
+  ConformanceSnapshotReadPersistence,
+  ConformanceSnapshotWritePersistence
+>({
+  mode: 'bounded-collection',
   operation: 'conformance-status-operation',
   async collect(context) {
-    const observation = await context.execute('conformance-status-operation', {})
-    const data = observation.data as ConformanceStatusData
-    const typeGroups = await context.capabilities.coreData.publishedTypeGroups({ typeIds: [34] })
+    const previous = await context.capabilities.persistence.readConformanceSnapshot({
+      characterId: context.subject.characterId,
+    })
+    const status = await context.operations['conformance-status-operation']({})
+    const names = await context.operations['universe-resolve-names']({
+      body: [context.subject.characterId],
+    })
     return {
       complete: true,
       data: {
-        players: data.players,
-        publishedTypeCount: typeGroups.rows.length,
-        sdeBuildNumber: typeGroups.revision.buildNumber,
+        players: status.data.players,
+        characterName:
+          names.data.find(({ id }) => id === context.subject.characterId)?.name ?? null,
+        previousPlayers: previous?.pilotsOnline ?? null,
       },
     }
-  },
-  request(_subject: PlatformCharacterResourceSubject) {
-    return {}
-  },
-  map({ data }) {
-    return { players: data.players }
   },
   materialize: materializeConformanceStatus,
 })

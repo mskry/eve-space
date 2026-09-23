@@ -1,6 +1,9 @@
 import type { PlatformActivityProvider } from '@eve-space/platform-module-contract/activity'
 import type { PlatformPersistenceMethodsFor } from '@eve-space/platform-module-contract/persistence'
-import { definePlatformResourceOperation } from '@eve-space/platform-module-contract/resources'
+import {
+  definePlatformSingleRequestResource,
+  type PlatformResourceOperationContract,
+} from '@eve-space/platform-module-contract/resources'
 import type { PlatformModuleRouteCapabilities } from '@eve-space/platform-module-contract/server'
 import { definePlatformPersistenceOperation } from '@eve-space/platform-module-server'
 import { Hono } from 'hono'
@@ -29,7 +32,19 @@ export function fixtureRoutes(capabilities: PlatformModuleRouteCapabilities<Fixt
   )
 }
 
-export const fixtureResource = definePlatformResourceOperation({
+type FixtureProtocol = {
+  readonly 'fixture-status': PlatformResourceOperationContract<
+    Readonly<Record<string, never>>,
+    unknown
+  >
+}
+
+export const fixtureResource = definePlatformSingleRequestResource<
+  'fixture-status',
+  FixtureProtocol,
+  unknown
+>({
+  mode: 'single-request',
   operation: 'fixture-status',
   request: () => ({}),
   map: ({ data }) => data,

@@ -1,10 +1,11 @@
 import type { PlatformCursorCheckpoint } from '@eve-space/platform-module-server'
+import type { ActivityOperationId } from './activity-protocol.js'
 import type { CollectionRequest } from './collection-response.js'
 import type { ActivitySnapshot } from './snapshot.js'
 
 export interface ActivityResourceProfile {
   readonly id: string
-  readonly rootOperation: string
+  readonly rootOperation: ActivityOperationId
   readonly list?: string
   readonly paginated: boolean
 }

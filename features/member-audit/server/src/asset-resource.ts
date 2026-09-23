@@ -6,9 +6,10 @@ import {
   type AssetTypeProjection,
 } from '@eve-space/core-eve-projections/assets'
 import type {
+  PlatformBoundedCollectionResourceImplementation,
   PlatformCharacterResourceSubject,
-  PlatformResourceOperationImplementation,
 } from '@eve-space/platform-module-contract/resources'
+import type { PlatformCoreEsiOperationProtocol } from '@eve-space/platform-module-server'
 import { z } from 'zod'
 import {
   materializeEvidenceObservation,
@@ -49,11 +50,14 @@ const checkpointSchema = z.object({
 
 type AssetObservation = Extract<EvidenceObservation, { resourceId: 'assets' }>
 type AssetProducts = readonly ['published-type-details', 'static-location-labels']
-type AssetCollectionContext = EvidenceCollectionContext<AssetProducts>
+type AssetProtocol = PlatformCoreEsiOperationProtocol<
+  'character-assets-page' | 'character-asset-names' | 'universe-resolve-names'
+>
+type AssetCollectionContext = EvidenceCollectionContext<AssetProtocol, AssetProducts>
 
-export const assetsResource: PlatformResourceOperationImplementation<
+export const assetsResource: PlatformBoundedCollectionResourceImplementation<
   'character-assets-page',
-  unknown,
+  AssetProtocol,
   AssetObservation,
   string,
   unknown,
@@ -63,6 +67,7 @@ export const assetsResource: PlatformResourceOperationImplementation<
   EvidenceMaterializationPersistence,
   EvidenceMaintenancePersistence
 > = {
+  mode: 'bounded-collection',
   operation: 'character-assets-page',
   async collect(context) {
     const collection = await startEvidenceCollection(
@@ -70,7 +75,7 @@ export const assetsResource: PlatformResourceOperationImplementation<
       context,
     )
     const checkpoint = checkpointSchema.parse(collection.checkpoint)
-    const result = await context.execute('character-assets-page', {
+    const result = await context.operations['character-assets-page']({
       path: { character_id: context.subject.characterId },
       query: { page: checkpoint.page },
     })
@@ -96,12 +101,6 @@ export const assetsResource: PlatformResourceOperationImplementation<
         records,
       },
     }
-  },
-  request(subject) {
-    return { path: { character_id: subject.characterId }, query: { page: 1 } }
-  },
-  map() {
-    throw new Error('Asset mapping requires bounded collection')
   },
   materialize(context) {
     return materializeEvidenceObservation(context)
@@ -145,7 +144,7 @@ async function projectAssets(
     context.capabilities.coreData.staticLocationLabels({ locationIds }),
     namedItemIds.length === 0
       ? { data: [] }
-      : context.execute('character-asset-names', {
+      : context.operations['character-asset-names']({
           path: { character_id: context.subject.characterId },
           body: namedItemIds,
         }),

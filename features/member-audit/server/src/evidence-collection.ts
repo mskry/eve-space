@@ -2,6 +2,7 @@ import type {
   PlatformCharacterResourceSubject,
   PlatformResourceCollectionContext,
   PlatformResourceMaterializationContext,
+  PlatformResourceOperationProtocol,
 } from '@eve-space/platform-module-contract/resources'
 import type {
   EvidenceCollectionPersistence,
@@ -62,9 +63,11 @@ export type EvidenceObservation =
   | EvidenceObservationBase<'mail', 'mail-details', 'mail-content'>
 
 export type EvidenceCollectionContext<
+  Protocol extends PlatformResourceOperationProtocol,
   Products extends readonly EvidenceCoreDataProductId[] = readonly [],
 > = PlatformResourceCollectionContext<
   PlatformCharacterResourceSubject,
+  Protocol,
   Products,
   EvidenceCollectionPersistence
 >
@@ -78,8 +81,9 @@ type EvidenceResourceDefinition =
   | { readonly sectionId: 'mail'; readonly resourceId: 'mail-headers' | 'mail-details' }
 
 export async function startEvidenceCollection<
+  Protocol extends PlatformResourceOperationProtocol,
   Products extends readonly EvidenceCoreDataProductId[],
->(definition: EvidenceResourceDefinition, context: EvidenceCollectionContext<Products>) {
+>(definition: EvidenceResourceDefinition, context: EvidenceCollectionContext<Protocol, Products>) {
   const authority = requireCollectionAuthority(definition.sectionId, context)
   const identity = {
     ...definition,
@@ -138,10 +142,10 @@ export async function materializeEvidenceObservation(
   return promoted.outcome === 'obsolete' ? { outcome: 'obsolete' } : undefined
 }
 
-function requireCollectionAuthority<Products extends readonly EvidenceCoreDataProductId[]>(
-  sectionId: EvidenceSectionId,
-  context: EvidenceCollectionContext<Products>,
-) {
+function requireCollectionAuthority<
+  Protocol extends PlatformResourceOperationProtocol,
+  Products extends readonly EvidenceCoreDataProductId[],
+>(sectionId: EvidenceSectionId, context: EvidenceCollectionContext<Protocol, Products>) {
   const authority = context.managedAuthority
   if (
     context.organizationVersion !== authority?.organizationVersion ||

@@ -2,8 +2,9 @@
 
 import type {
   PlatformInstalledResourceDescriptor,
-  PlatformResourceImplementationForCapabilities,
+  PlatformResourceImplementationForContract,
 } from '@eve-space/platform-module-contract/resources'
+import type { PlatformEsiOperationProtocol } from '../../esi-gateway/catalog-interface.js'
 import type {
   InstalledModuleResourceMaterializationPersistence,
   InstalledModuleResourceProjectionPersistence,
@@ -43,8 +44,10 @@ export const installedModuleResources = [
         { operationId: 'purge-evidence' },
       ],
     } as const,
-    implementation: module0Resource0 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module0Resource0 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource0,
+      'skills',
+      PlatformEsiOperationProtocol<'skills'>,
       readonly ['published-skill-catalogue'],
       InstalledModuleResourceProjectionPersistence<'member-audit/trained-skills'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/trained-skills'>
@@ -68,8 +71,12 @@ export const installedModuleResources = [
         { operationId: 'purge-evidence' },
       ],
     } as const,
-    implementation: module0Resource1 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module0Resource1 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource1,
+      'character-assets-page',
+      PlatformEsiOperationProtocol<
+        'character-assets-page' | 'character-asset-names' | 'universe-resolve-names'
+      >,
       readonly ['published-type-details', 'static-location-labels'],
       InstalledModuleResourceProjectionPersistence<'member-audit/assets'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/assets'>
@@ -91,8 +98,10 @@ export const installedModuleResources = [
         { operationId: 'purge-evidence' },
       ],
     } as const,
-    implementation: module0Resource2 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module0Resource2 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource2,
+      'wallet-balance',
+      PlatformEsiOperationProtocol<'wallet-balance'>,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'member-audit/wallet-balance'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/wallet-balance'>
@@ -115,8 +124,10 @@ export const installedModuleResources = [
         { operationId: 'purge-evidence' },
       ],
     } as const,
-    implementation: module0Resource3 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module0Resource3 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource3,
+      'wallet-journal',
+      PlatformEsiOperationProtocol<'wallet-journal'>,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'member-audit/wallet-journal'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/wallet-journal'>
@@ -139,8 +150,10 @@ export const installedModuleResources = [
         { operationId: 'purge-evidence' },
       ],
     } as const,
-    implementation: module0Resource4 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module0Resource4 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource4,
+      'wallet-transactions',
+      PlatformEsiOperationProtocol<'wallet-transactions'>,
       readonly ['published-type-details', 'static-location-labels'],
       InstalledModuleResourceProjectionPersistence<'member-audit/wallet-transactions'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/wallet-transactions'>
@@ -164,8 +177,10 @@ export const installedModuleResources = [
         { operationId: 'purge-evidence' },
       ],
     } as const,
-    implementation: module0Resource5 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module0Resource5 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource5,
+      'mail-headers',
+      PlatformEsiOperationProtocol<'mail-headers' | 'mail-lists' | 'universe-resolve-names'>,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'member-audit/mail-headers'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/mail-headers'>
@@ -189,8 +204,12 @@ export const installedModuleResources = [
         { operationId: 'purge-evidence' },
       ],
     } as const,
-    implementation: module0Resource6 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module0Resource6 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource6,
+      'mail-headers',
+      PlatformEsiOperationProtocol<
+        'mail-headers' | 'mail-message' | 'mail-lists' | 'universe-resolve-names'
+      >,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'member-audit/mail-details'>,
       InstalledModuleResourceMaterializationPersistence<'member-audit/mail-details'>
@@ -213,8 +232,15 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource0 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module1Resource0 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource0,
+      'organization-activity-campaign-list',
+      PlatformEsiOperationProtocol<
+        | 'organization-activity-campaign-list'
+        | 'organization-activity-campaign-detail'
+        | 'organization-activity-objective-list'
+        | 'organization-activity-objective-detail'
+      >,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'organization-activity/campaigns'>,
       InstalledModuleResourceMaterializationPersistence<'organization-activity/campaigns'>
@@ -233,8 +259,12 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource1 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module1Resource1 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource1,
+      'organization-activity-job-list',
+      PlatformEsiOperationProtocol<
+        'organization-activity-job-list' | 'organization-activity-job-detail'
+      >,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'organization-activity/public-jobs'>,
       InstalledModuleResourceMaterializationPersistence<'organization-activity/public-jobs'>
@@ -252,8 +282,10 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource2 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module1Resource2 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource2,
+      'organization-activity-corporation-jobs',
+      PlatformEsiOperationProtocol<'organization-activity-corporation-jobs'>,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'organization-activity/corporation-jobs'>,
       InstalledModuleResourceMaterializationPersistence<'organization-activity/corporation-jobs'>
@@ -272,8 +304,12 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource3 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module1Resource3 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource3,
+      'organization-activity-project-list',
+      PlatformEsiOperationProtocol<
+        'organization-activity-project-list' | 'organization-activity-project-detail'
+      >,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'organization-activity/corporation-projects'>,
       InstalledModuleResourceMaterializationPersistence<'organization-activity/corporation-projects'>
@@ -292,8 +328,12 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource4 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module1Resource4 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource4,
+      'organization-activity-character-jobs',
+      PlatformEsiOperationProtocol<
+        'organization-activity-character-jobs' | 'organization-activity-job-participation'
+      >,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'organization-activity/character-jobs'>,
       InstalledModuleResourceMaterializationPersistence<'organization-activity/character-jobs'>
@@ -312,8 +352,13 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource5 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module1Resource5 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource5,
+      'organization-activity-character-objectives',
+      PlatformEsiOperationProtocol<
+        | 'organization-activity-character-objectives'
+        | 'organization-activity-objective-participation'
+      >,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'organization-activity/character-campaigns'>,
       InstalledModuleResourceMaterializationPersistence<'organization-activity/character-campaigns'>
@@ -332,8 +377,12 @@ export const installedModuleResources = [
       projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
     } as const,
-    implementation: module1Resource6 satisfies PlatformResourceImplementationForCapabilities<
+    implementation: module1Resource6 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource6,
+      'organization-activity-project-list',
+      PlatformEsiOperationProtocol<
+        'organization-activity-project-list' | 'organization-activity-project-contribution'
+      >,
       readonly [],
       InstalledModuleResourceProjectionPersistence<'organization-activity/character-projects'>,
       InstalledModuleResourceMaterializationPersistence<'organization-activity/character-projects'>

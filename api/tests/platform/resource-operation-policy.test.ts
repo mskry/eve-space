@@ -2,13 +2,18 @@ import { operationRegistry } from '@evespace/esi-client/operations'
 import type {
   PlatformCharacterResourceSubject,
   PlatformInstalledResourceDescriptor,
-  PlatformResourceOperationImplementation,
+  PlatformResourceCollectionContext,
+  PlatformResourceCollectionResult,
+  PlatformSingleRequestResourceImplementation,
 } from '@eve-space/platform-module-contract/resources'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import type { StableOperationId } from '@evespace/esi-client/operations'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { PlatformEsiRequestError } from '../../src/esi-gateway/platform-execution.js'
-import { getPlatformEsiOperationDefinition } from '../../src/esi-gateway/catalog-interface.js'
+import {
+  getPlatformEsiOperationDefinition,
+  type PlatformEsiOperationProtocol,
+} from '../../src/esi-gateway/catalog-interface.js'
 
 const mocks = vi.hoisted(() => ({
   getCharacterAuthorizationForLifecycle: vi.fn(),
@@ -37,10 +42,27 @@ const identity = {
 } as const
 
 const implementation = {
+  mode: 'single-request',
   operation: 'wallet-balance',
-  request: vi.fn(({ characterId }: { characterId: number }) => ({ characterId })),
+  request: vi.fn(({ characterId }: { characterId: number }) => ({
+    path: { character_id: characterId },
+  })),
   map: vi.fn(({ data }: { data: unknown }) => Number(data)),
   materialize: vi.fn().mockResolvedValue(undefined),
+} satisfies PlatformSingleRequestResourceImplementation
+type WalletCollectionContext = PlatformResourceCollectionContext<
+  PlatformCharacterResourceSubject,
+  PlatformEsiOperationProtocol<'wallet-balance'>
+>
+const walletInputs = { path: { character_id: 1404328063 } } as const
+const managedAuthority = {
+  organizationDeploymentId: 1 as const,
+  organizationVersion: 2,
+  targetUserId: '22222222-2222-4222-8222-222222222222',
+  managedMemberLifecycleId: '33333333-3333-4333-8333-333333333333',
+  sectionId: 'wallet',
+  disclosureVersion: 1,
+  sectionActivationVersion: 1,
 }
 const resource = {
   moduleId: identity.moduleId,
@@ -50,7 +72,7 @@ const resource = {
   materializationIntervalSeconds: 900,
   eligibility: { kind: 'current-owned-character' },
   implementation,
-} as const satisfies PlatformInstalledResourceDescriptor<PlatformResourceOperationImplementation>
+} as const satisfies PlatformInstalledResourceDescriptor
 
 const batchImplementation = {
   ...implementation,
@@ -62,13 +84,13 @@ const batchImplementation = {
     })),
     classify: vi.fn(),
   },
-} as const satisfies PlatformResourceOperationImplementation
+} as const satisfies PlatformSingleRequestResourceImplementation
 
 const batchResource = {
   ...resource,
   batch: { mode: 'complete-observation', operationId: 'universe-resolve-names' },
   implementation: batchImplementation,
-} as const satisfies PlatformInstalledResourceDescriptor<PlatformResourceOperationImplementation>
+} as const satisfies PlatformInstalledResourceDescriptor
 
 describe('installed resource operation policy', () => {
   beforeEach(() => {
@@ -102,7 +124,7 @@ describe('installed resource operation policy', () => {
     })
     expect(executeEsiOperation).toHaveBeenCalledWith({
       operation: 'wallet-balance',
-      inputs: { characterId: 1404328063 },
+      inputs: walletInputs,
       authorization: {
         kind: 'character-lifecycle',
         characterId: 1404328063,
@@ -249,7 +271,12 @@ describe('installed resource operation policy', () => {
     expect(() => assertInstalledResourceDeclarations([resource], definitions)).not.toThrow()
     expect(() =>
       assertInstalledResourceDeclarations(
-        [{ ...resource, dependentOperationIds: ['universe-resolve-names'] }],
+        [
+          {
+            ...walletCollectionResource(vi.fn()),
+            dependentOperationIds: ['universe-resolve-names'],
+          },
+        ],
         definitions,
       ),
     ).not.toThrow()
@@ -277,9 +304,7 @@ describe('installed resource operation policy', () => {
         [{ ...resource, implementation: {} } as PlatformInstalledResourceDescriptor],
         definitions,
       ),
-    ).toThrow(
-      'test-feature/wallet-balance must provide operation, request, map, and materialize functions',
-    )
+    ).toThrow('test-feature/wallet-balance must declare a single-request or bounded-collection')
     expect(() =>
       assertInstalledResourceDeclarations(
         [
@@ -325,23 +350,14 @@ describe('installed resource operation policy', () => {
   test('executes bounded dependent requests with the same lifecycle authorization', async () => {
     const collect = vi.fn(
       async (
-        context: import('@eve-space/platform-module-contract/resources').PlatformResourceCollectionContext<PlatformCharacterResourceSubject>,
-      ): Promise<
-        import('@eve-space/platform-module-contract/resources').PlatformResourceCollectionResult<unknown>
-      > => ({
+        context: WalletCollectionContext,
+      ): Promise<PlatformResourceCollectionResult<unknown>> => ({
         complete: false,
-        data: await context.execute('wallet-balance', { characterId: 1404328063 }),
+        data: await context.operations['wallet-balance'](walletInputs),
       }),
     )
-    const collectingResource = { ...resource, implementation: { ...implementation, collect } }
-    const guardExecution = vi.fn().mockResolvedValue({
-      outcome: 'ready',
-      resource: collectingResource,
-      characterId: 1404328063,
-      authorization: { tokenVersion: 4 },
-      authorizationCharacterId: 1404328063,
-      authorizationCharacterLifecycleId: identity.subjectLifecycleId,
-    })
+    const collectingResource = walletCollectionResource(collect)
+    const guardExecution = vi.fn().mockResolvedValue(readyCollection(collectingResource))
     const options = {
       resources: [collectingResource],
       guardExecution,
@@ -358,7 +374,9 @@ describe('installed resource operation policy', () => {
       result: { data: { data: 123 } },
     })
     expect(guardExecution).toHaveBeenCalledTimes(2)
-    expect(implementation.map).not.toHaveBeenCalled()
+    expect(options.executeEsiOperation).toHaveBeenCalledWith(
+      expect.objectContaining({ operation: 'wallet-balance', inputs: walletInputs }),
+    )
     expect(options.createCapabilities).toHaveBeenCalledWith(collectingResource)
 
     const controller = new AbortController()
@@ -368,27 +386,24 @@ describe('installed resource operation policy', () => {
       controller.signal,
     )
 
-    collect.mockImplementation(async (context) => {
-      await context.execute('undeclared', {})
-      return { complete: false, data: null }
-    })
-    await expect(executeInstalledResourceOperation(identity, options)).rejects.toThrow('undeclared')
     collect.mockImplementation(async (context) => ({
       complete: true,
-      data: await context.execute('wallet-balance', { path: { character_id: 9999 } }),
+      data: await context.operations['wallet-balance']({ path: { character_id: 9999 } }),
     }))
     await expect(executeInstalledResourceOperation(identity, options)).rejects.toThrow(
       'character is outside',
     )
     collect.mockImplementation(async (context) => ({
       complete: true,
-      data: await context.execute('wallet-balance', { path: { corporation_id: 9999 } }),
+      data: await context.operations['wallet-balance']({
+        path: { corporation_id: 9999 },
+      } as never),
     }))
     await expect(executeInstalledResourceOperation(identity, options)).rejects.toThrow(
       'corporation is outside',
     )
     collect.mockImplementation(async (context) => {
-      for (let i = 0; i < 33; i++) await context.execute('wallet-balance', {})
+      for (let i = 0; i < 33; i++) await context.operations['wallet-balance'](walletInputs)
       return { complete: false, data: null }
     })
     await expect(executeInstalledResourceOperation(identity, options)).rejects.toThrow(
@@ -396,7 +411,7 @@ describe('installed resource operation policy', () => {
     )
     collect.mockImplementation(async (context) => ({
       complete: true,
-      data: await context.execute('wallet-balance', {}),
+      data: await context.operations['wallet-balance'](walletInputs),
     }))
     options.executeEsiOperation.mockResolvedValue(platformExecution(123, 5))
     await expect(executeInstalledResourceOperation(identity, options)).rejects.toThrow(
@@ -404,15 +419,181 @@ describe('installed resource operation policy', () => {
     )
   })
 
+  test('exposes only frozen descriptor-declared collection operations to untyped code', async () => {
+    let operations: Readonly<Record<string, unknown>> = {}
+    const collect = vi.fn(async (context: WalletCollectionContext) => {
+      operations = context.operations
+      const probe = context.operations as Readonly<Record<string, unknown>>
+      expect(probe.undeclared).toBeUndefined()
+      expect(probe.constructor).toBeUndefined()
+      expect(probe.toString).toBeUndefined()
+      expect(Reflect.set(probe, 'undeclared', vi.fn())).toBe(false)
+      expect('execute' in context).toBe(false)
+      return { complete: true, data: await context.operations['wallet-balance'](walletInputs) }
+    })
+    const collectingResource = {
+      ...walletCollectionResource(collect),
+      dependentOperationIds: ['universe-resolve-names', 'wallet-balance'],
+    }
+    const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution(123, 4))
+
+    await expect(
+      executeInstalledResourceOperation(identity, {
+        resources: [collectingResource],
+        guardExecution: vi.fn().mockResolvedValue(readyCollection(collectingResource)),
+        executeEsiOperation,
+        loadCollectionContext: vi
+          .fn()
+          .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
+        createCapabilities: vi.fn().mockReturnValue({}),
+      }),
+    ).resolves.toMatchObject({ outcome: 'loaded', complete: true })
+    expect(Object.isFrozen(operations)).toBe(true)
+    expect(Object.getPrototypeOf(operations)).toBeNull()
+    expect(Object.keys(operations).toSorted((left, right) => left.localeCompare(right))).toEqual([
+      'universe-resolve-names',
+      'wallet-balance',
+    ])
+    expect(executeEsiOperation).toHaveBeenCalledOnce()
+  })
+
+  test('rejects invalid untyped collection inputs before ESI execution', async () => {
+    const collect = vi.fn(async (context: WalletCollectionContext) => ({
+      complete: true,
+      data: await context.operations['wallet-balance']({} as never),
+    }))
+    const collectingResource = walletCollectionResource(collect)
+    const executeEsiOperation = vi.fn()
+
+    await expect(
+      executeInstalledResourceOperation(identity, {
+        resources: [collectingResource],
+        guardExecution: vi.fn().mockResolvedValue(readyCollection(collectingResource)),
+        executeEsiOperation,
+        loadCollectionContext: vi
+          .fn()
+          .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
+        createCapabilities: vi.fn().mockReturnValue({}),
+      }),
+    ).rejects.toThrow('Platform resource mapping failed')
+    expect(executeEsiOperation).not.toHaveBeenCalled()
+  })
+
+  test('treats a managed-authority change during dependent execution as obsolete', async () => {
+    const collect = vi.fn(async (context: WalletCollectionContext) => ({
+      complete: true,
+      data: await context.operations['wallet-balance'](walletInputs),
+    }))
+    const collectingResource = walletCollectionResource(collect)
+    const ready = { ...readyCollection(collectingResource), managedAuthority }
+    const guardExecution = vi
+      .fn()
+      .mockResolvedValueOnce(ready)
+      .mockResolvedValueOnce({
+        ...ready,
+        managedAuthority: { ...managedAuthority, disclosureVersion: 2 },
+      })
+    const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution(123, 4))
+
+    await expect(
+      executeInstalledResourceOperation(identity, {
+        resources: [collectingResource],
+        guardExecution,
+        executeEsiOperation,
+        loadCollectionContext: vi
+          .fn()
+          .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
+        createCapabilities: vi.fn().mockReturnValue({}),
+      }),
+    ).rejects.toThrow('authority changed')
+  })
+
+  test('retains the earliest validation time across collection requests', async () => {
+    const collect = vi.fn(async (context: WalletCollectionContext) => {
+      await context.operations['wallet-balance'](walletInputs)
+      await context.operations['wallet-balance'](walletInputs)
+      return { complete: true, data: 'collected' }
+    })
+    const collectingResource = walletCollectionResource(collect)
+    const executeEsiOperation = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ...platformExecution(1, 4),
+        validatedAt: '2026-08-26T14:59:00.000Z',
+      })
+      .mockResolvedValueOnce({
+        ...platformExecution(2, 4),
+        validatedAt: '2026-08-26T14:57:00.000Z',
+      })
+
+    await expect(
+      executeInstalledResourceOperation(identity, {
+        resources: [collectingResource],
+        guardExecution: vi.fn().mockResolvedValue(readyCollection(collectingResource)),
+        executeEsiOperation,
+        loadCollectionContext: vi
+          .fn()
+          .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
+        createCapabilities: vi.fn().mockReturnValue({}),
+      }),
+    ).resolves.toMatchObject({
+      result: { data: 'collected', validatedAt: '2026-08-26T14:57:00.000Z' },
+    })
+  })
+
+  test('validates inspectable execution-mode shapes for erased implementations', () => {
+    const definitions = {
+      'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet'),
+      'universe-resolve-names': executableDefinition('PostUniverseNames'),
+    }
+    const collection = walletCollectionResource(vi.fn())
+    const validate = (candidate: unknown, dependentOperationIds?: readonly string[]) => () =>
+      assertInstalledResourceDeclarations(
+        [
+          {
+            ...resource,
+            ...(dependentOperationIds ? { dependentOperationIds } : {}),
+            implementation: candidate,
+          } as PlatformInstalledResourceDescriptor,
+        ],
+        definitions,
+      )
+
+    expect(validate(implementation)).not.toThrow()
+    expect(validate(collection.implementation)).not.toThrow()
+    expect(validate(collection.implementation, ['universe-resolve-names'])).not.toThrow()
+    expect(validate(implementation, ['universe-resolve-names'])).toThrow(
+      'single-request execution cannot declare dependent operations',
+    )
+    expect(validate({ ...implementation, collect: vi.fn() })).toThrow(
+      'single-request execution cannot provide collect',
+    )
+    expect(validate({ ...collection.implementation, request: vi.fn(), map: vi.fn() })).toThrow(
+      'bounded-collection execution cannot provide request or map',
+    )
+    expect(validate({ ...collection.implementation, collect: undefined })).toThrow(
+      'must provide operation, materialize, and collect for bounded-collection execution',
+    )
+    expect(validate({ ...implementation, map: 'not-a-function' })).toThrow(
+      'must provide operation, materialize, and request and map for single-request execution',
+    )
+    const { mode: _mode, ...modeless } = implementation
+    expect(validate(modeless)).toThrow('must declare a single-request or bounded-collection')
+    expect(validate({ ...implementation, mode: 'hybrid' })).toThrow(
+      'must declare a single-request or bounded-collection',
+    )
+    expect(validate(null)).toThrow('must declare a single-request or bounded-collection')
+    expect(validate(() => undefined)).toThrow('must declare a single-request or bounded-collection')
+  })
+
   test('executes declared public enrichment without forwarding character authority', async () => {
     const collect = vi.fn(async (context) => ({
       complete: true,
-      data: await context.execute('universe-resolve-names', { body: [1404328063] }),
+      data: await context.operations['universe-resolve-names']({ body: [1404328063] }),
     }))
     const collectingResource = {
-      ...resource,
+      ...walletCollectionResource(collect),
       dependentOperationIds: ['universe-resolve-names'],
-      implementation: { ...implementation, collect },
     }
     const guardExecution = vi.fn().mockResolvedValue({
       outcome: 'ready',
@@ -454,12 +635,11 @@ describe('installed resource operation policy', () => {
   test('uses resilient per-item universe-name resolution for production collection', async () => {
     const collect = vi.fn(async (context) => ({
       complete: true,
-      data: await context.execute('universe-resolve-names', { body: [1, 90_666_561] }),
+      data: await context.operations['universe-resolve-names']({ body: [1, 90_666_561] }),
     }))
     const collectingResource = {
-      ...resource,
+      ...walletCollectionResource(collect),
       dependentOperationIds: ['universe-resolve-names'],
-      implementation: { ...implementation, collect },
     }
     const guardExecution = vi.fn().mockResolvedValue({
       outcome: 'ready',
@@ -510,15 +690,21 @@ describe('installed resource operation policy', () => {
       resourceId: 'assets',
       operationId: 'character-assets-page',
       dependentOperationIds: ['character-asset-names', 'universe-resolve-names'],
-      implementation: { ...implementation, operation: 'character-assets-page' },
-    } as const satisfies PlatformInstalledResourceDescriptor<PlatformResourceOperationImplementation>
+      implementation: {
+        ...walletCollectionResource(vi.fn()).implementation,
+        operation: 'character-assets-page',
+      },
+    } as const satisfies PlatformInstalledResourceDescriptor
     const mailResource = {
       ...resource,
       resourceId: 'mail',
       operationId: 'mail-headers',
       dependentOperationIds: ['mail-message', 'mail-lists', 'universe-resolve-names'],
-      implementation: { ...implementation, operation: 'mail-headers' },
-    } as const satisfies PlatformInstalledResourceDescriptor<PlatformResourceOperationImplementation>
+      implementation: {
+        ...walletCollectionResource(vi.fn()).implementation,
+        operation: 'mail-headers',
+      },
+    } as const satisfies PlatformInstalledResourceDescriptor
 
     expect(() =>
       assertInstalledResourceDeclarations([assetResource, mailResource], definitions),
@@ -641,6 +827,30 @@ describe('installed resource operation policy', () => {
     ).toThrow('implements batch operation public-character instead of universe-resolve-names')
   })
 })
+
+function walletCollectionResource(collect: ReturnType<typeof vi.fn>) {
+  return {
+    ...resource,
+    implementation: {
+      mode: 'bounded-collection' as const,
+      operation: 'wallet-balance',
+      collect,
+      materialize: vi.fn(),
+    },
+  }
+}
+
+function readyCollection(collectingResource: PlatformInstalledResourceDescriptor) {
+  return {
+    outcome: 'ready',
+    resource: collectingResource,
+    characterId: 1404328063,
+    authorization: { tokenVersion: 4 },
+    authorizationCharacterId: 1404328063,
+    authorizationCharacterLifecycleId: identity.subjectLifecycleId,
+    managedAuthority: null,
+  }
+}
 
 function executableDefinition<SdkOperation extends StableOperationId>(
   sdkOperationId: SdkOperation,

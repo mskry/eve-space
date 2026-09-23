@@ -3,17 +3,23 @@ import type {
   PlatformResourceMaterializationContext,
   PlatformResourceSubject,
 } from '@eve-space/platform-module-contract/resources'
+import type { ActivityOperationId, ActivityProtocol } from './activity-protocol.js'
+import type { ActivityOperationMethods } from './collection-response.js'
 import type { ActivityObservation } from './collection-types.js'
 import type {
   ActivityCheckpointPersistence,
   ActivityMaterializationPersistence,
 } from './persistence.js'
 
-export type ResourceCollectionContext = PlatformResourceCollectionContext<
-  PlatformResourceSubject,
-  readonly [],
-  ActivityCheckpointPersistence
->
+export type ActivityCollectionContext = Omit<
+  PlatformResourceCollectionContext<
+    PlatformResourceSubject,
+    ActivityProtocol<ActivityOperationId>,
+    readonly [],
+    ActivityCheckpointPersistence
+  >,
+  'operations'
+> & { readonly operations: ActivityOperationMethods }
 export type ResourceMaterializationContext = PlatformResourceMaterializationContext<
   ActivityObservation,
   PlatformResourceSubject,
@@ -45,7 +51,7 @@ export async function materializeActivityResource(context: ResourceMaterializati
 
 export async function readActivityCheckpoint(
   resourceId: string,
-  context: ResourceCollectionContext,
+  context: ActivityCollectionContext,
 ) {
   const stored = await context.capabilities.persistence.readActivityCheckpoint({
     resourceId,

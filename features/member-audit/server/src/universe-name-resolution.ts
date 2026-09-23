@@ -1,3 +1,5 @@
+import type { PlatformResourceOperationMethods } from '@eve-space/platform-module-contract/resources'
+import type { PlatformCoreEsiOperationProtocol } from '@eve-space/platform-module-server'
 import { z } from 'zod'
 
 const maximumUniverseNameIds = 1_000
@@ -9,11 +11,10 @@ const universeNamesSchema = z.array(
   }),
 )
 
+type UniverseNameProtocol = PlatformCoreEsiOperationProtocol<'universe-resolve-names'>
+
 interface UniverseNameExecutionContext {
-  execute(
-    operationId: string,
-    inputs: Readonly<Record<string, unknown>>,
-  ): Promise<{ readonly data: unknown }>
+  readonly operations: PlatformResourceOperationMethods<UniverseNameProtocol>
 }
 
 export interface ResolvedUniverseName {
@@ -34,7 +35,7 @@ export async function resolveUniverseNamesBestEffort(
   const results = await Promise.all(
     chunks.map(async (chunk) => {
       try {
-        return await context.execute('universe-resolve-names', { body: chunk })
+        return await context.operations['universe-resolve-names']({ body: chunk })
       } catch {
         return { data: [] }
       }

@@ -4,16 +4,15 @@ import type {
   PlatformInstalledResourceDescriptor,
   PlatformResourceBatchMode,
   PlatformResourceBatchOperationImplementation,
-  PlatformResourceOperationImplementation,
+  PlatformResourceImplementation,
 } from '@eve-space/platform-module-contract/resources'
 import {
-  assertRegisteredEsiOperation,
+  assertPlatformEsiOperation,
   getEsiOperationAuthorization,
   getEsiSetOperationConfiguration,
-  type EsiOperation,
 } from '../esi-gateway/catalog-interface.js'
 import {
-  executePlatformEsiOperation,
+  executeUntypedPlatformEsiOperation,
   PlatformEsiRequestError,
 } from '../esi-gateway/platform-execution.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
@@ -74,7 +73,7 @@ export interface BatchExecutionOptions {
   readonly signal?: AbortSignal
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly resolveEligibility?: typeof resolveInstalledResourceEligibility
-  readonly executeEsiOperation?: typeof executePlatformEsiOperation
+  readonly executeEsiOperation?: typeof executeUntypedPlatformEsiOperation
 }
 
 export async function executeInstalledResourceBatchOperation(
@@ -88,15 +87,15 @@ export async function executeInstalledResourceBatchOperation(
   const resource = findInstalledResource(parsed, resources)
   if (!resource?.batch) return { outcome: 'noop', reason: 'resource-unavailable' }
 
-  const implementation = resource.implementation as PlatformResourceOperationImplementation
+  const implementation = resource.implementation as PlatformResourceImplementation
   const batch = implementation.batch as PlatformResourceBatchOperationImplementation | undefined
   if (!batch)
     throw new Error(
       `Installed resource ${resource.moduleId}/${resource.resourceId} lacks batch implementation`,
     )
 
-  assertRegisteredEsiOperation(resource.batch.operationId)
-  const operation = resource.batch.operationId as EsiOperation
+  const operation = resource.batch.operationId
+  assertPlatformEsiOperation(operation)
   const authorization = getEsiOperationAuthorization(operation)
   if (authorization.kind !== 'public')
     throw new Error(
@@ -142,9 +141,9 @@ export async function executeInstalledResourceBatchOperation(
     options.signal?.throwIfAborted()
     throw new PlatformResourceBatchExecutionError(new PlatformResourceMappingError(error), eligible)
   }
-  let result: Awaited<ReturnType<typeof executePlatformEsiOperation>>
+  let result: Awaited<ReturnType<typeof executeUntypedPlatformEsiOperation>>
   try {
-    result = await (options.executeEsiOperation ?? executePlatformEsiOperation)({
+    result = await (options.executeEsiOperation ?? executeUntypedPlatformEsiOperation)({
       operation,
       inputs,
       authorization: { kind: 'public' },

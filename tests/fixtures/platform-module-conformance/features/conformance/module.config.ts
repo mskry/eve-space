@@ -58,6 +58,20 @@ const manifest = {
         },
         exportName: 'conformanceStatusResource',
       },
+      {
+        id: 'conformance-collection',
+        operationId: 'conformance-status-operation',
+        coreDataProducts: [],
+        dependentOperationIds: ['universe-resolve-names'],
+        subjectKind: 'character',
+        materializationIntervalSeconds: 300,
+        eligibility: { kind: 'current-owned-character' },
+        persistence: {
+          projection: [{ operationId: 'read-conformance-snapshot' }],
+          materialization: [{ operationId: 'upsert-conformance-snapshot' }],
+        },
+        exportName: 'conformanceCollectionResource',
+      },
     ],
     esiOperations: [
       {

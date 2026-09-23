@@ -4,7 +4,8 @@ import {
   type PlatformCursorCheckpoint,
 } from '@eve-space/platform-module-server'
 import {
-  mapCollectionResponse,
+  executeCollectionOperation,
+  type CollectionCursorQuery,
   type CollectionRequest,
   type CollectionResponse,
 } from './collection-response.js'
@@ -13,11 +14,11 @@ import type {
   ActivityObservation,
   CollectedSnapshot,
 } from './collection-types.js'
-import { readActivityCheckpoint, type ResourceCollectionContext } from './collection-store.js'
+import { readActivityCheckpoint, type ActivityCollectionContext } from './collection-store.js'
 
 export async function collectActivityResource(
   profile: ActivityResourceProfile,
-  context: ResourceCollectionContext,
+  context: ActivityCollectionContext,
 ) {
   const stored = await readActivityCheckpoint(profile.id, context)
   const checkpoint = stored?.checkpoint ?? { initialized: false, requests: [], cursors: {} }
@@ -32,12 +33,12 @@ export async function collectActivityResource(
     const request = requests.shift()!
     // Each request can reveal the next opaque cursor or a dependent detail request.
     // oxlint-disable-next-line no-await-in-loop
-    const { cursor, result } = await executeCollectionRequest(request, cursors, context)
+    const { cursor, result } = await executeCollectionRequest(request, profile, cursors, context)
     if (!result) {
       restoreUnavailableSnapshot(request, snapshots)
       continue
     }
-    const mapped = mapCollectionResponse(request, result.data, profile.id)
+    const mapped = result.response
     if (mapped.retainedIds) retainedIds = mapped.retainedIds
     if (mapped.retainedCampaignIds) retainedCampaignIds = mapped.retainedCampaignIds
     const replace = advanceRequestCursor(request, cursor, mapped, cursors, requests)
@@ -68,25 +69,28 @@ export async function collectActivityResource(
 
 async function executeCollectionRequest(
   request: CollectionRequest,
+  profile: ActivityResourceProfile,
   cursors: Readonly<Record<string, PlatformCursorCheckpoint>>,
-  context: ResourceCollectionContext,
+  context: ActivityCollectionContext,
 ) {
   const cursor =
     request.cursor ?? (request.cursorKey ? cursors[request.cursorKey] : undefined) ?? {}
-  const query = createCursorQuery(request.cursorKey, cursor)
-  const result = await context
-    .execute(`organization-activity-${request.operation}`, {
-      ...(Object.keys(request.path).length ? { path: request.path } : {}),
-      ...(query ? { query } : {}),
-    })
-    .catch((error: unknown) => {
-      if (request.validatedAt === undefined || !isPlatformEsiUnavailableItem(error)) throw error
-      return null
-    })
+  const result = await executeCollectionOperation({
+    request,
+    query: createCursorQuery(request.cursorKey, cursor),
+    operations: context.operations,
+    profile: profile.id,
+  }).catch((error: unknown) => {
+    if (request.validatedAt === undefined || !isPlatformEsiUnavailableItem(error)) throw error
+    return null
+  })
   return { cursor, result }
 }
 
-function createCursorQuery(cursorKey: string | undefined, cursor: PlatformCursorCheckpoint) {
+function createCursorQuery(
+  cursorKey: string | undefined,
+  cursor: PlatformCursorCheckpoint,
+): CollectionCursorQuery | undefined {
   if (!cursorKey) return undefined
   return {
     limit: 100,
@@ -120,7 +124,7 @@ function advanceRequestCursor(
 
 function initialRequest(
   profile: ActivityResourceProfile,
-  context: ResourceCollectionContext,
+  context: ActivityCollectionContext,
   initialized: boolean,
 ): CollectionRequest {
   const path: Record<string, number> = {}

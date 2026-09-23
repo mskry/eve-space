@@ -1,10 +1,9 @@
 import { describe, expect, test, vi } from 'vitest'
-import type {
-  PlatformResourceCollectionContext,
-  PlatformResourceSubject,
-} from '@eve-space/platform-module-contract/resources'
 import { collectActivityResource } from '../src/collection.js'
-import { materializeActivityResource } from '../src/collection-store.js'
+import {
+  materializeActivityResource,
+  type ActivityCollectionContext,
+} from '../src/collection-store.js'
 import { summarySnapshot } from '../src/snapshot.js'
 
 const id = '11111111-1111-4111-8111-111111111111'
@@ -26,11 +25,14 @@ function context(execute: ReturnType<typeof vi.fn>, checkpoint?: unknown) {
     corporationId: 9801,
     authorizationGeneration: 4,
     requestBudget: 32,
-    execute,
+    operations: new Proxy(
+      {},
+      { get: (_target, operationId) => (inputs: unknown) => execute(operationId, inputs) },
+    ),
     capabilities: {
       persistence: { readActivityCheckpoint },
     },
-  } as unknown as PlatformResourceCollectionContext<PlatformResourceSubject>
+  } as unknown as ActivityCollectionContext
 }
 
 describe('activity collection', () => {
@@ -88,6 +90,10 @@ describe('activity collection', () => {
 
   test('replaces incremental observations and rejects broken cursor progress', async () => {
     const profile = { id: 'corporation-jobs', rootOperation: 'corporation-jobs', paginated: true }
+    const corporationContext = (execute: ReturnType<typeof vi.fn>, stored?: unknown) => ({
+      ...context(execute, stored),
+      subject: { kind: 'corporation' as const, corporationId: 9801, lifecycleId: id },
+    })
     const checkpoint = { initialized: true, requests: [], cursors: { root: { after: 'old' } } }
     const execute = vi
       .fn()
@@ -96,12 +102,12 @@ describe('activity collection', () => {
         validatedAt: now,
       })
       .mockResolvedValueOnce({ data: { freelance_jobs: [] }, validatedAt: now })
-    const result = await collectActivityResource(profile, context(execute, checkpoint))
+    const result = await collectActivityResource(profile, corporationContext(execute, checkpoint))
     expect(result.data.snapshots[0]?.replace).toBe(true)
     await expect(
       collectActivityResource(
         profile,
-        context(
+        corporationContext(
           vi.fn().mockResolvedValue({
             data: { freelance_jobs: [summary], cursor: { after: 'old' } },
             validatedAt: now,

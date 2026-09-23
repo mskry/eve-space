@@ -227,6 +227,138 @@ export const typeDetails = undefined as PublishedTypeDetailsResult | undefined
 `,
   )
   await writeFile(
+    join(sourceRoot, 'resources.ts'),
+    `import { platformCoreEsiOperationSdkIdentities } from '@eve-space/platform-module-contract/esi'
+import {
+  definePlatformBoundedCollectionResource,
+  definePlatformSingleRequestResource,
+  type PlatformBoundedCollectionResourceImplementation,
+  type PlatformCharacterResourceSubject,
+  type PlatformResourceImplementationForContract,
+  type PlatformResourceOperationContract,
+} from '@eve-space/platform-module-contract/resources'
+import {
+  definePlatformExecutableEsiOperation,
+  type PlatformCoreEsiOperationProtocol,
+  type PlatformEsiOperationProtocol,
+  type PlatformExecutableEsiOperationProtocol,
+} from '@eve-space/platform-module-server'
+
+export const statusOperation = definePlatformExecutableEsiOperation({
+  sdkOperationId: 'GetStatus',
+  policy: {
+    audit: { reviewedDate: '2026-09-06' },
+    representationVersion: 'v1',
+    authorization: { kind: 'public' },
+    identity: { kind: 'ordered', fields: [] },
+    freshness: { kind: 'relative', seconds: 60 },
+    cache: { kind: 'none' },
+    rateGroup: { kind: 'legacy-only' },
+    retry: { kind: 'none' },
+    compatibility: { minimumDate: '2026-09-01' },
+    responseValidation: { kind: 'enabled' },
+  },
+})
+
+type ModuleDefinitions = { readonly 'smoke-status': typeof statusOperation }
+type StatusProtocol = PlatformExecutableEsiOperationProtocol<ModuleDefinitions, 'smoke-status'>
+type CollectionProtocol = StatusProtocol & PlatformCoreEsiOperationProtocol<'universe-resolve-names'>
+type HostIdentities = typeof platformCoreEsiOperationSdkIdentities & {
+  readonly 'smoke-status': typeof statusOperation.sdkOperationId
+}
+type ExpectedCollectionProtocol = PlatformEsiOperationProtocol<
+  HostIdentities,
+  'smoke-status' | 'universe-resolve-names'
+>
+
+async function materialize() {}
+
+export const statusResource = definePlatformSingleRequestResource<
+  'smoke-status',
+  StatusProtocol,
+  number
+>({
+  mode: 'single-request',
+  operation: 'smoke-status',
+  request: () => ({}),
+  map: ({ data }) => data.players,
+  materialize,
+})
+
+export const collectionResource = definePlatformBoundedCollectionResource<
+  'smoke-status',
+  CollectionProtocol,
+  string | null
+>({
+  mode: 'bounded-collection',
+  operation: 'smoke-status',
+  async collect(context) {
+    const status = await context.operations['smoke-status']({})
+    const names = await context.operations['universe-resolve-names']({
+      body: [context.subject.characterId],
+    })
+    // @ts-expect-error collection capabilities expose no arbitrary operation dispatcher
+    void context.execute
+    // @ts-expect-error undeclared operations have no callable member
+    void context.operations['wallet-balance']
+    // @ts-expect-error operation inputs retain their reviewed SDK contract
+    void context.operations['universe-resolve-names']({ body: ['one'] })
+    return { complete: status.data.players >= 0, data: names.data[0]?.name ?? null }
+  },
+  materialize,
+})
+
+void (statusResource satisfies PlatformResourceImplementationForContract<
+  typeof statusResource,
+  'smoke-status',
+  PlatformEsiOperationProtocol<HostIdentities, 'smoke-status'>,
+  readonly [],
+  object,
+  object
+>)
+void (collectionResource satisfies PlatformResourceImplementationForContract<
+  typeof collectionResource,
+  'smoke-status',
+  ExpectedCollectionProtocol,
+  readonly [],
+  object,
+  object
+>)
+// @ts-expect-error a single-request resource cannot satisfy a declaration with dependents
+void (statusResource satisfies PlatformResourceImplementationForContract<
+  typeof statusResource,
+  'smoke-status',
+  ExpectedCollectionProtocol,
+  readonly [],
+  object,
+  object
+>)
+
+declare const mislabeled: PlatformBoundedCollectionResourceImplementation<
+  'smoke-status',
+  StatusProtocol & {
+    readonly 'universe-resolve-names': PlatformResourceOperationContract<
+      { readonly body: string[] },
+      unknown
+    >
+  },
+  string | null,
+  string,
+  unknown,
+  PlatformCharacterResourceSubject
+>
+// @ts-expect-error correct aliases with a wrong operation contract fail the exact constraint
+void (mislabeled satisfies PlatformResourceImplementationForContract<
+  typeof mislabeled,
+  'smoke-status',
+  ExpectedCollectionProtocol,
+  readonly [],
+  object,
+  object
+>)
+`,
+  )
+  await writeFile(
     join(sourceRoot, 'nuxt.ts'),
     `import { defineNuxtModule } from '@nuxt/kit'
 import type { PlatformReviewerNuxtContribution } from '@eve-space/platform-module-contract/nuxt'
