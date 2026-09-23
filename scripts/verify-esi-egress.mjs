@@ -585,7 +585,7 @@ function moduleResourceBoundaryViolations(path, source) {
   if (hasNamedProperty(path, source, genericMutationPropertyNames))
     findings.push(`${path}: feature server code attempts generic ESI mutation execution`)
   if (
-    source.includes('definePlatformResourceOperation') &&
+    /\bdefinePlatform(?:SingleRequest|BoundedCollection)Resource\b/.test(source) &&
     /\b(?:identity|cacheKey|representationKey)\s*:/.test(source)
   )
     findings.push(`${path}: feature resource code defines an independent ESI identity`)

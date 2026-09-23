@@ -1,7 +1,7 @@
 import type {
   PlatformInstalledResourceDescriptor,
   PlatformResourceInvalidAuthority,
-  PlatformResourceOperationImplementation,
+  PlatformResourceImplementation,
 } from '@eve-space/platform-module-contract/resources'
 import type postgres from 'postgres'
 import { sql } from '../db/client.js'
@@ -33,7 +33,7 @@ export async function runInstalledResourceMaintenance(options: ResourceMaintenan
   const resources = options.resources ?? installedModuleResources
   const purgeWork = await loadPurgeWork(connection)
   const maintainableResources = resources.filter((resource) =>
-    Boolean((resource.implementation as PlatformResourceOperationImplementation).maintain),
+    Boolean((resource.implementation as PlatformResourceImplementation).maintain),
   )
   for (const resource of maintainableResources) {
     options.signal?.throwIfAborted()
@@ -51,7 +51,7 @@ async function maintainResource(
   now: Date,
   signal?: AbortSignal,
 ) {
-  const implementation = resource.implementation as PlatformResourceOperationImplementation
+  const implementation = resource.implementation as PlatformResourceImplementation
   const resourcePurgeWork = purgeWork.filter(
     (work) => work.moduleId === resource.moduleId && work.resourceId === resource.resourceId,
   )

@@ -1,4 +1,4 @@
-import type { PlatformResourceOperationImplementation } from '@eve-space/platform-module-contract/resources'
+import type { PlatformSingleRequestResourceImplementation } from '@eve-space/platform-module-contract/resources'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -451,13 +451,14 @@ describe('local resource observations', () => {
   })
 })
 
-function observation(materialize: PlatformResourceOperationImplementation['materialize']) {
+function observation(materialize: PlatformSingleRequestResourceImplementation['materialize']) {
   const implementation = {
+    mode: 'single-request',
     operation: 'skills',
     request: vi.fn(),
     map: vi.fn(),
     materialize,
-  } satisfies PlatformResourceOperationImplementation
+  } satisfies PlatformSingleRequestResourceImplementation
   return {
     identity,
     resource: {

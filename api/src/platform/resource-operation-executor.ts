@@ -1,12 +1,21 @@
 import type {
   PlatformInstalledResourceDescriptor,
-  PlatformResourceOperationImplementation,
+  PlatformResourceImplementation,
+  PlatformResourceOperationContract,
+  PlatformResourceOperationMethod,
+  PlatformResourceOperationMethods,
+  PlatformResourceOperationProtocol,
+  PlatformResourceOperationResult,
   PlatformResourceSubject,
 } from '@eve-space/platform-module-contract/resources'
 import {
+  assertPlatformEsiOperation,
   getEsiOperationAuthorization,
   getPlatformEsiOperationDefinition,
-  type EsiOperation,
+  narrowPlatformEsiOperationOutput,
+  parsePlatformEsiOperationInputs,
+  type PlatformEsiOperation,
+  type PlatformEsiOperationOutput,
 } from '../esi-gateway/catalog-interface.js'
 import { isEsiAuthorizationFailure } from '../esi-gateway/failures.js'
 import {
@@ -55,24 +64,26 @@ type PlatformResourceOperationExecution =
       readonly result: PlatformEsiExecution<unknown>
     }
 
+type LoadedPlatformResourceExecution = Extract<
+  PlatformResourceOperationExecution,
+  { outcome: 'loaded' }
+>
 type ReadyPlatformResourceExecution = Extract<PlatformResourceExecutionGuard, { outcome: 'ready' }>
 type ResourceCollectionContext = Awaited<ReturnType<typeof loadResourceCollectionContext>>
-type ResourceOperationImplementation = PlatformResourceOperationImplementation<
-  string,
-  unknown,
-  unknown,
-  string,
-  unknown,
-  PlatformResourceSubject
+type SingleRequestImplementation = Extract<
+  PlatformResourceImplementation,
+  { readonly mode: 'single-request' }
 >
-type ResourceCollector = NonNullable<ResourceOperationImplementation['collect']>
+type BoundedCollectionImplementation = Extract<
+  PlatformResourceImplementation,
+  { readonly mode: 'bounded-collection' }
+>
+type ResourceCollectionOperationMethod =
+  PlatformResourceOperationMethod<PlatformResourceOperationContract>
 
 interface ResourceOperationExecutorOptions {
   readonly signal?: AbortSignal
-  readonly request?: {
-    readonly operationId: string
-    readonly inputs: Readonly<Record<string, unknown>>
-  }
+  readonly request?: ResourceOperationRequest
   readonly loadCollectionContext?: typeof loadResourceCollectionContext
   readonly createCapabilities?: typeof createPlatformResourceReadCapabilities
   readonly createMappingCapabilities?: typeof createPlatformResourceMappingCapabilities
@@ -83,6 +94,11 @@ interface ResourceOperationExecutorOptions {
     readonly authorizationGeneration: number | null
     readonly managedAuthority: PlatformManagedCollectionAuthority | null
   }) => void
+}
+
+interface ResourceOperationRequest {
+  readonly operationId: string
+  readonly inputs: unknown
 }
 
 interface ResourceCollectionExecutionState {
@@ -120,16 +136,11 @@ export async function executeInstalledResourceOperation(
     guarded.subject ??
     toPlatformResourceSubject(identity as Parameters<typeof toPlatformResourceSubject>[0])
   if (!subject) return { outcome: 'noop', reason: 'obsolete' }
-  const implementation = guarded.resource.implementation as ResourceOperationImplementation
-  if (implementation.collect && !options.request)
-    return executeCollectedResourceOperation(
-      identity,
-      options,
-      guarded,
-      subject,
-      implementation.collect,
-    )
-
+  if (options.request)
+    return executeResourceRequest(identity, options, guarded, subject, options.request)
+  const implementation = guarded.resource.implementation as PlatformResourceImplementation
+  if (implementation.mode === 'bounded-collection')
+    return executeCollectedResourceOperation(identity, options, guarded, subject, implementation)
   return executeSingleResourceOperation(identity, options, guarded, subject, implementation)
 }
 
@@ -138,7 +149,7 @@ async function executeCollectedResourceOperation(
   options: ResourceOperationExecutorOptions,
   guarded: ReadyPlatformResourceExecution,
   subject: PlatformResourceSubject,
-  collect: ResourceCollector,
+  implementation: BoundedCollectionImplementation,
 ): Promise<PlatformResourceOperationExecution> {
   const collectionContext = await (options.loadCollectionContext ?? loadResourceCollectionContext)(
     subject,
@@ -154,14 +165,14 @@ async function executeCollectedResourceOperation(
     collectionContext,
     state,
   }
-  const collected = await collect({
+  const collected = await implementation.collect({
     ...collectionContext,
     subject,
     authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
     managedAuthority: guarded.managedAuthority,
     capabilities: createResourceCollectionCapabilities(options, guarded.resource),
     requestBudget: RESOURCE_COLLECTION_REQUEST_BUDGET,
-    execute: (operationId, inputs) => executeCollectionRequest(requestContext, operationId, inputs),
+    operations: createResourceCollectionOperations(requestContext),
   })
   options.signal?.throwIfAborted()
   if (!state.latest) throw new Error('Resource collection must validate an observation')
@@ -179,11 +190,21 @@ async function executeCollectedResourceOperation(
   }
 }
 
+/** Builds the collector's only ESI authority from the compiled descriptor's declared operations. */
+function createResourceCollectionOperations(
+  context: ResourceCollectionRequestContext,
+): PlatformResourceOperationMethods<PlatformResourceOperationProtocol> {
+  const operations: Record<string, ResourceCollectionOperationMethod> = Object.create(null)
+  for (const operationId of declaredCollectionOperations(context.guarded.resource))
+    operations[operationId] = (inputs) => executeCollectionRequest(context, operationId, inputs)
+  return Object.freeze(operations)
+}
+
 async function executeCollectionRequest(
   context: ResourceCollectionRequestContext,
   operationId: string,
-  inputs: Readonly<Record<string, unknown>>,
-) {
+  inputs: unknown,
+): Promise<PlatformResourceOperationResult<unknown>> {
   context.options.signal?.throwIfAborted()
   context.state.requests += 1
   if (context.state.requests > RESOURCE_COLLECTION_REQUEST_BUDGET)
@@ -210,23 +231,22 @@ async function executeCollectionRequest(
 }
 
 async function resolveCollectionUniverseNames(
-  inputs: Readonly<Record<string, unknown>>,
+  inputs: unknown,
   signal?: AbortSignal,
-): Promise<PlatformEsiExecution<unknown>> {
-  const parsed =
-    getPlatformEsiOperationDefinition('universe-resolve-names').descriptor.requestSchema.parse(
-      inputs,
-    )
-  if (!isRecord(parsed) || !Array.isArray(parsed.body))
-    throw new PlatformResourceMappingError(new Error('Universe name request is invalid'))
-  const ids = parsed.body as number[]
+): Promise<PlatformEsiExecution<PlatformEsiOperationOutput<'universe-resolve-names'>>> {
+  const ids = parseResourceRequestInputs('universe-resolve-names', inputs).body
   const resolved = await resolveUniverseNamesBestEffort(ids, { signal })
+  const responseSchema =
+    getPlatformEsiOperationDefinition('universe-resolve-names').descriptor.responseSchema
   const validatedAt = new Date().toISOString()
   return {
-    data: ids.flatMap((id) => {
-      const name = resolved.names.get(id)
-      return name ? [name] : []
-    }),
+    data: narrowPlatformEsiOperationOutput(
+      'universe-resolve-names',
+      ids.flatMap((id) => {
+        const name = resolved.names.get(id)
+        return name && responseSchema.safeParse([name]).success ? [name] : []
+      }),
+    ),
     authorizationGeneration: null,
     cachedUntil: validatedAt,
     validatedAt,
@@ -241,15 +261,40 @@ async function executeSingleResourceOperation(
   options: ResourceOperationExecutorOptions,
   guarded: ReadyPlatformResourceExecution,
   subject: PlatformResourceSubject,
-  implementation: ResourceOperationImplementation,
+  implementation: SingleRequestImplementation,
 ): Promise<PlatformResourceOperationExecution> {
-  const operation = (options.request?.operationId ?? guarded.resource.operationId) as EsiOperation
-  let inputs: Readonly<Record<string, unknown>>
+  let inputs: unknown
   try {
-    inputs = options.request?.inputs ?? implementation.request(subject)
+    inputs = implementation.request(subject)
   } catch (error) {
     throw new PlatformResourceMappingError(error)
   }
+  const loaded = await executeResourceRequest(identity, options, guarded, subject, {
+    operationId: guarded.resource.operationId,
+    inputs,
+  })
+  return {
+    ...loaded,
+    result: await mapResourceResult(
+      loaded.result,
+      implementation,
+      subject,
+      guarded.resource,
+      options,
+    ),
+  }
+}
+
+async function executeResourceRequest(
+  identity: PlatformCollectionStateIdentity,
+  options: ResourceOperationExecutorOptions,
+  guarded: ReadyPlatformResourceExecution,
+  subject: PlatformResourceSubject,
+  request: ResourceOperationRequest,
+): Promise<LoadedPlatformResourceExecution> {
+  const operation = request.operationId
+  assertPlatformEsiOperation(operation)
+  const inputs = parseResourceRequestInputs(operation, request.inputs)
   const authorization = guarded.authorization
   const operationAuthorization = getEsiOperationAuthorization(operation)
   const authorizationCharacterId =
@@ -278,6 +323,7 @@ async function executeSingleResourceOperation(
     ...(options.signal ? { signal: options.signal } : {}),
   })
   options.signal?.throwIfAborted()
+  assertPlatformResourceRefreshSucceeded(execution)
   return {
     outcome: 'loaded',
     resource: guarded.resource,
@@ -289,14 +335,7 @@ async function executeSingleResourceOperation(
     authorizationCharacterId,
     authorizationCharacterLifecycleId,
     managedAuthority: guarded.managedAuthority,
-    result: await mapResourceResult(
-      execution,
-      implementation,
-      subject,
-      guarded.resource,
-      options,
-      !!options.request,
-    ),
+    result: execution,
   }
 }
 
@@ -316,14 +355,11 @@ async function executeResourceEsiOperation(
 
 async function mapResourceResult(
   result: PlatformEsiExecution<unknown>,
-  implementation: ResourceOperationImplementation,
+  implementation: SingleRequestImplementation,
   subject: PlatformResourceSubject,
   resource: PlatformInstalledResourceDescriptor,
   options: ResourceOperationExecutorOptions,
-  raw = false,
 ): Promise<PlatformEsiExecution<unknown>> {
-  assertPlatformResourceRefreshSucceeded(result)
-  if (raw) return result
   try {
     const createCapabilities =
       options.createMappingCapabilities ?? createPlatformResourceMappingCapabilities
@@ -350,23 +386,37 @@ function createResourceCollectionCapabilities(
     : createCapabilities(resource)
 }
 
+function parseResourceRequestInputs<Operation extends PlatformEsiOperation>(
+  operation: Operation,
+  inputs: unknown,
+) {
+  try {
+    return parsePlatformEsiOperationInputs(operation, inputs)
+  } catch (error) {
+    throw new PlatformResourceMappingError(
+      new PlatformEsiRequestError('Platform ESI request inputs are invalid', { cause: error }),
+    )
+  }
+}
+
+function declaredCollectionOperations(resource: PlatformInstalledResourceDescriptor) {
+  return new Set([resource.operationId, ...(resource.dependentOperationIds ?? [])])
+}
+
 function assertDeclaredCollectionOperation(
   operationId: string,
   resource: PlatformInstalledResourceDescriptor,
 ) {
-  if (
-    operationId !== resource.operationId &&
-    !resource.dependentOperationIds?.includes(operationId)
-  )
+  if (!declaredCollectionOperations(resource).has(operationId))
     throw new Error('Resource collection operation is undeclared')
 }
 
 function assertCollectionSubject(
-  inputs: Readonly<Record<string, unknown>>,
+  inputs: unknown,
   subject: PlatformResourceSubject,
   corporationId: number | null,
 ) {
-  if (!isRecord(inputs.path)) return
+  if (!isRecord(inputs) || !isRecord(inputs.path)) return
   if (
     'character_id' in inputs.path &&
     (subject.kind !== 'character' || inputs.path.character_id !== subject.characterId)
@@ -383,7 +433,7 @@ function assertCollectionSubject(
 function assertCollectionAuthority(
   result: PlatformResourceOperationExecution,
   guarded: ReadyPlatformResourceExecution,
-): asserts result is Extract<PlatformResourceOperationExecution, { outcome: 'loaded' }> {
+): asserts result is LoadedPlatformResourceExecution {
   if (
     result.outcome !== 'loaded' ||
     result.authorizationGeneration !== (guarded.authorization?.tokenVersion ?? null) ||

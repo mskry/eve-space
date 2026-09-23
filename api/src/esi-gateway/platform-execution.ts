@@ -1,16 +1,21 @@
-import { isRecord } from '../type-guards.js'
 import {
   assertPlatformEsiOperation,
   getEsiOperationAuthorization,
   getPlatformEsiOperationDefinition,
-  type EsiOperation,
+  narrowPlatformEsiOperationOutput,
+  parsePlatformEsiOperationInputs,
+  type PlatformEsiOperation,
+  type PlatformEsiOperationInput,
+  type PlatformEsiOperationOutput,
 } from './catalog-interface.js'
 import { getProductionEsiExecutionRuntime } from './internal/production-runtime.js'
 import { assertNoCallerEsiRevalidationHeaders } from './internal/revalidation.js'
 
-export interface PlatformEsiExecutionRequest {
-  readonly operation: EsiOperation
-  readonly inputs: Readonly<Record<string, unknown>>
+export interface PlatformEsiExecutionRequest<
+  Operation extends PlatformEsiOperation = PlatformEsiOperation,
+> {
+  readonly operation: Operation
+  readonly inputs: PlatformEsiOperationInput<Operation>
   readonly signal?: AbortSignal
   readonly authorization:
     | { readonly kind: 'public' }
@@ -38,6 +43,14 @@ export interface PlatformEsiExecution<Data> {
   }
 }
 
+export interface PlatformUntypedEsiExecutionRequest extends Omit<
+  PlatformEsiExecutionRequest,
+  'operation' | 'inputs'
+> {
+  readonly operation: string
+  readonly inputs: unknown
+}
+
 export interface PlatformEsiQuota {
   readonly group?: string
   readonly limit?: string
@@ -47,12 +60,12 @@ export interface PlatformEsiQuota {
   readonly errorResetSeconds?: number
 }
 
-export async function executePlatformEsiOperation(
-  request: PlatformEsiExecutionRequest,
-): Promise<PlatformEsiExecution<unknown>> {
+export async function executePlatformEsiOperation<Operation extends PlatformEsiOperation>(
+  request: PlatformEsiExecutionRequest<Operation>,
+): Promise<PlatformEsiExecution<PlatformEsiOperationOutput<Operation>>> {
   assertPlatformEsiOperation(request.operation)
   const definition = getPlatformEsiOperationDefinition(request.operation)
-  const inputs = validatePlatformInputs(definition, request.inputs)
+  const inputs = validatePlatformInputs(request.operation, request.inputs)
   const authorization = getEsiOperationAuthorization(request.operation)
 
   if (authorization.kind === 'public') {
@@ -63,7 +76,11 @@ export async function executePlatformEsiOperation(
     const execution = await (
       await getProductionEsiExecutionRuntime()
     ).executePlatformOperation(request, definition, inputs)
-    return { ...execution.result, authorizationGeneration: null }
+    return {
+      ...execution.result,
+      data: narrowPlatformEsiOperationOutput(request.operation, execution.result.data),
+      authorizationGeneration: null,
+    }
   }
 
   if (request.authorization.kind !== 'character-lifecycle')
@@ -73,7 +90,24 @@ export async function executePlatformEsiOperation(
   const execution = await (
     await getProductionEsiExecutionRuntime()
   ).executePlatformOperation(request, definition, inputs)
-  return { ...execution.result, authorizationGeneration: execution.authorizationGeneration }
+  return {
+    ...execution.result,
+    data: narrowPlatformEsiOperationOutput(request.operation, execution.result.data),
+    authorizationGeneration: execution.authorizationGeneration,
+  }
+}
+
+/** Executes host-erased requests only after the catalog request schema validates their inputs. */
+export function executeUntypedPlatformEsiOperation(
+  request: PlatformUntypedEsiExecutionRequest,
+): Promise<PlatformEsiExecution<unknown>> {
+  const operation = request.operation
+  assertPlatformEsiOperation(operation)
+  return executePlatformEsiOperation({
+    ...request,
+    operation,
+    inputs: validatePlatformInputs(operation, request.inputs),
+  })
 }
 
 export class PlatformEsiRequestError extends Error {
@@ -83,13 +117,12 @@ export class PlatformEsiRequestError extends Error {
   }
 }
 
-function validatePlatformInputs(
-  definition: ReturnType<typeof getPlatformEsiOperationDefinition>,
-  inputs: Readonly<Record<string, unknown>>,
+function validatePlatformInputs<Operation extends PlatformEsiOperation>(
+  operation: Operation,
+  inputs: unknown,
 ) {
   try {
-    const parsed: unknown = definition.descriptor.requestSchema.parse(inputs)
-    if (!isRecord(parsed)) throw new Error('ESI SDK operation arguments must resolve to an object')
+    const parsed = parsePlatformEsiOperationInputs(operation, inputs)
     assertNoCallerEsiRevalidationHeaders(parsed)
     return parsed
   } catch (error) {

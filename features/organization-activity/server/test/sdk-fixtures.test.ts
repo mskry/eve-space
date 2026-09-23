@@ -1,7 +1,7 @@
 import { expect, test, vi } from 'vitest'
 import * as operations from '../src/operations.js'
 import * as resources from '../src/resources.js'
-import { mapCollectionResponse } from '../src/collection-response.js'
+import { executeCollectionOperation } from '../src/collection-response.js'
 import { jobSnapshot, projectSnapshot } from '../src/snapshot.js'
 import { organizationActivityProvider } from '../src/provider.js'
 
@@ -116,7 +116,7 @@ const fixtures = [
 
 test.each(fixtures.map(([operation, name, fixture, path]) => ({ operation, name, fixture, path })))(
   'validates SDK fixtures for $name and maps intentional DTOs',
-  ({ operation, name, fixture, path }) => {
+  async ({ operation, name, fixture, path }) => {
     const response = operation.descriptor.transport.successResponses.find(
       (item) => item.status === 200,
     )
@@ -124,14 +124,17 @@ test.each(fixtures.map(([operation, name, fixture, path]) => ({ operation, name,
     if (!response || response.body !== 'json') throw new Error('Missing SDK response schema')
     const data = response.schema.parse(fixture)
     expect(() => response.schema.parse({})).toThrow(/Invalid input/)
-    expect(() =>
-      operation.descriptor.requestSchema.parse(Object.keys(path).length ? { path } : {}),
-    ).not.toThrow()
-    const mapped = mapCollectionResponse(
-      { operation: name, path, replace: true, snapshot: projectSnapshot(project, 9801) },
-      data,
-      'corporation-projects',
-    )
+    const method = vi.fn(async (_inputs: unknown) => ({ data, validatedAt: now }))
+    const { response: mapped } = await executeCollectionOperation({
+      request: { operation: name, path, replace: true, snapshot: projectSnapshot(project, 9801) },
+      query: undefined,
+      operations: { [`organization-activity-${name}`]: method },
+      profile: 'corporation-projects',
+    })
+    expect(method).toHaveBeenCalledOnce()
+    const inputs = method.mock.calls[0]?.[0]
+    expect(inputs).toEqual(Object.keys(path).length ? { path } : {})
+    expect(() => operation.descriptor.requestSchema.parse(inputs)).not.toThrow()
     expect(mapped.count).toBeGreaterThan(0)
     for (const snapshot of mapped.snapshots) {
       expect(snapshot).not.toHaveProperty('access_and_visibility')
@@ -162,19 +165,28 @@ test('does not infer eligibility through ACL or age restrictions', () => {
 
 test('all resource definitions execute only through bounded collection and materialization', async () => {
   for (const resource of Object.values(resources)) {
-    expect(resource.request()).toEqual({})
-    expect(() => resource.map()).toThrow('bounded collection')
+    expect(resource.mode).toBe('bounded-collection')
+    expect(resource).not.toHaveProperty('request')
+    expect(resource).not.toHaveProperty('map')
     const execute = vi.fn().mockResolvedValue({
       data: { campaigns: [], projects: [], freelance_jobs: [], objectives: [] },
       validatedAt: now,
     })
+    const subject =
+      resource === resources.corporationJobsResource ||
+      resource === resources.corporationProjectsResource
+        ? { kind: 'corporation', corporationId: 9801, lifecycleId: id }
+        : { kind: 'character', characterId: 9001, lifecycleId: id }
     const result = await resource.collect({
-      subject: { kind: 'character', characterId: 9001, lifecycleId: id },
+      subject,
       corporationId: 9801,
       organizationVersion: 7,
       authorizationGeneration: 4,
       requestBudget: 32,
-      execute,
+      operations: new Proxy(
+        {},
+        { get: (_target, operationId) => (inputs: unknown) => execute(operationId, inputs) },
+      ),
       capabilities: {
         persistence: { readActivityCheckpoint: vi.fn().mockResolvedValue(null) },
       },

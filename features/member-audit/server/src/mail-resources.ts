@@ -6,13 +6,16 @@ import {
   type MailRecipientSource,
 } from '@eve-space/core-eve-projections/mail'
 import type {
+  PlatformBoundedCollectionResourceImplementation,
   PlatformCharacterResourceSubject,
-  PlatformResourceOperationImplementation,
+  PlatformResourceRootProtocol,
 } from '@eve-space/platform-module-contract/resources'
+import type { PlatformCoreEsiOperationProtocol } from '@eve-space/platform-module-server'
 import { z } from 'zod'
 import {
   materializeEvidenceObservation,
   startEvidenceCollection,
+  type EvidenceCollectionContext,
   type EvidenceObservation,
   type IntentionalEvidence,
   type StagedEvidenceRecord,
@@ -63,9 +66,19 @@ type MailHeader = z.infer<typeof mailHeaderSchema>
 type MailDetail = z.infer<typeof mailDetailSchema>
 type MailHeaderObservation = Extract<EvidenceObservation, { resourceId: 'mail-headers' }>
 type MailDetailObservation = Extract<EvidenceObservation, { resourceId: 'mail-details' }>
-type MailResource<Operation extends string, Data> = PlatformResourceOperationImplementation<
-  Operation,
-  unknown,
+type MailPartyProtocol = PlatformCoreEsiOperationProtocol<'mail-lists' | 'universe-resolve-names'>
+type MailHeaderProtocol = PlatformCoreEsiOperationProtocol<
+  'mail-headers' | 'mail-lists' | 'universe-resolve-names'
+>
+type MailDetailProtocol = PlatformCoreEsiOperationProtocol<
+  'mail-headers' | 'mail-message' | 'mail-lists' | 'universe-resolve-names'
+>
+type MailResource<
+  Protocol extends PlatformResourceRootProtocol<'mail-headers'>,
+  Data,
+> = PlatformBoundedCollectionResourceImplementation<
+  'mail-headers',
+  Protocol,
   Data,
   string,
   unknown,
@@ -76,7 +89,8 @@ type MailResource<Operation extends string, Data> = PlatformResourceOperationImp
   EvidenceMaintenancePersistence
 >
 
-export const mailHeadersResource: MailResource<'mail-headers', MailHeaderObservation> = {
+export const mailHeadersResource: MailResource<MailHeaderProtocol, MailHeaderObservation> = {
+  mode: 'bounded-collection',
   operation: 'mail-headers',
   async collect(context) {
     const collection = await startEvidenceCollection(
@@ -84,7 +98,7 @@ export const mailHeadersResource: MailResource<'mail-headers', MailHeaderObserva
       context,
     )
     const checkpoint = headerCheckpointSchema.parse(collection.checkpoint)
-    const result = await context.execute('mail-headers', {
+    const result = await context.operations['mail-headers']({
       path: { character_id: context.subject.characterId },
       ...(checkpoint.lastMailId === null ? {} : { query: { last_mail_id: checkpoint.lastMailId } }),
     })
@@ -112,12 +126,6 @@ export const mailHeadersResource: MailResource<'mail-headers', MailHeaderObserva
       },
     }
   },
-  request(subject) {
-    return { path: { character_id: subject.characterId } }
-  },
-  map() {
-    throw new Error('Mail header mapping requires bounded collection')
-  },
   materialize(context) {
     return materializeEvidenceObservation(context)
   },
@@ -126,7 +134,8 @@ export const mailHeadersResource: MailResource<'mail-headers', MailHeaderObserva
   },
 }
 
-export const mailDetailsResource: MailResource<'mail-headers', MailDetailObservation> = {
+export const mailDetailsResource: MailResource<MailDetailProtocol, MailDetailObservation> = {
+  mode: 'bounded-collection',
   operation: 'mail-headers',
   async collect(context) {
     const collection = await startEvidenceCollection(
@@ -134,7 +143,7 @@ export const mailDetailsResource: MailResource<'mail-headers', MailDetailObserva
       context,
     )
     const checkpoint = detailCheckpointSchema.parse(collection.checkpoint)
-    const headerResult = await context.execute('mail-headers', {
+    const headerResult = await context.operations['mail-headers']({
       path: { character_id: context.subject.characterId },
       ...(checkpoint.lastMailId === null ? {} : { query: { last_mail_id: checkpoint.lastMailId } }),
     })
@@ -145,7 +154,7 @@ export const mailDetailsResource: MailResource<'mail-headers', MailDetailObserva
     const selected = headers.slice(0, detailLimit)
     const details = await Promise.all(
       selected.map(async (header) => {
-        const result = await context.execute('mail-message', {
+        const result = await context.operations['mail-message']({
           path: { character_id: context.subject.characterId, mail_id: header.mail_id },
         })
         return {
@@ -179,12 +188,6 @@ export const mailDetailsResource: MailResource<'mail-headers', MailDetailObserva
         ),
       },
     }
-  },
-  request(subject) {
-    return { path: { character_id: subject.characterId } }
-  },
-  map() {
-    throw new Error('Mail detail mapping requires bounded collection')
   },
   materialize(context) {
     return materializeEvidenceObservation(context)
@@ -265,7 +268,7 @@ async function resolveParties(
     readonly from?: number
     readonly recipients?: readonly MailRecipientSource[]
   }[],
-  context: Parameters<NonNullable<typeof mailHeadersResource.collect>>[0],
+  context: EvidenceCollectionContext<MailPartyProtocol>,
 ): Promise<MailPartyNames> {
   const universeIds = new Set<number>()
   let needsMailingLists = false
@@ -280,7 +283,7 @@ async function resolveParties(
     resolveUniverseNamesBestEffort([...universeIds], context),
     !needsMailingLists
       ? { data: [] }
-      : context.execute('mail-lists', {
+      : context.operations['mail-lists']({
           path: { character_id: context.subject.characterId },
         }),
   ])

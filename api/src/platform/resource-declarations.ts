@@ -1,7 +1,9 @@
-import type {
-  PlatformInstalledResourceDescriptor,
-  PlatformResourceBatchOperationImplementation,
-  PlatformResourceOperationImplementation,
+import {
+  platformResourceExecutionModes,
+  type PlatformInstalledResourceDescriptor,
+  type PlatformResourceBatchOperationImplementation,
+  type PlatformResourceExecutionMode,
+  type PlatformResourceImplementation,
 } from '@eve-space/platform-module-contract/resources'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import { assertCoreDataProductDeclarations } from '../core-data/capabilities.js'
@@ -13,7 +15,16 @@ import {
   getEsiSetOperationConfiguration,
   getPlatformEsiOperationDefinition,
 } from '../esi-gateway/catalog-interface.js'
+import { isRecord } from '../type-guards.js'
 import { platformResources } from './resources.js'
+
+const resourceModeMethods = {
+  'single-request': { required: ['request', 'map'], forbidden: ['collect'] },
+  'bounded-collection': { required: ['collect'], forbidden: ['request', 'map'] },
+} as const satisfies Record<
+  PlatformResourceExecutionMode,
+  { readonly required: readonly string[]; readonly forbidden: readonly string[] }
+>
 
 export function assertInstalledResourceDeclarations(
   resources: readonly PlatformInstalledResourceDescriptor[] = platformResources,
@@ -58,31 +69,35 @@ function getInstalledResourceEsiOperationDefinition(
 function assertResourceImplementation(
   resource: PlatformInstalledResourceDescriptor,
   implementation: unknown,
-): asserts implementation is PlatformResourceOperationImplementation {
+): asserts implementation is PlatformResourceImplementation {
+  const label = `Installed resource ${resource.moduleId}/${resource.resourceId}`
+  if (!isRecord(implementation) || !isResourceExecutionMode(implementation.mode))
+    throw new Error(`${label} must declare a single-request or bounded-collection execution mode`)
+  const methods = resourceModeMethods[implementation.mode]
   if (
-    typeof implementation !== 'object' ||
-    implementation === null ||
-    !('operation' in implementation) ||
     typeof implementation.operation !== 'string' ||
-    !('request' in implementation) ||
-    typeof implementation.request !== 'function' ||
-    !('map' in implementation) ||
-    typeof implementation.map !== 'function' ||
-    !('materialize' in implementation) ||
-    typeof implementation.materialize !== 'function'
+    typeof implementation.materialize !== 'function' ||
+    methods.required.some((method) => typeof implementation[method] !== 'function')
   )
     throw new Error(
-      `Installed resource ${resource.moduleId}/${resource.resourceId} must provide operation, request, map, and materialize functions`,
+      `${label} must provide operation, materialize, and ${methods.required.join(' and ')} for ${implementation.mode} execution`,
     )
+  const forbidden = methods.forbidden.filter((method) => implementation[method] !== undefined)
+  if (forbidden.length > 0)
+    throw new Error(
+      `${label} ${implementation.mode} execution cannot provide ${forbidden.join(' or ')}`,
+    )
+  if (implementation.mode === 'single-request' && resource.dependentOperationIds?.length)
+    throw new Error(`${label} single-request execution cannot declare dependent operations`)
   if (implementation.operation !== resource.operationId)
     throw new Error(
-      `Installed resource ${resource.moduleId}/${resource.resourceId} implements ${implementation.operation} instead of ${resource.operationId}`,
+      `${label} implements ${implementation.operation} instead of ${resource.operationId}`,
     )
 }
 
 function assertResourceBatchImplementation(
   resource: PlatformInstalledResourceDescriptor,
-  implementation: PlatformResourceOperationImplementation,
+  implementation: PlatformResourceImplementation,
   definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,
 ) {
   const descriptor = resource.batch
@@ -141,4 +156,8 @@ function assertBatchFunctions(
     throw new Error(
       `Installed resource ${resource.moduleId}/${resource.resourceId} batch implementation must provide request and classify functions`,
     )
+}
+
+function isResourceExecutionMode(mode: unknown): mode is PlatformResourceExecutionMode {
+  return platformResourceExecutionModes.includes(mode as PlatformResourceExecutionMode)
 }

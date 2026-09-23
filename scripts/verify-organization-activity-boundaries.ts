@@ -5,6 +5,7 @@ import { typescriptModuleSpecifiers } from './typescript-module-specifiers.js'
 
 const directory = new URL('../features/organization-activity/server/src/', import.meta.url)
 const tiers = {
+  'activity-protocol': 'representation',
   'activity-source': 'representation',
   'bounded-map': 'representation',
   'collection-types': 'representation',
@@ -17,7 +18,7 @@ const tiers = {
   provider: 'service',
   resources: 'entry',
   routes: 'entry',
-  operations: 'entry',
+  operations: 'representation',
   persistence: 'representation',
   schema: 'entry',
   index: 'entry',

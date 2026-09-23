@@ -4,5 +4,5 @@ export {
   upsertConformanceSnapshotOperation,
 } from './persistence.js'
 export { conformanceActivityProvider } from './provider.js'
-export { conformanceStatusResource } from './resource.js'
+export { conformanceCollectionResource, conformanceStatusResource } from './resource.js'
 export { conformanceRoutes } from './routes.js'

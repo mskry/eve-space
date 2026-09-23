@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type {
   PlatformInstalledResourceDescriptor,
-  PlatformResourceOperationImplementation,
+  PlatformBoundedCollectionResourceImplementation,
 } from '@eve-space/platform-module-contract/resources'
 import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
@@ -2301,10 +2301,12 @@ describe('approved character transfer', () => {
     const transfer = await prepareNonMainTransfer()
     const materializationStarted = deferred<void>()
     const releaseMaterialization = deferred<void>()
-    const materialize = vi.fn<PlatformResourceOperationImplementation['materialize']>(async () => {
-      materializationStarted.resolve()
-      await releaseMaterialization.promise
-    })
+    const materialize = vi.fn<PlatformBoundedCollectionResourceImplementation['materialize']>(
+      async () => {
+        materializationStarted.resolve()
+        await releaseMaterialization.promise
+      },
+    )
     const observation = await prepareCharacterResourceObservation(transfer, materialize)
 
     const application = resourceRefresh.applyInstalledResourceObservation(observation)
@@ -2323,7 +2325,7 @@ describe('approved character transfer', () => {
 
   test('discards old-lifecycle materialization after transfer without relabeling its write', async () => {
     const transfer = await prepareNonMainTransfer()
-    const materialize = vi.fn<PlatformResourceOperationImplementation['materialize']>()
+    const materialize = vi.fn<PlatformBoundedCollectionResourceImplementation['materialize']>()
     const observation = await prepareCharacterResourceObservation(transfer, materialize)
     const holder = postgres(databaseUrl, { max: 1 })
     let lockHeld = false
@@ -3318,7 +3320,7 @@ async function prepareCorporationSourceCandidate(
 
 async function prepareCharacterResourceObservation(
   transfer: Awaited<ReturnType<typeof prepareNonMainTransfer>>,
-  materialize: PlatformResourceOperationImplementation['materialize'],
+  materialize: PlatformBoundedCollectionResourceImplementation['materialize'],
 ) {
   const requiredScope = 'esi-characters.read_freelance_jobs.v1'
   await characterLifecycle.attachCharacter({
@@ -3343,11 +3345,11 @@ async function prepareCharacterResourceObservation(
     subjectId: String(sourceAlternateCharacterId),
   }
   const implementation = {
+    mode: 'bounded-collection',
     operation: 'character-jobs',
-    request: vi.fn(),
-    map: vi.fn(),
+    collect: vi.fn(),
     materialize,
-  } satisfies PlatformResourceOperationImplementation
+  } satisfies PlatformBoundedCollectionResourceImplementation
   return {
     identity,
     resource: {
@@ -3374,11 +3376,11 @@ async function prepareCharacterResourceObservation(
 
 function characterResourceDescriptor() {
   const implementation = {
+    mode: 'bounded-collection',
     operation: 'character-jobs',
-    request: vi.fn(),
-    map: vi.fn(),
+    collect: vi.fn(),
     materialize: vi.fn(),
-  } satisfies PlatformResourceOperationImplementation
+  } satisfies PlatformBoundedCollectionResourceImplementation
   return {
     moduleId: 'transfer-repair',
     resourceId: 'character-jobs',

@@ -1,9 +1,14 @@
-import type {
-  PlatformCoreEsiOperationId,
-  PlatformEsiOperationContract,
+import {
+  platformCoreEsiOperationSdkIdentities,
+  type PlatformCoreEsiOperationId,
+  type PlatformEsiOperationContract,
 } from '@eve-space/platform-module-contract/esi'
-import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
+import type {
+  PlatformExecutableEsiOperationDefinition,
+  PlatformExecutableEsiOperationProtocol,
+} from '@eve-space/platform-module-server'
 import { operationRegistry } from '@evespace/esi-client/operations'
+import { isRecord } from '../type-guards.js'
 import {
   assertEsiOperationCatalogConfiguration,
   assertExecutableEsiOperationDefinitions,
@@ -29,71 +34,19 @@ export interface EsiSetOperationConfiguration {
 }
 
 const corePlatformEsiOperationDefinitions = {
-  'alliance-corporations': {
-    sdkOperationId: 'GetAlliancesAllianceIdCorporations',
-    descriptor: operationRegistry.GetAlliancesAllianceIdCorporations!,
-    contract: esiOperationCatalog['alliance-corporations'],
-  },
-  'character-asset-names': {
-    sdkOperationId: 'PostCharactersCharacterIdAssetsNames',
-    descriptor: operationRegistry.PostCharactersCharacterIdAssetsNames!,
-    contract: esiOperationCatalog['character-asset-names'],
-  },
-  'character-assets-page': {
-    sdkOperationId: 'GetCharactersCharacterIdAssets',
-    descriptor: operationRegistry.GetCharactersCharacterIdAssets!,
-    contract: esiOperationCatalog['character-assets-page'],
-  },
-  'corporation-members': {
-    sdkOperationId: 'GetCorporationsCorporationIdMembers',
-    descriptor: operationRegistry.GetCorporationsCorporationIdMembers!,
-    contract: esiOperationCatalog['corporation-members'],
-  },
-  'mail-headers': {
-    sdkOperationId: 'GetCharactersCharacterIdMail',
-    descriptor: operationRegistry.GetCharactersCharacterIdMail!,
-    contract: esiOperationCatalog['mail-headers'],
-  },
-  'mail-lists': {
-    sdkOperationId: 'GetCharactersCharacterIdMailLists',
-    descriptor: operationRegistry.GetCharactersCharacterIdMailLists!,
-    contract: esiOperationCatalog['mail-lists'],
-  },
-  'mail-message': {
-    sdkOperationId: 'GetCharactersCharacterIdMailMailId',
-    descriptor: operationRegistry.GetCharactersCharacterIdMailMailId!,
-    contract: esiOperationCatalog['mail-message'],
-  },
-  skills: {
-    sdkOperationId: 'GetCharactersCharacterIdSkills',
-    descriptor: operationRegistry.GetCharactersCharacterIdSkills!,
-    contract: esiOperationCatalog.skills,
-  },
-  'skill-queue': {
-    sdkOperationId: 'GetCharactersCharacterIdSkillqueue',
-    descriptor: operationRegistry.GetCharactersCharacterIdSkillqueue!,
-    contract: esiOperationCatalog['skill-queue'],
-  },
-  'universe-resolve-names': {
-    sdkOperationId: 'PostUniverseNames',
-    descriptor: operationRegistry.PostUniverseNames!,
-    contract: esiOperationCatalog['universe-resolve-names'],
-  },
-  'wallet-balance': {
-    sdkOperationId: 'GetCharactersCharacterIdWallet',
-    descriptor: operationRegistry.GetCharactersCharacterIdWallet!,
-    contract: esiOperationCatalog['wallet-balance'],
-  },
-  'wallet-journal': {
-    sdkOperationId: 'GetCharactersCharacterIdWalletJournal',
-    descriptor: operationRegistry.GetCharactersCharacterIdWalletJournal!,
-    contract: esiOperationCatalog['wallet-journal'],
-  },
-  'wallet-transactions': {
-    sdkOperationId: 'GetCharactersCharacterIdWalletTransactions',
-    descriptor: operationRegistry.GetCharactersCharacterIdWalletTransactions!,
-    contract: esiOperationCatalog['wallet-transactions'],
-  },
+  'alliance-corporations': coreDefinition('alliance-corporations'),
+  'character-asset-names': coreDefinition('character-asset-names'),
+  'character-assets-page': coreDefinition('character-assets-page'),
+  'corporation-members': coreDefinition('corporation-members'),
+  'mail-headers': coreDefinition('mail-headers'),
+  'mail-lists': coreDefinition('mail-lists'),
+  'mail-message': coreDefinition('mail-message'),
+  skills: coreDefinition('skills'),
+  'skill-queue': coreDefinition('skill-queue'),
+  'universe-resolve-names': coreDefinition('universe-resolve-names'),
+  'wallet-balance': coreDefinition('wallet-balance'),
+  'wallet-journal': coreDefinition('wallet-journal'),
+  'wallet-transactions': coreDefinition('wallet-transactions'),
 } as const satisfies Readonly<
   Record<PlatformCoreEsiOperationId, PlatformExecutableEsiOperationDefinition>
 >
@@ -110,7 +63,14 @@ const platformEsiOperationCatalog = Object.fromEntries(
   ]),
 ) as Readonly<Record<string, PlatformEsiOperationContract>>
 
-type PlatformEsiOperation = keyof typeof platformEsiOperationDefinitions
+type PlatformEsiOperationDefinitions = typeof platformEsiOperationDefinitions
+export type PlatformEsiOperation = keyof PlatformEsiOperationDefinitions
+export type PlatformEsiOperationProtocol<Operation extends PlatformEsiOperation> =
+  PlatformExecutableEsiOperationProtocol<PlatformEsiOperationDefinitions, Operation>
+export type PlatformEsiOperationInput<Operation extends PlatformEsiOperation> =
+  PlatformEsiOperationProtocol<Operation>[Operation]['input']
+export type PlatformEsiOperationOutput<Operation extends PlatformEsiOperation> =
+  PlatformEsiOperationProtocol<Operation>[Operation]['output']
 
 export function assertEsiCatalogConfiguration(options: {
   readonly compatibilityDate: string
@@ -170,9 +130,34 @@ export function assertCoreEsiOperation(operation: EsiOperation): void {
     throw new Error(`ESI operation ${operation} is registered for platform execution`)
 }
 
+export function getPlatformEsiOperationDefinition<Operation extends PlatformEsiOperation>(
+  operation: Operation,
+): PlatformEsiOperationDefinitions[Operation]
+export function getPlatformEsiOperationDefinition(
+  operation: string,
+): PlatformEsiOperationDefinitions[PlatformEsiOperation]
 export function getPlatformEsiOperationDefinition(operation: string) {
   assertPlatformEsiOperation(operation)
   return platformEsiOperationDefinitions[operation]
+}
+
+/** Parses untrusted inputs with the operation's SDK request schema; the only input narrowing point. */
+export function parsePlatformEsiOperationInputs<Operation extends PlatformEsiOperation>(
+  operation: Operation,
+  inputs: unknown,
+): PlatformEsiOperationInput<Operation> {
+  const parsed: unknown =
+    getPlatformEsiOperationDefinition(operation).descriptor.requestSchema.parse(inputs)
+  if (!isRecord(parsed)) throw new Error('ESI SDK operation arguments must resolve to an object')
+  return parsed as PlatformEsiOperationInput<Operation>
+}
+
+/** Narrows data the execution runtime validated with the operation's SDK response schema. */
+export function narrowPlatformEsiOperationOutput<Operation extends PlatformEsiOperation>(
+  _operation: Operation,
+  data: unknown,
+): PlatformEsiOperationOutput<Operation> {
+  return data as PlatformEsiOperationOutput<Operation>
 }
 
 /** Verifies that every catalog operation has exactly one callable or platform execution path. */
@@ -180,6 +165,7 @@ export function assertEsiPlatformExecutionConfiguration(): void {
   const duplicateOperations = Object.keys(corePlatformEsiOperationDefinitions).filter((operation) =>
     Object.hasOwn(installedModuleEsiOperationDefinitions, operation),
   )
+  assertCorePlatformEsiOperationIdentities()
   if (duplicateOperations.length > 0)
     throw new Error(
       `ESI operations select duplicate platform execution paths: ${duplicateOperations
@@ -226,4 +212,23 @@ export function assertEsiExecutableDefinition(operation: EsiOperation, definitio
     definition.contract.authorization.kind !== contract.authorization.kind
   )
     throw new Error(`ESI operation ${operation} does not match its executable definition`)
+}
+
+function assertCorePlatformEsiOperationIdentities() {
+  const published = new Map<string, string>(Object.entries(platformCoreEsiOperationSdkIdentities))
+  const definitions = Object.entries(corePlatformEsiOperationDefinitions)
+  if (
+    published.size !== definitions.length ||
+    definitions.some(
+      ([operation, definition]) => published.get(operation) !== definition.sdkOperationId,
+    )
+  )
+    throw new Error('Core platform ESI definitions do not match the published SDK identities')
+}
+
+function coreDefinition<const Operation extends PlatformCoreEsiOperationId>(operation: Operation) {
+  const sdkOperationId = platformCoreEsiOperationSdkIdentities[operation]
+  const descriptor = operationRegistry[sdkOperationId]
+  if (!descriptor) throw new Error(`Core ESI operation ${operation} has no SDK descriptor`)
+  return { sdkOperationId, descriptor, contract: esiOperationCatalog[operation] } as const
 }

@@ -60,8 +60,9 @@ const forbiddenNuxtGlobals = new Set([
 const definitionCalls = new Set([
   'defineNuxtModule',
   'definePlatformExecutableEsiOperation',
+  'definePlatformBoundedCollectionResource',
   'definePlatformPersistenceOperation',
-  'definePlatformResourceOperation',
+  'definePlatformSingleRequestResource',
 ])
 
 const routeCompositionMethods = new Set([

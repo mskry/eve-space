@@ -130,3 +130,19 @@ export const platformCoreEsiOperationCatalog = {
 
 export type PlatformCoreEsiOperationId =
   (typeof platformCoreEsiOperationCatalog.operationIds)[number]
+
+export const platformCoreEsiOperationSdkIdentities = {
+  'alliance-corporations': 'GetAlliancesAllianceIdCorporations',
+  'character-asset-names': 'PostCharactersCharacterIdAssetsNames',
+  'character-assets-page': 'GetCharactersCharacterIdAssets',
+  'corporation-members': 'GetCorporationsCorporationIdMembers',
+  'mail-headers': 'GetCharactersCharacterIdMail',
+  'mail-lists': 'GetCharactersCharacterIdMailLists',
+  'mail-message': 'GetCharactersCharacterIdMailMailId',
+  'skill-queue': 'GetCharactersCharacterIdSkillqueue',
+  skills: 'GetCharactersCharacterIdSkills',
+  'universe-resolve-names': 'PostUniverseNames',
+  'wallet-balance': 'GetCharactersCharacterIdWallet',
+  'wallet-journal': 'GetCharactersCharacterIdWalletJournal',
+  'wallet-transactions': 'GetCharactersCharacterIdWalletTransactions',
+} as const satisfies Readonly<Record<PlatformCoreEsiOperationId, string>>

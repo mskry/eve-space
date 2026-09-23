@@ -4,6 +4,7 @@ import {
   platformPersistencePayloadMaximumBytes,
 } from '@eve-space/platform-module-server'
 import { z } from 'zod'
+import { activityOperationIds } from './activity-protocol.js'
 
 const maximumSnapshots = 10_000
 const maximumRequests = 10_000
@@ -36,7 +37,7 @@ const boundedPathSchema = z
   .record(z.string().min(1).max(100), z.union([z.string().max(4_096), z.number().int()]))
   .refine((value) => Object.keys(value).length <= 32)
 const collectionRequestSchema = z.strictObject({
-  operation: z.string().min(1).max(100),
+  operation: z.enum(activityOperationIds),
   path: boundedPathSchema,
   list: z.string().min(1).max(100).optional(),
   cursorKey: z.string().min(1).max(100).optional(),

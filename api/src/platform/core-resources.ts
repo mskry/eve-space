@@ -2,22 +2,20 @@ import type {
   PlatformAllianceResourceSubject,
   PlatformCorporationResourceSubject,
   PlatformInstalledResourceDescriptor,
-  PlatformResourceOperationImplementation,
+  PlatformSingleRequestResourceImplementation,
 } from '@eve-space/platform-module-contract/resources'
+import type { PlatformEsiOperationProtocol } from '../esi-gateway/catalog-interface.js'
 import { normalizePositiveSafeIntegerIds } from './resource-id-list.js'
 
-const managedCorporationsImplementation: PlatformResourceOperationImplementation<
+const managedCorporationsImplementation: PlatformSingleRequestResourceImplementation<
   'alliance-corporations',
-  readonly number[],
+  PlatformEsiOperationProtocol<'alliance-corporations'>,
   readonly number[],
   string,
   unknown,
-  PlatformAllianceResourceSubject,
-  readonly [],
-  object,
-  object,
-  object
+  PlatformAllianceResourceSubject
 > = {
+  mode: 'single-request',
   operation: 'alliance-corporations',
   request(subject) {
     if (subject.kind !== 'alliance')
@@ -32,18 +30,15 @@ const managedCorporationsImplementation: PlatformResourceOperationImplementation
   },
 }
 
-const corporationRosterImplementation: PlatformResourceOperationImplementation<
+const corporationRosterImplementation: PlatformSingleRequestResourceImplementation<
   'corporation-members',
-  readonly number[],
+  PlatformEsiOperationProtocol<'corporation-members'>,
   readonly number[],
   string,
   unknown,
-  PlatformCorporationResourceSubject,
-  readonly [],
-  object,
-  object,
-  object
+  PlatformCorporationResourceSubject
 > = {
+  mode: 'single-request',
   operation: 'corporation-members',
   request(subject) {
     if (subject.kind !== 'corporation')

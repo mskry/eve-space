@@ -5,8 +5,9 @@ import {
 import type {
   PlatformCharacterResourceSubject,
   PlatformResourceMaterializationContext,
-  PlatformResourceOperationImplementation,
+  PlatformSingleRequestResourceImplementation,
 } from '@eve-space/platform-module-contract/resources'
+import type { PlatformCoreEsiOperationProtocol } from '@eve-space/platform-module-server'
 import { z } from 'zod'
 import { maintainEvidence } from './evidence-maintenance.js'
 import { createObservationId } from './observation-identity.js'
@@ -47,15 +48,14 @@ interface PublishedSkillRow {
     | 'willpower'
     | null
 }
-type SkillResource<Operation extends string, Data> = PlatformResourceOperationImplementation<
-  Operation,
-  unknown,
-  Data,
+type TrainedSkillsResource = PlatformSingleRequestResourceImplementation<
+  'skills',
+  PlatformCoreEsiOperationProtocol<'skills'>,
+  TrainedSkillsData,
   string,
   unknown,
   PlatformCharacterResourceSubject,
   SkillProducts,
-  object,
   CurrentSnapshotPersistence,
   EvidenceMaintenancePersistence
 >
@@ -65,7 +65,8 @@ type SkillSnapshotMaterializationContext = PlatformResourceMaterializationContex
   CurrentSnapshotPersistence
 >
 
-export const trainedSkillsResource: SkillResource<'skills', TrainedSkillsData> = {
+export const trainedSkillsResource: TrainedSkillsResource = {
+  mode: 'single-request',
   operation: 'skills',
   request(subject) {
     return { path: { character_id: subject.characterId } }

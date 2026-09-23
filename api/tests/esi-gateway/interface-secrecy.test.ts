@@ -45,6 +45,8 @@ describe('ESI purpose interface secrecy', () => {
       'getEsiSetOperationConfiguration',
       'getOptionalCharacterEsiScope',
       'getPlatformEsiOperationDefinition',
+      'narrowPlatformEsiOperationOutput',
+      'parsePlatformEsiOperationInputs',
     ])
   })
 

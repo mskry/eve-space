@@ -1,4 +1,4 @@
-import type { PlatformEsiOperationData } from '@eve-space/platform-module-server'
+import type { ActivityOperationData } from './activity-protocol.js'
 
 export interface ActivitySnapshot {
   readonly id: string
@@ -17,11 +17,11 @@ export interface ActivitySnapshot {
   readonly committed: boolean | null
 }
 
-type Project = PlatformEsiOperationData<'GetCorporationsProjectsDetail'>
-type Job = PlatformEsiOperationData<'GetFreelanceJobsDetail'>
-type Campaign = PlatformEsiOperationData<'GetMilitaryCampaignsDetail'>
-type Objective = PlatformEsiOperationData<'GetMilitaryCampaignsObjectivesDetail'>
-type Summary = PlatformEsiOperationData<'GetCorporationsProjectsListing'>['projects'][number]
+type Project = ActivityOperationData<'project-detail'>
+type Job = ActivityOperationData<'job-detail'>
+type Campaign = ActivityOperationData<'campaign-detail'>
+type Objective = ActivityOperationData<'objective-detail'>
+type Summary = ActivityOperationData<'project-list'>['projects'][number]
 
 export function projectSnapshot(data: Project, corporationId: number): ActivitySnapshot {
   return {

@@ -326,16 +326,22 @@ function renderWorkerResources(compiled: CompiledPlatformModules) {
       : ''
     const sectionId = resource.sectionId ? ` sectionId: ${quote(resource.sectionId)},` : ''
     const scheduled = resource.scheduled === false ? ' scheduled: false,' : ''
-    return `({ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId} coreDataProducts: ${coreDataProducts} as const,${dependent}${batch}${scheduled} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, persistence: ${JSON.stringify(resource.persistence)} as const, implementation: ${binding} satisfies PlatformResourceImplementationForCapabilities<typeof ${binding}, readonly ${coreDataProducts}, InstalledModuleResourceProjectionPersistence<${capabilityKey}>, InstalledModuleResourceMaterializationPersistence<${capabilityKey}>> } as const)`
+    const protocolOperations = [
+      ...new Set([resource.operationId, ...(resource.dependentOperationIds ?? [])]),
+    ]
+      .map(quote)
+      .join(' | ')
+    const contract = `PlatformResourceImplementationForContract<typeof ${binding}, ${quote(resource.operationId)}, PlatformEsiOperationProtocol<${protocolOperations}>, readonly ${coreDataProducts}, InstalledModuleResourceProjectionPersistence<${capabilityKey}>, InstalledModuleResourceMaterializationPersistence<${capabilityKey}>>`
+    return `({ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${sectionId} coreDataProducts: ${coreDataProducts} as const,${dependent}${batch}${scheduled} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, persistence: ${JSON.stringify(resource.persistence)} as const, implementation: ${binding} satisfies ${contract} } as const)`
   })
   const rendered = descriptors.length ? `[${descriptors.join(', ')}]` : '[]'
   const importedTypes = resources.length
-    ? 'PlatformInstalledResourceDescriptor, PlatformResourceImplementationForCapabilities'
+    ? 'PlatformInstalledResourceDescriptor, PlatformResourceImplementationForContract'
     : 'PlatformInstalledResourceDescriptor'
-  const persistenceTypes = resources.length
-    ? "import type { InstalledModuleResourceMaterializationPersistence, InstalledModuleResourceProjectionPersistence } from './installed-module-persistence.js'\n"
+  const hostTypes = resources.length
+    ? "import type { PlatformEsiOperationProtocol } from '../../esi-gateway/catalog-interface.js'\nimport type { InstalledModuleResourceMaterializationPersistence, InstalledModuleResourceProjectionPersistence } from './installed-module-persistence.js'\n"
     : ''
-  return `${generatedHeader}import type { ${importedTypes} } from '@eve-space/platform-module-contract/resources'\n${persistenceTypes}${imports}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor[]\n`
+  return `${generatedHeader}import type { ${importedTypes} } from '@eve-space/platform-module-contract/resources'\n${hostTypes}${imports}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor[]\n`
 }
 
 function renderResourceDeclarations(compiled: CompiledPlatformModules) {

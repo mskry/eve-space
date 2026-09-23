@@ -1,4 +1,4 @@
-import type { PlatformResourceOperationImplementation } from '@eve-space/platform-module-contract/resources'
+import type { PlatformResourceImplementation } from '@eve-space/platform-module-contract/resources'
 import { eq, inArray } from 'drizzle-orm'
 import type { DatabaseTransaction } from '../db/client.js'
 import {
@@ -9,7 +9,7 @@ import {
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 
 const maintainableInstalledResources = installedModuleResources.filter((resource) => {
-  const implementation = resource.implementation as PlatformResourceOperationImplementation
+  const implementation = resource.implementation as PlatformResourceImplementation
   return Boolean(implementation.maintain)
 })
 const maintainableResourceKeys = new Set(

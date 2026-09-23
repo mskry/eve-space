@@ -3,10 +3,12 @@ import {
   projectWalletTransactions,
 } from '@eve-space/core-eve-projections/wallet'
 import type {
+  PlatformBoundedCollectionResourceImplementation,
   PlatformCharacterResourceSubject,
   PlatformResourceMaterializationContext,
-  PlatformResourceOperationImplementation,
+  PlatformSingleRequestResourceImplementation,
 } from '@eve-space/platform-module-contract/resources'
+import type { PlatformCoreEsiOperationProtocol } from '@eve-space/platform-module-server'
 import { z } from 'zod'
 import {
   materializeEvidenceObservation,
@@ -66,25 +68,29 @@ type WalletTransactionObservation = Extract<
   { resourceId: 'wallet-transactions' }
 >
 type WalletTransactionProducts = readonly ['published-type-details', 'static-location-labels']
-type WalletTransactionCollectionContext = EvidenceCollectionContext<WalletTransactionProducts>
+type WalletTransactionProtocol = PlatformCoreEsiOperationProtocol<'wallet-transactions'>
+type WalletTransactionCollectionContext = EvidenceCollectionContext<
+  WalletTransactionProtocol,
+  WalletTransactionProducts
+>
 type WalletBalanceContext = PlatformResourceMaterializationContext<
   WalletBalanceData,
   PlatformCharacterResourceSubject,
   CurrentSnapshotPersistence
 >
 
-export const walletBalanceResource: PlatformResourceOperationImplementation<
+export const walletBalanceResource: PlatformSingleRequestResourceImplementation<
   'wallet-balance',
-  unknown,
+  PlatformCoreEsiOperationProtocol<'wallet-balance'>,
   WalletBalanceData,
   string,
   unknown,
   PlatformCharacterResourceSubject,
   readonly [],
-  object,
   CurrentSnapshotPersistence,
   EvidenceMaintenancePersistence
 > = {
+  mode: 'single-request',
   operation: 'wallet-balance',
   request(subject) {
     return { path: { character_id: subject.characterId } }
@@ -100,9 +106,9 @@ export const walletBalanceResource: PlatformResourceOperationImplementation<
   },
 }
 
-export const walletJournalResource: PlatformResourceOperationImplementation<
+export const walletJournalResource: PlatformBoundedCollectionResourceImplementation<
   'wallet-journal',
-  unknown,
+  PlatformCoreEsiOperationProtocol<'wallet-journal'>,
   WalletJournalObservation,
   string,
   unknown,
@@ -112,6 +118,7 @@ export const walletJournalResource: PlatformResourceOperationImplementation<
   EvidenceMaterializationPersistence,
   EvidenceMaintenancePersistence
 > = {
+  mode: 'bounded-collection',
   operation: 'wallet-journal',
   async collect(context) {
     const collection = await startEvidenceCollection(
@@ -119,7 +126,7 @@ export const walletJournalResource: PlatformResourceOperationImplementation<
       context,
     )
     const checkpoint = journalCheckpointSchema.parse(collection.checkpoint)
-    const result = await context.execute('wallet-journal', {
+    const result = await context.operations['wallet-journal']({
       path: { character_id: context.subject.characterId },
       query: { page: checkpoint.page },
     })
@@ -165,12 +172,6 @@ export const walletJournalResource: PlatformResourceOperationImplementation<
       },
     }
   },
-  request(subject) {
-    return { path: { character_id: subject.characterId }, query: { page: 1 } }
-  },
-  map() {
-    throw new Error('Wallet journal mapping requires bounded collection')
-  },
   materialize(context) {
     return materializeEvidenceObservation(context)
   },
@@ -179,9 +180,9 @@ export const walletJournalResource: PlatformResourceOperationImplementation<
   },
 }
 
-export const walletTransactionsResource: PlatformResourceOperationImplementation<
+export const walletTransactionsResource: PlatformBoundedCollectionResourceImplementation<
   'wallet-transactions',
-  unknown,
+  WalletTransactionProtocol,
   WalletTransactionObservation,
   string,
   unknown,
@@ -191,6 +192,7 @@ export const walletTransactionsResource: PlatformResourceOperationImplementation
   EvidenceMaterializationPersistence,
   EvidenceMaintenancePersistence
 > = {
+  mode: 'bounded-collection',
   operation: 'wallet-transactions',
   async collect(context) {
     const collection = await startEvidenceCollection(
@@ -198,7 +200,7 @@ export const walletTransactionsResource: PlatformResourceOperationImplementation
       context,
     )
     const checkpoint = transactionCheckpointSchema.parse(collection.checkpoint)
-    const result = await context.execute('wallet-transactions', {
+    const result = await context.operations['wallet-transactions']({
       path: { character_id: context.subject.characterId },
       ...(checkpoint.fromId === null ? {} : { query: { from_id: checkpoint.fromId } }),
     })
@@ -227,12 +229,6 @@ export const walletTransactionsResource: PlatformResourceOperationImplementation
         })),
       },
     }
-  },
-  request(subject) {
-    return { path: { character_id: subject.characterId } }
-  },
-  map() {
-    throw new Error('Wallet transaction mapping requires bounded collection')
   },
   materialize(context) {
     return materializeEvidenceObservation(context)

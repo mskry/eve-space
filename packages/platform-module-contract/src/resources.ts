@@ -196,8 +196,41 @@ export type PlatformResourceBatchOperationImplementation<
       }): readonly PlatformChangeHintBatchOutcome[]
     })
 
+export interface PlatformResourceOperationContract<Input = unknown, Output = unknown> {
+  readonly input: Input
+  readonly output: Output
+}
+
+export type PlatformResourceOperationProtocol = Readonly<
+  Record<string, PlatformResourceOperationContract>
+>
+
+export type PlatformResourceRootProtocol<Operation extends string> =
+  PlatformResourceOperationProtocol & {
+    readonly [Root in Operation]: PlatformResourceOperationContract
+  }
+
+export interface PlatformResourceOperationResult<Output> {
+  readonly data: Output
+  readonly validatedAt: string
+  readonly pagination?: {
+    readonly pages?: number
+  }
+}
+
+export type PlatformResourceOperationMethod<Contract extends PlatformResourceOperationContract> = (
+  input: Contract['input'],
+) => Promise<PlatformResourceOperationResult<Contract['output']>>
+
+export type PlatformResourceOperationMethods<Protocol extends PlatformResourceOperationProtocol> = {
+  readonly [Operation in keyof Protocol & string]: PlatformResourceOperationMethod<
+    Protocol[Operation]
+  >
+}
+
 export interface PlatformResourceCollectionContext<
   Subject extends PlatformResourceSubject,
+  Protocol extends PlatformResourceOperationProtocol,
   ProductIds extends readonly CoreDataProductId[] = readonly [],
   Persistence extends object = object,
 > {
@@ -208,16 +241,7 @@ export interface PlatformResourceCollectionContext<
   readonly managedAuthority: PlatformManagedResourceAuthority | null
   readonly capabilities: PlatformModuleResourceCapabilities<Persistence, ProductIds>
   readonly requestBudget: number
-  execute(
-    operationId: string,
-    inputs: Readonly<Record<string, unknown>>,
-  ): Promise<{
-    readonly data: unknown
-    readonly validatedAt: string
-    readonly pagination?: {
-      readonly pages?: number
-    }
-  }>
+  readonly operations: PlatformResourceOperationMethods<Protocol>
 }
 
 export interface PlatformResourceCollectionResult<Data> {
@@ -225,9 +249,56 @@ export interface PlatformResourceCollectionResult<Data> {
   readonly complete: boolean
 }
 
-export interface PlatformResourceOperationImplementation<
+export const platformResourceExecutionModes = ['single-request', 'bounded-collection'] as const
+export type PlatformResourceExecutionMode = (typeof platformResourceExecutionModes)[number]
+
+interface PlatformResourceImplementationBase<
+  Data,
+  BatchOperation extends string,
+  BatchData,
+  Subject extends PlatformResourceSubject,
+  MaterializationPersistence extends object,
+  MaintenancePersistence extends object,
+> {
+  materialize(
+    context: PlatformResourceMaterializationContext<Data, Subject, MaterializationPersistence>,
+  ): Promise<void | { readonly outcome: 'obsolete' }>
+  maintain?(context: PlatformResourceMaintenanceContext<MaintenancePersistence>): Promise<void>
+  readonly batch?: PlatformResourceBatchOperationImplementation<BatchOperation, Data, BatchData>
+}
+
+export interface PlatformSingleRequestResourceImplementation<
   Operation extends string = string,
-  OperationData = unknown,
+  Protocol extends PlatformResourceRootProtocol<Operation> =
+    PlatformResourceRootProtocol<Operation>,
+  Data = unknown,
+  BatchOperation extends string = string,
+  BatchData = unknown,
+  Subject extends PlatformResourceSubject = PlatformCharacterResourceSubject,
+  ProductIds extends readonly CoreDataProductId[] = readonly [],
+  MaterializationPersistence extends object = object,
+  MaintenancePersistence extends object = object,
+> extends PlatformResourceImplementationBase<
+  Data,
+  BatchOperation,
+  BatchData,
+  Subject,
+  MaterializationPersistence,
+  MaintenancePersistence
+> {
+  readonly mode: 'single-request'
+  readonly operation: Operation
+  readonly collect?: never
+  request(subject: Subject): Protocol[Operation]['input']
+  map(
+    input: PlatformResourceMappingContext<Protocol[Operation]['output'], Subject, ProductIds>,
+  ): Data | Promise<Data>
+}
+
+export interface PlatformBoundedCollectionResourceImplementation<
+  Operation extends string = string,
+  Protocol extends PlatformResourceRootProtocol<Operation> =
+    PlatformResourceRootProtocol<Operation>,
   Data = unknown,
   BatchOperation extends string = string,
   BatchData = unknown,
@@ -236,60 +307,107 @@ export interface PlatformResourceOperationImplementation<
   ProjectionPersistence extends object = object,
   MaterializationPersistence extends object = object,
   MaintenancePersistence extends object = object,
+> extends PlatformResourceImplementationBase<
+  Data,
+  BatchOperation,
+  BatchData,
+  Subject,
+  MaterializationPersistence,
+  MaintenancePersistence
 > {
+  readonly mode: 'bounded-collection'
   readonly operation: Operation
-  collect?(
-    context: PlatformResourceCollectionContext<Subject, ProductIds, ProjectionPersistence>,
+  readonly request?: never
+  readonly map?: never
+  collect(
+    context: PlatformResourceCollectionContext<
+      Subject,
+      Protocol,
+      ProductIds,
+      ProjectionPersistence
+    >,
   ): Promise<PlatformResourceCollectionResult<Data>>
-  request(subject: Subject): Readonly<Record<string, unknown>>
-  map(
-    input: PlatformResourceMappingContext<OperationData, Subject, ProductIds>,
-  ): Data | Promise<Data>
-  materialize(
-    context: PlatformResourceMaterializationContext<Data, Subject, MaterializationPersistence>,
-  ): Promise<void | { readonly outcome: 'obsolete' }>
-  maintain?(context: PlatformResourceMaintenanceContext<MaintenancePersistence>): Promise<void>
-  readonly batch?: PlatformResourceBatchOperationImplementation<BatchOperation, Data, BatchData>
 }
 
-type PlatformResourceImplementationParts<Implementation> =
-  Implementation extends PlatformResourceOperationImplementation<
+export type PlatformResourceImplementation =
+  | PlatformSingleRequestResourceImplementation<
+      string,
+      PlatformResourceOperationProtocol,
+      unknown,
+      string,
+      unknown,
+      PlatformResourceSubject
+    >
+  | PlatformBoundedCollectionResourceImplementation<
+      string,
+      PlatformResourceOperationProtocol,
+      unknown,
+      string,
+      unknown,
+      PlatformResourceSubject
+    >
+
+interface PlatformResourceImplementationParts<
+  Mode extends PlatformResourceExecutionMode,
+  Operation extends string,
+  Protocol,
+  ProductIds,
+  ProjectionPersistence,
+  MaterializationPersistence,
+  MaintenancePersistence,
+> {
+  readonly mode: Mode
+  readonly operation: Operation
+  readonly protocol: Protocol
+  readonly productIds: ProductIds
+  readonly projectionPersistence: ProjectionPersistence
+  readonly materializationPersistence: MaterializationPersistence
+  readonly maintenancePersistence: MaintenancePersistence
+}
+
+type PlatformResourceImplementationPartsOf<Implementation> =
+  Implementation extends PlatformSingleRequestResourceImplementation<
     infer Operation,
-    infer OperationData,
-    infer Data,
-    infer BatchOperation,
-    infer BatchData,
-    infer Subject,
+    infer Protocol,
+    infer _Data,
+    infer _BatchOperation,
+    infer _BatchData,
+    infer _Subject,
     infer ProductIds,
-    infer ProjectionPersistence,
     infer MaterializationPersistence,
     infer MaintenancePersistence
   >
-    ? readonly [
-        operation: Operation,
-        operationData: OperationData,
-        data: Data,
-        batchOperation: BatchOperation,
-        batchData: BatchData,
-        subject: Subject,
-        productIds: ProductIds,
-        projectionPersistence: ProjectionPersistence,
-        materializationPersistence: MaterializationPersistence,
-        maintenancePersistence: MaintenancePersistence,
-      ]
-    : never
-
-type PlatformResourceImplementationProductIds<Implementation> =
-  PlatformResourceImplementationParts<Implementation>[6]
-
-type PlatformResourceImplementationProjectionPersistence<Implementation> =
-  PlatformResourceImplementationParts<Implementation>[7]
-
-type PlatformResourceImplementationMaterializationPersistence<Implementation> =
-  PlatformResourceImplementationParts<Implementation>[8]
-
-type PlatformResourceImplementationMaintenancePersistence<Implementation> =
-  PlatformResourceImplementationParts<Implementation>[9]
+    ? PlatformResourceImplementationParts<
+        'single-request',
+        Operation,
+        Protocol,
+        ProductIds,
+        object,
+        MaterializationPersistence,
+        MaintenancePersistence
+      >
+    : Implementation extends PlatformBoundedCollectionResourceImplementation<
+          infer Operation,
+          infer Protocol,
+          infer _Data,
+          infer _BatchOperation,
+          infer _BatchData,
+          infer _Subject,
+          infer ProductIds,
+          infer ProjectionPersistence,
+          infer MaterializationPersistence,
+          infer MaintenancePersistence
+        >
+      ? PlatformResourceImplementationParts<
+          'bounded-collection',
+          Operation,
+          Protocol,
+          ProductIds,
+          ProjectionPersistence,
+          MaterializationPersistence,
+          MaintenancePersistence
+        >
+      : never
 
 type SameProductIds<Left, Right> = [Left] extends [Right]
   ? [Right] extends [Left]
@@ -306,11 +424,45 @@ type SamePersistence<Left, Right> = SameProductIds<
   NormalizedPersistence<Right>
 >
 
+type IsAny<Value> = 0 extends 1 & Value ? true : false
+
+type SameExactType<Left, Right> =
+  IsAny<Left> extends true ? false : IsAny<Right> extends true ? false : SameProductIds<Left, Right>
+
+type SameOperationContract<Actual, Expected> =
+  Actual extends PlatformResourceOperationContract<infer ActualInput, infer ActualOutput>
+    ? Expected extends PlatformResourceOperationContract<infer ExpectedInput, infer ExpectedOutput>
+      ? SameExactType<ActualInput, ExpectedInput> extends true
+        ? SameExactType<ActualOutput, ExpectedOutput>
+        : false
+      : false
+    : false
+
+type SameOperationContracts<Actual, Expected> = {
+  readonly [Operation in keyof Expected]: Operation extends keyof Actual
+    ? SameOperationContract<Actual[Operation], Expected[Operation]>
+    : false
+}[keyof Expected]
+
+type SameProtocol<Actual, Expected> =
+  SameExactType<keyof Actual, keyof Expected> extends true
+    ? [SameOperationContracts<Actual, Expected>] extends [true]
+      ? true
+      : false
+    : false
+
+type ModeAgreesWithProtocol<Mode, Operation, ExpectedProtocol> = Mode extends 'single-request'
+  ? SameExactType<keyof ExpectedProtocol, Operation>
+  : true
+
 export type PlatformResourceImplementationForProducts<
   Implementation,
   ProductIds extends readonly CoreDataProductId[],
 > =
-  SameProductIds<PlatformResourceImplementationProductIds<Implementation>, ProductIds> extends true
+  SameProductIds<
+    PlatformResourceImplementationPartsOf<Implementation>['productIds'],
+    ProductIds
+  > extends true
     ? Implementation
     : never
 
@@ -320,51 +472,127 @@ export type PlatformResourceImplementationForCapabilities<
   ProjectionPersistence extends object,
   MaterializationPersistence extends object,
 > =
-  SameProductIds<PlatformResourceImplementationProductIds<Implementation>, ProductIds> extends true
-    ? SamePersistence<
-        PlatformResourceImplementationProjectionPersistence<Implementation>,
-        ProjectionPersistence
-      > extends true
-      ? SamePersistence<
-          PlatformResourceImplementationMaterializationPersistence<Implementation> &
-            PlatformResourceImplementationMaintenancePersistence<Implementation>,
-          MaterializationPersistence
-        > extends true
-        ? Implementation
+  PlatformResourceImplementationPartsOf<Implementation> extends infer Parts extends
+    PlatformResourceImplementationParts<
+      PlatformResourceExecutionMode,
+      string,
+      unknown,
+      unknown,
+      unknown,
+      unknown,
+      unknown
+    >
+    ? SameProductIds<Parts['productIds'], ProductIds> extends true
+      ? SamePersistence<Parts['projectionPersistence'], ProjectionPersistence> extends true
+        ? SamePersistence<
+            Parts['materializationPersistence'] & Parts['maintenancePersistence'],
+            MaterializationPersistence
+          > extends true
+          ? Implementation
+          : never
         : never
       : never
     : never
 
-export function definePlatformResourceOperation<
+export type PlatformResourceImplementationForContract<
+  Implementation,
+  Operation extends string,
+  ExpectedProtocol extends PlatformResourceOperationProtocol,
+  ProductIds extends readonly CoreDataProductId[],
+  ProjectionPersistence extends object,
+  MaterializationPersistence extends object,
+> =
+  PlatformResourceImplementationPartsOf<Implementation> extends infer Parts extends
+    PlatformResourceImplementationParts<
+      PlatformResourceExecutionMode,
+      string,
+      unknown,
+      unknown,
+      unknown,
+      unknown,
+      unknown
+    >
+    ? SameExactType<Parts['operation'], Operation> extends true
+      ? ModeAgreesWithProtocol<Parts['mode'], Operation, ExpectedProtocol> extends true
+        ? SameProtocol<Parts['protocol'], ExpectedProtocol> extends true
+          ? PlatformResourceImplementationForCapabilities<
+              Implementation,
+              ProductIds,
+              ProjectionPersistence,
+              MaterializationPersistence
+            >
+          : never
+        : never
+      : never
+    : never
+
+export function definePlatformSingleRequestResource<
   const Operation extends string,
-  OperationData,
+  Protocol extends PlatformResourceRootProtocol<Operation>,
   Data,
   const BatchOperation extends string = string,
   BatchData = unknown,
+  Subject extends PlatformResourceSubject = PlatformCharacterResourceSubject,
+  const ProductIds extends readonly CoreDataProductId[] = readonly [],
+  MaterializationPersistence extends object = object,
+  MaintenancePersistence extends object = object,
+>(
+  implementation: PlatformSingleRequestResourceImplementation<
+    Operation,
+    Protocol,
+    Data,
+    BatchOperation,
+    BatchData,
+    Subject,
+    ProductIds,
+    MaterializationPersistence,
+    MaintenancePersistence
+  >,
+): PlatformSingleRequestResourceImplementation<
+  Operation,
+  Protocol,
+  Data,
+  BatchOperation,
+  BatchData,
+  Subject,
+  ProductIds,
+  MaterializationPersistence,
+  MaintenancePersistence
+> {
+  return implementation
+}
+
+export function definePlatformBoundedCollectionResource<
+  const Operation extends string,
+  Protocol extends PlatformResourceRootProtocol<Operation>,
+  Data,
+  const BatchOperation extends string = string,
+  BatchData = unknown,
+  Subject extends PlatformResourceSubject = PlatformCharacterResourceSubject,
   const ProductIds extends readonly CoreDataProductId[] = readonly [],
   ProjectionPersistence extends object = object,
   MaterializationPersistence extends object = object,
   MaintenancePersistence extends object = object,
 >(
-  implementation: PlatformResourceOperationImplementation<
+  implementation: PlatformBoundedCollectionResourceImplementation<
     Operation,
-    OperationData,
+    Protocol,
     Data,
     BatchOperation,
     BatchData,
-    PlatformCharacterResourceSubject,
+    Subject,
     ProductIds,
     ProjectionPersistence,
     MaterializationPersistence,
     MaintenancePersistence
   >,
-): PlatformResourceOperationImplementation<
+): PlatformBoundedCollectionResourceImplementation<
   Operation,
-  OperationData,
+  Protocol,
   Data,
   BatchOperation,
   BatchData,
-  PlatformCharacterResourceSubject,
+  Subject,
   ProductIds,
   ProjectionPersistence,
   MaterializationPersistence,

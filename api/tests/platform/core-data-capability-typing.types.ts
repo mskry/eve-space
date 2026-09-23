@@ -1,10 +1,11 @@
 import type { PlatformActivityProviderCapabilities } from '@eve-space/platform-module-contract/activity'
 import type {
   PlatformModuleResourceMaterializationCapabilities,
+  PlatformBoundedCollectionResourceImplementation,
   PlatformResourceImplementationForProducts,
-  PlatformResourceOperationImplementation,
   PlatformResourceCollectionContext,
   PlatformCharacterResourceSubject,
+  PlatformResourceOperationContract,
 } from '@eve-space/platform-module-contract/resources'
 import type { PlatformModuleRouteCapabilities } from '@eve-space/platform-module-contract/server'
 
@@ -17,15 +18,18 @@ declare const routeWithProduct: PlatformModuleRouteCapabilities<
   readonly ['published-type-groups']
 >
 declare const routeWithoutProducts: PlatformModuleRouteCapabilities<RoutePersistence>
+type OperationProtocol = { readonly operation: PlatformResourceOperationContract }
+
 declare const resourceWithProduct: PlatformResourceCollectionContext<
-  import('@eve-space/platform-module-contract/resources').PlatformCharacterResourceSubject,
+  PlatformCharacterResourceSubject,
+  OperationProtocol,
   readonly ['published-type-groups']
 >
 declare const providerWithoutProducts: PlatformActivityProviderCapabilities<RoutePersistence>
 declare const materialization: PlatformModuleResourceMaterializationCapabilities
-declare const resourceImplementationWithProduct: PlatformResourceOperationImplementation<
+declare const resourceImplementationWithProduct: PlatformBoundedCollectionResourceImplementation<
   'operation',
-  unknown,
+  OperationProtocol,
   unknown,
   string,
   unknown,

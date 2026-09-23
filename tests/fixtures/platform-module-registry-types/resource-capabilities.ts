@@ -1,7 +1,8 @@
 import type {
+  PlatformBoundedCollectionResourceImplementation,
   PlatformCharacterResourceSubject,
   PlatformResourceImplementationForCapabilities,
-  PlatformResourceOperationImplementation,
+  PlatformResourceOperationContract,
 } from '@eve-space/platform-module-contract/resources'
 
 interface ProjectionPersistence {
@@ -20,9 +21,9 @@ interface ExcessPersistence {
   readonly undeclaredMethod: (input: { readonly value: string }) => Promise<void>
 }
 
-type ResourceImplementation = PlatformResourceOperationImplementation<
+type ResourceImplementation = PlatformBoundedCollectionResourceImplementation<
   'fixture-operation',
-  unknown,
+  { readonly 'fixture-operation': PlatformResourceOperationContract },
   unknown,
   string,
   unknown,
