@@ -59,8 +59,8 @@ export async function loadCacheAdmissionContext(
   ])
   const characters = characterFacts
     .map((fact) => ({
-      characterId: fact.characterId,
       admissionRevision: characterAdmissionRevision(fact),
+      characterId: fact.characterId,
     }))
     .toSorted((left, right) => left.characterId - right.characterId)
   const organization = await resolveOrganizationAdmission(
@@ -69,7 +69,7 @@ export async function loadCacheAdmissionContext(
     now,
     options,
   )
-  return { userId, characters, organization }
+  return { characters, organization, userId }
 }
 
 async function resolveOrganizationAdmission(
@@ -78,9 +78,13 @@ async function resolveOrganizationAdmission(
   now: Date,
   options: CacheAdmissionServiceOptions,
 ) {
-  if (!foundation || foundation.context.blocked) return null
+  if (!foundation || foundation.context.blocked) {
+    return null
+  }
   const entitlementScope = resolveOrganizationEntitlementScope(foundation.context, now)
-  if (entitlementScope === 'none') return null
+  if (entitlementScope === 'none') {
+    return null
+  }
 
   const enabledModuleIds = new Set(
     foundation.modules.filter(({ enabled }) => enabled).map(({ moduleId }) => moduleId),
@@ -100,8 +104,8 @@ async function resolveOrganizationAdmission(
   const authorize = options.authorize ?? authorizeOrganizationContribution
   const authorizationResults = await Promise.all(
     declarations.map(async (declaration) => ({
-      declaration,
       authorization: await authorize(userId, foundation.context, declaration, now),
+      declaration,
     })),
   )
   const moduleScopes = authorizationResults
@@ -114,38 +118,40 @@ async function resolveOrganizationAdmission(
       : []),
     ...moduleScopes,
   ].toSorted((left, right) => left.localeCompare(right))
-  if (admissionScopes.length === 0) return null
+  if (admissionScopes.length === 0) {
+    return null
+  }
 
   const validUntil = earliestAuthorizationDeadline(foundation.context, revisionFacts, now)
   const admissionRevision = createRevision(organizationRevisionPrefix, {
-    organizationVersion: foundation.context.organizationVersion,
-    registrationPolicyVersion: foundation.registrationPolicyVersion,
-    latestAuditSequence: revisionFacts.latestAuditSequence,
+    admissionScopes,
     compliance: {
-      state: foundation.context.state,
-      evidenceFreshness: foundation.context.evidenceFreshness,
-      reviewDeadline: foundation.context.reviewDeadline?.toISOString() ?? null,
       accessValidUntil: foundation.context.accessValidUntil?.toISOString() ?? null,
       blocked: foundation.context.blocked,
+      evidenceFreshness: foundation.context.evidenceFreshness,
+      reviewDeadline: foundation.context.reviewDeadline?.toISOString() ?? null,
+      state: foundation.context.state,
     },
-    roles: revisionFacts.roles,
     groups: revisionFacts.groups,
-    permissions: {
-      modules: normalizeScopeSet(permissions.modules),
-      services: normalizeScopeSet(permissions.services),
-    },
+    latestAuditSequence: revisionFacts.latestAuditSequence,
     modules: foundation.modules.map(({ moduleId, enabled, updatedAt }) => ({
       moduleId,
       enabled,
       updatedAt: updatedAt?.toISOString() ?? null,
     })),
-    admissionScopes,
+    organizationVersion: foundation.context.organizationVersion,
+    permissions: {
+      modules: normalizeScopeSet(permissions.modules),
+      services: normalizeScopeSet(permissions.services),
+    },
+    registrationPolicyVersion: foundation.registrationPolicyVersion,
+    roles: revisionFacts.roles,
   })
   return {
-    organizationVersion: foundation.context.organizationVersion,
     admissionRevision,
-    validUntil: validUntil?.toISOString() ?? null,
     admissionScopes,
+    organizationVersion: foundation.context.organizationVersion,
+    validUntil: validUntil?.toISOString() ?? null,
   }
 }
 
@@ -158,12 +164,13 @@ function characterAdmissionRevision(fact: CharacterAdmissionFact) {
     fact.tokenVersion < 0 ||
     !Array.isArray(fact.scopes) ||
     !fact.scopes.every((scope) => typeof scope === 'string')
-  )
+  ) {
     return null
+  }
   return createRevision(characterRevisionPrefix, {
+    scopes: normalizeScopeSet(fact.scopes),
     subjectLifecycleId: fact.subjectLifecycleId,
     tokenVersion: fact.tokenVersion,
-    scopes: normalizeScopeSet(fact.scopes),
   })
 }
 
@@ -196,8 +203,9 @@ function earliestAuthorizationDeadline(
 }
 
 function effectiveAuthorityDeadline(facts: OrganizationRevisionFacts, now: Date) {
-  if (facts.roles.some(({ role, evidenceStatus }) => role === 'director' && !evidenceStatus))
+  if (facts.roles.some(({ role, evidenceStatus }) => role === 'director' && !evidenceStatus)) {
     return null
+  }
   const deadlines = facts.roles
     .filter(({ role }) => role === 'organization_owner' || role === 'derived:director')
     .map(({ evidenceValidUntil }) => (evidenceValidUntil ? new Date(evidenceValidUntil) : null))

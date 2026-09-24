@@ -6,7 +6,7 @@ import { subscribePrivateQueryInvalidation } from '../../../query-persistence/ru
 import type { EsiResourceState } from '../../../types/esi-resource'
 import { parseRouteId } from '../../../utils/route-id'
 
-definePageMeta({ title: 'Character Mail', layout: 'headerless' })
+definePageMeta({ layout: 'headerless', title: 'Character Mail' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
@@ -24,12 +24,12 @@ const mailbox = useCharacterMailbox({
   authenticated,
   authenticationReady,
   characterId,
-  ownsCharacter,
   createdLabels: mutations.createdLabels,
+  deletePendingIds: mutations.deletePendingIds,
   deletedLabelIds: mutations.deletedLabelIds,
   deletedMailIds: mutations.deletedMailIds,
-  deletePendingIds: mutations.deletePendingIds,
   labelOverrides: mutations.labelOverrides,
+  ownsCharacter,
   readStateOverrides: mutations.readStateOverrides,
   reconcileCreatedLabels: mutations.reconcileCreatedLabels,
   reconcileLabelState: mutations.reconcileLabelState,
@@ -49,7 +49,7 @@ subscribePrivateQueryInvalidation(
   () =>
     characterId.value === undefined
       ? { kind: 'character' }
-      : { kind: 'character', characterId: characterId.value },
+      : { characterId: characterId.value, kind: 'character' },
   () => {
     mailbox.resetMailboxPrivateState()
     mutations.resetMailMutations()
@@ -161,38 +161,38 @@ const {
 
 const mailboxResourceState = computed<EsiResourceState>(() => {
   if (mailboxStatus.value === 'loading') {
-    return { status: 'loading', title: '', message: null }
+    return { message: null, status: 'loading', title: '' }
   }
   if (mailboxStatus.value === 'scope-required') {
     return {
-      status: 'authorization-required',
-      code: 'ESI 403 / MAIL',
-      title: 'Mail authorization required',
-      message: mailboxMessage.value,
       action: authorizeUrl.value
         ? { href: authorizeUrl.value, label: 'AUTHORIZE THIS CHARACTER' }
         : null,
+      code: 'ESI 403 / MAIL',
+      message: mailboxMessage.value,
+      status: 'authorization-required',
+      title: 'Mail authorization required',
     }
   }
   if (mailboxStatus.value === 'cooldown') {
     return {
-      status: 'error',
       code: 'ESI / COOLDOWN',
-      title: 'Mail uplink rate limited',
       message: `${mailboxMessage.value}${
         retryAfterSeconds.value === undefined
           ? ''
           : ` Wait ${retryAfterSeconds.value} seconds before trying again.`
       }`,
+      status: 'error',
+      title: 'Mail uplink rate limited',
     }
   }
   if (mailboxStatus.value === 'error') {
     return {
-      status: 'error',
       code: 'ERR / MAIL',
-      title: 'Mail temporarily unavailable',
       message: mailboxMessage.value,
       retryLabel: 'TRY AGAIN',
+      status: 'error',
+      title: 'Mail temporarily unavailable',
     }
   }
   return { status: 'ready' }

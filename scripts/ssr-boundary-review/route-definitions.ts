@@ -54,7 +54,9 @@ const expandRouterSources = async (
   inheritedMiddleware: readonly string[] = [],
   ancestors: ReadonlySet<string> = new Set(),
 ): Promise<ExpandedRouter[]> => {
-  if (ancestors.has(mountSource)) return []
+  if (ancestors.has(mountSource)) {
+    return []
+  }
 
   const source = await readSource(root, mountSource)
   const sourceFile = ts.createSourceFile(mountSource, source, ts.ScriptTarget.Latest, true)
@@ -78,7 +80,7 @@ const expandRouterSources = async (
   })
 
   return [
-    { source: mountSource, contents: source, remainder, inheritedMiddleware },
+    { contents: source, inheritedMiddleware, remainder, source: mountSource },
     ...(await Promise.all(children)).flat(),
   ]
 }
@@ -110,11 +112,11 @@ const definitionsIn = ({
         const line = sourceFile.getLineAndCharacterOfPosition(path.getStart(sourceFile)).line
 
         definitions.push({
-          source,
-          method: method.toUpperCase(),
-          path: path.text,
           excerpt: lines.slice(line, line + DEFINITION_LINES).join('\n'),
+          method: method.toUpperCase(),
           middleware: [...new Set([...inheritedMiddleware, ...middlewareBefore(node, remainder)])],
+          path: path.text,
+          source,
         })
       }
     }
@@ -135,17 +137,22 @@ const importedRouterSources = (sourceFile: ts.SourceFile, source: string) => {
       !ts.isImportDeclaration(statement) ||
       !ts.isStringLiteralLike(statement.moduleSpecifier) ||
       !statement.moduleSpecifier.text.startsWith('.')
-    )
+    ) {
       continue
+    }
 
     const bindings = statement.importClause?.namedBindings
-    if (!bindings || !ts.isNamedImports(bindings)) continue
+    if (!bindings || !ts.isNamedImports(bindings)) {
+      continue
+    }
 
     const importedSource = join(
       dirname(source),
       statement.moduleSpecifier.text.replace(/\.js$/, '.ts'),
     )
-    for (const element of bindings.elements) imported.set(element.name.text, importedSource)
+    for (const element of bindings.elements) {
+      imported.set(element.name.text, importedSource)
+    }
   }
 
   return imported
@@ -163,12 +170,13 @@ const childRoutesIn = (sourceFile: ts.SourceFile) => {
       ts.isStringLiteralLike(node.arguments[0]) &&
       node.arguments[1] &&
       ts.isIdentifier(node.arguments[1])
-    )
+    ) {
       routes.push({
         call: node,
-        prefix: node.arguments[0].text,
         identifier: node.arguments[1].text,
+        prefix: node.arguments[0].text,
       })
+    }
 
     ts.forEachChild(node, visit)
   }
@@ -203,7 +211,9 @@ const middlewareInUse = (call: ts.CallExpression, path: string) => {
   const hasPattern = Boolean(first && ts.isStringLiteralLike(first))
   const pattern = hasPattern && first && ts.isStringLiteralLike(first) ? first.text : '*'
 
-  if (!matchesPattern(path, pattern)) return []
+  if (!matchesPattern(path, pattern)) {
+    return []
+  }
 
   return (hasPattern ? rest : call.arguments).flatMap((argument) => {
     const name = expressionName(argument)
@@ -212,16 +222,28 @@ const middlewareInUse = (call: ts.CallExpression, path: string) => {
 }
 
 const expressionName = (expression: ts.Expression): string | null => {
-  if (ts.isIdentifier(expression)) return expression.text
-  if (!ts.isCallExpression(expression)) return null
-  if (ts.isIdentifier(expression.expression)) return expression.expression.text
-  if (ts.isPropertyAccessExpression(expression.expression)) return expression.expression.name.text
+  if (ts.isIdentifier(expression)) {
+    return expression.text
+  }
+  if (!ts.isCallExpression(expression)) {
+    return null
+  }
+  if (ts.isIdentifier(expression.expression)) {
+    return expression.expression.text
+  }
+  if (ts.isPropertyAccessExpression(expression.expression)) {
+    return expression.expression.name.text
+  }
   return null
 }
 
 const remainderAfterMount = (path: string, prefix: string) => {
-  if (prefix === '/' || prefix === '') return path
-  if (path === prefix) return '/'
+  if (prefix === '/' || prefix === '') {
+    return path
+  }
+  if (path === prefix) {
+    return '/'
+  }
   return path.startsWith(`${prefix}/`) ? path.slice(prefix.length) : null
 }
 

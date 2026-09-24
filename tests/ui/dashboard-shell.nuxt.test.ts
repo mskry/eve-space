@@ -15,32 +15,32 @@ const StatusPopoverStub = defineComponent({
   },
 })
 const telemetry = {
-  status: 'operational',
-  checkedAt: '2026-08-20T12:30:00.000Z',
   cachedUntil: '2026-08-20T12:30:15.000Z',
+  checkedAt: '2026-08-20T12:30:00.000Z',
   services: {
     api: { status: 'operational', uptimeSeconds: 100 },
-    database: { status: 'operational', latencyMs: 8 },
-    sde: {
-      status: 'operational',
-      latencyMs: 4,
-      checkedAt: '2026-08-20T12:30:00.000Z',
-      buildNumber: 3_503_375,
-      ingestVersion: 4,
-      ingestedAt: '2026-08-20T12:00:00.000Z',
-    },
+    database: { latencyMs: 8, status: 'operational' },
     esi: {
-      status: 'operational',
-      latencyMs: 210,
       checkedAt: '2026-08-20T12:30:00.000Z',
+      errorBudgetRemaining: 100,
+      errorBudgetResetSeconds: 10,
+      latencyMs: 210,
       players: 20_000,
       serverVersion: 'test',
       startedAt: null,
+      status: 'operational',
       vip: false,
-      errorBudgetRemaining: 100,
-      errorBudgetResetSeconds: 10,
+    },
+    sde: {
+      buildNumber: 3_503_375,
+      checkedAt: '2026-08-20T12:30:00.000Z',
+      ingestVersion: 4,
+      ingestedAt: '2026-08-20T12:00:00.000Z',
+      latencyMs: 4,
+      status: 'operational',
     },
   },
+  status: 'operational',
 }
 
 async function settle() {
@@ -54,7 +54,9 @@ afterAll(() => queryServer.close())
 
 afterEach(async () => {
   queryServer.resetHandlers()
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   vi.restoreAllMocks()
   await settle()
   document.body.replaceChildren()
@@ -74,7 +76,7 @@ describe('DashboardShell system status', () => {
 
     queryServer.use(
       http.get('*/auth/config', () =>
-        HttpResponse.json({ configured: true, loginUrl: '/login', attachUrl: '/attach' }),
+        HttpResponse.json({ attachUrl: '/attach', configured: true, loginUrl: '/login' }),
       ),
       http.get('*/auth/session', () => HttpResponse.json({ authenticated: false })),
       http.get('*/api/admin/session', () => HttpResponse.json({ authenticated: false })),
@@ -83,7 +85,9 @@ describe('DashboardShell system status', () => {
           await initialGate
           return HttpResponse.json({ code: 'STATUS_UNAVAILABLE' }, { status: 503 })
         }
-        if (statusMode === 'success') return HttpResponse.json(telemetry)
+        if (statusMode === 'success') {
+          return HttpResponse.json(telemetry)
+        }
 
         await refreshGate
         return HttpResponse.json({ code: 'STATUS_UNAVAILABLE' }, { status: 503 })
@@ -100,7 +104,6 @@ describe('DashboardShell system status', () => {
               'button',
               {
                 'data-invalidate-status': '',
-                type: 'button',
                 onClick: () =>
                   void queryCache
                     .invalidateQueries({
@@ -108,6 +111,7 @@ describe('DashboardShell system status', () => {
                       key: PUBLIC_QUERY_KEYS.systemStatus(),
                     })
                     .catch(() => undefined),
+                type: 'button',
               },
               'Refresh status',
             ),
@@ -140,7 +144,7 @@ describe('DashboardShell system status', () => {
         expect(text).toContain('STATUS UNAVAILABLE')
         expect(text).toContain('NO STATUS AVAILABLE')
       },
-      { timeout: 4_000 },
+      { timeout: 4000 },
     )
 
     statusMode = 'success'
@@ -161,7 +165,7 @@ describe('DashboardShell system status', () => {
     releaseRefresh()
     await vi.waitFor(
       () => expect(wrapper.get('.service-status').text()).toContain('LATEST CHECK FAILED'),
-      { timeout: 4_000 },
+      { timeout: 4000 },
     )
   })
 
@@ -169,7 +173,7 @@ describe('DashboardShell system status', () => {
     const validatedAt = new Date().toISOString()
     queryServer.use(
       http.get('*/auth/config', () =>
-        HttpResponse.json({ configured: true, loginUrl: '/login', attachUrl: '/attach' }),
+        HttpResponse.json({ attachUrl: '/attach', configured: true, loginUrl: '/login' }),
       ),
       http.get('*/auth/session', () => HttpResponse.json({ authenticated: false })),
       http.get('*/api/admin/session', () => HttpResponse.json({ authenticated: false })),
@@ -180,12 +184,12 @@ describe('DashboardShell system status', () => {
       setup() {
         useQuery({
           key: ['public', 'dashboard-presentation-test'],
+          meta: { esiPersistence: { kind: 'public-esi' } },
           query: async () => ({
             stale: true as const,
             validatedAt,
             refreshFailureClass: 'esi-unavailable',
           }),
-          meta: { esiPersistence: { kind: 'public-esi' } },
         })
         return () => h(DashboardShell, null, { default: () => h('p', 'Page content') })
       },

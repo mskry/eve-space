@@ -21,7 +21,7 @@ describe('dashboard section visibility', () => {
       (section) => section.to === '/characters',
     )
 
-    expect(rosterSections.map(({ navigationId }) => navigationId)).toEqual([
+    expect(rosterSections.map(({ navigationId }) => navigationId)).toStrictEqual([
       'core-characters',
       'core-mail',
     ])

@@ -35,7 +35,9 @@ export async function appendExternalServiceEntitlementTransitions(
         ),
       )
       .limit(1)
-    if (block) return
+    if (block) {
+      return
+    }
   }
   const serviceEntries = await transaction
     .selectDistinct({
@@ -72,11 +74,12 @@ export async function appendExternalServiceEntitlementTransitions(
     )
     .orderBy(asc(organizationPermissionBundleEntries.permissionKey))
   const reviewAccessByService = new Map<string, boolean>()
-  for (const { permissionKey, reviewAllowed } of serviceEntries)
+  for (const { permissionKey, reviewAllowed } of serviceEntries) {
     reviewAccessByService.set(
       permissionKey,
       Boolean(reviewAccessByService.get(permissionKey) || reviewAllowed),
     )
+  }
   const services = [...reviewAccessByService]
     .filter(
       ([, reviewAllowed]) =>
@@ -88,20 +91,20 @@ export async function appendExternalServiceEntitlementTransitions(
   await appendOrganizationAuditEvents(
     transaction,
     services.map((permissionKey) => ({
+      actorId: null,
+      actorType: 'system' as const,
+      causationAuditId: input.causationAuditId,
       deploymentId: 1 as const,
-      organizationVersion: input.organizationVersion,
-      policyVersion: input.policyVersion,
       eventType: input.granted
         ? ('entitlement.granted' as const)
         : ('entitlement.revoked' as const),
-      actorType: 'system' as const,
-      actorId: null,
-      subjectType: 'external_service' as const,
-      subjectId: permissionKey,
-      reason: input.reason,
-      outcome: input.granted ? ('granted' as const) : ('revoked' as const),
-      causationAuditId: input.causationAuditId,
       occurredAt: input.now,
+      organizationVersion: input.organizationVersion,
+      outcome: input.granted ? ('granted' as const) : ('revoked' as const),
+      policyVersion: input.policyVersion,
+      reason: input.reason,
+      subjectId: permissionKey,
+      subjectType: 'external_service' as const,
     })),
   )
 }

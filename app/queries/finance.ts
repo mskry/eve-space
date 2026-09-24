@@ -59,8 +59,8 @@ interface ContractDetailQueryParameters extends RequestedFinanceQueryParameters 
 
 const financeIdentityMismatch = () =>
   new ApiQueryError('Finance response did not match the requested identity.', {
-    status: 409,
     code: 'FINANCE_IDENTITY_MISMATCH',
+    status: 409,
   })
 
 export const characterFinanceBalanceQuery = defineEsiQueryOptions(
@@ -125,7 +125,9 @@ export const characterFinanceTransactionsQuery = defineEsiQueryOptions(
       }
       const transactions: CharacterFinanceTransactions = await response.json()
       assertCharacterIdentity(transactions, characterId)
-      if (transactions.fromId !== fromId) throw financeIdentityMismatch()
+      if (transactions.fromId !== fromId) {
+        throw financeIdentityMismatch()
+      }
       return transactions
     },
     ...QUERY_POLICY.characterFinanceTransactions,
@@ -290,11 +292,15 @@ function canRunContractDetailQuery(
 }
 
 function assertCharacterIdentity(value: { characterId: number }, characterId: number) {
-  if (value.characterId !== characterId) throw financeIdentityMismatch()
+  if (value.characterId !== characterId) {
+    throw financeIdentityMismatch()
+  }
 }
 
 function assertPageIdentity(value: { page: number }, page: number) {
-  if (value.page !== page) throw financeIdentityMismatch()
+  if (value.page !== page) {
+    throw financeIdentityMismatch()
+  }
 }
 
 function assertContractIdentity(

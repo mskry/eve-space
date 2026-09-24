@@ -23,11 +23,15 @@ export async function assertModuleMigrationSql(
     const ast = await parsePostgres17Migration(migration.sql)
     assertModuleMigrationAstPolicy(schemaName, ast, persistenceRoutines)
   } catch (error) {
-    if (error instanceof ModuleMigrationValidationError) throw error
-    if (error instanceof ModuleMigrationPolicyError)
+    if (error instanceof ModuleMigrationValidationError) {
+      throw error
+    }
+    if (error instanceof ModuleMigrationPolicyError) {
       throw new ModuleMigrationValidationError(moduleId, migration.name, error.category)
-    if (error instanceof PostgresMigrationParseError)
+    }
+    if (error instanceof PostgresMigrationParseError) {
       throw new ModuleMigrationValidationError(moduleId, migration.name, 'parse')
+    }
     throw new ModuleMigrationValidationError(moduleId, migration.name, 'parse')
   }
 }

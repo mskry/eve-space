@@ -20,23 +20,23 @@ import { queryServer } from '../support/query-server'
 
 const apiClient = createApiClient('http://localhost')
 const allowed: ProtectedCharacterQueryAccess = {
-  isClient: true,
   authenticated: true,
   authenticationReady: true,
+  isClient: true,
   ownsCharacter: true,
 }
 
 describe('character asset route query', () => {
   it('uses a private canonical origin-aware identity and bounded one-hour freshness', () => {
     const options = characterAssetRoutesQuery({
+      access: allowed,
       apiClient,
       characterId: 7,
-      originSystemId: 30_000_001,
       destinationSystemIds: [30_000_003, 30_000_002, 30_000_003, 0],
-      access: allowed,
+      originSystemId: 30_000_001,
     })
 
-    expect(options.key).toEqual([
+    expect(options.key).toStrictEqual([
       'private',
       'characters',
       7,
@@ -46,15 +46,15 @@ describe('character asset route query', () => {
       'shortest',
       [30_000_002, 30_000_003],
     ])
-    expect(options.key).not.toEqual(
+    expect(options.key).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.characterAssetRoutes(8, 30_000_001, [30_000_002, 30_000_003]),
     )
-    expect(options.key).not.toEqual(
+    expect(options.key).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.characterAssetRoutes(7, 30_000_004, [30_000_002, 30_000_003]),
     )
-    expect(QUERY_POLICY.characterAssetRoutes).toEqual({
-      staleTime: 60 * 60_000,
+    expect(QUERY_POLICY.characterAssetRoutes).toStrictEqual({
       gcTime: QUERY_GC_TIME,
+      staleTime: 60 * 60_000,
     })
   })
 
@@ -89,11 +89,11 @@ describe('character asset route query', () => {
       setup() {
         useQuery(
           characterAssetRoutesQuery({
+            access: { ...allowed, isClient: false },
             apiClient,
             characterId: 7,
-            originSystemId: 1,
             destinationSystemIds: [2],
-            access: { ...allowed, isClient: false },
+            originSystemId: 1,
           }),
         )
         return () => h('span', 'routes locked')
@@ -116,11 +116,11 @@ describe('character asset route query', () => {
         return HttpResponse.json({
           originSystemId: 1,
           policy: { kind: 'shortest' },
-          sdeBuildNumber: 1234,
           routes: [
             { destinationSystemId: 3, jumps: 1 },
             { destinationSystemId: 2, jumps: 2 },
           ],
+          sdeBuildNumber: 1234,
         })
       }),
     )
@@ -129,11 +129,11 @@ describe('character asset route query', () => {
       setup() {
         const query = useQuery(
           characterAssetRoutesQuery({
+            access: allowed,
             apiClient,
             characterId: 7,
-            originSystemId: 1,
             destinationSystemIds: [3, 2, 3],
-            access: allowed,
+            originSystemId: 1,
           }),
         )
         return () => {
@@ -145,9 +145,9 @@ describe('character asset route query', () => {
     const { wrapper } = mountWithQueryPlugins(Root)
     await flushPromises()
 
-    expect(requestBody).toEqual({
-      originSystemId: 1,
+    expect(requestBody).toStrictEqual({
       destinationSystemIds: [2, 3],
+      originSystemId: 1,
       policy: { kind: 'shortest' },
     })
     expect(result).toMatchObject({
@@ -165,8 +165,8 @@ describe('character asset route query', () => {
         HttpResponse.json({
           originSystemId: 9,
           policy: { kind: 'shortest' },
-          sdeBuildNumber: 1234,
           routes: [{ destinationSystemId: 2, jumps: 1 }],
+          sdeBuildNumber: 1234,
         }),
       ),
     )
@@ -175,11 +175,11 @@ describe('character asset route query', () => {
       setup() {
         const query = useQuery({
           ...characterAssetRoutesQuery({
+            access: allowed,
             apiClient,
             characterId: 7,
-            originSystemId: 1,
             destinationSystemIds: [2],
-            access: allowed,
+            originSystemId: 1,
           }),
           retry: 0,
         })
@@ -193,7 +193,7 @@ describe('character asset route query', () => {
     await flushPromises()
 
     expect(error).toBeInstanceOf(ApiQueryError)
-    expect(error).toMatchObject({ status: 409, code: 'ASSET_ROUTES_IDENTITY_MISMATCH' })
+    expect(error).toMatchObject({ code: 'ASSET_ROUTES_IDENTITY_MISMATCH', status: 409 })
     wrapper.unmount()
   })
 })

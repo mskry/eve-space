@@ -8,9 +8,9 @@ const compatibilityDate = '2026-08-23'
 describe('ESI representation-scoped identity', () => {
   test('two representation names of one operation produce two distinct identities', () => {
     const base = {
-      operation: 'skills' as const,
-      inputs: { characterId: 1 },
       compatibilityDate,
+      inputs: { characterId: 1 },
+      operation: 'skills' as const,
       representationVersion: 'v2',
     }
     const unnamed = createEsiRepresentationIdentity(base)
@@ -31,13 +31,15 @@ describe('ESI representation-scoped identity', () => {
 
   test('the same representation name is stable across calls', () => {
     const base = {
-      operation: 'skills' as const,
-      inputs: { characterId: 1 },
       compatibilityDate,
-      representationVersion: 'v2',
+      inputs: { characterId: 1 },
+      operation: 'skills' as const,
       representationName: 'character-skills-core',
+      representationVersion: 'v2',
     }
-    expect(createEsiRepresentationIdentity(base)).toEqual(createEsiRepresentationIdentity(base))
+    expect(createEsiRepresentationIdentity(base)).toStrictEqual(
+      createEsiRepresentationIdentity(base),
+    )
   })
 
   test('carries the representation name into the envelope-stored representation version', () => {
@@ -53,11 +55,11 @@ describe('ESI representation-scoped identity', () => {
   test('the v3 cache identity prefix is in effect', () => {
     expect(cacheIdentityVersion).toBe('v3')
     const identity = createEsiRepresentationIdentity({
-      operation: 'skills',
-      inputs: { characterId: 1 },
       compatibilityDate,
-      representationVersion: 'v2',
+      inputs: { characterId: 1 },
+      operation: 'skills',
       representationName: 'character-skills-core',
+      representationVersion: 'v2',
     })
     expect(cacheEnvelopeKey('namespace-one', identity)).toContain(':v3:')
   })

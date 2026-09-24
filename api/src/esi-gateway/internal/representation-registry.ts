@@ -29,17 +29,17 @@ export function registerCallableEsiRepresentation<
   )
   assertConsistentEsiRepresentationRegistration(
     {
+      authorization: representation.authorization,
+      descriptorOperationId: representation.descriptor.operationId,
+      execution: representation.execution,
       name: representation.name,
       operation: representation.operation,
-      authorization: representation.authorization,
-      execution: representation.execution,
-      descriptorOperationId: representation.descriptor.operationId,
     },
     {
-      duplicateName: representationsByName.has(representation.name),
-      descriptorRegistered: sdkOperation !== undefined,
-      descriptorClassification: sdkOperation?.classification,
       contract: getEsiOperationContract(representation.operation),
+      descriptorClassification: sdkOperation?.classification,
+      descriptorRegistered: sdkOperation !== undefined,
+      duplicateName: representationsByName.has(representation.name),
     },
   )
   representationsByName.set(representation.name, representation)

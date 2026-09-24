@@ -49,15 +49,20 @@ export async function loadInstalledModuleMigrationSets(
   persistenceOperations: readonly ModulePersistenceRoutineDescriptor[] = [],
 ): Promise<readonly ModuleMigrationSet[]> {
   validateDescriptors(descriptors, moduleIds)
-  if (!loadSql) validateDescriptorPackageExports(descriptors)
+  if (!loadSql) {
+    validateDescriptorPackageExports(descriptors)
+  }
   const migrationSqlLoader = loadSql ?? loadModuleMigrationSql
   validatePersistenceOperations(persistenceOperations, descriptors, moduleIds)
   const grouped = new Map<string, InstalledModuleMigrationDescriptor[]>()
-  for (const moduleId of moduleIds) grouped.set(moduleId, [])
+  for (const moduleId of moduleIds) {
+    grouped.set(moduleId, [])
+  }
   for (const descriptor of descriptors) {
     const migrations = grouped.get(descriptor.moduleId)
-    if (!migrations)
+    if (!migrations) {
       throw new Error(`Migration references uninstalled module ${descriptor.moduleId}`)
+    }
     migrations.push(descriptor)
   }
 
@@ -73,15 +78,17 @@ export async function loadInstalledModuleMigrationSets(
           migrations: Migration[]
           persistenceOperations?: readonly ModulePersistenceRoutineDescriptor[]
         } = {
-          moduleId,
           migrations: await Promise.all(
             migrations.map(async ({ name, ...descriptor }) => ({
               name,
               sql: await migrationSqlLoader({ name, ...descriptor }),
             })),
           ),
+          moduleId,
         }
-        if (moduleOperations.length > 0) migrationSet.persistenceOperations = moduleOperations
+        if (moduleOperations.length > 0) {
+          migrationSet.persistenceOperations = moduleOperations
+        }
         return migrationSet
       }),
   )
@@ -99,8 +106,9 @@ export async function runModuleMigrationSets(
     ),
     moduleIds,
   )
-  if (new Set(moduleIds).size !== moduleIds.length)
+  if (new Set(moduleIds).size !== moduleIds.length) {
     throw new Error('Installed module migration sets contain duplicate module owners')
+  }
   for (const { moduleId, migrations, persistenceOperations = [] } of migrationSets) {
     const { schemaName } = modulePersistenceNames(moduleId)
     for (const migration of migrations) {
@@ -134,8 +142,12 @@ async function runModuleMigrationSet(
   }
 
   const cleanupFailure = await lease.release()
-  if (failure) throw withCleanupFailure(failure.error, cleanupFailure)
-  if (cleanupFailure) throw cleanupFailure.error
+  if (failure) {
+    throw withCleanupFailure(failure.error, cleanupFailure)
+  }
+  if (cleanupFailure) {
+    throw cleanupFailure.error
+  }
 }
 
 async function applyModuleMigrationSet(
@@ -161,8 +173,9 @@ async function applyModuleMigrationSet(
   for (const [index, migration] of pendingMigrations.entries()) {
     // oxlint-disable-next-line no-await-in-loop
     await runInTransaction(connection, async () => {
-      if (index === 0)
+      if (index === 0) {
         await provisionModulePersistence(connection, moduleId, persistenceOperations, false)
+      }
       await connection`set local role ${connection(migrationRoleName)}`
       await connection`select set_config('search_path', ${searchPath}, true)`
       await connection.unsafe(migration.sql).simple()
@@ -243,24 +256,30 @@ async function releaseLease(
 ) {
   const failures: unknown[] = []
   const record = (failure: Failure | undefined) => {
-    if (failure) failures.push(failure.error)
+    if (failure) {
+      failures.push(failure.error)
+    }
   }
 
-  if (lockHeld)
+  if (lockHeld) {
     record(
       await attempt(
         () => connection`select pg_advisory_unlock(${moduleMigrationLockNamespace}, ${lockKey})`,
       ),
     )
-  if (restoreLockTimeout !== undefined)
+  }
+  if (restoreLockTimeout !== undefined) {
     record(
       await attempt(
         () => connection`select set_config('lock_timeout', ${restoreLockTimeout}, false)`,
       ),
     )
+  }
   record(await attempt(async () => connection.release()))
 
-  if (failures.length === 0) return undefined
+  if (failures.length === 0) {
+    return
+  }
   return {
     error:
       failures.length === 1
@@ -284,7 +303,9 @@ async function attempt(action: () => Promise<unknown>): Promise<Failure | undefi
 
 /** Keeps the originating failure first; cleanup failures never replace it. */
 function withCleanupFailure(error: unknown, cleanupFailure: Failure | undefined) {
-  if (!cleanupFailure) return error
+  if (!cleanupFailure) {
+    return error
+  }
   return new AggregateError(
     [error, cleanupFailure.error],
     'Module migration failed and could not be cleaned up',
@@ -295,8 +316,9 @@ async function loadModuleMigrationSql({
   packageName,
   exportPath,
 }: InstalledModuleMigrationDescriptor) {
-  if (!packageName || !exportPath)
+  if (!packageName || !exportPath) {
     throw new Error('Installed module migration package coordinates are required')
+  }
   const resolved = import.meta.resolve(`${packageName}/${exportPath.slice(2)}`)
   return readFile(new URL(resolved), 'utf8')
 }
@@ -305,16 +327,20 @@ function validateDescriptors(
   descriptors: readonly InstalledModuleMigrationDescriptor[],
   moduleIds: readonly string[],
 ) {
-  for (const moduleId of moduleIds) validateModuleId(moduleId)
+  for (const moduleId of moduleIds) {
+    validateModuleId(moduleId)
+  }
   const identities = new Set<string>()
   for (const { moduleId, name } of descriptors) {
     validateModuleId(moduleId)
-    if (!name.startsWith(`${moduleId}-`) || !isPlatformMigrationFilename(name))
+    if (!name.startsWith(`${moduleId}-`) || !isPlatformMigrationFilename(name)) {
       throw new Error(`Migration ${moduleId}/${name} must use package-local ${moduleId}-*.sql`)
+    }
 
     const identity = `${moduleId}/${name}`
-    if (identities.has(identity))
+    if (identities.has(identity)) {
       throw new Error(`Duplicate installed module migration ${identity}`)
+    }
     identities.add(identity)
   }
   assertDistinctModuleMigrationLockKeys(moduleIds)
@@ -324,14 +350,16 @@ function validateDescriptorPackageExports(
   descriptors: readonly InstalledModuleMigrationDescriptor[],
 ) {
   for (const { moduleId, name, packageName, exportPath } of descriptors) {
-    if (typeof packageName !== 'string' || !isPlatformPackageName(packageName))
+    if (typeof packageName !== 'string' || !isPlatformPackageName(packageName)) {
       throw new Error(`Migration ${moduleId}/${name} has invalid package ${packageName}`)
+    }
     if (
       typeof exportPath !== 'string' ||
       !isPlatformPackageExport(exportPath) ||
       exportPath !== `./migrations/${name}`
-    )
+    ) {
       throw new Error(`Migration ${moduleId}/${name} has invalid package export ${exportPath}`)
+    }
   }
 }
 
@@ -345,23 +373,31 @@ function validatePersistenceOperations(
   const identities = new Set<string>()
   for (const operation of operations) {
     const identity = `${operation.moduleId}/${operation.operationId}`
-    if (identities.has(identity))
+    if (identities.has(identity)) {
       throw new Error(`Duplicate installed persistence operation ${identity}`)
+    }
     identities.add(identity)
-    if (!installedModules.has(operation.moduleId))
+    if (!installedModules.has(operation.moduleId)) {
       throw new Error(`Persistence operation references uninstalled module ${identity}`)
-    if (!installedMigrations.has(`${operation.moduleId}/${operation.migration}`))
+    }
+    if (!installedMigrations.has(`${operation.moduleId}/${operation.migration}`)) {
       throw new Error(`Persistence operation references uninstalled migration ${identity}`)
+    }
   }
 }
 
 function validateModuleId(moduleId: string) {
-  if (!isPlatformModuleId(moduleId))
+  if (!isPlatformModuleId(moduleId)) {
     throw new Error(`Invalid installed module migration owner ${moduleId}`)
+  }
 }
 
 function compareStable(left: string, right: string) {
-  if (left < right) return -1
-  if (left > right) return 1
+  if (left < right) {
+    return -1
+  }
+  if (left > right) {
+    return 1
+  }
   return 0
 }

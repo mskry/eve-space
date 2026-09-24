@@ -61,16 +61,16 @@ export class EsiError extends Error {
       defaultMessage.replace('{operationId}', operationId),
     );
     super(message, options.cause === undefined ? undefined : { cause: options.cause });
-    Object.defineProperty(this, 'name', { value: name, enumerable: false });
+    Object.defineProperty(this, 'name', { enumerable: false, value: name });
     this.code = code;
     this.operationId = operationId;
   }
 
   toJSON(): SerializedEsiError {
     return Object.freeze({
-      name: this.name,
       code: this.code,
       message: this.message,
+      name: this.name,
       operationId: this.operationId,
     });
   }
@@ -168,11 +168,11 @@ export class EsiHttpError extends EsiError {
   override toJSON(): SerializedEsiHttpError {
     return Object.freeze({
       ...super.toJSON(),
-      status: this.status,
-      metadata: this.metadata,
-      bodyFormat: this.bodyFormat,
       body: this.body,
+      bodyFormat: this.bodyFormat,
       bodyTruncated: this.bodyTruncated,
+      metadata: this.metadata,
+      status: this.status,
     });
   }
 }
@@ -207,8 +207,8 @@ export class EsiTransportError extends EsiError {
   override toJSON(): SerializedEsiTransportError {
     return Object.freeze({
       ...super.toJSON(),
-      reason: this.reason,
       phase: this.phase,
+      reason: this.reason,
       ...(this.status === undefined ? {} : { status: this.status }),
       ...(this.metadata === undefined ? {} : { metadata: this.metadata }),
     });
@@ -235,8 +235,8 @@ export class EsiNotModifiedError extends EsiError {
   override toJSON(): SerializedEsiNotModifiedError {
     return Object.freeze({
       ...super.toJSON(),
-      status: this.status,
       metadata: this.metadata,
+      status: this.status,
     });
   }
 }
@@ -263,8 +263,8 @@ export class EsiResponseParseError extends EsiError {
   override toJSON(): SerializedEsiResponseParseError {
     const serialized = {
       ...super.toJSON(),
-      status: this.status,
       metadata: this.metadata,
+      status: this.status,
     };
 
     return Object.freeze(serialized);
@@ -338,8 +338,8 @@ export class EsiResponseValidationError extends EsiValidationError {
     const { status, metadata } = this;
     return Object.freeze({
       ...super.toJSON(),
-      status,
       metadata,
+      status,
     });
   }
 }

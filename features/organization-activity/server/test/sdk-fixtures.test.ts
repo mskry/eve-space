@@ -9,18 +9,18 @@ const id = '11111111-1111-4111-8111-111111111111'
 const now = '2026-09-07T10:00:00.000Z'
 const summary = {
   id,
-  name: 'Supplies',
-  state: 'Active' as const,
   last_modified: now,
+  name: 'Supplies',
   progress: { current: 1, desired: 10 },
   reward: { initial: 100, remaining: 90 },
+  state: 'Active' as const,
 }
-const campaign = { id, progress: 20, state: 'Active', last_modified: now }
+const campaign = { id, last_modified: now, progress: 20, state: 'Active' }
 const objective = { ...campaign, participants: { committed: 1, contributors: 1, total: 1 } }
 const participation = {
-  id,
   campaign_id: id,
   contributed: 1,
+  id,
   is_committed: true,
   last_modified: now,
 }
@@ -37,8 +37,8 @@ const project = {
 }
 const job = {
   ...summary,
-  configuration: { method: 'delivery', parameters: {}, version: 1 },
   access_and_visibility: { acl_protected: false },
+  configuration: { method: 'delivery', parameters: {}, version: 1 },
   details: {
     ...project.details,
     creator: {
@@ -53,7 +53,7 @@ const fixtures = [
   [
     operations.objectiveListOperation,
     'objective-list',
-    { objectives: [objective], cursor: { after: 'after' } },
+    { cursor: { after: 'after' }, objectives: [objective] },
     { campaign_id: id },
   ],
   [
@@ -79,7 +79,7 @@ const fixtures = [
   [
     operations.jobParticipationOperation,
     'job-participation',
-    { contributed: 1, state: 'Committed', id, last_modified: now },
+    { contributed: 1, id, last_modified: now, state: 'Committed' },
     { character_id: 9001, job_id: id },
   ],
   [
@@ -98,7 +98,7 @@ const fixtures = [
     operations.projectContributionOperation,
     'project-contribution',
     { contributed: 1 },
-    { corporation_id: 9801, project_id: id, character_id: 9001 },
+    { character_id: 9001, corporation_id: 9801, project_id: id },
   ],
   [
     operations.characterObjectivesOperation,
@@ -114,26 +114,28 @@ const fixtures = [
   ],
 ] as const
 
-test.each(fixtures.map(([operation, name, fixture, path]) => ({ operation, name, fixture, path })))(
+test.each(fixtures.map(([operation, name, fixture, path]) => ({ fixture, name, operation, path })))(
   'validates SDK fixtures for $name and maps intentional DTOs',
   async ({ operation, name, fixture, path }) => {
     const response = operation.descriptor.transport.successResponses.find(
       (item) => item.status === 200,
     )
     expect(response?.body).toBe('json')
-    if (!response || response.body !== 'json') throw new Error('Missing SDK response schema')
+    if (!response || response.body !== 'json') {
+      throw new Error('Missing SDK response schema')
+    }
     const data = response.schema.parse(fixture)
     expect(() => response.schema.parse({})).toThrow(/Invalid input/)
     const method = vi.fn(async (_inputs: unknown) => ({ data, validatedAt: now }))
     const { response: mapped } = await executeCollectionOperation({
-      request: { operation: name, path, replace: true, snapshot: projectSnapshot(project, 9801) },
-      query: undefined,
       operations: { [`organization-activity-${name}`]: method },
       profile: 'corporation-projects',
+      query: undefined,
+      request: { operation: name, path, replace: true, snapshot: projectSnapshot(project, 9801) },
     })
     expect(method).toHaveBeenCalledOnce()
     const inputs = method.mock.calls[0]?.[0]
-    expect(inputs).toEqual(Object.keys(path).length ? { path } : {})
+    expect(inputs).toStrictEqual(Object.keys(path).length ? { path } : {})
     expect(() => operation.descriptor.requestSchema.parse(inputs)).not.toThrow()
     expect(mapped.count).toBeGreaterThan(0)
     for (const snapshot of mapped.snapshots) {
@@ -160,7 +162,7 @@ test('does not infer eligibility through ACL or age restrictions', () => {
       { ...project, configuration: {}, details: { ...project.details, expires: undefined } },
       9801,
     ),
-  ).toMatchObject({ objective: null, deadline: null })
+  ).toMatchObject({ deadline: null, objective: null })
 })
 
 test('all resource definitions execute only through bounded collection and materialization', async () => {
@@ -169,27 +171,27 @@ test('all resource definitions execute only through bounded collection and mater
     expect(resource).not.toHaveProperty('request')
     expect(resource).not.toHaveProperty('map')
     const execute = vi.fn().mockResolvedValue({
-      data: { campaigns: [], projects: [], freelance_jobs: [], objectives: [] },
+      data: { campaigns: [], freelance_jobs: [], objectives: [], projects: [] },
       validatedAt: now,
     })
     const subject =
       resource === resources.corporationJobsResource ||
       resource === resources.corporationProjectsResource
-        ? { kind: 'corporation', corporationId: 9801, lifecycleId: id }
-        : { kind: 'character', characterId: 9001, lifecycleId: id }
+        ? { corporationId: 9801, kind: 'corporation', lifecycleId: id }
+        : { characterId: 9001, kind: 'character', lifecycleId: id }
     const result = await resource.collect({
-      subject,
-      corporationId: 9801,
-      organizationVersion: 7,
       authorizationGeneration: 4,
-      requestBudget: 32,
+      capabilities: {
+        persistence: { readActivityCheckpoint: vi.fn().mockResolvedValue(null) },
+      },
+      corporationId: 9801,
       operations: new Proxy(
         {},
         { get: (_target, operationId) => (inputs: unknown) => execute(operationId, inputs) },
       ),
-      capabilities: {
-        persistence: { readActivityCheckpoint: vi.fn().mockResolvedValue(null) },
-      },
+      organizationVersion: 7,
+      requestBudget: 32,
+      subject,
     } as never)
     expect(result.complete).toBe(true)
     expect(execute).toHaveBeenCalledOnce()
@@ -200,22 +202,22 @@ test.each(['current', 'stale', 'unavailable'])(
   'provider reports %s independently and never reads external participation',
   async (status) => {
     const read = vi.fn().mockResolvedValue({
+      authorizationGeneration: null,
+      lastFailureClass: null,
       status,
       subjectLifecycleId: status === 'unavailable' ? undefined : id,
-      authorizationGeneration: null,
       validatedAt: status === 'unavailable' ? null : now,
-      lastFailureClass: null,
     })
     const provider = organizationActivityProvider({
       collectionStatus: { read },
       persistence: { readActivitySnapshots: vi.fn().mockResolvedValue([]) },
     } as never)
     const result = await provider({
-      organizationVersion: 7,
       characters: [
         { characterId: 9001, corporationId: 9801, membership: 'managed' },
         { characterId: 9002, corporationId: 9802, membership: 'approved-external' },
       ],
+      organizationVersion: 7,
     } as never)
     expect(result.freshness.state).toBe(status)
     expect(

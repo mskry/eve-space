@@ -17,7 +17,7 @@ describe('module persistence operation executor', () => {
     ])
     const invoke = createModulePersistenceOperationInvoker([operation], runInTransaction)
 
-    await expect(invoke(operation, { key: 'snapshot' })).resolves.toEqual({ count: 3 })
+    await expect(invoke(operation, { key: 'snapshot' })).resolves.toStrictEqual({ count: 3 })
     expect(runInTransactionSpy).toHaveBeenCalledOnce()
     expect(runInTransactionSpy).toHaveBeenCalledWith(operation, expect.any(Function))
     expect(unsafe).toHaveBeenCalledWith(
@@ -117,9 +117,9 @@ describe('module persistence operation executor', () => {
     expect(pending.cancel).toHaveBeenCalledOnce()
     expect(failure).toBeInstanceOf(ModulePersistenceOperationError)
     expect(failure).toMatchObject({
+      category: 'cancelled',
       moduleId: 'alpha',
       operationId: 'read-snapshot',
-      category: 'cancelled',
     })
     expect(String(failure)).not.toContain('private-sentinel')
   })
@@ -129,15 +129,6 @@ function descriptor(
   bounds: { readonly maximumInputBytes?: number; readonly maximumOutputBytes?: number } = {},
 ): PlatformInstalledPersistenceOperationDescriptor {
   return {
-    moduleId: 'alpha',
-    operationId: 'read-snapshot',
-    method: 'readSnapshot',
-    revision: 1,
-    mode: 'read',
-    migration: 'alpha-001-read-snapshot.sql',
-    schemaName: 'eve_module_alpha',
-    routineName: 'persist_read_snapshot',
-    definitionFingerprint: '0'.repeat(64),
     definition: definePlatformPersistenceOperation({
       id: 'read-snapshot',
       method: 'readSnapshot',
@@ -145,15 +136,24 @@ function descriptor(
       mode: 'read',
       inputSchema: z.object({ key: z.string() }).strict(),
       outputSchema: z.object({ count: z.number() }).strict(),
-      maximumInputBytes: bounds.maximumInputBytes ?? 1_024,
-      maximumOutputBytes: bounds.maximumOutputBytes ?? 1_024,
+      maximumInputBytes: bounds.maximumInputBytes ?? 1024,
+      maximumOutputBytes: bounds.maximumOutputBytes ?? 1024,
     }),
+    definitionFingerprint: '0'.repeat(64),
     grants: {
-      routes: ['activity'],
       activityProviders: [],
-      resourceProjections: [],
       resourceMaterializations: [],
+      resourceProjections: [],
+      routes: ['activity'],
     },
+    method: 'readSnapshot',
+    migration: 'alpha-001-read-snapshot.sql',
+    mode: 'read',
+    moduleId: 'alpha',
+    operationId: 'read-snapshot',
+    revision: 1,
+    routineName: 'persist_read_snapshot',
+    schemaName: 'eve_module_alpha',
   }
 }
 

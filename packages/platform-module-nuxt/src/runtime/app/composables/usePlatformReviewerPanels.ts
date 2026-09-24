@@ -8,8 +8,9 @@ export function usePlatformReviewerPanels() {
         (candidate) =>
           candidate.moduleId === moduleId && candidate.contributionId === contributionId,
       )
-      if (!contribution)
+      if (!contribution) {
         throw new Error(`Reviewer panel ${moduleId}/${contributionId} is not installed`)
+      }
       return contribution.load()
     },
   }

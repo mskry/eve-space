@@ -9,13 +9,13 @@ export function createFeatureExecutionMock(
   executeMutation = execute,
 ) {
   return {
-    createPublicEsiRead: (definition: CallableDefinition) => callable(definition, execute, null),
-    createCharacterEsiRead: (definition: CallableDefinition) =>
-      callable(definition, execute, getCharacterEsiScope(definition.operation as never)),
-    createCharacterEsiMutation: (definition: CallableDefinition) =>
-      callable(definition, executeMutation, getCharacterEsiScope(definition.operation as never)),
     combineEsiReadResultMetadata: combineMetadata,
     combineEsiResultMetadata: combineMetadata,
+    createCharacterEsiMutation: (definition: CallableDefinition) =>
+      callable(definition, executeMutation, getCharacterEsiScope(definition.operation as never)),
+    createCharacterEsiRead: (definition: CallableDefinition) =>
+      callable(definition, execute, getCharacterEsiScope(definition.operation as never)),
+    createPublicEsiRead: (definition: CallableDefinition) => callable(definition, execute, null),
     toEsiReadResultMetadata: metadataFrom,
   }
 }
@@ -26,18 +26,21 @@ function callable(
   requiredScope: string | null,
 ) {
   return {
+    execute: (input: unknown) => execute(definition, input, executionOptions(requiredScope, input)),
     operation: definition.operation,
     requiredScope,
-    execute: (input: unknown) => execute(definition, input, executionOptions(requiredScope, input)),
   }
 }
 
 function executionOptions(requiredScope: string | null, input: unknown) {
-  if (requiredScope !== null)
+  if (requiredScope !== null) {
     return {
       subjectLifecycleId: (input as { readonly subjectLifecycleId: string }).subjectLifecycleId,
     }
-  if (typeof input !== 'object' || input === null || !('signal' in input)) return undefined
+  }
+  if (typeof input !== 'object' || input === null || !('signal' in input)) {
+    return undefined
+  }
   return { signal: (input as { readonly signal?: AbortSignal }).signal }
 }
 
@@ -50,15 +53,17 @@ function metadataFrom(result: {
 }) {
   return {
     cachedUntil: result.cachedUntil,
-    validatedAt: result.validatedAt,
     stale: result.stale,
+    validatedAt: result.validatedAt,
     ...(result.retryAt ? { retryAt: result.retryAt } : {}),
     ...(result.refreshFailureClass ? { refreshFailureClass: result.refreshFailureClass } : {}),
   }
 }
 
 function combineMetadata(results: readonly ReturnType<typeof metadataFrom>[]) {
-  if (results.length === 0) throw new Error('At least one ESI result is required')
+  if (results.length === 0) {
+    throw new Error('At least one ESI result is required')
+  }
   const oldest = results.reduce((current, result) =>
     result.validatedAt < current.validatedAt ? result : current,
   )
@@ -80,8 +85,8 @@ function combineMetadata(results: readonly ReturnType<typeof metadataFrom>[]) {
       (current, result) => (result.cachedUntil < current ? result.cachedUntil : current),
       results[0]?.cachedUntil ?? '',
     ),
-    validatedAt: oldest.validatedAt,
     stale: oldestStale !== undefined,
+    validatedAt: oldest.validatedAt,
     ...(oldestStale?.refreshFailureClass
       ? { refreshFailureClass: oldestStale.refreshFailureClass }
       : {}),

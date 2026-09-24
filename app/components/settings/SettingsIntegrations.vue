@@ -48,31 +48,35 @@ watch(invalidationRevision, resetRoleAdministrationState, { flush: 'sync' })
 
 const integrations = [
   {
-    name: 'EVE Public ESI',
     detail: 'Character, corporation, alliance, race and bloodline records.',
+    name: 'EVE Public ESI',
     state: 'ACTIVE',
     tone: 'active',
   },
   {
-    name: 'EVE SSO',
     detail: 'Authorization Code flow, encrypted tokens and local sessions.',
+    name: 'EVE SSO',
     state: 'CONFIGURED',
     tone: 'active',
   },
   {
-    name: 'Character Finance',
     detail: 'Scoped wallet, personal market-order and contract access with quota protection.',
+    name: 'Character Finance',
     state: 'SCOPE BASED',
     tone: 'warning',
   },
 ]
 
 const ownerFeedback = computed(() => {
-  if (route.query.organizationOwner === 'success')
+  if (route.query.organizationOwner === 'success') {
     return 'Organization-owner authority was verified.'
-  if (route.query.organizationOwner === 'cancelled') return 'Authority verification was cancelled.'
-  if (route.query.organizationOwner === 'error')
+  }
+  if (route.query.organizationOwner === 'cancelled') {
+    return 'Authority verification was cancelled.'
+  }
+  if (route.query.organizationOwner === 'error') {
     return 'Authority verification failed. Confirm the character affiliation, EVE Director role, and requested scope.'
+  }
   return ''
 })
 const ownerFeedbackError = computed(
@@ -95,7 +99,9 @@ onMounted(async () => {
 })
 
 async function startOwnerClaim(characterId = claimCharacterId.value) {
-  if (!characterId) return
+  if (!characterId) {
+    return
+  }
   const destination = new URL(
     `/auth/eve/claim-organization-owner/${characterId}`,
     runtimeConfig.public.apiBase,
@@ -104,14 +110,18 @@ async function startOwnerClaim(characterId = claimCharacterId.value) {
 }
 
 async function submitOwnerReplacement() {
-  if (!ownerReplacementCharacterId.value) return
+  if (!ownerReplacementCharacterId.value) {
+    return
+  }
   actionMessage.value = ''
   try {
     const replaced = await replaceOwnerSource({
       characterId: ownerReplacementCharacterId.value,
       reason: ownerReplacementReason.value.trim(),
     })
-    if (!replaced) return
+    if (!replaced) {
+      return
+    }
     ownerReplacementCharacterId.value = null
     ownerReplacementReason.value = ''
     actionMessage.value = 'Organization-owner source replaced.'
@@ -121,14 +131,18 @@ async function submitOwnerReplacement() {
 }
 
 async function submitCorporationReplacement() {
-  if (!corporationReplacementId.value || !corporationReplacementCharacterId.value) return
+  if (!corporationReplacementId.value || !corporationReplacementCharacterId.value) {
+    return
+  }
   actionMessage.value = ''
   try {
     const replaced = await replaceCorporationSource({
-      corporationId: corporationReplacementId.value,
       characterId: corporationReplacementCharacterId.value,
+      corporationId: corporationReplacementId.value,
     })
-    if (!replaced) return
+    if (!replaced) {
+      return
+    }
     corporationReplacementId.value = null
     corporationReplacementCharacterId.value = null
     actionMessage.value = 'Corporation source replaced.'
@@ -141,11 +155,13 @@ async function submitGrant() {
   actionMessage.value = ''
   try {
     const granted = await grantRole({
-      userId: targetUserId.value.trim(),
-      role: delegatedRole.value,
       reason: grantReason.value.trim(),
+      role: delegatedRole.value,
+      userId: targetUserId.value.trim(),
     })
-    if (!granted) return
+    if (!granted) {
+      return
+    }
     targetUserId.value = ''
     grantReason.value = ''
     actionMessage.value = 'Organization role granted.'
@@ -155,11 +171,15 @@ async function submitGrant() {
 }
 
 async function submitRevocation() {
-  if (!revokeGrantId.value) return
+  if (!revokeGrantId.value) {
+    return
+  }
   actionMessage.value = ''
   try {
     const revoked = await revokeRole(revokeGrantId.value, revokeReason.value.trim())
-    if (!revoked) return
+    if (!revoked) {
+      return
+    }
     closeRevocation()
     actionMessage.value = 'Organization role revoked.'
   } catch {
@@ -194,10 +214,16 @@ function roleLabel(role: DelegatedOrganizationRole) {
 }
 
 function sourceFailureLabel(failureClass: string | null) {
-  if (!failureClass) return 'None'
+  if (!failureClass) {
+    return 'None'
+  }
   const label = failureClass.replace(/^(?:strict|transient):/, '').replaceAll('-', ' ')
-  if (label.startsWith('esi ')) return `ESI ${label.slice(4)}`
-  if (label.startsWith('sso ')) return `SSO ${label.slice(4)}`
+  if (label.startsWith('esi ')) {
+    return `ESI ${label.slice(4)}`
+  }
+  if (label.startsWith('sso ')) {
+    return `SSO ${label.slice(4)}`
+  }
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`
 }
 </script>

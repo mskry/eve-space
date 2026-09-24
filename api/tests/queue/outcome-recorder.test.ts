@@ -12,15 +12,15 @@ describe('queue outcome recorder', () => {
     const set = vi.fn().mockResolvedValue('OK')
     const recorder = createQueueOutcomeRecorder({ set } as never)
     const affiliation = { outcome: 'scheduled', planned: 2, recordedAt } as const
-    const outbox = { outcome: 'published', category: null, recordedAt } as const
+    const outbox = { category: null, outcome: 'published', recordedAt } as const
 
     await recorder.recordAffiliation(affiliation)
     await recorder.recordOutbox(outbox)
 
     expect(set.mock.calls[0]?.[0]).toBe('eve-space:v1:planner:affiliation:outcome')
-    expect(decodeAffiliationPlannerOutcome(set.mock.calls[0]?.[1])).toEqual(affiliation)
+    expect(decodeAffiliationPlannerOutcome(set.mock.calls[0]?.[1])).toStrictEqual(affiliation)
     expect(set.mock.calls[1]?.[0]).toBe('eve-space:v1:outbox-relay:outcome')
-    expect(decodeOutboxRelayOutcome(set.mock.calls[1]?.[1])).toEqual(outbox)
+    expect(decodeOutboxRelayOutcome(set.mock.calls[1]?.[1])).toStrictEqual(outbox)
   })
 
   test('rejects invalid values before writing and propagates Redis failures', async () => {
@@ -34,7 +34,7 @@ describe('queue outcome recorder', () => {
     expect(set).not.toHaveBeenCalled()
 
     await expect(
-      recorder.recordOutbox({ outcome: 'published', category: null, recordedAt }),
+      recorder.recordOutbox({ category: null, outcome: 'published', recordedAt }),
     ).rejects.toBe(failure)
   })
 })

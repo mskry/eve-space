@@ -5,12 +5,12 @@ describe('trained-skill projection', () => {
   test('projects deterministic catalogue progress and retains unknown skills', () => {
     const result = projectTrainedSkills(
       {
-        totalSp: 9_000,
-        unallocatedSp: 25,
         skills: [
           { typeId: 99, activeLevel: 1, trainedLevel: 2, skillpoints: 900 },
-          { typeId: 4, activeLevel: 4, trainedLevel: 5, skillpoints: 4_000 },
+          { typeId: 4, activeLevel: 4, trainedLevel: 5, skillpoints: 4000 },
         ],
+        totalSp: 9000,
+        unallocatedSp: 25,
       },
       {
         groups: [
@@ -19,11 +19,11 @@ describe('trained-skill projection', () => {
             name: 'Zeta Group',
             skills: [
               {
-                typeId: 2,
                 name: 'Beta',
-                rank: 1,
                 primaryAttribute: 'intelligence',
+                rank: 1,
                 secondaryAttribute: 'memory',
+                typeId: 2,
               },
             ],
           },
@@ -32,18 +32,18 @@ describe('trained-skill projection', () => {
             name: 'Alpha Group',
             skills: [
               {
-                typeId: 4,
                 name: 'Same',
-                rank: 2,
                 primaryAttribute: 'perception',
+                rank: 2,
                 secondaryAttribute: 'willpower',
+                typeId: 4,
               },
               {
-                typeId: 3,
                 name: 'Alpha',
-                rank: null,
                 primaryAttribute: null,
+                rank: null,
                 secondaryAttribute: null,
+                typeId: 3,
               },
             ],
           },
@@ -51,10 +51,13 @@ describe('trained-skill projection', () => {
       },
     )
 
-    expect(result).toMatchObject({ totalSp: 9_000, unallocatedSp: 25, injectedSkillCount: 2 })
-    expect(result.groups.map(({ name }) => name)).toEqual(['Alpha Group', 'Unknown', 'Zeta Group'])
+    expect(result).toMatchObject({ injectedSkillCount: 2, totalSp: 9000, unallocatedSp: 25 })
+    expect(result.groups.map(({ name }) => name)).toStrictEqual([
+      'Alpha Group',
+      'Unknown',
+      'Zeta Group',
+    ])
     expect(result.groups[0]).toMatchObject({
-      trainedSp: 4_000,
       skills: [
         { typeId: 3, injected: false, skillpoints: 0 },
         {
@@ -65,10 +68,10 @@ describe('trained-skill projection', () => {
           secondaryAttribute: 'willpower',
         },
       ],
+      trainedSp: 4000,
     })
     expect(result.groups[1]).toMatchObject({
       groupId: null,
-      trainedSp: 900,
       skills: [
         {
           typeId: 99,
@@ -78,6 +81,7 @@ describe('trained-skill projection', () => {
           secondaryAttribute: null,
         },
       ],
+      trainedSp: 900,
     })
   })
 })

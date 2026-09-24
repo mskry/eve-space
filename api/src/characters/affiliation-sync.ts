@@ -10,23 +10,22 @@ import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
 
 const generatedAffiliationBatchLimit =
   operationRegistry.PostCharactersAffiliation.transport.protocol.maximumBatchSize
-if (generatedAffiliationBatchLimit === null)
+if (generatedAffiliationBatchLimit === null) {
   throw new Error('Bulk affiliation operation must declare a maximum batch size')
+}
 const affiliationBatchLimit = generatedAffiliationBatchLimit
 
 const affiliationObservationCacheSchema = z.array(
   z.object({
+    allianceId: z.number().nullable(),
     characterId: z.number(),
     corporationId: z.number(),
-    allianceId: z.number().nullable(),
   }),
 )
 
 const bulkAffiliationRead = createPublicEsiRead({
-  operation: 'bulk-affiliation',
-  name: 'bulk-affiliation-core',
-  descriptor: operationRegistry.PostCharactersAffiliation.transport,
   cacheSchema: affiliationObservationCacheSchema,
+  descriptor: operationRegistry.PostCharactersAffiliation.transport,
   encodeRequest: (input: { body: number[]; signal?: AbortSignal }) => ({ body: input.body }),
   map: ({ data }): AffiliationObservation[] =>
     data.map((affiliation) => ({
@@ -34,6 +33,8 @@ const bulkAffiliationRead = createPublicEsiRead({
       corporationId: affiliation.corporation_id,
       allianceId: affiliation.alliance_id ?? null,
     })),
+  name: 'bulk-affiliation-core',
+  operation: 'bulk-affiliation',
 })
 
 interface AffiliationObservation {
@@ -51,7 +52,9 @@ export type AffiliationPersistenceHook = (
 export async function observeCharacterAffiliation(characterId: number, signal?: AbortSignal) {
   const result = await lookupAffiliationResult([characterId], signal)
   const observation = result.data.find((entry) => entry.characterId === characterId)
-  if (!observation) return null
+  if (!observation) {
+    return null
+  }
   return {
     ...observation,
     affiliationCheckedAt: new Date(result.validatedAt),
@@ -67,7 +70,7 @@ export async function observeAndPersistCharacterAffiliation(
 ) {
   const observation = await observeCharacterAffiliation(characterId, signal)
   signal?.throwIfAborted()
-  if (observation && !observation.stale)
+  if (observation && !observation.stale) {
     await persistAffiliationObservations(
       [characterId],
       [observation],
@@ -75,6 +78,7 @@ export async function observeAndPersistCharacterAffiliation(
       signal,
       afterPersist,
     )
+  }
   return observation
 }
 
@@ -85,7 +89,9 @@ export async function selectDueAffiliationBatches(now = new Date()) {
     .where(and(lte(characters.nextAffiliationCheck, now)))
     .orderBy(asc(characters.nextAffiliationCheck), asc(characters.characterId))
     .limit(affiliationBatchLimit)
-  if (due.length === 0) return []
+  if (due.length === 0) {
+    return []
+  }
   return [due.map(({ characterId }) => characterId).toSorted((left, right) => left - right)]
 }
 
@@ -113,7 +119,9 @@ async function persistAffiliationObservations(
   const requested = new Set(requestedCharacterIds)
   const returned = new Map<number, AffiliationObservation>()
   for (const observation of observations) {
-    if (requested.has(observation.characterId)) returned.set(observation.characterId, observation)
+    if (requested.has(observation.characterId)) {
+      returned.set(observation.characterId, observation)
+    }
   }
   const omitted = requestedCharacterIds.filter((characterId) => !returned.has(characterId))
   const observedAtValue = observedAt.toISOString()
@@ -134,7 +142,7 @@ async function persistAffiliationObservations(
       ) locks
     `)
     const affectedCharacters = await transaction
-      .select({ userId: characters.userId, characterId: characters.characterId })
+      .select({ characterId: characters.characterId, userId: characters.userId })
       .from(characters)
       .where(inArray(characters.characterId, [...requested]))
       .orderBy(asc(characters.userId), asc(characters.characterId))
@@ -145,9 +153,9 @@ async function persistAffiliationObservations(
     if (returned.size > 0) {
       const records = JSON.stringify(
         Array.from(returned.values(), (observation) => ({
+          alliance_id: observation.allianceId,
           character_id: observation.characterId,
           corporation_id: observation.corporationId,
-          alliance_id: observation.allianceId,
         })),
       )
       await transaction.execute(sql`
@@ -196,15 +204,16 @@ async function persistAffiliationObservations(
     }
     await afterPersist?.(transaction, affectedUserIds, observedAt)
     signal?.throwIfAborted()
-    for (const character of affectedCharacters)
+    for (const character of affectedCharacters) {
       // oxlint-disable-next-line no-await-in-loop -- Event sequence follows stable character order.
       await appendDomainEvent(transaction, {
-        type: 'character.affiliation-observed',
-        payloadVersion: 1,
         aggregateId: String(character.characterId),
-        payload: character,
         occurredAt: observedAt,
+        payload: character,
+        payloadVersion: 1,
+        type: 'character.affiliation-observed',
       })
+    }
     signal?.throwIfAborted()
   })
 }
@@ -218,8 +227,9 @@ function validateAffiliationBatch(characterIds: readonly number[]) {
     characterIds.length === 0 ||
     characterIds.length > affiliationBatchLimit ||
     characterIds.some((characterId) => !Number.isSafeInteger(characterId) || characterId <= 0)
-  )
+  ) {
     throw new Error('Invalid affiliation batch')
+  }
   return [...characterIds]
 }
 

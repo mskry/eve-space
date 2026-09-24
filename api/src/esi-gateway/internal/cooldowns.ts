@@ -38,17 +38,20 @@ export async function getEsiRequestCooldowns(options: {
   now?: number
   localState?: RuntimeLocalQuotaStatePort
 }): Promise<readonly EsiRequestCooldown[]> {
-  if (options.requests.length > options.maximumRequests)
+  if (options.requests.length > options.maximumRequests) {
     throw new Error('ESI cooldown batch exceeds the resource planner page bound')
-  if (options.requests.length === 0) return []
+  }
+  if (options.requests.length === 0) {
+    return []
+  }
   const now = options.now ?? Date.now()
   const globalKey = `${esiQuotaCoordinationPrefix}:cooldown:global`
   const requestKeys = options.requests.map(({ operation, principal }) => {
     const normalizedPrincipal = normalizeEsiPrincipal(principal)
     return {
+      key: cooldownKey(operation, normalizedPrincipal),
       operation,
       principal: normalizedPrincipal,
-      key: cooldownKey(operation, normalizedPrincipal),
     }
   })
   const keys = [globalKey, ...new Set(requestKeys.map(({ key }) => key))]
@@ -109,24 +112,26 @@ export async function recordEsiResponse(options: {
   const now = options.now ?? Date.now()
   const globalRetryAt =
     errorRemaining !== undefined && errorRemaining <= esiErrorBudgetFloor
-      ? now + (errorResetSeconds ?? esiCooldownFallbackSeconds) * 1_000
+      ? now + (errorResetSeconds ?? esiCooldownFallbackSeconds) * 1000
       : undefined
   const operationRetryAt =
     options.metadata.status === 429
-      ? now + (retryAfterSeconds ?? esiCooldownFallbackSeconds) * 1_000
+      ? now + (retryAfterSeconds ?? esiCooldownFallbackSeconds) * 1000
       : undefined
   const cooldowns: Array<[string, number]> = []
-  if (globalRetryAt !== undefined)
+  if (globalRetryAt !== undefined) {
     cooldowns.push([`${esiQuotaCoordinationPrefix}:cooldown:global`, globalRetryAt])
-  if (operationRetryAt !== undefined)
+  }
+  if (operationRetryAt !== undefined) {
     cooldowns.push([cooldownKey(options.operation, principal), operationRetryAt])
+  }
   recordLocalEsiCooldowns({
-    operation: options.operation,
-    principal,
     globalRetryAt,
-    operationRetryAt,
-    state: options.localState,
     now,
+    operation: options.operation,
+    operationRetryAt,
+    principal,
+    state: options.localState,
   })
   try {
     await Promise.all(
@@ -153,19 +158,23 @@ export async function getSharedEsiCooldownStatus(connection: Redis): Promise<Esi
       return retryAt ? [{ operation, retryAt }] : []
     })
     return {
-      status: globalRetryAt || activeOperations.length > 0 ? 'active' : 'inactive',
+      activeOperations,
       checkedAt,
       globalRetryAt,
-      activeOperations,
+      status: globalRetryAt || activeOperations.length > 0 ? 'active' : 'inactive',
     }
   } catch {
-    return { status: 'unavailable', checkedAt, globalRetryAt: null, activeOperations: [] }
+    return { activeOperations: [], checkedAt, globalRetryAt: null, status: 'unavailable' }
   }
 }
 
 export function normalizeEsiPrincipal(principal: string | undefined) {
-  if (!principal) return 'public'
-  if (!/^[a-z0-9_-]+$/i.test(principal)) throw new Error('Invalid ESI principal identity')
+  if (!principal) {
+    return 'public'
+  }
+  if (!/^[a-z0-9_-]+$/i.test(principal)) {
+    throw new Error('Invalid ESI principal identity')
+  }
   return principal
 }
 
@@ -176,8 +185,8 @@ function toCooldown(
 ): EsiRequestCooldown {
   return {
     active: retryAt > now,
-    retryAfterSeconds: retryAt > now ? Math.max(1, Math.ceil((retryAt - now) / 1_000)) : null,
     coordinationAvailable,
+    retryAfterSeconds: retryAt > now ? Math.max(1, Math.ceil((retryAt - now) / 1000)) : null,
   }
 }
 
@@ -194,7 +203,7 @@ async function setCooldownAtLeast(connection: Redis, key: string, retryAt: numbe
     1,
     key,
     retryAt,
-    Math.max(1_000, retryAt - now),
+    Math.max(1000, retryAt - now),
   )
 }
 

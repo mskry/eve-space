@@ -20,12 +20,16 @@ export const releaseCandidateSteps = Object.freeze([
 export async function createReleaseCandidate(outputDirectory: string): Promise<void> {
   const resolvedOutputDirectory = resolve(outputDirectory);
   await mkdir(resolvedOutputDirectory);
-  for (const step of releaseCandidateSteps) await runPnpm(step);
+  for (const step of releaseCandidateSteps) {
+    await runPnpm(step);
+  }
   const retainedPackage = await checkPackage({
     built: true,
     retainDirectory: resolvedOutputDirectory,
   });
-  if (retainedPackage === undefined) throw new Error('Release candidate was not retained');
+  if (retainedPackage === undefined) {
+    throw new Error('Release candidate was not retained');
+  }
   process.stdout.write(`${JSON.stringify(retainedPackage, null, 2)}\n`);
 }
 
@@ -34,8 +38,9 @@ function runPnpm(script: string): Promise<void> {
     const child = spawn(pnpmExecutable, [script], { stdio: 'inherit' });
     child.once('error', reject);
     child.once('exit', (code, signal) => {
-      if (code === 0) resolvePromise();
-      else {
+      if (code === 0) {
+        resolvePromise();
+      } else {
         const reason = signal ?? `exit code ${code}`;
         reject(new Error(`${script} failed with ${reason}`));
       }
@@ -46,7 +51,9 @@ function runPnpm(script: string): Promise<void> {
 function requiredArgument(name: string): string {
   const index = process.argv.indexOf(name);
   const value = process.argv[index + 1];
-  if (index < 0 || value === undefined) throw new Error(`${name} requires a value`);
+  if (index < 0 || value === undefined) {
+    throw new Error(`${name} requires a value`);
+  }
   return value;
 }
 

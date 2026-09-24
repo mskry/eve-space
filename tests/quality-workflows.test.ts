@@ -43,7 +43,7 @@ describe('repository quality workflow contracts', () => {
     expect(normalizeCommand(workflowStep(continuousIntegration, 'rust', 'Run Rust tests'))).toBe(
       'cargo test --locked --manifest-path sde-ingest/Cargo.toml --all-features',
     )
-    expect(rustToolchain).toEqual({
+    expect(rustToolchain).toStrictEqual({
       channel: '1.89.0',
       components: ['clippy', 'rustfmt'],
       profile: 'minimal',
@@ -87,7 +87,9 @@ describe('repository quality workflow contracts', () => {
 
 function workflowStep(workflow: Workflow, job: string, name: string) {
   const step = workflow.jobs[job]?.steps.find((candidate) => candidate.name === name)
-  if (!step) throw new Error(`Missing ${job} workflow step: ${name}`)
+  if (!step) {
+    throw new Error(`Missing ${job} workflow step: ${name}`)
+  }
   return step
 }
 
@@ -105,15 +107,21 @@ function tomlSection(content: string, expectedSection: string) {
 
   for (const rawLine of content.split('\n')) {
     const line = rawLine.trim()
-    if (!line || line.startsWith('#')) continue
+    if (!line || line.startsWith('#')) {
+      continue
+    }
     if (line.startsWith('[') && line.endsWith(']')) {
       section = line.slice(1, -1)
       continue
     }
-    if (section !== expectedSection) continue
+    if (section !== expectedSection) {
+      continue
+    }
 
     const separator = line.indexOf('=')
-    if (separator < 1) throw new Error(`Invalid TOML entry: ${line}`)
+    if (separator < 1) {
+      throw new Error(`Invalid TOML entry: ${line}`)
+    }
     values[line.slice(0, separator).trim()] = JSON.parse(line.slice(separator + 1).trim())
   }
 

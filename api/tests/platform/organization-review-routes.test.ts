@@ -9,15 +9,15 @@ const mocks = vi.hoisted(() => ({
   findSession: vi.fn(),
   listAvailableReviewerContributions: vi.fn(),
   organization: {
-    organizationVersion: 7,
-    state: 'compliant' as 'pending' | 'compliant' | 'review_required' | 'suspended',
-    evidenceFreshness: 'fresh' as const,
-    reviewDeadline: null as Date | null,
     accessValidUntil: new Date('2026-09-19T12:00:00.000Z') as Date | null,
     blocked: false,
+    evidenceFreshness: 'fresh' as const,
+    organizationVersion: 7,
+    reviewDeadline: null as Date | null,
+    state: 'compliant' as 'pending' | 'compliant' | 'review_required' | 'suspended',
   },
-  searchManagedOrganizationDirectory: vi.fn(),
   resolveOrganizationReviewerTarget: vi.fn(),
+  searchManagedOrganizationDirectory: vi.fn(),
 }))
 
 vi.mock('../../src/env.js', () => ({
@@ -60,8 +60,7 @@ import { ReviewerAccountSearchInputError } from '../../src/organization/reviewer
 const alpha = contribution('alpha', 'overview', 10)
 const beta = contribution('beta', 'details', 20)
 const directoryPage = {
-  organizationVersion: 7,
-  status: 'available' as const,
+  groupFacets: [{ groupId: '00000000-0000-4000-8000-000000000030', name: 'Audited' }],
   items: [
     {
       managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
@@ -102,8 +101,9 @@ const directoryPage = {
       },
     },
   ],
-  groupFacets: [{ groupId: '00000000-0000-4000-8000-000000000030', name: 'Audited' }],
   nextCursor: null,
+  organizationVersion: 7,
+  status: 'available' as const,
 }
 
 describe('platform organization review routes', () => {
@@ -115,8 +115,8 @@ describe('platform organization review routes', () => {
     mocks.organization.accessValidUntil = new Date('2026-09-19T12:00:00.000Z')
     mocks.organization.blocked = false
     mocks.findSession.mockResolvedValue({
-      userId: 'reviewer-1',
       mainCharacter: null,
+      userId: 'reviewer-1',
     })
     mocks.listAvailableReviewerContributions.mockResolvedValue([alpha, beta])
     mocks.authorizeOrganizationReviewerContribution.mockImplementation(
@@ -129,20 +129,18 @@ describe('platform organization review routes', () => {
           ? {
               authorized: true,
               context: {
-                organizationVersion: 7,
                 audience: 'hr',
-                requiredPermission: 'alpha.review',
                 entitlementScope: 'all',
+                organizationVersion: 7,
+                requiredPermission: 'alpha.review',
               },
             }
           : { authorized: false, reason: 'permission' },
     )
     mocks.searchManagedOrganizationDirectory.mockResolvedValue(directoryPage)
     mocks.resolveOrganizationReviewerTarget.mockResolvedValue({
-      organizationVersion: 7,
-      managedMemberLifecycleId: directoryPage.items[0]!.managedMemberLifecycleId,
-      selection: { kind: 'account' },
       account: directoryPage.items[0]!.account,
+      block: { blocked: false },
       characters: [
         {
           characterId: 90_000_001,
@@ -160,15 +158,17 @@ describe('platform organization review routes', () => {
         },
       ],
       compliance: {
-        state: 'compliant',
-        evidenceFreshness: 'fresh',
-        evidenceAt: '2026-09-18T12:00:00.000Z',
-        reviewDeadline: null,
         accessValidUntil: '2026-09-19T12:00:00.000Z',
         evaluatedAt: '2026-09-18T12:00:00.000Z',
+        evidenceAt: '2026-09-18T12:00:00.000Z',
+        evidenceFreshness: 'fresh',
+        reviewDeadline: null,
+        state: 'compliant',
       },
       groups: [],
-      block: { blocked: false },
+      managedMemberLifecycleId: directoryPage.items[0]!.managedMemberLifecycleId,
+      organizationVersion: 7,
+      selection: { kind: 'account' },
     })
   })
 
@@ -178,8 +178,7 @@ describe('platform organization review routes', () => {
     expect(response.status).toBe(200)
     expectPrivateResponsePolicy(response)
     const responseText = await response.clone().text()
-    await expect(response.json()).resolves.toEqual({
-      organizationVersion: 7,
+    await expect(response.json()).resolves.toStrictEqual({
       contributions: [
         {
           moduleId: 'alpha',
@@ -193,6 +192,7 @@ describe('platform organization review routes', () => {
           order: 10,
         },
       ],
+      organizationVersion: 7,
     })
     expect(responseText).not.toContain('panelPackage')
     expect(mocks.authorizeOrganizationReviewerContribution).toHaveBeenCalledTimes(2)
@@ -200,8 +200,8 @@ describe('platform organization review routes', () => {
       'reviewer-1',
       mocks.organization,
       expect.objectContaining({
-        moduleId: 'alpha',
         additionalRequiredPermissions: ['alpha.search', 'member-audit.summary.read'],
+        moduleId: 'alpha',
       }),
     )
   })
@@ -212,20 +212,20 @@ describe('platform organization review routes', () => {
     )
 
     expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual(directoryPage)
+    await expect(response.json()).resolves.toStrictEqual(directoryPage)
     expect(mocks.searchManagedOrganizationDirectory).toHaveBeenCalledWith({
-      organizationVersion: 7,
       filters: {
-        query: 'Target',
-        corporationId: 98_000_001,
-        groupId: '00000000-0000-4000-8000-000000000030',
-        complianceState: 'compliant',
-        blocked: false,
         auditState: 'current',
-        sort: 'managed_since',
+        blocked: false,
+        complianceState: 'compliant',
+        corporationId: 98_000_001,
         direction: 'desc',
+        groupId: '00000000-0000-4000-8000-000000000030',
         limit: 10,
+        query: 'Target',
+        sort: 'managed_since',
       },
+      organizationVersion: 7,
     })
     const serialized = JSON.stringify(directoryPage)
     for (const forbidden of [
@@ -245,8 +245,9 @@ describe('platform organization review routes', () => {
       'loginCount',
       'exportUrl',
       'csv',
-    ])
+    ]) {
       expect(serialized).not.toContain(forbidden)
+    }
   })
 
   test('returns the JSON error contract when an opaque cursor no longer matches', async () => {
@@ -258,7 +259,7 @@ describe('platform organization review routes', () => {
 
     expect(response.status).toBe(400)
     expectPrivateResponsePolicy(response)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'INVALID_REVIEWER_DIRECTORY_INPUT',
       message: 'Invalid reviewer directory input.',
     })
@@ -273,15 +274,16 @@ describe('platform organization review routes', () => {
           _organization,
           descriptor: PlatformInstalledOrganizationContributionAuthorization,
         ) => {
-          if (descriptor.additionalRequiredPermissions?.includes('member-audit.summary.read'))
+          if (descriptor.additionalRequiredPermissions?.includes('member-audit.summary.read')) {
             return { authorized: false, reason: 'permission' }
+          }
           return {
             authorized: true,
             context: {
-              organizationVersion: 7,
               audience: 'hr',
-              requiredPermission: descriptor.requiredPermission,
               entitlementScope: 'all',
+              organizationVersion: 7,
+              requiredPermission: descriptor.requiredPermission,
             },
           }
         },
@@ -316,10 +318,10 @@ describe('platform organization review routes', () => {
             : {
                 authorized: true,
                 context: {
-                  organizationVersion: 7,
                   audience: 'hr',
-                  requiredPermission: descriptor.requiredPermission,
                   entitlementScope: 'all',
+                  organizationVersion: 7,
+                  requiredPermission: descriptor.requiredPermission,
                 },
               },
       )
@@ -346,9 +348,7 @@ describe('platform organization review routes', () => {
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toMatchObject({
-      organizationVersion: 7,
       member: {
-        managedMemberLifecycleId: directoryPage.items[0]!.managedMemberLifecycleId,
         characters: [
           {
             characterId: 90_000_001,
@@ -356,7 +356,9 @@ describe('platform organization review routes', () => {
             authorizationGeneration: 4,
           },
         ],
+        managedMemberLifecycleId: directoryPage.items[0]!.managedMemberLifecycleId,
       },
+      organizationVersion: 7,
     })
     expect(mocks.resolveOrganizationReviewerTarget).toHaveBeenCalledWith({
       organizationVersion: 7,
@@ -370,7 +372,7 @@ describe('platform organization review routes', () => {
     const response = await request('/members/00000000-0000-4000-8000-000000000099')
 
     expect(response.status).toBe(404)
-    await expect(response.json()).resolves.toEqual({ message: 'Route not found' })
+    await expect(response.json()).resolves.toStrictEqual({ message: 'Route not found' })
     expect(mocks.searchManagedOrganizationDirectory).not.toHaveBeenCalled()
   })
 
@@ -416,21 +418,21 @@ function contribution(
   order: number,
 ): PlatformInstalledReviewerContributionDescriptor {
   return {
-    publisherPackage: `@example/${moduleId}-manifest`,
-    moduleId,
+    audience: 'hr',
     contributionId,
+    description: `Review ${moduleId}.`,
+    directoryPermission: `${moduleId}.search`,
+    icon: 'overview',
+    label: moduleId === 'alpha' ? 'Alpha' : 'Beta',
+    moduleId,
+    order,
+    panelExport: `./reviewer/${contributionId}`,
+    panelPackage: `@example/${moduleId}-nuxt`,
+    publisherPackage: `@example/${moduleId}-manifest`,
+    requiredPermission: `${moduleId}.review`,
     routeId: `${moduleId}-route`,
     routePath: `/api/modules/${moduleId}/accounts/:userId`,
-    audience: 'hr',
-    requiredPermission: `${moduleId}.review`,
-    directoryPermission: `${moduleId}.search`,
     target: 'managed-organization-account',
-    panelPackage: `@example/${moduleId}-nuxt`,
-    panelExport: `./reviewer/${contributionId}`,
-    label: moduleId === 'alpha' ? 'Alpha' : 'Beta',
-    description: `Review ${moduleId}.`,
-    icon: 'overview',
-    order,
   }
 }
 

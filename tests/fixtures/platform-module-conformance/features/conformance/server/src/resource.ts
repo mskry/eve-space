@@ -44,9 +44,6 @@ export const conformanceStatusResource = definePlatformSingleRequestResource<
   readonly ['published-type-groups'],
   ConformanceSnapshotWritePersistence
 >({
-  mode: 'single-request',
-  operation: 'conformance-status-operation',
-  request: () => ({}),
   async map({ data, capabilities }) {
     const typeGroups = await capabilities.coreData.publishedTypeGroups({ typeIds: [34] })
     return {
@@ -56,6 +53,9 @@ export const conformanceStatusResource = definePlatformSingleRequestResource<
     }
   },
   materialize: materializeConformanceStatus,
+  mode: 'single-request',
+  operation: 'conformance-status-operation',
+  request: () => ({}),
 })
 
 export const conformanceCollectionResource = definePlatformBoundedCollectionResource<
@@ -69,8 +69,6 @@ export const conformanceCollectionResource = definePlatformBoundedCollectionReso
   ConformanceSnapshotReadPersistence,
   ConformanceSnapshotWritePersistence
 >({
-  mode: 'bounded-collection',
-  operation: 'conformance-status-operation',
   async collect(context) {
     const previous = await context.capabilities.persistence.readConformanceSnapshot({
       characterId: context.subject.characterId,
@@ -90,6 +88,8 @@ export const conformanceCollectionResource = definePlatformBoundedCollectionReso
     }
   },
   materialize: materializeConformanceStatus,
+  mode: 'bounded-collection',
+  operation: 'conformance-status-operation',
 })
 
 async function materializeConformanceStatus({

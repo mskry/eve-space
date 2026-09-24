@@ -2,24 +2,7 @@ import { posix } from 'node:path'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
-  support: [
-    'internal/numeric',
-    'internal/quota-error',
-    'internal/response-error-metadata',
-    'internal/revalidation',
-    'internal/runtime-config',
-    'internal/timing',
-  ],
-  representation: [
-    'internal/types',
-    'internal/keys',
-    'internal/identity',
-    'internal/identity-projectors',
-    'internal/envelope',
-    'internal/l1-cache',
-    'internal/cache-redaction',
-    'internal/result-metadata',
-  ],
+  aggregateObservability: ['internal/telemetry', 'status-interface'],
   contract: [
     'internal/operation-metadata',
     'internal/catalog-validation',
@@ -32,11 +15,6 @@ const modulesByTier = {
     'internal/runtime-ports',
     'catalog-authority',
     'catalog-interface',
-  ],
-  infrastructure: [
-    'internal/coordination',
-    'internal/coordination-connection',
-    'internal/transport',
   ],
   execution: [
     'internal/execution-runtime',
@@ -53,8 +31,30 @@ const modulesByTier = {
     'failures',
     'runtime-lifecycle',
   ],
+  infrastructure: [
+    'internal/coordination',
+    'internal/coordination-connection',
+    'internal/transport',
+  ],
   recorderObservability: ['internal/telemetry-counters', 'internal/rate-measurement'],
-  aggregateObservability: ['internal/telemetry', 'status-interface'],
+  representation: [
+    'internal/types',
+    'internal/keys',
+    'internal/identity',
+    'internal/identity-projectors',
+    'internal/envelope',
+    'internal/l1-cache',
+    'internal/cache-redaction',
+    'internal/result-metadata',
+  ],
+  support: [
+    'internal/numeric',
+    'internal/quota-error',
+    'internal/response-error-metadata',
+    'internal/revalidation',
+    'internal/runtime-config',
+    'internal/timing',
+  ],
 } as const
 
 type EsiGatewayTier = keyof typeof modulesByTier
@@ -66,25 +66,6 @@ const tierByModule = new Map<string, EsiGatewayTier>(
 )
 
 const allowedImportTiersBySourceTier: Record<EsiGatewayTier, readonly EsiGatewayTier[]> = {
-  support: [],
-  representation: ['support', 'representation', 'contract', 'recorderObservability'],
-  contract: ['support', 'representation', 'contract', 'recorderObservability'],
-  infrastructure: [
-    'support',
-    'representation',
-    'contract',
-    'infrastructure',
-    'recorderObservability',
-  ],
-  execution: [
-    'support',
-    'representation',
-    'contract',
-    'infrastructure',
-    'execution',
-    'recorderObservability',
-  ],
-  recorderObservability: ['support', 'representation', 'contract', 'recorderObservability'],
   aggregateObservability: [
     'support',
     'representation',
@@ -94,6 +75,25 @@ const allowedImportTiersBySourceTier: Record<EsiGatewayTier, readonly EsiGateway
     'recorderObservability',
     'aggregateObservability',
   ],
+  contract: ['support', 'representation', 'contract', 'recorderObservability'],
+  execution: [
+    'support',
+    'representation',
+    'contract',
+    'infrastructure',
+    'execution',
+    'recorderObservability',
+  ],
+  infrastructure: [
+    'support',
+    'representation',
+    'contract',
+    'infrastructure',
+    'recorderObservability',
+  ],
+  recorderObservability: ['support', 'representation', 'contract', 'recorderObservability'],
+  representation: ['support', 'representation', 'contract', 'recorderObservability'],
+  support: [],
 }
 
 const sharedExternalDependencies = new Set([
@@ -111,16 +111,16 @@ const externalDependenciesByModule: Readonly<Record<string, readonly string[]>> 
   'catalog-interface': ['api/src/generated/platform/installed-module-esi'],
   'internal/catalog': ['api/src/generated/platform/installed-module-esi'],
   'internal/catalog-access': ['api/src/generated/platform/installed-module-esi'],
+  'internal/cooldowns': ['ioredis'],
   'internal/coordination': ['ioredis'],
   'internal/coordination-connection': ['api/src/coordination-redis'],
-  'internal/cooldowns': ['ioredis'],
   'internal/failure-policy': ['api/src/auth/token-errors'],
   'internal/permits': ['ioredis'],
   'internal/production-runtime': ['api/src/auth/tokens', 'api/src/env', 'api/src/cache-redis'],
-  'internal/request-lifecycle': ['effect'],
   'internal/rate-measurement': ['ioredis'],
-  'internal/telemetry-counters': ['ioredis', 'api/src/cache-redis'],
+  'internal/request-lifecycle': ['effect'],
   'internal/telemetry': ['ioredis', 'api/src/cache-redis', 'api/src/coordination-redis'],
+  'internal/telemetry-counters': ['ioredis', 'api/src/cache-redis'],
   'status-interface': ['api/src/cache-redis'],
 }
 
@@ -142,21 +142,24 @@ export function esiGatewayConsumerImportViolations(
   return sources
     .flatMap(({ path, source }) =>
       typescriptModuleSpecifiers(path, source).flatMap((specifier) => {
-        if (specifier.includes('/esi-gateway/internal/'))
+        if (specifier.includes('/esi-gateway/internal/')) {
           return [`${path}: ${consumer} code cannot import ESI gateway internal modules`]
+        }
         if (
           consumer === 'core' &&
           !path.startsWith('api/src/platform/') &&
           specifier.endsWith('/esi-gateway/platform-execution.js')
-        )
+        ) {
           return [`${path}: core code cannot import ESI gateway platform execution`]
+        }
         if (
           consumer === 'installed-module' &&
           (specifier.endsWith('/esi-gateway/feature-execution.js') ||
             specifier === '@evespace/esi-client' ||
             specifier.startsWith('@evespace/esi-client/'))
-        )
+        ) {
           return [`${path}: installed module cannot import core ESI execution or SDK runtime code`]
+        }
         return []
       }),
     )
@@ -171,8 +174,9 @@ export function esiGatewayExternalInternalViolations(sources: readonly EsiGatewa
       path === 'scripts/module-registry/authorities.ts' ||
       path.startsWith('api/tests/esi-gateway/') ||
       path === 'api/tests/integration/redis/esi-gateway.test.ts'
-    )
+    ) {
       return []
+    }
     return /['"][^'"]*esi-gateway\/internal\//.test(source)
       ? [`${path}: external code cannot import or mock ESI gateway internal modules`]
       : []
@@ -182,14 +186,20 @@ export function esiGatewayExternalInternalViolations(sources: readonly EsiGatewa
 function violationsForSource(source: EsiGatewaySource) {
   const module = gatewayModuleName(source.path)
   const sourceTier = tierByModule.get(module)
-  if (!sourceTier) return [`${source.path}: ESI gateway module ${module} has no declared tier`]
+  if (!sourceTier) {
+    return [`${source.path}: ESI gateway module ${module} has no declared tier`]
+  }
 
   return typescriptModuleSpecifiers(source.path, source.source).flatMap((specifier) => {
     const importedModule = localGatewayModuleName(module, specifier)
-    if (!importedModule) return externalDependencyViolations(source.path, module, specifier)
+    if (!importedModule) {
+      return externalDependencyViolations(source.path, module, specifier)
+    }
     const importedTier = tierByModule.get(importedModule)
     const allowedImportTiers = allowedImportTiersBySourceTier[sourceTier]
-    if (!importedTier || allowedImportTiers.includes(importedTier)) return []
+    if (!importedTier || allowedImportTiers.includes(importedTier)) {
+      return []
+    }
     return [
       `${source.path}: ${sourceTier} module ${module} cannot import ${importedTier} module ${importedModule}`,
     ]
@@ -200,13 +210,15 @@ function externalDependencyViolations(path: string, module: string, specifier: s
   const dependency = specifier.startsWith('.')
     ? posix.normalize(posix.join(posix.dirname(path), specifier)).replace(/\.(?:[cm]?js|ts)$/, '')
     : specifier
-  if (dependency === 'api/src/env' && module !== 'internal/production-runtime')
+  if (dependency === 'api/src/env' && module !== 'internal/production-runtime') {
     return [`${path}: only the production runtime may import application configuration`]
+  }
   if (
     sharedExternalDependencies.has(dependency) ||
     externalDependenciesByModule[module]?.includes(dependency)
-  )
+  ) {
     return []
+  }
   return [`${path}: module ${module} cannot import external dependency ${dependency}`]
 }
 
@@ -216,7 +228,9 @@ function dependencyCycles(sources: readonly EsiGatewaySource[]) {
   const active: string[] = []
   const cycles = new Set<string>()
 
-  for (const module of modules.keys()) visitModule(module, modules, visited, active, cycles)
+  for (const module of modules.keys()) {
+    visitModule(module, modules, visited, active, cycles)
+  }
   return [...cycles].map((cycle) => `ESI gateway dependency cycle: ${cycle}`)
 }
 
@@ -227,19 +241,24 @@ function visitModule(
   active: string[],
   cycles: Set<string>,
 ): void {
-  if (visited.has(module)) return
+  if (visited.has(module)) {
+    return
+  }
   const activeIndex = active.indexOf(module)
   if (activeIndex !== -1) {
     cycles.add([...active.slice(activeIndex), module].join(' -> '))
     return
   }
   const source = modules.get(module)
-  if (!source) return
+  if (!source) {
+    return
+  }
   active.push(module)
   for (const specifier of typescriptModuleSpecifiers(source.path, source.source)) {
     const importedModule = localGatewayModuleName(module, specifier)
-    if (importedModule && modules.has(importedModule))
+    if (importedModule && modules.has(importedModule)) {
       visitModule(importedModule, modules, visited, active, cycles)
+    }
   }
   active.pop()
   visited.add(module)
@@ -253,8 +272,12 @@ function gatewayModuleName(path: string) {
 }
 
 function localGatewayModuleName(sourceModule: string, specifier: string) {
-  if (!specifier.startsWith('.')) return undefined
+  if (!specifier.startsWith('.')) {
+    return
+  }
   const resolved = posix.normalize(posix.join(posix.dirname(sourceModule), specifier))
-  if (resolved === '..' || resolved.startsWith('../')) return undefined
+  if (resolved === '..' || resolved.startsWith('../')) {
+    return
+  }
   return resolved.replace(/\.(?:[cm]?js|ts)$/, '')
 }

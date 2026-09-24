@@ -27,61 +27,61 @@ describe('clone state inference', () => {
 
 describe('clone ESI resource state', () => {
   const copy = {
-    resourceCode: 'CLONES',
-    loadingMessage: 'Loading clone data...',
     authorizationTitle: 'Clone authorization required',
     errorTitle: 'Clone data unavailable',
+    loadingMessage: 'Loading clone data...',
+    resourceCode: 'CLONES',
   }
 
   it('maps loading, authorization, error, and ready states', () => {
-    expect(toCloneEsiResourceState(cloneResourceState({ status: 'loading' }), copy)).toEqual({
+    expect(toCloneEsiResourceState(cloneResourceState({ status: 'loading' }), copy)).toStrictEqual({
+      message: 'Loading clone data...',
       status: 'loading',
       title: '',
-      message: 'Loading clone data...',
     })
     expect(
       toCloneEsiResourceState(
         cloneResourceState({
-          status: 'authorization',
-          message: 'Authorize clone access.',
           authorizeUrl: '/reauthorize',
+          message: 'Authorize clone access.',
+          status: 'authorization',
         }),
         copy,
       ),
-    ).toEqual({
-      status: 'authorization-required',
-      code: 'ESI 403 / CLONES',
-      title: 'Clone authorization required',
-      message: 'Authorize clone access.',
+    ).toStrictEqual({
       action: { href: '/reauthorize', label: 'AUTHORIZE THIS CHARACTER' },
+      code: 'ESI 403 / CLONES',
+      message: 'Authorize clone access.',
+      status: 'authorization-required',
+      title: 'Clone authorization required',
     })
     expect(
       toCloneEsiResourceState(
-        cloneResourceState({ status: 'authorization', authorizeUrl: '' }),
+        cloneResourceState({ authorizeUrl: '', status: 'authorization' }),
         copy,
       ),
-    ).toMatchObject({ status: 'authorization-required', action: null })
+    ).toMatchObject({ action: null, status: 'authorization-required' })
     expect(
       toCloneEsiResourceState(
-        cloneResourceState({ status: 'error', message: 'Clone lookup failed.' }),
+        cloneResourceState({ message: 'Clone lookup failed.', status: 'error' }),
         copy,
       ),
-    ).toEqual({
-      status: 'error',
+    ).toStrictEqual({
       code: 'ERR / CLONES',
-      title: 'Clone data unavailable',
       message: 'Clone lookup failed.',
       retryLabel: 'RETRY UPLINK',
+      status: 'error',
+      title: 'Clone data unavailable',
     })
-    expect(toCloneEsiResourceState(cloneResourceState(), copy)).toEqual({ status: 'ready' })
+    expect(toCloneEsiResourceState(cloneResourceState(), copy)).toStrictEqual({ status: 'ready' })
   })
 })
 
 function cloneResourceState(overrides: Partial<CloneResourceState> = {}): CloneResourceState {
   return {
-    status: 'ready',
-    message: '',
     authorizeUrl: '',
+    message: '',
+    status: 'ready',
     ...overrides,
   }
 }

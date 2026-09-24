@@ -15,7 +15,9 @@ export function usePlatformNavigation(placement: PlatformNavigationPlacement) {
     )
     const order: readonly PlatformNavigationIdentity[] | undefined =
       runtimeQuery.data.value?.shellNavigationOrder[placement]
-    if (!order) return entries
+    if (!order) {
+      return entries
+    }
 
     const entriesById = new Map(entries.map((entry) => [entryId(entry), entry]))
     const ordered = order.flatMap((entry) => {
@@ -25,7 +27,9 @@ export function usePlatformNavigation(placement: PlatformNavigationPlacement) {
     const orderedIds = new Set(ordered.map(entryId))
     const resolved = [...ordered]
     for (const entry of entries) {
-      if (orderedIds.has(entryId(entry))) continue
+      if (orderedIds.has(entryId(entry))) {
+        continue
+      }
       const preceding = entries
         .slice(0, entries.indexOf(entry))
         .findLast((candidate) =>

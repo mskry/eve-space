@@ -43,7 +43,7 @@ describe('mail mutations', () => {
     expect(mutations.readPendingIds.value.has(1)).toBe(true)
 
     finishRequest()
-    await expect(request).resolves.toEqual({ success: true })
+    await expect(request).resolves.toStrictEqual({ success: true })
     expect(mutations.readStateOverrides.value.get(1)).toBe(true)
     expect(mutations.readPendingIds.value.has(1)).toBe(false)
     unmount()
@@ -70,7 +70,7 @@ describe('mail mutations', () => {
     unmount()
     finishRequest()
 
-    await expect(request).resolves.toEqual({ success: true })
+    await expect(request).resolves.toStrictEqual({ success: true })
     expect(requests).toHaveBeenCalledOnce()
   })
 
@@ -96,7 +96,7 @@ describe('mail mutations', () => {
 
     await expect(
       mutations.setMailRead({ characterId, header: mailHeader(1, false), read: true }),
-    ).resolves.toEqual({ success: true })
+    ).resolves.toStrictEqual({ success: true })
 
     for (const key of [allMailKey, inboxKey]) {
       expect(
@@ -129,7 +129,7 @@ describe('mail mutations', () => {
 
     await expect(
       mutations.setMailRead({ characterId, header: mailHeader(1, true), read: false }),
-    ).resolves.toEqual({ success: true })
+    ).resolves.toStrictEqual({ success: true })
 
     expect(queryCache.getQueryData<ReturnType<typeof mailLabels>>(labelsKey)).toMatchObject({
       labels: [{ unreadCount: 1 }],
@@ -156,14 +156,16 @@ describe('mail mutations', () => {
     queryCache.setQueryData(labelsKey, mailLabels(1))
 
     const outcome = await mutations.deleteMail({ characterId, header: mailHeader(1, false) })
-    if (outcome.error) throw outcome.error
-    expect(outcome).toEqual({ success: true })
+    if (outcome.error) {
+      throw outcome.error
+    }
+    expect(outcome).toStrictEqual({ success: true })
 
     expect(
       queryCache
         .getQueryData<ReturnType<typeof mailHeaders>>(headersKey)
         ?.messages.map(({ mailId }) => mailId),
-    ).toEqual([2])
+    ).toStrictEqual([2])
     expect(queryCache.get(detailKey)?.when).toBe(0)
     expect(queryCache.getQueryData<ReturnType<typeof mailLabels>>(labelsKey)).toMatchObject({
       labels: [{ unreadCount: 0 }],
@@ -199,7 +201,7 @@ describe('mail mutations', () => {
 
     await expect(
       mutations.deleteMail({ characterId, header: mailHeader(1, false) }),
-    ).resolves.toEqual({ success: true })
+    ).resolves.toStrictEqual({ success: true })
     finishHeaderRequest()
     await staleRequest
 
@@ -207,7 +209,7 @@ describe('mail mutations', () => {
       queryCache
         .getQueryData<ReturnType<typeof mailHeaders>>(headersOptions.key)
         ?.messages.map(({ mailId }) => mailId),
-    ).toEqual([])
+    ).toStrictEqual([])
     unmount()
   })
 
@@ -239,14 +241,14 @@ describe('mail mutations', () => {
 
     await expect(
       mutations.setMailRead({ characterId, header: mailHeader(1, false), read: true }),
-    ).resolves.toEqual({ success: true })
+    ).resolves.toStrictEqual({ success: true })
     finishOlderRequest()
     await expect(olderRequest).resolves.toMatchObject({ status: 'success' })
     expect(
       queryCache
         .getQueryData<ReturnType<typeof mailHeaders>>(olderOptions.key)
         ?.messages.map(({ mailId }) => mailId),
-    ).toEqual([49])
+    ).toStrictEqual([49])
     unmount()
   })
 
@@ -277,7 +279,7 @@ describe('mail mutations', () => {
 
     await expect(
       mutations.deleteMail({ characterId, header: mailHeader(1, false) }),
-    ).resolves.toEqual({ success: true })
+    ).resolves.toStrictEqual({ success: true })
     finishFolderRequest()
     await folderRequest
 
@@ -330,15 +332,15 @@ describe('mail mutations', () => {
         header: mailHeader(1, false),
         labels: [1, 2],
       }),
-    ).resolves.toEqual({ success: true })
-    expect(mutations.labelOverrides.value.get(1)).toEqual([1, 2])
-    expect(queryCache.getQueryData<ReturnType<typeof mailDetail>>(detailKey)?.labelIds).toEqual([
-      1, 2,
-    ])
+    ).resolves.toStrictEqual({ success: true })
+    expect(mutations.labelOverrides.value.get(1)).toStrictEqual([1, 2])
+    expect(
+      queryCache.getQueryData<ReturnType<typeof mailDetail>>(detailKey)?.labelIds,
+    ).toStrictEqual([1, 2])
 
     await Promise.resolve()
     mutations.reconcileLabelState([mailHeader(1, false)])
-    expect(mutations.labelOverrides.value.get(1)).toEqual([1, 2])
+    expect(mutations.labelOverrides.value.get(1)).toStrictEqual([1, 2])
     mutations.reconcileLabelState([mailHeader(1, false, [2, 1])])
     expect(mutations.labelOverrides.value.has(1)).toBe(false)
     expect(labelRequests).not.toHaveBeenCalled()
@@ -368,26 +370,26 @@ describe('mail mutations', () => {
         header: mailHeader(1, false),
         labels: [2],
       }),
-    ).resolves.toEqual({ success: true })
+    ).resolves.toStrictEqual({ success: true })
 
     expect(
       queryCache
         .getQueryData<ReturnType<typeof mailHeaders>>(inboxKey)
         ?.messages.map(({ mailId }) => mailId),
-    ).toEqual([])
+    ).toStrictEqual([])
     expect(
       queryCache
         .getQueryData<ReturnType<typeof mailHeaders>>(priorityKey)
         ?.messages.map(({ mailId }) => mailId),
-    ).toEqual([2, 1])
+    ).toStrictEqual([2, 1])
     expect(
       queryCache.getQueryData<ReturnType<typeof mailHeaders>>(allMailKey)?.messages[0]?.labelIds,
-    ).toEqual([2])
+    ).toStrictEqual([2])
     expect(
       queryCache
         .getQueryData<ReturnType<typeof mailHeaders>>(unrelatedKey)
         ?.messages.map(({ mailId }) => mailId),
-    ).toEqual([3])
+    ).toStrictEqual([3])
     unmount()
   })
 
@@ -404,15 +406,15 @@ describe('mail mutations', () => {
 
     await expect(
       mutations.createMailLabel({ characterId, color: '#fe0000', name: 'Priority' }),
-    ).resolves.toEqual({ success: true })
-    expect(mutations.createdLabels.value).toEqual([
+    ).resolves.toStrictEqual({ success: true })
+    expect(mutations.createdLabels.value).toStrictEqual([
       { color: '#fe0000', labelId: 2, name: 'Priority', unreadCount: 0 },
     ])
     expect(
       queryCache
         .getQueryData<ReturnType<typeof mailLabels>>(labelsKey)
         ?.labels.map(({ labelId }) => labelId),
-    ).toEqual([1, 2])
+    ).toStrictEqual([1, 2])
 
     await Promise.resolve()
     mutations.reconcileCreatedLabels(staleLabels.labels)
@@ -447,20 +449,22 @@ describe('mail mutations', () => {
     })
     mutations.labelOverrides.value = new Map([[1, [1, 2]]])
 
-    await expect(mutations.deleteMailLabel({ characterId, labelId: 2 })).resolves.toEqual({
+    await expect(mutations.deleteMailLabel({ characterId, labelId: 2 })).resolves.toStrictEqual({
       success: true,
     })
 
     expect(
       queryCache.getQueryData<ReturnType<typeof mailHeaders>>(headersKey)?.messages[0]?.labelIds,
-    ).toEqual([1])
-    expect(queryCache.getQueryData<ReturnType<typeof mailDetail>>(detailKey)?.labelIds).toEqual([1])
+    ).toStrictEqual([1])
+    expect(
+      queryCache.getQueryData<ReturnType<typeof mailDetail>>(detailKey)?.labelIds,
+    ).toStrictEqual([1])
     expect(
       queryCache
         .getQueryData<ReturnType<typeof mailLabels>>(labelsKey)
         ?.labels.map(({ labelId }) => labelId),
-    ).toEqual([1])
-    expect(mutations.labelOverrides.value.get(1)).toEqual([1])
+    ).toStrictEqual([1])
+    expect(mutations.labelOverrides.value.get(1)).toStrictEqual([1])
     expect(mutations.deletedLabelIds.value.has(2)).toBe(true)
     unmount()
   })
@@ -521,7 +525,7 @@ describe('mail mutations', () => {
 
     await expect(
       mutations.createMailLabel({ characterId, color: '#fe0000', name: 'Replacement' }),
-    ).resolves.toEqual({ reusedDeletedLabelId: 2, success: true })
+    ).resolves.toStrictEqual({ reusedDeletedLabelId: 2, success: true })
     expect(mutations.deletedLabelIds.value.has(2)).toBe(true)
     expect(mutations.createdLabels.value).toContainEqual({
       color: '#fe0000',
@@ -533,7 +537,7 @@ describe('mail mutations', () => {
       queryCache
         .getQueryData<ReturnType<typeof mailLabels>>(labelsKey)
         ?.labels.find((label) => label.labelId === 2),
-    ).toEqual({ color: '#fe0000', labelId: 2, name: 'Replacement', unreadCount: 0 })
+    ).toStrictEqual({ color: '#fe0000', labelId: 2, name: 'Replacement', unreadCount: 0 })
 
     mutations.retireReusedDeletedLabel(characterId, 2)
     finishHeaders()
@@ -543,10 +547,10 @@ describe('mail mutations', () => {
     expect(
       queryCache.getQueryData<ReturnType<typeof mailHeaders>>(headersOptions.key)?.messages[0]
         ?.labelIds,
-    ).toEqual([1])
+    ).toStrictEqual([1])
     expect(
       queryCache.getQueryData<ReturnType<typeof mailDetail>>(detailOptions.key)?.labelIds,
-    ).toEqual([1])
+    ).toStrictEqual([1])
     unmount()
   })
 
@@ -585,7 +589,7 @@ describe('mail mutations', () => {
     const olderRequest = queryCache.fetch(queryCache.ensure(olderOptions))
     await Promise.all([detailStarted, olderStarted])
 
-    await expect(mutations.deleteMailLabel({ characterId, labelId: 2 })).resolves.toEqual({
+    await expect(mutations.deleteMailLabel({ characterId, labelId: 2 })).resolves.toStrictEqual({
       success: true,
     })
     finishDetail()
@@ -593,8 +597,8 @@ describe('mail mutations', () => {
 
     await expect(detailRequest).resolves.toMatchObject({ status: 'success' })
     await expect(olderRequest).resolves.toMatchObject({ status: 'success' })
-    expect(queryCache.getQueryData(detailOptions.key)?.labelIds).toEqual([1, 2])
-    expect(queryCache.getQueryData(olderOptions.key)?.messages[0]?.labelIds).toEqual([1, 2])
+    expect(queryCache.getQueryData(detailOptions.key)?.labelIds).toStrictEqual([1, 2])
+    expect(queryCache.getQueryData(olderOptions.key)?.messages[0]?.labelIds).toStrictEqual([1, 2])
     expect(mutations.deletedLabelIds.value.has(2)).toBe(true)
     unmount()
   })
@@ -617,13 +621,13 @@ describe('mail mutations', () => {
       header: mailHeader(1, false),
       labels: [1, 2],
     })
-    await expect(mutations.deleteMailLabel({ characterId, labelId: 2 })).resolves.toEqual({
+    await expect(mutations.deleteMailLabel({ characterId, labelId: 2 })).resolves.toStrictEqual({
       success: false,
     })
     expect(deleteRequests).not.toHaveBeenCalled()
 
     finishAssignment()
-    await expect(assignment).resolves.toEqual({ success: true })
+    await expect(assignment).resolves.toStrictEqual({ success: true })
     unmount()
   })
 
@@ -647,11 +651,11 @@ describe('mail mutations', () => {
         header: mailHeader(1, false),
         labels: [1, 2],
       }),
-    ).resolves.toEqual({ success: false })
+    ).resolves.toStrictEqual({ success: false })
     expect(assignmentRequests).not.toHaveBeenCalled()
 
     finishDeletion()
-    await expect(deletion).resolves.toEqual({ success: true })
+    await expect(deletion).resolves.toStrictEqual({ success: true })
     unmount()
   })
 
@@ -667,8 +671,11 @@ describe('mail mutations', () => {
         http.put('http://localhost/api/me/characters/7/mail/1', async ({ request }) => {
           const body = await request.json()
           requestBodies.push(body)
-          if ('read' in (body as object)) await readCanFinish
-          else await labelsCanFinish
+          if ('read' in (body as object)) {
+            await readCanFinish
+          } else {
+            await labelsCanFinish
+          }
           return new HttpResponse(null, { status: 204 })
         }),
       )
@@ -808,7 +815,7 @@ describe('mail mutations', () => {
     mutations.resetMailMutations()
     finishRequest()
 
-    await expect(request).resolves.toEqual({ invalidated: true, success: false })
+    await expect(request).resolves.toStrictEqual({ invalidated: true, success: false })
     expect(queryCache.getQueryData<ReturnType<typeof mailHeaders>>(key)?.messages[0]?.isRead).toBe(
       false,
     )

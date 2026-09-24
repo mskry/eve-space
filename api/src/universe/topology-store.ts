@@ -91,7 +91,9 @@ async function selectActiveRevision(database: UniverseQuery, signal: AbortSignal
     `,
     signal,
   )
-  if (!row) throw new UniverseTopologyUnavailableError('Universe topology revision is missing')
+  if (!row) {
+    throw new UniverseTopologyUnavailableError('Universe topology revision is missing')
+  }
   return {
     buildNumber: positiveSafeInteger(row.build_number, 'build number'),
     ingestVersion: positiveSafeInteger(row.ingest_version, 'ingest version'),
@@ -110,8 +112,9 @@ function buildTopologySnapshot(
     registerTopologyRow(row, systems, gateRows)
   }
 
-  if (systems.size === 0 || gateRows.size === 0)
+  if (systems.size === 0 || gateRows.size === 0) {
     throw new UniverseTopologyUnavailableError('Universe topology is incomplete')
+  }
 
   for (const row of gateRows.values()) {
     connectTopologyGate(row, systems)
@@ -123,8 +126,8 @@ function buildTopologySnapshot(
       id,
       Object.freeze({
         id,
-        securityStatus: system.securityStatus,
         neighbors: Object.freeze([...system.neighbors].toSorted((left, right) => left - right)),
+        securityStatus: system.securityStatus,
       }),
     )
   }
@@ -137,21 +140,24 @@ function registerTopologyRow(
   gateRows: Map<number, UniverseTopologyRow>,
 ) {
   const id = positiveSafeInteger(row.id, `${row.dataset} ID`)
-  if (row.key !== String(id))
+  if (row.key !== String(id)) {
     throw new UniverseTopologyUnavailableError('Universe topology row key is invalid')
+  }
 
   switch (row.dataset) {
     case 'mapSolarSystems':
-      if (systems.has(id))
+      if (systems.has(id)) {
         throw new UniverseTopologyUnavailableError('Universe topology contains duplicate systems')
+      }
       systems.set(id, {
-        securityStatus: optionalFiniteSecurity(row.security_status),
         neighbors: new Set(),
+        securityStatus: optionalFiniteSecurity(row.security_status),
       })
       return
     case 'mapStargates':
-      if (gateRows.has(id))
+      if (gateRows.has(id)) {
         throw new UniverseTopologyUnavailableError('Universe topology contains duplicate stargates')
+      }
       gateRows.set(id, row)
       return
     default:
@@ -169,32 +175,42 @@ function connectTopologyGate(
     'stargate destination system ID',
   )
   const source = systems.get(sourceSystemId)
-  if (!source || !systems.has(destinationSystemId))
+  if (!source || !systems.has(destinationSystemId)) {
     throw new UniverseTopologyUnavailableError('Universe topology contains an unknown system')
+  }
   source.neighbors.add(destinationSystemId)
 }
 
 function positiveSafeInteger(value: unknown, label: string) {
   let parsed = Number.NaN
-  if (typeof value === 'number') parsed = value
-  else if (typeof value === 'string' && /^[1-9]\d*$/.test(value)) parsed = Number(value)
-  if (!Number.isSafeInteger(parsed) || parsed <= 0)
+  if (typeof value === 'number') {
+    parsed = value
+  } else if (typeof value === 'string' && /^[1-9]\d*$/.test(value)) {
+    parsed = Number(value)
+  }
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
     throw new UniverseTopologyUnavailableError(`Universe topology ${label} is invalid`)
+  }
   return parsed
 }
 
 function nonemptyString(value: unknown, label: string) {
-  if (typeof value !== 'string' || value.trim().length === 0)
+  if (typeof value !== 'string' || value.trim().length === 0) {
     throw new UniverseTopologyUnavailableError(`Universe topology ${label} is invalid`)
+  }
   return value
 }
 
 function optionalFiniteSecurity(value: unknown) {
-  if (value === null) return null
-  if (typeof value === 'string' && (value.length === 0 || value.trim() !== value))
+  if (value === null) {
+    return null
+  }
+  if (typeof value === 'string' && (value.length === 0 || value.trim() !== value)) {
     throw new UniverseTopologyUnavailableError('Universe topology security status is invalid')
+  }
   const parsed = typeof value === 'number' ? value : Number(value)
-  if (!Number.isFinite(parsed) || parsed < -1 || parsed > 1)
+  if (!Number.isFinite(parsed) || parsed < -1 || parsed > 1) {
     throw new UniverseTopologyUnavailableError('Universe topology security status is invalid')
+  }
   return parsed
 }

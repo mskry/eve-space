@@ -23,5 +23,6 @@ const violations = [
   ...platformFeatureImportViolations(await loadPlatformHostSources(root)),
 ]
 
-if (violations.length > 0)
+if (violations.length > 0) {
   throw new Error(`Module server boundary verification failed:\n${violations.join('\n')}`)
+}

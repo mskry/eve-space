@@ -9,10 +9,10 @@ vi.mock('../../src/esi-gateway/feature-execution.js', () =>
 
 const freshness = {
   cachedUntil: '2026-08-20T12:01:00.000Z',
-  validatedAt: '2026-08-20T12:00:00.000Z',
   quota: {},
   source: 'esi' as const,
   stale: false,
+  validatedAt: '2026-08-20T12:00:00.000Z',
 }
 
 beforeEach(() => {
@@ -21,28 +21,28 @@ beforeEach(() => {
       case 'public-character':
         return Promise.resolve(
           result({
-            name: 'Bandera Primary',
-            birthday: '2008-01-31T00:00:00Z',
-            gender: 'female',
-            raceId: 4,
-            bloodlineId: 5,
-            securityStatus: -0.3,
             achievementScore: 0,
-            corporationId: 1_000_166,
-            factionId: null,
             allianceId: 99_000_001,
+            birthday: '2008-01-31T00:00:00Z',
+            bloodlineId: 5,
+            corporationId: 1_000_166,
             description: String.raw`<font color="#ffffffff">u'고생 끝에 낙이 온다'</font>`,
+            factionId: null,
+            gender: 'female',
+            name: 'Bandera Primary',
+            raceId: 4,
+            securityStatus: -0.3,
           }),
         )
       case 'public-corporation':
         return Promise.resolve(
           result({
+            corporation: { memberCount: 1, name: 'Imperial Academy', ticker: 'IAC' },
             found: true,
-            corporation: { name: 'Imperial Academy', ticker: 'IAC', memberCount: 1 },
           }),
         )
       case 'universe-races':
-        return Promise.resolve(result([{ raceId: 4, name: 'Amarr' }]))
+        return Promise.resolve(result([{ name: 'Amarr', raceId: 4 }]))
       case 'universe-bloodlines':
         return Promise.resolve(result([{ bloodlineId: 5, name: 'Khanid' }]))
       case 'public-alliance':
@@ -58,20 +58,20 @@ describe('character profile', () => {
     const { getCharacterProfile } = await import('../../src/characters/profile.js')
 
     await expect(getCharacterProfile(90_000_001)).resolves.toMatchObject({
-      id: 90_000_001,
-      name: 'Bandera Primary',
+      alliance: { id: 99_000_001, name: 'Alliance', ticker: 'ALLY' },
       bio: {
         plainText: '고생 끝에 낙이 온다',
         runs: [{ color: '#ffffffff', start: 0, text: '고생 끝에 낙이 온다' }],
       },
-      race: 'Amarr',
       bloodline: 'Khanid',
-      corporation: { id: 1_000_166, name: 'Imperial Academy', ticker: 'IAC', memberCount: 1 },
-      alliance: { id: 99_000_001, name: 'Alliance', ticker: 'ALLY' },
+      corporation: { id: 1_000_166, memberCount: 1, name: 'Imperial Academy', ticker: 'IAC' },
+      id: 90_000_001,
+      name: 'Bandera Primary',
+      race: 'Amarr',
     })
     expect(
       mocks.executeRepresentation.mock.calls.map(([definition]) => definition.operation),
-    ).toEqual([
+    ).toStrictEqual([
       'public-character',
       'public-corporation',
       'universe-races',
@@ -87,33 +87,34 @@ describe('character profile', () => {
           ? '2026-08-20T11:56:00.000Z'
           : '2026-08-20T12:00:00.000Z',
       )
-      if (definition.operation === 'universe-bloodlines')
+      if (definition.operation === 'universe-bloodlines') {
         return Promise.resolve({
           ...result([{ bloodlineId: 5, name: 'Khanid' }]),
           ...base,
-          stale: true,
-          retryAt: '2026-08-20T12:05:00.000Z',
           refreshFailureClass: 'response-invalid',
+          retryAt: '2026-08-20T12:05:00.000Z',
+          stale: true,
         })
+      }
       const defaults = {
+        'public-alliance': { name: 'Alliance', ticker: 'ALLY' },
         'public-character': {
-          name: 'Bandera Primary',
-          birthday: '',
-          gender: 'female',
-          raceId: 4,
-          bloodlineId: 5,
-          securityStatus: 0,
           achievementScore: 0,
+          allianceId: 99_000_001,
+          birthday: '',
+          bloodlineId: 5,
           corporationId: 1_000_166,
           factionId: null,
-          allianceId: 99_000_001,
+          gender: 'female',
+          name: 'Bandera Primary',
+          raceId: 4,
+          securityStatus: 0,
         },
         'public-corporation': {
+          corporation: { memberCount: 1, name: 'Imperial Academy', ticker: 'IAC' },
           found: true,
-          corporation: { name: 'Imperial Academy', ticker: 'IAC', memberCount: 1 },
         },
         'universe-races': [{ raceId: 4, name: 'Amarr' }],
-        'public-alliance': { name: 'Alliance', ticker: 'ALLY' },
       } as const
       return Promise.resolve({
         data: defaults[definition.operation as keyof typeof defaults],
@@ -123,10 +124,10 @@ describe('character profile', () => {
     const { getCharacterProfile } = await import('../../src/characters/profile.js')
 
     await expect(getCharacterProfile(90_000_001)).resolves.toMatchObject({
-      validatedAt: '2026-08-20T11:56:00.000Z',
-      stale: true,
-      retryAt: '2026-08-20T12:05:00.000Z',
       refreshFailureClass: 'response-invalid',
+      retryAt: '2026-08-20T12:05:00.000Z',
+      stale: true,
+      validatedAt: '2026-08-20T11:56:00.000Z',
     })
   })
 })

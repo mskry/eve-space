@@ -46,7 +46,7 @@ describe('worker lifecycle', () => {
 
     await vi.advanceTimersByTimeAsync(15_000)
 
-    expect(JSON.parse(String(error.mock.calls[0]?.[0]))).toEqual(
+    expect(JSON.parse(String(error.mock.calls[0]?.[0]))).toStrictEqual(
       expect.objectContaining({
         event: 'worker.heartbeat.failed',
         failureCategory: 'dependency-unavailable',
@@ -106,10 +106,10 @@ describe('worker lifecycle', () => {
 
 function heartbeatConnection() {
   return {
-    set: vi.fn().mockResolvedValue('OK'),
-    sadd: vi.fn().mockResolvedValue(1),
-    srem: vi.fn().mockResolvedValue(1),
-    smembers: vi.fn().mockResolvedValue([]),
     mget: vi.fn().mockResolvedValue([]),
+    sadd: vi.fn().mockResolvedValue(1),
+    set: vi.fn().mockResolvedValue('OK'),
+    smembers: vi.fn().mockResolvedValue([]),
+    srem: vi.fn().mockResolvedValue(1),
   }
 }

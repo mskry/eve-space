@@ -49,22 +49,22 @@ describe('Finance presentation helpers', () => {
         }),
         'Wallet',
       ),
-    ).toEqual({
-      status: 'authorization-required',
-      code: 'ESI 403 / FINANCE',
-      title: 'Wallet not authorized',
-      message: 'Wallet scope required.',
+    ).toStrictEqual({
       action: { href: '/reauthorize', label: 'AUTHORIZE' },
+      code: 'ESI 403 / FINANCE',
+      message: 'Wallet scope required.',
+      status: 'authorization-required',
+      title: 'Wallet not authorized',
     })
     expect(
       toFinanceEsiResourceState(
         financeResourceState({ errorMessage: 'Previous failure.', loading: true }),
         'Wallet Journal',
       ),
-    ).toEqual({
+    ).toStrictEqual({
+      message: 'Loading wallet journal...',
       status: 'loading',
       title: '',
-      message: 'Loading wallet journal...',
     })
     expect(
       toFinanceEsiResourceState(
@@ -75,26 +75,26 @@ describe('Finance presentation helpers', () => {
         }),
         'Wallet Journal',
       ),
-    ).toEqual({
-      status: 'error',
+    ).toStrictEqual({
       code: 'ESI 504 / JOURNAL',
-      title: 'Wallet Journal unavailable',
       message: 'Journal timed out.',
       retryLabel: 'RETRY',
+      status: 'error',
+      title: 'Wallet Journal unavailable',
     })
     expect(
       toFinanceEsiResourceState(
         financeResourceState({ errorMessage: 'Balance unavailable.' }),
         'Wallet',
       ),
-    ).toEqual({
-      status: 'error',
+    ).toStrictEqual({
       code: 'ESI 502 / FINANCE',
-      title: 'Wallet unavailable',
       message: 'Balance unavailable.',
       retryLabel: undefined,
+      status: 'error',
+      title: 'Wallet unavailable',
     })
-    expect(toFinanceEsiResourceState(financeResourceState(), 'Wallet')).toEqual({
+    expect(toFinanceEsiResourceState(financeResourceState(), 'Wallet')).toStrictEqual({
       status: 'ready',
     })
   })
@@ -148,8 +148,8 @@ describe('Finance presentation helpers', () => {
 
   it('groups and filters loaded journal entries without changing range identity', () => {
     const entries = [
-      journalEntry(1, 'contract_reward', 20, now - 1_000),
-      journalEntry(2, 'market_transaction', -10, now - 1_000),
+      journalEntry(1, 'contract_reward', 20, now - 1000),
+      journalEntry(2, 'market_transaction', -10, now - 1000),
       journalEntry(3, 'player_donation', null, now - 31 * 86_400_000),
     ]
 
@@ -158,21 +158,21 @@ describe('Finance presentation helpers', () => {
     expect(financeJournalGroup('player_donation')).toBe('Other')
     expect(
       filterFinanceJournalEntries(entries, '30D', 'All', now).map((entry) => entry.journalId),
-    ).toEqual([1, 2])
+    ).toStrictEqual([1, 2])
     expect(
       filterFinanceJournalEntries(entries, 'ALL', 'Expense', now).map((entry) => entry.journalId),
-    ).toEqual([2])
+    ).toStrictEqual([2])
     expect(
       filterFinanceJournalEntries(entries, 'ALL', 'Contracts', now).map((entry) => entry.journalId),
-    ).toEqual([1])
+    ).toStrictEqual([1])
   })
 
   it('preserves open-versus-history order calculations and collection labels', () => {
-    const open = [order(1, { isBuy: true, escrow: 50, volumeRemain: 3, volumeTotal: 10 })]
+    const open = [order(1, { escrow: 50, isBuy: true, volumeRemain: 3, volumeTotal: 10 })]
     const history = [order(2, { issuedAt: new Date(now - 31 * 86_400_000).toISOString() })]
 
-    expect(filterFinanceOrders(open, history, 'open', '7D', 'Escrowed', now)).toEqual(open)
-    expect(filterFinanceOrders(open, history, 'history', '30D', 'All', now)).toEqual([])
+    expect(filterFinanceOrders(open, history, 'open', '7D', 'Escrowed', now)).toStrictEqual(open)
+    expect(filterFinanceOrders(open, history, 'history', '30D', 'All', now)).toStrictEqual([])
     expect(financeOrderFill(open[0]!)).toBe(70)
     expect(financeOrderFill({ volumeRemain: 0, volumeTotal: 0 })).toBe(0)
     expect(financeOrderVolumeNumerator(open[0]!, 'open')).toBe(3)
@@ -186,38 +186,38 @@ describe('Finance presentation helpers', () => {
 
   it('preserves contract grouping and applicability', () => {
     const contracts = [
-      contract(1, { type: 'courier', role: 'assigned', status: 'outstanding' }),
-      contract(2, { type: 'auction', role: 'issued', status: 'finished' }),
-      contract(3, { type: 'item_exchange', role: 'issued', status: 'in_progress' }),
+      contract(1, { role: 'assigned', status: 'outstanding', type: 'courier' }),
+      contract(2, { role: 'issued', status: 'finished', type: 'auction' }),
+      contract(3, { role: 'issued', status: 'in_progress', type: 'item_exchange' }),
     ]
 
     expect(financeContractHasItems('auction')).toBe(true)
     expect(financeContractHasItems('courier')).toBe(true)
     expect(financeContractHasItems('item_exchange')).toBe(true)
     expect(financeContractHasItems('loan')).toBe(false)
-    expect(filterFinanceContracts(contracts, 'ALL', 'awaiting', now)).toEqual([contracts[0]])
-    expect(filterFinanceContracts(contracts, 'ALL', 'active', now)).toEqual([
+    expect(filterFinanceContracts(contracts, 'ALL', 'awaiting', now)).toStrictEqual([contracts[0]])
+    expect(filterFinanceContracts(contracts, 'ALL', 'active', now)).toStrictEqual([
       contracts[0],
       contracts[2],
     ])
-    expect(filterFinanceContracts(contracts, 'ALL', 'closed', now)).toEqual([contracts[1]])
+    expect(filterFinanceContracts(contracts, 'ALL', 'closed', now)).toStrictEqual([contracts[1]])
   })
 
   it('calculates and labels page-scoped and complete-collection summary metrics', () => {
     const journal: FinanceJournal = {
       entries: [
-        journalEntry(1, 'mission_reward', 200, now - 1_000),
-        journalEntry(2, 'tax', null, now - 1_000),
+        journalEntry(1, 'mission_reward', 200, now - 1000),
+        journalEntry(2, 'tax', null, now - 1000),
       ],
       page: 1,
+      stale: false,
       totalPages: 3,
       validatedAt: new Date(now).toISOString(),
-      stale: false,
     }
     const openOrders: FinanceOrders = {
-      orders: [order(1, { escrow: 100, expiresAt: new Date(now + 1_000).toISOString() })],
-      validatedAt: new Date(now).toISOString(),
+      orders: [order(1, { escrow: 100, expiresAt: new Date(now + 1000).toISOString() })],
       stale: false,
+      validatedAt: new Date(now).toISOString(),
     }
     const contracts = {
       contracts: [
@@ -230,55 +230,55 @@ describe('Finance presentation helpers', () => {
           role: 'assigned',
           status: 'outstanding',
           issuedAt: new Date(now - 31 * 86_400_000).toISOString(),
-          expiredAt: new Date(now + 1_000).toISOString(),
+          expiredAt: new Date(now + 1000).toISOString(),
         }),
       ],
       page: 1,
+      stale: false,
       totalPages: 2,
       validatedAt: new Date(now).toISOString(),
-      stale: false,
     }
 
-    const summary = calculateFinanceSummary({ journal, openOrders, contracts, range: '30D', now })
+    const summary = calculateFinanceSummary({ contracts, journal, now, openOrders, range: '30D' })
     expect(summary).toMatchObject({
-      journalEntryCount: 2,
-      netInRange: 200,
+      awaitingContractCount: 1,
       escrowOrderCount: 1,
       escrowTotal: 100,
-      awaitingContractCount: 1,
-      expiringOrderCount: 1,
       expiringContractCount: 1,
+      expiringOrderCount: 1,
+      journalEntryCount: 2,
+      netInRange: 200,
     })
-    expect(buildFinanceSummaryMetrics(summary, summaryCopy)).toEqual([
+    expect(buildFinanceSummaryMetrics(summary, summaryCopy)).toStrictEqual([
       {
+        detail: '2 journal entries · loaded page',
         id: 'net',
         label: 'Net change',
-        detail: '2 journal entries · loaded page',
         value: '+200.00 ISK',
       },
       {
+        detail: '1 buy orders · complete collection',
         id: 'escrow',
         label: 'In escrow',
-        detail: '1 buy orders · complete collection',
         value: '100 ISK',
       },
       {
+        detail: 'contracts assigned to you · loaded page',
         id: 'awaiting',
         label: 'Awaiting me',
-        detail: 'contracts assigned to you · loaded page',
-        value: '1',
         link: true,
+        value: '1',
       },
       {
+        detail: '1 orders · 1 contracts',
         id: 'expiring',
         label: 'Expiring < 48h',
-        detail: '1 orders · 1 contracts',
         value: '2',
       },
     ])
     expect(
-      buildFinanceSummaryMetrics(calculateFinanceSummary({ range: '30D', now }), summaryCopy),
-    ).toEqual([])
+      buildFinanceSummaryMetrics(calculateFinanceSummary({ now, range: '30D' }), summaryCopy),
+    ).toStrictEqual([])
   })
 
   it('formats synchronization ages from the supplied instant only', () => {
@@ -307,49 +307,49 @@ function financeResourceState(overrides: Partial<FinanceResourceState> = {}): Fi
 
 function journalEntry(id: number, referenceType: string, amount: number | null, timestamp: number) {
   return {
-    journalId: id,
-    date: new Date(timestamp).toISOString(),
     amount,
     balance: null,
-    referenceType,
+    date: new Date(timestamp).toISOString(),
     description: `Entry ${id}`,
+    journalId: id,
+    referenceType,
   }
 }
 
 function order(id: number, overrides: Partial<FinanceOrder> = {}): FinanceOrder {
   return {
+    escrow: null,
+    expiresAt: new Date(now + 7 * 86_400_000).toISOString(),
+    isBuy: false,
+    issuedAt: new Date(now - 1000).toISOString(),
+    locationId: 60_003_760,
+    locationName: null,
     orderId: id,
+    price: 5,
+    range: 'station',
+    state: null,
     typeId: 34,
     typeName: 'Tritanium',
-    isBuy: false,
-    price: 5,
     volumeRemain: 5,
     volumeTotal: 10,
-    escrow: null,
-    range: 'station',
-    locationId: 60003760,
-    locationName: null,
-    issuedAt: new Date(now - 1_000).toISOString(),
-    expiresAt: new Date(now + 7 * 86_400_000).toISOString(),
-    state: null,
     ...overrides,
   }
 }
 
 function contract(id: number, overrides: Partial<FinanceContract> = {}): FinanceContract {
   return {
-    contractId: id,
-    type: 'item_exchange',
-    status: 'outstanding',
     availability: 'personal',
-    role: 'issued',
-    title: null,
-    issuedAt: new Date(now - 1_000).toISOString(),
-    expiredAt: new Date(now + 7 * 86_400_000).toISOString(),
+    collateral: null,
+    contractId: id,
     daysToComplete: null,
+    expiredAt: new Date(now + 7 * 86_400_000).toISOString(),
+    issuedAt: new Date(now - 1000).toISOString(),
     price: null,
     reward: null,
-    collateral: null,
+    role: 'issued',
+    status: 'outstanding',
+    title: null,
+    type: 'item_exchange',
     volume: null,
     ...overrides,
   }

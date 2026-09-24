@@ -24,13 +24,13 @@ describe('IndexedDB query persistence storage', () => {
     const initial = envelope('Initial public')
     await storage.write(JSON.stringify(initial), true)
 
-    await expect(storage.invalidate({ kind: 'character', characterId: 7 })).resolves.toEqual({
+    await expect(storage.invalidate({ characterId: 7, kind: 'character' })).resolves.toStrictEqual({
       generation: 1,
-      scope: { kind: 'character', characterId: 7 },
+      scope: { characterId: 7, kind: 'character' },
     })
 
     const stale = envelope('Updated public')
-    await expect(storage.write(JSON.stringify(stale), true)).resolves.toEqual({
+    await expect(storage.write(JSON.stringify(stale), true)).resolves.toStrictEqual({
       generation: 1,
       privateAccepted: false,
     })
@@ -38,10 +38,10 @@ describe('IndexedDB query persistence storage', () => {
 
     expect(restored.generation).toBe(1)
     expect(JSON.parse(restored.value!)).toMatchObject({
-      invalidationGeneration: 1,
-      public: { [PUBLIC_KEY]: tuple({ name: 'Updated public' }, { kind: 'public-esi' }) },
       characters: {},
+      invalidationGeneration: 1,
       organizations: initial.organizations,
+      public: { [PUBLIC_KEY]: tuple({ name: 'Updated public' }, { kind: 'public-esi' }) },
     })
   })
 
@@ -51,7 +51,7 @@ describe('IndexedDB query persistence storage', () => {
 
     await storage.removeEnvelope()
 
-    await expect(storage.read()).resolves.toEqual({ generation: 0, value: null })
+    await expect(storage.read()).resolves.toStrictEqual({ generation: 0, value: null })
     await expect(storage.readGeneration()).resolves.toBe(0)
   })
 
@@ -67,8 +67,8 @@ describe('IndexedDB query persistence storage', () => {
       now: () => NOW,
     })
 
-    await expect(storage.read()).resolves.toEqual({ generation: 0, value: null })
-    await expect(storage.read()).resolves.toEqual({ generation: 0, value: null })
+    await expect(storage.read()).resolves.toStrictEqual({ generation: 0, value: null })
+    await expect(storage.read()).resolves.toStrictEqual({ generation: 0, value: null })
   })
 
   it('invalidates one module scope atomically and rejects its stale captured-generation write', async () => {
@@ -78,23 +78,23 @@ describe('IndexedDB query persistence storage', () => {
     await storage.write(JSON.stringify(initial), true)
 
     await expect(
-      storage.invalidate({ kind: 'organization', admissionScope: MODULE_SCOPE }),
-    ).resolves.toEqual({
+      storage.invalidate({ admissionScope: MODULE_SCOPE, kind: 'organization' }),
+    ).resolves.toStrictEqual({
       generation: 1,
-      scope: { kind: 'organization', admissionScope: MODULE_SCOPE },
+      scope: { admissionScope: MODULE_SCOPE, kind: 'organization' },
     })
-    await expect(storage.write(JSON.stringify(staleWrite), true)).resolves.toEqual({
+    await expect(storage.write(JSON.stringify(staleWrite), true)).resolves.toStrictEqual({
       generation: 1,
       privateAccepted: false,
     })
 
     const restored = JSON.parse((await storage.read()).value!) as EsiQueryCacheEnvelope
     expect(restored.invalidationGeneration).toBe(1)
-    expect(restored.public).toEqual({
+    expect(restored.public).toStrictEqual({
       [PUBLIC_KEY]: tuple({ name: 'Updated public' }, { kind: 'public-esi' }),
     })
-    expect(restored.characters).toEqual(initial.characters)
-    expect(restored.organizations[ORGANIZATION_SCOPE]).toEqual(
+    expect(restored.characters).toStrictEqual(initial.characters)
+    expect(restored.organizations[ORGANIZATION_SCOPE]).toStrictEqual(
       initial.organizations[ORGANIZATION_SCOPE],
     )
     expect(restored.organizations[MODULE_SCOPE]).toBeUndefined()
@@ -110,27 +110,29 @@ describe('IndexedDB query persistence storage', () => {
     })
     await storage.write(JSON.stringify(envelope('Initial public')), true)
     indexedDb.setRecord('eve-space-esi-query-cache-control', {
-      version: 1,
       invalidationGeneration: 'invalid',
+      version: 1,
     })
 
     const restored = await storage.read()
 
     expect(restored.generation).toBeNull()
     expect(JSON.parse(restored.value!)).toMatchObject({
-      public: { [PUBLIC_KEY]: tuple({ name: 'Initial public' }, { kind: 'public-esi' }) },
       characters: {},
       organizations: {},
+      public: { [PUBLIC_KEY]: tuple({ name: 'Initial public' }, { kind: 'public-esi' }) },
     })
 
-    await expect(storage.write(JSON.stringify(envelope('Updated public')), true)).resolves.toEqual({
+    await expect(
+      storage.write(JSON.stringify(envelope('Updated public')), true),
+    ).resolves.toStrictEqual({
       generation: null,
       privateAccepted: false,
     })
     expect(JSON.parse((await storage.read()).value!)).toMatchObject({
-      public: { [PUBLIC_KEY]: tuple({ name: 'Updated public' }, { kind: 'public-esi' }) },
       characters: {},
       organizations: {},
+      public: { [PUBLIC_KEY]: tuple({ name: 'Updated public' }, { kind: 'public-esi' }) },
     })
   })
 
@@ -145,7 +147,7 @@ describe('IndexedDB query persistence storage', () => {
     await storage.write(JSON.stringify(envelope('Initial public')), true)
     indexedDb.rejectNextTransaction()
 
-    await expect(storage.invalidate({ kind: 'character', characterId: 7 })).resolves.toBeNull()
+    await expect(storage.invalidate({ characterId: 7, kind: 'character' })).resolves.toBeNull()
 
     const reloaded = createIndexedDbQueryPersistenceStorage({
       indexedDb: indexedDb as unknown as IDBFactory,
@@ -155,17 +157,17 @@ describe('IndexedDB query persistence storage', () => {
     const restored = await reloaded.read()
     expect(restored.generation).toBe(1)
     expect(JSON.parse(restored.value!)).toMatchObject({
-      invalidationGeneration: 1,
-      public: { [PUBLIC_KEY]: tuple({ name: 'Initial public' }, { kind: 'public-esi' }) },
       characters: {},
+      invalidationGeneration: 1,
       organizations: {},
+      public: { [PUBLIC_KEY]: tuple({ name: 'Initial public' }, { kind: 'public-esi' }) },
     })
-    await expect(reloaded.write(JSON.stringify(envelope('Updated public')), true)).resolves.toEqual(
-      {
-        generation: 1,
-        privateAccepted: false,
-      },
-    )
+    await expect(
+      reloaded.write(JSON.stringify(envelope('Updated public')), true),
+    ).resolves.toStrictEqual({
+      generation: 1,
+      privateAccepted: false,
+    })
   })
 
   it('uses the IndexedDB barrier when local storage is unavailable', async () => {
@@ -179,7 +181,7 @@ describe('IndexedDB query persistence storage', () => {
     await storage.write(JSON.stringify(envelope('Initial public')), true)
     indexedDb.rejectTransactionAfter(1)
 
-    await expect(storage.invalidate({ kind: 'character', characterId: 7 })).resolves.toBeNull()
+    await expect(storage.invalidate({ characterId: 7, kind: 'character' })).resolves.toBeNull()
     await expect(storage.readGeneration()).resolves.toBeNull()
 
     const reloaded = createIndexedDbQueryPersistenceStorage({
@@ -190,10 +192,10 @@ describe('IndexedDB query persistence storage', () => {
     const restored = await reloaded.read()
     expect(restored.generation).toBe(1)
     expect(JSON.parse(restored.value!)).toMatchObject({
-      invalidationGeneration: 1,
-      public: { [PUBLIC_KEY]: tuple({ name: 'Initial public' }, { kind: 'public-esi' }) },
       characters: {},
+      invalidationGeneration: 1,
       organizations: {},
+      public: { [PUBLIC_KEY]: tuple({ name: 'Initial public' }, { kind: 'public-esi' }) },
     })
   })
 
@@ -207,19 +209,19 @@ describe('IndexedDB query persistence storage', () => {
     })
     await storage.write(JSON.stringify(envelope('Initial public')), true)
     indexedDb.rejectTransactionAfter(1)
-    await expect(storage.invalidate({ kind: 'character', characterId: 7 })).resolves.toBeNull()
+    await expect(storage.invalidate({ characterId: 7, kind: 'character' })).resolves.toBeNull()
 
     await expect(
-      storage.invalidate({ kind: 'organization', admissionScope: ORGANIZATION_SCOPE }),
-    ).resolves.toEqual({ generation: 1, scope: { kind: 'all' } })
+      storage.invalidate({ admissionScope: ORGANIZATION_SCOPE, kind: 'organization' }),
+    ).resolves.toStrictEqual({ generation: 1, scope: { kind: 'all' } })
     const restored = JSON.parse((await storage.read()).value!) as EsiQueryCacheEnvelope
-    expect(restored.characters).toEqual({})
-    expect(restored.organizations).toEqual({})
+    expect(restored.characters).toStrictEqual({})
+    expect(restored.organizations).toStrictEqual({})
   })
 
   it.each([
-    ['malformed', { version: 1, invalidationGeneration: 'invalid' }],
-    ['exhausted', { version: 1, invalidationGeneration: Number.MAX_SAFE_INTEGER }],
+    ['malformed', { invalidationGeneration: 'invalid', version: 1 }],
+    ['exhausted', { invalidationGeneration: Number.MAX_SAFE_INTEGER, version: 1 }],
   ])('poisons %s durable control during invalidation', async (_label, invalidControl) => {
     const indexedDb = new FakeIndexedDb()
     const localStorage = new FakeStorage()
@@ -231,18 +233,20 @@ describe('IndexedDB query persistence storage', () => {
     await storage.write(JSON.stringify(envelope('Initial public')), true)
     indexedDb.setRecord('eve-space-esi-query-cache-control', invalidControl)
 
-    await expect(storage.invalidate({ kind: 'character', characterId: 7 })).resolves.toBeNull()
-    await expect(storage.read()).resolves.toEqual({ generation: null, value: null })
-    await expect(storage.write(JSON.stringify(envelope('Updated public')), true)).resolves.toEqual({
+    await expect(storage.invalidate({ characterId: 7, kind: 'character' })).resolves.toBeNull()
+    await expect(storage.read()).resolves.toStrictEqual({ generation: null, value: null })
+    await expect(
+      storage.write(JSON.stringify(envelope('Updated public')), true),
+    ).resolves.toStrictEqual({
       generation: null,
       privateAccepted: false,
     })
     const restored = JSON.parse((await storage.read()).value!) as EsiQueryCacheEnvelope
-    expect(restored.public).toEqual({
+    expect(restored.public).toStrictEqual({
       [PUBLIC_KEY]: tuple({ name: 'Updated public' }, { kind: 'public-esi' }),
     })
-    expect(restored.characters).toEqual({})
-    expect(restored.organizations).toEqual({})
+    expect(restored.characters).toStrictEqual({})
+    expect(restored.organizations).toStrictEqual({})
   })
 })
 
@@ -256,18 +260,16 @@ function createStorage(): QueryPersistenceStorage {
 
 function envelope(publicName: string): EsiQueryCacheEnvelope {
   return {
-    version: 1,
-    invalidationGeneration: 0,
-    public: { [PUBLIC_KEY]: tuple({ name: publicName }, { kind: 'public-esi' }) },
     characters: {
       7: {
-        ownerUserId: 'user-1',
         admissionRevision: 'character-revision-1',
         cache: {
           [CHARACTER_KEY]: tuple({ name: 'Character' }, { kind: 'character-esi', characterId: 7 }),
         },
+        ownerUserId: 'user-1',
       },
     },
+    invalidationGeneration: 0,
     organizations: {
       [ORGANIZATION_SCOPE]: {
         ownerUserId: 'user-1',
@@ -294,6 +296,8 @@ function envelope(publicName: string): EsiQueryCacheEnvelope {
         },
       },
     },
+    public: { [PUBLIC_KEY]: tuple({ name: publicName }, { kind: 'public-esi' }) },
+    version: 1,
   }
 }
 
@@ -353,7 +357,9 @@ class FakeDatabase extends EventTarget {
     const rejectTransaction = this.transactionsBeforeRejection === 0
     if (this.transactionsBeforeRejection !== null) {
       this.transactionsBeforeRejection -= 1
-      if (rejectTransaction) this.transactionsBeforeRejection = null
+      if (rejectTransaction) {
+        this.transactionsBeforeRejection = null
+      }
     }
     const transaction = new FakeTransaction(this.records, rejectTransaction)
     return transaction as unknown as IDBTransaction
@@ -399,7 +405,9 @@ class FakeTransaction extends EventTarget {
     this.pending += 1
     this.completionRevision += 1
     queueMicrotask(() => {
-      if (this.finished) return
+      if (this.finished) {
+        return
+      }
       if (this.rejectRequests) {
         request.error = new DOMException('IndexedDB transaction failed.', 'UnknownError')
         request.dispatchEvent(new Event('error'))
@@ -422,7 +430,9 @@ class FakeTransaction extends EventTarget {
   }
 
   abort() {
-    if (this.finished) return
+    if (this.finished) {
+      return
+    }
     this.finished = true
     this.dispatchEvent(new Event('abort'))
   }
@@ -430,7 +440,9 @@ class FakeTransaction extends EventTarget {
   private queueCompletion() {
     const revision = ++this.completionRevision
     queueMicrotask(() => {
-      if (this.finished || this.pending > 0 || revision !== this.completionRevision) return
+      if (this.finished || this.pending > 0 || revision !== this.completionRevision) {
+        return
+      }
       this.finished = true
       this.dispatchEvent(new Event('complete'))
     })

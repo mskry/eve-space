@@ -140,5 +140,5 @@ function route(
   query: Record<string, unknown> = {},
   meta: Record<string, unknown> = {},
 ) {
-  return { path, fullPath, query, meta }
+  return { fullPath, meta, path, query }
 }

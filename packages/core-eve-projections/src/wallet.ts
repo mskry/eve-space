@@ -69,15 +69,15 @@ export function projectWalletJournalEntry<ReferenceType extends string>(
   entry: WalletJournalSourceEntry<ReferenceType>,
 ): ProjectedWalletJournalEntry<ReferenceType> {
   return {
-    journalId: entry.id,
-    date: entry.date,
     amount: entry.amount ?? null,
     balance: entry.balance ?? null,
-    referenceType: entry.ref_type,
-    description: entry.description,
-    reason: entry.reason ?? null,
-    taxAmount: entry.tax ?? null,
     context: walletJournalContext(entry),
+    date: entry.date,
+    description: entry.description,
+    journalId: entry.id,
+    reason: entry.reason ?? null,
+    referenceType: entry.ref_type,
+    taxAmount: entry.tax ?? null,
   }
 }
 
@@ -89,17 +89,17 @@ export function projectWalletTransactions(
   return transactions
     .filter((transaction) => transaction.is_personal)
     .map((transaction) => ({
-      transactionId: transaction.transaction_id,
-      journalRefId: transaction.journal_ref_id,
       date: transaction.date,
-      typeId: transaction.type_id,
-      typeName: namesByType.get(transaction.type_id) ?? `Unknown type ${transaction.type_id}`,
-      quantity: transaction.quantity,
-      unitPrice: transaction.unit_price,
-      totalPrice: transaction.quantity * transaction.unit_price,
       isBuy: transaction.is_buy,
+      journalRefId: transaction.journal_ref_id,
       locationId: transaction.location_id,
       locationName: namesByLocation.get(transaction.location_id) ?? null,
+      quantity: transaction.quantity,
+      totalPrice: transaction.quantity * transaction.unit_price,
+      transactionId: transaction.transaction_id,
+      typeId: transaction.type_id,
+      typeName: namesByType.get(transaction.type_id) ?? `Unknown type ${transaction.type_id}`,
+      unitPrice: transaction.unit_price,
     }))
     .toSorted(
       (left, right) =>
@@ -111,8 +111,9 @@ function walletJournalContext(entry: WalletJournalSourceEntry) {
   if (
     !isPositiveSafeInteger(entry.context_id) ||
     !isSafeWalletJournalContextType(entry.context_id_type)
-  )
+  ) {
     return null
+  }
   return { id: entry.context_id, type: entry.context_id_type }
 }
 

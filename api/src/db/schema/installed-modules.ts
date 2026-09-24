@@ -40,8 +40,8 @@ const subjectIdCheck = (name: string) =>
 export const deploymentModules = pgTable(
   'deployment_modules',
   {
-    moduleId: text('module_id').primaryKey().notNull(),
     enabled: boolean().default(false).notNull(),
+    moduleId: text('module_id').primaryKey().notNull(),
     ...auditTimestamps(),
   },
   () => [
@@ -56,13 +56,13 @@ export const deploymentModules = pgTable(
 export const deploymentModuleSections = pgTable(
   'deployment_module_sections',
   {
-    moduleId: text('module_id').notNull(),
-    sectionId: text('section_id').notNull(),
-    kind: text().$type<'workspace' | 'sensitive-evidence' | 'access-management'>().notNull(),
-    enabled: boolean().default(false).notNull(),
+    activationVersion: integer('activation_version').default(0).notNull(),
     declarationRevision: integer('declaration_revision'),
     disclosureVersion: integer('disclosure_version').default(0).notNull(),
-    activationVersion: integer('activation_version').default(0).notNull(),
+    enabled: boolean().default(false).notNull(),
+    kind: text().$type<'workspace' | 'sensitive-evidence' | 'access-management'>().notNull(),
+    moduleId: text('module_id').notNull(),
+    sectionId: text('section_id').notNull(),
     ...auditTimestamps(),
   },
   (table) => [
@@ -101,8 +101,8 @@ export const deploymentModuleSections = pgTable(
 export const deploymentShellNavigationOrder = pgTable(
   'deployment_shell_navigation_order',
   {
-    ownerId: text('owner_id').notNull(),
     navigationId: text('navigation_id').notNull(),
+    ownerId: text('owner_id').notNull(),
     position: integer().notNull(),
     ...auditTimestamps(),
   },
@@ -126,16 +126,16 @@ export const deploymentShellNavigationOrder = pgTable(
 export const platformSubjectLifecycles = pgTable(
   'platform_subject_lifecycles',
   {
-    subjectLifecycleId: uuid('subject_lifecycle_id').defaultRandom().primaryKey().notNull(),
+    characterId: bigint('character_id', { mode: 'number' }),
+    corporationSourceId: uuid('corporation_source_id'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    organizationDeploymentId: integer('organization_deployment_id'),
+    organizationVersion: bigint('organization_version', { mode: 'number' }),
+    subjectId: text('subject_id').notNull(),
     subjectKind: text('subject_kind')
       .$type<PlatformCollectionStateIdentity['subjectKind']>()
       .notNull(),
-    subjectId: text('subject_id').notNull(),
-    characterId: bigint('character_id', { mode: 'number' }),
-    organizationDeploymentId: integer('organization_deployment_id'),
-    organizationVersion: bigint('organization_version', { mode: 'number' }),
-    corporationSourceId: uuid('corporation_source_id'),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    subjectLifecycleId: uuid('subject_lifecycle_id').defaultRandom().primaryKey().notNull(),
   },
   (table) => [
     uniqueIndex('platform_subject_lifecycles_character_id_key').on(table.characterId),
@@ -179,25 +179,25 @@ export const platformSubjectLifecycles = pgTable(
 export const platformCollectionState = pgTable(
   'platform_collection_state',
   {
+    authorizationGeneration: integer('authorization_generation'),
+    disclosureVersion: integer('disclosure_version'),
+    failureStartedAt: timestamp('failure_started_at', { withTimezone: true, mode: 'date' }),
+    lastFailureClass: text('last_failure_class').$type<PlatformCollectionFailureClass>(),
+    managedMemberLifecycleId: uuid('managed_member_lifecycle_id'),
     moduleId: text('module_id').notNull(),
+    nextEligibleAt: timestamp('next_eligible_at', { withTimezone: true, mode: 'date' }),
+    organizationDeploymentId: integer('organization_deployment_id'),
+    organizationVersion: bigint('organization_version', { mode: 'number' }),
     resourceId: text('resource_id').notNull(),
+    sectionActivationVersion: integer('section_activation_version'),
+    sectionId: text('section_id'),
+    subjectId: text('subject_id').notNull(),
     subjectKind: text('subject_kind')
       .$type<PlatformCollectionStateIdentity['subjectKind']>()
       .notNull(),
     subjectLifecycleId: uuid('subject_lifecycle_id').notNull(),
-    subjectId: text('subject_id').notNull(),
-    nextEligibleAt: timestamp('next_eligible_at', { withTimezone: true, mode: 'date' }),
-    authorizationGeneration: integer('authorization_generation'),
-    organizationDeploymentId: integer('organization_deployment_id'),
-    organizationVersion: bigint('organization_version', { mode: 'number' }),
     targetUserId: uuid('target_user_id'),
-    managedMemberLifecycleId: uuid('managed_member_lifecycle_id'),
-    sectionId: text('section_id'),
-    disclosureVersion: integer('disclosure_version'),
-    sectionActivationVersion: integer('section_activation_version'),
     validatedAt: timestamp('validated_at', { withTimezone: true, mode: 'date' }),
-    lastFailureClass: text('last_failure_class').$type<PlatformCollectionFailureClass>(),
-    failureStartedAt: timestamp('failure_started_at', { withTimezone: true, mode: 'date' }),
     ...auditTimestamps(),
   },
   (table) => [
@@ -303,18 +303,18 @@ export const platformCollectionState = pgTable(
 export const platformResourcePurgeWork = pgTable(
   'platform_resource_purge_work',
   {
-    purgeWorkId: uuid('purge_work_id').defaultRandom().primaryKey().notNull(),
-    moduleId: text('module_id').notNull(),
-    resourceId: text('resource_id').notNull(),
-    mode: text().$type<'account' | 'authority'>().notNull(),
-    targetUserId: uuid('target_user_id').notNull(),
-    organizationVersion: bigint('organization_version', { mode: 'number' }),
-    managedMemberLifecycleId: uuid('managed_member_lifecycle_id'),
+    authorizationGeneration: integer('authorization_generation'),
     characterId: bigint('character_id', { mode: 'number' }),
     characterLifecycleId: uuid('character_lifecycle_id'),
-    authorizationGeneration: integer('authorization_generation'),
     disclosureVersion: integer('disclosure_version'),
+    managedMemberLifecycleId: uuid('managed_member_lifecycle_id'),
+    mode: text().$type<'account' | 'authority'>().notNull(),
+    moduleId: text('module_id').notNull(),
+    organizationVersion: bigint('organization_version', { mode: 'number' }),
+    purgeWorkId: uuid('purge_work_id').defaultRandom().primaryKey().notNull(),
+    resourceId: text('resource_id').notNull(),
     sectionActivationVersion: integer('section_activation_version'),
+    targetUserId: uuid('target_user_id').notNull(),
     ...auditTimestamps(),
   },
   (table) => [

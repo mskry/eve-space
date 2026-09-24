@@ -3,8 +3,12 @@ import { findDependencyCycles } from '../dependency-cycles.js'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
-  policy: ['sso-errors', 'token-errors'],
-  primitive: ['security'],
+  application: [
+    'character-lifecycle',
+    'character-transfer',
+    'character-transfer-approvals',
+    'tokens',
+  ],
   persistence: [
     'character-disclosure-store',
     'character-lock',
@@ -13,13 +17,9 @@ const modulesByTier = {
     'oauth-state-store',
     'session-store',
   ],
+  policy: ['sso-errors', 'token-errors'],
+  primitive: ['security'],
   provider: ['sso'],
-  application: [
-    'character-lifecycle',
-    'character-transfer',
-    'character-transfer-approvals',
-    'tokens',
-  ],
   transport: ['routes'],
 } as const
 
@@ -37,11 +37,11 @@ export const authModuleDeclarations: readonly AuthModuleDeclaration[] = Object.f
 )
 
 const allowedImportTiersBySourceTier: Record<AuthTier, readonly AuthTier[]> = {
+  application: ['policy', 'primitive', 'persistence', 'provider', 'application'],
+  persistence: ['primitive', 'persistence'],
   policy: ['policy'],
   primitive: ['policy', 'primitive'],
-  persistence: ['primitive', 'persistence'],
   provider: ['policy', 'primitive', 'provider'],
-  application: ['policy', 'primitive', 'persistence', 'provider', 'application'],
   transport: ['policy', 'primitive', 'persistence', 'provider', 'application', 'transport'],
 }
 
@@ -134,20 +134,24 @@ function createBoundaryModel(
 function declarationViolations(model: AuthBoundaryModel) {
   const violations: string[] = []
   for (const [module, declarations] of model.declarationsByModule) {
-    if (!model.sourcesByModule.has(module))
+    if (!model.sourcesByModule.has(module)) {
       violations.push(`Declared auth module ${module} has no source file`)
-    if (declarations.length > 1)
+    }
+    if (declarations.length > 1) {
       violations.push(
         `Auth module ${module} has duplicate tier declarations: ${declarations.map(({ tier }) => tier).join(', ')}`,
       )
+    }
   }
   for (const [module, sources] of model.sourcesByModule) {
-    if (!model.declarationsByModule.has(module))
+    if (!model.declarationsByModule.has(module)) {
       violations.push(`${sources[0]!.path}: Auth module ${module} has no declared tier`)
-    if (sources.length > 1)
+    }
+    if (sources.length > 1) {
       violations.push(
         `Auth module ${module} has duplicate source ownership: ${sources.map(({ path }) => path).join(', ')}`,
       )
+    }
   }
   return violations
 }
@@ -155,7 +159,9 @@ function declarationViolations(model: AuthBoundaryModel) {
 function violationsForSource(source: AuthSource, model: AuthBoundaryModel) {
   const module = moduleName(source.path)
   const sourceTier = declaredTier(model, module)
-  if (!sourceTier || model.sourcesByModule.get(module)?.length !== 1) return []
+  if (!sourceTier || model.sourcesByModule.get(module)?.length !== 1) {
+    return []
+  }
 
   return typescriptModuleSpecifiers(source.path, source.source).flatMap((specifier) =>
     violationsForImport(source.path, module, sourceTier, specifier, model),
@@ -173,27 +179,32 @@ function violationsForImport(
   const importedModule = authModuleName(dependency)
   if (importedModule) {
     const importedTier = declaredTier(model, importedModule)
-    if (!importedTier)
+    if (!importedTier) {
       return [
         `${path}: ${sourceTier} module ${module} cannot import undeclared auth module ${importedModule}`,
       ]
-    if (!allowedImportTiersBySourceTier[sourceTier].includes(importedTier))
+    }
+    if (!allowedImportTiersBySourceTier[sourceTier].includes(importedTier)) {
       return [
         `${path}: ${sourceTier} module ${module} cannot import ${importedTier} module ${importedModule}`,
       ]
-    if (sourceTier !== 'persistence') return []
+    }
+    if (sourceTier !== 'persistence') {
+      return []
+    }
   }
 
   const allowedImports =
     sourceTier === 'persistence'
       ? persistenceImports[module]
       : allowedExternalImportsByTier[sourceTier]
-  if (allowedImports && !allowedImports.has(dependency))
+  if (allowedImports && !allowedImports.has(dependency)) {
     return [
       sourceTier === 'persistence'
         ? `${path}: persistence module ${module} cannot import ${specifier}`
         : `${path}: ${sourceTier} module ${module} cannot import external dependency ${specifier}`,
     ]
+  }
   return []
 }
 
@@ -236,7 +247,9 @@ function authRelativePath(path: string) {
 }
 
 function dependencyIdentity(sourcePath: string, specifier: string) {
-  if (!specifier.startsWith('.')) return specifier
+  if (!specifier.startsWith('.')) {
+    return specifier
+  }
   const normalizedSource = sourcePath.replaceAll('\\', '/')
   const marker = 'api/src/auth/'
   const markerIndex = normalizedSource.lastIndexOf(marker)
@@ -250,8 +263,11 @@ function groupBy<Value>(values: readonly Value[], keyForValue: (value: Value) =>
   for (const value of values) {
     const key = keyForValue(value)
     const group = grouped.get(key)
-    if (group) group.push(value)
-    else grouped.set(key, [value])
+    if (group) {
+      group.push(value)
+    } else {
+      grouped.set(key, [value])
+    }
   }
   return grouped
 }

@@ -26,9 +26,9 @@ export async function materializeCoreResourceObservation(
   if (input.resourceId === 'managed-corporations' && input.subject.kind === 'alliance') {
     const [previousCollection] = await database
       .select({
-        validatedAt: platformCollectionState.validatedAt,
-        nextEligibleAt: platformCollectionState.nextEligibleAt,
         lastFailureClass: platformCollectionState.lastFailureClass,
+        nextEligibleAt: platformCollectionState.nextEligibleAt,
+        validatedAt: platformCollectionState.validatedAt,
       })
       .from(platformCollectionState)
       .where(
@@ -60,17 +60,19 @@ export async function materializeCoreResourceObservation(
           eq(deploymentSettings.organizationId, input.subject.allianceId),
         ),
       )
-    if (!organization) return null
+    if (!organization) {
+      return null
+    }
     const result = await materializeManagedAllianceCorporations(database, {
-      organizationVersion: organization.organizationVersion,
       allianceId: input.subject.allianceId,
       corporationIds: ids,
+      organizationVersion: organization.organizationVersion,
       validatedAt: input.validatedAt,
     })
     return result.outcome === 'refreshed'
       ? {
-          organizationVersion: organization.organizationVersion,
           affectedCorporationIds: [...result.addedIds, ...result.removedIds],
+          organizationVersion: organization.organizationVersion,
           recomputeAllAccounts:
             !previousCollection?.validatedAt ||
             previousCollection.lastFailureClass !== null ||
@@ -81,12 +83,14 @@ export async function materializeCoreResourceObservation(
   }
 
   if (input.resourceId === 'corporation-roster' && input.subject.kind === 'corporation') {
-    if (input.authorizationGeneration === null) return null
+    if (input.authorizationGeneration === null) {
+      return null
+    }
     const [source] = await database
       .select({
-        sourceId: organizationCorporationSources.sourceId,
-        organizationVersion: organizationCorporationSources.organizationVersion,
         characterId: organizationCorporationSources.characterId,
+        organizationVersion: organizationCorporationSources.organizationVersion,
+        sourceId: organizationCorporationSources.sourceId,
       })
       .from(platformSubjectLifecycles)
       .innerJoin(
@@ -129,20 +133,22 @@ export async function materializeCoreResourceObservation(
           eq(organizationCorporationSources.corporationId, input.subject.corporationId),
         ),
       )
-    if (!source?.characterId) return null
+    if (!source?.characterId) {
+      return null
+    }
     const result = await materializeCorporationRoster(database, {
-      organizationVersion: source.organizationVersion,
-      corporationId: input.subject.corporationId,
-      sourceId: source.sourceId,
       characterId: source.characterId,
-      tokenVersion: input.authorizationGeneration,
       characterIds: ids,
+      corporationId: input.subject.corporationId,
+      organizationVersion: source.organizationVersion,
+      sourceId: source.sourceId,
+      tokenVersion: input.authorizationGeneration,
       validatedAt: input.validatedAt,
     })
     return result.outcome === 'refreshed'
       ? {
-          organizationVersion: source.organizationVersion,
           affectedCorporationIds: [],
+          organizationVersion: source.organizationVersion,
           recomputeAllAccounts: false,
         }
       : null
@@ -152,6 +158,8 @@ export async function materializeCoreResourceObservation(
 }
 
 function parseIds(value: unknown) {
-  if (!Array.isArray(value)) throw new Error('Core organization resource data must be an ID array')
+  if (!Array.isArray(value)) {
+    throw new TypeError('Core organization resource data must be an ID array')
+  }
   return normalizePositiveSafeIntegerIds(value, 'Core organization resource data')
 }

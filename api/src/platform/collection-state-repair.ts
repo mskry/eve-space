@@ -25,20 +25,23 @@ export async function repairPlatformCollectionState(options: CollectionStateRepa
     if (
       resource.subjectKind !== 'character' ||
       resource.eligibility.kind !== 'current-owned-character'
-    )
+    ) {
       return []
+    }
     const requiredScope = getOptionalCharacterEsiScope(resource.operationId as EsiOperation)
     return requiredScope
       ? [
           {
             module_id: resource.moduleId,
-            resource_id: resource.resourceId,
             required_scope: requiredScope,
+            resource_id: resource.resourceId,
           },
         ]
       : []
   })
-  if (repairs.length === 0) return { repairedResources: 0 }
+  if (repairs.length === 0) {
+    return { repairedResources: 0 }
+  }
   const repairJson = JSON.stringify(repairs)
 
   options.signal?.throwIfAborted()

@@ -20,7 +20,9 @@ export function operationAllowsCompatibilityDateOverride(operation: NormalizedOp
       candidate.placement === 'header' && candidate.name.toLowerCase() === 'x-compatibility-date',
   );
   const declaredDate = operation.extensions?.['x-compatibility-date'];
-  if (parameter === undefined && declaredDate === undefined) return false;
+  if (parameter === undefined && declaredDate === undefined) {
+    return false;
+  }
   if (
     parameter === undefined ||
     parameter.required !== true ||

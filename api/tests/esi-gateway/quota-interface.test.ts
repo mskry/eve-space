@@ -20,7 +20,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.isLimited.mockResolvedValue(false)
   mocks.cooldowns.mockResolvedValue([
-    { active: false, retryAfterSeconds: null, coordinationAvailable: true },
+    { active: false, coordinationAvailable: true, retryAfterSeconds: null },
   ])
 })
 
@@ -44,14 +44,14 @@ describe('ESI quota interface', () => {
     const { getEsiQuotaStatuses } = await import('../../src/esi-gateway/failures.js')
 
     const statuses = await getEsiQuotaStatuses([
-      { operation: 'skills', characterId: 2_112_625_428 },
+      { characterId: 2_112_625_428, operation: 'skills' },
     ])
 
     expect(mocks.cooldowns).toHaveBeenCalledWith([
       { operation: 'skills', principal: 'character-2112625428' },
     ])
-    expect(statuses).toEqual([
-      { active: false, retryAfterSeconds: null, coordinationAvailable: true },
+    expect(statuses).toStrictEqual([
+      { active: false, coordinationAvailable: true, retryAfterSeconds: null },
     ])
     expect(JSON.stringify(statuses)).not.toContain('character-2112625428')
   })

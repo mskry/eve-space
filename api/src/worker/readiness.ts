@@ -74,8 +74,8 @@ export async function checkWorkerReadiness(
       return firstRequirement
         ? {
             healthy: false as const,
-            reason: `Missing migration ${formatMigration(firstRequirement)}`,
             missing: firstRequirement,
+            reason: `Missing migration ${formatMigration(firstRequirement)}`,
           }
         : { healthy: true as const }
     }
@@ -88,12 +88,13 @@ export async function checkWorkerReadiness(
       (requirement) => !appliedIdentities.has(formatMigration(requirement)),
     )
 
-    if (missing)
+    if (missing) {
       return {
         healthy: false as const,
-        reason: `Missing migration ${formatMigration(missing)}`,
         missing,
+        reason: `Missing migration ${formatMigration(missing)}`,
       }
+    }
 
     if (moduleIds.length > 0) {
       const provisioned = await connection<{ module_id: string }[]>`
@@ -101,12 +102,13 @@ export async function checkWorkerReadiness(
       `
       const provisionedIds = new Set(provisioned.map(({ module_id }) => module_id))
       const missingProvisioning = moduleIds.find((moduleId) => !provisionedIds.has(moduleId))
-      if (missingProvisioning)
+      if (missingProvisioning) {
         return {
           healthy: false as const,
-          reason: `Missing module provisioning ${missingProvisioning}`,
           missingProvisioning,
+          reason: `Missing module provisioning ${missingProvisioning}`,
         }
+      }
     }
 
     await assertInstalledModulePersistenceContract(
@@ -118,19 +120,21 @@ export async function checkWorkerReadiness(
 
     return { healthy: true as const }
   } catch (error) {
-    if (error instanceof ModulePersistenceAttestationError)
+    if (error instanceof ModulePersistenceAttestationError) {
       return { healthy: false as const, reason: error.message }
+    }
     return { healthy: false as const, reason: 'Database unavailable' }
   }
 }
 
 export async function assertWorkerReadiness(connection = sql) {
   const readiness = await checkWorkerReadiness(connection)
-  if (!readiness.healthy)
+  if (!readiness.healthy) {
     throw new WorkerSchemaNotReadyError(
       'missing' in readiness ? readiness.missing : undefined,
       readiness.reason,
     )
+  }
 }
 
 async function checkSchemaAndQueueReachability(
@@ -138,15 +142,18 @@ async function checkSchemaAndQueueReachability(
   queueProbe: typeof probeQueueStatus,
 ) {
   const readiness = await checkWorkerReadiness(connection)
-  if (!readiness.healthy) return readiness
+  if (!readiness.healthy) {
+    return readiness
+  }
   let queue
   try {
     queue = await queueProbe()
   } catch {
     return { healthy: false as const, reason: 'Queue Redis unavailable' }
   }
-  if (queue.status === 'unavailable')
+  if (queue.status === 'unavailable') {
     return { healthy: false as const, reason: 'Queue Redis unavailable' }
+  }
   return { healthy: true as const, queue }
 }
 
@@ -159,7 +166,9 @@ export async function checkWorkerStartupDependencies(
   queueProbe: typeof probeQueueStatus = probeQueueStatus,
 ) {
   const dependencies = await checkSchemaAndQueueReachability(connection, queueProbe)
-  if (!dependencies.healthy) return dependencies
+  if (!dependencies.healthy) {
+    return dependencies
+  }
   return { healthy: true as const }
 }
 
@@ -169,17 +178,21 @@ export async function checkWorkerDependencies(
   connection = sql,
 ) {
   const readiness = await checkWorkerReadiness(connection)
-  if (!readiness.healthy) return readiness
+  if (!readiness.healthy) {
+    return readiness
+  }
   let liveness: ScopedWorkerLiveness
   try {
     liveness = await livenessProbe()
   } catch {
     return { healthy: false as const, reason: 'Queue Redis unavailable' }
   }
-  if (liveness.status === 'unavailable')
+  if (liveness.status === 'unavailable') {
     return { healthy: false as const, reason: 'Queue Redis unavailable' }
-  if (liveness.status === 'stale')
+  }
+  if (liveness.status === 'stale') {
     return { healthy: false as const, reason: 'Worker heartbeat stale' }
+  }
   return { healthy: true as const }
 }
 
@@ -188,7 +201,9 @@ export async function assertWorkerStartupDependencies(
   queueProbe: typeof probeQueueStatus = probeQueueStatus,
 ) {
   const readiness = await checkWorkerStartupDependencies(connection, queueProbe)
-  if (!readiness.healthy) throw new Error(`Worker dependency unavailable: ${readiness.reason}`)
+  if (!readiness.healthy) {
+    throw new Error(`Worker dependency unavailable: ${readiness.reason}`)
+  }
 }
 
 export async function assertWorkerDependencies(
@@ -196,7 +211,9 @@ export async function assertWorkerDependencies(
   connection = sql,
 ) {
   const readiness = await checkWorkerDependencies(livenessProbe, connection)
-  if (!readiness.healthy) throw new Error(`Worker dependency unavailable: ${readiness.reason}`)
+  if (!readiness.healthy) {
+    throw new Error(`Worker dependency unavailable: ${readiness.reason}`)
+  }
 }
 
 function formatMigration({ module, name }: WorkerMigrationRequirement) {

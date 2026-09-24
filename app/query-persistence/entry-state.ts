@@ -67,6 +67,85 @@ export function createQueryPersistenceEntryState(): QueryPersistenceEntryState {
   const removalTombstones = new Set<string>()
 
   return {
+    failed(keyHash, error, hasData) {
+      if (!hasData) {
+        return
+      }
+      const existing = records.get(keyHash)
+      const provenance = existing?.provenance ?? { kind: 'fresh' as const }
+      records.set(keyHash, {
+        ...(existing ?? {
+          provenance,
+          restored: false,
+          local: false,
+          quarantined: false,
+        }),
+        provenance:
+          provenance.kind === 'restored' || provenance.kind === 'restored-refresh-failed'
+            ? restoredRefreshFailedProvenance(provenance, error)
+            : provenance,
+        failed: true,
+      })
+    },
+    hasFailedData(keyHash) {
+      return records.get(keyHash)?.failed ?? false
+    },
+    hasQuarantinedData(keyHash) {
+      return records.get(keyHash)?.quarantined ?? false
+    },
+    hasRestoredData(keyHash) {
+      return records.get(keyHash)?.restored ?? false
+    },
+    isRemovalTombstoned(keyHash) {
+      return removalTombstones.has(keyHash)
+    },
+    localWrite(event) {
+      const existing = records.get(event.keyHash)
+      const originalSuccessAt = oldestPastTimestamp(
+        event.now,
+        existing?.originalSuccessAt,
+        event.priorSuccessAt,
+      )
+      records.set(event.keyHash, {
+        provenance: existing?.provenance ?? { kind: 'fresh' },
+        ...(originalSuccessAt === undefined ? {} : { originalSuccessAt }),
+        restored: existing?.restored ?? false,
+        local: true,
+        failed: false,
+        quarantined: false,
+      })
+    },
+    quarantine(keyHash) {
+      const existing = records.get(keyHash)
+      if (!existing) {
+        return
+      }
+      records.set(keyHash, { ...existing, quarantined: true })
+    },
+    readOriginalSuccessTime(keyHash) {
+      return records.get(keyHash)?.originalSuccessAt
+    },
+    readPresentation(keyHash) {
+      return presentationForRecord(records.get(keyHash))
+    },
+    readRetentionDeadline(keyHash) {
+      const record = records.get(keyHash)
+      if (
+        record?.originalSuccessAt === undefined ||
+        (!record.restored && record.provenance.kind !== 'server-stale')
+      ) {
+        return
+      }
+      return record.originalSuccessAt + PERSISTED_ESI_QUERY_CACHE_RETENTION_MS
+    },
+    removed(keyHash) {
+      records.delete(keyHash)
+      removalTombstones.add(keyHash)
+    },
+    reset() {
+      records.clear()
+      removalTombstones.clear()
+    },
     restored(keyHash, data, originalSuccessAt) {
       records.set(keyHash, {
         provenance: provenanceForData(data, 'restored'),
@@ -77,6 +156,20 @@ export function createQueryPersistenceEntryState(): QueryPersistenceEntryState {
         quarantined: false,
       })
       removalTombstones.delete(keyHash)
+    },
+    serializerMerged(acceptedSuccessfulTimes) {
+      for (const [keyHash, originalSuccessAt] of acceptedSuccessfulTimes) {
+        const existing = records.get(keyHash)
+        records.set(keyHash, {
+          provenance: existing?.provenance ?? { kind: 'fresh' },
+          originalSuccessAt,
+          restored: existing?.restored ?? false,
+          local: existing?.local ?? false,
+          failed: existing?.failed ?? false,
+          quarantined: existing?.quarantined ?? false,
+        })
+        removalTombstones.delete(keyHash)
+      }
     },
     succeeded(event) {
       const existing = records.get(event.keyHash)
@@ -104,95 +197,6 @@ export function createQueryPersistenceEntryState(): QueryPersistenceEntryState {
       removalTombstones.delete(event.keyHash)
       return true
     },
-    failed(keyHash, error, hasData) {
-      if (!hasData) return
-      const existing = records.get(keyHash)
-      const provenance = existing?.provenance ?? { kind: 'fresh' as const }
-      records.set(keyHash, {
-        ...(existing ?? {
-          provenance,
-          restored: false,
-          local: false,
-          quarantined: false,
-        }),
-        provenance:
-          provenance.kind === 'restored' || provenance.kind === 'restored-refresh-failed'
-            ? restoredRefreshFailedProvenance(provenance, error)
-            : provenance,
-        failed: true,
-      })
-    },
-    quarantine(keyHash) {
-      const existing = records.get(keyHash)
-      if (!existing) return
-      records.set(keyHash, { ...existing, quarantined: true })
-    },
-    localWrite(event) {
-      const existing = records.get(event.keyHash)
-      const originalSuccessAt = oldestPastTimestamp(
-        event.now,
-        existing?.originalSuccessAt,
-        event.priorSuccessAt,
-      )
-      records.set(event.keyHash, {
-        provenance: existing?.provenance ?? { kind: 'fresh' },
-        ...(originalSuccessAt === undefined ? {} : { originalSuccessAt }),
-        restored: existing?.restored ?? false,
-        local: true,
-        failed: false,
-        quarantined: false,
-      })
-    },
-    removed(keyHash) {
-      records.delete(keyHash)
-      removalTombstones.add(keyHash)
-    },
-    serializerMerged(acceptedSuccessfulTimes) {
-      for (const [keyHash, originalSuccessAt] of acceptedSuccessfulTimes) {
-        const existing = records.get(keyHash)
-        records.set(keyHash, {
-          provenance: existing?.provenance ?? { kind: 'fresh' },
-          originalSuccessAt,
-          restored: existing?.restored ?? false,
-          local: existing?.local ?? false,
-          failed: existing?.failed ?? false,
-          quarantined: existing?.quarantined ?? false,
-        })
-        removalTombstones.delete(keyHash)
-      }
-    },
-    reset() {
-      records.clear()
-      removalTombstones.clear()
-    },
-    readPresentation(keyHash) {
-      return presentationForRecord(records.get(keyHash))
-    },
-    hasRestoredData(keyHash) {
-      return records.get(keyHash)?.restored ?? false
-    },
-    hasFailedData(keyHash) {
-      return records.get(keyHash)?.failed ?? false
-    },
-    hasQuarantinedData(keyHash) {
-      return records.get(keyHash)?.quarantined ?? false
-    },
-    readOriginalSuccessTime(keyHash) {
-      return records.get(keyHash)?.originalSuccessAt
-    },
-    readRetentionDeadline(keyHash) {
-      const record = records.get(keyHash)
-      if (
-        record?.originalSuccessAt === undefined ||
-        (!record.restored && record.provenance.kind !== 'server-stale')
-      ) {
-        return undefined
-      }
-      return record.originalSuccessAt + PERSISTED_ESI_QUERY_CACHE_RETENTION_MS
-    },
-    isRemovalTombstoned(keyHash) {
-      return removalTombstones.has(keyHash)
-    },
   }
 }
 
@@ -214,8 +218,12 @@ function staleOriginalSuccessAt(
     existing?.originalSuccessAt,
     event.priorSuccessAt,
   )
-  if (originalSuccessAt !== undefined) return originalSuccessAt
-  if (!metadata.validatedAt) return undefined
+  if (originalSuccessAt !== undefined) {
+    return originalSuccessAt
+  }
+  if (!metadata.validatedAt) {
+    return
+  }
   const validatedAt = Date.parse(metadata.validatedAt)
   return oldestPastTimestamp(event.now, validatedAt)
 }
@@ -258,7 +266,9 @@ function restoredRefreshFailedProvenance(
 }
 
 function normalizedRetryAt(error: unknown) {
-  if (!(error instanceof ApiQueryError) || !error.retryAt) return undefined
+  if (!(error instanceof ApiQueryError) || !error.retryAt) {
+    return
+  }
   return Number.isFinite(Date.parse(error.retryAt)) ? error.retryAt : undefined
 }
 
@@ -272,7 +282,9 @@ function refreshFailureMetadata(
       refreshFailureStatus: error.status,
     }
   }
-  if (provenance.kind !== 'restored-refresh-failed') return {}
+  if (provenance.kind !== 'restored-refresh-failed') {
+    return {}
+  }
   return {
     ...(provenance.refreshFailureCode ? { refreshFailureCode: provenance.refreshFailureCode } : {}),
     ...(provenance.refreshFailureStatus
@@ -282,15 +294,21 @@ function refreshFailureMetadata(
 }
 
 function presentationForRecord(record: EntryRecord | undefined): EsiQueryPersistencePresentation {
-  if (!record) return { kind: 'fresh' }
+  if (!record) {
+    return { kind: 'fresh' }
+  }
   const originalSuccessAt =
     record.originalSuccessAt === undefined
       ? undefined
       : new Date(record.originalSuccessAt).toISOString()
-  if (record.provenance.kind === 'fresh') return { kind: 'fresh', originalSuccessAt }
+  if (record.provenance.kind === 'fresh') {
+    return { kind: 'fresh', originalSuccessAt }
+  }
   if (record.provenance.kind === 'server-stale') {
     return { ...record.provenance, originalSuccessAt }
   }
-  if (!originalSuccessAt) return { kind: 'fresh' }
+  if (!originalSuccessAt) {
+    return { kind: 'fresh' }
+  }
   return { ...record.provenance, originalSuccessAt }
 }

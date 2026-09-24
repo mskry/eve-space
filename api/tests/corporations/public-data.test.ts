@@ -9,42 +9,45 @@ vi.mock('../../src/esi-gateway/feature-execution.js', () =>
 
 const freshness = {
   cachedUntil: '2026-08-22T12:01:00.000Z',
-  validatedAt: '2026-08-22T12:00:00.000Z',
   quota: {},
   source: 'esi' as const,
   stale: false,
+  validatedAt: '2026-08-22T12:00:00.000Z',
 }
 
 const corporation = {
-  name: 'Test',
-  ticker: 'TEST',
-  memberCount: 10,
+  allianceId: null,
+  allianceName: null,
   ceoId: null,
   ceoName: null,
   creatorId: null,
   creatorName: null,
-  taxRate: 7.5,
-  loyaltyPointTaxRate: 2.5,
   dateFounded: null,
   description: null,
-  url: null,
   factionId: null,
+  friendlyFire: 'illegal',
   homeStationId: null,
   homeStationName: null,
+  loyaltyPointTaxRate: 2.5,
+  memberCount: 10,
+  name: 'Test',
   shares: null,
-  allianceId: null,
-  allianceName: null,
-  type: 'player_owned',
   state: 'active',
-  friendlyFire: 'illegal',
+  taxRate: 7.5,
+  ticker: 'TEST',
+  type: 'player_owned',
+  url: null,
   warEligible: true,
 }
 
 beforeEach(() => {
   mocks.executeRepresentation.mockImplementation((definition) => {
-    if (definition.operation === 'public-corporation')
-      return Promise.resolve(result({ found: true, corporation }))
-    if (definition.operation === 'corporation-alliance-history') return Promise.resolve(result([]))
+    if (definition.operation === 'public-corporation') {
+      return Promise.resolve(result({ corporation, found: true }))
+    }
+    if (definition.operation === 'corporation-alliance-history') {
+      return Promise.resolve(result([]))
+    }
     return Promise.resolve(result([1, 2]))
   })
 })
@@ -55,9 +58,9 @@ describe('corporation service', () => {
 
     await expect(getCorporationPublic(90_000_001)).resolves.toMatchObject({
       corporationId: 90_000_001,
+      memberCount: 10,
       name: 'Test',
       ticker: 'TEST',
-      memberCount: 10,
     })
     expect(mocks.executeRepresentation).toHaveBeenCalledWith(
       expect.objectContaining({ operation: 'public-corporation' }),
@@ -81,27 +84,27 @@ describe('corporation service', () => {
     const { getCorporationAllianceHistory, getNpcCorporations } =
       await import('../../src/corporations/public-data.js')
 
-    await expect(getCorporationAllianceHistory(90_000_003)).resolves.toEqual([])
-    await expect(getNpcCorporations()).resolves.toEqual([1, 2])
+    await expect(getCorporationAllianceHistory(90_000_003)).resolves.toStrictEqual([])
+    await expect(getNpcCorporations()).resolves.toStrictEqual([1, 2])
     expect(
       mocks.executeRepresentation.mock.calls.map(([definition]) => definition.operation),
-    ).toEqual(['corporation-alliance-history', 'corporation-npc-list'])
+    ).toStrictEqual(['corporation-alliance-history', 'corporation-npc-list'])
   })
 
   test('preserves stale metadata on public corporation and alliance-history results', async () => {
     mocks.executeRepresentation.mockImplementation((definition) => {
       const data =
         definition.operation === 'public-corporation'
-          ? { found: true, corporation }
+          ? { corporation, found: true }
           : definition.operation === 'corporation-alliance-history'
             ? []
             : [1, 2]
       return Promise.resolve({
         ...result(data),
+        refreshFailureClass: 'esi-unavailable',
+        retryAt: '2026-08-22T12:05:00.000Z',
         stale: true,
         validatedAt: '2026-08-22T11:55:00.000Z',
-        retryAt: '2026-08-22T12:05:00.000Z',
-        refreshFailureClass: 'esi-unavailable',
       })
     })
     const { getCorporationAllianceHistoryResult, getCorporationPublicResult } =
@@ -113,17 +116,17 @@ describe('corporation service', () => {
     ])
     expect(corporationResult).toMatchObject({
       data: { corporationId: 90_000_001 },
+      refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-08-22T12:05:00.000Z',
       stale: true,
       validatedAt: '2026-08-22T11:55:00.000Z',
-      retryAt: '2026-08-22T12:05:00.000Z',
-      refreshFailureClass: 'esi-unavailable',
     })
     expect(historyResult).toMatchObject({
       data: [],
+      refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-08-22T12:05:00.000Z',
       stale: true,
       validatedAt: '2026-08-22T11:55:00.000Z',
-      retryAt: '2026-08-22T12:05:00.000Z',
-      refreshFailureClass: 'esi-unavailable',
     })
   })
 })

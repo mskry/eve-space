@@ -25,10 +25,12 @@ export function platformModuleError(
 }
 
 function assertPlatformModuleErrorBody(body: PlatformModuleErrorBody) {
-  if (!errorCodePattern.test(body.code) || body.code.length > 100)
+  if (!errorCodePattern.test(body.code) || body.code.length > 100) {
     throw new TypeError('Platform module error code must use bounded uppercase snake case')
-  if (body.message.trim().length === 0 || body.message.length > 500)
+  }
+  if (body.message.trim().length === 0 || body.message.length > 500) {
     throw new TypeError('Platform module error message must be between 1 and 500 characters')
+  }
 }
 
 export function isPlatformEsiUnavailableItem(error: unknown): boolean {

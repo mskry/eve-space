@@ -11,7 +11,6 @@ describe('descriptor-driven request construction', () => {
   it('constructs every supported placement with deterministic encoding', () => {
     const descriptor = operation({
       method: 'POST',
-      path: '/characters/{character_id}/contacts/{label}',
       parameters: [
         parameter('character_id', 'path', 'integer', true),
         parameter('label', 'path', 'string', true),
@@ -20,24 +19,25 @@ describe('descriptor-driven request construction', () => {
         arrayParameter('standing', 'query', 'number', false, true),
         parameter('If-None-Match', 'header', 'string'),
       ],
-      requestBody: { required: true, mediaType: 'application/json' },
+      path: '/characters/{character_id}/contacts/{label}',
+      requestBody: { mediaType: 'application/json', required: true },
     });
 
     const request = constructOperationRequest(descriptor, {
-      path: { label: 'blue team/one', character_id: 90000001 },
-      query: { standing: [1.5, -2], include_blocked: false, page: 2 },
+      body: { ids: [3, 1], note: null, watched: true },
       headers: { 'If-None-Match': '"revision-1"' },
-      body: { watched: true, ids: [3, 1], note: null },
+      path: { character_id: 90_000_001, label: 'blue team/one' },
+      query: { include_blocked: false, page: 2, standing: [1.5, -2] },
     });
 
-    expect(request).toEqual({
+    expect(request).toStrictEqual({
+      body: '{"ids":[3,1],"note":null,"watched":true}',
+      headers: {
+        'content-type': 'application/json',
+        'if-none-match': '"revision-1"',
+      },
       method: 'POST',
       path: '/characters/90000001/contacts/blue%20team%2Fone?page=2&include_blocked=false&standing=1.5&standing=-2',
-      headers: {
-        'if-none-match': '"revision-1"',
-        'content-type': 'application/json',
-      },
-      body: '{"watched":true,"ids":[3,1],"note":null}',
     });
     expect(Object.isFrozen(request)).toBe(true);
     expect(Object.isFrozen(request.headers)).toBe(true);
@@ -54,58 +54,58 @@ describe('descriptor-driven request construction', () => {
 
     expect(
       constructOperationRequest(descriptor, {
-        query: { ids: [4, 2], a: 'second', z: 'first' },
+        query: { a: 'second', ids: [4, 2], z: 'first' },
       }).path,
     ).toBe('/items?z=first&a=second&ids=4&ids=2');
   });
 
   it('applies OpenAPI style and explode defaults and serializes arrays', () => {
     const descriptor = operation({
-      path: '/route/{segments}',
       parameters: [
         arrayParameter('segments', 'path', 'string', true),
         arrayParameter('repeated', 'query', 'string'),
         arrayParameter('compact', 'query', 'string', false, false),
         arrayParameter('X-Flags', 'header', 'boolean'),
       ],
+      path: '/route/{segments}',
     });
 
     expect(
       constructOperationRequest(descriptor, {
-        path: { segments: ['alpha', 'beta/gamma'] },
-        query: { repeated: ['one two', 'a&b'], compact: ['x,y', 'z'] },
         headers: { 'X-Flags': [true, false] },
+        path: { segments: ['alpha', 'beta/gamma'] },
+        query: { compact: ['x,y', 'z'], repeated: ['one two', 'a&b'] },
       }),
-    ).toEqual({
+    ).toStrictEqual({
+      headers: { 'x-flags': 'true,false' },
       method: 'GET',
       path: '/route/alpha,beta%2Fgamma?repeated=one%20two&repeated=a%26b&compact=x%2Cy,z',
-      headers: { 'x-flags': 'true,false' },
     });
   });
 
   it('omits optional undefined parameters, groups, and bodies', () => {
     const descriptor = operation({
       parameters: [parameter('page', 'query', 'integer')],
-      requestBody: { required: false, mediaType: 'application/json' },
+      requestBody: { mediaType: 'application/json', required: false },
     });
 
-    expect(constructOperationRequest(descriptor, {})).toEqual({
+    expect(constructOperationRequest(descriptor, {})).toStrictEqual({
+      headers: {},
       method: 'GET',
       path: '/items',
-      headers: {},
     });
     expect(
-      constructOperationRequest(descriptor, { query: { page: undefined }, body: undefined }),
-    ).toEqual({
+      constructOperationRequest(descriptor, { body: undefined, query: { page: undefined } }),
+    ).toStrictEqual({
+      headers: {},
       method: 'GET',
       path: '/items',
-      headers: {},
     });
   });
 
   it('serializes null and top-level scalar JSON bodies', () => {
     const descriptor = operation({
-      requestBody: { required: true, mediaType: 'application/json' },
+      requestBody: { mediaType: 'application/json', required: true },
     });
 
     expect(constructOperationRequest(descriptor, { body: null }).body).toBe('null');
@@ -116,8 +116,8 @@ describe('descriptor-driven request construction', () => {
 
   it('encodes traversal-like and URL-delimiter path values as one safe segment', () => {
     const descriptor = operation({
-      path: '/route/{value}/result',
       parameters: [parameter('value', 'path', 'string', true)],
+      path: '/route/{value}/result',
     });
 
     const path = constructOperationRequest(descriptor, {
@@ -152,7 +152,7 @@ describe('descriptor-driven request construction', () => {
     ],
     [
       'missing body',
-      operation({ requestBody: { required: true, mediaType: 'application/json' } }),
+      operation({ requestBody: { mediaType: 'application/json', required: true } }),
       {},
     ],
   ])('rejects %s before request execution', (_description, descriptor, arguments_) => {
@@ -244,7 +244,7 @@ describe('descriptor-driven request construction', () => {
     ['sparse array', { value: Array(1) }],
   ])('rejects non-JSON-native body value: %s', (_description, body) => {
     const descriptor = operation({
-      requestBody: { required: true, mediaType: 'application/json' },
+      requestBody: { mediaType: 'application/json', required: true },
     });
 
     expect(() => constructOperationRequest(descriptor, { body })).toThrow(
@@ -254,7 +254,7 @@ describe('descriptor-driven request construction', () => {
 
   it('rejects cyclic bodies but permits repeated non-cyclic references', () => {
     const descriptor = operation({
-      requestBody: { required: true, mediaType: 'application/json' },
+      requestBody: { mediaType: 'application/json', required: true },
     });
     const cyclic: { self?: unknown } = {};
     cyclic.self = cyclic;
@@ -270,10 +270,10 @@ describe('descriptor-driven request construction', () => {
 
   it('rejects custom JSON array properties', () => {
     const descriptor = operation({
-      requestBody: { required: true, mediaType: 'application/json' },
+      requestBody: { mediaType: 'application/json', required: true },
     });
     const body = [1, 2];
-    Object.defineProperty(body, 'extra', { value: true, enumerable: true });
+    Object.defineProperty(body, 'extra', { enumerable: true, value: true });
 
     expect(() => constructOperationRequest(descriptor, { body })).toThrow(
       EsiRequestValidationError,
@@ -291,8 +291,8 @@ describe('descriptor-driven request construction', () => {
     [
       'placeholder spanning a segment',
       malformedOperation({
-        path: '/items/{id/value}',
         parameters: [parameter('id/value', 'path', 'string', true)],
+        path: '/items/{id/value}',
       }),
     ],
     ['undeclared placeholder', { ...operation(), path: '/items/{id}' }],
@@ -303,8 +303,8 @@ describe('descriptor-driven request construction', () => {
     [
       'optional path parameter',
       operation({
-        path: '/items/{id}',
         parameters: [parameter('id', 'path', 'string', false)],
+        path: '/items/{id}',
       }),
     ],
     [
@@ -361,20 +361,20 @@ describe('descriptor-driven request construction', () => {
         parameters: [
           {
             ...arrayParameter('ids', 'query', 'integer'),
-            schema: { type: 'array', items: { type: 'array', items: { type: 'integer' } } },
+            schema: { items: { items: { type: 'integer' }, type: 'array' }, type: 'array' },
           },
         ],
       }),
     ],
     [
       'unsupported body media type',
-      { ...operation(), requestBody: { required: true, mediaType: 'text/plain' } },
+      { ...operation(), requestBody: { mediaType: 'text/plain', required: true } },
     ],
     [
       'body content-type parameter conflict',
       operation({
         parameters: [parameter('Content-Type', 'header', 'string')],
-        requestBody: { required: true, mediaType: 'application/json' },
+        requestBody: { mediaType: 'application/json', required: true },
       }),
     ],
     ['invalid request schema', { ...operation(), requestSchema: {} }],
@@ -388,7 +388,7 @@ describe('descriptor-driven request construction', () => {
       requestSchema: {
         safeParse: (_value: unknown) => {
           calls += 1;
-          return { success: true as const, data: {} };
+          return { data: {}, success: true as const };
         },
       },
     });
@@ -402,10 +402,10 @@ function operation(
   overrides: Partial<ExecutableOperationDescriptor> = {},
 ): ExecutableOperationDescriptor {
   return {
-    operationId: 'get_items',
     method: 'GET',
-    path: '/items',
+    operationId: 'get_items',
     parameters: [],
+    path: '/items',
     requestBody: null,
     ...overrides,
   };
@@ -413,8 +413,8 @@ function operation(
 
 function operationWithRequiredPath(): ExecutableOperationDescriptor {
   return operation({
-    path: '/items/{id}',
     parameters: [parameter('id', 'path', 'string', true)],
+    path: '/items/{id}',
   });
 }
 
@@ -438,7 +438,7 @@ function arrayParameter(
     name,
     placement,
     required,
-    schema: { type: 'array', items: { type: itemType } },
+    schema: { items: { type: itemType }, type: 'array' },
     ...(explode === undefined ? {} : { explode }),
   };
 }

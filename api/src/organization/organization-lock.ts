@@ -8,13 +8,15 @@ export async function lockCurrentOrganization(
 ) {
   const [organization] = await transaction
     .select({
+      organizationType: deploymentSettings.organizationType,
       organizationVersion: deploymentSettings.organizationVersion,
       policyVersion: deploymentSettings.registrationPolicyVersion,
-      organizationType: deploymentSettings.organizationType,
     })
     .from(deploymentSettings)
     .where(eq(deploymentSettings.id, 1))
     .for(strength)
-  if (!organization) throw new Error('Deployment organization is not configured')
+  if (!organization) {
+    throw new Error('Deployment organization is not configured')
+  }
   return organization
 }

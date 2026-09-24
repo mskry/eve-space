@@ -13,22 +13,22 @@ export interface PlatformNuxtModuleOptions {
 }
 
 export default defineNuxtModule<PlatformNuxtModuleOptions>({
+  defaults: {
+    contributions: [],
+  },
   meta: {
-    name: '@eve-space/platform-module-nuxt',
     compatibility: {
       nuxt: '>=4.5.2 <5',
     },
+    name: '@eve-space/platform-module-nuxt',
   },
   moduleDependencies: {
-    '@pinia/nuxt': {
-      version: '>=1.0.2 <2',
-    },
     '@pinia/colada-nuxt': {
       version: '>=1.0.2 <2',
     },
-  },
-  defaults: {
-    contributions: [],
+    '@pinia/nuxt': {
+      version: '>=1.0.2 <2',
+    },
   },
   async setup(options, nuxt) {
     const contributions = [...(options.contributions ?? [])].toSorted((left, right) =>

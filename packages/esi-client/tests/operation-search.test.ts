@@ -26,14 +26,14 @@ describe('operation search', () => {
       'GetCharactersCharacterIdAgentsResearch',
     );
     expect(
-      searchOperations({ query: 'public', limit: 100 }).every((result) => !result.authenticated),
+      searchOperations({ limit: 100, query: 'public' }).every((result) => !result.authenticated),
     ).toBe(true);
-    expect(searchOperations({ query: 'mutation', limit: 1 }).every(isMutation)).toBe(true);
+    expect(searchOperations({ limit: 1, query: 'mutation' }).every(isMutation)).toBe(true);
     expect(searchOperations({ query: 'esi characters write contacts v1' })[0]?.operationId).toBe(
       'DeleteCharactersCharacterIdContacts',
     );
     expect(
-      searchOperations({ query: 'delete', limit: 100 }).some(
+      searchOperations({ limit: 100, query: 'delete' }).some(
         ({ httpMethod }) => httpMethod === 'DELETE',
       ),
     ).toBe(true);
@@ -42,12 +42,12 @@ describe('operation search', () => {
   it('supports filter-only searches and combines every typed filter', () => {
     const scope = 'esi-markets.read_character_orders.v1';
     const results = searchOperations({
-      domain: 'market',
-      method: 'GET',
       authenticated: true,
-      scopes: [scope],
       classification: 'read',
+      domain: 'market',
       limit: 100,
+      method: 'GET',
+      scopes: [scope],
     });
 
     expect(results.length).toBeGreaterThan(0);
@@ -66,7 +66,7 @@ describe('operation search', () => {
 
   it('uses exactly 20 by default, permits zero, and enforces the hard maximum', () => {
     expect(searchOperations()).toHaveLength(20);
-    expect(searchOperations({ limit: 0 })).toEqual([]);
+    expect(searchOperations({ limit: 0 })).toStrictEqual([]);
     expect(searchOperations({ limit: 100 })).toHaveLength(100);
 
     for (const limit of [-1, 1.5, 101, Number.NaN, Number.POSITIVE_INFINITY]) {
@@ -86,36 +86,40 @@ describe('operation search', () => {
       .filter(({ facade }) => facade.domain === 'market')
       .map(({ operationId }) => operationId);
 
-    expect(ids).toEqual(expectedIds);
-    expect(second).toEqual(first);
-    expect(searchOperations({ query: 'market', limit: 100 })).toEqual(
-      searchOperations({ query: 'market', limit: 100 }),
+    expect(ids).toStrictEqual(expectedIds);
+    expect(second).toStrictEqual(first);
+    expect(searchOperations({ limit: 100, query: 'market' })).toStrictEqual(
+      searchOperations({ limit: 100, query: 'market' }),
     );
-    expect(searchOperations({ query: 'market', domain: 'market', limit: 100 })).toEqual(first);
+    expect(searchOperations({ domain: 'market', limit: 100, query: 'market' })).toStrictEqual(
+      first,
+    );
   });
 
   it('returns concise deeply immutable JSON entries without executable or credential data', () => {
     const secret = 'super-secret-operation-search-test-token';
-    const results = searchOperations({ query: 'authenticated', limit: 100 });
+    const results = searchOperations({ limit: 100, query: 'authenticated' });
     const serialized = JSON.stringify(results);
 
     expect(results.length).toBeGreaterThan(0);
     expect(serialized).not.toContain(secret);
     expect(serialized.toLowerCase()).not.toContain('authorization');
     expect(serialized.toLowerCase()).not.toContain('tokenprovider');
-    expect(JSON.parse(serialized)).toEqual(results);
+    expect(JSON.parse(serialized)).toStrictEqual(results);
     expect(Object.isFrozen(results)).toBe(true);
     for (const result of results) {
-      expect(Object.keys(result)).toEqual([
-        'operationId',
+      expect(
+        Object.keys(result).toSorted((left, right) => left.localeCompare(right)),
+      ).toStrictEqual([
+        'authenticated',
+        'classification',
         'domain',
         'facadeMethod',
-        'summary',
         'httpMethod',
-        'authenticated',
-        'scopes',
-        'classification',
+        'operationId',
         'protocol',
+        'scopes',
+        'summary',
       ]);
       expect(Object.isFrozen(result)).toBe(true);
       expect(Object.isFrozen(result.scopes)).toBe(true);
@@ -127,12 +131,12 @@ describe('operation search', () => {
   });
 
   it('projects generated protocol facts into search results', () => {
-    const result = searchOperations({ query: 'GetStatus', limit: 1 })[0];
+    const result = searchOperations({ limit: 1, query: 'GetStatus' })[0];
     const operation = operationManifest.operations.find(
       ({ operationId }) => operationId === 'GetStatus',
     );
 
-    expect(result?.protocol).toEqual({
+    expect(result?.protocol).toStrictEqual({
       cache: operation?.cache,
       conditionalRequestValidators: operation?.conditionalRequestValidators,
       maximumBatchSize: operation?.maximumBatchSize,

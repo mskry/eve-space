@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   collectionStatus: { read: vi.fn() },
+  coreData: { publishedTypeGroups: vi.fn() },
+  createCoreDataCapability: vi.fn(),
   createPlatformModuleActivityProviderPersistence: vi.fn(() => ({})),
   createPlatformModuleRoutePersistence: vi.fn(() => ({})),
   createPlatformResourceProjectionPersistence: vi.fn(() => ({})),
-  createCoreDataCapability: vi.fn(),
-  coreData: { publishedTypeGroups: vi.fn() },
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-  providerPersistence: { readProviderSnapshot: vi.fn() },
+  logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
   projectionPersistence: { readProjectionSnapshot: vi.fn() },
+  providerPersistence: { readProviderSnapshot: vi.fn() },
   routePersistence: { readRouteSnapshot: vi.fn() },
 }))
 
@@ -23,10 +23,10 @@ vi.mock('../../src/platform/module-logging.js', () => ({
   createPlatformModuleLogger: vi.fn(() => mocks.logger),
 }))
 vi.mock('../../src/platform/module-persistence-capabilities.js', () => ({
-  createPlatformModuleRoutePersistence: mocks.createPlatformModuleRoutePersistence,
-  createPlatformResourceProjectionPersistence: mocks.createPlatformResourceProjectionPersistence,
   createPlatformModuleActivityProviderPersistence:
     mocks.createPlatformModuleActivityProviderPersistence,
+  createPlatformModuleRoutePersistence: mocks.createPlatformModuleRoutePersistence,
+  createPlatformResourceProjectionPersistence: mocks.createPlatformResourceProjectionPersistence,
 }))
 
 import {
@@ -52,12 +52,12 @@ describe('platform module route capabilities', () => {
       'published-type-groups',
     ] as const)
 
-    expect(capabilities).toEqual({
+    expect(capabilities).toStrictEqual({
       coreData: mocks.coreData,
       logger: mocks.logger,
       persistence: mocks.routePersistence,
     })
-    expect(Object.keys(capabilities)).toEqual(['coreData', 'logger', 'persistence'])
+    expect(Object.keys(capabilities)).toStrictEqual(['coreData', 'logger', 'persistence'])
     expect(mocks.createCoreDataCapability).toHaveBeenCalledWith(['published-type-groups'], 'route')
     expect(mocks.createPlatformModuleRoutePersistence).toHaveBeenCalledWith('alpha', 'alpha-route')
   })
@@ -65,25 +65,25 @@ describe('platform module route capabilities', () => {
   test('provides reviewer contributions only declared core reads and logging', () => {
     const capabilities = createPlatformReviewerContributionRouteCapabilities(
       {
-        publisherPackage: '@example/alpha-manifest',
-        moduleId: 'alpha',
-        contributionId: 'overview',
-        routeId: 'alpha-route',
-        routePath: '/api/modules/alpha/accounts/:userId',
         audience: 'hr',
-        requiredPermission: 'alpha.review',
-        target: 'managed-organization-account',
-        panelPackage: '@example/alpha-nuxt',
-        panelExport: './reviewer/overview',
-        label: 'Alpha',
+        contributionId: 'overview',
         description: 'Review alpha.',
         icon: 'overview',
+        label: 'Alpha',
+        moduleId: 'alpha',
         order: 10,
+        panelExport: './reviewer/overview',
+        panelPackage: '@example/alpha-nuxt',
+        publisherPackage: '@example/alpha-manifest',
+        requiredPermission: 'alpha.review',
+        routeId: 'alpha-route',
+        routePath: '/api/modules/alpha/accounts/:userId',
+        target: 'managed-organization-account',
       },
       ['published-type-groups'] as const,
     )
 
-    expect(capabilities).toEqual({ coreData: mocks.coreData, logger: mocks.logger })
+    expect(capabilities).toStrictEqual({ coreData: mocks.coreData, logger: mocks.logger })
     expect(capabilities).not.toHaveProperty('persistence')
     expect(mocks.createCoreDataCapability).toHaveBeenCalledWith(['published-type-groups'], 'route')
     expect(mocks.createPlatformModuleRoutePersistence).not.toHaveBeenCalled()
@@ -91,17 +91,17 @@ describe('platform module route capabilities', () => {
 
   test('provides resource collectors read-only bounded persistence', () => {
     const capabilities = createPlatformResourceReadCapabilities({
-      moduleId: 'alpha',
-      resourceId: 'resource',
-      operationId: 'operation',
       coreDataProducts: ['published-type-groups'],
-      subjectKind: 'deployment',
-      materializationIntervalSeconds: 60,
       eligibility: { kind: 'current-deployment' },
       implementation: {},
+      materializationIntervalSeconds: 60,
+      moduleId: 'alpha',
+      operationId: 'operation',
+      resourceId: 'resource',
+      subjectKind: 'deployment',
     })
 
-    expect(capabilities).toEqual({
+    expect(capabilities).toStrictEqual({
       coreData: mocks.coreData,
       logger: mocks.logger,
       persistence: mocks.projectionPersistence,
@@ -120,24 +120,24 @@ describe('platform module route capabilities', () => {
   test('provides activity providers bounded status, logging, and persistence', () => {
     const controller = new AbortController()
     const context = {
-      userId: 'user-1',
+      characters: [],
       organizationVersion: 7,
       requestedAt: '2026-09-06T12:00:00.000Z',
       signal: controller.signal,
-      characters: [],
+      userId: 'user-1',
     }
     const capabilities = createPlatformModuleActivityProviderCapabilities(
       'alpha',
       'alpha-provider',
       context,
     )
-    expect(Object.keys(capabilities)).toEqual([
+    expect(Object.keys(capabilities)).toStrictEqual([
       'collectionStatus',
       'coreData',
       'logger',
       'persistence',
     ])
-    expect(capabilities.coreData).toEqual({})
+    expect(capabilities.coreData).toStrictEqual({})
     expect(mocks.createPlatformModuleActivityProviderPersistence).toHaveBeenCalledWith(
       'alpha',
       'alpha-provider',

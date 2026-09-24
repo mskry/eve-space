@@ -24,14 +24,14 @@ describe('outbox relay batch', () => {
     const store = relayStore()
 
     await expect(
-      runOutboxRelayBatch(producer, outcomes, store, { highWaterMark: 10, batchSize: 100 }),
-    ).resolves.toMatchObject({ claimed: 1, published: 1, failed: 0 })
-    expect(store.claim).toHaveBeenCalledWith({ limit: 3, claimTtlMs: 30_000 })
-    expect(producer.commands).toEqual([
+      runOutboxRelayBatch(producer, outcomes, store, { batchSize: 100, highWaterMark: 10 }),
+    ).resolves.toMatchObject({ claimed: 1, failed: 0, published: 1 })
+    expect(store.claim).toHaveBeenCalledWith({ claimTtlMs: 30_000, limit: 3 })
+    expect(producer.commands).toStrictEqual([
       { name: 'domain-event', payload: { eventId }, source: 'outbox' },
     ])
     expect(store.acknowledge).toHaveBeenCalledWith(eventId, claimToken)
-    expect(JSON.parse(String(vi.mocked(console.info).mock.calls[0]?.[0]))).toEqual(
+    expect(JSON.parse(String(vi.mocked(console.info).mock.calls[0]?.[0]))).toStrictEqual(
       expect.objectContaining({
         event: 'outbox.relay.event-published',
         eventId,
@@ -41,19 +41,19 @@ describe('outbox relay batch', () => {
     )
     expect(JSON.stringify(vi.mocked(console.info).mock.calls)).not.toContain('Payload Pilot')
     expect(outcomes.recordOutbox).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: 'published', category: null }),
+      expect.objectContaining({ category: null, outcome: 'published' }),
     )
   })
 
   test('does not claim PostgreSQL rows while outbox admission is paused', async () => {
-    const producer = createInMemoryQueueProducer({ highWaterMark: 10, depth: 10 })
+    const producer = createInMemoryQueueProducer({ depth: 10, highWaterMark: 10 })
     const outcomes = outcomeRecorder()
     const store = relayStore()
 
     await expect(
       runOutboxRelayBatch(producer, outcomes, store, { highWaterMark: 10 }),
     ).resolves.toMatchObject({
-      admission: { status: 'rejected', reason: 'outbox-paused' },
+      admission: { reason: 'outbox-paused', status: 'rejected' },
       claimed: 0,
     })
     expect(store.claim).not.toHaveBeenCalled()
@@ -73,14 +73,14 @@ describe('outbox relay batch', () => {
 
     await expect(
       runOutboxRelayBatch(producer, outcomes, store, { retryDelayMs: 12_000 }),
-    ).resolves.toMatchObject({ claimed: 1, published: 0, failed: 1 })
+    ).resolves.toMatchObject({ claimed: 1, failed: 1, published: 0 })
     expect(store.recordFailure).toHaveBeenCalledWith({
-      eventId,
-      claimToken,
       category: 'queue-unavailable',
+      claimToken,
+      eventId,
       retryDelayMs: 12_000,
     })
-    expect(JSON.parse(String(vi.mocked(console.error).mock.calls[0]?.[0]))).toEqual(
+    expect(JSON.parse(String(vi.mocked(console.error).mock.calls[0]?.[0]))).toStrictEqual(
       expect.objectContaining({
         event: 'outbox.relay.event-failed',
         eventId,
@@ -116,9 +116,9 @@ describe('outbox relay batch', () => {
   test('turns expected producer rejection into recoverable queue rejection', async () => {
     const producer = createInMemoryQueueProducer()
     producer.enqueue = vi.fn().mockResolvedValue({
-      status: 'rejected',
       depth: 1,
       reason: 'coalesced',
+      status: 'rejected',
     })
     const store = relayStore()
 
@@ -136,22 +136,22 @@ describe('outbox relay batch', () => {
     const store = relayStore()
     store.claim.mockResolvedValue([
       {
-        valid: false,
-        event: { eventId: '16b7570c-f6ea-43c5-9669-4692245b6667' },
-        claimToken: '39eb48bb-50b2-4871-b944-72781b334e2e',
         claimExpiresAt: new Date(Date.now() + 30_000),
+        claimToken: '39eb48bb-50b2-4871-b944-72781b334e2e',
+        event: { eventId: '16b7570c-f6ea-43c5-9669-4692245b6667' },
         publishAttempts: 1,
+        valid: false,
       },
       validClaim(),
     ])
 
     await expect(runOutboxRelayBatch(producer, outcomes, store)).resolves.toMatchObject({
       claimed: 2,
-      published: 1,
       failed: 1,
+      published: 1,
     })
     expect(outcomes.recordOutbox).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: 'partial-failure', category: 'invalid-event' }),
+      expect.objectContaining({ category: 'invalid-event', outcome: 'partial-failure' }),
     )
   })
 
@@ -160,18 +160,20 @@ describe('outbox relay batch', () => {
     async (failure) => {
       const producer = createInMemoryQueueProducer()
       const store = relayStore()
-      if (failure === 'rejected')
+      if (failure === 'rejected') {
         store.acknowledge.mockRejectedValueOnce(new Error('database topology'))
-      else store.acknowledge.mockResolvedValueOnce(false)
+      } else {
+        store.acknowledge.mockResolvedValueOnce(false)
+      }
 
       await expect(runOutboxRelayBatch(producer, outcomeRecorder(), store)).resolves.toMatchObject({
         claimed: 1,
-        published: 0,
         failed: 1,
+        published: 0,
       })
       expect(producer.commands).toHaveLength(1)
       expect(store.recordFailure).toHaveBeenCalledWith(
-        expect.objectContaining({ eventId, claimToken, category: 'unknown' }),
+        expect.objectContaining({ category: 'unknown', claimToken, eventId }),
       )
       expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain('database topology')
     },
@@ -183,28 +185,28 @@ describe('outbox relay batch', () => {
     const producer = createInMemoryQueueProducer()
     producer.enqueue = vi
       .fn()
-      .mockResolvedValueOnce({ status: 'accepted', depth: 0 })
-      .mockResolvedValueOnce({ status: 'rejected', depth: 1, reason: 'outbox-paused' })
+      .mockResolvedValueOnce({ depth: 0, status: 'accepted' })
+      .mockResolvedValueOnce({ depth: 1, reason: 'outbox-paused', status: 'rejected' })
     const outcomes = outcomeRecorder()
     const store = relayStore()
     store.claim.mockResolvedValue([validClaim(), validClaim(rejectedEventId, rejectedClaimToken)])
 
     await expect(runOutboxRelayBatch(producer, outcomes, store)).resolves.toMatchObject({
       claimed: 2,
-      published: 1,
       failed: 1,
+      published: 1,
     })
     expect(store.acknowledge).toHaveBeenCalledOnce()
     expect(store.acknowledge).toHaveBeenCalledWith(eventId, claimToken)
     expect(store.recordFailure).toHaveBeenCalledWith(
       expect.objectContaining({
-        eventId: rejectedEventId,
-        claimToken: rejectedClaimToken,
         category: 'queue-rejected',
+        claimToken: rejectedClaimToken,
+        eventId: rejectedEventId,
       }),
     )
     expect(outcomes.recordOutbox).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: 'partial-failure', category: 'queue-rejected' }),
+      expect.objectContaining({ category: 'queue-rejected', outcome: 'partial-failure' }),
     )
   })
 
@@ -215,9 +217,9 @@ describe('outbox relay batch', () => {
 
     await expect(
       runOutboxRelayBatch(createInMemoryQueueProducer(), outcomes, store),
-    ).resolves.toMatchObject({ claimed: 0, published: 0, failed: 0 })
+    ).resolves.toMatchObject({ claimed: 0, failed: 0, published: 0 })
     expect(outcomes.recordOutbox).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: 'idle', category: null }),
+      expect.objectContaining({ category: null, outcome: 'idle' }),
     )
   })
 
@@ -249,23 +251,23 @@ function outcomeRecorder() {
 
 function relayStore() {
   return {
-    claim: vi.fn().mockResolvedValue([validClaim()]),
     acknowledge: vi.fn().mockResolvedValue(true),
+    claim: vi.fn().mockResolvedValue([validClaim()]),
     recordFailure: vi.fn().mockResolvedValue(true),
   }
 }
 
 function validClaim(id = eventId, token = claimToken) {
   return {
-    valid: true,
+    claimExpiresAt: new Date(Date.now() + 30_000),
+    claimToken: token,
     event: {
       eventId: id,
       eventType: 'character.attached',
-      payloadVersion: 1,
       payload: { characterName: 'Payload Pilot' },
+      payloadVersion: 1,
     },
-    claimToken: token,
-    claimExpiresAt: new Date(Date.now() + 30_000),
     publishAttempts: 1,
+    valid: true,
   } as const
 }

@@ -25,7 +25,7 @@ describe('client request parsing', () => {
     ],
     ["client\n  .api\n  ['status']\n  .$post()", { method: 'POST', requestPath: '/api/status' }],
   ])('parses Hono client chains', (source, expected) => {
-    expect(clientRequestIn(source)).toEqual(expected)
+    expect(clientRequestIn(source)).toStrictEqual(expected)
   })
 
   it('rejects an adversarial unterminated chain', () => {
@@ -37,37 +37,37 @@ describe('client request parsing', () => {
 
 const site = (overrides: Partial<SiteState['site']> = {}) =>
   ({
-    id: 'app/pages/thing.vue:10',
-    file: 'app/pages/thing.vue',
-    line: 10,
+    definitionExcerpt: null,
+    definitionSource: null,
     entry: 'useQuery',
     excerpt: 'useQuery(...)',
+    file: 'app/pages/thing.vue',
+    id: 'app/pages/thing.vue:10',
+    line: 10,
     method: 'GET',
     requestPath: '/api/me/characters/:characterId',
-    definitionSource: null,
-    definitionExcerpt: null,
     ...overrides,
   }) satisfies SiteState['site']
 
 const state = (overrides: Partial<SiteState> = {}): SiteState => ({
-  site: site(),
   rootMiddleware: ['loadSession', 'requireSession'],
   route: {
-    source: 'api/src/characters/core-routes.ts',
-    method: 'GET',
-    path: '/:characterId',
     excerpt: '.get(...)',
+    method: 'GET',
     middleware: [],
+    path: '/:characterId',
+    source: 'api/src/characters/core-routes.ts',
   },
+  site: site(),
   ...overrides,
 })
 
 const judgment = (overrides: Partial<SiteJudgment> = {}): SiteJudgment => ({
-  ssrCapable: 0.9,
   credentialRequirement: { choice: 'owned_character', confidence: 0.95 },
-  ssrSafePath: { choice: 'none', confidence: 0.9 },
   credentialsIncludeOnly: 0.1,
   excludedPublicEndpoint: 0.02,
+  ssrCapable: 0.9,
+  ssrSafePath: { choice: 'none', confidence: 0.9 },
   ...overrides,
 })
 
@@ -85,18 +85,18 @@ describe('labelled requests', () => {
         ].join('\n'),
       )
 
-      await expect(loadLabelledRequests(pathToFileURL(`${root}/`))).resolves.toEqual([
+      await expect(loadLabelledRequests(pathToFileURL(`${root}/`))).resolves.toStrictEqual([
         {
-          name: 'validQuery',
-          method: 'GET',
-          requestPath: '/api/status',
           credentialRequirement: 'public',
+          method: 'GET',
+          name: 'validQuery',
+          requestPath: '/api/status',
           ssrGated: false,
           trigger: 'SSR-capable',
         },
       ])
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 })
@@ -108,7 +108,7 @@ describe('root mount table', () => {
       await loadRootMountTable(fixtures),
     )
 
-    expect(resolved.mounts.map((mount) => mount.source)).toEqual([
+    expect(resolved.mounts.map((mount) => mount.source)).toStrictEqual([
       'api/src/characters/routes.ts',
       'api/src/mail/routes.ts',
     ])
@@ -118,13 +118,13 @@ describe('root mount table', () => {
     const resolved = resolveMount('/api/status', await loadRootMountTable(fixtures))
 
     expect(resolved.middleware).not.toContain('next')
-    expect(resolved.middleware).toEqual([])
+    expect(resolved.middleware).toStrictEqual([])
   })
 
   it('applies prefix middleware only to matching paths', async () => {
     const table = await loadRootMountTable(fixtures)
 
-    expect(resolveMount('/api/characters/5', table).middleware).toEqual([
+    expect(resolveMount('/api/characters/5', table).middleware).toStrictEqual([
       'loadSession',
       'requireSession',
     ])
@@ -153,7 +153,11 @@ describe('route definitions', () => {
     )
 
     expect(route?.source).toBe('api/src/characters/core-routes.ts')
-    expect(route?.middleware).toEqual(['loadSession', 'requireSession', 'loadOrganizationSession'])
+    expect(route?.middleware).toStrictEqual([
+      'loadSession',
+      'requireSession',
+      'loadOrganizationSession',
+    ])
   })
 
   it('combines root and inherited router middleware for model evidence', async () => {
@@ -164,7 +168,7 @@ describe('route definitions', () => {
       'GET',
     )
 
-    expect(applicableRouteMiddleware(['loadSession'], route)).toEqual([
+    expect(applicableRouteMiddleware(['loadSession'], route)).toStrictEqual([
       'loadSession',
       'requireSession',
       'loadOrganizationSession',
@@ -192,7 +196,7 @@ describe('request site resolution', () => {
   it('excludes requests inside inline mutation callbacks', async () => {
     const sites = await sitesInComposable()
 
-    expect(sites.map(({ entry }) => entry)).toEqual(['useQuery', 'useQuery'])
+    expect(sites.map(({ entry }) => entry)).toStrictEqual(['useQuery', 'useQuery'])
   })
 
   it('resolves a query definition returned from a factory arrow', async () => {
@@ -212,8 +216,12 @@ describe('request site resolution', () => {
   it('collects protected prefetches, direct Hono calls, and $fetch beside mutations', async () => {
     const sites = await collectRequestSites(fixtures, ['app/composables/requestForms.ts'])
 
-    expect(sites.map(({ entry }) => entry)).toEqual(['prefetchProtectedQuery', '$get', '$fetch'])
-    expect(sites.map(({ method, requestPath }) => ({ method, requestPath }))).toEqual([
+    expect(sites.map(({ entry }) => entry)).toStrictEqual([
+      'prefetchProtectedQuery',
+      '$get',
+      '$fetch',
+    ])
+    expect(sites.map(({ method, requestPath }) => ({ method, requestPath }))).toStrictEqual([
       { method: 'GET', requestPath: '/api/status' },
       { method: 'GET', requestPath: '/api/status' },
       { method: 'GET', requestPath: '/api/status' },

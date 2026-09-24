@@ -27,11 +27,11 @@ import { classifyEsiResponse } from '../../src/esi-gateway/internal/policy.js'
 import { installedModuleEsiOperationCatalog } from '../../src/generated/platform/installed-module-esi.js'
 
 const runtimePrivateCache = {
-  kind: 'shared',
   collapse: true,
-  stale: { kind: 'none' },
+  kind: 'shared',
   retentionMilliseconds: 0,
   runtimeRetention: 'private',
+  stale: { kind: 'none' },
 } as const
 
 describe('ESI operation policies', () => {
@@ -40,7 +40,7 @@ describe('ESI operation policies', () => {
       .filter(([, contract]) => contract.responseValidation.kind === 'disabled')
       .map(([operation, contract]) => [operation, contract.audit.esiOperationId])
 
-    expect(disabled).toEqual([['universe-bloodlines', 'GetUniverseBloodlines']])
+    expect(disabled).toStrictEqual([['universe-bloodlines', 'GetUniverseBloodlines']])
   })
 
   test('requires definitions to own a real matching SDK descriptor and catalog contract', () => {
@@ -49,9 +49,9 @@ describe('ESI operation policies', () => {
       audit: { esiOperationId: 'GetStatus', reviewedDate: '2026-08-18' },
     } as const
     const definition = {
-      sdkOperationId: 'GetStatus' as const,
-      descriptor: operationRegistry.GetStatus!,
       contract,
+      descriptor: operationRegistry.GetStatus!,
+      sdkOperationId: 'GetStatus' as const,
     }
 
     expect(() =>
@@ -74,7 +74,7 @@ describe('ESI operation policies', () => {
   })
 
   test('declares every backend ESI operation with quota behavior', () => {
-    expect(Object.keys(esiOperationCatalog)).toEqual(
+    expect(Object.keys(esiOperationCatalog)).toStrictEqual(
       expect.arrayContaining([
         'status',
         'public-character',
@@ -137,11 +137,11 @@ describe('ESI operation policies', () => {
       cache: { kind: 'runtime-only' },
     })
     expect(getEsiOperationContract('universe-resolve-names')).toMatchObject({
+      freshness: { kind: 'relative', seconds: 3600 },
       identity: {
         kind: 'set',
         maximumItems: getGeneratedEsiMaximumBatchSize('universe-resolve-names'),
       },
-      freshness: { kind: 'relative', seconds: 3_600 },
     })
     expect(getEsiOperationContract('bulk-affiliation')).toMatchObject({
       identity: {
@@ -154,14 +154,14 @@ describe('ESI operation policies', () => {
       cache: runtimePrivateCache,
     })
     expect(getEsiOperationContract('wallet-transactions')).toMatchObject({
-      representationVersion: 'v3',
       identity: {
-        kind: 'mixed',
         fields: [
           { kind: 'scalar', field: 'characterId' },
           { kind: 'scalar', field: 'fromId', nullable: true },
         ],
+        kind: 'mixed',
       },
+      representationVersion: 'v3',
     })
   })
 
@@ -172,18 +172,18 @@ describe('ESI operation policies', () => {
   })
 
   test('merges the reviewed core and generated installed-module catalogs', () => {
-    expect(esiMetadataReview).toEqual({
+    expect(esiMetadataReview).toStrictEqual({
       explorerUrl: 'https://developers.eveonline.com/api-explorer',
-      reviewedAt: '2026-09-03',
       requestedCompatibilityDate: '2026-08-23',
       resolvedCompatibilityDate: '2026-08-18',
+      reviewedAt: '2026-09-03',
     })
     expect(
       Object.keys(coreEsiOperationCatalog).toSorted((left, right) => left.localeCompare(right)),
-    ).toEqual(
+    ).toStrictEqual(
       Object.keys(esiOperationMetadata).toSorted((left, right) => left.localeCompare(right)),
     )
-    expect(esiOperationCatalog).toEqual({
+    expect(esiOperationCatalog).toStrictEqual({
       ...coreEsiOperationCatalog,
       ...installedModuleEsiOperationCatalog,
     })
@@ -198,15 +198,14 @@ describe('ESI operation policies', () => {
         operation as keyof typeof esiOperationMetadata,
       )
       resolved.push({
-        operation,
         audit: contract.audit,
         authorization: contract.authorization,
+        operation,
         rateGroup: contract.rateGroup,
-        validRepresentationVersion: contract.representationVersion.length > 0,
         revalidate: contract.cache.kind === 'shared' ? contract.cache.revalidate : false,
+        validRepresentationVersion: contract.representationVersion.length > 0,
       })
       expected.push({
-        operation,
         audit: {
           esiOperationId: metadata.esiOperationId,
           reviewedDate: esiMetadataReview.resolvedCompatibilityDate,
@@ -215,12 +214,13 @@ describe('ESI operation policies', () => {
           generated.authenticationScopes.length === 0
             ? { kind: 'public' }
             : { kind: 'character', scope: generated.authenticationScopes[0] },
+        operation,
         rateGroup: generated.rateLimit,
-        validRepresentationVersion: true,
         revalidate: contract.cache.kind === 'shared' && generated.supportsConditionalRequests,
+        validRepresentationVersion: true,
       })
     }
-    expect(resolved).toEqual(expected)
+    expect(resolved).toStrictEqual(expected)
   })
 
   test('derives character scopes from every core and installed-module catalog contract', () => {
@@ -270,15 +270,17 @@ describe('ESI operation policies', () => {
       expect(generated.classification).toBe(
         'mutation' in contract && contract.mutation ? 'mutation' : 'read',
       )
-      expect(contract.rateGroup).toEqual(generated.rateLimit)
-      if (contract.cache.kind === 'shared')
+      expect(contract.rateGroup).toStrictEqual(generated.rateLimit)
+      if (contract.cache.kind === 'shared') {
         revalidationDerivations.push([
           contract.cache.revalidate,
           generated.supportsConditionalRequests,
         ])
+      }
 
-      if (generated.maximumBatchSize !== null && !identityBoundOperations.has(operation))
+      if (generated.maximumBatchSize !== null && !identityBoundOperations.has(operation)) {
         sdkOnlyBatchLimits.push([operation, generated.maximumBatchSize])
+      }
 
       const generatedCacheAge =
         operationRegistry[metadata.esiOperationId].transport.protocol.cache.extensions[
@@ -288,8 +290,9 @@ describe('ESI operation policies', () => {
         metadata.cache.kind === 'relative' &&
         generatedCacheAge !== undefined &&
         metadata.cache.seconds !== generatedCacheAge
-      )
+      ) {
         cacheFallbackDifferences.push([operation, metadata.cache.seconds, generatedCacheAge])
+      }
     }
 
     for (const operation of [
@@ -301,15 +304,17 @@ describe('ESI operation policies', () => {
       'mail-update',
     ] as const) {
       expect(getGeneratedEsiOperationFacts(operation).supportsConditionalRequests).toBe(true)
-      expect(getEsiOperationContract(operation).cache).toEqual({ kind: 'none' })
+      expect(getEsiOperationContract(operation).cache).toStrictEqual({ kind: 'none' })
     }
-    expect(sdkOnlyBatchLimits.toSorted(([left], [right]) => left.localeCompare(right))).toEqual([
+    expect(
+      sdkOnlyBatchLimits.toSorted(([left], [right]) => left.localeCompare(right)),
+    ).toStrictEqual([
       ['character-search', 11],
       ['mail-send', 50],
       ['mail-update', 25],
     ])
     expect(revalidationDerivations.every(([actual, generated]) => actual === generated)).toBe(true)
-    expect(cacheFallbackDifferences).toEqual([['skill-queue', 120, 60]])
+    expect(cacheFallbackDifferences).toStrictEqual([['skill-queue', 120, 60]])
   })
 
   test('fails closed when application mutation policy conflicts with SDK classification', () => {
@@ -327,21 +332,21 @@ describe('ESI operation policies', () => {
   })
 
   test('records representative public and daily-boundary cache contracts', () => {
-    expect(esiOperationMetadata['public-character']).toEqual({
+    expect(esiOperationMetadata['public-character']).toStrictEqual({
+      cache: { kind: 'relative', seconds: 86_400 },
       esiOperationId: 'GetCharactersDetail',
       minimumCompatibilityDate: '2026-06-09',
-      cache: { kind: 'relative', seconds: 86_400 },
     })
     expect(getGeneratedEsiOperationFacts('public-character')).toMatchObject({
+      authenticationScopes: [],
       method: 'GET',
       path: '/characters/{character_id}',
-      authenticationScopes: [],
       rateLimit: { kind: 'legacy-only' },
     })
-    expect(esiOperationMetadata['universe-solar-system']).toEqual({
+    expect(esiOperationMetadata['universe-solar-system']).toStrictEqual({
+      cache: { hour: 11, kind: 'daily-utc', minute: 5 },
       esiOperationId: 'GetUniverseSystemsSystemId',
       minimumCompatibilityDate: '2020-01-01',
-      cache: { kind: 'daily-utc', hour: 11, minute: 5 },
     })
     expect(getGeneratedEsiOperationFacts('universe-solar-system')).toMatchObject({
       method: 'GET',
@@ -351,7 +356,7 @@ describe('ESI operation policies', () => {
   })
 
   test('records representative character route-group contracts', () => {
-    expect([esiOperationMetadata.location, esiOperationMetadata.ship]).toEqual([
+    expect([esiOperationMetadata.location, esiOperationMetadata.ship]).toStrictEqual([
       expect.objectContaining({
         cache: { kind: 'relative', seconds: 5 },
       }),
@@ -359,101 +364,88 @@ describe('ESI operation policies', () => {
         cache: { kind: 'relative', seconds: 5 },
       }),
     ])
-    for (const operation of ['location', 'ship'] as const)
-      expect(getGeneratedEsiOperationFacts(operation).rateLimit).toEqual({
-        kind: 'declared',
+    for (const operation of ['location', 'ship'] as const) {
+      expect(getGeneratedEsiOperationFacts(operation).rateLimit).toStrictEqual({
         group: 'char-location',
-        maximumTokens: 1_200,
+        kind: 'declared',
+        maximumTokens: 1200,
         window: '15m',
       })
+    }
     expect(esiOperationMetadata.skills).toMatchObject({
       cache: { kind: 'relative', seconds: 60 },
     })
     expect(esiOperationMetadata.attributes).toMatchObject({
-      esiOperationId: 'GetCharactersCharacterIdAttributes',
       cache: { kind: 'relative', seconds: 120 },
+      esiOperationId: 'GetCharactersCharacterIdAttributes',
     })
     expect(getGeneratedEsiOperationFacts('attributes')).toMatchObject({
+      authenticationScopes: ['esi-skills.read_skills.v1'],
       method: 'GET',
       path: '/characters/{character_id}/attributes',
-      authenticationScopes: ['esi-skills.read_skills.v1'],
-      supportsConditionalRequests: true,
       rateLimit: {
-        kind: 'declared',
         group: 'char-detail',
+        kind: 'declared',
         maximumTokens: 600,
         window: '15m',
       },
+      supportsConditionalRequests: true,
     })
     expect(getEsiOperationContract('attributes')).toMatchObject({
       authorization: { kind: 'character', scope: 'esi-skills.read_skills.v1' },
-      identity: { kind: 'ordered', fields: ['characterId'] },
       cache: {
         ...runtimePrivateCache,
         revalidate: true,
       },
+      identity: { fields: ['characterId'], kind: 'ordered' },
       retry: { kind: 'idempotent' },
     })
     expect(esiOperationMetadata['skill-queue']).toMatchObject({
-      esiOperationId: 'GetCharactersCharacterIdSkillqueue',
       cache: { kind: 'relative', seconds: 120 },
+      esiOperationId: 'GetCharactersCharacterIdSkillqueue',
     })
     expect(getGeneratedEsiOperationFacts('skill-queue')).toMatchObject({
-      path: '/characters/{character_id}/skillqueue',
       authenticationScopes: ['esi-skills.read_skillqueue.v1'],
+      path: '/characters/{character_id}/skillqueue',
       supportsConditionalRequests: true,
     })
     expect(getEsiOperationContract('skill-queue')).toMatchObject({
       authorization: { kind: 'character', scope: 'esi-skills.read_skillqueue.v1' },
-      identity: { kind: 'ordered', fields: ['characterId'] },
       cache: {
         ...runtimePrivateCache,
         revalidate: true,
       },
+      identity: { fields: ['characterId'], kind: 'ordered' },
     })
     expect([
       esiOperationMetadata['wallet-balance'],
       esiOperationMetadata['wallet-journal'],
       esiOperationMetadata['wallet-transactions'],
-    ]).toEqual([
+    ]).toStrictEqual([
       expect.objectContaining({
         cache: { kind: 'relative', seconds: 120 },
       }),
       expect.objectContaining({
-        cache: { kind: 'relative', seconds: 3_600 },
+        cache: { kind: 'relative', seconds: 3600 },
       }),
       expect.objectContaining({
-        cache: { kind: 'relative', seconds: 3_600 },
+        cache: { kind: 'relative', seconds: 3600 },
       }),
     ])
-    for (const operation of ['wallet-balance', 'wallet-journal', 'wallet-transactions'] as const)
-      expect(getGeneratedEsiOperationFacts(operation).rateLimit).toEqual({
-        kind: 'declared',
+    for (const operation of ['wallet-balance', 'wallet-journal', 'wallet-transactions'] as const) {
+      expect(getGeneratedEsiOperationFacts(operation).rateLimit).toStrictEqual({
         group: 'char-wallet',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       })
+    }
   })
 
   test('records reviewed Finance operation descriptors and private resilience contracts', () => {
     const expected = {
-      'wallet-journal': [
-        'GetCharactersCharacterIdWalletJournal',
-        'esi-wallet.read_character_wallet.v1',
-        { kind: 'declared', group: 'char-wallet', maximumTokens: 150, window: '15m' },
-      ],
-      'market-orders': [
-        'GetCharactersCharacterIdOrders',
-        'esi-markets.read_character_orders.v1',
-        { kind: 'legacy-only' },
-      ],
-      'market-order-history': [
-        'GetCharactersCharacterIdOrdersHistory',
-        'esi-markets.read_character_orders.v1',
-        { kind: 'legacy-only' },
-      ],
-      'character-contracts': [
-        'GetCharactersCharacterIdContracts',
+      'character-contract-bids': [
+        'GetCharactersCharacterIdContractsContractIdBids',
         'esi-contracts.read_character_contracts.v1',
         { kind: 'declared', group: 'char-contract', maximumTokens: 600, window: '15m' },
       ],
@@ -462,10 +454,25 @@ describe('ESI operation policies', () => {
         'esi-contracts.read_character_contracts.v1',
         { kind: 'declared', group: 'char-contract', maximumTokens: 600, window: '15m' },
       ],
-      'character-contract-bids': [
-        'GetCharactersCharacterIdContractsContractIdBids',
+      'character-contracts': [
+        'GetCharactersCharacterIdContracts',
         'esi-contracts.read_character_contracts.v1',
         { kind: 'declared', group: 'char-contract', maximumTokens: 600, window: '15m' },
+      ],
+      'market-order-history': [
+        'GetCharactersCharacterIdOrdersHistory',
+        'esi-markets.read_character_orders.v1',
+        { kind: 'legacy-only' },
+      ],
+      'market-orders': [
+        'GetCharactersCharacterIdOrders',
+        'esi-markets.read_character_orders.v1',
+        { kind: 'legacy-only' },
+      ],
+      'wallet-journal': [
+        'GetCharactersCharacterIdWalletJournal',
+        'esi-wallet.read_character_wallet.v1',
+        { kind: 'declared', group: 'char-wallet', maximumTokens: 150, window: '15m' },
       ],
     } as const
 
@@ -478,10 +485,10 @@ describe('ESI operation policies', () => {
         minimumCompatibilityDate: '2020-01-01',
       })
       expect(generated).toMatchObject({
-        method: 'GET',
         authenticationScopes: [scope],
-        supportsConditionalRequests: true,
+        method: 'GET',
         rateLimit: rateGroup,
+        supportsConditionalRequests: true,
       })
       expect(contract).toMatchObject({
         authorization: { kind: 'character', scope },
@@ -501,13 +508,13 @@ describe('ESI operation policies', () => {
         '/characters/{character_id}/clones',
         'GetCharactersCharacterIdClones',
         'esi-clones.read_clones.v1',
-        { kind: 'declared', group: 'char-location', maximumTokens: 1_200, window: '15m' },
+        { group: 'char-location', kind: 'declared', maximumTokens: 1200, window: '15m' },
       ],
       'character-implants': [
         '/characters/{character_id}/implants',
         'GetCharactersCharacterIdImplants',
         'esi-clones.read_implants.v1',
-        { kind: 'declared', group: 'char-detail', maximumTokens: 600, window: '15m' },
+        { group: 'char-detail', kind: 'declared', maximumTokens: 600, window: '15m' },
       ],
     } as const
 
@@ -516,25 +523,25 @@ describe('ESI operation policies', () => {
       const contract = getEsiOperationContract(operation as keyof typeof expected)
       const generated = getGeneratedEsiOperationFacts(operation as keyof typeof expected)
       expect(metadata).toMatchObject({
+        cache: { kind: 'relative', seconds: 120 },
         esiOperationId,
         minimumCompatibilityDate: '2020-01-01',
-        cache: { kind: 'relative', seconds: 120 },
       })
       expect(generated).toMatchObject({
+        authenticationScopes: [scope],
         method: 'GET',
         path,
-        authenticationScopes: [scope],
-        supportsConditionalRequests: true,
         rateLimit: rateGroup,
+        supportsConditionalRequests: true,
       })
       expect(contract).toMatchObject({
         authorization: { kind: 'character', scope },
-        identity: { kind: 'ordered', fields: ['characterId'] },
-        freshness: { kind: 'relative', seconds: 120 },
         cache: {
           ...runtimePrivateCache,
           revalidate: true,
         },
+        freshness: { kind: 'relative', seconds: 120 },
+        identity: { fields: ['characterId'], kind: 'ordered' },
         rateGroup,
         retry: { kind: 'idempotent' },
       })
@@ -543,25 +550,25 @@ describe('ESI operation policies', () => {
 
   test('records only the reviewed character asset operations and their shared private policy', () => {
     const expected = {
-      'character-assets-page': {
-        method: 'GET',
-        path: '/characters/{character_id}/assets',
-        esiOperationId: 'GetCharactersCharacterIdAssets',
-        cache: { kind: 'relative', seconds: 3_600 },
-        identity: { kind: 'ordered', fields: ['characterId', 'page'] },
-      },
       'character-asset-names': {
-        method: 'POST',
-        path: '/characters/{character_id}/assets/names',
-        esiOperationId: 'PostCharactersCharacterIdAssetsNames',
         cache: { kind: 'runtime-only' },
+        esiOperationId: 'PostCharactersCharacterIdAssetsNames',
         identity: {
-          kind: 'mixed',
           fields: [
             { kind: 'scalar', field: 'characterId' },
-            { kind: 'set', field: 'itemIds', maximumItems: 1_000 },
+            { kind: 'set', field: 'itemIds', maximumItems: 1000 },
           ],
+          kind: 'mixed',
         },
+        method: 'POST',
+        path: '/characters/{character_id}/assets/names',
+      },
+      'character-assets-page': {
+        cache: { kind: 'relative', seconds: 3600 },
+        esiOperationId: 'GetCharactersCharacterIdAssets',
+        identity: { fields: ['characterId', 'page'], kind: 'ordered' },
+        method: 'GET',
+        path: '/characters/{character_id}/assets',
       },
     } as const
 
@@ -570,34 +577,34 @@ describe('ESI operation policies', () => {
       const contract = getEsiOperationContract(operation as keyof typeof expected)
       const generated = getGeneratedEsiOperationFacts(operation as keyof typeof expected)
       expect(metadata).toMatchObject({
+        cache: asset.cache,
         esiOperationId: asset.esiOperationId,
         minimumCompatibilityDate: '2020-01-01',
-        cache: asset.cache,
       })
       expect(generated).toMatchObject({
+        authenticationScopes: ['esi-assets.read_assets.v1'],
         method: asset.method,
         path: asset.path,
-        authenticationScopes: ['esi-assets.read_assets.v1'],
-        supportsConditionalRequests: true,
         rateLimit: {
-          kind: 'declared',
           group: 'char-asset',
-          maximumTokens: 1_800,
+          kind: 'declared',
+          maximumTokens: 1800,
           window: '15m',
         },
+        supportsConditionalRequests: true,
       })
       expect(contract).toMatchObject({
         authorization: { kind: 'character', scope: 'esi-assets.read_assets.v1' },
-        identity: asset.identity,
-        freshness: asset.cache,
         cache: {
           ...runtimePrivateCache,
           revalidate: true,
         },
+        freshness: asset.cache,
+        identity: asset.identity,
         rateGroup: {
-          kind: 'declared',
           group: 'char-asset',
-          maximumTokens: 1_800,
+          kind: 'declared',
+          maximumTokens: 1800,
           window: '15m',
         },
         retry: { kind: 'idempotent' },
@@ -606,7 +613,7 @@ describe('ESI operation policies', () => {
 
     expect(
       Object.values(esiOperationMetadata).map(({ esiOperationId }) => esiOperationId),
-    ).not.toEqual(
+    ).not.toStrictEqual(
       expect.arrayContaining([
         'PostCharactersCharacterIdAssetsLocations',
         'GetUniverseStructuresStructureId',
@@ -617,71 +624,71 @@ describe('ESI operation policies', () => {
 
   test('records composition lookup and charge policies', () => {
     expect(esiOperationMetadata['universe-resolve-ids']).toMatchObject({
-      esiOperationId: 'PostUniverseIds',
       cache: { kind: 'runtime-only' },
+      esiOperationId: 'PostUniverseIds',
     })
     expect(getGeneratedEsiOperationFacts('universe-resolve-ids')).toMatchObject({
+      authenticationScopes: [],
+      maximumBatchSize: 500,
       method: 'POST',
       path: '/universe/ids',
-      authenticationScopes: [],
-      supportsConditionalRequests: true,
       rateLimit: { kind: 'legacy-only' },
-      maximumBatchSize: 500,
+      supportsConditionalRequests: true,
     })
     expect(getEsiOperationContract('universe-resolve-ids')).toMatchObject({
       authorization: { kind: 'public' },
-      identity: { kind: 'set', field: 'names', maximumItems: 500 },
-      freshness: { kind: 'relative', seconds: 3_600 },
       cache: { kind: 'shared', revalidate: true },
+      freshness: { kind: 'relative', seconds: 3600 },
+      identity: { field: 'names', kind: 'set', maximumItems: 500 },
       retry: { kind: 'idempotent' },
     })
 
     expect(esiOperationMetadata['character-search']).toMatchObject({
+      cache: { kind: 'relative', seconds: 3600 },
       esiOperationId: 'GetCharactersCharacterIdSearch',
-      cache: { kind: 'relative', seconds: 3_600 },
     })
     expect(getGeneratedEsiOperationFacts('character-search')).toMatchObject({
+      authenticationScopes: ['esi-search.search_structures.v1'],
       method: 'GET',
       path: '/characters/{character_id}/search',
-      authenticationScopes: ['esi-search.search_structures.v1'],
-      supportsConditionalRequests: true,
       rateLimit: { kind: 'legacy-only' },
+      supportsConditionalRequests: true,
     })
     expect(getEsiOperationContract('character-search')).toMatchObject({
       authorization: { kind: 'character', scope: 'esi-search.search_structures.v1' },
-      identity: { kind: 'ordered', fields: ['characterId', 'search'] },
       cache: {
         ...runtimePrivateCache,
         revalidate: true,
       },
+      identity: { fields: ['characterId', 'search'], kind: 'ordered' },
       retry: { kind: 'idempotent' },
     })
 
     expect(esiOperationMetadata['character-cspa-charge']).toMatchObject({
-      esiOperationId: 'PostCharactersCharacterIdCspa',
       cache: { kind: 'none' },
+      esiOperationId: 'PostCharactersCharacterIdCspa',
     })
     expect(getGeneratedEsiOperationFacts('character-cspa-charge')).toMatchObject({
+      authenticationScopes: ['esi-characters.read_contacts.v1'],
       classification: 'read',
+      maximumBatchSize: 100,
       method: 'POST',
       path: '/characters/{character_id}/cspa',
-      authenticationScopes: ['esi-characters.read_contacts.v1'],
-      supportsConditionalRequests: true,
       rateLimit: {
-        kind: 'declared',
         group: 'char-detail',
+        kind: 'declared',
         maximumTokens: 600,
         window: '15m',
       },
-      maximumBatchSize: 100,
+      supportsConditionalRequests: true,
     })
     const cspa = getEsiOperationContract('character-cspa-charge')
     expect(cspa).toMatchObject({
       authorization: { kind: 'character', scope: 'esi-characters.read_contacts.v1' },
       cache: { kind: 'none' },
       rateGroup: {
-        kind: 'declared',
         group: 'char-detail',
+        kind: 'declared',
         maximumTokens: 600,
         window: '15m',
       },
@@ -711,22 +718,22 @@ describe('ESI operation policies', () => {
         minimumCompatibilityDate: '2020-01-01',
       })
       expect(generated).toMatchObject({
-        method,
         authenticationScopes: [scope],
-        supportsConditionalRequests: true,
+        method,
         rateLimit: {
-          kind: 'declared',
           group: 'char-social',
+          kind: 'declared',
           maximumTokens: 600,
           window: '15m',
         },
+        supportsConditionalRequests: true,
       })
       expect(contract).toMatchObject({
         audit: { reviewedDate: '2026-08-18' },
         authorization: { kind: 'character', scope },
         rateGroup: {
-          kind: 'declared',
           group: 'char-social',
+          kind: 'declared',
           maximumTokens: 600,
           window: '15m',
         },
@@ -741,12 +748,12 @@ describe('ESI operation policies', () => {
       mailHeaderIdentity.kind === 'mixed' ? mailHeaderIdentity.fields : []
     expect(mailHeaderIdentity).toMatchObject({ kind: 'mixed' })
     expect(mailHeaderIdentityFields).toContainEqual(
-      expect.objectContaining({ kind: 'set', field: 'labels', maximumItems: 25 }),
+      expect.objectContaining({ field: 'labels', kind: 'set', maximumItems: 25 }),
     )
 
     expect(getEsiOperationContract('mail-message')).toMatchObject({
-      freshness: { kind: 'relative', seconds: 30 },
       cache: { kind: 'shared', retentionMilliseconds: 0, stale: { kind: 'none' } },
+      freshness: { kind: 'relative', seconds: 30 },
     })
     expect(getEsiOperationContract('mail-lists')).toMatchObject({
       freshness: { kind: 'relative', seconds: 120 },
@@ -757,23 +764,24 @@ describe('ESI operation policies', () => {
       'mail-update',
       'mail-delete',
       'mail-delete-label',
-    ] as const)
-      expect(getEsiOperationContract(operation).cache).toEqual({ kind: 'none' })
+    ] as const) {
+      expect(getEsiOperationContract(operation).cache).toStrictEqual({ kind: 'none' })
+    }
   })
 
   test('rejects incompatible dates and missing requestable private scopes at startup', () => {
     expect(() =>
       assertEsiCatalogConfiguration({
         compatibilityDate: '2026-06-08',
-        ssoEnabled: false,
         requestableScopes: [],
+        ssoEnabled: false,
       }),
     ).toThrow('public-character requires 2026-06-09')
     expect(() =>
       assertEsiCatalogConfiguration({
         compatibilityDate: '2026-08-23',
-        ssoEnabled: true,
         requestableScopes: ['esi-location.read_location.v1'],
+        ssoEnabled: true,
       }),
     ).toThrow(
       'EVE_SCOPES is missing scopes required by registered ESI operations: esi-assets.read_assets.v1 esi-characters.read_contacts.v1 esi-characters.read_corporation_roles.v1 esi-characters.read_freelance_jobs.v1 esi-clones.read_clones.v1 esi-clones.read_implants.v1 esi-contracts.read_character_contracts.v1 esi-corporations.read_corporation_membership.v1 esi-corporations.read_freelance_jobs.v1 esi-corporations.read_projects.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-markets.read_character_orders.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1 esi.activity.char:read',
@@ -784,7 +792,6 @@ describe('ESI operation policies', () => {
     expect(() =>
       assertEsiCatalogConfiguration({
         compatibilityDate: '2026-08-23',
-        ssoEnabled: true,
         requestableScopes: [
           'esi-assets.read_assets.v1',
           'esi-characters.read_contacts.v1',
@@ -808,13 +815,14 @@ describe('ESI operation policies', () => {
           'esi-corporations.read_projects.v1',
           'esi.activity.char:read',
         ],
+        ssoEnabled: true,
       }),
     ).not.toThrow()
     expect(() =>
       assertEsiCatalogConfiguration({
         compatibilityDate: '2026-08-23',
-        ssoEnabled: false,
         requestableScopes: [],
+        ssoEnabled: false,
       }),
     ).not.toThrow()
   })
@@ -855,8 +863,8 @@ describe('ESI operation policies', () => {
     expect(() =>
       assertEsiCatalogConfiguration({
         compatibilityDate: '2026-08-23',
-        ssoEnabled: true,
         requestableScopes,
+        ssoEnabled: true,
       }),
     ).toThrow(`EVE_SCOPES is missing scopes required by registered ESI operations: ${missingScope}`)
   })
@@ -887,14 +895,14 @@ describe('ESI operation policies', () => {
     ],
     [
       'ordered identity',
-      () => ({ ...validModuleOperation(), identity: { kind: 'ordered', fields: ['id', 'id'] } }),
+      () => ({ ...validModuleOperation(), identity: { fields: ['id', 'id'], kind: 'ordered' } }),
       'invalid or duplicate ordered identity fields',
     ],
     [
       'set identity',
       () => ({
         ...validModuleOperation(),
-        identity: { kind: 'set', field: 'ids', maximumItems: 0 },
+        identity: { field: 'ids', kind: 'set', maximumItems: 0 },
       }),
       'set identity maximum must be a positive safe integer',
     ],
@@ -914,8 +922,8 @@ describe('ESI operation policies', () => {
         ...validModuleOperation(),
         cache: {
           ...validModuleOperation().cache,
-          stale: { kind: 'bounded', milliseconds: 120_000 },
           retentionMilliseconds: 60_000,
+          stale: { kind: 'bounded', milliseconds: 120_000 },
         },
       }),
       'stale duration exceeds cache retention',
@@ -924,7 +932,7 @@ describe('ESI operation policies', () => {
       'rate group',
       () => ({
         ...validModuleOperation(),
-        rateGroup: { kind: 'declared', group: 'Module Group', maximumTokens: 100, window: '15m' },
+        rateGroup: { group: 'Module Group', kind: 'declared', maximumTokens: 100, window: '15m' },
       }),
       'invalid declared rate-group metadata',
     ],
@@ -933,10 +941,10 @@ describe('ESI operation policies', () => {
       () => ({
         ...validModuleOperation(),
         retry: {
-          kind: 'idempotent',
           attempts: 3,
-          initialDelayMilliseconds: 2_000,
-          maximumDelayMilliseconds: 1_000,
+          initialDelayMilliseconds: 2000,
+          kind: 'idempotent',
+          maximumDelayMilliseconds: 1000,
         },
       }),
       'invalid idempotent retry metadata',
@@ -946,9 +954,9 @@ describe('ESI operation policies', () => {
       () => ({
         ...validModuleOperation(),
         retry: {
-          kind: 'idempotent',
           attempts: 4,
           initialDelayMilliseconds: 500,
+          kind: 'idempotent',
           maximumDelayMilliseconds: 10_000,
         },
       }),
@@ -1003,8 +1011,8 @@ describe('ESI operation policies', () => {
       assertEsiOperationCatalogConfiguration(
         {
           compatibilityDate: '2026-08-23',
-          ssoEnabled: false,
           requestableScopes: [],
+          ssoEnabled: false,
         },
         {
           'module-operation': {
@@ -1018,8 +1026,8 @@ describe('ESI operation policies', () => {
       assertEsiOperationCatalogConfiguration(
         {
           compatibilityDate: '2026-8-23',
-          ssoEnabled: false,
           requestableScopes: [],
+          ssoEnabled: false,
         },
         { 'module-operation': validModuleOperation() },
       ),
@@ -1030,31 +1038,31 @@ describe('ESI operation policies', () => {
 function validModuleOperation() {
   return {
     audit: { esiOperationId: 'GetModuleOperation', reviewedDate: '2026-08-18' },
-    representationVersion: 'v1',
     authorization: { kind: 'public' },
-    identity: { kind: 'ordered', fields: ['subjectId'] },
-    freshness: { kind: 'relative', seconds: 60 },
     cache: {
-      kind: 'shared',
       collapse: true,
+      kind: 'shared',
+      retentionMilliseconds: 60_000,
       revalidate: true,
       stale: { kind: 'bounded', milliseconds: 30_000 },
-      retentionMilliseconds: 60_000,
     },
+    compatibility: { minimumDate: '2026-01-01' },
+    freshness: { kind: 'relative', seconds: 60 },
+    identity: { fields: ['subjectId'], kind: 'ordered' },
     rateGroup: {
-      kind: 'declared',
       group: 'module-group',
+      kind: 'declared',
       maximumTokens: 100,
       window: '15m',
     },
+    representationVersion: 'v1',
+    responseValidation: { kind: 'enabled' },
     retry: {
-      kind: 'idempotent',
       attempts: 3,
       initialDelayMilliseconds: 100,
-      maximumDelayMilliseconds: 1_000,
+      kind: 'idempotent',
+      maximumDelayMilliseconds: 1000,
     },
-    compatibility: { minimumDate: '2026-01-01' },
-    responseValidation: { kind: 'enabled' },
   } as const
 }
 
@@ -1067,7 +1075,7 @@ describe('ESI mutation contracts', () => {
         'mutation' in contract ? contract.mutation?.appliedOnMissing : undefined,
       ])
 
-    expect(mutations).toEqual([
+    expect(mutations).toStrictEqual([
       ['mail-send', false],
       ['mail-create-label', false],
       ['mail-update', false],
@@ -1082,7 +1090,7 @@ describe('ESI mutation contracts', () => {
         'module-operation': {
           ...validModuleOperation(),
           cache: { kind: 'none' },
-          mutation: { kind: 'character', appliedOnMissing: false },
+          mutation: { appliedOnMissing: false, kind: 'character' },
         },
       }),
     ).toThrow('declares a mutation without character authorization and an uncached contract')
@@ -1090,7 +1098,9 @@ describe('ESI mutation contracts', () => {
 
   test('keeps every mutation out of the cached read paths', () => {
     for (const [, contract] of Object.entries(esiOperationCatalog)) {
-      if (!('mutation' in contract) || !contract.mutation) continue
+      if (!('mutation' in contract) || !contract.mutation) {
+        continue
+      }
       expect(contract.cache.kind).toBe('none')
       expect(contract.authorization.kind).toBe('character')
     }
@@ -1099,16 +1109,16 @@ describe('ESI mutation contracts', () => {
 
 describe('ESI response classification', () => {
   test('charges the documented bucket cost for each response class', () => {
-    expect(classifyEsiResponse(200)).toEqual({ outcome: 'success', tokenCost: 2 })
-    expect(classifyEsiResponse(204)).toEqual({ outcome: 'success', tokenCost: 2 })
-    expect(classifyEsiResponse(301)).toEqual({ outcome: 'redirect', tokenCost: 1 })
-    expect(classifyEsiResponse(304)).toEqual({ outcome: 'notModified', tokenCost: 1 })
-    expect(classifyEsiResponse(307)).toEqual({ outcome: 'redirect', tokenCost: 1 })
-    expect(classifyEsiResponse(404)).toEqual({ outcome: 'clientError', tokenCost: 5 })
-    expect(classifyEsiResponse(500)).toEqual({ outcome: 'serverError', tokenCost: 0 })
+    expect(classifyEsiResponse(200)).toStrictEqual({ outcome: 'success', tokenCost: 2 })
+    expect(classifyEsiResponse(204)).toStrictEqual({ outcome: 'success', tokenCost: 2 })
+    expect(classifyEsiResponse(301)).toStrictEqual({ outcome: 'redirect', tokenCost: 1 })
+    expect(classifyEsiResponse(304)).toStrictEqual({ outcome: 'notModified', tokenCost: 1 })
+    expect(classifyEsiResponse(307)).toStrictEqual({ outcome: 'redirect', tokenCost: 1 })
+    expect(classifyEsiResponse(404)).toStrictEqual({ outcome: 'clientError', tokenCost: 5 })
+    expect(classifyEsiResponse(500)).toStrictEqual({ outcome: 'serverError', tokenCost: 0 })
   })
 
   test('exempts 429 from the client-error cost so cooldowns are not self-reinforcing', () => {
-    expect(classifyEsiResponse(429)).toEqual({ outcome: 'rateLimited', tokenCost: 0 })
+    expect(classifyEsiResponse(429)).toStrictEqual({ outcome: 'rateLimited', tokenCost: 0 })
   })
 })

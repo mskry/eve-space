@@ -8,6 +8,7 @@ interface PublicFixtureResponse {
 }
 
 const publicFixtureQuery = defineEsiQueryOptions((apiBase: string) => ({
+  esiPersistence: { kind: 'public-esi' },
   key: ['public', 'e2e', 'query-persistence'] as const,
   query: async ({ signal }: { signal: AbortSignal }) => {
     const response = await fetch(new URL('/api/e2e/public-esi', apiBase), {
@@ -19,9 +20,8 @@ const publicFixtureQuery = defineEsiQueryOptions((apiBase: string) => ({
     }
     return (await response.json()) as PublicFixtureResponse
   },
-  staleTime: 60_000,
-  esiPersistence: { kind: 'public-esi' },
   ssrCatchError: true,
+  staleTime: 60_000,
 }))
 
 definePageMeta({
@@ -52,17 +52,21 @@ if (import.meta.client) {
   watch(
     publicData,
     (value) => {
-      if (!value) return
+      if (!value) {
+        return
+      }
       browserState.e2ePublicHistory!.push({
         hydrating: nuxtApp.isHydrating === true,
         text: value.text,
       })
     },
-    { immediate: true, flush: 'sync' },
+    { flush: 'sync', immediate: true },
   )
 }
 
-if (clientFetchMode && import.meta.client) await query.refetch()
+if (clientFetchMode && import.meta.client) {
+  await query.refetch()
+}
 
 onMounted(() => {
   clientMounted.value = true

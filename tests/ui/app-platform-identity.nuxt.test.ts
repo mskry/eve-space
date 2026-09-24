@@ -32,7 +32,9 @@ import App from '../../app/app.vue'
 const wrappers: { unmount(): void }[] = []
 
 afterEach(() => {
-  for (const wrapper of wrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of wrappers.splice(0)) {
+    wrapper.unmount()
+  }
   vi.clearAllMocks()
 })
 
@@ -57,13 +59,13 @@ test('registers platform identity and query persistence host seams', async () =>
 
   const invalidate = mocks.usePlatformModulePersistenceLifecycle.mock.calls[0]?.[0]
   invalidate?.({
-    moduleId: 'organization-activity',
     admissionScopes: ['organization:v1:organization-activity:member:organization-activity.view'],
+    moduleId: 'organization-activity',
   })
 
   expect(mocks.invalidatePrivateQueryScope).toHaveBeenCalledWith(expect.anything(), {
-    kind: 'organization',
     admissionScope: 'organization:v1:organization-activity:member:organization-activity.view',
+    kind: 'organization',
   })
 })
 
@@ -84,14 +86,14 @@ test('preconnects to the configured API origin and EVE image host', async () => 
 
   const appHead = mocks.useHead.mock.calls.map(([head]) => head()).find((head) => head.link)
 
-  expect(appHead?.link).toEqual(
+  expect(appHead?.link).toStrictEqual(
     expect.arrayContaining([
       {
-        rel: 'preconnect',
-        href: 'http://localhost:8788',
         crossorigin: 'use-credentials',
+        href: 'http://localhost:8788',
+        rel: 'preconnect',
       },
-      { rel: 'preconnect', href: 'https://images.evetech.net' },
+      { href: 'https://images.evetech.net', rel: 'preconnect' },
     ]),
   )
 })

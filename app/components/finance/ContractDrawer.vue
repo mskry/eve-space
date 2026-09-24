@@ -41,7 +41,9 @@ const emit = defineEmits<{
 const drawerOpen = computed({
   get: () => props.open,
   set: (open: boolean) => {
-    if (!open) emit('close-contract')
+    if (!open) {
+      emit('close-contract')
+    }
   },
 })
 const drawerTitle = computed(

@@ -4,10 +4,10 @@ import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainer
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 import { runMigrations } from '../../../src/db/migration-runner.js'
 
-const dayMs = 24 * 60 * 60 * 1_000
+const dayMs = 24 * 60 * 60 * 1000
 const lifetime = {
-  idleSeconds: 14 * 24 * 60 * 60,
   absoluteSeconds: 30 * 24 * 60 * 60,
+  idleSeconds: 14 * 24 * 60 * 60,
   renewalIntervalSeconds: 24 * 60 * 60,
 }
 
@@ -52,6 +52,27 @@ afterAll(async () => {
   await dbClient?.sql.end()
   await connection?.end()
   await container?.stop()
+})
+
+describe('session lookup', () => {
+  test('returns no account for an expired or unknown session', async () => {
+    const token = await insertSession({ createdDaysAgo: 2, expiresInDays: 1 })
+    await connection`
+      insert into characters (character_id, user_id, owner_hash, name, corporation_id, is_main)
+      select 1404328063, user_id, 'session-owner', 'Session Pilot', 1000166, true
+      from sessions where session_hash = ${security.hashToken(token)}
+    `
+
+    await expect(sessionStore.findSession(token)).resolves.toMatchObject({
+      mainCharacter: { characterId: 1_404_328_063 },
+    })
+    await connection`
+      update sessions set expires_at = now() - interval '1 minute'
+      where session_hash = ${security.hashToken(token)}
+    `
+    await expect(sessionStore.findSession(token)).resolves.toBeNull()
+    await expect(sessionStore.findSession(randomUUID())).resolves.toBeNull()
+  })
 })
 
 describe('session renewal', () => {

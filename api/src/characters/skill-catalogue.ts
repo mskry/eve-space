@@ -16,7 +16,9 @@ let skillCataloguePromise: Promise<SkillCatalogue> | undefined
 export function getSkillCatalogue(): Promise<SkillCatalogue> {
   skillCataloguePromise ??= loadSkillCatalogue()
     .then((catalogue) => {
-      if (catalogue.groups.length === 0) skillCataloguePromise = undefined
+      if (catalogue.groups.length === 0) {
+        skillCataloguePromise = undefined
+      }
       return catalogue
     })
     .catch((error: unknown) => {
@@ -55,7 +57,7 @@ async function loadSkillCatalogue(): Promise<SkillCatalogue> {
     }
     if (row.typeId !== null && row.typeName !== null && !seenTypeIds.has(row.typeId)) {
       seenTypeIds.add(row.typeId)
-      group.skills.push({ typeId: row.typeId, name: row.typeName })
+      group.skills.push({ name: row.typeName, typeId: row.typeId })
     }
   }
 

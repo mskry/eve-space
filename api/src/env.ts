@@ -50,11 +50,11 @@ const schema = z.object({
   ESI_CACHE_L1_MAX_ENTRIES: positiveInteger.default(250),
   ESI_PRIVATE_RETENTION_SECONDS: positiveInteger.default(86_400),
   ESI_CACHE_MAX_RETENTION_SECONDS: positiveInteger.default(86_400),
-  MODULE_RUNTIME_CACHE_TTL_MS: positiveInteger.max(30_000).default(5_000),
+  MODULE_RUNTIME_CACHE_TTL_MS: positiveInteger.max(30_000).default(5000),
   ESI_REQUEST_TIMEOUT_MS: positiveInteger.default(30_000),
   ESI_OPERATION_CONCURRENCY: positiveInteger.default(6),
   ESI_OPERATION_QUEUE_TIMEOUT_MS: positiveInteger.default(30_000),
-  AFFILIATION_ACTIVE_INTERVAL_SECONDS: positiveInteger.default(3_600),
+  AFFILIATION_ACTIVE_INTERVAL_SECONDS: positiveInteger.default(3600),
   AFFILIATION_INACTIVE_INTERVAL_SECONDS: positiveInteger.default(86_400),
   ADMIN_SETUP_SECRET: z.preprocess(
     (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
@@ -62,17 +62,17 @@ const schema = z.object({
   ),
   QUEUE_REDIS_URL: redisUrl.default('redis://localhost:6379'),
   QUEUE_COMPLETED_RETENTION_AGE_SECONDS: positiveInteger.default(86_400),
-  QUEUE_COMPLETED_RETENTION_COUNT: positiveInteger.default(1_000),
+  QUEUE_COMPLETED_RETENTION_COUNT: positiveInteger.default(1000),
   QUEUE_FAILED_RETENTION_AGE_SECONDS: positiveInteger.default(604_800),
-  QUEUE_FAILED_RETENTION_COUNT: positiveInteger.default(5_000),
+  QUEUE_FAILED_RETENTION_COUNT: positiveInteger.default(5000),
   QUEUE_OPERATION_CONCURRENCY: positiveInteger.default(10),
-  QUEUE_HIGH_WATER_MARK: positiveInteger.default(1_000),
+  QUEUE_HIGH_WATER_MARK: positiveInteger.default(1000),
   QUEUE_RESOURCE_PLANNER_PAGE_SIZE: positiveInteger.default(100),
   QUEUE_PLANNER_SCHEDULE: cronSchedule.default('*/15 * * * *'),
   QUEUE_PLANNER_SCHEDULE_OFFSET_MS: optionalNonNegativeInteger,
   QUEUE_PLANNER_INITIAL_DELAY_MAX_MS: positiveInteger.default(60_000),
   QUEUE_LAG_DEGRADED_SECONDS: positiveInteger.default(300),
-  OUTBOX_RELAY_INTERVAL_MS: positiveInteger.default(5_000),
+  OUTBOX_RELAY_INTERVAL_MS: positiveInteger.default(5000),
   OUTBOX_RELAY_BATCH_SIZE: positiveInteger.default(100),
   OUTBOX_RELAY_CLAIM_TTL_MS: positiveInteger.default(30_000),
   OUTBOX_RELAY_RETRY_DELAY_MS: positiveInteger.default(10_000),
@@ -97,8 +97,8 @@ const schemaWithInvariants = schema.superRefine((values, context) => {
   if (values.TOKEN_REFRESH_LOCK_TIMEOUT_MS <= worstCaseRefreshMs) {
     context.addIssue({
       code: 'custom',
-      path: ['TOKEN_REFRESH_LOCK_TIMEOUT_MS'],
       message: `Expected more than ${worstCaseRefreshMs}ms (2 x EVE_SSO_TIMEOUT_MS) so a queued replica waits for the winner instead of aborting`,
+      path: ['TOKEN_REFRESH_LOCK_TIMEOUT_MS'],
     })
   }
 
@@ -107,57 +107,57 @@ const schemaWithInvariants = schema.superRefine((values, context) => {
   if (values.TOKEN_REFRESH_CONCURRENCY >= values.DATABASE_POOL_MAX) {
     context.addIssue({
       code: 'custom',
-      path: ['TOKEN_REFRESH_CONCURRENCY'],
       message: `Expected fewer than DATABASE_POOL_MAX (${values.DATABASE_POOL_MAX}) so refreshes cannot consume every pooled connection`,
+      path: ['TOKEN_REFRESH_CONCURRENCY'],
     })
   }
 
   if (values.OUTBOX_RELAY_BATCH_SIZE > values.QUEUE_HIGH_WATER_MARK) {
     context.addIssue({
       code: 'custom',
-      path: ['OUTBOX_RELAY_BATCH_SIZE'],
       message: `Expected no more than QUEUE_HIGH_WATER_MARK (${values.QUEUE_HIGH_WATER_MARK})`,
+      path: ['OUTBOX_RELAY_BATCH_SIZE'],
     })
   }
 
   if (values.QUEUE_RESOURCE_PLANNER_PAGE_SIZE > values.QUEUE_HIGH_WATER_MARK) {
     context.addIssue({
       code: 'custom',
-      path: ['QUEUE_RESOURCE_PLANNER_PAGE_SIZE'],
       message: `Expected no more than QUEUE_HIGH_WATER_MARK (${values.QUEUE_HIGH_WATER_MARK})`,
+      path: ['QUEUE_RESOURCE_PLANNER_PAGE_SIZE'],
     })
   }
 
   if (values.OUTBOX_RELAY_CLAIM_TTL_MS <= values.OUTBOX_RELAY_INTERVAL_MS) {
     context.addIssue({
       code: 'custom',
-      path: ['OUTBOX_RELAY_CLAIM_TTL_MS'],
       message: `Expected more than OUTBOX_RELAY_INTERVAL_MS (${values.OUTBOX_RELAY_INTERVAL_MS})`,
+      path: ['OUTBOX_RELAY_CLAIM_TTL_MS'],
     })
   }
 
   if (values.OUTBOX_RELAY_RETRY_DELAY_MS < values.OUTBOX_RELAY_INTERVAL_MS) {
     context.addIssue({
       code: 'custom',
-      path: ['OUTBOX_RELAY_RETRY_DELAY_MS'],
       message: `Expected at least OUTBOX_RELAY_INTERVAL_MS (${values.OUTBOX_RELAY_INTERVAL_MS})`,
+      path: ['OUTBOX_RELAY_RETRY_DELAY_MS'],
     })
   }
 
-  if (values.OUTBOX_LAG_DEGRADED_SECONDS * 1_000 <= values.OUTBOX_RELAY_CLAIM_TTL_MS) {
+  if (values.OUTBOX_LAG_DEGRADED_SECONDS * 1000 <= values.OUTBOX_RELAY_CLAIM_TTL_MS) {
     context.addIssue({
       code: 'custom',
-      path: ['OUTBOX_LAG_DEGRADED_SECONDS'],
       message: `Expected a duration longer than OUTBOX_RELAY_CLAIM_TTL_MS (${values.OUTBOX_RELAY_CLAIM_TTL_MS}ms)`,
+      path: ['OUTBOX_LAG_DEGRADED_SECONDS'],
     })
   }
 
   if (values.AFFILIATION_INACTIVE_INTERVAL_SECONDS < values.AFFILIATION_ACTIVE_INTERVAL_SECONDS) {
     context.addIssue({
       code: 'custom',
-      path: ['AFFILIATION_INACTIVE_INTERVAL_SECONDS'],
       message:
         'Expected AFFILIATION_INACTIVE_INTERVAL_SECONDS to be at least AFFILIATION_ACTIVE_INTERVAL_SECONDS',
+      path: ['AFFILIATION_INACTIVE_INTERVAL_SECONDS'],
     })
   }
 })
@@ -174,9 +174,9 @@ export function getSsoConfig() {
   }
 
   return {
+    callbackUrl: env.EVE_CALLBACK_URL,
     clientId: env.EVE_CLIENT_ID,
     clientSecret: env.EVE_CLIENT_SECRET,
-    callbackUrl: env.EVE_CALLBACK_URL,
     encryptionKey: env.TOKEN_ENCRYPTION_KEY,
     scopes: env.EVE_SCOPES.split(/\s+/).filter(Boolean),
   }

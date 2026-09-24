@@ -11,13 +11,11 @@ const characterLifecycleId = '00000000-0000-4000-8000-000000000021'
 const characterId = 90_000_001
 const now = new Date('2026-09-16T12:00:00.000Z')
 const target = {
-  organizationVersion: 7,
-  managedMemberLifecycleId,
-  selection: { kind: 'account' },
   account: {
-    userId,
     mainCharacter: { characterId, name: 'Target Main' },
+    userId,
   },
+  block: { blocked: false },
   characters: [
     {
       characterId,
@@ -35,26 +33,28 @@ const target = {
     },
   ],
   compliance: {
-    state: 'compliant',
-    evidenceFreshness: 'fresh',
-    evidenceAt: '2026-09-16T11:55:00.000Z',
-    reviewDeadline: null,
     accessValidUntil: '2026-09-16T13:00:00.000Z',
     evaluatedAt: '2026-09-16T11:55:00.000Z',
+    evidenceAt: '2026-09-16T11:55:00.000Z',
+    evidenceFreshness: 'fresh',
+    reviewDeadline: null,
+    state: 'compliant',
   },
   groups: [],
-  block: { blocked: false },
+  managedMemberLifecycleId,
+  organizationVersion: 7,
+  selection: { kind: 'account' },
 } as const satisfies PlatformReviewerTargetContext
 const resources = [
   {
-    moduleId: 'member-audit',
-    sectionId: 'skills',
-    resourceId: 'trained-skills',
-    subjectKind: 'character',
-    operationId: 'skills',
-    materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     implementation: {},
+    materializationIntervalSeconds: 900,
+    moduleId: 'member-audit',
+    operationId: 'skills',
+    resourceId: 'trained-skills',
+    sectionId: 'skills',
+    subjectKind: 'character',
   } as PlatformInstalledResourceDescriptor,
 ]
 const resolveEligibility = vi.fn()
@@ -68,56 +68,58 @@ describe('platform reviewer collection-status capabilities', () => {
     resolveEligibility.mockResolvedValue(eligible(false))
     const reads = createReads()
 
-    await expect(reads.read('trained-skills', characterId)).resolves.toEqual({
-      status: 'current',
-      moduleId: 'member-audit',
-      sectionId: 'skills',
-      resourceId: 'trained-skills',
-      organizationVersion: 7,
-      targetUserId: userId,
-      managedMemberLifecycleId,
+    await expect(reads.read('trained-skills', characterId)).resolves.toStrictEqual({
+      authorizationGeneration: 3,
       characterId,
       characterLifecycleId,
-      authorizationGeneration: 3,
       disclosureVersion: 1,
-      sectionActivationVersion: 1,
-      validatedAt: '2026-09-16T11:55:00.000Z',
       lastFailureClass: null,
+      managedMemberLifecycleId,
+      moduleId: 'member-audit',
+      organizationVersion: 7,
+      resourceId: 'trained-skills',
+      sectionActivationVersion: 1,
+      sectionId: 'skills',
+      status: 'current',
+      targetUserId: userId,
+      validatedAt: '2026-09-16T11:55:00.000Z',
     })
     expect(resolveEligibility).toHaveBeenCalledWith(
       {
         moduleId: 'member-audit',
         resourceId: 'trained-skills',
+        subjectId: String(characterId),
         subjectKind: 'character',
         subjectLifecycleId: characterLifecycleId,
-        subjectId: String(characterId),
       },
-      { resources, now },
+      { now, resources },
     )
   })
 
   test('returns authorization-required without exposing a target reauthorization path', async () => {
     const current = eligible(true)
-    if (current.status !== 'eligible') throw new Error('Expected eligible test fixture')
+    if (current.status !== 'eligible') {
+      throw new Error('Expected eligible test fixture')
+    }
     resolveEligibility.mockResolvedValue({
       authorizationGeneration: current.authorizationGeneration,
+      dueReason: null,
+      lastFailureClass: null,
       managedAuthority: current.managedAuthority,
       nextEligibleAt: current.nextEligibleAt,
-      status: 'authorization-required',
-      dueReason: null,
-      schedulingKey: null,
       requiredScope: 'esi-skills.read_skills.v1',
+      schedulingKey: null,
+      status: 'authorization-required',
       validatedAt: null,
-      lastFailureClass: null,
     } satisfies PlatformResourceEligibility)
     const reads = createReads()
 
     const status = await reads.read('trained-skills', characterId)
 
-    expect(status).toEqual(
+    expect(status).toStrictEqual(
       expect.objectContaining({
-        status: 'authorization-required',
         requiredScope: 'esi-skills.read_skills.v1',
+        status: 'authorization-required',
         validatedAt: null,
       }),
     )
@@ -144,8 +146,9 @@ describe('platform reviewer collection-status capabilities', () => {
     ['section', { sectionId: 'assets' }],
   ])('refuses a mismatched %s authority binding', async (_label, authorityOverride) => {
     const current = eligible(false)
-    if (current.status !== 'eligible' || !current.managedAuthority)
+    if (current.status !== 'eligible' || !current.managedAuthority) {
       throw new Error('Expected managed eligibility fixture')
+    }
     resolveEligibility.mockResolvedValue({
       ...current,
       managedAuthority: { ...current.managedAuthority, ...authorityOverride },
@@ -158,7 +161,9 @@ describe('platform reviewer collection-status capabilities', () => {
 
   test('refuses a target context from an older authorization generation', async () => {
     const current = eligible(false)
-    if (current.status !== 'eligible') throw new Error('Expected eligible test fixture')
+    if (current.status !== 'eligible') {
+      throw new Error('Expected eligible test fixture')
+    }
     resolveEligibility.mockResolvedValue({ ...current, authorizationGeneration: 4 })
 
     await expect(createReads().read('trained-skills', characterId)).rejects.toThrow(
@@ -173,10 +178,10 @@ describe('platform reviewer collection-status capabilities', () => {
         sectionId: 'skills',
         target: {
           ...target,
-          selection: { kind: 'character', characterId, subjectLifecycleId: characterLifecycleId },
+          selection: { characterId, kind: 'character', subjectLifecycleId: characterLifecycleId },
         },
       },
-      { resources, now: () => now },
+      { now: () => now, resources },
     )
 
     await expect(characterReads.read('missing', characterId)).rejects.toThrow(
@@ -192,11 +197,13 @@ describe('platform reviewer collection-status capabilities', () => {
     const reads = createPlatformReviewerCollectionStatusReads(
       {
         moduleId: 'member-audit',
-        sectionId: 'skills',
         resourceIds: ['trained-skills'],
+        sectionId: 'skills',
         target,
       },
       {
+        now: () => now,
+        resolveEligibility,
         resources: [
           ...resources,
           {
@@ -209,8 +216,6 @@ describe('platform reviewer collection-status capabilities', () => {
             resourceId: 'other-private-data',
           } as PlatformInstalledResourceDescriptor,
         ],
-        now: () => now,
-        resolveEligibility,
       },
     )
 
@@ -230,8 +235,8 @@ describe('platform reviewer collection-status capabilities', () => {
     })
 
     await expect(createReads().read('trained-skills', characterId)).resolves.toMatchObject({
-      status: 'stale',
       lastFailureClass: 'esi-unavailable',
+      status: 'stale',
       validatedAt: '2026-09-16T11:55:00.000Z',
     })
   })
@@ -240,32 +245,32 @@ describe('platform reviewer collection-status capabilities', () => {
 function createReads() {
   return createPlatformReviewerCollectionStatusReads(
     { moduleId: 'member-audit', sectionId: 'skills', target },
-    { resources, now: () => now, resolveEligibility },
+    { now: () => now, resolveEligibility, resources },
   )
 }
 
 function eligible(due: boolean): PlatformResourceEligibility {
   return {
-    status: 'eligible',
+    authorizationGeneration: 3,
     due,
     dueReason: due ? 'elapsed' : 'future',
-    schedulingKey: due
-      ? new Date('2026-09-16T11:59:00.000Z')
-      : new Date('2026-09-16T12:15:00.000Z'),
-    authorizationGeneration: 3,
+    lastFailureClass: null,
+    managedAuthority: {
+      disclosureVersion: 1,
+      managedMemberLifecycleId,
+      organizationDeploymentId: 1,
+      organizationVersion: 7,
+      sectionActivationVersion: 1,
+      sectionId: 'skills',
+      targetUserId: userId,
+    },
     nextEligibleAt: due
       ? new Date('2026-09-16T11:59:00.000Z')
       : new Date('2026-09-16T12:15:00.000Z'),
+    schedulingKey: due
+      ? new Date('2026-09-16T11:59:00.000Z')
+      : new Date('2026-09-16T12:15:00.000Z'),
+    status: 'eligible',
     validatedAt: new Date('2026-09-16T11:55:00.000Z'),
-    lastFailureClass: null,
-    managedAuthority: {
-      organizationDeploymentId: 1,
-      organizationVersion: 7,
-      targetUserId: userId,
-      managedMemberLifecycleId,
-      sectionId: 'skills',
-      disclosureVersion: 1,
-      sectionActivationVersion: 1,
-    },
   }
 }

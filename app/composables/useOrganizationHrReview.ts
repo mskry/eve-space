@@ -55,9 +55,12 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
   watch(
     () => auditQuery.data.value,
     (page) => {
-      if (!page) return
-      if (beforeAuditSequence.value === null) auditEvents.value = page.events
-      else {
+      if (!page) {
+        return
+      }
+      if (beforeAuditSequence.value === null) {
+        auditEvents.value = page.events
+      } else {
         const existingIds = new Set(auditEvents.value.map(({ auditId }) => auditId))
         auditEvents.value = [
           ...auditEvents.value,
@@ -73,8 +76,8 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
       const response = await apiClient.api.organization.members[':userId'].characters[
         ':characterId'
       ].exception.$post({
-        param: { userId: input.userId, characterId: String(input.characterId) },
-        json: { reason: input.reason, expiresAt: input.expiresAt },
+        json: { expiresAt: input.expiresAt, reason: input.reason },
+        param: { characterId: String(input.characterId), userId: input.userId },
       })
       if (response.status !== 201) {
         throw await toApiQueryError(response, 'Character exception could not be approved.')
@@ -90,8 +93,8 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
     }) => {
       const route = apiClient.api.organization.exceptions[':exceptionId'][input.decision]
       const response = await route.$post({
-        param: { exceptionId: input.exceptionId },
         json: { reason: input.reason },
+        param: { exceptionId: input.exceptionId },
       })
       if (response.status !== 200) {
         throw await toApiQueryError(response, 'Character exception could not be updated.')
@@ -103,7 +106,9 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
   subscribePrivateQueryInvalidation(queryCache, { kind: 'organization' }, resetReviewState)
 
   const errorMessage = computed(() => {
-    if (authUnavailable.value) return 'Session verification is unavailable.'
+    if (authUnavailable.value) {
+      return 'Session verification is unavailable.'
+    }
     const error =
       actionError.value ??
       approveMutation.error.value ??
@@ -134,9 +139,13 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
 
   async function initialize() {
     const [authenticated, setup] = await Promise.all([initializeAuth(), setupQuery.refresh()])
-    if (!authenticated || setup.data?.required !== false) return
+    if (!authenticated || setup.data?.required !== false) {
+      return
+    }
     const context = await contextQuery.refresh()
-    if (!context.data?.memberAccess || !context.data.capabilities.reviewRegistration) return
+    if (!context.data?.memberAccess || !context.data.capabilities.reviewRegistration) {
+      return
+    }
     await Promise.all([exceptionsQuery.refresh(), auditQuery.refresh()])
   }
 
@@ -152,11 +161,15 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
     } catch (error) {
       const current = operationRevision === invalidationRevision.value
       if (reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)) {
-        if (current) actionError.value = error
+        if (current) {
+          actionError.value = error
+        }
       }
       throw error
     }
-    if (operationRevision !== invalidationRevision.value) return
+    if (operationRevision !== invalidationRevision.value) {
+      return
+    }
     await refreshReviewData()
   }
 
@@ -168,21 +181,27 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
     const operationRevision = invalidationRevision.value
     actionError.value = undefined
     try {
-      await decisionMutation.mutateAsync({ exceptionId, decision, reason })
+      await decisionMutation.mutateAsync({ decision, exceptionId, reason })
     } catch (error) {
       const current = operationRevision === invalidationRevision.value
       if (reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)) {
-        if (current) actionError.value = error
+        if (current) {
+          actionError.value = error
+        }
       }
       throw error
     }
-    if (operationRevision !== invalidationRevision.value) return
+    if (operationRevision !== invalidationRevision.value) {
+      return
+    }
     await refreshReviewData()
   }
 
   function loadOlderAuditEvents() {
     const cursor = auditQuery.data.value?.nextBeforeAuditSequence
-    if (!cursor) return
+    if (!cursor) {
+      return
+    }
     beforeAuditSequence.value = cursor
     void auditQuery.refetch()
   }
@@ -206,14 +225,14 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
     exceptions: computed(() =>
       canReview.value ? (exceptionsQuery.data.value?.exceptions ?? []) : [],
     ),
-    reviewCandidates: computed(() =>
-      canReview.value ? (exceptionsQuery.data.value?.reviewCandidates ?? []) : [],
-    ),
     hasOlderAuditEvents,
     initialize,
     invalidationRevision: readonly(invalidationRevision),
     loadOlderAuditEvents,
     loading,
     mutationPending,
+    reviewCandidates: computed(() =>
+      canReview.value ? (exceptionsQuery.data.value?.reviewCandidates ?? []) : [],
+    ),
   }
 }

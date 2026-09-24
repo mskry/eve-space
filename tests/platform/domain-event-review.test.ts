@@ -8,10 +8,10 @@ import { classifyDomainEvent } from '../../scripts/domain-event-review/findings'
 import type { DomainEventJudgment } from '../../scripts/domain-event-review/judgments'
 
 const judgment = (overrides: Partial<DomainEventJudgment> = {}): DomainEventJudgment => ({
+  deliverySafety: { choice: 'safe', confidence: 0.95 },
+  identityFit: { choice: 'complete', confidence: 0.95 },
   mutationFit: { choice: 'aligned', confidence: 0.95 },
   schemaFit: { choice: 'aligned', confidence: 0.95 },
-  identityFit: { choice: 'complete', confidence: 0.95 },
-  deliverySafety: { choice: 'safe', confidence: 0.95 },
   sensitivityFit: { choice: 'minimal', confidence: 0.95 },
   ...overrides,
 })
@@ -71,24 +71,24 @@ export async function updateOrder(transaction, orderId, revision) {
 
       expect(evidence).toHaveLength(1)
       expect(evidence[0]).toMatchObject({
+        definition: { aggregateType: 'order', payloadVersion: 1 },
         producer: {
+          aggregateId: 'orderId',
           eventType: 'order.changed',
           functionName: 'updateOrder',
-          aggregateId: 'orderId',
         },
-        definition: { aggregateType: 'order', payloadVersion: 1 },
       })
       expect(evidence[0].producer.mutationContext).toContain('transaction.update')
       expect(evidence[0].definition?.payloadSchema).toContain('orderChangedSchema')
       expect(evidence[0].consumers).toHaveLength(1)
       expect(evidence[0].consumers[0]).toMatchObject({
+        dependencyFiles: ['api/src/projections/orders.ts'],
         functionName: 'createOrderHandlers',
         idempotency: 'convergent-state',
-        dependencyFiles: ['api/src/projections/orders.ts'],
       })
       expect(evidence[0].consumers[0].dependencies[0]?.code).toContain('rebuildOrder')
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 
@@ -121,40 +121,40 @@ export function appendTransition(transaction, transition, organizationId) {
       )
 
       const evidence = await collectDomainEventEvidence(root, ['api/src/organizations/store.ts'])
-      expect(evidence.map(({ producer }) => producer.eventType)).toEqual([
+      expect(evidence.map(({ producer }) => producer.eventType)).toStrictEqual([
         'organization.added',
         'organization.removed',
       ])
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 })
 
 describe('domain-event semantic finding classification', () => {
   const evidence = {
+    consumers: [],
+    definition: {
+      aggregateType: 'order',
+      eventType: 'order.changed',
+      payloadSchema: 'orderChangedSchema',
+      payloadVersion: 1,
+      registryEntry: "'order.changed': {...}",
+    },
     id: 'api/src/orders/store.ts:8:order.changed',
     producer: {
-      id: 'api/src/orders/store.ts:8:order.changed',
-      file: 'api/src/orders/store.ts',
-      line: 8,
-      functionName: 'updateOrder',
+      aggregateId: 'orderId',
+      appendCall: 'appendDomainEvent(...)',
       eventType: 'order.changed',
       eventTypeExpression: "'order.changed'",
-      payloadVersion: 1,
-      aggregateId: 'orderId',
-      payload: '{ orderId, revision }',
-      appendCall: 'appendDomainEvent(...)',
+      file: 'api/src/orders/store.ts',
+      functionName: 'updateOrder',
+      id: 'api/src/orders/store.ts:8:order.changed',
+      line: 8,
       mutationContext: 'update order and append event',
-    },
-    definition: {
-      eventType: 'order.changed',
+      payload: '{ orderId, revision }',
       payloadVersion: 1,
-      aggregateType: 'order',
-      registryEntry: "'order.changed': {...}",
-      payloadSchema: 'orderChangedSchema',
     },
-    consumers: [],
   } as const
 
   it('passes a confidently aligned event', () => {

@@ -11,13 +11,13 @@ import { z } from 'zod'
 
 export const readFixtureOperation = definePlatformPersistenceOperation({
   id: 'read-fixture',
-  method: 'readFixture',
-  revision: 1,
-  mode: 'read',
   inputSchema: z.strictObject({ id: z.string() }),
-  outputSchema: z.strictObject({ value: z.string() }),
   maximumInputBytes: 128,
   maximumOutputBytes: 128,
+  method: 'readFixture',
+  mode: 'read',
+  outputSchema: z.strictObject({ value: z.string() }),
+  revision: 1,
 })
 
 const operations = { 'read-fixture': readFixtureOperation } as const
@@ -44,13 +44,13 @@ export const fixtureResource = definePlatformSingleRequestResource<
   FixtureProtocol,
   unknown
 >({
+  map: ({ data }) => data,
+  async materialize() {},
   mode: 'single-request',
   operation: 'fixture-status',
   request: () => ({}),
-  map: ({ data }) => data,
-  async materialize() {},
 })
 
 export function fixtureProvider(): PlatformActivityProvider {
-  return async () => ({ activities: [], freshness: { state: 'current', collectedAt: null } })
+  return async () => ({ activities: [], freshness: { collectedAt: null, state: 'current' } })
 }

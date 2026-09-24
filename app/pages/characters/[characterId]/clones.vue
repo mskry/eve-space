@@ -8,7 +8,7 @@ import type { CloneResourceState } from '../../../types/clones'
 import { ApiQueryError } from '../../../utils/query-error'
 import { parseRouteId } from '../../../utils/route-id'
 
-definePageMeta({ title: 'Character Clones', layout: 'headerless' })
+definePageMeta({ layout: 'headerless', title: 'Character Clones' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
@@ -20,24 +20,24 @@ const authenticated = computed(() => authSession.value.authenticated)
 const authenticationReady = computed(() => !authLoading.value)
 const ownsCharacter = useCharacterOwnership(characterId, characters)
 const access = computed(() => ({
-  isClient: import.meta.client,
   authenticated: authenticated.value,
   authenticationReady: authenticationReady.value,
+  isClient: import.meta.client,
   ownsCharacter: ownsCharacter.value,
 }))
 
 const clonesQuery = useQuery(() =>
   characterClonesQuery({
+    access: access.value,
     apiClient,
     characterId: characterId.value ?? 0,
-    access: access.value,
   }),
 )
 const implantsQuery = useQuery(() =>
   characterImplantsQuery({
+    access: access.value,
     apiClient,
     characterId: characterId.value ?? 0,
-    access: access.value,
   }),
 )
 // Jump-clone capacity lives on the skills resource; the record shell already prefetches it, and a
@@ -67,25 +67,27 @@ useCharacterReauthorization(characterId, () =>
 )
 
 function resourceState(data: unknown, error: unknown, status: string): CloneResourceState {
-  if (data) return { status: 'ready', message: '', authorizeUrl: '' }
+  if (data) {
+    return { authorizeUrl: '', message: '', status: 'ready' }
+  }
   if (
     error instanceof ApiQueryError &&
     (error.code === 'EVE_SCOPE_REQUIRED' || error.code === 'EVE_REAUTH_REQUIRED')
   ) {
     return {
-      status: 'authorization',
-      message: error.message,
       authorizeUrl: error.authorizeUrl ?? '',
+      message: error.message,
+      status: 'authorization',
     }
   }
   if (status === 'error') {
     return {
-      status: 'error',
-      message: error instanceof Error ? error.message : 'This resource is temporarily unavailable.',
       authorizeUrl: '',
+      message: error instanceof Error ? error.message : 'This resource is temporarily unavailable.',
+      status: 'error',
     }
   }
-  return { status: 'loading', message: '', authorizeUrl: '' }
+  return { authorizeUrl: '', message: '', status: 'loading' }
 }
 </script>
 

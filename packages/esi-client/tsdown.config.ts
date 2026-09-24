@@ -1,11 +1,15 @@
 import { defineConfig } from 'tsdown';
 
 export default defineConfig({
+  clean: true,
+  deps: {
+    neverBundle: true,
+    onlyImport: ['zod'],
+  },
+  dts: {
+    sourcemap: false,
+  },
   entry: {
-    root: 'src/index.ts',
-    'operations/index': 'src/operations.ts',
-    'types/index': 'src/types.ts',
-    zod: 'src/zod.ts',
     'domains/access-list': 'src/generated/domains/access-list.ts',
     'domains/activities': 'src/generated/domains/activities.ts',
     'domains/alliance': 'src/generated/domains/alliance.ts',
@@ -15,8 +19,8 @@ export default defineConfig({
     'domains/clones': 'src/generated/domains/clones.ts',
     'domains/contacts': 'src/generated/domains/contacts.ts',
     'domains/contracts': 'src/generated/domains/contracts.ts',
-    'domains/corporation-projects': 'src/generated/domains/corporation-projects.ts',
     'domains/corporation': 'src/generated/domains/corporation.ts',
+    'domains/corporation-projects': 'src/generated/domains/corporation-projects.ts',
     'domains/cosmetics': 'src/generated/domains/cosmetics.ts',
     'domains/dogma': 'src/generated/domains/dogma.ts',
     'domains/faction-warfare': 'src/generated/domains/faction-warfare.ts',
@@ -45,20 +49,16 @@ export default defineConfig({
     'domains/user-interface': 'src/generated/domains/user-interface.ts',
     'domains/wallet': 'src/generated/domains/wallet.ts',
     'domains/wars': 'src/generated/domains/wars.ts',
+    'operations/index': 'src/operations.ts',
+    root: 'src/index.ts',
+    'types/index': 'src/types.ts',
+    zod: 'src/zod.ts',
   },
   format: 'esm',
-  platform: 'neutral',
-  target: 'es2022',
-  clean: true,
-  minify: false,
-  sourcemap: false,
   hash: false,
-  dts: {
-    sourcemap: false,
-  },
-  deps: {
-    neverBundle: true,
-    onlyImport: ['zod'],
-  },
+  minify: false,
   onSuccess: 'node scripts/check-runtime-imports.ts',
+  platform: 'neutral',
+  sourcemap: false,
+  target: 'es2022',
 });

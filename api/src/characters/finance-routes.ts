@@ -65,9 +65,9 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
         )
       } catch (error) {
         return financeError(context, error, characterId, {
+          quotaMessage: 'ESI wallet quota is temporarily exhausted.',
           requiredScope: walletScope,
           scopeMessage: 'Authorize wallet access for this character.',
-          quotaMessage: 'ESI wallet quota is temporarily exhausted.',
           unavailableMessage: 'Unable to retrieve the EVE wallet balance.',
         })
       }
@@ -98,9 +98,9 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
         )
       } catch (error) {
         return financeError(context, error, characterId, {
+          quotaMessage: 'ESI wallet quota is temporarily exhausted.',
           requiredScope: walletScope,
           scopeMessage: 'Authorize wallet access for this character.',
-          quotaMessage: 'ESI wallet quota is temporarily exhausted.',
           unavailableMessage: 'Unable to retrieve the wallet journal.',
         })
       }
@@ -131,9 +131,9 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
         )
       } catch (error) {
         return financeError(context, error, characterId, {
+          quotaMessage: 'ESI wallet quota is temporarily exhausted.',
           requiredScope: walletScope,
           scopeMessage: 'Authorize wallet access for this character.',
-          quotaMessage: 'ESI wallet quota is temporarily exhausted.',
           unavailableMessage: 'Unable to retrieve wallet transactions.',
         })
       }
@@ -159,9 +159,9 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
         )
       } catch (error) {
         return financeError(context, error, characterId, {
+          quotaMessage: 'ESI market quota is temporarily exhausted.',
           requiredScope: marketOrdersScope,
           scopeMessage: 'Authorize market order access for this character.',
-          quotaMessage: 'ESI market quota is temporarily exhausted.',
           unavailableMessage: 'Unable to retrieve character market orders.',
         })
       }
@@ -192,9 +192,9 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
         )
       } catch (error) {
         return financeError(context, error, characterId, {
+          quotaMessage: 'ESI market quota is temporarily exhausted.',
           requiredScope: marketOrdersScope,
           scopeMessage: 'Authorize market order access for this character.',
-          quotaMessage: 'ESI market quota is temporarily exhausted.',
           unavailableMessage: 'Unable to retrieve character market order history.',
         })
       }
@@ -225,9 +225,9 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
         )
       } catch (error) {
         return financeError(context, error, characterId, {
+          quotaMessage: 'ESI contract quota is temporarily exhausted.',
           requiredScope: characterContractsScope,
           scopeMessage: 'Authorize contract access for this character.',
-          quotaMessage: 'ESI contract quota is temporarily exhausted.',
           unavailableMessage: 'Unable to retrieve character contracts.',
         })
       }
@@ -261,11 +261,11 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
         )
       } catch (error) {
         return financeError(context, error, characterId, {
+          allowNotFound: true,
+          quotaMessage: 'ESI contract quota is temporarily exhausted.',
           requiredScope: characterContractsScope,
           scopeMessage: 'Authorize contract access for this character.',
-          quotaMessage: 'ESI contract quota is temporarily exhausted.',
           unavailableMessage: 'Unable to retrieve character contract items.',
-          allowNotFound: true,
         })
       }
     },
@@ -298,11 +298,11 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
         )
       } catch (error) {
         return financeError(context, error, characterId, {
+          allowNotFound: true,
+          quotaMessage: 'ESI contract quota is temporarily exhausted.',
           requiredScope: characterContractsScope,
           scopeMessage: 'Authorize contract access for this character.',
-          quotaMessage: 'ESI contract quota is temporarily exhausted.',
           unavailableMessage: 'Unable to retrieve character contract bids.',
-          allowNotFound: true,
         })
       }
     },
@@ -336,10 +336,10 @@ function financeError(
     }),
     characterId,
     {
-      scopeMessage: options.scopeMessage,
-      unavailableMessage: options.unavailableMessage,
       cooldownMessage: options.quotaMessage,
       returnTo: `/characters/${characterId}/finance`,
+      scopeMessage: options.scopeMessage,
+      unavailableMessage: options.unavailableMessage,
     },
   )
 }

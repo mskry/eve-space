@@ -17,11 +17,11 @@ export async function hasCurrentReviewerOrganizationSnapshot(
 ) {
   const [organization] = await transaction
     .select({
-      organizationType: deploymentSettings.organizationType,
-      managedCorporationsValidatedAt: platformCollectionState.validatedAt,
-      managedCorporationsNextEligibleAt: platformCollectionState.nextEligibleAt,
-      managedCorporationsLastFailureClass: platformCollectionState.lastFailureClass,
       managedCorporationsFailureStartedAt: platformCollectionState.failureStartedAt,
+      managedCorporationsLastFailureClass: platformCollectionState.lastFailureClass,
+      managedCorporationsNextEligibleAt: platformCollectionState.nextEligibleAt,
+      managedCorporationsValidatedAt: platformCollectionState.validatedAt,
+      organizationType: deploymentSettings.organizationType,
     })
     .from(deploymentSettings)
     .leftJoin(
@@ -48,15 +48,19 @@ export async function hasCurrentReviewerOrganizationSnapshot(
       ),
     )
     .for('key share', { of: deploymentSettings })
-  if (!organization) return false
-  if (organization.organizationType === 'corporation') return true
+  if (!organization) {
+    return false
+  }
+  if (organization.organizationType === 'corporation') {
+    return true
+  }
   return (
     projectManagedCorporationEvidence(
       {
-        validatedAt: organization.managedCorporationsValidatedAt,
-        nextEligibleAt: organization.managedCorporationsNextEligibleAt,
-        lastFailureClass: organization.managedCorporationsLastFailureClass,
         failureStartedAt: organization.managedCorporationsFailureStartedAt,
+        lastFailureClass: organization.managedCorporationsLastFailureClass,
+        nextEligibleAt: organization.managedCorporationsNextEligibleAt,
+        validatedAt: organization.managedCorporationsValidatedAt,
       },
       now,
     ).freshness === 'fresh'

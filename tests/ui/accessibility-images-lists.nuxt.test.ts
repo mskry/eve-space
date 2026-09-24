@@ -13,7 +13,9 @@ import UiEveImage from '../../layers/ui/app/components/ui/UiEveImage.vue'
 const mountedWrappers: { unmount: () => void }[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   document.body.replaceChildren()
 })
 
@@ -40,6 +42,7 @@ describe('accessible image and repeated-list behavior', () => {
     )
 
     const controlledImage = await mountSuspended(UiEveImage, {
+      attrs: { 'aria-hidden': 'true', class: 'caller-image' },
       props: {
         alt: '',
         decoding: 'async',
@@ -51,7 +54,6 @@ describe('accessible image and repeated-list behavior', () => {
         loading: 'lazy',
         width: 96,
       },
-      attrs: { 'aria-hidden': 'true', class: 'caller-image' },
       route: false,
     })
     mountedWrappers.push(controlledImage)
@@ -134,7 +136,7 @@ describe('accessible image and repeated-list behavior', () => {
     )
     expect(
       reorderedEntries.filter(({ item }) => item.labelId === null).map(({ key }) => key),
-    ).toEqual(entries.filter(({ item }) => item.labelId === null).map(({ key }) => key))
+    ).toStrictEqual(entries.filter(({ item }) => item.labelId === null).map(({ key }) => key))
   })
 
   it('retains rendered duplicate label rows when a duplicate is inserted and reordered', async () => {
@@ -200,10 +202,10 @@ describe('accessible image and repeated-list behavior', () => {
         h(TooltipProvider, null, {
           default: () =>
             h(MailReader, {
+              canReply: false,
               labels: [],
               loading: true,
               mutationPending: false,
-              canReply: false,
               readState: null,
               selected: true,
             }),

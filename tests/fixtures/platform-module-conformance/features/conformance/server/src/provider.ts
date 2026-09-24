@@ -14,24 +14,26 @@ export function conformanceActivityProvider(
 ): PlatformActivityProvider {
   return async (context) => {
     const character = context.characters.find(({ membership }) => membership === 'managed')
-    if (!character)
-      return { activities: [], freshness: { state: 'unavailable', collectedAt: null } }
+    if (!character) {
+      return { activities: [], freshness: { collectedAt: null, state: 'unavailable' } }
+    }
 
     const status = await capabilities.collectionStatus.read('conformance-status', {
-      kind: 'character',
       characterId: character.characterId,
+      kind: 'character',
     })
     const snapshot = await capabilities.persistence.readConformanceSnapshot({
       characterId: character.characterId,
     })
     const freshness = activityFreshness(status)
-    if (!snapshot) return { activities: [], freshness }
+    if (!snapshot) {
+      return { activities: [], freshness }
+    }
 
     capabilities.logger.info('conformance.provider.loaded', {
       characterId: character.characterId,
     })
     return {
-      freshness,
       activities: [
         {
           id: `status:${character.characterId}`,
@@ -60,14 +62,17 @@ export function conformanceActivityProvider(
           freshness,
         },
       ],
+      freshness,
     }
   }
 }
 
 function activityFreshness(status: PlatformCollectionStatus): PlatformActivityFreshness {
-  if (status.status === 'current' || status.status === 'stale')
-    return { state: status.status, collectedAt: status.validatedAt }
-  if (status.status === 'authorization-required')
-    return { state: 'authorization-required', collectedAt: status.validatedAt }
-  return { state: 'unavailable', collectedAt: status.validatedAt }
+  if (status.status === 'current' || status.status === 'stale') {
+    return { collectedAt: status.validatedAt, state: status.status }
+  }
+  if (status.status === 'authorization-required') {
+    return { collectedAt: status.validatedAt, state: 'authorization-required' }
+  }
+  return { collectedAt: status.validatedAt, state: 'unavailable' }
 }

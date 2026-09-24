@@ -25,45 +25,45 @@ export async function judgePlatformContract(
 ): Promise<PlatformContractJudgment> {
   const answers = await evaluateSystemOne(client, toModelState(evidence), platformContractQuestions)
   return {
-    purposeFit: choice(answers.purpose_fit),
     audienceFit: choice(answers.audience_fit),
     permissionFit: choice(answers.permission_fit),
-    targetFit: choice(answers.target_fit),
+    purposeFit: choice(answers.purpose_fit),
     sensitivityFit: choice(answers.sensitivity_fit),
+    targetFit: choice(answers.target_fit),
   }
 }
 
 function toModelState(evidence: PlatformContractEvidence): EntryType {
   return {
     contract: {
-      module_id: evidence.moduleId,
       manifest_source: `${evidence.manifestFile}:${evidence.manifestLine}`,
+      module_id: evidence.moduleId,
+      permission: evidence.permission ?? 'No matching permission declaration was found.',
+      reviewer_contribution:
+        evidence.reviewerContribution ?? 'No reviewer contribution is declared for this route.',
       route: {
+        audience: evidence.route.audience,
+        authorization: evidence.route.authorization,
+        code: evidence.route.code,
+        export_name: evidence.route.exportName,
+        exposure: evidence.route.exposure,
         id: evidence.route.id,
         namespace: evidence.route.namespace,
-        export_name: evidence.route.exportName,
-        authorization: evidence.route.authorization,
-        audience: evidence.route.audience,
         required_permission: evidence.route.requiredPermission,
         section_id: evidence.route.sectionId,
         target: evidence.route.target,
-        exposure: evidence.route.exposure,
-        code: evidence.route.code,
       },
-      permission: evidence.permission ?? 'No matching permission declaration was found.',
       section: evidence.section ?? 'No section is declared for this route.',
-      reviewer_contribution:
-        evidence.reviewerContribution ?? 'No reviewer contribution is declared for this route.',
     },
+    host_composition:
+      evidence.composition || 'No applicable host route composer implementation was found.',
     implementation: {
+      code: evidence.implementation.code ?? 'No route implementation was found.',
       source:
         evidence.implementation.file && evidence.implementation.line
           ? `${evidence.implementation.file}:${evidence.implementation.line}`
           : 'No route implementation was found.',
-      code: evidence.implementation.code ?? 'No route implementation was found.',
     },
-    host_composition:
-      evidence.composition || 'No applicable host route composer implementation was found.',
     policy: platformContractPolicy,
   }
 }

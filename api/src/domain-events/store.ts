@@ -32,35 +32,35 @@ type EventWriter = Pick<typeof db, 'update'>
 type EventDeleter = Pick<typeof db, 'delete'>
 
 const claimOptions = z.object({
-  limit: z.number().int().positive().max(1_000),
   claimTtlMs: z.number().int().positive(),
+  limit: z.number().int().positive().max(1000),
   now: z.date().optional(),
 })
 const failureOptions = z.object({
-  eventId: z.uuid(),
-  claimToken: z.uuid(),
   category: z.enum(relayFailureCategories),
-  retryDelayMs: z.number().int().nonnegative(),
+  claimToken: z.uuid(),
+  eventId: z.uuid(),
   now: z.date().optional(),
+  retryDelayMs: z.number().int().nonnegative(),
 })
 const retentionOptions = z.object({
-  retentionMs: z.number().int().positive(),
   now: z.date().optional(),
+  retentionMs: z.number().int().positive(),
 })
 const redriveOptions = z
   .object({
     from: z.date(),
-    to: z.date(),
-    limit: z.number().int().positive().max(1_000),
-    timeField: z.enum(['occurredAt', 'publishedAt']).default('publishedAt'),
+    limit: z.number().int().positive().max(1000),
     now: z.date().optional(),
+    timeField: z.enum(['occurredAt', 'publishedAt']).default('publishedAt'),
+    to: z.date(),
   })
   .refine((options) => options.from < options.to, {
     message: 'Re-drive start must be before its end',
   })
 const redriveEventIds = z
   .array(z.uuid())
-  .max(1_000)
+  .max(1000)
   .refine((eventIds) => new Set(eventIds).size === eventIds.length, {
     message: 'Re-drive event IDs must be unique',
   })
@@ -83,15 +83,17 @@ export async function appendDomainEvent(
   const [stored] = await transaction
     .insert(domainEvents)
     .values({
-      eventType: event.type,
-      payloadVersion: event.payloadVersion,
-      aggregateType: event.aggregateType,
       aggregateId: event.aggregateId,
-      payload: event.payload,
+      aggregateType: event.aggregateType,
+      eventType: event.type,
       occurredAt: event.occurredAt,
+      payload: event.payload,
+      payloadVersion: event.payloadVersion,
     })
     .returning()
-  if (!stored) throw new Error('Failed to append domain event')
+  if (!stored) {
+    throw new Error('Failed to append domain event')
+  }
   return toEnvelope(stored)
 }
 
@@ -134,13 +136,15 @@ export async function claimPendingDomainEvents(
       .limit(parsed.limit)
       .for('update', { skipLocked: true })
 
-    if (selected.length === 0) return []
+    if (selected.length === 0) {
+      return []
+    }
     const selectedIds = selected.map((event) => event.eventId)
     const updated = await transaction
       .update(domainEvents)
       .set({
-        claimToken,
         claimExpiresAt,
+        claimToken,
         publishAttempts: sql`${domainEvents.publishAttempts} + 1`,
       })
       .where(and(inArray(domainEvents.eventId, selectedIds), isNull(domainEvents.publishedAt)))
@@ -152,20 +156,22 @@ export async function claimPendingDomainEvents(
   return claimed.map((event) => {
     try {
       return {
-        valid: true as const,
-        event: toEnvelope(event),
-        claimToken,
         claimExpiresAt,
+        claimToken,
+        event: toEnvelope(event),
         publishAttempts: event.publishAttempts,
+        valid: true as const,
       }
     } catch (error) {
-      if (!(error instanceof DomainEventValidationError)) throw error
+      if (!(error instanceof DomainEventValidationError)) {
+        throw error
+      }
       return {
-        valid: false as const,
-        event: { eventId: event.eventId },
-        claimToken,
         claimExpiresAt,
+        claimToken,
+        event: { eventId: event.eventId },
         publishAttempts: event.publishAttempts,
+        valid: false as const,
       }
     }
   })
@@ -180,11 +186,11 @@ export async function markDomainEventPublished(
   const [updated] = await database
     .update(domainEvents)
     .set({
-      publishedAt,
-      claimToken: null,
       claimExpiresAt: null,
-      lastFailureCategory: null,
+      claimToken: null,
       lastFailureAt: null,
+      lastFailureCategory: null,
+      publishedAt,
     })
     .where(
       and(
@@ -206,11 +212,11 @@ export async function recordDomainEventPublishFailure(
   const [updated] = await database
     .update(domainEvents)
     .set({
-      nextAttemptAt: new Date(failedAt.getTime() + parsed.retryDelayMs),
-      claimToken: null,
       claimExpiresAt: null,
-      lastFailureCategory: parsed.category,
+      claimToken: null,
       lastFailureAt: failedAt,
+      lastFailureCategory: parsed.category,
+      nextAttemptAt: new Date(failedAt.getTime() + parsed.retryDelayMs),
     })
     .where(
       and(
@@ -226,12 +232,12 @@ export async function recordDomainEventPublishFailure(
 export async function getPendingDomainEventAggregates(connection: EventReader = db) {
   const [aggregate] = await connection
     .select({
-      pendingCount: count(),
       oldestPendingAt: min(domainEvents.pendingSince),
+      pendingCount: count(),
     })
     .from(domainEvents)
     .where(isNull(domainEvents.publishedAt))
-  return aggregate ?? { pendingCount: 0, oldestPendingAt: null }
+  return aggregate ?? { oldestPendingAt: null, pendingCount: 0 }
 }
 
 export async function deletePublishedDomainEvents(
@@ -282,19 +288,21 @@ export async function redrivePublishedDomainEvents(
   database: TransactionalDatabase = db,
 ) {
   const parsedIds = redriveEventIds.parse(eventIds)
-  if (parsedIds.length === 0) return []
+  if (parsedIds.length === 0) {
+    return []
+  }
 
   return database.transaction(async (transaction) => {
     const updated = await transaction
       .update(domainEvents)
       .set({
-        publishedAt: null,
-        pendingSince: now,
-        nextAttemptAt: now,
-        claimToken: null,
         claimExpiresAt: null,
-        lastFailureCategory: null,
+        claimToken: null,
         lastFailureAt: null,
+        lastFailureCategory: null,
+        nextAttemptAt: now,
+        pendingSince: now,
+        publishedAt: null,
       })
       .where(
         and(
@@ -304,8 +312,9 @@ export async function redrivePublishedDomainEvents(
         ),
       )
       .returning({ eventId: domainEvents.eventId })
-    if (updated.length !== parsedIds.length)
+    if (updated.length !== parsedIds.length) {
       throw new Error('Domain-event re-drive selection changed before mutation')
+    }
     return parsedIds
   })
 }
@@ -333,13 +342,13 @@ export async function countPublishedDomainEventsForRedrive(
 
 function toEnvelope(stored: DomainEventRow) {
   return validateStoredDomainEvent({
+    aggregateId: stored.aggregateId,
+    aggregateType: stored.aggregateType,
     eventId: stored.eventId,
     eventSequence: stored.eventSequence,
     eventType: stored.eventType,
-    payloadVersion: stored.payloadVersion,
-    aggregateType: stored.aggregateType,
-    aggregateId: stored.aggregateId,
-    payload: stored.payload,
     occurredAt: stored.occurredAt,
+    payload: stored.payload,
+    payloadVersion: stored.payloadVersion,
   })
 }

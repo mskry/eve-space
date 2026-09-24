@@ -21,10 +21,8 @@ const esiStatusCacheSchema = z.object({
 })
 
 const esiStatusRead = createPublicEsiRead({
-  operation: 'status',
-  name: 'esi-status-core',
-  descriptor: operationRegistry.GetStatus.transport,
   cacheSchema: esiStatusCacheSchema,
+  descriptor: operationRegistry.GetStatus.transport,
   encodeRequest: (input: Record<string, never>) => input,
   map: ({ data }) => ({
     players: data.players,
@@ -32,6 +30,8 @@ const esiStatusRead = createPublicEsiRead({
     startedAt: data.start_time,
     vip: data.vip,
   }),
+  name: 'esi-status-core',
+  operation: 'status',
 })
 
 const cacheTtlMs = 30_000
@@ -95,10 +95,12 @@ export interface SystemStatus {
 
 export function getSystemStatus() {
   const now = Date.now()
-  if (localStatus && localStatus.expiresAt > now) return Promise.resolve(localStatus.value)
+  if (localStatus && localStatus.expiresAt > now) {
+    return Promise.resolve(localStatus.value)
+  }
   statusProbe ??= probeSystemStatus(now)
     .then((value) => {
-      localStatus = { value, expiresAt: now + cacheTtlMs }
+      localStatus = { expiresAt: now + cacheTtlMs, value }
       return value
     })
     .finally(() => {
@@ -122,8 +124,9 @@ async function probeSystemStatus(now: number): Promise<SystemStatus> {
   const unavailableCount =
     Number(database.status === 'unavailable') + Number(esi.status === 'unavailable')
   let status: SystemStatus['status'] = 'degraded'
-  if (unavailableCount === 2) status = 'unavailable'
-  else if (
+  if (unavailableCount === 2) {
+    status = 'unavailable'
+  } else if (
     database.status === 'operational' &&
     sde.status === 'operational' &&
     esi.status === 'operational' &&
@@ -133,27 +136,28 @@ async function probeSystemStatus(now: number): Promise<SystemStatus> {
     esiResilience.coordination.status === 'operational' &&
     esiResilience.cooldown.status === 'inactive' &&
     esiResilience.upstream.status === 'operational'
-  )
+  ) {
     status = 'operational'
+  }
 
   const cachedUntil = Math.min(now + cacheTtlMs, Date.parse(esi.cachedUntil))
   return {
-    status,
-    checkedAt: new Date(now).toISOString(),
     cachedUntil: new Date(cachedUntil).toISOString(),
+    checkedAt: new Date(now).toISOString(),
     services: {
       api: {
+        checkedAt: new Date(now).toISOString(),
         status: 'operational',
         uptimeSeconds: Math.floor(process.uptime()),
-        checkedAt: new Date(now).toISOString(),
       },
       database,
-      sde,
       esi,
-      queue: { ...queue, checkedAt: new Date(now).toISOString() },
-      eventRelay: { ...eventRelay, checkedAt: new Date(now).toISOString() },
       esiResilience,
+      eventRelay: { ...eventRelay, checkedAt: new Date(now).toISOString() },
+      queue: { ...queue, checkedAt: new Date(now).toISOString() },
+      sde,
     },
+    status,
   }
 }
 
@@ -163,19 +167,19 @@ async function probeSde(): Promise<SdeStatus> {
   try {
     const revision = await readStaticLocationRevision()
     return {
-      status: 'operational',
-      latencyMs: Date.now() - startedAt,
       checkedAt,
+      latencyMs: Date.now() - startedAt,
+      status: 'operational',
       ...revision,
     }
   } catch {
     return {
-      status: 'unavailable',
-      latencyMs: Date.now() - startedAt,
-      checkedAt,
       buildNumber: null,
+      checkedAt,
       ingestVersion: null,
       ingestedAt: null,
+      latencyMs: Date.now() - startedAt,
+      status: 'unavailable',
     }
   }
 }
@@ -185,9 +189,9 @@ async function probeDatabase(): Promise<DatabaseStatus> {
   const checkedAt = new Date(startedAt).toISOString()
   try {
     await sql`select 1`
-    return { status: 'operational', latencyMs: Date.now() - startedAt, checkedAt }
+    return { checkedAt, latencyMs: Date.now() - startedAt, status: 'operational' }
   } catch {
-    return { status: 'unavailable', latencyMs: Date.now() - startedAt, checkedAt }
+    return { checkedAt, latencyMs: Date.now() - startedAt, status: 'unavailable' }
   }
 }
 
@@ -199,31 +203,33 @@ async function probeEsi(): Promise<EsiStatusProbe> {
     const response = await esiStatusRead.execute({})
     const errorBudgetRemaining = response.quota.errorRemaining ?? null
     let status: EsiStatus['status'] = 'operational'
-    if (response.stale) status = 'stale'
-    else if (
+    if (response.stale) {
+      status = 'stale'
+    } else if (
       response.data.vip ||
       response.data.players === 0 ||
       isEsiErrorBudgetAtFloor(errorBudgetRemaining)
-    )
+    ) {
       status = 'degraded'
+    }
     return {
-      service: {
-        status,
-        latencyMs: Date.now() - startedAt,
-        checkedAt: response.validatedAt,
-        players: response.data.players,
-        serverVersion: response.data.serverVersion,
-        startedAt: response.data.startedAt,
-        vip: response.data.vip,
-        errorBudgetRemaining,
-        errorBudgetResetSeconds: response.quota.errorResetSeconds ?? null,
-        cachedUntil: response.cachedUntil,
-      },
       observation: {
         status,
         ...(response.refreshFailureClass
           ? { refreshFailureClass: response.refreshFailureClass }
           : {}),
+      },
+      service: {
+        cachedUntil: response.cachedUntil,
+        checkedAt: response.validatedAt,
+        errorBudgetRemaining,
+        errorBudgetResetSeconds: response.quota.errorResetSeconds ?? null,
+        latencyMs: Date.now() - startedAt,
+        players: response.data.players,
+        serverVersion: response.data.serverVersion,
+        startedAt: response.data.startedAt,
+        status,
+        vip: response.data.vip,
       },
     }
   } catch (error) {
@@ -233,19 +239,19 @@ async function probeEsi(): Promise<EsiStatusProbe> {
         ? 'degraded'
         : 'unavailable'
     return {
+      observation: { refreshFailureClass, status },
       service: {
-        status,
-        latencyMs: Date.now() - startedAt,
+        cachedUntil: new Date(startedAt + cacheTtlMs).toISOString(),
         checkedAt,
+        errorBudgetRemaining: null,
+        errorBudgetResetSeconds: null,
+        latencyMs: Date.now() - startedAt,
         players: null,
         serverVersion: null,
         startedAt: null,
+        status,
         vip: null,
-        errorBudgetRemaining: null,
-        errorBudgetResetSeconds: null,
-        cachedUntil: new Date(startedAt + cacheTtlMs).toISOString(),
       },
-      observation: { status, refreshFailureClass },
     }
   }
 }

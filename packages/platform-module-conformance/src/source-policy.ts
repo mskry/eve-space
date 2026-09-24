@@ -176,7 +176,7 @@ export function platformModulePackageManifestIssues(input: {
 }): readonly PlatformModulePolicyIssue[] {
   const issues: PlatformModulePolicyIssue[] = []
   const { manifest, environment, path, scope } = input
-  if (manifest.name !== input.expectedPackageName)
+  if (manifest.name !== input.expectedPackageName) {
     issues.push(
       issue(
         'PACKAGE_NAME_MISMATCH',
@@ -185,13 +185,15 @@ export function platformModulePackageManifestIssues(input: {
         `Package must be named ${input.expectedPackageName}.`,
       ),
     )
-  if (manifest.type !== 'module')
+  }
+  if (manifest.type !== 'module') {
     issues.push(issue('PACKAGE_ESM_REQUIRED', scope, path, 'Package must use ESM.'))
+  }
   if (
     environment === 'server'
       ? manifest.sideEffects !== false
       : !isNuxtSideEffects(manifest.sideEffects)
-  )
+  ) {
     issues.push(
       issue(
         'PACKAGE_SIDE_EFFECTS_INVALID',
@@ -202,11 +204,13 @@ export function platformModulePackageManifestIssues(input: {
           : 'Nuxt package must declare only Vue files as side-effectful.',
       ),
     )
+  }
 
   const runtime = environment === 'server' ? serverRuntimePackages : nuxtRuntimePackages
   const development = environment === 'server' ? serverDevelopmentPackages : nuxtDevelopmentPackages
-  for (const field of ['dependencies', 'optionalDependencies', 'peerDependencies'] as const)
+  for (const field of ['dependencies', 'optionalDependencies', 'peerDependencies'] as const) {
     validateDependencies(manifest[field], field, runtime, input, issues)
+  }
   validateDependencies(manifest.devDependencies, 'devDependencies', development, input, issues)
   validateExports(manifest.exports, environment, scope, path, issues)
   return sortedIssues(issues)
@@ -217,7 +221,7 @@ export function platformModuleSourceIssues(
   declaredRuntimeDependencies: ReadonlySet<string>,
 ): readonly PlatformModulePolicyIssue[] {
   const issues: PlatformModulePolicyIssue[] = []
-  if (input.path.endsWith('.cjs') || input.path.endsWith('.cts'))
+  if (input.path.endsWith('.cjs') || input.path.endsWith('.cts')) {
     issues.push(
       issue(
         'SOURCE_ESM_REQUIRED',
@@ -226,6 +230,7 @@ export function platformModuleSourceIssues(
         'Feature packages must use ESM source files.',
       ),
     )
+  }
   for (const sourceFile of parseSourceFiles(input, issues)) {
     const imported = new Set<string>()
     const checker = sourceFileChecker(sourceFile)
@@ -236,7 +241,7 @@ export function platformModuleSourceIssues(
         ts.isIdentifier(node) &&
         isUnboundIdentifier(node, checker) &&
         forbiddenGlobals(input.environment).has(node.text)
-      )
+      ) {
         issues.push(
           issue(
             'GLOBAL_REFERENCE_FORBIDDEN',
@@ -245,7 +250,8 @@ export function platformModuleSourceIssues(
             `Reference to ${node.text} is not allowed.`,
           ),
         )
-      if (isForbiddenGlobalProperty(node, input.environment))
+      }
+      if (isForbiddenGlobalProperty(node, input.environment)) {
         issues.push(
           issue(
             'GLOBAL_REFERENCE_FORBIDDEN',
@@ -254,7 +260,8 @@ export function platformModuleSourceIssues(
             `Reference to ${node.name.text} is not allowed.`,
           ),
         )
-      if (input.environment === 'server' && isRuntimeSqlLiteral(node))
+      }
+      if (input.environment === 'server' && isRuntimeSqlLiteral(node)) {
         issues.push(
           issue(
             'RUNTIME_SQL_FORBIDDEN',
@@ -263,11 +270,12 @@ export function platformModuleSourceIssues(
             'Server code must not contain runtime SQL statements.',
           ),
         )
+      }
       if (
         input.environment === 'server' &&
         ts.isCallExpression(node) &&
         isGenericPersistenceCall(node.expression, persistenceNames)
-      )
+      ) {
         issues.push(
           issue(
             'GENERIC_PERSISTENCE_FORBIDDEN',
@@ -276,8 +284,9 @@ export function platformModuleSourceIssues(
             'Server code must not use generic persistence dispatch.',
           ),
         )
+      }
     })
-    for (const dependency of imported)
+    for (const dependency of imported) {
       if (!declaredRuntimeDependencies.has(dependency))
         issues.push(
           issue(
@@ -287,6 +296,7 @@ export function platformModuleSourceIssues(
             `Runtime dependency ${safePackageName(dependency)} must be declared by its package.`,
           ),
         )
+    }
   }
   return sortedIssues(issues)
 }
@@ -297,7 +307,7 @@ export function platformModuleRelativeImportIssues(
 ): readonly PlatformModulePolicyIssue[] {
   const issues: PlatformModulePolicyIssue[] = []
   const sourcePath = packageRelativePath(input)
-  for (const sourceFile of parseSourceFiles(input, issues))
+  for (const sourceFile of parseSourceFiles(input, issues)) {
     visit(sourceFile, (node) => {
       const specifier = importSpecifier(node)
       if (!specifier?.startsWith('.')) return
@@ -316,6 +326,7 @@ export function platformModuleRelativeImportIssues(
           ),
         )
     })
+  }
   return sortedIssues(issues)
 }
 
@@ -335,7 +346,9 @@ function validateDependencies(
   input: Parameters<typeof platformModulePackageManifestIssues>[0],
   issues: PlatformModulePolicyIssue[],
 ) {
-  if (value === undefined) return
+  if (value === undefined) {
+    return
+  }
   if (!isRecord(value)) {
     issues.push(
       issue(
@@ -351,7 +364,7 @@ function validateDependencies(
     left.localeCompare(right),
   )) {
     const displayDependency = safePackageName(dependency)
-    if (!allowed.has(dependency))
+    if (!allowed.has(dependency)) {
       issues.push(
         issue(
           'DEPENDENCY_NOT_ALLOWED',
@@ -360,6 +373,7 @@ function validateDependencies(
           `${field} dependency ${displayDependency} is not allowed.`,
         ),
       )
+    }
     if (typeof version !== 'string' || version.trim().length === 0) {
       issues.push(
         issue(
@@ -386,13 +400,15 @@ function validateDependencies(
       )
       continue
     }
-    if (input.requireWorkspaceSpecifiers !== true) continue
+    if (input.requireWorkspaceSpecifiers !== true) {
+      continue
+    }
     const expected = dependency.startsWith('@eve-space/') ? 'workspace:*' : 'catalog:'
     const named =
       (dependency === 'typescript' && ['catalog:tsapi', 'catalog:tsgo'].includes(version)) ||
       ((dependency === 'vitest' || dependency === '@vitest/coverage-v8') &&
         version === 'catalog:vitest4')
-    if (version !== expected && !named)
+    if (version !== expected && !named) {
       issues.push(
         issue(
           'DEPENDENCY_VERSION_INVALID',
@@ -401,6 +417,7 @@ function validateDependencies(
           `${field} dependency ${displayDependency} must use ${expected}.`,
         ),
       )
+    }
   }
 }
 
@@ -423,15 +440,15 @@ function validateExports(
   }
   const expected =
     environment === 'server'
-      ? { types: './dist/index.d.ts', import: './dist/index.js' }
-      : { types: './dist/module.d.ts', import: './dist/module.js' }
+      ? { import: './dist/index.js', types: './dist/index.d.ts' }
+      : { import: './dist/module.js', types: './dist/module.d.ts' }
   const root = value['.']
   if (
     !isRecord(root) ||
     root.types !== expected.types ||
     root.import !== expected.import ||
     Object.keys(root).some((key) => key !== 'types' && key !== 'import')
-  )
+  ) {
     issues.push(
       issue(
         'PACKAGE_ROOT_EXPORT_INVALID',
@@ -440,9 +457,10 @@ function validateExports(
         `Feature package root export must use ${expected.types} and ${expected.import}.`,
       ),
     )
+  }
   for (const target of exportTargets(value)) {
     const normalized = target.replaceAll('\\', '/')
-    if (!normalized.startsWith('./') || normalized.split('/').includes('..'))
+    if (!normalized.startsWith('./') || normalized.split('/').includes('..')) {
       issues.push(
         issue(
           'PACKAGE_EXPORT_ESCAPE',
@@ -451,7 +469,7 @@ function validateExports(
           'Package export escapes the feature package root.',
         ),
       )
-    else if (!normalized.startsWith('./dist/') && !normalized.startsWith('./migrations/'))
+    } else if (!normalized.startsWith('./dist/') && !normalized.startsWith('./migrations/')) {
       issues.push(
         issue(
           'PACKAGE_EXPORT_INVALID',
@@ -460,11 +478,13 @@ function validateExports(
           `Package export ${target} must resolve from dist or migrations.`,
         ),
       )
+    }
   }
-  if (environment === 'server' && !('./migrations/*' in value))
+  if (environment === 'server' && !('./migrations/*' in value)) {
     issues.push(
       issue('MIGRATION_EXPORT_MISSING', scope, path, 'Server package must export ./migrations/*.'),
     )
+  }
 }
 
 function validateImportNode(
@@ -485,7 +505,7 @@ function validateImportNode(
       imported,
       issues,
     )
-    if (ts.isImportDeclaration(node) && !node.importClause)
+    if (ts.isImportDeclaration(node) && !node.importClause) {
       issues.push(
         issue(
           'SIDE_EFFECT_IMPORT_FORBIDDEN',
@@ -494,6 +514,7 @@ function validateImportNode(
           'Side-effect imports are not allowed.',
         ),
       )
+    }
   }
   if (ts.isImportEqualsDeclaration(node)) {
     issues.push(
@@ -507,12 +528,13 @@ function validateImportNode(
     const expression = ts.isExternalModuleReference(node.moduleReference)
       ? node.moduleReference.expression
       : undefined
-    if (expression && ts.isStringLiteralLike(expression))
+    if (expression && ts.isStringLiteralLike(expression)) {
       validateSpecifier(input, expression.text, undefined, imported, issues)
+    }
   }
   if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
     const argument = node.arguments[0]
-    if (!argument || !ts.isStringLiteral(argument))
+    if (!argument || !ts.isStringLiteral(argument)) {
       issues.push(
         issue(
           'DYNAMIC_IMPORT_INVALID',
@@ -521,7 +543,9 @@ function validateImportNode(
           'Dynamic imports must use string literals.',
         ),
       )
-    else validateSpecifier(input, argument.text, undefined, imported, issues)
+    } else {
+      validateSpecifier(input, argument.text, undefined, imported, issues)
+    }
   }
 }
 
@@ -530,23 +554,26 @@ function importSpecifier(node: ts.Node) {
     (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
     node.moduleSpecifier &&
     ts.isStringLiteral(node.moduleSpecifier)
-  )
+  ) {
     return node.moduleSpecifier.text
+  }
   if (
     ts.isImportEqualsDeclaration(node) &&
     ts.isExternalModuleReference(node.moduleReference) &&
     node.moduleReference.expression &&
     ts.isStringLiteralLike(node.moduleReference.expression)
-  )
+  ) {
     return node.moduleReference.expression.text
+  }
   if (
     ts.isCallExpression(node) &&
     node.expression.kind === ts.SyntaxKind.ImportKeyword &&
     node.arguments[0] &&
     ts.isStringLiteral(node.arguments[0])
-  )
+  ) {
     return node.arguments[0].text
-  return undefined
+  }
+  return
 }
 
 function validateSpecifier(
@@ -557,12 +584,7 @@ function validateSpecifier(
   issues: PlatformModulePolicyIssue[],
 ) {
   const normalized = specifier.replaceAll('\\', '/')
-  if (
-    input.environment === 'server' &&
-    (normalized === '@eve-space/api' ||
-      normalized.startsWith('@eve-space/api/') ||
-      /(?:^|\/)api\/src(?:\/|$)/.test(normalized))
-  ) {
+  if (isForbiddenCoreApiImport(input, normalized)) {
     issues.push(
       issue(
         'IMPORT_NOT_ALLOWED',
@@ -577,7 +599,7 @@ function validateSpecifier(
     const target = resolve('/', dirname(input.path), normalized)
     const root = resolve('/', input.boundaryRoot)
     const targetRelative = relative(root, target)
-    if (targetRelative === '..' || targetRelative.startsWith('../') || isAbsolute(targetRelative))
+    if (targetRelative === '..' || targetRelative.startsWith('../') || isAbsolute(targetRelative)) {
       issues.push(
         issue(
           'IMPORT_ESCAPE',
@@ -586,6 +608,7 @@ function validateSpecifier(
           `Relative import ${specifier} escapes the feature package root.`,
         ),
       )
+    }
     return
   }
   if (normalized.startsWith('/') || normalized.startsWith('file:')) {
@@ -600,28 +623,7 @@ function validateSpecifier(
     return
   }
   if (normalized === '#imports') {
-    if (input.environment !== 'nuxt')
-      issues.push(
-        issue(
-          'IMPORT_NOT_ALLOWED',
-          input.scope,
-          input.path,
-          '#imports is not allowed in server code.',
-        ),
-      )
-    else {
-      const names = importedNames(importClause)
-      const rejected = names.filter((name) => !allowedNuxtImports.has(name))
-      if (rejected.length > 0 || names.length === 0)
-        issues.push(
-          issue(
-            'NUXT_IMPORT_NOT_ALLOWED',
-            input.scope,
-            input.path,
-            `#imports may only expose approved Nuxt runtime imports; rejected ${rejected.join(', ') || 'namespace/default import'}.`,
-          ),
-        )
-    }
+    validateNuxtImport(input, importClause, issues)
     return
   }
   if (normalized.startsWith('#')) {
@@ -641,7 +643,7 @@ function validateSpecifier(
     input.environment === 'server' ? serverRuntimePackages : nuxtRuntimePackages
   const allowedImports =
     input.environment === 'server' ? exactServerRuntimeImports : exactNuxtRuntimeImports
-  if (!allowedPackages.has(packageName) || !allowedImports.has(normalized))
+  if (!allowedPackages.has(packageName) || !allowedImports.has(normalized)) {
     issues.push(
       issue(
         'IMPORT_NOT_ALLOWED',
@@ -650,7 +652,8 @@ function validateSpecifier(
         `Import ${safeSpecifier(specifier)} is not allowed for ${input.environment} module code.`,
       ),
     )
-  if (normalized === '@eve-space/platform-module-server')
+  }
+  if (normalized === '@eve-space/platform-module-server') {
     rejectNamedImports(
       input,
       importClause,
@@ -661,13 +664,54 @@ function validateSpecifier(
       ]),
       issues,
     )
-  if (normalized === '@eve-space/platform-module-nuxt/runtime')
+  }
+  if (normalized === '@eve-space/platform-module-nuxt/runtime') {
     rejectNamedImports(
       input,
       importClause,
       new Set(['PlatformApiClient', 'PlatformApiHost', 'createPlatformApiClient']),
       issues,
     )
+  }
+}
+
+function isForbiddenCoreApiImport(input: PlatformModuleSource, normalized: string) {
+  return (
+    input.environment === 'server' &&
+    (normalized === '@eve-space/api' ||
+      normalized.startsWith('@eve-space/api/') ||
+      /(?:^|\/)api\/src(?:\/|$)/.test(normalized))
+  )
+}
+
+function validateNuxtImport(
+  input: PlatformModuleSource,
+  importClause: ts.ImportClause | undefined,
+  issues: PlatformModulePolicyIssue[],
+) {
+  if (input.environment !== 'nuxt') {
+    issues.push(
+      issue(
+        'IMPORT_NOT_ALLOWED',
+        input.scope,
+        input.path,
+        '#imports is not allowed in server code.',
+      ),
+    )
+    return
+  }
+  const names = importedNames(importClause)
+  const rejected = names.filter((name) => !allowedNuxtImports.has(name))
+  if (rejected.length > 0 || names.length === 0) {
+    issues.push(
+      issue(
+        'NUXT_IMPORT_NOT_ALLOWED',
+        input.scope,
+        input.path,
+        `#imports may only expose approved Nuxt runtime imports; rejected ${rejected.join(', ') || 'namespace/default import'}.`,
+      ),
+    )
+  }
 }
 
 function rejectNamedImports(
@@ -677,7 +721,7 @@ function rejectNamedImports(
   issues: PlatformModulePolicyIssue[],
 ) {
   const names = importedNames(clause).filter((name) => rejected.has(name))
-  if (!clause?.namedBindings || ts.isNamespaceImport(clause.namedBindings))
+  if (!clause?.namedBindings || ts.isNamespaceImport(clause.namedBindings)) {
     issues.push(
       issue(
         'PUBLIC_CONTRACT_IMPORT_REQUIRED',
@@ -686,7 +730,8 @@ function rejectNamedImports(
         'Platform imports must use named feature-facing exports.',
       ),
     )
-  if (names.length > 0)
+  }
+  if (names.length > 0) {
     issues.push(
       issue(
         'HOST_CONTRACT_IMPORT_FORBIDDEN',
@@ -695,19 +740,24 @@ function rejectNamedImports(
         `Feature package imports host-only platform symbols ${names.join(', ')}.`,
       ),
     )
+  }
 }
 
 function parseSourceFiles(input: PlatformModuleSource, issues: PlatformModulePolicyIssue[]) {
-  if (!input.path.endsWith('.vue'))
+  if (!input.path.endsWith('.vue')) {
     return [parseTypescript(input, input.path, input.source, issues)]
+  }
   const parsed = parseVue(input.source, { filename: input.path })
-  if (parsed.errors.length > 0)
+  if (parsed.errors.length > 0) {
     issues.push(
       issue('SOURCE_PARSE_ERROR', input.scope, input.path, 'Vue source must parse without errors.'),
     )
+  }
   return [parsed.descriptor.script, parsed.descriptor.scriptSetup].flatMap((script, index) => {
-    if (!script) return []
-    if (script.src !== undefined)
+    if (!script) {
+      return []
+    }
+    if (script.src !== undefined) {
       issues.push(
         issue(
           'VUE_EXTERNAL_SCRIPT_FORBIDDEN',
@@ -716,6 +766,7 @@ function parseSourceFiles(input: PlatformModuleSource, issues: PlatformModulePol
           'Vue script blocks must be inline.',
         ),
       )
+    }
     const language = script.lang ?? 'js'
     if (!['js', 'jsx', 'ts', 'tsx'].includes(language)) {
       issues.push(
@@ -744,7 +795,7 @@ function parseTypescript(
   if (
     (file as ts.SourceFile & { readonly parseDiagnostics: readonly ts.Diagnostic[] })
       .parseDiagnostics.length > 0
-  )
+  ) {
     issues.push(
       issue(
         'SOURCE_PARSE_ERROR',
@@ -753,28 +804,39 @@ function parseTypescript(
         'Source must parse without syntax errors.',
       ),
     )
+  }
   return file
 }
 
 function sourceFileChecker(sourceFile: ts.SourceFile) {
-  const options: ts.CompilerOptions = { noLib: true, noResolve: true, allowJs: true }
+  const options: ts.CompilerOptions = { allowJs: true, noLib: true, noResolve: true }
   const host = ts.createCompilerHost(options)
   host.getSourceFile = (name) => (name === sourceFile.fileName ? sourceFile : undefined)
   return ts.createProgram([sourceFile.fileName], options, host).getTypeChecker()
 }
 
 function isUnboundIdentifier(node: ts.Identifier, checker: ts.TypeChecker) {
-  if (!isValueReference(node)) return false
+  if (!isValueReference(node)) {
+    return false
+  }
   const symbol = checker.getSymbolAtLocation(node)
   return !symbol?.declarations?.length
 }
 
 function isValueReference(node: ts.Identifier) {
   const parent = node.parent
-  if (ts.isShorthandPropertyAssignment(parent)) return true
-  if (ts.isPropertyAccessExpression(parent)) return parent.expression === node
-  if (ts.isBindingElement(parent)) return parent.initializer === node
-  if (ts.isPropertyAssignment(parent)) return parent.initializer === node
+  if (ts.isShorthandPropertyAssignment(parent)) {
+    return true
+  }
+  if (ts.isPropertyAccessExpression(parent)) {
+    return parent.expression === node
+  }
+  if (ts.isBindingElement(parent)) {
+    return parent.initializer === node
+  }
+  if (ts.isPropertyAssignment(parent)) {
+    return parent.initializer === node
+  }
   return !('name' in parent && parent.name === node)
 }
 
@@ -785,8 +847,9 @@ function isRuntimeSqlLiteral(node: ts.Node) {
       : ts.isTemplateExpression(node)
         ? node.head.text
         : undefined
-  if (value === undefined)
+  if (value === undefined) {
     return ts.isTaggedTemplateExpression(node) && ['sql', 'query'].includes(node.tag.getText())
+  }
   const normalized = value.trimStart().toLowerCase()
   return (
     (normalized.startsWith('select ') && normalized.includes(' from ')) ||
@@ -813,8 +876,9 @@ function persistenceCapabilityNames(sourceFile: ts.SourceFile) {
   while (changed) {
     changed = false
     visit(sourceFile, (node) => {
-      if (!ts.isVariableDeclaration(node) || !ts.isIdentifier(node.name) || !node.initializer)
+      if (!ts.isVariableDeclaration(node) || !ts.isIdentifier(node.name) || !node.initializer) {
         return
+      }
       const initializer = unwrapExpression(node.initializer)
       const alias =
         (ts.isIdentifier(initializer) && names.has(initializer.text)) ||
@@ -833,11 +897,12 @@ function isGenericPersistenceCall(
   persistenceNames: ReadonlySet<string>,
 ) {
   const target = unwrapExpression(expression)
-  if (ts.isPropertyAccessExpression(target))
+  if (ts.isPropertyAccessExpression(target)) {
     return (
       genericPersistenceMethods.has(target.name.text) &&
       referencesPersistence(target.expression, persistenceNames)
     )
+  }
   return (
     ts.isElementAccessExpression(target) &&
     referencesPersistence(target.expression, persistenceNames)
@@ -846,10 +911,15 @@ function isGenericPersistenceCall(
 
 function referencesPersistence(expression: ts.Expression, names: ReadonlySet<string>): boolean {
   const target = unwrapExpression(expression)
-  if (ts.isIdentifier(target)) return names.has(target.text)
-  if (ts.isPropertyAccessExpression(target))
+  if (ts.isIdentifier(target)) {
+    return names.has(target.text)
+  }
+  if (ts.isPropertyAccessExpression(target)) {
     return target.name.text === 'persistence' || referencesPersistence(target.expression, names)
-  if (ts.isElementAccessExpression(target)) return referencesPersistence(target.expression, names)
+  }
+  if (ts.isElementAccessExpression(target)) {
+    return referencesPersistence(target.expression, names)
+  }
   return false
 }
 
@@ -873,8 +943,9 @@ function unwrapExpression(expression: ts.Expression): ts.Expression {
     ts.isTypeAssertionExpression(value) ||
     ts.isNonNullExpression(value) ||
     ts.isSatisfiesExpression(value)
-  )
+  ) {
     value = value.expression
+  }
   return value
 }
 
@@ -883,14 +954,24 @@ function forbiddenGlobals(environment: PlatformModuleEnvironment) {
 }
 
 function exportTargets(value: unknown): string[] {
-  if (typeof value === 'string') return [value]
-  if (!isRecord(value)) return []
+  if (typeof value === 'string') {
+    return [value]
+  }
+  if (!isRecord(value)) {
+    return []
+  }
   return Object.values(value).flatMap(exportTargets)
 }
 
 function importedNames(clause: ts.ImportClause | undefined) {
-  if (!clause || clause.name || !clause.namedBindings || ts.isNamespaceImport(clause.namedBindings))
+  if (
+    !clause ||
+    clause.name ||
+    !clause.namedBindings ||
+    ts.isNamespaceImport(clause.namedBindings)
+  ) {
     return []
+  }
   return clause.namedBindings.elements.map(
     (element) => element.propertyName?.text ?? element.name.text,
   )
@@ -958,10 +1039,15 @@ function isNuxtSideEffects(value: unknown) {
 }
 
 function scriptKind(path: string) {
-  if (path.endsWith('.tsx')) return ts.ScriptKind.TSX
-  if (path.endsWith('.jsx')) return ts.ScriptKind.JSX
-  if (path.endsWith('.js') || path.endsWith('.mjs') || path.endsWith('.cjs'))
+  if (path.endsWith('.tsx')) {
+    return ts.ScriptKind.TSX
+  }
+  if (path.endsWith('.jsx')) {
+    return ts.ScriptKind.JSX
+  }
+  if (path.endsWith('.js') || path.endsWith('.mjs') || path.endsWith('.cjs')) {
     return ts.ScriptKind.JS
+  }
   return ts.ScriptKind.TS
 }
 
@@ -976,7 +1062,7 @@ function issue(
   path: string,
   message: string,
 ): PlatformModulePolicyIssue {
-  return { code, scope, path: path.replaceAll('\\', '/'), message }
+  return { code, message, path: path.replaceAll('\\', '/'), scope }
 }
 
 function sortedIssues(issues: readonly PlatformModulePolicyIssue[]) {

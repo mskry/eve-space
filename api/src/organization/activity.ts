@@ -21,38 +21,36 @@ import { authorizeOrganizationContribution } from './module-authorization.js'
 const positiveCharacterIdSchema = z.int().positive()
 const freshnessSchema = z
   .object({
-    state: z.enum(platformActivityFreshnessStates),
     collectedAt: z.iso.datetime({ offset: true }).nullable(),
+    state: z.enum(platformActivityFreshnessStates),
   })
   .strict()
   .superRefine((freshness, context) => {
     if (
       (freshness.state === 'current' || freshness.state === 'stale') &&
       freshness.collectedAt === null
-    )
+    ) {
       context.addIssue({ code: 'custom', message: 'Collected activity requires a timestamp.' })
+    }
   })
 const providerActivitySchema = z
   .object({
+    deadline: z.iso.datetime({ offset: true }).nullable(),
+    eligibleCharacterIds: z.array(positiveCharacterIdSchema).max(100),
+    freshness: freshnessSchema,
     id: z.string().trim().min(1).max(200),
     kind: z.string().trim().min(1).max(100),
-    title: z.string().trim().min(1).max(200),
-    summary: z.string().trim().min(1).max(2_000).nullable(),
-    objective: z.string().trim().min(1).max(500).nullable(),
-    state: z.string().trim().min(1).max(100),
-    progress: z.object({ current: z.number(), desired: z.number() }).strict().nullable(),
-    reward: z.object({ initial: z.number(), remaining: z.number() }).strict().nullable(),
-    requiredAction: z
+    linkTarget: z
       .object({
-        kind: z.enum(platformActivityRequiredActionKinds),
-        label: z.string().trim().min(1).max(200),
+        pageId: z.string().refine(isPlatformContributionId),
+        activityId: z.uuid().optional(),
+        corporationId: positiveCharacterIdSchema.nullable().optional(),
         characterId: positiveCharacterIdSchema.nullable(),
       })
       .strict()
       .nullable(),
-    organizationPriority: z.int().min(0).max(1_000),
-    deadline: z.iso.datetime({ offset: true }).nullable(),
-    eligibleCharacterIds: z.array(positiveCharacterIdSchema).max(100),
+    objective: z.string().trim().min(1).max(500).nullable(),
+    organizationPriority: z.int().min(0).max(1000),
     participation: z
       .array(
         z
@@ -64,16 +62,19 @@ const providerActivitySchema = z
           .strict(),
       )
       .max(100),
-    linkTarget: z
+    progress: z.object({ current: z.number(), desired: z.number() }).strict().nullable(),
+    requiredAction: z
       .object({
-        pageId: z.string().refine(isPlatformContributionId),
-        activityId: z.uuid().optional(),
-        corporationId: positiveCharacterIdSchema.nullable().optional(),
+        kind: z.enum(platformActivityRequiredActionKinds),
+        label: z.string().trim().min(1).max(200),
         characterId: positiveCharacterIdSchema.nullable(),
       })
       .strict()
       .nullable(),
-    freshness: freshnessSchema,
+    reward: z.object({ initial: z.number(), remaining: z.number() }).strict().nullable(),
+    state: z.string().trim().min(1).max(100),
+    summary: z.string().trim().min(1).max(2000).nullable(),
+    title: z.string().trim().min(1).max(200),
   })
   .strict()
 const providerResultSchema = z
@@ -134,21 +135,22 @@ export async function aggregateOrganizationActivities(
   const authorize = options.authorize ?? authorizeOrganizationContribution
   const authorizationResults = await Promise.all(
     enabledProviders.map(async (provider) => ({
-      provider,
       authorization: await authorize(userId, organization, provider, now),
+      provider,
     })),
   )
   const authorizedProviders = authorizationResults
     .filter(({ authorization }) => authorization.authorized)
     .map(({ provider }) => provider)
-  if (authorizedProviders.length === 0)
+  if (authorizedProviders.length === 0) {
     return {
-      organizationVersion: organization.organizationVersion,
-      generatedAt: now.toISOString(),
       activities: [] as OrganizationActivity[],
+      generatedAt: now.toISOString(),
+      organizationVersion: organization.organizationVersion,
       sources: [] as OrganizationActivitySource[],
       ...aggregateActivityFreshness([], []),
     }
+  }
 
   let characters: readonly PlatformActivityProviderCharacter[]
   try {
@@ -160,9 +162,9 @@ export async function aggregateOrganizationActivities(
   } catch {
     const sources = authorizedProviders.map(unavailableSource)
     return {
-      organizationVersion: organization.organizationVersion,
-      generatedAt: now.toISOString(),
       activities: [] as OrganizationActivity[],
+      generatedAt: now.toISOString(),
+      organizationVersion: organization.organizationVersion,
       sources,
       ...aggregateActivityFreshness([], sources),
     }
@@ -172,12 +174,12 @@ export async function aggregateOrganizationActivities(
   const results = await Promise.all(
     authorizedProviders.map((provider) =>
       collectProviderActivities(provider, {
-        userId,
+        characters,
+        now,
         organizationVersion: organization.organizationVersion,
         requestedAt: now.toISOString(),
-        characters,
         timeoutMilliseconds,
-        now,
+        userId,
       }),
     ),
   )
@@ -186,9 +188,9 @@ export async function aggregateOrganizationActivities(
     .toSorted(compareActivities)
   const sources = results.map(({ source }) => source)
   return {
-    organizationVersion: organization.organizationVersion,
-    generatedAt: now.toISOString(),
     activities,
+    generatedAt: now.toISOString(),
+    organizationVersion: organization.organizationVersion,
     sources,
     ...aggregateActivityFreshness(activities, sources),
   }
@@ -198,10 +200,10 @@ function unavailableSource(
   provider: PlatformInstalledActivityProviderDescriptor,
 ): OrganizationActivitySource {
   return {
-    sourceId: `${provider.moduleId}:${provider.providerId}`,
+    freshness: { collectedAt: null, state: 'unavailable' },
     moduleId: provider.moduleId,
     providerId: provider.providerId,
-    freshness: { state: 'unavailable', collectedAt: null },
+    sourceId: `${provider.moduleId}:${provider.providerId}`,
   }
 }
 
@@ -234,11 +236,11 @@ async function collectProviderActivities(
   try {
     const result = await Promise.race([
       provider.invoke({
-        userId: input.userId,
+        characters: input.characters,
         organizationVersion: input.organizationVersion,
         requestedAt: input.requestedAt,
         signal: controller.signal,
-        characters: input.characters,
+        userId: input.userId,
       }),
       new Promise<never>((_resolve, reject) => {
         timeout = setTimeout(() => {
@@ -252,10 +254,10 @@ async function collectProviderActivities(
     return {
       activities: mergeProviderActivities(provider, sourceId, parsed.activities, input),
       source: {
-        sourceId,
+        freshness,
         moduleId: provider.moduleId,
         providerId: provider.providerId,
-        freshness,
+        sourceId,
       },
     }
   } catch {
@@ -263,14 +265,16 @@ async function collectProviderActivities(
     return {
       activities: [],
       source: {
-        sourceId,
+        freshness: { collectedAt: null, state: 'unavailable' },
         moduleId: provider.moduleId,
         providerId: provider.providerId,
-        freshness: { state: 'unavailable', collectedAt: null },
+        sourceId,
       },
     }
   } finally {
-    if (timeout) clearTimeout(timeout)
+    if (timeout) {
+      clearTimeout(timeout)
+    }
   }
 }
 
@@ -293,12 +297,15 @@ function mergeProviderActivities(
       merged.set(activity.id, projected)
       continue
     }
-    if (!sameActivityScalars(existing, projected)) throw new Error('Conflicting duplicate activity')
+    if (!sameActivityScalars(existing, projected)) {
+      throw new Error('Conflicting duplicate activity')
+    }
     const participation = new Map(existing.participation.map((entry) => [entry.characterId, entry]))
     for (const entry of projected.participation) {
       const previous = participation.get(entry.characterId)
-      if (previous && !sameParticipation(previous, entry))
+      if (previous && !sameParticipation(previous, entry)) {
         throw new Error('Conflicting duplicate activity participation')
+      }
       participation.set(entry.characterId, entry)
     }
     merged.set(activity.id, {
@@ -327,10 +334,12 @@ function validateActivityReferences(
   ].filter(
     (characterId): characterId is number => characterId !== null && characterId !== undefined,
   )
-  if (referencedCharacterIds.some((characterId) => !characterIds.has(characterId)))
+  if (referencedCharacterIds.some((characterId) => !characterIds.has(characterId))) {
     throw new Error('Activity references a character outside the authorized account')
-  if (activity.linkTarget && !provider.pageIds.includes(activity.linkTarget.pageId))
+  }
+  if (activity.linkTarget && !provider.pageIds.includes(activity.linkTarget.pageId)) {
     throw new Error('Activity references an undeclared module page')
+  }
 }
 
 function projectActivity(
@@ -340,26 +349,26 @@ function projectActivity(
   now: Date,
 ): OrganizationActivity {
   return {
-    id: `${sourceId}:${activity.id}`,
-    sourceId,
-    kind: activity.kind,
-    title: activity.title,
-    summary: activity.summary,
-    objective: activity.objective,
-    state: activity.state,
-    progress: activity.progress,
-    reward: activity.reward,
-    requiredAction: activity.requiredAction,
-    organizationPriority: activity.organizationPriority,
     deadline: activity.deadline,
     eligibleCharacterIds: [...new Set(activity.eligibleCharacterIds)].toSorted(
       (left, right) => left - right,
     ),
-    participation: normalizeParticipation(activity.participation),
+    freshness: normalizeFreshness(activity.freshness, provider, now),
+    id: `${sourceId}:${activity.id}`,
+    kind: activity.kind,
     linkTarget: activity.linkTarget
       ? { moduleId: provider.moduleId, ...activity.linkTarget }
       : null,
-    freshness: normalizeFreshness(activity.freshness, provider, now),
+    objective: activity.objective,
+    organizationPriority: activity.organizationPriority,
+    participation: normalizeParticipation(activity.participation),
+    progress: activity.progress,
+    requiredAction: activity.requiredAction,
+    reward: activity.reward,
+    sourceId,
+    state: activity.state,
+    summary: activity.summary,
+    title: activity.title,
   }
 }
 
@@ -369,8 +378,9 @@ function normalizeParticipation(
   const byCharacter = new Map<number, (typeof participation)[number]>()
   for (const entry of participation) {
     const existing = byCharacter.get(entry.characterId)
-    if (existing && !sameParticipation(existing, entry))
+    if (existing && !sameParticipation(existing, entry)) {
       throw new Error('Conflicting activity participation')
+    }
     byCharacter.set(entry.characterId, entry)
   }
   return [...byCharacter.values()].toSorted((left, right) => left.characterId - right.characterId)
@@ -392,9 +402,10 @@ function normalizeFreshness(
     freshness.state === 'current' &&
     freshness.collectedAt &&
     new Date(freshness.collectedAt).getTime() <
-      now.getTime() - provider.freshness.staleAfterSeconds * 1_000
-  )
+      now.getTime() - provider.freshness.staleAfterSeconds * 1000
+  ) {
     return { ...freshness, state: 'stale' }
+  }
   return freshness
 }
 
@@ -433,16 +444,30 @@ function sameActivityScalars(left: OrganizationActivity, right: OrganizationActi
 
 function compareActivities(left: OrganizationActivity, right: OrganizationActivity) {
   const actionOrder = Number(right.requiredAction !== null) - Number(left.requiredAction !== null)
-  if (actionOrder !== 0) return actionOrder
-  const priorityOrder = right.organizationPriority - left.organizationPriority
-  if (priorityOrder !== 0) return priorityOrder
-  if (left.deadline !== right.deadline) {
-    if (left.deadline === null) return 1
-    if (right.deadline === null) return -1
-    const deadlineOrder = new Date(left.deadline).getTime() - new Date(right.deadline).getTime()
-    if (deadlineOrder !== 0) return deadlineOrder
+  if (actionOrder !== 0) {
+    return actionOrder
   }
-  if (left.id < right.id) return -1
-  if (left.id > right.id) return 1
+  const priorityOrder = right.organizationPriority - left.organizationPriority
+  if (priorityOrder !== 0) {
+    return priorityOrder
+  }
+  if (left.deadline !== right.deadline) {
+    if (left.deadline === null) {
+      return 1
+    }
+    if (right.deadline === null) {
+      return -1
+    }
+    const deadlineOrder = new Date(left.deadline).getTime() - new Date(right.deadline).getTime()
+    if (deadlineOrder !== 0) {
+      return deadlineOrder
+    }
+  }
+  if (left.id < right.id) {
+    return -1
+  }
+  if (left.id > right.id) {
+    return 1
+  }
   return 0
 }

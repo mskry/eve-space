@@ -13,25 +13,25 @@ interface CharacterAttributesRepresentationInput {
 }
 
 const characterAttributesCacheSchema = z.object({
+  accruedRemapCooldownDate: z.string().nullable(),
+  bonusRemaps: z.number(),
   charisma: z.number(),
   intelligence: z.number(),
+  lastRemapDate: z.string().nullable(),
   memory: z.number(),
   perception: z.number(),
   willpower: z.number(),
-  bonusRemaps: z.number(),
-  accruedRemapCooldownDate: z.string().nullable(),
-  lastRemapDate: z.string().nullable(),
 })
 
 const characterAttributesRead = createCharacterEsiRead({
-  operation: 'attributes',
-  name: 'character-attributes-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdAttributes.transport,
   cacheSchema: characterAttributesCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdAttributes.transport,
   encodeRequest: (input: CharacterAttributesRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
   map: (response) => mapCharacterAttributes(response.data),
+  name: 'character-attributes-core',
+  operation: 'attributes',
 })
 
 export const characterAttributesScope = characterAttributesRead.requiredScope
@@ -61,13 +61,13 @@ function mapCharacterAttributes(
   result: GetCharactersCharacterIdAttributesResponse,
 ): CharacterAttributesData {
   return {
+    accruedRemapCooldownDate: result.accrued_remap_cooldown_date ?? null,
+    bonusRemaps: result.bonus_remaps ?? 0,
     charisma: result.charisma,
     intelligence: result.intelligence,
+    lastRemapDate: result.last_remap_date ?? null,
     memory: result.memory,
     perception: result.perception,
     willpower: result.willpower,
-    bonusRemaps: result.bonus_remaps ?? 0,
-    accruedRemapCooldownDate: result.accrued_remap_cooldown_date ?? null,
-    lastRemapDate: result.last_remap_date ?? null,
   }
 }

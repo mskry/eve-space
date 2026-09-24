@@ -21,7 +21,9 @@ export function hashToken(value: string) {
 }
 
 export function tokensMatch(left: string | undefined, right: string | undefined) {
-  if (!left || !right) return false
+  if (!left || !right) {
+    return false
+  }
   const leftBuffer = Buffer.from(left)
   const rightBuffer = Buffer.from(right)
   return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer)
@@ -35,10 +37,14 @@ export async function hashPassword(password: string) {
 
 export async function verifyPassword(password: string, encoded: string) {
   const [algorithm, saltValue, hashValue] = encoded.split('$')
-  if (algorithm !== 'scrypt' || !saltValue || !hashValue) return false
+  if (algorithm !== 'scrypt' || !saltValue || !hashValue) {
+    return false
+  }
 
   const expected = Buffer.from(hashValue, 'base64url')
-  if (expected.length !== passwordKeyLength) return false
+  if (expected.length !== passwordKeyLength) {
+    return false
+  }
   const derived = (await scryptAsync(
     password,
     Buffer.from(saltValue, 'base64url'),
@@ -63,8 +69,9 @@ export function encryptTokens(tokens: { accessToken: string; refreshToken: strin
 
 export function decryptTokens(value: string) {
   const parts = value.split('.')
-  if (parts.length !== 3 || parts.some((part) => !part))
+  if (parts.length !== 3 || parts.some((part) => !part)) {
     throw new Error('Invalid encrypted token payload')
+  }
 
   const [initializationVector, authenticationTag, encrypted] = parts.map((part) =>
     Buffer.from(part!, 'base64url'),

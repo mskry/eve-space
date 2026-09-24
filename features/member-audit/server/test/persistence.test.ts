@@ -6,25 +6,25 @@ import {
 } from '../src/persistence.js'
 
 const validInput = {
-  resourceId: 'trained-skills',
-  organizationVersion: 4,
-  targetUserId: '22222222-2222-4222-8222-222222222222',
-  managedMemberLifecycleId: '33333333-3333-4333-8333-333333333333',
+  authorizationGeneration: 8,
   characterId: 90_000_001,
   characterLifecycleId: '11111111-1111-4111-8111-111111111111',
-  authorizationGeneration: 8,
   disclosureVersion: 2,
-  sectionActivationVersion: 3,
-  observationId: '44444444-4444-4444-8444-444444444444',
   dtoRevision: 1,
-  validatedAt: '2026-09-17T10:00:00Z',
+  managedMemberLifecycleId: '33333333-3333-4333-8333-333333333333',
+  observationId: '44444444-4444-4444-8444-444444444444',
+  organizationVersion: 4,
+  resourceId: 'trained-skills',
+  sectionActivationVersion: 3,
   snapshot: {
+    groups: [],
+    injectedSkillCount: 0,
     kind: 'trained-skills',
     totalSp: 0,
     unallocatedSp: 0,
-    injectedSkillCount: 0,
-    groups: [],
   },
+  targetUserId: '22222222-2222-4222-8222-222222222222',
+  validatedAt: '2026-09-17T10:00:00Z',
 } as const
 
 test('requires every authority revision when persisting sensitive evidence', () => {
@@ -40,10 +40,6 @@ test('rejects oversized and malformed trained-skill evidence', () => {
     materializeCurrentSnapshotOperation.inputSchema.safeParse({
       ...validInput,
       snapshot: {
-        kind: 'trained-skills',
-        totalSp: 0,
-        unallocatedSp: 0,
-        injectedSkillCount: 10_001,
         groups: [
           {
             groupId: 1,
@@ -62,6 +58,10 @@ test('rejects oversized and malformed trained-skill evidence', () => {
             })),
           },
         ],
+        injectedSkillCount: 10_001,
+        kind: 'trained-skills',
+        totalSp: 0,
+        unallocatedSp: 0,
       },
     }).success,
   ).toBe(false)
@@ -69,21 +69,16 @@ test('rejects oversized and malformed trained-skill evidence', () => {
 
 test('binds each staged record kind to its continuation resource', () => {
   const continuation = {
-    sectionId: 'wallet',
-    resourceId: 'wallet-transactions',
-    operationContractRevision: 1,
-    resourceRevision: 1,
-    organizationVersion: 4,
-    targetUserId: '22222222-2222-4222-8222-222222222222',
-    managedMemberLifecycleId: '33333333-3333-4333-8333-333333333333',
+    authorizationGeneration: 8,
     characterId: 90_000_001,
     characterLifecycleId: '11111111-1111-4111-8111-111111111111',
-    authorizationGeneration: 8,
-    disclosureVersion: 2,
-    sectionActivationVersion: 3,
-    observationId: '44444444-4444-4444-8444-444444444444',
-    expectedRevision: 0,
     checkpoint: { complete: true },
+    disclosureVersion: 2,
+    expectedRevision: 0,
+    managedMemberLifecycleId: '33333333-3333-4333-8333-333333333333',
+    observationId: '44444444-4444-4444-8444-444444444444',
+    operationContractRevision: 1,
+    organizationVersion: 4,
     records: [
       {
         recordKind: 'wallet-transaction',
@@ -93,6 +88,11 @@ test('binds each staged record kind to its continuation resource', () => {
         validatedAt: '2026-09-17T10:00:00Z',
       },
     ],
+    resourceId: 'wallet-transactions',
+    resourceRevision: 1,
+    sectionActivationVersion: 3,
+    sectionId: 'wallet',
+    targetUserId: '22222222-2222-4222-8222-222222222222',
     updatedAt: '2026-09-17T10:00:00Z',
   } as const
 
@@ -107,35 +107,35 @@ test('binds each staged record kind to its continuation resource', () => {
 
 test('accepts one complete finance page but rejects a larger staging write', () => {
   const record = {
+    evidence: { amount: 1 },
     recordKind: 'wallet-journal',
     sourceId: '1',
     sourceTimestamp: '2026-09-17T10:00:00Z',
-    evidence: { amount: 1 },
     validatedAt: '2026-09-17T10:00:00Z',
   } as const
   const input = {
-    sectionId: 'wallet',
-    resourceId: 'wallet-journal',
-    operationContractRevision: 1,
-    resourceRevision: 1,
-    organizationVersion: 4,
-    targetUserId: '22222222-2222-4222-8222-222222222222',
-    managedMemberLifecycleId: '33333333-3333-4333-8333-333333333333',
+    authorizationGeneration: 8,
     characterId: 90_000_001,
     characterLifecycleId: '11111111-1111-4111-8111-111111111111',
-    authorizationGeneration: 8,
-    disclosureVersion: 2,
-    sectionActivationVersion: 3,
-    observationId: '44444444-4444-4444-8444-444444444444',
-    expectedRevision: 0,
     checkpoint: { complete: true },
+    disclosureVersion: 2,
+    expectedRevision: 0,
+    managedMemberLifecycleId: '33333333-3333-4333-8333-333333333333',
+    observationId: '44444444-4444-4444-8444-444444444444',
+    operationContractRevision: 1,
+    organizationVersion: 4,
+    resourceId: 'wallet-journal',
+    resourceRevision: 1,
+    sectionActivationVersion: 3,
+    sectionId: 'wallet',
+    targetUserId: '22222222-2222-4222-8222-222222222222',
     updatedAt: '2026-09-17T10:00:00Z',
   } as const
 
   expect(
     writeEvidenceContinuationOperation.inputSchema.safeParse({
       ...input,
-      records: Array.from({ length: 2_500 }, (_, index) => ({
+      records: Array.from({ length: 2500 }, (_, index) => ({
         ...record,
         sourceId: String(index + 1),
       })),
@@ -144,7 +144,7 @@ test('accepts one complete finance page but rejects a larger staging write', () 
   expect(
     writeEvidenceContinuationOperation.inputSchema.safeParse({
       ...input,
-      records: Array.from({ length: 2_501 }, (_, index) => ({
+      records: Array.from({ length: 2501 }, (_, index) => ({
         ...record,
         sourceId: String(index + 1),
       })),
@@ -155,19 +155,19 @@ test('accepts one complete finance page but rejects a larger staging write', () 
 test('purges an account without narrowing deletion to one organization version', () => {
   expect(
     purgeEvidenceOperation.inputSchema.safeParse({
+      limit: 100,
       mode: 'account',
       store: 'assets',
       targetUserId: '22222222-2222-4222-8222-222222222222',
-      limit: 100,
     }).success,
   ).toBe(true)
   expect(
     purgeEvidenceOperation.inputSchema.safeParse({
-      mode: 'account',
-      store: 'assets',
-      organizationVersion: 4,
-      targetUserId: '22222222-2222-4222-8222-222222222222',
       limit: 100,
+      mode: 'account',
+      organizationVersion: 4,
+      store: 'assets',
+      targetUserId: '22222222-2222-4222-8222-222222222222',
     }).success,
   ).toBe(false)
 })

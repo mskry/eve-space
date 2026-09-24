@@ -27,7 +27,7 @@ describe('universe cache dependency boundaries', () => {
   ])('allows %s to import %s', (sourceModule, importedModule) => {
     expect(
       universeCacheImportViolations([source(sourceModule, `import './${importedModule}.js'`)]),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   test.each([
@@ -56,11 +56,11 @@ describe('universe cache dependency boundaries', () => {
   ])('rejects %s importing %s', (sourceModule, importedModule) => {
     expect(
       universeCacheImportViolations([source(sourceModule, `import './${importedModule}.js'`)]),
-    ).toEqual([expect.stringContaining(`${sourceModule} cannot import`)])
+    ).toStrictEqual([expect.stringContaining(`${sourceModule} cannot import`)])
   })
 
   test('rejects undeclared static-location modules', () => {
-    expect(universeCacheImportViolations([source('static-location-extra', '')])).toEqual([
+    expect(universeCacheImportViolations([source('static-location-extra', '')])).toStrictEqual([
       'api/src/universe/static-location-extra.ts: universe cache module static-location-extra has no declared tier',
     ])
   })
@@ -68,7 +68,7 @@ describe('universe cache dependency boundaries', () => {
   test('rejects imports of undeclared local universe modules', () => {
     expect(
       universeCacheImportViolations([source('database-read', "import './database-extra.js'")]),
-    ).toEqual([
+    ).toStrictEqual([
       'api/src/universe/database-read.ts: database module database-read imports undeclared universe module database-extra',
     ])
   })

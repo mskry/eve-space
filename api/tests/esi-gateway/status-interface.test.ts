@@ -67,30 +67,29 @@ describe('ESI status interface', () => {
 
 function telemetryFixture() {
   return {
-    checkedAt: '2026-09-11T12:00:00.000Z',
-    redisUrl: 'redis://coordination.internal:6379',
     cache: {
-      status: 'operational',
       checkedAt: '2026-09-11T12:00:00.000Z',
       connectionErrors: {},
       envelopeRejections: {},
       envelopeVersionMismatches: { expected: 3, found: {}, overflow: 0 },
       payload: 'secret-cache-payload',
-    },
-    coordination: {
       status: 'operational',
-      checkedAt: '2026-09-11T12:00:00.000Z',
-      operationFailures: 0,
-      dependencyError: new Error('dependency stack'),
     },
+    checkedAt: '2026-09-11T12:00:00.000Z',
     cooldown: {
-      status: 'inactive',
+      activeOperations: [],
       checkedAt: '2026-09-11T12:00:00.000Z',
       globalRetryAt: null,
-      activeOperations: [],
+      status: 'inactive',
     },
-    upstream: {
+    coordination: {
+      checkedAt: '2026-09-11T12:00:00.000Z',
+      dependencyError: new Error('dependency stack'),
+      operationFailures: 0,
       status: 'operational',
+    },
+    redisUrl: 'redis://coordination.internal:6379',
+    upstream: {
       checkedAt: '2026-09-11T12:00:00.000Z',
       operations: [
         {
@@ -117,17 +116,18 @@ function telemetryFixture() {
           headers: { 'If-None-Match': 'private-etag' },
         },
       ],
+      status: 'operational',
     },
   }
 }
 
 function rateFixture() {
   return {
-    bucketStartedAt: '2026-09-11T12:00:00.000Z',
     bucketEndedAt: '2026-09-11T12:15:00.000Z',
+    bucketStartedAt: '2026-09-11T12:00:00.000Z',
     complete: false,
-    operations: [],
-    groups: [],
     connection: mocks.connection,
+    groups: [],
+    operations: [],
   }
 }

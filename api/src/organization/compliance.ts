@@ -48,12 +48,12 @@ export function recomputeOrganizationAccountCompliance(
   const recompute = async (transaction: ComplianceTransaction) => {
     const [organization] = await transaction
       .select({
-        organizationVersion: deploymentSettings.organizationVersion,
         organizationType: deploymentSettings.organizationType,
+        organizationVersion: deploymentSettings.organizationVersion,
         policyVersion: deploymentSettings.registrationPolicyVersion,
         requiredScopes: deploymentSettings.requiredRegistrationScopes,
-        strictRemediationDurationSeconds: deploymentSettings.strictRemediationDurationSeconds,
         staleEvidenceGraceDurationSeconds: deploymentSettings.staleEvidenceGraceDurationSeconds,
+        strictRemediationDurationSeconds: deploymentSettings.strictRemediationDurationSeconds,
       })
       .from(deploymentSettings)
       .where(
@@ -63,13 +63,17 @@ export function recomputeOrganizationAccountCompliance(
         ),
       )
       .for('key share')
-    if (!organization) return { outcome: 'obsolete' as const }
+    if (!organization) {
+      return { outcome: 'obsolete' as const }
+    }
     const [account] = await transaction
       .select({ userId: users.id })
       .from(users)
       .where(eq(users.id, input.userId))
       .for('update')
-    if (!account) return { outcome: 'obsolete' as const }
+    if (!account) {
+      return { outcome: 'obsolete' as const }
+    }
 
     const [
       characterRows,
@@ -81,11 +85,11 @@ export function recomputeOrganizationAccountCompliance(
     ] = await Promise.all([
       transaction
         .select({
+          affiliationCheckedAt: characters.affiliationCheckedAt,
+          affiliationResolutionState: characters.affiliationResolutionState,
           characterId: characters.characterId,
           corporationId: characters.corporationId,
-          affiliationCheckedAt: characters.affiliationCheckedAt,
           nextAffiliationCheck: characters.nextAffiliationCheck,
-          affiliationResolutionState: characters.affiliationResolutionState,
           scopes: eveTokens.scopes,
         })
         .from(characters)
@@ -103,10 +107,10 @@ export function recomputeOrganizationAccountCompliance(
         ),
       transaction
         .select({
-          validatedAt: platformCollectionState.validatedAt,
-          nextEligibleAt: platformCollectionState.nextEligibleAt,
-          lastFailureClass: platformCollectionState.lastFailureClass,
           failureStartedAt: platformCollectionState.failureStartedAt,
+          lastFailureClass: platformCollectionState.lastFailureClass,
+          nextEligibleAt: platformCollectionState.nextEligibleAt,
+          validatedAt: platformCollectionState.validatedAt,
         })
         .from(platformSubjectLifecycles)
         .leftJoin(
@@ -182,14 +186,12 @@ export function recomputeOrganizationAccountCompliance(
           activeExceptionExpiresAt: activeExceptions.get(character.characterId) ?? null,
         }),
       ),
-      managedCorporationIds: new Set(managedRows.map(({ corporationId }) => corporationId)),
       managedCorporationEvidence:
         organization.organizationType === 'corporation'
           ? { freshness: 'fresh', evidenceAt: null, freshUntil: null, staleSince: null }
           : projectManagedCorporationEvidence(managedCollectionRows[0], now),
-      requiredScopes: organization.requiredScopes,
-      strictRemediationDurationSeconds: organization.strictRemediationDurationSeconds,
-      staleEvidenceGraceDurationSeconds: organization.staleEvidenceGraceDurationSeconds,
+      managedCorporationIds: new Set(managedRows.map(({ corporationId }) => corporationId)),
+      now,
       previous: previous
         ? {
             state: previous.state,
@@ -204,7 +206,9 @@ export function recomputeOrganizationAccountCompliance(
             ),
           }
         : null,
-      now,
+      requiredScopes: organization.requiredScopes,
+      staleEvidenceGraceDurationSeconds: organization.staleEvidenceGraceDurationSeconds,
+      strictRemediationDurationSeconds: organization.strictRemediationDurationSeconds,
     })
     const managedCorporationIds = new Set(managedRows.map(({ corporationId }) => corporationId))
     const managedCorporationEvidence =
@@ -213,8 +217,6 @@ export function recomputeOrganizationAccountCompliance(
         : projectManagedCorporationEvidence(managedCollectionRows[0], now)
     await convergeManagedMemberLifecycleInTransaction(transaction, {
       deploymentId: input.deploymentId,
-      organizationVersion: input.organizationVersion,
-      userId: input.userId,
       eligible:
         managedCorporationEvidence.freshness === 'fresh' &&
         characterRows.some(
@@ -226,59 +228,61 @@ export function recomputeOrganizationAccountCompliance(
             managedCorporationIds.has(character.corporationId),
         ),
       now,
+      organizationVersion: input.organizationVersion,
+      userId: input.userId,
     })
     const changed = materiallyChanged(previous, previousIssues, evaluation)
 
     await transaction
       .insert(organizationAccountCompliance)
       .values({
-        deploymentId: input.deploymentId,
-        organizationVersion: input.organizationVersion,
-        userId: input.userId,
-        state: evaluation.state,
-        evidenceFreshness: evaluation.evidenceFreshness,
-        evidenceAt: evaluation.evidenceAt,
-        reviewDeadline: evaluation.reviewDeadline,
         accessValidUntil: evaluation.accessValidUntil,
-        establishedCompliantAt: evaluation.establishedCompliantAt,
         authoritative: true,
-        invalidatedAt: null,
+        deploymentId: input.deploymentId,
+        establishedCompliantAt: evaluation.establishedCompliantAt,
         evaluatedAt: now,
+        evidenceAt: evaluation.evidenceAt,
+        evidenceFreshness: evaluation.evidenceFreshness,
+        invalidatedAt: null,
+        organizationVersion: input.organizationVersion,
+        reviewDeadline: evaluation.reviewDeadline,
+        state: evaluation.state,
         updatedAt: now,
+        userId: input.userId,
       })
       .onConflictDoUpdate({
+        set: {
+          accessValidUntil: evaluation.accessValidUntil,
+          authoritative: true,
+          establishedCompliantAt: evaluation.establishedCompliantAt,
+          evaluatedAt: now,
+          evidenceAt: evaluation.evidenceAt,
+          evidenceFreshness: evaluation.evidenceFreshness,
+          invalidatedAt: null,
+          reviewDeadline: evaluation.reviewDeadline,
+          state: evaluation.state,
+          updatedAt: now,
+        },
         target: [
           organizationAccountCompliance.deploymentId,
           organizationAccountCompliance.organizationVersion,
           organizationAccountCompliance.userId,
         ],
-        set: {
-          state: evaluation.state,
-          evidenceFreshness: evaluation.evidenceFreshness,
-          evidenceAt: evaluation.evidenceAt,
-          reviewDeadline: evaluation.reviewDeadline,
-          accessValidUntil: evaluation.accessValidUntil,
-          establishedCompliantAt: evaluation.establishedCompliantAt,
-          authoritative: true,
-          invalidatedAt: null,
-          evaluatedAt: now,
-          updatedAt: now,
-        },
       })
     await reconcileIssues(transaction, input, evaluation, previousIssues, now)
     const transitionAudit = changed
       ? await appendOrganizationAuditEvent(transaction, {
-          deploymentId: input.deploymentId,
-          organizationVersion: input.organizationVersion,
-          policyVersion: organization.policyVersion,
-          eventType: 'compliance.transitioned',
-          actorType: 'system',
           actorId: null,
-          subjectType: 'compliance',
-          subjectId: input.userId,
-          reason: `Account compliance changed from ${previous?.state ?? 'unprojected'} to ${evaluation.state}.`,
-          outcome: 'transitioned',
+          actorType: 'system',
+          deploymentId: input.deploymentId,
+          eventType: 'compliance.transitioned',
           occurredAt: now,
+          organizationVersion: input.organizationVersion,
+          outcome: 'transitioned',
+          policyVersion: organization.policyVersion,
+          reason: `Account compliance changed from ${previous?.state ?? 'unprojected'} to ${evaluation.state}.`,
+          subjectId: input.userId,
+          subjectType: 'compliance',
         })
       : null
     const nextEntitlementScope = resolveOrganizationEntitlementScope(evaluation, now)
@@ -291,57 +295,59 @@ export function recomputeOrganizationAccountCompliance(
       previousEntitlementScope,
       nextEntitlementScope,
     )
-    if (transitionAudit && revokedPermissionScope)
+    if (transitionAudit && revokedPermissionScope) {
       await appendExternalServiceEntitlementTransitions(transaction, {
-        organizationVersion: input.organizationVersion,
-        policyVersion: organization.policyVersion,
-        userId: input.userId,
-        granted: false,
         causationAuditId: transitionAudit.auditId,
+        granted: false,
         now,
-        reason: 'Account compliance no longer grants this external-service entitlement.',
+        organizationVersion: input.organizationVersion,
         permissionScope: revokedPermissionScope,
+        policyVersion: organization.policyVersion,
+        reason: 'Account compliance no longer grants this external-service entitlement.',
+        userId: input.userId,
       })
+    }
     await convergeRegistrationComplianceGroupsInTransaction(transaction, {
-      organizationVersion: input.organizationVersion,
-      policyVersion: organization.policyVersion,
-      userId: input.userId,
       eligible:
         evaluation.accessValidUntil !== null &&
         evaluation.accessValidUntil.getTime() > now.getTime(),
       now,
+      organizationVersion: input.organizationVersion,
+      policyVersion: organization.policyVersion,
+      userId: input.userId,
     })
     const grantedPermissionScope = changedPermissionScope(
       nextEntitlementScope,
       previousEntitlementScope,
     )
-    if (transitionAudit && grantedPermissionScope)
+    if (transitionAudit && grantedPermissionScope) {
       await appendExternalServiceEntitlementTransitions(transaction, {
-        organizationVersion: input.organizationVersion,
-        policyVersion: organization.policyVersion,
-        userId: input.userId,
-        granted: true,
         causationAuditId: transitionAudit.auditId,
+        granted: true,
         now,
-        reason: 'Account compliance grants this external-service entitlement.',
+        organizationVersion: input.organizationVersion,
         permissionScope: grantedPermissionScope,
-      })
-    if (changed) {
-      await appendDomainEvent(transaction, {
-        type: 'organization.compliance-transitioned',
-        payloadVersion: 1,
-        aggregateId: input.userId,
-        payload: {
-          deploymentId: input.deploymentId,
-          organizationVersion: input.organizationVersion,
-          userId: input.userId,
-          state: evaluation.state,
-          evidenceFreshness: evaluation.evidenceFreshness,
-        },
-        occurredAt: now,
+        policyVersion: organization.policyVersion,
+        reason: 'Account compliance grants this external-service entitlement.',
+        userId: input.userId,
       })
     }
-    return { outcome: changed ? ('changed' as const) : ('unchanged' as const), evaluation }
+    if (changed) {
+      await appendDomainEvent(transaction, {
+        aggregateId: input.userId,
+        occurredAt: now,
+        payload: {
+          deploymentId: input.deploymentId,
+          evidenceFreshness: evaluation.evidenceFreshness,
+          organizationVersion: input.organizationVersion,
+          state: evaluation.state,
+          userId: input.userId,
+        },
+        payloadVersion: 1,
+        type: 'organization.compliance-transitioned',
+      })
+    }
+    return { evaluation, outcome: changed ? ('changed' as const) : ('unchanged' as const) }
   }
   return outerTransaction ? recompute(outerTransaction) : db.transaction(recompute)
 }
@@ -387,9 +393,11 @@ export async function lockCurrentOrganizationVersionForCompliance(
 export function recomputeCurrentOrganizationAccountCompliance(userId: string, now = new Date()) {
   return db.transaction(async (transaction) => {
     const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
-    if (!organizationVersion) return { outcome: 'obsolete' as const }
+    if (!organizationVersion) {
+      return { outcome: 'obsolete' as const }
+    }
     return recomputeOrganizationAccountCompliance(
-      { deploymentId: 1, organizationVersion, userId, now },
+      { deploymentId: 1, now, organizationVersion, userId },
       transaction,
     )
   })
@@ -421,7 +429,9 @@ export async function recomputeComplianceForManagedCorporationsInTransaction(
     now?: Date
   },
 ) {
-  if (input.corporationIds.length === 0) return []
+  if (input.corporationIds.length === 0) {
+    return []
+  }
   const affectedUsers = await transaction
     .selectDistinct({ userId: characters.userId })
     .from(characters)
@@ -447,9 +457,15 @@ function projectedPreviousEntitlementScope(
   now: Date,
 ): OrganizationEntitlementScope {
   const projected = resolveOrganizationEntitlementScope(previous, now)
-  if (projected !== 'none' || !previous?.accessValidUntil) return projected
-  if (previous.state === 'compliant' && next !== 'all') return 'all'
-  if (previous.state === 'review_required' && next === 'none') return 'review'
+  if (projected !== 'none' || !previous?.accessValidUntil) {
+    return projected
+  }
+  if (previous.state === 'compliant' && next !== 'all') {
+    return 'all'
+  }
+  if (previous.state === 'review_required' && next === 'none') {
+    return 'review'
+  }
   return projected
 }
 
@@ -457,9 +473,15 @@ function changedPermissionScope(
   from: OrganizationEntitlementScope,
   to: OrganizationEntitlementScope,
 ): 'all' | 'review' | 'non-review' | null {
-  if (from === 'all' && to === 'review') return 'non-review'
-  if (from === 'all' && to === 'none') return 'all'
-  if (from === 'review' && to === 'none') return 'review'
+  if (from === 'all' && to === 'review') {
+    return 'non-review'
+  }
+  if (from === 'all' && to === 'none') {
+    return 'all'
+  }
+  if (from === 'review' && to === 'none') {
+    return 'review'
+  }
   return null
 }
 
@@ -474,7 +496,9 @@ async function recomputeAccountsInTransaction(
   userIds: readonly string[],
 ) {
   const orderedUserIds = [...new Set(userIds)].toSorted((left, right) => left.localeCompare(right))
-  if (orderedUserIds.length === 0) return []
+  if (orderedUserIds.length === 0) {
+    return []
+  }
   await transaction
     .select({ userId: users.id })
     .from(users)
@@ -482,21 +506,22 @@ async function recomputeAccountsInTransaction(
     .orderBy(asc(users.id))
     .for('update')
   const now = input.now ?? new Date()
-  if (input.rotateManagedMemberLifecycles)
+  if (input.rotateManagedMemberLifecycles) {
     await endManagedMemberLifecyclesForOrganizationVersionInTransaction(transaction, {
       deploymentId: input.deploymentId,
-      organizationVersion: input.organizationVersion,
       now,
+      organizationVersion: input.organizationVersion,
     })
+  }
   const results = []
   for (const userId of orderedUserIds) {
     // oxlint-disable-next-line no-await-in-loop -- Accounts are recomputed after all user locks are acquired.
     const result = await recomputeOrganizationAccountCompliance(
       {
         deploymentId: input.deploymentId,
+        now,
         organizationVersion: input.organizationVersion,
         userId,
-        now,
       },
       transaction,
     )
@@ -513,7 +538,7 @@ async function reconcileIssues(
   now: Date,
 ) {
   const issueKeys = evaluation.issues.map(({ issueKey }) => issueKey)
-  if (issueKeys.length === 0)
+  if (issueKeys.length === 0) {
     await transaction
       .delete(organizationComplianceIssues)
       .where(
@@ -523,7 +548,7 @@ async function reconcileIssues(
           eq(organizationComplianceIssues.userId, input.userId),
         ),
       )
-  else {
+  } else {
     await transaction
       .delete(organizationComplianceIssues)
       .where(
@@ -552,12 +577,6 @@ async function reconcileIssues(
         })),
       )
       .onConflictDoUpdate({
-        target: [
-          organizationComplianceIssues.deploymentId,
-          organizationComplianceIssues.organizationVersion,
-          organizationComplianceIssues.userId,
-          organizationComplianceIssues.issueKey,
-        ],
         set: {
           lastObservedAt: sql`greatest(
             ${organizationComplianceIssues.lastObservedAt},
@@ -565,6 +584,12 @@ async function reconcileIssues(
           )`,
           updatedAt: now,
         },
+        target: [
+          organizationComplianceIssues.deploymentId,
+          organizationComplianceIssues.organizationVersion,
+          organizationComplianceIssues.userId,
+          organizationComplianceIssues.issueKey,
+        ],
       })
   }
 }
@@ -578,8 +603,9 @@ function materiallyChanged(
     previous?.state !== next.state ||
     previous?.evidenceFreshness !== next.evidenceFreshness ||
     previous?.reviewDeadline?.getTime() !== next.reviewDeadline?.getTime()
-  )
+  ) {
     return true
+  }
   return (
     issueSignatures(previousIssues.map(toIssue)).join('\n') !==
     issueSignatures(next.issues).join('\n')
@@ -597,9 +623,9 @@ function issueSignatures(issues: readonly AccountComplianceIssue[]) {
 
 function toIssue(issue: typeof organizationComplianceIssues.$inferSelect): AccountComplianceIssue {
   return {
-    issueKey: issue.issueKey,
-    issueCode: issue.issueCode,
     characterId: issue.characterId,
+    issueCode: issue.issueCode,
+    issueKey: issue.issueKey,
     requiredScope: issue.requiredScope,
   }
 }

@@ -83,12 +83,12 @@ const mainCharacterExceptions = alias(
   'reviewer_search_main_character_exceptions',
 )
 const pendingCompliance: PlatformReviewerTargetCompliance = {
-  state: 'pending',
-  evidenceFreshness: 'unavailable',
-  evidenceAt: null,
-  reviewDeadline: null,
   accessValidUntil: null,
   evaluatedAt: null,
+  evidenceAt: null,
+  evidenceFreshness: 'unavailable',
+  reviewDeadline: null,
+  state: 'pending',
 }
 const nullableDirectorySortFields = new Set<PlatformReviewerDirectorySortField>([
   'audit_data',
@@ -207,8 +207,9 @@ async function searchManagedOrganizationDirectoryInTransaction(
   const cursorPosition = filters.cursor
     ? decodeDirectoryCursor(filters.cursor, organizationVersion, filters, fingerprint)
     : null
-  if (!(await hasCurrentReviewerOrganizationSnapshot(transaction, organizationVersion, now)))
+  if (!(await hasCurrentReviewerOrganizationSnapshot(transaction, organizationVersion, now))) {
     return unavailableDirectoryPage(organizationVersion)
+  }
 
   const rows = await loadDirectoryPage(
     transaction,
@@ -224,16 +225,15 @@ async function searchManagedOrganizationDirectoryInTransaction(
     page.map(({ userId }) => userId),
     now,
   )
-  if (!(await isCurrentDirectoryOrganizationVersion(transaction, organizationVersion)))
+  if (!(await isCurrentDirectoryOrganizationVersion(transaction, organizationVersion))) {
     return unavailableDirectoryPage(organizationVersion)
+  }
 
   return {
-    organizationVersion,
-    status: 'available',
+    groupFacets: groupData.facets,
     items: page.map((row) =>
       projectDirectoryRow(row, groupData.groupsByUserId.get(row.userId) ?? []),
     ),
-    groupFacets: groupData.facets,
     nextCursor:
       rows.length > filters.limit
         ? encodeDirectoryCursor(
@@ -243,6 +243,8 @@ async function searchManagedOrganizationDirectoryInTransaction(
             fingerprint,
           )
         : null,
+    organizationVersion,
+    status: 'available',
   }
 }
 
@@ -483,11 +485,13 @@ function directoryFilterCondition(
   now: Date,
 ) {
   const conditions: SQL[] = []
-  if (filters.query)
+  if (filters.query) {
     conditions.push(directorySearchCondition(filters.query, organizationVersion, now))
-  if (filters.corporationId)
+  }
+  if (filters.corporationId) {
     conditions.push(sql`affiliation.corporation_id = ${filters.corporationId}`)
-  if (filters.groupId)
+  }
+  if (filters.groupId) {
     conditions.push(sql`
       exists (
         select 1
@@ -503,15 +507,20 @@ function directoryFilterCondition(
           )
       )
     `)
-  if (filters.complianceState) {
-    if (filters.complianceState === 'pending')
-      conditions.push(sql`coalesce(compliance.state, 'pending') = 'pending'`)
-    else conditions.push(sql`compliance.state = ${filters.complianceState}`)
   }
-  if (filters.blocked !== undefined)
+  if (filters.complianceState) {
+    if (filters.complianceState === 'pending') {
+      conditions.push(sql`coalesce(compliance.state, 'pending') = 'pending'`)
+    } else {
+      conditions.push(sql`compliance.state = ${filters.complianceState}`)
+    }
+  }
+  if (filters.blocked !== undefined) {
     conditions.push(filters.blocked ? sql`block.block_id is not null` : sql`block.block_id is null`)
-  if (filters.auditState)
+  }
+  if (filters.auditState) {
     conditions.push(sql`coalesce(audit.state, 'not-enabled') = ${filters.auditState}`)
+  }
   return conditions.length > 0 ? sql.join(conditions, sql` and `) : sql`true`
 }
 
@@ -519,7 +528,9 @@ function directorySearchCondition(query: string, organizationVersion: number, no
   const characterId = parseCharacterId(query)
   const queryPattern = `%${escapeLikePattern(query)}%`
   const identityConditions: SQL[] = [sql`character.name ilike ${queryPattern}`]
-  if (characterId) identityConditions.push(sql`character.character_id = ${characterId}`)
+  if (characterId) {
+    identityConditions.push(sql`character.character_id = ${characterId}`)
+  }
   const identityCondition = sql.join(identityConditions, sql` or `)
   const accountCondition = uuidPattern.test(query)
     ? sql`or affiliation.user_id = ${query}::uuid`
@@ -608,9 +619,12 @@ function directoryCursorCondition(
   filters: NormalizedDirectoryFilters,
   position: DirectoryCursorPosition | null,
 ) {
-  if (!position) return sql`true`
-  if (position.sortValue === null)
+  if (!position) {
+    return sql`true`
+  }
+  if (position.sortValue === null) {
     return sql`${sortExpression} is null and affiliation.user_id > ${position.userId}::uuid`
+  }
 
   const comparisons: SQL[] = [
     filters.direction === 'asc'
@@ -618,8 +632,9 @@ function directoryCursorCondition(
       : sql`${sortExpression} < ${position.sortValue}`,
     sql`(${sortExpression} = ${position.sortValue} and affiliation.user_id > ${position.userId}::uuid)`,
   ]
-  if (nullableDirectorySortFields.has(filters.sort))
+  if (nullableDirectorySortFields.has(filters.sort)) {
     comparisons.push(sql`${sortExpression} is null`)
+  }
   const comparisonCondition = sql.join(comparisons, sql` or `)
   return sql`(${comparisonCondition})`
 }
@@ -632,9 +647,9 @@ async function loadDirectoryGroupData(
 ) {
   const rows = await transaction
     .select({
-      userId: organizationGroupAssignments.userId,
       groupId: organizationGroups.groupId,
       name: organizationGroups.name,
+      userId: organizationGroupAssignments.userId,
     })
     .from(organizationGroups)
     .leftJoin(
@@ -671,12 +686,16 @@ async function loadDirectoryGroupData(
   const facets: { groupId: string; name: string }[] = []
   const groupsByUserId = new Map<string, { groupId: string; name: string }[]>()
   for (const row of rows) {
-    if (!facets.some(({ groupId }) => groupId === row.groupId))
+    if (!facets.some(({ groupId }) => groupId === row.groupId)) {
       facets.push({ groupId: row.groupId, name: row.name })
-    if (!row.userId) continue
+    }
+    if (!row.userId) {
+      continue
+    }
     const groups = groupsByUserId.get(row.userId) ?? []
-    if (!groups.some(({ groupId }) => groupId === row.groupId))
+    if (!groups.some(({ groupId }) => groupId === row.groupId)) {
       groups.push({ groupId: row.groupId, name: row.name })
+    }
     groupsByUserId.set(row.userId, groups)
   }
   return { facets, groupsByUserId }
@@ -707,27 +726,23 @@ function projectDirectoryRow(
       ? null
       : { characterId: databaseInteger(row.mainCharacterId), name: row.mainCharacterName }
   const managedAffiliation = {
-    characterId: databaseInteger(row.characterId),
-    name: row.characterName,
-    corporationId: databaseInteger(row.corporationId),
     allianceId: row.allianceId === null ? null : databaseInteger(row.allianceId),
+    characterId: databaseInteger(row.characterId),
     checkedAt: databaseDate(row.affiliationCheckedAt),
+    corporationId: databaseInteger(row.corporationId),
+    name: row.characterName,
   }
   return {
-    managedMemberLifecycleId: row.managedMemberLifecycleId,
-    managedSince: databaseDate(row.managedSince),
-    siteRegisteredAt: databaseDate(row.siteRegisteredAt),
-    account: { userId: row.userId, mainCharacter },
-    portraitCharacter: mainCharacter
-      ? { ...mainCharacter, source: 'main-character' }
-      : {
-          characterId: managedAffiliation.characterId,
-          name: managedAffiliation.name,
-          source: 'managed-affiliation',
-        },
-    managedAffiliation,
-    disclosedCharacterCount: databaseInteger(row.disclosedCharacterCount),
-    groups,
+    account: { mainCharacter, userId: row.userId },
+    auditData: {
+      asOf: optionalDatabaseDate(row.auditAsOf),
+      covered: databaseInteger(row.auditCovered),
+      expected: databaseInteger(row.auditExpected),
+      state: row.auditState,
+    },
+    block: row.blockedAt
+      ? { blocked: true, blockedAt: databaseDate(row.blockedAt) }
+      : { blocked: false },
     compliance: row.complianceState
       ? {
           state: row.complianceState,
@@ -738,15 +753,19 @@ function projectDirectoryRow(
           evaluatedAt: optionalDatabaseDate(row.complianceEvaluatedAt),
         }
       : pendingCompliance,
-    block: row.blockedAt
-      ? { blocked: true, blockedAt: databaseDate(row.blockedAt) }
-      : { blocked: false },
-    auditData: {
-      state: row.auditState,
-      expected: databaseInteger(row.auditExpected),
-      covered: databaseInteger(row.auditCovered),
-      asOf: optionalDatabaseDate(row.auditAsOf),
-    },
+    disclosedCharacterCount: databaseInteger(row.disclosedCharacterCount),
+    groups,
+    managedAffiliation,
+    managedMemberLifecycleId: row.managedMemberLifecycleId,
+    managedSince: databaseDate(row.managedSince),
+    portraitCharacter: mainCharacter
+      ? { ...mainCharacter, source: 'main-character' }
+      : {
+          characterId: managedAffiliation.characterId,
+          name: managedAffiliation.name,
+          source: 'managed-affiliation',
+        },
+    siteRegisteredAt: databaseDate(row.siteRegisteredAt),
   }
 }
 
@@ -784,12 +803,18 @@ function validateDirectoryFilterValues(input: PlatformReviewerDirectoryInput) {
 }
 
 function validateOptionalDirectoryFilter<T>(value: T | undefined, isValid: (value: T) => boolean) {
-  if (value === undefined) return
-  if (!isValid(value)) invalidInput()
+  if (value === undefined) {
+    return
+  }
+  if (!isValid(value)) {
+    invalidInput()
+  }
 }
 
 function validateDirectoryLimit(limit: number) {
-  if (!Number.isInteger(limit) || limit < 1 || limit > maximumPageSize) invalidInput()
+  if (!Number.isInteger(limit) || limit < 1 || limit > maximumPageSize) {
+    invalidInput()
+  }
 }
 
 function isPositiveCorporationId(value: number) {
@@ -832,13 +857,13 @@ function encodeDirectoryCursor(
   const ciphertext = Buffer.concat([
     cipher.update(
       JSON.stringify({
-        v: directoryCursorVersion,
-        o: organizationVersion,
-        s: filters.sort,
         d: filters.direction,
-        p: position.sortValue,
-        u: position.userId,
         f: fingerprint,
+        o: organizationVersion,
+        p: position.sortValue,
+        s: filters.sort,
+        u: position.userId,
+        v: directoryCursorVersion,
       }),
     ),
     cipher.final(),
@@ -858,8 +883,9 @@ function decodeDirectoryCursor(
     if (
       encoded.length <= cursorNonceLength + cursorTagLength ||
       encoded.toString('base64url') !== cursor
-    )
+    ) {
       invalidInput()
+    }
     const nonce = encoded.subarray(0, cursorNonceLength)
     const tag = encoded.subarray(cursorNonceLength, cursorNonceLength + cursorTagLength)
     const decipher = createDecipheriv('aes-256-gcm', key, nonce)
@@ -881,8 +907,9 @@ function decodeDirectoryCursor(
       !uuidPattern.test(decoded.u) ||
       decoded.f !== expectedFingerprint ||
       !isDirectoryCursorSortValue(decoded.p, filters.sort)
-    )
+    ) {
       invalidInput()
+    }
     return { sortValue: decoded.p, userId: decoded.u }
   } catch {
     return invalidInput()
@@ -901,8 +928,12 @@ function isDirectoryCursorSortValue(
   value: unknown,
   sort: PlatformReviewerDirectorySortField,
 ): value is DirectorySortValue {
-  if (value === null) return nullableDirectorySortFields.has(sort)
-  if (sort === 'member') return typeof value === 'string' && value.length > 0 && value.length <= 512
+  if (value === null) {
+    return nullableDirectorySortFields.has(sort)
+  }
+  if (sort === 'member') {
+    return typeof value === 'string' && value.length > 0 && value.length <= 512
+  }
   return typeof value === 'number' && Number.isFinite(value)
 }
 
@@ -911,16 +942,22 @@ function normalizedDatabaseSortValue(
   sort: PlatformReviewerDirectorySortField,
 ) {
   if (sort === 'member') {
-    if (typeof value !== 'string' || value.length === 0) invalidInput()
+    if (typeof value !== 'string' || value.length === 0) {
+      invalidInput()
+    }
     return value
   }
   const number = Number(value)
-  if (!Number.isFinite(number)) invalidInput()
+  if (!Number.isFinite(number)) {
+    invalidInput()
+  }
   return number
 }
 
 function reviewerDirectoryCursorKey() {
-  if (!env.TOKEN_ENCRYPTION_KEY) throw new Error('Reviewer directory is unavailable.')
+  if (!env.TOKEN_ENCRYPTION_KEY) {
+    throw new Error('Reviewer directory is unavailable.')
+  }
   return Buffer.from(
     hkdfSync(
       'sha256',
@@ -936,15 +973,15 @@ function directoryFingerprint(filters: NormalizedDirectoryFilters) {
   return createHash('sha256')
     .update(
       JSON.stringify({
-        q: filters.query ?? null,
-        c: filters.corporationId ?? null,
-        g: filters.groupId ?? null,
-        cs: filters.complianceState ?? null,
-        b: filters.blocked ?? null,
         a: filters.auditState ?? null,
-        s: filters.sort,
+        b: filters.blocked ?? null,
+        c: filters.corporationId ?? null,
+        cs: filters.complianceState ?? null,
         d: filters.direction,
+        g: filters.groupId ?? null,
         l: filters.limit,
+        q: filters.query ?? null,
+        s: filters.sort,
       }),
     )
     .digest('base64url')
@@ -953,25 +990,30 @@ function directoryFingerprint(filters: NormalizedDirectoryFilters) {
 
 function unavailableDirectoryPage(organizationVersion: number): PlatformReviewerDirectoryPage {
   return {
+    groupFacets: [],
+    items: [],
+    nextCursor: null,
     organizationVersion,
     status: 'unavailable',
-    items: [],
-    groupFacets: [],
-    nextCursor: null,
   }
 }
 
 function databaseInteger(value: number | string) {
   const parsed = Number(value)
-  if (!Number.isSafeInteger(parsed) || parsed < 0)
+  if (!Number.isSafeInteger(parsed) || parsed < 0) {
     throw new Error('Reviewer directory returned an invalid integer')
+  }
   return parsed
 }
 
 function databaseDate(value: DatabaseDate) {
-  if (value === null) throw new Error('Reviewer directory returned a missing date')
+  if (value === null) {
+    throw new Error('Reviewer directory returned a missing date')
+  }
   const parsed = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(parsed.getTime())) throw new Error('Reviewer directory returned an invalid date')
+  if (Number.isNaN(parsed.getTime())) {
+    throw new TypeError('Reviewer directory returned an invalid date')
+  }
   return parsed.toISOString()
 }
 
@@ -988,8 +1030,9 @@ async function searchManagedOrganizationAccountsInTransaction(
   const cursorUserId = filters.cursor
     ? decodeCursor(filters.cursor, organizationVersion, searchFingerprint(filters))
     : null
-  if (!(await hasCurrentReviewerOrganizationSnapshot(transaction, organizationVersion, now)))
-    return { organizationVersion, status: 'unavailable', items: [], nextCursor: null }
+  if (!(await hasCurrentReviewerOrganizationSnapshot(transaction, organizationVersion, now))) {
+    return { items: [], nextCursor: null, organizationVersion, status: 'unavailable' }
+  }
 
   const rows = await loadSearchPage(transaction, organizationVersion, filters, cursorUserId, now)
   const page = rows.slice(0, filters.limit)
@@ -1001,13 +1044,13 @@ async function searchManagedOrganizationAccountsInTransaction(
   )
 
   return {
-    organizationVersion,
-    status: 'available',
     items: page.map((row) => projectSearchItem(row, mainCharacterByUserId.get(row.userId))),
     nextCursor:
       rows.length > filters.limit
         ? encodeCursor(page.at(-1)!.userId, organizationVersion, searchFingerprint(filters))
         : null,
+    organizationVersion,
+    status: 'available',
   }
 }
 
@@ -1026,8 +1069,12 @@ function loadSearchPage(
     isNotNull(characters.affiliationCheckedAt),
     gt(characters.nextAffiliationCheck, now),
   ]
-  if (cursorUserId) conditions.push(gt(characters.userId, cursorUserId))
-  if (filters.corporationId) conditions.push(eq(characters.corporationId, filters.corporationId))
+  if (cursorUserId) {
+    conditions.push(gt(characters.userId, cursorUserId))
+  }
+  if (filters.corporationId) {
+    conditions.push(eq(characters.corporationId, filters.corporationId))
+  }
   if (filters.query) {
     const characterId = parseCharacterId(filters.query)
     conditions.push(
@@ -1038,7 +1085,7 @@ function loadSearchPage(
       )!,
     )
   }
-  if (filters.complianceState)
+  if (filters.complianceState) {
     conditions.push(
       filters.complianceState === 'pending'
         ? or(
@@ -1047,29 +1094,31 @@ function loadSearchPage(
           )!
         : eq(organizationAccountCompliance.state, filters.complianceState),
     )
-  if (filters.blocked !== undefined)
+  }
+  if (filters.blocked !== undefined) {
     conditions.push(
       filters.blocked
         ? isNotNull(organizationMemberBlocks.blockId)
         : isNull(organizationMemberBlocks.blockId),
     )
+  }
 
   return transaction
     .selectDistinctOn([characters.userId], {
-      userId: characters.userId,
-      managedMemberLifecycleId: organizationManagedMemberLifecycles.managedMemberLifecycleId,
+      affiliationCheckedAt: characters.affiliationCheckedAt,
+      allianceId: characters.allianceId,
+      blockedAt: organizationMemberBlocks.blockedAt,
       characterId: characters.characterId,
       characterName: characters.name,
-      corporationId: characters.corporationId,
-      allianceId: characters.allianceId,
-      affiliationCheckedAt: characters.affiliationCheckedAt,
-      complianceState: organizationAccountCompliance.state,
-      complianceEvidenceFreshness: organizationAccountCompliance.evidenceFreshness,
-      complianceEvidenceAt: organizationAccountCompliance.evidenceAt,
-      complianceReviewDeadline: organizationAccountCompliance.reviewDeadline,
       complianceAccessValidUntil: organizationAccountCompliance.accessValidUntil,
       complianceEvaluatedAt: organizationAccountCompliance.evaluatedAt,
-      blockedAt: organizationMemberBlocks.blockedAt,
+      complianceEvidenceAt: organizationAccountCompliance.evidenceAt,
+      complianceEvidenceFreshness: organizationAccountCompliance.evidenceFreshness,
+      complianceReviewDeadline: organizationAccountCompliance.reviewDeadline,
+      complianceState: organizationAccountCompliance.state,
+      corporationId: characters.corporationId,
+      managedMemberLifecycleId: organizationManagedMemberLifecycles.managedMemberLifecycleId,
+      userId: characters.userId,
     })
     .from(deploymentSettings)
     .innerJoin(
@@ -1143,12 +1192,14 @@ async function loadPermittedMainCharacters(
   userIds: readonly string[],
   now: Date,
 ) {
-  if (userIds.length === 0) return new Map<string, { characterId: number; name: string }>()
+  if (userIds.length === 0) {
+    return new Map<string, { characterId: number; name: string }>()
+  }
   const rows = await transaction
     .select({
-      userId: mainCharacters.userId,
       characterId: mainCharacters.characterId,
       name: mainCharacters.name,
+      userId: mainCharacters.userId,
     })
     .from(deploymentSettings)
     .innerJoin(
@@ -1203,15 +1254,10 @@ function projectSearchItem(
   mainCharacter: { characterId: number; name: string } | undefined,
 ): PlatformReviewerAccountSearchItem {
   return {
-    managedMemberLifecycleId: row.managedMemberLifecycleId,
-    account: { userId: row.userId, mainCharacter: mainCharacter ?? null },
-    managedAffiliation: {
-      characterId: row.characterId,
-      name: row.characterName,
-      corporationId: row.corporationId,
-      allianceId: row.allianceId,
-      checkedAt: row.affiliationCheckedAt!.toISOString(),
-    },
+    account: { mainCharacter: mainCharacter ?? null, userId: row.userId },
+    block: row.blockedAt
+      ? { blocked: true, blockedAt: row.blockedAt.toISOString() }
+      : { blocked: false },
     compliance: row.complianceState
       ? {
           state: row.complianceState,
@@ -1222,10 +1268,15 @@ function projectSearchItem(
           evaluatedAt: row.complianceEvaluatedAt!.toISOString(),
         }
       : pendingCompliance,
-    block: row.blockedAt
-      ? { blocked: true, blockedAt: row.blockedAt.toISOString() }
-      : { blocked: false },
     evidenceSections: [],
+    managedAffiliation: {
+      allianceId: row.allianceId,
+      characterId: row.characterId,
+      checkedAt: row.affiliationCheckedAt!.toISOString(),
+      corporationId: row.corporationId,
+      name: row.characterName,
+    },
+    managedMemberLifecycleId: row.managedMemberLifecycleId,
   }
 }
 
@@ -1244,13 +1295,19 @@ function normalizeFilters(input: PlatformReviewerAccountSearchInput): Normalized
   if (
     input.corporationId !== undefined &&
     (!Number.isSafeInteger(input.corporationId) || input.corporationId <= 0)
-  )
+  ) {
     invalidInput()
-  if (input.complianceState !== undefined && !complianceStates.has(input.complianceState))
+  }
+  if (input.complianceState !== undefined && !complianceStates.has(input.complianceState)) {
     invalidInput()
-  if (input.blocked !== undefined && typeof input.blocked !== 'boolean') invalidInput()
+  }
+  if (input.blocked !== undefined && typeof input.blocked !== 'boolean') {
+    invalidInput()
+  }
   const limit = input.limit ?? defaultPageSize
-  if (!Number.isInteger(limit) || limit < 1 || limit > maximumPageSize) invalidInput()
+  if (!Number.isInteger(limit) || limit < 1 || limit > maximumPageSize) {
+    invalidInput()
+  }
   validateSearchCursor(input.cursor)
   return {
     ...(query ? { query } : {}),
@@ -1263,11 +1320,15 @@ function normalizeFilters(input: PlatformReviewerAccountSearchInput): Normalized
 }
 
 function validateSearchQuery(query: string | undefined) {
-  if (query !== undefined && !isPlatformReviewerAccountSearchQuery(query)) invalidInput()
+  if (query !== undefined && !isPlatformReviewerAccountSearchQuery(query)) {
+    invalidInput()
+  }
 }
 
 function validateSearchCursor(cursor: string | undefined) {
-  if (cursor !== undefined && !isPlatformReviewerAccountSearchCursor(cursor)) invalidInput()
+  if (cursor !== undefined && !isPlatformReviewerAccountSearchCursor(cursor)) {
+    invalidInput()
+  }
 }
 
 function encodeCursor(userId: string, organizationVersion: number, fingerprint: string) {
@@ -1276,7 +1337,7 @@ function encodeCursor(userId: string, organizationVersion: number, fingerprint: 
   cipher.setAAD(cursorAdditionalData)
   const ciphertext = Buffer.concat([
     cipher.update(
-      JSON.stringify({ v: cursorVersion, o: organizationVersion, u: userId, f: fingerprint }),
+      JSON.stringify({ f: fingerprint, o: organizationVersion, u: userId, v: cursorVersion }),
     ),
     cipher.final(),
   ])
@@ -1290,8 +1351,9 @@ function decodeCursor(cursor: string, organizationVersion: number, expectedFinge
     if (
       encoded.length <= cursorNonceLength + cursorTagLength ||
       encoded.toString('base64url') !== cursor
-    )
+    ) {
       invalidInput()
+    }
     const nonce = encoded.subarray(0, cursorNonceLength)
     const tag = encoded.subarray(cursorNonceLength, cursorNonceLength + cursorTagLength)
     const decipher = createDecipheriv('aes-256-gcm', key, nonce)
@@ -1310,8 +1372,9 @@ function decodeCursor(cursor: string, organizationVersion: number, expectedFinge
       typeof decoded.u !== 'string' ||
       !uuidPattern.test(decoded.u) ||
       decoded.f !== expectedFingerprint
-    )
+    ) {
       invalidInput()
+    }
     return decoded.u
   } catch {
     return invalidInput()
@@ -1319,7 +1382,9 @@ function decodeCursor(cursor: string, organizationVersion: number, expectedFinge
 }
 
 function reviewerSearchCursorKey() {
-  if (!env.TOKEN_ENCRYPTION_KEY) throw new Error('Reviewer account search is unavailable.')
+  if (!env.TOKEN_ENCRYPTION_KEY) {
+    throw new Error('Reviewer account search is unavailable.')
+  }
   return Buffer.from(
     hkdfSync(
       'sha256',
@@ -1335,10 +1400,10 @@ function searchFingerprint(filters: NormalizedSearchFilters) {
   return createHash('sha256')
     .update(
       JSON.stringify({
-        q: filters.query ?? null,
-        c: filters.corporationId ?? null,
-        s: filters.complianceState ?? null,
         b: filters.blocked ?? null,
+        c: filters.corporationId ?? null,
+        q: filters.query ?? null,
+        s: filters.complianceState ?? null,
       }),
     )
     .digest('base64url')
@@ -1353,8 +1418,12 @@ function escapeLikePattern(value: string) {
 }
 
 function parseCharacterId(value: string) {
-  if (value.length > 16) return null
-  for (const character of value) if (character < '0' || character > '9') return null
+  if (value.length > 16) {
+    return null
+  }
+  for (const character of value) {
+    if (character < '0' || character > '9') return null
+  }
   const parsed = Number(value)
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null
 }

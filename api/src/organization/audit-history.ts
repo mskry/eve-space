@@ -14,33 +14,34 @@ export async function listCurrentOrganizationAuditHistory(input: {
     eq(organizationAuditEvents.organizationVersion, deploymentSettings.organizationVersion),
     eq(deploymentSettings.id, 1),
   ]
-  if (input.beforeAuditSequence)
+  if (input.beforeAuditSequence) {
     conditions.push(lt(organizationAuditEvents.auditSequence, input.beforeAuditSequence))
+  }
 
   const rows = await db
     .select({
+      actorId: organizationAuditEvents.actorId,
+      actorType: organizationAuditEvents.actorType,
+      assignmentId: organizationAuditEvents.assignmentId,
+      assignmentSource: organizationAuditEvents.assignmentSource,
       auditId: organizationAuditEvents.auditId,
       auditSequence: organizationAuditEvents.auditSequence,
-      organizationVersion: organizationAuditEvents.organizationVersion,
-      policyVersion: organizationAuditEvents.policyVersion,
-      eventType: organizationAuditEvents.eventType,
-      actorType: organizationAuditEvents.actorType,
-      actorId: organizationAuditEvents.actorId,
-      subjectType: organizationAuditEvents.subjectType,
-      subjectId: organizationAuditEvents.subjectId,
-      reason: organizationAuditEvents.reason,
-      outcome: organizationAuditEvents.outcome,
-      groupId: organizationAuditEvents.groupId,
-      assignmentId: organizationAuditEvents.assignmentId,
-      targetUserId: organizationAuditEvents.targetUserId,
-      sectionId: organizationAuditEvents.sectionId,
-      targetCharacterId: organizationAuditEvents.targetCharacterId,
-      disclosureVersion: organizationAuditEvents.disclosureVersion,
-      assignmentSource: organizationAuditEvents.assignmentSource,
-      complianceSource: organizationAuditEvents.complianceSource,
-      entitlementExpiresAt: organizationAuditEvents.entitlementExpiresAt,
       causationAuditId: organizationAuditEvents.causationAuditId,
+      complianceSource: organizationAuditEvents.complianceSource,
+      disclosureVersion: organizationAuditEvents.disclosureVersion,
+      entitlementExpiresAt: organizationAuditEvents.entitlementExpiresAt,
+      eventType: organizationAuditEvents.eventType,
+      groupId: organizationAuditEvents.groupId,
       occurredAt: organizationAuditEvents.occurredAt,
+      organizationVersion: organizationAuditEvents.organizationVersion,
+      outcome: organizationAuditEvents.outcome,
+      policyVersion: organizationAuditEvents.policyVersion,
+      reason: organizationAuditEvents.reason,
+      sectionId: organizationAuditEvents.sectionId,
+      subjectId: organizationAuditEvents.subjectId,
+      subjectType: organizationAuditEvents.subjectType,
+      targetCharacterId: organizationAuditEvents.targetCharacterId,
+      targetUserId: organizationAuditEvents.targetUserId,
     })
     .from(organizationAuditEvents)
     .innerJoin(deploymentSettings, and(...conditions))

@@ -17,16 +17,17 @@ const wallet = withMemberAuditReviewerQueryState(
   props,
   usePlatformProtectedQuery(() => ({
     ...memberAuditReviewerQueryOptions(props, async ({ signal }) => {
-      if (props.target.kind !== 'managed-organization-character')
+      if (props.target.kind !== 'managed-organization-character') {
         throw new Error('Select a disclosed character to review wallet evidence.')
+      }
       return readPlatformApiResponse(
         await api.api.modules['member-audit'].accounts[':userId'].characters[
           ':characterId'
         ].wallet.$get(
           {
             param: {
-              userId: props.target.userId,
               characterId: String(props.target.characterId),
+              userId: props.target.userId,
             },
           },
           { init: { signal } },

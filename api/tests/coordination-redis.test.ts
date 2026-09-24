@@ -7,12 +7,12 @@ vi.mock('ioredis', () => ({
     status = 'ready'
     constructor(url: string, options: Record<string, unknown>) {
       mocks.instances.push({
-        url,
-        options,
-        on: vi.fn(),
-        quit: vi.fn(),
         disconnect: vi.fn(),
+        on: vi.fn(),
+        options,
+        quit: vi.fn(),
         status: this.status,
+        url,
       })
       Object.assign(this, mocks.instances.at(-1))
     }
@@ -40,14 +40,14 @@ describe('coordination Redis connections', () => {
       retryStrategy: (attempt: number) => number | null
     }
     expect(options).toMatchObject({
-      connectTimeout: 1_000,
+      connectTimeout: 1000,
       lazyConnect: true,
       maxRetriesPerRequest: 1,
     })
     expect(options.retryStrategy(1)).toBe(100)
     expect(options.retryStrategy(4)).toBeNull()
     expect(options).not.toHaveProperty('commandTimeout')
-    expect(probe.options).toMatchObject({ commandTimeout: 1_000 })
+    expect(probe.options).toMatchObject({ commandTimeout: 1000 })
     expect(bounded.on).toHaveBeenCalledWith('error', expect.any(Function))
     expect(probe.on).toHaveBeenCalledWith('error', expect.any(Function))
 
@@ -65,8 +65,8 @@ describe('coordination Redis connections', () => {
     const quit = vi.fn().mockRejectedValue(new Error('timeout'))
     const disconnect = vi.fn()
 
-    await closeCoordinationRedisConnection({ status: 'ready', quit, disconnect } as never)
-    await closeCoordinationRedisConnection({ status: 'end', quit, disconnect } as never)
+    await closeCoordinationRedisConnection({ disconnect, quit, status: 'ready' } as never)
+    await closeCoordinationRedisConnection({ disconnect, quit, status: 'end' } as never)
 
     expect(quit).toHaveBeenCalledOnce()
     expect(disconnect).toHaveBeenCalledOnce()

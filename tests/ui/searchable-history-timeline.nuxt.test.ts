@@ -6,13 +6,17 @@ import SearchableHistoryTimeline from '../../app/components/SearchableHistoryTim
 const mountedWrappers: { unmount: () => void }[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
 })
 
 describe('SearchableHistoryTimeline', () => {
   it('searches normalized names and IDs without hiding non-matches', async () => {
     const wrapper = await mountSuspended(SearchableHistoryTimeline, {
       props: {
+        entityKind: 'alliance',
+        entityLabel: 'alliance',
         entries: [
           {
             recordId: 2,
@@ -31,8 +35,6 @@ describe('SearchableHistoryTimeline', () => {
             entityName: 'First Alliance',
           },
         ],
-        entityKind: 'alliance',
-        entityLabel: 'alliance',
       },
     })
     mountedWrappers.push(wrapper)

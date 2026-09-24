@@ -24,8 +24,8 @@ import { getStaticLocations } from '../universe/static-locations.js'
 
 // A sanity bound on the advertised page count, not a product limit: the fan-out allocates an array
 // of page numbers, so a corrupt X-Pages must not reach it. 1,000 pages is ~1,000,000 assets.
-const maximumCharacterAssetPages = 1_000
-const characterAssetNameBatchSize = 1_000
+const maximumCharacterAssetPages = 1000
+const characterAssetNameBatchSize = 1000
 const characterAssetWorkerConcurrency = 4
 
 type EnrichmentStatus = 'complete' | 'partial' | 'unavailable'
@@ -53,28 +53,26 @@ interface CharacterAssetsPageRepresentationInput {
 }
 
 const characterAssetCacheSchema = z.object({
-  itemId: z.number(),
-  typeId: z.number(),
-  quantity: z.number(),
-  isSingleton: z.boolean(),
   isBlueprintCopy: z.boolean().nullable(),
+  isSingleton: z.boolean(),
+  itemId: z.number(),
+  locationFlag: z.string(),
   locationId: z.number(),
   locationType: z.enum(['station', 'solar_system', 'item', 'other']),
-  locationFlag: z.string(),
   parentItemId: z.number().nullable(),
+  quantity: z.number(),
+  typeId: z.number(),
 })
 const characterAssetPageCacheSchema = z.object({
+  assets: z.array(characterAssetCacheSchema),
   page: z.number(),
   totalPages: z.number(),
-  assets: z.array(characterAssetCacheSchema),
 })
 const characterAssetNamesCacheSchema = z.array(z.object({ itemId: z.number(), name: z.string() }))
 
 const characterAssetsPageRead = createCharacterEsiRead({
-  operation: 'character-assets-page',
-  name: 'character-assets-page-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdAssets.transport,
   cacheSchema: characterAssetPageCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdAssets.transport,
   encodeRequest: (input: CharacterAssetsPageRepresentationInput) => ({
     path: { character_id: input.characterId },
     query: { page: input.page },
@@ -84,13 +82,13 @@ const characterAssetsPageRead = createCharacterEsiRead({
     totalPages: validatePageCount(response.meta.pagination?.pages),
     assets: response.data.map(projectAssetSnapshot),
   }),
+  name: 'character-assets-page-core',
+  operation: 'character-assets-page',
 })
 
 const characterAssetNamesRead = createCharacterEsiRead({
-  operation: 'character-asset-names',
-  name: 'character-asset-names-core',
-  descriptor: operationRegistry.PostCharactersCharacterIdAssetsNames.transport,
   cacheSchema: characterAssetNamesCacheSchema,
+  descriptor: operationRegistry.PostCharactersCharacterIdAssetsNames.transport,
   encodeRequest: (input: {
     path: { character_id: number }
     body: number[]
@@ -98,6 +96,8 @@ const characterAssetNamesRead = createCharacterEsiRead({
   }) => ({ path: input.path, body: input.body }),
   map: ({ data }): CharacterAssetNameSnapshot[] =>
     data.map(({ item_id: itemId, name }) => ({ itemId, name })),
+  name: 'character-asset-names-core',
+  operation: 'character-asset-names',
 })
 
 export const characterAssetsScope = characterAssetsPageRead.requiredScope
@@ -132,8 +132,9 @@ export async function getCharacterAssets(
     loadCharacterAssetPage(characterId, subjectLifecycleId, page),
   )
   const pages = [firstPage, ...remainingPages]
-  if (pages.some((page) => page.data.totalPages !== firstPage.data.totalPages))
+  if (pages.some((page) => page.data.totalPages !== firstPage.data.totalPages)) {
     throw new CharacterAssetsPaginationError()
+  }
 
   const assets = deduplicateAssets(pages)
   const [types, names, locations] = await Promise.all([
@@ -164,12 +165,12 @@ export async function getCharacterAssets(
   }
 
   return {
-    characterId,
     assets: enrichedAssets,
+    characterId,
     enrichment: {
-      types: types.status,
-      names: names.status,
       locations: locations.status,
+      names: names.status,
+      types: types.status,
     },
     ...metadata,
     ...(retryAt ? { retryAt } : {}),
@@ -185,16 +186,18 @@ async function loadCharacterAssetPage(
 }
 
 function validatePageCount(value: unknown) {
-  if (!isPositiveSafeInteger(value) || Number(value) > maximumCharacterAssetPages)
+  if (!isPositiveSafeInteger(value) || Number(value) > maximumCharacterAssetPages) {
     throw new CharacterAssetsPaginationError()
+  }
   return Number(value)
 }
 
 function deduplicateAssets(pages: readonly EsiReadResult<CharacterAssetPageSnapshot>[]) {
   const assets = new Map<number, CharacterAssetSnapshot>()
-  for (const page of pages)
+  for (const page of pages) {
     for (const asset of page.data.assets)
       if (!assets.has(asset.itemId)) assets.set(asset.itemId, asset)
+  }
   return [...assets.values()]
 }
 
@@ -202,18 +205,19 @@ async function loadAssetTypes(assets: readonly CharacterAssetSnapshot[]) {
   const typeIds = [...new Set(assets.map((asset) => asset.typeId))].toSorted(
     (left, right) => left - right,
   )
-  if (typeIds.length === 0)
-    return { values: new Map<number, CharacterAssetTypeData>(), status: 'complete' as const }
+  if (typeIds.length === 0) {
+    return { status: 'complete' as const, values: new Map<number, CharacterAssetTypeData>() }
+  }
 
   try {
     const rows = await db
       .select({
-        typeId: sdeTypes.typeId,
-        typeName: sdeTypes.name,
-        groupId: sdeTypes.groupId,
-        groupName: sdeGroups.name,
         categoryId: sdeCategories.categoryId,
         categoryName: sdeCategories.name,
+        groupId: sdeTypes.groupId,
+        groupName: sdeGroups.name,
+        typeId: sdeTypes.typeId,
+        typeName: sdeTypes.name,
         unitVolume: sdeTypes.volume,
       })
       .from(sdeTypes)
@@ -222,18 +226,19 @@ async function loadAssetTypes(assets: readonly CharacterAssetSnapshot[]) {
       .where(inArray(sdeTypes.typeId, typeIds))
       .limit(typeIds.length)
     const values = new Map<number, CharacterAssetTypeData>()
-    for (const row of rows)
+    for (const row of rows) {
       values.set(row.typeId, {
-        typeName: row.typeName,
-        groupId: row.groupId,
-        groupName: row.groupName,
         categoryId: row.categoryId,
         categoryName: row.categoryName,
+        groupId: row.groupId,
+        groupName: row.groupName,
+        typeName: row.typeName,
         unitVolume:
           row.unitVolume !== null && Number.isFinite(row.unitVolume) && row.unitVolume >= 0
             ? row.unitVolume
             : null,
       })
+    }
     const complete =
       values.size === typeIds.length &&
       [...values.values()].every(
@@ -243,9 +248,9 @@ async function loadAssetTypes(assets: readonly CharacterAssetSnapshot[]) {
           value.categoryId !== null &&
           value.categoryName !== null,
       )
-    return { values, status: complete ? ('complete' as const) : ('partial' as const) }
+    return { status: complete ? ('complete' as const) : ('partial' as const), values }
   } catch {
-    return { values: new Map<number, CharacterAssetTypeData>(), status: 'unavailable' as const }
+    return { status: 'unavailable' as const, values: new Map<number, CharacterAssetTypeData>() }
   }
 }
 
@@ -257,8 +262,9 @@ async function loadAssetNames(
   const candidates = [
     ...new Set(assets.filter((asset) => asset.isSingleton).map((asset) => asset.itemId)),
   ].toSorted((left, right) => left - right)
-  if (candidates.length === 0)
-    return { values: new Map<number, string>(), status: 'complete' as const }
+  if (candidates.length === 0) {
+    return { status: 'complete' as const, values: new Map<number, string>() }
+  }
 
   const batches = Array.from(
     { length: Math.ceil(candidates.length / characterAssetNameBatchSize) },
@@ -277,18 +283,21 @@ async function loadAssetNames(
   const candidateSet = new Set(candidates)
   let successfulBatches = 0
   for (const result of results) {
-    if (result.status === 'rejected') continue
+    if (result.status === 'rejected') {
+      continue
+    }
     successfulBatches += 1
-    for (const entry of result.value)
+    for (const entry of result.value) {
       if (candidateSet.has(entry.itemId) && !values.has(entry.itemId))
         values.set(entry.itemId, entry.name)
+    }
   }
   return {
-    values,
     status: enrichmentStatus(
       successfulBatches === batches.length && values.size === candidates.length,
       successfulBatches > 0,
     ),
+    values,
   }
 }
 
@@ -300,23 +309,27 @@ function loadCharacterAssetNameBatch(
   const normalizedItemIds = normalizeCharacterAssetNameBatch(itemIds)
   return characterAssetNamesRead
     .execute({
-      path: { character_id: characterId },
       body: normalizedItemIds,
+      path: { character_id: characterId },
       subjectLifecycleId,
     })
     .then((result) => result.data)
 }
 
 function normalizeCharacterAssetNameBatch(itemIds: readonly number[]) {
-  if (itemIds.length === 0 || itemIds.length > characterAssetNameBatchSize)
+  if (itemIds.length === 0 || itemIds.length > characterAssetNameBatchSize) {
     throw new Error(
       `Character asset name batch must contain between 1 and ${characterAssetNameBatchSize} item IDs`,
     )
+  }
   const seen = new Set<number>()
   for (const itemId of itemIds) {
-    if (!isPositiveSafeInteger(itemId))
+    if (!isPositiveSafeInteger(itemId)) {
       throw new Error('Character asset name batch item IDs must be positive safe integers')
-    if (seen.has(itemId)) throw new Error('Character asset name batch item IDs must be unique')
+    }
+    if (seen.has(itemId)) {
+      throw new Error('Character asset name batch item IDs must be unique')
+    }
     seen.add(itemId)
   }
   return [...itemIds].toSorted((left, right) => left - right)
@@ -325,23 +338,26 @@ function normalizeCharacterAssetNameBatch(itemIds: readonly number[]) {
 async function loadAssetLocations(assets: readonly CharacterAssetSnapshot[]) {
   const expected = new Map<number, Set<'station' | 'solar_system'>>()
   for (const asset of assets) {
-    if (asset.locationType !== 'station' && asset.locationType !== 'solar_system') continue
+    if (asset.locationType !== 'station' && asset.locationType !== 'solar_system') {
+      continue
+    }
     const types = expected.get(asset.locationId) ?? new Set<'station' | 'solar_system'>()
     types.add(asset.locationType)
     expected.set(asset.locationId, types)
   }
-  if (expected.size === 0)
+  if (expected.size === 0) {
     return {
-      values: new Map<number, CharacterAssetLocationData>(),
       status: 'complete' as const,
+      values: new Map<number, CharacterAssetLocationData>(),
     }
+  }
 
   const locations = [...expected]
     .filter(([, types]) => types.size === 1)
     .map(([id, types]) => ({ id, type: [...types][0]! }))
   const ids = [...expected.keys()].toSorted((left, right) => left - right)
   const [names, details] = await Promise.all([
-    resolveUniverseNamesBestEffort(ids).catch(() => ({ names: new Map(), complete: false })),
+    resolveUniverseNamesBestEffort(ids).catch(() => ({ complete: false, names: new Map() })),
     getStaticLocations(locations).catch(() => []),
   ])
   const staticLocations = new Map(details.map((location) => [location.id, location]))
@@ -377,12 +393,16 @@ async function loadAssetLocations(assets: readonly CharacterAssetSnapshot[]) {
       value.solarSystemId !== null ||
       value.solarSystemSecurityStatus !== null,
   )
-  return { values, status: enrichmentStatus(complete, usable) }
+  return { status: enrichmentStatus(complete, usable), values }
 }
 
 function enrichmentStatus(complete: boolean, partial: boolean): EnrichmentStatus {
-  if (complete) return 'complete'
-  if (partial) return 'partial'
+  if (complete) {
+    return 'complete'
+  }
+  if (partial) {
+    return 'partial'
+  }
   return 'unavailable'
 }
 
@@ -392,7 +412,9 @@ async function mapBounded<Item, Result>(
 ): Promise<Result[]> {
   const results = await mapBoundedSettled(items, load)
   const failure = results.find((result) => result.status === 'rejected')
-  if (failure) throw failure.reason
+  if (failure) {
+    throw failure.reason
+  }
   return results.map((result) => (result as PromiseFulfilledResult<Result>).value)
 }
 
@@ -412,7 +434,7 @@ async function mapBoundedSettled<Item, Result>(
           // oxlint-disable-next-line no-await-in-loop
           results[index] = { status: 'fulfilled', value: await load(items[index]!) }
         } catch (reason) {
-          results[index] = { status: 'rejected', reason }
+          results[index] = { reason, status: 'rejected' }
         }
       }
     },

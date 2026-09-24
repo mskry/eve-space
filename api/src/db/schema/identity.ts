@@ -34,22 +34,22 @@ export const users = pgTable('users', {
 export const characters = pgTable(
   'characters',
   {
-    characterId: bigint('character_id', { mode: 'number' }).primaryKey().notNull(),
-    userId: uuid('user_id').notNull(),
-    ownerHash: text('owner_hash').notNull(),
-    name: text().notNull(),
-    corporationId: bigint('corporation_id', { mode: 'number' }).notNull(),
-    allianceId: bigint('alliance_id', { mode: 'number' }),
     affiliationCheckedAt: timestamp('affiliation_checked_at', { withTimezone: true, mode: 'date' }),
-    nextAffiliationCheck: timestamp('next_affiliation_check', {
-      withTimezone: true,
-      mode: 'date',
-    }),
     affiliationResolutionState: text('affiliation_resolution_state')
       .$type<'pending' | 'resolved' | 'unresolvable'>()
       .default('pending')
       .notNull(),
+    allianceId: bigint('alliance_id', { mode: 'number' }),
+    characterId: bigint('character_id', { mode: 'number' }).primaryKey().notNull(),
+    corporationId: bigint('corporation_id', { mode: 'number' }).notNull(),
     isMain: boolean('is_main').default(false).notNull(),
+    name: text().notNull(),
+    nextAffiliationCheck: timestamp('next_affiliation_check', {
+      withTimezone: true,
+      mode: 'date',
+    }),
+    ownerHash: text('owner_hash').notNull(),
+    userId: uuid('user_id').notNull(),
     ...auditTimestamps(),
   },
   (table) => [
@@ -78,10 +78,10 @@ export const characters = pgTable(
 export const sessions = pgTable(
   'sessions',
   {
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
     sessionHash: varchar('session_hash', { length: 64 }).primaryKey().notNull(),
     userId: uuid('user_id').notNull(),
-    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
   },
   (table) => [
     check('sessions_session_hash_length_check', sql`length(session_hash) = 64`),
@@ -101,16 +101,13 @@ export const sessions = pgTable(
 export const oauthStates = pgTable(
   'oauth_states',
   {
-    stateHash: varchar('state_hash', { length: 64 }).primaryKey().notNull(),
-    intent: text().$type<AuthorizationIntent>().default('login').notNull(),
-    userId: uuid('user_id'),
     characterId: bigint('character_id', { mode: 'number' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+    intent: text().$type<AuthorizationIntent>().default('login').notNull(),
     organizationDeploymentId: smallint('organization_deployment_id'),
     organizationId: bigint('organization_id', { mode: 'number' }),
     organizationVersion: bigint('organization_version', { mode: 'number' }),
-    transferApprovalId: uuid('transfer_approval_id'),
-    transferSourceUserId: uuid('transfer_source_user_id'),
-    transferSourceSubjectLifecycleId: uuid('transfer_source_subject_lifecycle_id'),
     returnPath: varchar('return_path', { length: 512 }),
     reviewerUseDisclosures: jsonb('reviewer_use_disclosures')
       .$type<
@@ -122,8 +119,11 @@ export const oauthStates = pgTable(
       >()
       .default([])
       .notNull(),
-    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    stateHash: varchar('state_hash', { length: 64 }).primaryKey().notNull(),
+    transferApprovalId: uuid('transfer_approval_id'),
+    transferSourceSubjectLifecycleId: uuid('transfer_source_subject_lifecycle_id'),
+    transferSourceUserId: uuid('transfer_source_user_id'),
+    userId: uuid('user_id'),
   },
   (table) => [
     check('oauth_states_state_hash_length_check', sql`length(state_hash) = 64`),
@@ -245,12 +245,12 @@ export const oauthStates = pgTable(
 export const eveTokens = pgTable(
   'eve_tokens',
   {
-    characterId: bigint('character_id', { mode: 'number' }).primaryKey().notNull(),
-    encryptedTokens: text('encrypted_tokens').notNull(),
     accessTokenExpiresAt: timestamp('access_token_expires_at', {
       withTimezone: true,
       mode: 'date',
     }).notNull(),
+    characterId: bigint('character_id', { mode: 'number' }).primaryKey().notNull(),
+    encryptedTokens: text('encrypted_tokens').notNull(),
     scopes: jsonb().$type<string[]>().default([]).notNull(),
     tokenVersion: integer('token_version').default(0).notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),

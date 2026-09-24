@@ -33,9 +33,9 @@ const emit = defineEmits<{
 }>()
 
 const filterOptions: ReadonlyArray<{ label: string; value: FinanceTransactionSideFilter }> = [
-  { value: 'All', label: 'All' },
-  { value: 'Buy', label: 'Buy' },
-  { value: 'Sell', label: 'Sell' },
+  { label: 'All', value: 'All' },
+  { label: 'Buy', value: 'Buy' },
+  { label: 'Sell', value: 'Sell' },
 ]
 const selectedFilter = computed<string>({
   get: () => props.filter,
@@ -49,9 +49,9 @@ const countLabel = computed(() =>
   ),
 )
 const continuation = computed(() => ({
-  rangeIndex: props.rangeIndex,
   hasNewer: props.rangeIndex > 0,
   hasOlder: props.transactions?.nextFromId !== null && props.transactions?.nextFromId !== undefined,
+  rangeIndex: props.rangeIndex,
 }))
 
 function changeSearch(event: Event) {

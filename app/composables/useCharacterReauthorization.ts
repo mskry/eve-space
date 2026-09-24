@@ -21,7 +21,9 @@ export function createCharacterReauthorizationCycle(): CharacterReauthorizationC
       consumed = false
     },
     consume(status) {
-      if (status !== 'success' || status !== activeStatus || consumed) return false
+      if (status !== 'success' || status !== activeStatus || consumed) {
+        return false
+      }
       consumed = true
       return true
     },
@@ -45,12 +47,16 @@ export function useCharacterReauthorization(
   const route = useRoute()
   const cycle = inject(characterReauthorizationKey)
 
-  if (!cycle) throw new Error('Character reauthorization requires the character record shell')
+  if (!cycle) {
+    throw new Error('Character reauthorization requires the character record shell')
+  }
 
   watch(
     [characterId, () => route.query.reauthorize],
     ([id, status]) => {
-      if (id !== undefined && cycle.consume(status)) onSuccess()
+      if (id !== undefined && cycle.consume(status)) {
+        onSuccess()
+      }
     },
     { flush: 'post', immediate: true },
   )

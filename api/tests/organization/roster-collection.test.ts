@@ -3,12 +3,12 @@ import { materializeCorporationRoster } from '../../src/organization/roster-coll
 import { corporationMembershipScope } from '../../src/organization/corporation-membership.js'
 
 const input = {
+  characterId: 1_404_328_063,
+  characterIds: [1_404_328_063, 1_404_328_064],
+  corporationId: 98_000_001,
   organizationVersion: 4,
-  corporationId: 98000001,
   sourceId: '98a782d2-e042-47d7-9659-03b218121a1a',
-  characterId: 1404328063,
   tokenVersion: 7,
-  characterIds: [1404328063, 1404328064],
   validatedAt: new Date('2026-09-01T12:00:00.000Z'),
 }
 
@@ -16,36 +16,36 @@ describe('corporation roster materialization', () => {
   test('replaces a current source snapshot atomically', async () => {
     const current = transaction([
       {
-        sourceId: input.sourceId,
+        affiliationCheckedAt: new Date('2099-09-01T11:00:00.000Z'),
+        affiliationResolutionState: 'resolved',
         characterId: input.characterId,
         corporationId: input.corporationId,
-        affiliationResolutionState: 'resolved',
-        affiliationCheckedAt: new Date('2099-09-01T11:00:00.000Z'),
+        currentSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
         nextAffiliationCheck: new Date('2099-09-01T12:00:00.000Z'),
-        tokenVersion: input.tokenVersion,
         scopes: [corporationMembershipScope],
-        sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
         sourceAuthorizationGeneration: input.tokenVersion,
-        sourceStatus: 'fresh',
         sourceFreshUntil: new Date('2099-09-01T13:00:00.000Z'),
         sourceGraceUntil: null,
+        sourceId: input.sourceId,
         sourceInvalidatedAt: null,
-        currentSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+        sourceStatus: 'fresh',
+        sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+        tokenVersion: input.tokenVersion,
       },
     ])
 
-    await expect(materializeCorporationRoster(current.database, input)).resolves.toEqual({
-      outcome: 'refreshed',
+    await expect(materializeCorporationRoster(current.database, input)).resolves.toStrictEqual({
       characterIds: input.characterIds,
+      outcome: 'refreshed',
     })
     expect(current.deletes).toBe(1)
-    expect(current.inserts).toEqual([
+    expect(current.inserts).toStrictEqual([
       input.characterIds.map((characterId) =>
         expect.objectContaining({
-          corporationId: input.corporationId,
-          characterId,
-          sourceId: input.sourceId,
           authorizationGeneration: input.tokenVersion,
+          characterId,
+          corporationId: input.corporationId,
+          sourceId: input.sourceId,
         }),
       ),
     ])
@@ -53,7 +53,7 @@ describe('corporation roster materialization', () => {
 
   test('rejects obsolete source and authorization generations without changing observations', async () => {
     const obsolete = transaction([])
-    await expect(materializeCorporationRoster(obsolete.database, input)).resolves.toEqual({
+    await expect(materializeCorporationRoster(obsolete.database, input)).resolves.toStrictEqual({
       outcome: 'obsolete',
     })
     expect(obsolete.deletes).toBe(0)
@@ -63,25 +63,25 @@ describe('corporation roster materialization', () => {
   test('rejects a source whose affiliation evidence has expired', async () => {
     const stale = transaction([
       {
-        sourceId: input.sourceId,
+        affiliationCheckedAt: new Date('2026-09-01T11:00:00.000Z'),
+        affiliationResolutionState: 'resolved',
         characterId: input.characterId,
         corporationId: input.corporationId,
-        affiliationResolutionState: 'resolved',
-        affiliationCheckedAt: new Date('2026-09-01T11:00:00.000Z'),
+        currentSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
         nextAffiliationCheck: new Date(0),
-        tokenVersion: input.tokenVersion,
         scopes: [corporationMembershipScope],
-        sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
         sourceAuthorizationGeneration: input.tokenVersion,
-        sourceStatus: 'fresh',
         sourceFreshUntil: new Date('2099-09-01T13:00:00.000Z'),
         sourceGraceUntil: null,
+        sourceId: input.sourceId,
         sourceInvalidatedAt: null,
-        currentSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+        sourceStatus: 'fresh',
+        sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+        tokenVersion: input.tokenVersion,
       },
     ])
 
-    await expect(materializeCorporationRoster(stale.database, input)).resolves.toEqual({
+    await expect(materializeCorporationRoster(stale.database, input)).resolves.toStrictEqual({
       outcome: 'obsolete',
     })
     expect(stale.deletes).toBe(0)
@@ -91,25 +91,25 @@ describe('corporation roster materialization', () => {
   test('rejects resolved affiliation without checked evidence', async () => {
     const unavailable = transaction([
       {
-        sourceId: input.sourceId,
+        affiliationCheckedAt: null,
+        affiliationResolutionState: 'resolved',
         characterId: input.characterId,
         corporationId: input.corporationId,
-        affiliationResolutionState: 'resolved',
-        affiliationCheckedAt: null,
+        currentSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
         nextAffiliationCheck: new Date('2099-09-01T12:00:00.000Z'),
-        tokenVersion: input.tokenVersion,
         scopes: [corporationMembershipScope],
-        sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
         sourceAuthorizationGeneration: input.tokenVersion,
-        sourceStatus: 'fresh',
         sourceFreshUntil: new Date('2099-09-01T13:00:00.000Z'),
         sourceGraceUntil: null,
+        sourceId: input.sourceId,
         sourceInvalidatedAt: null,
-        currentSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+        sourceStatus: 'fresh',
+        sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+        tokenVersion: input.tokenVersion,
       },
     ])
 
-    await expect(materializeCorporationRoster(unavailable.database, input)).resolves.toEqual({
+    await expect(materializeCorporationRoster(unavailable.database, input)).resolves.toStrictEqual({
       outcome: 'obsolete',
     })
     expect(unavailable.deletes).toBe(0)
@@ -121,10 +121,6 @@ function transaction(source: unknown[]) {
   const inserts: unknown[] = []
   let deletes = 0
   const state = {
-    inserts,
-    get deletes() {
-      return deletes
-    },
     database: {
       select() {
         return query(source)
@@ -137,13 +133,19 @@ function transaction(source: unknown[]) {
         return query([], (value) => inserts.push(value))
       },
     } as never,
+    get deletes() {
+      return deletes
+    },
+    inserts,
   }
   return state
 }
 
 function query(result: unknown[], record?: (value: unknown) => void) {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'innerJoin', 'where', 'for']) builder[method] = () => builder
+  for (const method of ['from', 'innerJoin', 'where', 'for']) {
+    builder[method] = () => builder
+  }
   builder.values = (value: unknown) => {
     record?.(value)
     return builder

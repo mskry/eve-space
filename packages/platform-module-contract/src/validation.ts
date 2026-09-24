@@ -42,9 +42,9 @@ import {
 } from './server.js'
 
 const resourceEligibilityBySubject = {
-  deployment: 'current-deployment',
-  corporation: 'current-managed-corporation-source',
   alliance: 'current-managed-alliance',
+  corporation: 'current-managed-corporation-source',
+  deployment: 'current-deployment',
 } as const
 const characterResourceEligibilityKinds = new Set([
   'current-owned-character',
@@ -91,8 +91,12 @@ interface ReviewerContributionValidationContext {
 }
 
 export function compareStable(left: string, right: string) {
-  if (left < right) return -1
-  if (left > right) return 1
+  if (left < right) {
+    return -1
+  }
+  if (left > right) {
+    return 1
+  }
   return 0
 }
 
@@ -134,13 +138,15 @@ export function validatePlatformModuleCandidates<
   const reviewerOrderPositions = new Map<string, string>()
   const persistenceOperationOwners = indexPersistenceOperationOwners(sorted)
 
-  for (const manifest of sorted)
+  for (const manifest of sorted) {
     claimValue(moduleIds, manifest.id, manifest.id, 'module ID', issues)
+  }
 
   // Resources may reference an ESI operation declared by a module sorted after their own.
-  for (const manifest of sorted)
+  for (const manifest of sorted) {
     for (const operation of manifest.server.esiOperations)
       claimValue(esiOperationIds, operation.id, manifest.id, 'ESI operation ID', issues)
+  }
 
   for (const manifest of sorted) {
     validateManifestIdentity(manifest, reservedModuleIds, issues)
@@ -196,13 +202,15 @@ export function validatePlatformModuleCandidates<
     )
   }
 
-  if (issues.length > 0) throw new PlatformModuleValidationError(issues)
+  if (issues.length > 0) {
+    throw new PlatformModuleValidationError(issues)
+  }
   return sortedCandidates
 }
 
 function indexPersistenceOperationOwners(manifests: readonly PlatformModuleManifest[]) {
   const owners = new Map<string, Set<string>>()
-  for (const manifest of manifests)
+  for (const manifest of manifests) {
     for (const operation of manifest.server.persistenceOperations) {
       if (typeof operation.id !== 'string') continue
       const key = normalizeIdentity(operation.id)
@@ -210,6 +218,7 @@ function indexPersistenceOperationOwners(manifests: readonly PlatformModuleManif
       operationOwners.add(manifest.id)
       owners.set(key, operationOwners)
     }
+  }
   return owners
 }
 
@@ -225,30 +234,32 @@ function validatePersistenceOperations(
   for (const operation of manifest.server.persistenceOperations) {
     const identity = `${manifest.id}/${String(operation.id)}`
     validatePersistenceOperationId(operation, identity, manifest.id, operations, issues)
-    if (typeof operation.method !== 'string')
+    if (typeof operation.method !== 'string') {
       issues.push(`persistence operation ${identity} must declare a method name`)
-    else {
+    } else {
       validateExportName(operation.method, manifest.id, 'persistence operation method', issues)
       claimValue(methods, operation.method, identity, 'persistence operation method', issues)
     }
-    if (typeof operation.exportName !== 'string')
+    if (typeof operation.exportName !== 'string') {
       issues.push(`persistence operation ${identity} must declare a definition export`)
-    else {
+    } else {
       validateExportName(operation.exportName, manifest.id, 'persistence operation', issues)
       claimValue(exports, operation.exportName, identity, 'persistence definition export', issues)
     }
-    if (!Number.isSafeInteger(operation.revision) || operation.revision < 1)
+    if (!Number.isSafeInteger(operation.revision) || operation.revision < 1) {
       issues.push(`persistence operation ${identity} must use a positive whole revision`)
+    }
     validateMember(
       operation.mode,
       platformPersistenceOperationModes,
       `persistence operation ${identity} uses unsupported mode ${String(operation.mode)}`,
       issues,
     )
-    if (typeof operation.migration !== 'string' || !migrations.has(operation.migration))
+    if (typeof operation.migration !== 'string' || !migrations.has(operation.migration)) {
       issues.push(
         `persistence operation ${identity} references undeclared migration ${String(operation.migration)}`,
       )
+    }
   }
   return operations
 }
@@ -268,9 +279,11 @@ function validatePersistenceOperationId(
     return
   }
   const key = normalizeIdentity(operation.id)
-  if (operations.has(key))
+  if (operations.has(key)) {
     issues.push(`persistence operation ID ${operation.id} is duplicated in ${moduleId}`)
-  else operations.set(key, operation)
+  } else {
+    operations.set(key, operation)
+  }
 }
 
 function validatePersistenceGrants(
@@ -280,25 +293,27 @@ function validatePersistenceGrants(
   issues: string[],
 ) {
   const validationContext: PersistenceReferenceValidationContext = {
+    issues,
     moduleId: manifest.id,
     operations,
     owners,
-    issues,
   }
-  for (const route of manifest.server.routes)
+  for (const route of manifest.server.routes) {
     validatePersistenceReferences(
       route.persistenceOperations,
       `route ${manifest.id}/${route.id}`,
       route.reviewerEvidenceResourceId === undefined ? undefined : 'read',
       validationContext,
     )
-  for (const provider of manifest.server.activityProviders)
+  }
+  for (const provider of manifest.server.activityProviders) {
     validatePersistenceReferences(
       provider.persistenceOperations,
       `activity provider ${manifest.id}/${provider.id}`,
       'read',
       validationContext,
     )
+  }
   for (const resource of manifest.server.resources) {
     validatePersistenceReferences(
       resource.persistence?.projection,
@@ -343,10 +358,11 @@ function validatePersistenceReferences(
       reportMissingPersistenceOperation(reference.operationId, key, identity, context)
       continue
     }
-    if (expectedMode && operation.mode !== expectedMode)
+    if (expectedMode && operation.mode !== expectedMode) {
       issues.push(
         `${identity} cannot use ${operation.mode} persistence operation ${reference.operationId}; expected ${expectedMode}`,
       )
+    }
   }
 }
 
@@ -437,12 +453,14 @@ function validateRouteNamespace(
   issues: string[],
 ) {
   const moduleNamespace = `/${moduleId}`
-  if (route.namespace !== moduleNamespace && !route.namespace.startsWith(`${moduleNamespace}/`))
+  if (route.namespace !== moduleNamespace && !route.namespace.startsWith(`${moduleNamespace}/`)) {
     issues.push(
       `route ${identity} namespace must be ${moduleNamespace} or begin with ${moduleNamespace}/`,
     )
-  if (!isNormalizedPath(route.namespace))
+  }
+  if (!isNormalizedPath(route.namespace)) {
     issues.push(`route ${identity} has invalid namespace ${route.namespace}`)
+  }
   claimValue(
     routeCoordinates,
     canonicalizePath(resolvePlatformModuleRoutePath(route.namespace)),
@@ -459,10 +477,12 @@ function validateManagedReviewerRoute(
   issues: string[],
 ) {
   const managedReviewerTarget = route.target !== undefined && route.target !== 'caller'
-  if (managedReviewerTarget && route.authorization !== 'authenticated-session')
+  if (managedReviewerTarget && route.authorization !== 'authenticated-session') {
     issues.push(`managed reviewer route ${identity} must use authenticated-session authorization`)
-  if (managedReviewerTarget && route.audience === 'member')
+  }
+  if (managedReviewerTarget && route.audience === 'member') {
     issues.push(`managed reviewer route ${identity} must require an HR or director audience`)
+  }
   validateManagedReviewerSearchRoute(route, manifest.id, identity, issues)
   validateReviewerEvidenceRoute(route, manifest, identity, issues)
   validateManagedReviewerRouteParameters(route, identity, issues)
@@ -478,37 +498,46 @@ function validateReviewerEvidenceRoute(
   const resourceId = route.reviewerEvidenceResourceId
   const managedReviewerTarget = route.target !== undefined && route.target !== 'caller'
   if (!managedReviewerTarget) {
-    if (resourceId !== undefined)
+    if (resourceId !== undefined) {
       issues.push(`non-reviewer route ${identity} cannot declare reviewerEvidenceResourceId`)
+    }
     return
   }
-  if (!hasPersistence && resourceId === undefined) return
+  if (!hasPersistence && resourceId === undefined) {
+    return
+  }
   if (resourceId === undefined) {
     issues.push(
       `managed reviewer route ${identity} cannot receive generic route persistence; use a target-bound platform capability`,
     )
     return
   }
-  if (route.target !== 'managed-organization-character' || route.exposure !== 'sensitive-evidence')
+  if (
+    route.target !== 'managed-organization-character' ||
+    route.exposure !== 'sensitive-evidence'
+  ) {
     issues.push(
       `reviewer evidence route ${identity} must target one managed character with sensitive-evidence exposure`,
     )
-  if (route.persistenceOperations.length !== 1)
+  }
+  if (route.persistenceOperations.length !== 1) {
     issues.push(`reviewer evidence route ${identity} must declare exactly one read operation`)
+  }
   const resource = manifest.server.resources.find(({ id }) => id === resourceId)
-  if (!resource)
+  if (!resource) {
     issues.push(`reviewer evidence route ${identity} references unknown resource ${resourceId}`)
-  else if (resource.sectionId !== route.sectionId)
+  } else if (resource.sectionId !== route.sectionId) {
     issues.push(
       `reviewer evidence route ${identity} resource ${resourceId} must belong to section ${String(route.sectionId)}`,
     )
-  else if (
+  } else if (
     resource.subjectKind !== 'character' ||
     resource.eligibility.kind !== 'current-managed-member-character'
-  )
+  ) {
     issues.push(
       `reviewer evidence route ${identity} resource ${resourceId} must be a character resource with current-managed-member-character eligibility`,
     )
+  }
 }
 
 function validateManagedReviewerSearchRoute(
@@ -517,15 +546,20 @@ function validateManagedReviewerSearchRoute(
   identity: string,
   issues: string[],
 ) {
-  if (route.target !== 'managed-organization-account-search') return
-  if ((route.additionalRequiredPermissions?.length ?? 0) === 0)
+  if (route.target !== 'managed-organization-account-search') {
+    return
+  }
+  if ((route.additionalRequiredPermissions?.length ?? 0) === 0) {
     issues.push(`managed reviewer search route ${identity} must require a summary permission`)
-  if (route.requiredPermission !== `${moduleId}.search`)
+  }
+  if (route.requiredPermission !== `${moduleId}.search`) {
     issues.push(`managed reviewer search route ${identity} must require ${moduleId}.search`)
-  if (!route.additionalRequiredPermissions?.includes(`${moduleId}.summary.read`))
+  }
+  if (!route.additionalRequiredPermissions?.includes(`${moduleId}.summary.read`)) {
     issues.push(
       `managed reviewer search route ${identity} must additionally require ${moduleId}.summary.read`,
     )
+  }
 }
 
 function validateManagedReviewerRouteParameters(
@@ -538,12 +572,14 @@ function validateManagedReviewerRouteParameters(
     (route.target === 'managed-organization-account' ||
       route.target === 'managed-organization-character') &&
     !namespaceSegments.has(':userId')
-  )
+  ) {
     issues.push(`managed reviewer route ${identity} must include :userId in its namespace`)
-  if (route.target === 'managed-organization-character' && !namespaceSegments.has(':characterId'))
+  }
+  if (route.target === 'managed-organization-character' && !namespaceSegments.has(':characterId')) {
     issues.push(
       `managed reviewer character route ${identity} must include :characterId in its namespace`,
     )
+  }
 }
 
 function validateRouteExposure(
@@ -557,8 +593,9 @@ function validateRouteExposure(
     validateSensitiveRouteExposure(route, section, moduleId, identity, issues)
     return
   }
-  if (section?.kind === 'sensitive-evidence')
+  if (section?.kind === 'sensitive-evidence') {
     issues.push(`route ${identity} in a sensitive-evidence section must declare sensitive exposure`)
+  }
 }
 
 function validateSensitiveRouteExposure(
@@ -568,15 +605,18 @@ function validateSensitiveRouteExposure(
   identity: string,
   issues: string[],
 ) {
-  if (section?.kind !== 'sensitive-evidence')
+  if (section?.kind !== 'sensitive-evidence') {
     issues.push(`sensitive route ${identity} must use a sensitive-evidence section`)
+  }
   if (
     route.target !== 'managed-organization-account' &&
     route.target !== 'managed-organization-character'
-  )
+  ) {
     issues.push(`sensitive route ${identity} must declare a managed reviewer target`)
-  if (section && route.requiredPermission !== `${moduleId}.${section.id}.read`)
+  }
+  if (section && route.requiredPermission !== `${moduleId}.${section.id}.read`) {
     issues.push(`sensitive route ${identity} must require ${moduleId}.${section.id}.read`)
+  }
 }
 
 function validateOwnedCharacterRoute(
@@ -587,8 +627,9 @@ function validateOwnedCharacterRoute(
   if (
     route.authorization === 'owned-character' &&
     !route.namespace.split('/').includes(':characterId')
-  )
+  ) {
     issues.push(`owned-character route ${identity} must include :characterId in its namespace`)
+  }
 }
 
 function validateOrganizationCommands(
@@ -598,16 +639,20 @@ function validateOrganizationCommands(
   identity: string,
   issues: string[],
 ) {
-  if (value === undefined) return
+  if (value === undefined) {
+    return
+  }
   if (!Array.isArray(value) || value.length === 0) {
     issues.push(`route ${identity} organization commands must be a non-empty array`)
     return
   }
   collectOrganizationCommandIds(value, identity, issues)
-  if (target !== 'managed-organization-account' && target !== 'managed-organization-character')
+  if (target !== 'managed-organization-account' && target !== 'managed-organization-character') {
     issues.push(`route ${identity} organization commands require a managed reviewer target`)
-  if (section?.kind !== 'access-management')
+  }
+  if (section?.kind !== 'access-management') {
     issues.push(`route ${identity} organization commands require an access-management section`)
+  }
 }
 
 function collectOrganizationCommandIds(
@@ -626,9 +671,11 @@ function collectOrganizationCommandIds(
       )
       continue
     }
-    if (commandIds.has(commandId))
+    if (commandIds.has(commandId)) {
       issues.push(`route ${identity} declares duplicate organization command ${commandId}`)
-    else commandIds.add(commandId)
+    } else {
+      commandIds.add(commandId)
+    }
   }
 }
 
@@ -651,10 +698,11 @@ function validateActivityProviders(
       `activity provider ${identity}`,
       issues,
     )
-    if (section?.kind === 'sensitive-evidence')
+    if (section?.kind === 'sensitive-evidence') {
       issues.push(
         `activity provider ${identity} cannot expose a sensitive-evidence section outside an audited reviewer route`,
       )
+    }
     validateCoreDataProducts(
       provider,
       `activity provider ${identity}`,
@@ -666,8 +714,9 @@ function validateActivityProviders(
     if (
       !Number.isSafeInteger(provider.freshness?.staleAfterSeconds) ||
       provider.freshness.staleAfterSeconds <= 0
-    )
+    ) {
       issues.push(`activity provider ${identity} must use a positive whole stale interval`)
+    }
   }
 }
 
@@ -678,10 +727,12 @@ function validateMigrations(
 ) {
   for (const migration of manifest.server.migrations) {
     const identity = `${manifest.id}/${migration.name}`
-    if (!migration.name.startsWith(`${manifest.id}-`) || !migration.name.endsWith('.sql'))
+    if (!migration.name.startsWith(`${manifest.id}-`) || !migration.name.endsWith('.sql')) {
       issues.push(`migration ${identity} must use ${manifest.id}-*.sql`)
-    if (!isPlatformMigrationFilename(migration.name))
+    }
+    if (!isPlatformMigrationFilename(migration.name)) {
       issues.push(`migration ${identity} must be a package-local filename`)
+    }
     claimValue(migrationIds, identity, manifest.id, 'migration identity', issues)
   }
 }
@@ -701,7 +752,7 @@ function validateResources(
   productContracts: PlatformModuleValidationAuthorities['coreDataProductContracts'],
   issues: string[],
 ) {
-  for (const resource of manifest.server.resources)
+  for (const resource of manifest.server.resources) {
     validateResource(
       manifest,
       sections,
@@ -711,6 +762,7 @@ function validateResources(
       productContracts,
       issues,
     )
+  }
 }
 
 function validateResource(
@@ -732,14 +784,16 @@ function validateResource(
     `resource ${identity}`,
     issues,
   )
-  if (manifest.sections !== undefined && section?.kind !== 'sensitive-evidence')
+  if (manifest.sections !== undefined && section?.kind !== 'sensitive-evidence') {
     issues.push(`resource ${identity} must use a sensitive-evidence section`)
+  }
   claimValue(resourceIds, resource.id, manifest.id, 'resource ID', issues)
   const expectedEligibility = validateResourceSubjectKind(resource, identity, issues)
   validateResourceMaterializationInterval(resource, identity, issues)
   validateResourceEligibility(resource, section, expectedEligibility, identity, issues)
-  if (!esiOperationIds.has(normalizeIdentity(resource.operationId)))
+  if (!esiOperationIds.has(normalizeIdentity(resource.operationId))) {
     issues.push(`resource ${identity} references unknown ESI operation ${resource.operationId}`)
+  }
   validateDependentEsiOperations(resource, identity, esiOperationIds, issues)
   validateResourceBatch(resource, identity, esiOperationIds, issues)
   validateCoreDataProducts(
@@ -756,12 +810,15 @@ function validateResourceSubjectKind(
   identity: string,
   issues: string[],
 ) {
-  if (resource.subjectKind === 'character') return undefined
+  if (resource.subjectKind === 'character') {
+    return
+  }
   const expectedEligibility = resourceEligibilityBySubject[resource.subjectKind]
-  if (!expectedEligibility)
+  if (!expectedEligibility) {
     issues.push(
       `resource ${identity} uses unsupported subject kind ${String(resource.subjectKind)}`,
     )
+  }
   return expectedEligibility
 }
 
@@ -773,8 +830,9 @@ function validateResourceMaterializationInterval(
   if (
     !Number.isSafeInteger(resource.materializationIntervalSeconds) ||
     resource.materializationIntervalSeconds <= 0
-  )
+  ) {
     issues.push(`resource ${identity} must use a positive whole interval`)
+  }
 }
 
 function validateResourceEligibility(
@@ -787,34 +845,37 @@ function validateResourceEligibility(
   issues: string[],
 ) {
   const eligibilityKind = resource.eligibility?.kind
-  if (!resourceEligibilityKinds.has(eligibilityKind as never))
+  if (!resourceEligibilityKinds.has(eligibilityKind as never)) {
     issues.push(`resource ${identity} uses unsupported eligibility ${String(eligibilityKind)}`)
-  else if (
+  } else if (
     resource.subjectKind === 'character' &&
     !characterResourceEligibilityKinds.has(eligibilityKind as never)
-  )
+  ) {
     issues.push(
       `resource ${identity} eligibility ${String(eligibilityKind)} is incompatible with subject kind character`,
     )
-  else if (expectedEligibility && eligibilityKind !== expectedEligibility)
+  } else if (expectedEligibility && eligibilityKind !== expectedEligibility) {
     issues.push(
       `resource ${identity} eligibility ${String(eligibilityKind)} is incompatible with subject kind ${String(resource.subjectKind)}; expected ${expectedEligibility}`,
     )
+  }
   if (
     eligibilityKind === 'current-managed-member-character' &&
     section?.kind !== 'sensitive-evidence'
-  )
+  ) {
     issues.push(
       `resource ${identity} managed-member eligibility requires a sensitive-evidence section`,
     )
+  }
   if (
     resource.subjectKind === 'character' &&
     section?.kind === 'sensitive-evidence' &&
     eligibilityKind !== 'current-managed-member-character'
-  )
+  ) {
     issues.push(
       `resource ${identity} in a sensitive-evidence section must use current-managed-member-character eligibility`,
     )
+  }
 }
 
 function validateCoreDataProducts(
@@ -825,7 +886,9 @@ function validateCoreDataProducts(
   issues: string[],
 ) {
   const products = contribution.coreDataProducts
-  if (products === undefined) return
+  if (products === undefined) {
+    return
+  }
   if (!Array.isArray(products)) {
     issues.push(`${identity} core-data products must be an array`)
     return
@@ -842,12 +905,15 @@ function validateCoreDataProducts(
     }
     seen.add(product)
     const contract = productContracts[product]!
-    if (contract.sensitivity !== 'public')
+    if (contract.sensitivity !== 'public') {
       issues.push(`${identity} cannot declare protected core-data product ${product}`)
-    if (contract.audience !== 'installed-module')
+    }
+    if (contract.audience !== 'installed-module') {
       issues.push(`${identity} has incompatible audience for core-data product ${product}`)
-    if (!(contract.permittedContexts as readonly CoreDataContributionContext[]).includes(context))
+    }
+    if (!(contract.permittedContexts as readonly CoreDataContributionContext[]).includes(context)) {
       issues.push(`${identity} cannot use core-data product ${product} in ${context}`)
+    }
   }
 }
 
@@ -857,11 +923,12 @@ function validateDependentEsiOperations(
   esiOperationIds: ReadonlyMap<string, string>,
   issues: string[],
 ) {
-  for (const operationId of resource.dependentOperationIds ?? [])
+  for (const operationId of resource.dependentOperationIds ?? []) {
     if (!esiOperationIds.has(normalizeIdentity(operationId)))
       issues.push(
         `resource ${identity} references undeclared dependent ESI operation ${operationId}`,
       )
+  }
 }
 
 function validateResourceBatch(
@@ -870,21 +937,26 @@ function validateResourceBatch(
   esiOperationIds: ReadonlyMap<string, string>,
   issues: string[],
 ) {
-  if (resource.batch === undefined) return
-  if (Array.isArray(resource.coreDataProducts) && resource.coreDataProducts.length > 0)
+  if (resource.batch === undefined) {
+    return
+  }
+  if (Array.isArray(resource.coreDataProducts) && resource.coreDataProducts.length > 0) {
     issues.push(`resource ${identity} cannot declare core-data products with batch execution`)
-  if (resource.subjectKind !== 'character')
+  }
+  if (resource.subjectKind !== 'character') {
     issues.push(`resource ${identity} may only declare a batch for character subjects`)
+  }
   validateMember(
     resource.batch.mode,
     platformResourceBatchModes,
     `resource ${identity} uses unsupported batch mode ${String(resource.batch.mode)}`,
     issues,
   )
-  if (!esiOperationIds.has(normalizeIdentity(resource.batch.operationId)))
+  if (!esiOperationIds.has(normalizeIdentity(resource.batch.operationId))) {
     issues.push(
       `resource ${identity} references unknown batch ESI operation ${resource.batch.operationId}`,
     )
+  }
 }
 
 function validatePages(
@@ -896,15 +968,19 @@ function validatePages(
     const identity = `${manifest.id}/${page.id}`
     validateContributionId(page.id, manifest.id, 'page', issues)
     validateContributionSection(manifest, sections, page, `page ${identity}`, issues)
-    if (!page.name.startsWith(`eve-${manifest.id}-`))
+    if (!page.name.startsWith(`eve-${manifest.id}-`)) {
       issues.push(`page ${identity} name must begin with eve-${manifest.id}-`)
-    if (!isNormalizedPath(page.path)) issues.push(`page ${identity} has invalid path ${page.path}`)
+    }
+    if (!isNormalizedPath(page.path)) {
+      issues.push(`page ${identity} has invalid path ${page.path}`)
+    }
     if (
       !page.file.startsWith('src/runtime/app/pages/') ||
       !page.file.endsWith('.vue') ||
       page.file.split('/').some((segment) => segment === '.' || segment === '..')
-    )
+    ) {
       issues.push(`page ${identity} file must be a Vue file under src/runtime/app/pages`)
+    }
     validateMember(
       page.extensionPoint,
       platformPageExtensionPoints,
@@ -930,13 +1006,14 @@ function validateNavigation(
     const identity = `${manifest.id}/${navigation.id}`
     validateContributionId(navigation.id, manifest.id, 'navigation', issues)
     validateContributionSection(manifest, sections, navigation, `navigation ${identity}`, issues)
-    if (navigation.icon !== undefined)
+    if (navigation.icon !== undefined) {
       validateMember(
         navigation.icon,
         platformIconTokens,
         `navigation ${identity} uses invalid icon ${String(navigation.icon)}`,
         issues,
       )
+    }
     validateMember(
       navigation.audience,
       platformNavigationAudiences,
@@ -949,27 +1026,32 @@ function validateNavigation(
       `navigation ${identity} uses unsupported placement ${String(navigation.placement)}`,
       issues,
     )
-    if (!Number.isSafeInteger(navigation.order))
+    if (!Number.isSafeInteger(navigation.order)) {
       issues.push(`navigation ${identity} order must be a safe integer`)
-    if (!manifest.nuxt.pages.some((page) => page.name === navigation.pageName))
+    }
+    if (!manifest.nuxt.pages.some((page) => page.name === navigation.pageName)) {
       issues.push(`navigation ${identity} references undeclared page ${navigation.pageName}`)
+    }
     claimValue(navigationIds, navigation.id, manifest.id, 'navigation ID', issues)
   }
 }
 
 function validateRouteNamespaceIntersections(manifest: PlatformModuleManifest, issues: string[]) {
   const routes = manifest.server.routes.map((route) => ({
-    namespace: route.namespace,
     canonical: canonicalizePath(route.namespace),
+    namespace: route.namespace,
     segments: route.namespace.split('/').filter(Boolean),
   }))
   for (const [index, route] of routes.entries()) {
     for (const candidate of routes.slice(index + 1)) {
-      if (route.canonical === candidate.canonical) continue
-      if (routeSegmentsIntersect(route.segments, candidate.segments))
+      if (route.canonical === candidate.canonical) {
+        continue
+      }
+      if (routeSegmentsIntersect(route.segments, candidate.segments)) {
         issues.push(
           `module route coordinates ${resolvePlatformModuleRoutePath(route.namespace)} and ${resolvePlatformModuleRoutePath(candidate.namespace)} overlap in module ${manifest.id}`,
         )
+      }
     }
   }
 }
@@ -979,13 +1061,16 @@ function routeSegmentsIntersect(left: readonly string[], right: readonly string[
   for (let index = 0; index < sharedLength; index += 1) {
     const leftSegment = left[index] ?? ''
     const rightSegment = right[index] ?? ''
-    if (leftSegment === '*' || rightSegment === '*') return true
+    if (leftSegment === '*' || rightSegment === '*') {
+      return true
+    }
     if (
       !leftSegment.startsWith(':') &&
       !rightSegment.startsWith(':') &&
       leftSegment !== rightSegment
-    )
+    ) {
       return false
+    }
   }
   return true
 }
@@ -996,24 +1081,32 @@ function validateManifestIdentity(
   issues: string[],
 ) {
   const identifierIssues = platformModuleIdIssues(manifest.id)
-  if (identifierIssues.includes('syntax'))
+  if (identifierIssues.includes('syntax')) {
     issues.push(`module ID ${manifest.id} must be lowercase kebab-case`)
-  if (identifierIssues.includes('too-long'))
+  }
+  if (identifierIssues.includes('too-long')) {
     issues.push(`module ID ${manifest.id} must be at most 44 characters`)
-  if (reservedModuleIds.has(manifest.id.toLowerCase()))
+  }
+  if (reservedModuleIds.has(manifest.id.toLowerCase())) {
     issues.push(`module ID ${manifest.id} is reserved`)
-  if (typeof manifest.defaultEnabled !== 'boolean')
+  }
+  if (typeof manifest.defaultEnabled !== 'boolean') {
     issues.push(`module ${manifest.id} must declare a boolean defaultEnabled value`)
+  }
 }
 
 function validateSections(manifest: PlatformModuleManifest, issues: string[]) {
   const sections = new Map<string, PlatformModuleSectionContribution>()
-  if (manifest.sections === undefined) return sections
+  if (manifest.sections === undefined) {
+    return sections
+  }
   if (!Array.isArray(manifest.sections) || manifest.sections.length === 0) {
     issues.push(`module ${manifest.id} sections must be a non-empty array when declared`)
     return sections
   }
-  for (const section of manifest.sections) validateSection(manifest.id, section, sections, issues)
+  for (const section of manifest.sections) {
+    validateSection(manifest.id, section, sections, issues)
+  }
   return sections
 }
 
@@ -1030,21 +1123,27 @@ function validateSection(
   }
   validateContributionId(section.id, moduleId, 'section', issues)
   const normalizedId = normalizeIdentity(section.id)
-  if (sections.has(normalizedId))
+  if (sections.has(normalizedId)) {
     issues.push(`section ID ${section.id} is duplicated in ${moduleId}`)
-  else sections.set(normalizedId, section)
+  } else {
+    sections.set(normalizedId, section)
+  }
   validateMember(
     section.kind,
     platformModuleSectionKinds,
     `section ${identity} uses unsupported kind ${String(section.kind)}`,
     issues,
   )
-  if (section.defaultEnabled !== false) issues.push(`section ${identity} must default disabled`)
+  if (section.defaultEnabled !== false) {
+    issues.push(`section ${identity} must default disabled`)
+  }
   if (section.kind === 'sensitive-evidence') {
-    if (!Number.isSafeInteger(section.disclosureRevision) || section.disclosureRevision < 1)
+    if (!Number.isSafeInteger(section.disclosureRevision) || section.disclosureRevision < 1) {
       issues.push(`sensitive section ${identity} must declare a positive disclosure revision`)
-  } else if (section.disclosureRevision !== undefined)
+    }
+  } else if (section.disclosureRevision !== undefined) {
     issues.push(`non-evidence section ${identity} cannot declare a disclosure revision`)
+  }
 }
 
 function validateContributionSection(
@@ -1055,16 +1154,19 @@ function validateContributionSection(
   issues: string[],
 ) {
   if (manifest.sections === undefined) {
-    if (contribution.sectionId !== undefined)
+    if (contribution.sectionId !== undefined) {
       issues.push(`${identity} cannot declare a section when module ${manifest.id} has none`)
-    return undefined
+    }
+    return
   }
   if (typeof contribution.sectionId !== 'string') {
     issues.push(`${identity} must declare exactly one section`)
-    return undefined
+    return
   }
   const section = sections.get(normalizeIdentity(contribution.sectionId))
-  if (!section) issues.push(`${identity} references unknown section ${contribution.sectionId}`)
+  if (!section) {
+    issues.push(`${identity} references unknown section ${contribution.sectionId}`)
+  }
   return section
 }
 
@@ -1075,39 +1177,56 @@ function validateClassification(
   optional: boolean,
   issues: string[],
 ) {
-  if (optional && value === undefined) return
-  if (typeof value !== 'string' || !allowed.includes(value)) issues.push(message)
+  if (optional && value === undefined) {
+    return
+  }
+  if (typeof value !== 'string' || !allowed.includes(value)) {
+    issues.push(message)
+  }
 }
 
 function validateRelease(manifest: PlatformModuleManifest, issues: string[]) {
   const { release } = manifest
-  if (!isPlatformPackageName(release.publisherPackage))
+  if (!isPlatformPackageName(release.publisherPackage)) {
     issues.push(`module ${manifest.id} publisher package must be a valid npm package name`)
-  if (!isPlatformPackageName(manifest.server.package))
+  }
+  if (!isPlatformPackageName(manifest.server.package)) {
     issues.push(`module ${manifest.id} server package must be a valid npm package name`)
-  if (!isPlatformPackageName(manifest.nuxt.package))
+  }
+  if (!isPlatformPackageName(manifest.nuxt.package)) {
     issues.push(`module ${manifest.id} Nuxt package must be a valid npm package name`)
-  if (!isPlatformSemanticVersion(release.version))
+  }
+  if (!isPlatformSemanticVersion(release.version)) {
     issues.push(`module ${manifest.id} release version must be a semantic version`)
-  if (!isPlatformSemanticVersionRange(release.hostContractRange))
+  }
+  if (!isPlatformSemanticVersionRange(release.hostContractRange)) {
     issues.push(`module ${manifest.id} host contract range must be a semantic version range`)
+  }
   const packageNames = [release.publisherPackage, manifest.server.package, manifest.nuxt.package]
-  if (new Set(packageNames).size !== packageNames.length)
+  if (new Set(packageNames).size !== packageNames.length) {
     issues.push(`module ${manifest.id} manifest, server, and Nuxt packages must be distinct`)
+  }
 }
 
 function validatePermissions(manifest: PlatformModuleManifest, issues: string[]) {
   const permissions = new Map<string, PlatformPermissionDeclaration>()
-  if (manifest.permissions === undefined) return permissions
-  if (manifest.permissions.length === 0)
+  if (manifest.permissions === undefined) {
+    return permissions
+  }
+  if (manifest.permissions.length === 0) {
     issues.push(`module ${manifest.id} permissions must be a non-empty array when declared`)
+  }
   for (const permission of manifest.permissions) {
     const identity = `permission ${permission.key}`
-    if (!isPlatformPermissionKey(permission.key) || !permission.key.startsWith(`${manifest.id}.`))
+    if (!isPlatformPermissionKey(permission.key) || !permission.key.startsWith(`${manifest.id}.`)) {
       issues.push(`${identity} must belong to module namespace ${manifest.id}.`)
+    }
     const key = normalizeIdentity(permission.key)
-    if (permissions.has(key)) issues.push(`${identity} is duplicated in ${manifest.id}`)
-    else permissions.set(key, permission)
+    if (permissions.has(key)) {
+      issues.push(`${identity} is duplicated in ${manifest.id}`)
+    } else {
+      permissions.set(key, permission)
+    }
     validateDisplayText(permission.label, `${identity} label`, 80, issues)
     validateDisplayText(permission.purpose, `${identity} purpose`, 500, issues)
     validateAudienceList(permission.audiences, identity, issues)
@@ -1117,8 +1236,9 @@ function validatePermissions(manifest: PlatformModuleManifest, issues: string[])
       `${identity} uses unsupported sensitivity ${String(permission.sensitivity)}`,
       issues,
     )
-    if (typeof permission.reviewAllowed !== 'boolean')
+    if (typeof permission.reviewAllowed !== 'boolean') {
       issues.push(`${identity} must declare a boolean reviewAllowed policy`)
+    }
   }
   return permissions
 }
@@ -1128,9 +1248,12 @@ function validatePermissionProfiles(
   permissions: ReadonlyMap<string, PlatformPermissionDeclaration>,
   issues: string[],
 ) {
-  if (manifest.permissionProfiles === undefined) return
-  if (manifest.permissionProfiles.length === 0)
+  if (manifest.permissionProfiles === undefined) {
+    return
+  }
+  if (manifest.permissionProfiles.length === 0) {
     issues.push(`module ${manifest.id} permission profiles must be a non-empty array when declared`)
+  }
   const profileIds = new Map<string, string>()
   for (const profile of manifest.permissionProfiles) {
     const identity = `permission profile ${manifest.id}/${profile.id}`
@@ -1148,7 +1271,7 @@ function validateCatalogedContributionPermissions(
   permissions: ReadonlyMap<string, PlatformPermissionDeclaration>,
   issues: string[],
 ) {
-  for (const route of manifest.server.routes)
+  for (const route of manifest.server.routes) {
     validatePermissionReferences(
       [route.requiredPermission, ...(route.additionalRequiredPermissions ?? [])],
       `route ${manifest.id}/${route.id}`,
@@ -1156,7 +1279,8 @@ function validateCatalogedContributionPermissions(
       route.audience,
       issues,
     )
-  for (const provider of manifest.server.activityProviders)
+  }
+  for (const provider of manifest.server.activityProviders) {
     validatePermissionReferences(
       [provider.requiredPermission, ...(provider.additionalRequiredPermissions ?? [])],
       `activity provider ${manifest.id}/${provider.id}`,
@@ -1164,6 +1288,7 @@ function validateCatalogedContributionPermissions(
       provider.audience,
       issues,
     )
+  }
 }
 
 function validateReviewerContributions(
@@ -1176,16 +1301,17 @@ function validateReviewerContributions(
   issues: string[],
 ) {
   const context: ReviewerContributionValidationContext = {
-    manifest,
-    permissions,
     contributionIds,
-    routeLinks,
-    panelExports,
-    orderPositions,
     issues,
+    manifest,
+    orderPositions,
+    panelExports,
+    permissions,
+    routeLinks,
   }
-  for (const contribution of manifest.reviewerContributions ?? [])
+  for (const contribution of manifest.reviewerContributions ?? []) {
     validateReviewerContribution(contribution, context)
+  }
 }
 
 function validateReviewerContribution(
@@ -1224,8 +1350,9 @@ function validateReviewerContribution(
     `${identity} uses unsupported target ${String(contribution.target)}`,
     issues,
   )
-  if (contribution.audience !== 'hr' && contribution.audience !== 'director')
+  if (contribution.audience !== 'hr' && contribution.audience !== 'director') {
     issues.push(`${identity} must require an HR or director audience`)
+  }
   validatePermissionReferences(
     [
       contribution.requiredPermission,
@@ -1238,8 +1365,9 @@ function validateReviewerContribution(
   )
   const route = manifest.server.routes.find(({ id }) => id === contribution.routeId)
   validateReviewerContributionRoute(contribution, route, identity, issues)
-  if (!isPlatformPackageExport(contribution.panelExport))
+  if (!isPlatformPackageExport(contribution.panelExport)) {
     issues.push(`${identity} panel export must be a package subpath export`)
+  }
   validateDisplayText(contribution.label, `${identity} label`, 80, issues)
   validateDisplayText(contribution.description, `${identity} description`, 500, issues)
   validateMember(
@@ -1261,16 +1389,20 @@ function validateReviewerContributionRoute(
     issues.push(`${identity} references unknown route ${contribution.routeId}`)
     return
   }
-  if (route.target !== contribution.target)
+  if (route.target !== contribution.target) {
     issues.push(`${identity} target must match route ${contribution.routeId}`)
-  if (route.audience !== contribution.audience)
+  }
+  if (route.audience !== contribution.audience) {
     issues.push(`${identity} audience must match route ${contribution.routeId}`)
-  if (route.requiredPermission !== contribution.requiredPermission)
+  }
+  if (route.requiredPermission !== contribution.requiredPermission) {
     issues.push(`${identity} permission must match route ${contribution.routeId}`)
-  if ((route.additionalRequiredPermissions?.length ?? 0) > 0)
+  }
+  if ((route.additionalRequiredPermissions?.length ?? 0) > 0) {
     issues.push(
       `${identity} route ${contribution.routeId} cannot require additional permissions not represented by the contribution`,
     )
+  }
 }
 
 function validateReviewerContributionOrder(
@@ -1317,15 +1449,18 @@ function validatePermissionReferences(
       issues.push(`${identity} references unknown catalog permission ${permissionKey}`)
       continue
     }
-    if (audience !== undefined && !permission.audiences.includes(audience as never))
+    if (audience !== undefined && !permission.audiences.includes(audience as never)) {
       issues.push(
         `${identity} audience ${audience} is not eligible for permission ${permissionKey}`,
       )
+    }
   }
 }
 
 function validateAudienceList(value: readonly string[], identity: string, issues: string[]) {
-  if (value.length === 0) issues.push(`${identity} audiences must be non-empty`)
+  if (value.length === 0) {
+    issues.push(`${identity} audiences must be non-empty`)
+  }
   const seen = new Set<string>()
   for (const audience of value) {
     validateMember(
@@ -1334,24 +1469,30 @@ function validateAudienceList(value: readonly string[], identity: string, issues
       `${identity} uses unsupported audience ${String(audience)}`,
       issues,
     )
-    if (seen.has(audience)) issues.push(`${identity} declares duplicate audience ${audience}`)
-    else seen.add(audience)
+    if (seen.has(audience)) {
+      issues.push(`${identity} declares duplicate audience ${audience}`)
+    } else {
+      seen.add(audience)
+    }
   }
 }
 
 function validateDisplayText(value: string, identity: string, maxLength: number, issues: string[]) {
-  if (value.trim().length === 0 || value !== value.trim() || value.length > maxLength)
+  if (value.trim().length === 0 || value !== value.trim() || value.length > maxLength) {
     issues.push(`${identity} must be non-empty, trimmed, and at most ${maxLength} characters`)
+  }
 }
 
 function validateContributionId(value: string, moduleId: string, kind: string, issues: string[]) {
-  if (!isPlatformContributionId(value))
+  if (!isPlatformContributionId(value)) {
     issues.push(`${kind} ${moduleId}/${value} must use a lowercase kebab-case ID`)
+  }
 }
 
 function validateExportName(value: string, moduleId: string, kind: string, issues: string[]) {
-  if (!isPlatformExportName(value))
+  if (!isPlatformExportName(value)) {
     issues.push(`${kind} ${moduleId} export ${value} is not a valid JavaScript export name`)
+  }
 }
 
 function validateOrganizationAuthorization(
@@ -1363,25 +1504,28 @@ function validateOrganizationAuthorization(
   identity: string,
   issues: string[],
 ) {
-  if (!platformOrganizationAudiences.includes(contribution.audience as never))
+  if (!platformOrganizationAudiences.includes(contribution.audience as never)) {
     issues.push(
       `${identity} uses unsupported organization audience ${String(contribution.audience)}`,
     )
-  if (!isValidPermissionKey(contribution.requiredPermission))
+  }
+  if (!isValidPermissionKey(contribution.requiredPermission)) {
     issues.push(`${identity} must declare a valid required permission`)
+  }
   if (contribution.additionalRequiredPermissions !== undefined) {
     if (
       !Array.isArray(contribution.additionalRequiredPermissions) ||
       contribution.additionalRequiredPermissions.length === 0 ||
       !contribution.additionalRequiredPermissions.every(isValidPermissionKey)
-    )
+    ) {
       issues.push(`${identity} must declare valid additional required permissions`)
-    else if (
+    } else if (
       new Set([contribution.requiredPermission, ...contribution.additionalRequiredPermissions])
         .size !==
       contribution.additionalRequiredPermissions.length + 1
-    )
+    ) {
       issues.push(`${identity} must not declare duplicate required permissions`)
+    }
   }
 }
 
@@ -1395,12 +1539,16 @@ function validateMember(
   message: string,
   issues: string[],
 ) {
-  if (!allowed.includes(value)) issues.push(message)
+  if (!allowed.includes(value)) {
+    issues.push(message)
+  }
 }
 
 function validateExposedContributions(manifest: PlatformModuleManifest, issues: string[]) {
   const exposed = manifest.nuxt.exposed
-  if (!exposed) return
+  if (!exposed) {
+    return
+  }
   const pascalId = manifest.id
     .split('-')
     .map((segment) => `${segment[0]?.toUpperCase() ?? ''}${segment.slice(1)}`)
@@ -1408,17 +1556,18 @@ function validateExposedContributions(manifest: PlatformModuleManifest, issues: 
   const prefixes = {
     components: `Eve${pascalId}`,
     composables: `useEve${pascalId}`,
-    hooks: `eve-${manifest.id}:`,
     configurationKeys: `eve${pascalId}`,
+    hooks: `eve-${manifest.id}:`,
     virtualFiles: `#eve-${manifest.id}/`,
   } as const
 
   for (const category of Object.keys(prefixes) as (keyof typeof prefixes)[]) {
     for (const value of exposed[category] ?? []) {
-      if (!value.startsWith(prefixes[category]))
+      if (!value.startsWith(prefixes[category])) {
         issues.push(
           `module ${manifest.id} exposed ${category} value ${value} must begin with ${prefixes[category]}`,
         )
+      }
     }
   }
 }
@@ -1436,8 +1585,11 @@ function claimValue(
 ) {
   const key = normalizeIdentity(value)
   const existingOwner = values.get(key)
-  if (existingOwner) issues.push(`${kind} ${value} conflicts between ${existingOwner} and ${owner}`)
-  else values.set(key, owner)
+  if (existingOwner) {
+    issues.push(`${kind} ${value} conflicts between ${existingOwner} and ${owner}`)
+  } else {
+    values.set(key, owner)
+  }
 }
 
 function normalizeIdentity(value: string) {

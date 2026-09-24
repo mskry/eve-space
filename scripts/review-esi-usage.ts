@@ -38,19 +38,21 @@ const previousSources = new Map(
 const sites = await collectEsiUsageSites(repository, files, previousSources)
 const evidence = await loadCatalogEvidence()
 const states = sites.map((site): EsiUsageState => ({
-  site,
   catalog: evidence.get(site.operation) ?? emptyCatalogEvidence(),
+  site,
 }))
 const review = await runJevReview({
+  classify: classifyEsiUsage,
   findingName: 'ESI usage',
+  judge: (state) => judgeEsiUsage(client, state),
   reviewedName: 'representation(s)',
   states,
-  judge: (state) => judgeEsiUsage(client, state),
-  classify: classifyEsiUsage,
 })
 
 process.stdout.write(`${review.output}\n`)
-if (review.failed) process.exitCode = 1
+if (review.failed) {
+  process.exitCode = 1
+}
 
 async function loadCatalogEvidence() {
   const { catalog: catalogFile, operationMetadata: metadataFile } = catalogReviewSources
@@ -65,8 +67,8 @@ async function loadCatalogEvidence() {
 
 function emptyCatalogEvidence() {
   return {
-    contract: null,
     cacheKind: 'unknown' as const,
+    contract: null,
     metadata: null,
     previousContract: null,
     previousMetadata: null,

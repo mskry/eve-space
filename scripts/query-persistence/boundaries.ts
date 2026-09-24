@@ -37,7 +37,9 @@ export function queryPersistenceImportViolations(sources: readonly QueryPersiste
 
   for (const source of sources) {
     const module = moduleName(source.path)
-    if (!isDeclaredModule(module) || sourcesByModule.get(module)?.length !== 1) continue
+    if (!isDeclaredModule(module) || sourcesByModule.get(module)?.length !== 1) {
+      continue
+    }
     for (const specifier of typescriptModuleSpecifiers(source.path, source.source)) {
       const dependency = dependencyIdentity(source.path, specifier)
       const dependencyModule = queryPersistenceModuleName(dependency)
@@ -95,15 +97,18 @@ function declarationViolations(
   const violations: string[] = []
   for (const module of Object.keys(allowedDependenciesByModule)) {
     const sources = sourcesByModule.get(module)
-    if (!sources) violations.push(`Declared query persistence module ${module} has no source file`)
-    else if (sources.length > 1)
+    if (!sources) {
+      violations.push(`Declared query persistence module ${module} has no source file`)
+    } else if (sources.length > 1) {
       violations.push(
         `Query persistence module ${module} has duplicate source ownership: ${sources.map(({ path }) => path).join(', ')}`,
       )
+    }
   }
   for (const [module, sources] of sourcesByModule) {
-    if (!isDeclaredModule(module))
+    if (!isDeclaredModule(module)) {
       violations.push(`${sources[0]!.path}: Query persistence module ${module} is not declared`)
+    }
   }
   return violations
 }
@@ -127,9 +132,12 @@ function queryPersistenceRelativePath(path: string) {
 }
 
 function dependencyIdentity(sourcePath: string, specifier: string) {
-  if (specifier.startsWith('~/') || specifier.startsWith('@/'))
+  if (specifier.startsWith('~/') || specifier.startsWith('@/')) {
     return posix.normalize(`app/${specifier.slice(2)}`)
-  if (!specifier.startsWith('.')) return specifier
+  }
+  if (!specifier.startsWith('.')) {
+    return specifier
+  }
   return posix.normalize(posix.join(posix.dirname(sourcePath.replaceAll('\\', '/')), specifier))
 }
 
@@ -142,8 +150,11 @@ function groupBy<Value>(values: readonly Value[], keyForValue: (value: Value) =>
   for (const value of values) {
     const key = keyForValue(value)
     const group = grouped.get(key)
-    if (group) group.push(value)
-    else grouped.set(key, [value])
+    if (group) {
+      group.push(value)
+    } else {
+      grouped.set(key, [value])
+    }
   }
   return grouped
 }

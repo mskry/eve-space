@@ -56,9 +56,9 @@ export function collectParameterValues(
   arguments_: Readonly<Record<string, unknown>>,
 ): Readonly<Record<OperationParameterPlacement, ReadonlyMap<string, unknown>>> {
   const result: Record<OperationParameterPlacement, Map<string, unknown>> = {
+    header: new Map(),
     path: new Map(),
     query: new Map(),
-    header: new Map(),
   };
   for (const placement of argumentPlacements) {
     collectPlacementValues(descriptor, arguments_, placement, result[placement]);
@@ -73,7 +73,9 @@ function collectPlacementValues(
   result: Map<string, unknown>,
 ): void {
   const parameters = descriptor.parameters.filter((parameter) => parameter.placement === placement);
-  if (parameters.length === 0) return;
+  if (parameters.length === 0) {
+    return;
+  }
   const groupName = argumentGroupName(placement);
   const group = validateParameterGroup(
     descriptor.operationId,
@@ -107,7 +109,9 @@ function validateParameterGroup(
   groupName: 'path' | 'query' | 'headers',
   parameters: readonly ValidatedParameter[],
 ): Readonly<Record<string, unknown>> | undefined {
-  if (value === undefined) return undefined;
+  if (value === undefined) {
+    return undefined;
+  }
   if (!isPlainRecord(value)) {
     throw requestError(
       operationId,
@@ -186,9 +190,15 @@ function validateScalar(
   placement: OperationParameterPlacement,
 ): void {
   let valid = false;
-  if (schema.type === 'string') valid = typeof value === 'string';
-  if (schema.type === 'boolean') valid = typeof value === 'boolean';
-  if (schema.type === 'number') valid = typeof value === 'number' && Number.isFinite(value);
+  if (schema.type === 'string') {
+    valid = typeof value === 'string';
+  }
+  if (schema.type === 'boolean') {
+    valid = typeof value === 'boolean';
+  }
+  if (schema.type === 'number') {
+    valid = typeof value === 'number' && Number.isFinite(value);
+  }
   if (schema.type === 'integer') {
     valid = typeof value === 'number' && Number.isSafeInteger(value);
   }
@@ -219,5 +229,7 @@ function validateScalar(
       'invalid_value',
     );
   }
-  if (placement === 'header') validateHeaderValue(operationId, path, String(value));
+  if (placement === 'header') {
+    validateHeaderValue(operationId, path, String(value));
+  }
 }

@@ -20,8 +20,9 @@ export function findDependencyCycles<Node>(
   const stack: string[] = []
   const cycles = new Set<string>()
 
-  for (const name of [...nodeNames].toSorted((left, right) => left.localeCompare(right)))
+  for (const name of [...nodeNames].toSorted((left, right) => left.localeCompare(right))) {
     visitDependencies(name, dependencies, visited, active, stack, cycles)
+  }
   return [...cycles]
 }
 
@@ -33,15 +34,17 @@ function visitDependencies(
   stack: string[],
   cycles: Set<string>,
 ) {
-  if (visited.has(node)) return
+  if (visited.has(node)) {
+    return
+  }
   visited.add(node)
   active.add(node)
   stack.push(node)
 
   for (const dependency of dependencies.get(node) ?? []) {
-    if (!visited.has(dependency))
+    if (!visited.has(dependency)) {
       visitDependencies(dependency, dependencies, visited, active, stack, cycles)
-    else if (active.has(dependency)) {
+    } else if (active.has(dependency)) {
       const cycle = stack.slice(stack.indexOf(dependency))
       cycles.add(canonicalCycle(cycle))
     }

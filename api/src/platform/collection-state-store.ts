@@ -44,25 +44,9 @@ export async function upsertPlatformCollectionState(
       failureStartedAt: parsed.lastFailureClass === null ? null : new Date(),
     })
     .onConflictDoUpdate({
-      target: [
-        platformCollectionState.moduleId,
-        platformCollectionState.resourceId,
-        platformCollectionState.subjectKind,
-        platformCollectionState.subjectLifecycleId,
-        platformCollectionState.subjectId,
-      ],
       set: {
-        nextEligibleAt: parsed.nextEligibleAt,
         authorizationGeneration: parsed.authorizationGeneration,
-        organizationDeploymentId: parsed.organizationDeploymentId ?? null,
-        organizationVersion: parsed.organizationVersion ?? null,
-        targetUserId: parsed.targetUserId ?? null,
-        managedMemberLifecycleId: parsed.managedMemberLifecycleId ?? null,
-        sectionId: parsed.sectionId ?? null,
         disclosureVersion: parsed.disclosureVersion ?? null,
-        sectionActivationVersion: parsed.sectionActivationVersion ?? null,
-        validatedAt: parsed.validatedAt,
-        lastFailureClass: parsed.lastFailureClass,
         failureStartedAt:
           parsed.lastFailureClass === null
             ? null
@@ -70,11 +54,29 @@ export async function upsertPlatformCollectionState(
                 when ${platformCollectionState.lastFailureClass} is null then now()
                 else ${platformCollectionState.failureStartedAt}
               end`,
+        lastFailureClass: parsed.lastFailureClass,
+        managedMemberLifecycleId: parsed.managedMemberLifecycleId ?? null,
+        nextEligibleAt: parsed.nextEligibleAt,
+        organizationDeploymentId: parsed.organizationDeploymentId ?? null,
+        organizationVersion: parsed.organizationVersion ?? null,
+        sectionActivationVersion: parsed.sectionActivationVersion ?? null,
+        sectionId: parsed.sectionId ?? null,
+        targetUserId: parsed.targetUserId ?? null,
         updatedAt: sql`now()`,
+        validatedAt: parsed.validatedAt,
       },
+      target: [
+        platformCollectionState.moduleId,
+        platformCollectionState.resourceId,
+        platformCollectionState.subjectKind,
+        platformCollectionState.subjectLifecycleId,
+        platformCollectionState.subjectId,
+      ],
     })
     .returning()
-  if (!stored) throw new Error('Failed to persist platform collection state')
+  if (!stored) {
+    throw new Error('Failed to persist platform collection state')
+  }
   return stored
 }
 
@@ -161,6 +163,8 @@ export async function upsertPlatformCollectionStateInTransaction(
       created_at as "createdAt",
       updated_at as "updatedAt"
   `
-  if (!stored) throw new Error('Failed to persist platform collection state')
+  if (!stored) {
+    throw new Error('Failed to persist platform collection state')
+  }
   return stored
 }

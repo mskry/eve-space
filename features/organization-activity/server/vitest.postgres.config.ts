@@ -2,10 +2,10 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    include: ['test/integration/postgres/**/*.test.ts'],
     env: { DATABASE_URL: 'postgres://localhost:5432/eve_space' },
     fileParallelism: false,
-    testTimeout: 60000,
-    hookTimeout: 60000,
+    hookTimeout: 60_000,
+    include: ['test/integration/postgres/**/*.test.ts'],
+    testTimeout: 60_000,
   },
 })

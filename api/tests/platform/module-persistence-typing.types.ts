@@ -94,13 +94,13 @@ void invalidResult
 
 const definedReadSnapshot = definePlatformPersistenceOperation({
   id: 'read-snapshot',
-  method: 'readSnapshot',
-  revision: 1,
-  mode: 'read',
   inputSchema: z.object({ snapshotId: z.string().max(100) }),
-  outputSchema: z.object({ value: z.string().max(1_000).nullable() }),
-  maximumInputBytes: 1_024,
-  maximumOutputBytes: 4_096,
+  maximumInputBytes: 1024,
+  maximumOutputBytes: 4096,
+  method: 'readSnapshot',
+  mode: 'read',
+  outputSchema: z.object({ value: z.string().max(1000).nullable() }),
+  revision: 1,
 })
 
 type DefinedOperations = { readonly 'read-snapshot': typeof definedReadSnapshot }

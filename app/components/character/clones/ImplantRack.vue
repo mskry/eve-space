@@ -29,10 +29,10 @@ const slotSummaryLabel = computed(() => {
 })
 const resourceState = computed(() =>
   toCloneEsiResourceState(props.state, {
-    resourceCode: 'IMPLANTS',
-    loadingMessage: 'Reading active implant telemetry...',
     authorizationTitle: 'Active implant authorization required',
     errorTitle: 'Active implants unavailable',
+    loadingMessage: 'Reading active implant telemetry...',
+    resourceCode: 'IMPLANTS',
   }),
 )
 </script>

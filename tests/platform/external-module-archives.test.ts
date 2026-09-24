@@ -30,8 +30,8 @@ const moduleId = 'synthetic'
 const version = '1.2.3'
 const packageNames = {
   manifest: '@example/synthetic-manifest',
-  server: '@example/synthetic-server',
   nuxt: '@example/synthetic-nuxt',
+  server: '@example/synthetic-server',
 } as const
 const packageRoles = ['manifest', 'server', 'nuxt'] as const
 
@@ -62,7 +62,9 @@ beforeAll(async () => {
 }, 120_000)
 
 afterAll(async () => {
-  if (suiteRoot) await rm(suiteRoot, { recursive: true, force: true })
+  if (suiteRoot) {
+    await rm(suiteRoot, { force: true, recursive: true })
+  }
 })
 
 describe.sequential('external module archives', () => {
@@ -92,17 +94,18 @@ describe.sequential('external module archives', () => {
 
     expect(release).toMatchObject({
       moduleId,
-      publisherPackage: packageNames.manifest,
-      version,
       packages: {
         manifest: { name: packageNames.manifest, version, workspace: false },
-        server: { name: packageNames.server, version, workspace: false },
         nuxt: { name: packageNames.nuxt, version, workspace: false },
+        server: { name: packageNames.server, version, workspace: false },
       },
+      publisherPackage: packageNames.manifest,
+      version,
     })
-    for (const artifact of Object.values(release.packages))
+    for (const artifact of Object.values(release.packages)) {
       expect(artifact.integrity).toMatch(/^sha512-/)
-    expect(serverModule.syntheticRoutes()).toEqual({ source: 'external-server' })
+    }
+    expect(serverModule.syntheticRoutes()).toStrictEqual({ source: 'external-server' })
     expect(nuxtModule.default).toBeTypeOf('function')
     expect(files.get('api/src/generated/platform/installed-module-routes.ts')).toContain(
       `from '${packageNames.server}'`,
@@ -117,20 +120,20 @@ describe.sequential('external module archives', () => {
       JSON.stringify(
         [
           {
-            publisherPackage: packageNames.manifest,
-            moduleId,
-            contributionId: 'overview',
-            routeId: 'synthetic-route',
-            routePath: '/api/modules/synthetic/accounts/:userId',
             audience: 'hr',
-            requiredPermission: 'synthetic.review',
-            target: 'managed-organization-account',
-            panelPackage: packageNames.nuxt,
-            panelExport: './reviewer/overview',
-            label: 'Synthetic overview',
+            contributionId: 'overview',
             description: 'Review a synthetic managed member.',
             icon: 'overview',
+            label: 'Synthetic overview',
+            moduleId,
             order: 10,
+            panelExport: './reviewer/overview',
+            panelPackage: packageNames.nuxt,
+            publisherPackage: packageNames.manifest,
+            requiredPermission: 'synthetic.review',
+            routeId: 'synthetic-route',
+            routePath: '/api/modules/synthetic/accounts/:userId',
+            target: 'managed-organization-account',
           },
         ],
         undefined,
@@ -169,12 +172,12 @@ describe.sequential('external module archives', () => {
       host.lifecycleMarker,
     )
 
-    expect(runNode(deploymentRoot, 'dist/server.js')).toEqual({
+    expect(runNode(deploymentRoot, 'dist/server.js')).toStrictEqual({
       artifact: 'api',
       migration: 'select 1;',
       source: 'external-server',
     })
-    expect(runNode(deploymentRoot, 'dist/worker.js')).toEqual({
+    expect(runNode(deploymentRoot, 'dist/worker.js')).toStrictEqual({
       artifact: 'worker',
       migration: 'select 1;',
       source: 'external-server',
@@ -382,8 +385,9 @@ export default defineNuxtConfig({
     const host = await installHost(baseRelease, 'conflicting-reviewer-declarations')
     await updateManifest(host, (manifest) => {
       const contributions = manifest.reviewerContributions
-      if (!Array.isArray(contributions) || !isRecord(contributions[0]))
+      if (!Array.isArray(contributions) || !isRecord(contributions[0])) {
         throw new Error('reviewerContributions must contain a declaration')
+      }
       manifest.reviewerContributions = [contributions[0], { ...contributions[0], id: 'details' }]
     })
 
@@ -433,9 +437,9 @@ export default defineNuxtConfig({
     await cp(dirname(baseRelease.roots.manifest), variantRoot, { recursive: true })
     const roots = packageRoots(variantRoot)
     const priorReport = await verifyInstalledModuleArtifacts({
-      manifest: { packageRoot: roots.manifest, export: './manifest' },
-      server: { packageRoot: roots.server },
+      manifest: { export: './manifest', packageRoot: roots.manifest },
       nuxt: { packageRoot: roots.nuxt },
+      server: { packageRoot: roots.server },
     })
     expect(priorReport.ok).toBe(true)
     await writeFile(
@@ -498,20 +502,40 @@ async function createPackedRelease(root: string) {
   const lifecycleScript =
     "node -e \"require('node:fs').writeFileSync(process.env.SYNTHETIC_LIFECYCLE_MARKER, 'ran')\""
   const scripts = {
+    install: lifecycleScript,
+    postpack: lifecycleScript,
     prepack: lifecycleScript,
     prepare: lifecycleScript,
-    postpack: lifecycleScript,
-    install: lifecycleScript,
   }
   const manifest = {
-    id: moduleId,
-    release: {
-      publisherPackage: packageNames.manifest,
-      version,
-      hostContractRange: '^1.0.0',
-    },
-    icon: 'overview',
     defaultEnabled: false,
+    icon: 'overview',
+    id: moduleId,
+    nuxt: {
+      navigation: [
+        {
+          id: 'synthetic-navigation',
+          label: 'Synthetic',
+          description: 'Synthetic external module',
+          to: '/synthetic',
+          audience: 'authenticated',
+          placement: 'dashboard',
+          order: 90,
+          pageName: 'eve-synthetic-page',
+        },
+      ],
+      package: packageNames.nuxt,
+      pages: [
+        {
+          id: 'synthetic-page',
+          name: 'eve-synthetic-page',
+          path: '/synthetic',
+          file: 'src/runtime/app/pages/SyntheticPage.vue',
+          extensionPoint: 'root',
+          audience: 'authenticated',
+        },
+      ],
+    },
     permissions: [
       {
         key: 'synthetic.review',
@@ -522,6 +546,11 @@ async function createPackedRelease(root: string) {
         reviewAllowed: false,
       },
     ],
+    release: {
+      hostContractRange: '^1.0.0',
+      publisherPackage: packageNames.manifest,
+      version,
+    },
     reviewerContributions: [
       {
         id: 'overview',
@@ -537,7 +566,12 @@ async function createPackedRelease(root: string) {
       },
     ],
     server: {
+      activityProviders: [],
+      esiOperations: [],
+      migrations: [{ name: 'synthetic-001.sql' }],
       package: packageNames.server,
+      persistenceOperations: [],
+      resources: [],
       routes: [
         {
           id: 'synthetic-route',
@@ -551,40 +585,11 @@ async function createPackedRelease(root: string) {
           persistenceOperations: [],
         },
       ],
-      migrations: [{ name: 'synthetic-001.sql' }],
-      persistenceOperations: [],
-      resources: [],
-      esiOperations: [],
-      activityProviders: [],
-    },
-    nuxt: {
-      package: packageNames.nuxt,
-      pages: [
-        {
-          id: 'synthetic-page',
-          name: 'eve-synthetic-page',
-          path: '/synthetic',
-          file: 'src/runtime/app/pages/SyntheticPage.vue',
-          extensionPoint: 'root',
-          audience: 'authenticated',
-        },
-      ],
-      navigation: [
-        {
-          id: 'synthetic-navigation',
-          label: 'Synthetic',
-          description: 'Synthetic external module',
-          to: '/synthetic',
-          audience: 'authenticated',
-          placement: 'dashboard',
-          order: 90,
-          pageName: 'eve-synthetic-page',
-        },
-      ],
     },
   }
 
   await writeFiles(roots.manifest, {
+    'manifest.json': json(manifest),
     'package.json': json({
       name: packageNames.manifest,
       version,
@@ -595,9 +600,12 @@ async function createPackedRelease(root: string) {
       files: ['manifest.json'],
       scripts,
     }),
-    'manifest.json': json(manifest),
   })
   await writeFiles(roots.server, {
+    'dist/index.d.ts':
+      "export declare function syntheticRoutes(): { readonly source: 'external-server' }\n",
+    'dist/index.js': "export function syntheticRoutes() { return { source: 'external-server' } }\n",
+    'migrations/synthetic-001.sql': 'select 1;\n',
     'package.json': json({
       name: packageNames.server,
       version,
@@ -611,12 +619,12 @@ async function createPackedRelease(root: string) {
       files: ['dist', 'migrations'],
       scripts,
     }),
-    'dist/index.js': "export function syntheticRoutes() { return { source: 'external-server' } }\n",
-    'dist/index.d.ts':
-      "export declare function syntheticRoutes(): { readonly source: 'external-server' }\n",
-    'migrations/synthetic-001.sql': 'select 1;\n',
   })
   await writeFiles(roots.nuxt, {
+    'dist/module.d.ts': 'export default function syntheticNuxtModule(): void\n',
+    'dist/module.js': 'export default function () {}\n',
+    'dist/reviewer/overview.js':
+      "export default { name: 'SyntheticReviewerPanel', render() { return 'Synthetic external reviewer panel' } }\nexport const syntheticPanel = { contributionId: 'overview' }\n",
     'package.json': json({
       name: packageNames.nuxt,
       version,
@@ -630,10 +638,6 @@ async function createPackedRelease(root: string) {
       files: ['dist', 'src/runtime/app'],
       scripts,
     }),
-    'dist/module.js': 'export default function () {}\n',
-    'dist/module.d.ts': 'export default function syntheticNuxtModule(): void\n',
-    'dist/reviewer/overview.js':
-      "export default { name: 'SyntheticReviewerPanel', render() { return 'Synthetic external reviewer panel' } }\nexport const syntheticPanel = { contributionId: 'overview' }\n",
     'src/runtime/app/pages/SyntheticPage.vue':
       '<template><main><h1>Synthetic external module</h1></main></template>\n',
   })
@@ -663,7 +667,9 @@ async function packRelease(
       lifecycleMarker,
     )
     const packed = (await readdir(destination)).filter((path) => path.endsWith('.tgz'))
-    if (packed.length !== 1) throw new Error(`Expected one packed ${role} archive`)
+    if (packed.length !== 1) {
+      throw new Error(`Expected one packed ${role} archive`)
+    }
     archives[role] = join(destination, packed[0]!)
   }
   return { archives, lifecycleMarker, roots }
@@ -677,31 +683,32 @@ async function installHost(release: PackedRelease, name: string): Promise<Instal
   await mkdir(join(root, 'api'), { recursive: true })
   await mkdir(join(root, 'features'), { recursive: true })
   await mkdir(archiveRoot, { recursive: true })
-  for (const role of packageRoles)
+  for (const role of packageRoles) {
     await copyFile(release.archives[role], join(archiveRoot, `${role}.tgz`))
+  }
   await writeFile(
     join(root, 'package.json'),
     json({
-      name: `external-module-host-${name}`,
-      private: true,
-      packageManager,
       dependencies: {
         [packageNames.manifest]: `file:${join(archiveRoot, 'manifest.tgz')}`,
         [packageNames.nuxt]: `file:${join(archiveRoot, 'nuxt.tgz')}`,
       },
+      name: `external-module-host-${name}`,
+      packageManager,
+      private: true,
     }),
   )
   await writeFile(
     join(root, 'api/package.json'),
     json({
+      dependencies: { [packageNames.server]: `file:${join(archiveRoot, 'server.tgz')}` },
       name: apiPackageName,
       private: true,
-      type: 'module',
       scripts: {
         start: 'node dist/server.js',
         'start:worker': 'node dist/worker.js',
       },
-      dependencies: { [packageNames.server]: `file:${join(archiveRoot, 'server.tgz')}` },
+      type: 'module',
     }),
   )
   const productionArtifact = (
@@ -737,14 +744,14 @@ console.log(JSON.stringify({ artifact: '${artifact}', migration: migration.trim(
     lifecycleMarker,
   )
   return {
-    root,
     apiPackageName,
     lifecycleMarker,
     packages: {
       manifest: await realpath(join(root, 'node_modules', ...packageNames.manifest.split('/'))),
-      server: await realpath(join(root, 'api/node_modules', ...packageNames.server.split('/'))),
       nuxt: await realpath(join(root, 'node_modules', ...packageNames.nuxt.split('/'))),
+      server: await realpath(join(root, 'api/node_modules', ...packageNames.server.split('/'))),
     },
+    root,
   }
 }
 
@@ -754,8 +761,8 @@ async function writeInstalledSelection(root: string, selectedId: string, publish
     json({
       modules: [
         {
+          manifest: { export: './manifest', package: publisherPackage },
           moduleId: selectedId,
-          manifest: { package: publisherPackage, export: './manifest' },
         },
       ],
     }),
@@ -768,7 +775,9 @@ async function updateManifest(host: InstalledHost, mutate: (manifest: JsonRecord
 
 async function updateJson(path: string, mutate: (value: JsonRecord) => void) {
   const value = JSON.parse(await readFile(path, 'utf8')) as unknown
-  if (!isRecord(value)) throw new Error(`${path} must contain an object`)
+  if (!isRecord(value)) {
+    throw new Error(`${path} must contain an object`)
+  }
   mutate(value)
   await writeFile(path, json(value))
 }
@@ -778,10 +787,11 @@ async function rejectedHostMessage(root: string) {
     await loadInstalledModuleManifests(root)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    if (message.includes(root) || message.includes(suiteRoot))
+    if (message.includes(root) || message.includes(suiteRoot)) {
       throw new Error('Host validation failure exposed a temporary filesystem path', {
         cause: error,
       })
+    }
     return message
   }
   throw new Error('Expected installed module host validation to fail')
@@ -789,16 +799,17 @@ async function rejectedHostMessage(root: string) {
 
 function requiredPackageManager(): string {
   const manifest: unknown = JSON.parse(readFileSync(join(repositoryRoot, 'package.json'), 'utf8'))
-  if (!isRecord(manifest) || typeof manifest.packageManager !== 'string')
+  if (!isRecord(manifest) || typeof manifest.packageManager !== 'string') {
     throw new Error('The repository manifest must declare a packageManager')
+  }
   return manifest.packageManager
 }
 
 function packageRoots(root: string): Record<PackageRole, string> {
   return {
     manifest: join(root, 'manifest'),
-    server: join(root, 'server'),
     nuxt: join(root, 'nuxt'),
+    server: join(root, 'server'),
   }
 }
 
@@ -816,24 +827,26 @@ function runPnpm(cwd: string, arguments_: readonly string[], lifecycleMarker: st
   const result = spawnSync('corepack', ['pnpm', ...arguments_], {
     cwd,
     encoding: 'utf8',
-    maxBuffer: 16 * 1024 * 1024,
     env: {
       ...process.env,
       CI: 'true',
       COREPACK_ENABLE_DOWNLOAD_PROMPT: '0',
       SYNTHETIC_LIFECYCLE_MARKER: lifecycleMarker,
     },
+    maxBuffer: 16 * 1024 * 1024,
   })
-  if (result.status !== 0 || result.error)
+  if (result.status !== 0 || result.error) {
     throw new Error(
       `pnpm ${arguments_[0] ?? 'command'} failed: ${result.stderr || result.stdout || result.error?.message || 'unknown error'}`,
     )
+  }
 }
 
 function runNode(cwd: string, path: string) {
   const result = spawnSync(process.execPath, [path], { cwd, encoding: 'utf8' })
-  if (result.status !== 0 || result.error)
+  if (result.status !== 0 || result.error) {
     throw new Error(result.stderr || result.stdout || result.error?.message || 'node failed')
+  }
   return JSON.parse(result.stdout.trim()) as unknown
 }
 
@@ -841,25 +854,32 @@ function runNuxtBuild(root: string) {
   const result = spawnSync(join(repositoryRoot, 'node_modules/.bin/nuxt'), ['build', root], {
     cwd: repositoryRoot,
     encoding: 'utf8',
-    maxBuffer: 16 * 1024 * 1024,
     env: { ...process.env, NUXT_TELEMETRY_DISABLED: '1' },
+    maxBuffer: 16 * 1024 * 1024,
   })
-  if (result.status !== 0 || result.error)
+  if (result.status !== 0 || result.error) {
     throw new Error(result.stderr || result.stdout || result.error?.message || 'Nuxt build failed')
+  }
 }
 
 async function directoryContainsText(root: string, expected: string): Promise<boolean> {
   for (const entry of await readdir(root, { withFileTypes: true })) {
     const path = join(root, entry.name)
-    if (entry.isDirectory() && (await directoryContainsText(path, expected))) return true
-    if (entry.isFile() && (await readFile(path, 'utf8')).includes(expected)) return true
+    if (entry.isDirectory() && (await directoryContainsText(path, expected))) {
+      return true
+    }
+    if (entry.isFile() && (await readFile(path, 'utf8')).includes(expected)) {
+      return true
+    }
   }
   return false
 }
 
 function objectField(value: JsonRecord, key: string) {
   const nested = value[key]
-  if (!isRecord(nested)) throw new Error(`${key} must contain an object`)
+  if (!isRecord(nested)) {
+    throw new Error(`${key} must contain an object`)
+  }
   return nested
 }
 

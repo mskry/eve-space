@@ -14,7 +14,7 @@ describe('platform Nuxt dependency direction', () => {
           source: "import type { PlatformNavigationEntry } from '../../navigation.js'",
         },
       ]),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it.each([
@@ -27,7 +27,7 @@ describe('platform Nuxt dependency direction', () => {
   ])('rejects %s importing %s', (path, specifier) => {
     expect(
       platformNuxtBoundaryViolations([{ path, source: `import { value } from '${specifier}'` }]),
-    ).not.toEqual([])
+    ).not.toStrictEqual([])
   })
 
   it('checks imports in Vue scripts', () => {
@@ -38,12 +38,12 @@ describe('platform Nuxt dependency direction', () => {
           source: '<script setup>import { addImports } from "@nuxt/kit"</script>',
         },
       ]),
-    ).not.toEqual([])
+    ).not.toStrictEqual([])
   })
 
   it('requires new build modules to declare their architectural tier', () => {
     expect(
       platformNuxtBoundaryViolations([{ path: 'new-adapter.ts', source: 'export {}' }]),
-    ).toEqual(['new-adapter.ts: build module has no declared tier'])
+    ).toStrictEqual(['new-adapter.ts: build module has no declared tier'])
   })
 })

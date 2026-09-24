@@ -33,7 +33,7 @@ describe('ESI gateway boundaries', () => {
     (sourceModule, sourceTier, importedModule, importedTier) => {
       expect(
         esiGatewayImportViolations([source(sourceModule, `import './${last(importedModule)}.js'`)]),
-      ).toEqual([
+      ).toStrictEqual([
         `api/src/esi-gateway/${sourceModule}.ts: ${sourceTier} module ${sourceModule} cannot import ${importedTier} module ${importedModule}`,
       ])
     },
@@ -52,7 +52,7 @@ describe('ESI gateway boundaries', () => {
         ),
         source('status-interface', "import './internal/telemetry.js'"),
       ]),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it('allows recording from lower tiers and aggregation of execution state', () => {
@@ -63,7 +63,7 @@ describe('ESI gateway boundaries', () => {
         source('internal/telemetry-counters', "import './catalog-access.js'"),
         source('internal/telemetry', "import './cooldowns.js'\nimport './telemetry-counters.js'"),
       ]),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it.each([
@@ -89,7 +89,7 @@ describe('ESI gateway boundaries', () => {
       '@evespace/esi-client/domains/wallet',
     ],
   ])('rejects %s importing external dependency %s', (module, specifier, dependency) => {
-    expect(esiGatewayImportViolations([source(module, `import '${specifier}'`)])).toEqual([
+    expect(esiGatewayImportViolations([source(module, `import '${specifier}'`)])).toStrictEqual([
       `api/src/esi-gateway/${module}.ts: module ${module} cannot import external dependency ${dependency}`,
     ])
   })
@@ -99,7 +99,7 @@ describe('ESI gateway boundaries', () => {
     "const database = await import('../../db/client.js')",
     "import type { Database } from '../../db/client.js'",
   ])('rejects external dependencies through %s', (contents) => {
-    expect(esiGatewayImportViolations([source('internal/identity', contents)])).toEqual([
+    expect(esiGatewayImportViolations([source('internal/identity', contents)])).toStrictEqual([
       'api/src/esi-gateway/internal/identity.ts: module internal/identity cannot import external dependency api/src/db/client',
     ])
   })
@@ -122,7 +122,7 @@ describe('ESI gateway boundaries', () => {
         source('internal/telemetry', "import '../../coordination-redis.js'"),
         source('status-interface', "import '../cache-redis.js'"),
       ]),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it('rejects dependency cycles', () => {
@@ -131,7 +131,7 @@ describe('ESI gateway boundaries', () => {
         source('internal/numeric', "import './timing.js'"),
         source('internal/timing', "import './numeric.js'"),
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'api/src/esi-gateway/internal/numeric.ts: support module internal/numeric cannot import support module internal/timing',
       'api/src/esi-gateway/internal/timing.ts: support module internal/timing cannot import support module internal/numeric',
       'ESI gateway dependency cycle: internal/numeric -> internal/timing -> internal/numeric',
@@ -139,7 +139,7 @@ describe('ESI gateway boundaries', () => {
   })
 
   it('rejects unlisted modules', () => {
-    expect(esiGatewayImportViolations([source('internal/new-module', '')])).toEqual([
+    expect(esiGatewayImportViolations([source('internal/new-module', '')])).toStrictEqual([
       'api/src/esi-gateway/internal/new-module.ts: ESI gateway module internal/new-module has no declared tier',
     ])
   })
@@ -151,7 +151,7 @@ describe('ESI gateway boundaries', () => {
         source('internal/envelope', "import '../../env.js'"),
         source('internal/production-runtime', "import '../../env.js'"),
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'api/src/esi-gateway/internal/envelope.ts: only the production runtime may import application configuration',
       'api/src/esi-gateway/internal/execution-runtime.ts: only the production runtime may import application configuration',
     ])
@@ -176,7 +176,7 @@ describe('ESI gateway boundaries', () => {
         ],
         'core',
       ),
-    ).toEqual([
+    ).toStrictEqual([
       'api/src/characters/example.ts: core code cannot import ESI gateway internal modules',
       'api/src/characters/example.ts: core code cannot import ESI gateway platform execution',
       'api/src/characters/lifecycle-example.ts: core code cannot import ESI gateway internal modules',
@@ -192,7 +192,7 @@ describe('ESI gateway boundaries', () => {
         ],
         'installed-module',
       ),
-    ).toEqual([
+    ).toStrictEqual([
       'features/example/server/src/index.ts: installed module cannot import core ESI execution or SDK runtime code',
       'features/example/server/src/index.ts: installed module cannot import core ESI execution or SDK runtime code',
     ])

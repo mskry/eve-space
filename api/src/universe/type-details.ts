@@ -102,36 +102,43 @@ export async function getUniverseTypeDetails(typeId: number): Promise<UniverseTy
 
 function mapUniverseTypeDetails(rows: readonly TypeDetailRow[]): UniverseTypeDetails | null {
   const first = rows[0]
-  if (!first || !isRepresentable(first)) return null
-  if (rows.some((row) => !sameTypeIdentity(first, row))) return null
+  if (!first || !isRepresentable(first)) {
+    return null
+  }
+  if (rows.some((row) => !sameTypeIdentity(first, row))) {
+    return null
+  }
 
   const detail =
     first.categoryId === skillCategoryId ? mapSkillDetail(rows) : mapImplantDetail(rows)
 
   return {
-    typeId: first.typeId,
-    name: first.typeName,
-    description: eveFormattedTextToPlainText(first.description) ?? null,
-    group: { id: first.groupId, name: first.groupName },
     category: { id: first.categoryId, name: first.categoryName },
+    description: eveFormattedTextToPlainText(first.description) ?? null,
     detail,
+    group: { id: first.groupId, name: first.groupName },
+    name: first.typeName,
+    typeId: first.typeId,
   }
 }
 
 function mapSkillDetail(rows: readonly TypeDetailRow[]) {
   const detail: Extract<NonNullable<UniverseTypeDetails['detail']>, { kind: 'skill' }> = {
     kind: 'skill',
-    rank: null,
     primaryAttribute: null,
+    rank: null,
     secondaryAttribute: null,
   }
   for (const row of rows) {
-    if (row.attributeId === skillRankAttributeId)
+    if (row.attributeId === skillRankAttributeId) {
       detail.rank = skillRankFromDogmaValue(row.attributeValue)
-    if (row.attributeId === skillPrimaryAttributeId)
+    }
+    if (row.attributeId === skillPrimaryAttributeId) {
       detail.primaryAttribute = skillAttributeFromDogmaValue(row.attributeValue)
-    if (row.attributeId === skillSecondaryAttributeId)
+    }
+    if (row.attributeId === skillSecondaryAttributeId) {
       detail.secondaryAttribute = skillAttributeFromDogmaValue(row.attributeValue)
+    }
   }
   return detail
 }
@@ -141,7 +148,9 @@ function mapImplantDetail(
 ): Extract<NonNullable<UniverseTypeDetails['detail']>, { kind: 'implant' }> | null {
   const values = new Map(rows.map((row) => [row.attributeId, row.attributeValue]))
   const slot = values.get(implantSlotAttributeId)
-  if (slot === null || slot === undefined || !isPositiveSafeInteger(slot)) return null
+  if (slot === null || slot === undefined || !isPositiveSafeInteger(slot)) {
+    return null
+  }
 
   const bonuses = implantBonusAttributes.flatMap(([attributeId, attribute]) => {
     const value = values.get(attributeId)
@@ -149,7 +158,7 @@ function mapImplantDetail(
       ? [{ attribute, value }]
       : []
   })
-  return { kind: 'implant', slot, bonuses }
+  return { bonuses, kind: 'implant', slot }
 }
 
 function isRepresentable(row: TypeDetailRow) {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ title: 'Corporation Overview', layout: 'headerless' })
+definePageMeta({ layout: 'headerless', title: 'Corporation Overview' })
 
 const { corporation } = useCorporationRecord()
 const formattedFounded = computed(() =>
@@ -7,17 +7,23 @@ const formattedFounded = computed(() =>
 )
 const founder = computed(() => {
   const record = corporation.value
-  if (!record || record.creatorId === null || record.creatorId === record.ceoId) return undefined
+  if (!record || record.creatorId === null || record.creatorId === record.ceoId) {
+    return
+  }
   return { id: record.creatorId, name: record.creatorName ?? `ID ${record.creatorId}` }
 })
 const ceoLabel = computed(() => {
   const record = corporation.value
-  if (!record || record.ceoId === null) return 'CEO'
+  if (!record || record.ceoId === null) {
+    return 'CEO'
+  }
   return record.ceoId === record.creatorId ? 'CEO · FOUNDER' : 'CEO'
 })
 const statusBadges = computed(() => {
   const record = corporation.value
-  if (!record) return []
+  if (!record) {
+    return []
+  }
 
   if (record.type === 'npc_owned') {
     return [{ id: 'type', label: 'NPC', tone: 'off' }]
@@ -48,8 +54,8 @@ const statusBadges = computed(() => {
 
 function formatTaxRate(taxRate: number) {
   return taxRate.toLocaleString('en-US', {
-    minimumFractionDigits: 1,
     maximumFractionDigits: 2,
+    minimumFractionDigits: 1,
   })
 }
 </script>

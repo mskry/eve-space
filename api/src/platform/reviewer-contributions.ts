@@ -13,8 +13,9 @@ export function requireInstalledReviewerContribution(
       candidate.moduleId === descriptor.moduleId &&
       candidate.contributionId === descriptor.contributionId,
   )
-  if (!installed || !sameReviewerContribution(installed, descriptor))
+  if (!installed || !sameReviewerContribution(installed, descriptor)) {
     throw new Error('Reviewer contribution descriptor is not installed')
+  }
   return installed
 }
 
@@ -22,7 +23,9 @@ export async function listAvailableReviewerContributions(
   catalog: readonly PlatformInstalledReviewerContributionDescriptor[] = installedReviewerContributions,
   loadRuntimeState: () => Promise<ModuleRuntimeState> = loadModuleRuntimeState,
 ) {
-  if (catalog.length === 0) return []
+  if (catalog.length === 0) {
+    return []
+  }
   const state = await loadRuntimeState()
   return catalog.filter((descriptor) => reviewerContributionEnabled(descriptor, state))
 }
@@ -31,8 +34,12 @@ function reviewerContributionEnabled(
   descriptor: PlatformInstalledReviewerContributionDescriptor,
   state: ModuleRuntimeState,
 ) {
-  if (!state.enabledModuleIds.includes(descriptor.moduleId)) return false
-  if (!descriptor.sectionId) return true
+  if (!state.enabledModuleIds.includes(descriptor.moduleId)) {
+    return false
+  }
+  if (!descriptor.sectionId) {
+    return true
+  }
   return state.enabledSections.some(
     (section) =>
       section.moduleId === descriptor.moduleId && section.sectionId === descriptor.sectionId,

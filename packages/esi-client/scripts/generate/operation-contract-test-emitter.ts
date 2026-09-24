@@ -77,7 +77,9 @@ export function renderGeneratedOperationContractTests(
   const contracts = [...model.operations]
     .toSorted((left, right) => compareText(left.operationId, right.operationId))
     .map((operation) => createOperationContract(operation, model.models, modelsByPointer));
-  if (contracts.length === 0) throw new Error('No operation contracts were generated');
+  if (contracts.length === 0) {
+    throw new Error('No operation contracts were generated');
+  }
   const responseContracts = contracts.flatMap((contract) =>
     contract.responses.map((response) => ({ operationId: contract.operationId, ...response })),
   );
@@ -231,8 +233,8 @@ export async function emitGeneratedOperationContractTests(
 }
 
 export const generatedOperationContractTestsComponent: GeneratedTestComponent = Object.freeze({
-  name: 'operation-contracts',
   emit: emitGeneratedOperationContractTests,
+  name: 'operation-contracts',
 });
 
 function createOperationContract(
@@ -253,25 +255,21 @@ function createOperationContract(
 
   const authentication = resolveOperationAuthentication(operation);
   return {
-    operationId: operation.operationId,
-    method: operation.method,
-    pathTemplate: operation.path,
-    parameters: descriptorParameters,
+    arguments: fixtureArguments,
     authentication: {
       required: authentication !== null,
       scopes: authentication?.scopes ?? [],
     },
-    requestBody,
-    requestSchemaExports: createRequestSchemaExports(operation, parameters),
-    requestTypeExport: `${operation.operationId}Data`,
-    responseTypeExport: `${operation.operationId}Response`,
-    arguments: fixtureArguments,
     expectedRequest: constructExpectedRequest(
       operation,
       descriptorParameters,
       fixtureArguments,
       requestBody,
     ),
+    method: operation.method,
+    operationId: operation.operationId,
+    parameters: descriptorParameters,
+    pathTemplate: operation.path,
     protocol: {
       cache: operation.cache,
       conditionalRequestValidators: operation.conditionalRequestValidators,
@@ -279,6 +277,10 @@ function createOperationContract(
       rateLimit: operation.rateLimit,
       requestArrayLimits: operation.requestArrayLimits,
     },
+    requestBody,
+    requestSchemaExports: createRequestSchemaExports(operation, parameters),
+    requestTypeExport: `${operation.operationId}Data`,
+    responseTypeExport: `${operation.operationId}Response`,
     responses: operation.successResponses.map((response) => ({
       status: response.status,
       body: response.noContent ? ('none' as const) : ('json' as const),
@@ -292,7 +294,9 @@ function createRequestSchemaExports(
   parameters: readonly NormalizedParameter[],
 ): string[] {
   const exports: string[] = [];
-  if (operation.requestBody !== null) exports.push(`z${operation.operationId}Body`);
+  if (operation.requestBody !== null) {
+    exports.push(`z${operation.operationId}Body`);
+  }
   for (const [placement, suffix] of [
     ['header', 'Headers'],
     ['path', 'Path'],
@@ -324,7 +328,9 @@ function createOperationParameters(
       modelsByPointer,
     );
     descriptorParameters.push(contract.descriptor);
-    if (!contract.hasFixture) continue;
+    if (!contract.hasFixture) {
+      continue;
+    }
     const groupName = parameter.placement === 'header' ? 'headers' : parameter.placement;
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- fixtureArguments groups by placement are always plain records
     const group = (fixtureArguments[groupName] ?? {}) as Record<string, unknown>;
@@ -367,10 +373,12 @@ function createOperationRequestBody(
   models: readonly NormalizedModel[],
   fixtureArguments: Record<string, unknown>,
 ): OperationRequestBodyContract | null {
-  if (operation.requestBody === null) return null;
+  if (operation.requestBody === null) {
+    return null;
+  }
   const requestBody: OperationRequestBodyContract = {
-    required: operation.requestBody.required,
     mediaType: 'application/json',
+    required: operation.requestBody.required,
   };
   const content = selectJsonContent(operation.requestBody.content);
   if (content === null) {
@@ -415,8 +423,12 @@ function createParameterDescriptor(
     required: parameter.required,
     schema,
   };
-  if (parameter.style !== null) descriptor.style = parameter.style;
-  if (parameter.explode !== null) descriptor.explode = parameter.explode;
+  if (parameter.style !== null) {
+    descriptor.style = parameter.style;
+  }
+  if (parameter.explode !== null) {
+    descriptor.explode = parameter.explode;
+  }
   if (parameter.placement === 'query' && parameter.allowReserved !== null) {
     descriptor.allowReserved = parameter.allowReserved;
   }
@@ -429,11 +441,19 @@ function resolveParameterSchema(
   active: Set<string>,
   operationId: string,
 ): Record<string, unknown> {
-  if (!isObject(schema)) throw new Error(`Invalid parameter schema for ${operationId}`);
-  if (typeof schema.$ref !== 'string') return schema;
-  if (active.has(schema.$ref)) throw new Error(`Recursive parameter schema for ${operationId}`);
+  if (!isObject(schema)) {
+    throw new Error(`Invalid parameter schema for ${operationId}`);
+  }
+  if (typeof schema.$ref !== 'string') {
+    return schema;
+  }
+  if (active.has(schema.$ref)) {
+    throw new Error(`Recursive parameter schema for ${operationId}`);
+  }
   const model = modelsByPointer.get(schema.$ref);
-  if (model === undefined) throw new Error(`Unresolved parameter schema ${schema.$ref}`);
+  if (model === undefined) {
+    throw new Error(`Unresolved parameter schema ${schema.$ref}`);
+  }
   const next = new Set(active);
   next.add(schema.$ref);
   return { ...resolveParameterSchema(model.schema, modelsByPointer, next, operationId), ...schema };
@@ -457,7 +477,7 @@ function simplifyParameterSchema(
       typeof items.type === 'string' &&
       ['boolean', 'integer', 'number', 'string'].includes(items.type)
     ) {
-      return { type: 'array', items: { type: items.type } };
+      return { items: { type: items.type }, type: 'array' };
     }
   }
   throw new Error(`Unsupported parameter schema for ${operationId}`);
@@ -477,7 +497,9 @@ function constructExpectedRequest(
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- fixtureArguments groups by placement are always plain records
     const group = fixtureArguments[groupName] as Record<string, unknown> | undefined;
     const value = group?.[parameter.name];
-    if (value === undefined) continue;
+    if (value === undefined) {
+      continue;
+    }
     switch (parameter.placement) {
       case 'path':
         path = replacePathParameter(path, parameter.name, value);
@@ -491,9 +513,9 @@ function constructExpectedRequest(
     }
   }
   const expected: ExpectedRequest = {
+    headers,
     method: operation.method,
     path: query.length === 0 ? path : `${path}?${query.join('&')}`,
-    headers,
   };
   if (requestBody !== null && fixtureArguments.body !== undefined) {
     headers['content-type'] = requestBody.mediaType;
@@ -529,8 +551,12 @@ function appendQueryParameter(
     query.push(`${name}=${value.map((entry) => encodeRfc3986(serializeScalar(entry))).join(',')}`);
     return;
   }
-  if (value.length === 0) query.push(`${name}=`);
-  for (const entry of value) query.push(`${name}=${encodeRfc3986(serializeScalar(entry))}`);
+  if (value.length === 0) {
+    query.push(`${name}=`);
+  }
+  for (const entry of value) {
+    query.push(`${name}=${encodeRfc3986(serializeScalar(entry))}`);
+  }
 }
 
 function assertExactOperationAccounting(model: NormalizedOpenApiModel): void {
@@ -576,7 +602,9 @@ function uniqueIds(values: readonly string[], label: string): Set<string> {
     throw new TypeError(`Invalid ${label} operation IDs`);
   }
   const result = new Set(values);
-  if (result.size !== values.length) throw new Error(`Duplicate ${label} operation ID`);
+  if (result.size !== values.length) {
+    throw new Error(`Duplicate ${label} operation ID`);
+  }
   return result;
 }
 
@@ -618,11 +646,17 @@ function encodePath(value: string): string {
 }
 
 function serializeScalar(value: unknown): string {
-  if (typeof value === 'string') return value;
+  if (typeof value === 'string') {
+    return value;
+  }
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
     return String(value);
   }
-  if (value === null) return 'null';
-  if (value === undefined) return 'undefined';
+  if (value === null) {
+    return 'null';
+  }
+  if (value === undefined) {
+    return 'undefined';
+  }
   throw new TypeError('Contract fixture parameter values must be scalars');
 }

@@ -35,13 +35,13 @@ export function memberAuditReviewerQueryOptions<TData>(
   query: (context: QueryContext) => Promise<TData>,
 ) {
   return {
+    access: { ...props.queryAccess, sectionId: props.sectionId },
+    query,
     resource: platformReviewerContributionTargetResourceKey({
       contributionId: props.contributionId,
       sectionId: props.sectionId,
       target: props.target,
     }),
-    access: { ...props.queryAccess, sectionId: props.sectionId },
-    query,
   }
 }
 
@@ -50,30 +50,34 @@ export function withMemberAuditReviewerQueryState<Result extends ReviewerQueryRe
   result: Result,
 ) {
   const requestState = computed<PlatformResourceState>(() => {
-    if (!props.queryAccess.authenticated || !props.queryAccess.authorized)
+    if (!props.queryAccess.authenticated || !props.queryAccess.authorized) {
       return {
+        message: 'Your current organization authority does not permit this contribution.',
         status: 'authorization-required',
         title: 'Reviewer permission required',
-        message: 'Your current organization authority does not permit this contribution.',
       }
-    if (!props.queryAccess.moduleEnabled)
+    }
+    if (!props.queryAccess.moduleEnabled) {
       return {
+        message: 'This contribution is not enabled for the current organization version.',
         status: 'unavailable',
         title: 'Member Audit is disabled',
-        message: 'This contribution is not enabled for the current organization version.',
       }
-    if (result.error.value)
+    }
+    if (result.error.value) {
       return {
-        status: 'unavailable',
-        title: 'Member Audit data is unavailable',
         message:
           result.error.value instanceof Error
             ? result.error.value.message
             : 'The contribution request failed.',
         retryLabel: 'Retry',
+        status: 'unavailable',
+        title: 'Member Audit data is unavailable',
       }
-    if (result.status.value === 'pending' && !result.data.value)
+    }
+    if (result.status.value === 'pending' && !result.data.value) {
       return { status: 'loading', title: 'Loading Member Audit data' }
+    }
     return { status: 'ready' }
   })
 
@@ -84,37 +88,43 @@ export function collectionState(
   statuses: readonly MemberAuditCollectionStatus[],
   requestState: PlatformResourceState,
 ): PlatformResourceState {
-  if (requestState.status !== 'ready') return requestState
+  if (requestState.status !== 'ready') {
+    return requestState
+  }
   const authorizationRequired = statuses.find(({ status }) => status === 'authorization-required')
-  if (authorizationRequired)
+  if (authorizationRequired) {
     return {
-      status: 'authorization-required',
-      title: 'Character authorization required',
       message: authorizationRequired.requiredScope
         ? `The character owner must authorize ${authorizationRequired.requiredScope}.`
         : 'The character owner must renew authorization for this evidence section.',
+      status: 'authorization-required',
+      title: 'Character authorization required',
     }
-  if (statuses.some(({ status }) => status === 'stale'))
+  }
+  if (statuses.some(({ status }) => status === 'stale')) {
     return {
-      status: 'stale',
-      title: 'Evidence is stale',
       message: 'The last complete observation is shown with its validation time.',
       retryLabel: 'Retry',
+      status: 'stale',
+      title: 'Evidence is stale',
     }
-  if (statuses.some(({ status }) => status === 'unavailable'))
+  }
+  if (statuses.some(({ status }) => status === 'unavailable')) {
     return {
-      status: 'unavailable',
-      title: 'Evidence is unavailable',
       message: 'Collection failed without exposing provider or persistence details.',
       retryLabel: 'Retry',
-    }
-  if (statuses.some(({ status }) => status === 'never-collected'))
-    return {
       status: 'unavailable',
-      title: 'Evidence has not been collected',
+      title: 'Evidence is unavailable',
+    }
+  }
+  if (statuses.some(({ status }) => status === 'never-collected')) {
+    return {
       message: 'No complete observation is available for this character.',
       retryLabel: 'Retry',
+      status: 'unavailable',
+      title: 'Evidence has not been collected',
     }
+  }
   return { status: 'ready' }
 }
 

@@ -24,5 +24,6 @@ const violations = [
   ...platformNuxtBoundaryViolations(await loadPlatformNuxtSources(root)),
 ]
 
-if (violations.length > 0)
+if (violations.length > 0) {
   throw new Error(`Module Nuxt boundary verification failed:\n${violations.join('\n')}`)
+}

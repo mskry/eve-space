@@ -21,16 +21,16 @@ export const DEFAULT_ESI_REQUEST_TIMEOUT_MS: number = 10_000;
 export const MAX_ESI_REQUEST_TIMEOUT_MS: number = 2_147_483_647;
 
 const optionNameRecord = {
+  allowGenericMutations: true,
   baseUrl: true,
   compatibilityDate: true,
+  fetch: true,
   language: true,
   requestTimeoutMs: true,
   token: true,
   tokenProvider: true,
-  fetch: true,
-  validateResponses: true,
   validateRequests: true,
-  allowGenericMutations: true,
+  validateResponses: true,
 } satisfies Record<keyof EsiClientOptions, true>;
 const optionNames: ReadonlySet<string> = new Set(Object.keys(optionNameRecord));
 const esiLanguages: ReadonlySet<string> = new Set(['de', 'en', 'es', 'fr', 'ja', 'ko', 'ru', 'zh']);
@@ -90,19 +90,21 @@ export class EsiClientConfiguration {
 
   toJSON(): SerializedEsiClientConfiguration {
     return Object.freeze({
+      allowGenericMutations: this.allowGenericMutations,
       baseUrl: this.baseUrl,
       compatibilityDate: this.compatibilityDate,
       language: this.language,
       requestTimeoutMs: this.requestTimeoutMs,
-      validateResponses: this.validateResponses,
       validateRequests: this.validateRequests,
-      allowGenericMutations: this.allowGenericMutations,
+      validateResponses: this.validateResponses,
     });
   }
 }
 
 function defaultIfUndefined<Value>(value: Value | undefined, fallback: Value): Value {
-  if (value === undefined) return fallback;
+  if (value === undefined) {
+    return fallback;
+  }
   return value;
 }
 
@@ -148,7 +150,9 @@ function normalizeBaseUrl(value: string): string {
 
   const href = url.href;
   let end = href.length;
-  while (href[end - 1] === '/') end -= 1;
+  while (href[end - 1] === '/') {
+    end -= 1;
+  }
   return href.slice(0, end);
 }
 
@@ -181,7 +185,9 @@ function validateRequestTimeout(value: number): number {
 }
 
 function validateToken(value: string | undefined): string | undefined {
-  if (value === undefined) return undefined;
+  if (value === undefined) {
+    return undefined;
+  }
   if (typeof value !== 'string' || value.length === 0 || hasUnsafeTokenCharacter(value)) {
     throw new TypeError(
       'token must be a non-empty string without whitespace or control characters',
@@ -193,7 +199,9 @@ function validateToken(value: string | undefined): string | undefined {
 function hasUnsafeTokenCharacter(value: string): boolean {
   for (const character of value) {
     const codePoint = character.codePointAt(0);
-    if (codePoint === undefined || codePoint <= 0x20 || codePoint === 0x7f) return true;
+    if (codePoint === undefined || codePoint <= 0x20 || codePoint === 0x7f) {
+      return true;
+    }
   }
   return false;
 }

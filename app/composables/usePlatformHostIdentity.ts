@@ -13,12 +13,12 @@ export function usePlatformHostIdentity() {
   })
   return {
     authenticated: computed(() => authSession.value.authenticated),
+    characters,
     organizationAuthorized: computed(
       () => authSession.value.authenticated && organizationQuery.data.value?.memberAccess === true,
     ),
     organizationVersion: computed(
       () => organizationQuery.data.value?.organization.organizationVersion ?? 0,
     ),
-    characters,
   }
 }

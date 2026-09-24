@@ -66,10 +66,11 @@ export function assertDistinctModuleMigrationLockKeys(
   for (const moduleId of new Set(moduleIds)) {
     const key = keyOf(moduleId)
     const owner = owners.get(key)
-    if (owner)
+    if (owner) {
       throw new Error(
         `Module migration advisory-lock key ${key} collides between ${owner} and ${moduleId}`,
       )
+    }
     owners.set(key, moduleId)
   }
 }

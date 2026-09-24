@@ -12,5 +12,7 @@ export function clearQueryCache() {
   }
 
   queryCache.cancelQueries()
-  for (const entry of entries) queryCache.remove(entry)
+  for (const entry of entries) {
+    queryCache.remove(entry)
+  }
 }

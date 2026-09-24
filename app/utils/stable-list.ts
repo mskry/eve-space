@@ -15,20 +15,25 @@ export function createStableListEntries<T>(
     for (const entry of previousEntries) {
       const identity = identify(entry.item)
       const entries = availableEntries.get(identity)
-      if (entries) entries.push(entry)
-      else availableEntries.set(identity, [entry])
+      if (entries) {
+        entries.push(entry)
+      } else {
+        availableEntries.set(identity, [entry])
+      }
     }
 
     const entries = items.map((item) => ({
-      item,
       identity: identify(item),
+      item,
       key: undefined as string | undefined,
     }))
     for (const entry of entries) {
       const candidates = availableEntries.get(entry.identity)
       const matchingIndex =
         candidates?.findIndex((candidate) => equivalent(candidate.item, entry.item)) ?? -1
-      if (!candidates || matchingIndex < 0) continue
+      if (!candidates || matchingIndex < 0) {
+        continue
+      }
 
       entry.key = candidates.splice(matchingIndex, 1)[0]?.key
     }

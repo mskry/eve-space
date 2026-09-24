@@ -15,7 +15,7 @@ describe('root client surface', () => {
             start_time: '2026-08-18T00:00:00Z',
             vip: false,
           }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
+          { headers: { 'content-type': 'application/json' }, status: 200 },
         ),
     );
     const client = new EsiClient({ baseUrl: 'https://example.test', fetch: fetchApi });
@@ -24,8 +24,8 @@ describe('root client surface', () => {
       fetch: fetchApi,
     });
 
-    expect(client.status).toEqual(expect.objectContaining({ get: expect.any(Function) }));
-    expect(standalone).toEqual(expect.objectContaining({ get: expect.any(Function) }));
+    expect(client.status).toStrictEqual(expect.objectContaining({ get: expect.any(Function) }));
+    expect(standalone).toStrictEqual(expect.objectContaining({ get: expect.any(Function) }));
     const status = await client.status.get({ compatibilityDate: '2020-01-01' });
 
     expect(fetchApi).toHaveBeenCalledOnce();
@@ -33,13 +33,13 @@ describe('root client surface', () => {
     expect(url).toBe('https://example.test/status');
     expect(init?.method).toBe('GET');
     expect(new Headers(init?.headers).get('x-compatibility-date')).toBe('2020-01-01');
-    expect(status).toEqual({
+    expect(status).toStrictEqual({
       players: 42,
       server_version: 'test',
       start_time: '2026-08-18T00:00:00Z',
       vip: false,
     });
-    expect(zGetStatusResponse.parse(status)).toEqual(status);
+    expect(zGetStatusResponse.parse(status)).toStrictEqual(status);
   });
 
   it('exports structured HTTP errors without prototype exports', async () => {
@@ -51,7 +51,9 @@ describe('root client surface', () => {
     const error = await client.status.get().catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(EsiHttpError);
-    if (!(error instanceof EsiHttpError)) throw error;
+    if (!(error instanceof EsiHttpError)) {
+      throw error;
+    }
     expect(error.status).toBe(503);
     expect(error.code).toBe('ESI_HTTP_ERROR');
     expect(sdk).not.toHaveProperty('Configuration');
@@ -83,13 +85,13 @@ describe('root client surface', () => {
     ],
   ])('returns a typed 304 outcome through the %s surface', async (_surface, call) => {
     const fetchApi = vi.fn<typeof fetch>(
-      async () => new Response(null, { status: 304, headers: { etag: 'revision-1' } }),
+      async () => new Response(null, { headers: { etag: 'revision-1' }, status: 304 }),
     );
 
     const error = await call(fetchApi).catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(EsiNotModifiedError);
-    expect(error).toMatchObject({ status: 304, metadata: { cache: { etag: 'revision-1' } } });
+    expect(error).toMatchObject({ metadata: { cache: { etag: 'revision-1' } }, status: 304 });
     expect(fetchApi).toHaveBeenCalledOnce();
     expect(new Headers(fetchApi.mock.calls[0]?.[1]?.headers).get('if-none-match')).toBe(
       'revision-1',
@@ -129,8 +131,8 @@ describe('root client surface', () => {
 
     await expect(call(fetchApi)).rejects.toMatchObject({
       code: 'ESI_TRANSPORT_ERROR',
-      reason: 'timeout',
       phase: 'request',
+      reason: 'timeout',
     });
     expect(fetchApi).toHaveBeenCalledOnce();
   });

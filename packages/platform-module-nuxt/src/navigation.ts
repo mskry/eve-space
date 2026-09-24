@@ -10,38 +10,38 @@ export function createPlatformNavigation(
 ) {
   const navigation: readonly PlatformNavigationEntry[] = [
     ...platformCoreNavigation.map((entry) => ({
-      ownerId: entry.ownerId,
-      navigationId: entry.navigationId,
-      label: entry.label,
-      description: entry.description,
-      to: entry.path,
-      icon: entry.icon,
       audience: entry.audience,
-      placement: entry.placement,
+      description: entry.description,
+      icon: entry.icon,
+      label: entry.label,
+      navigationId: entry.navigationId,
       order: entry.order,
+      ownerId: entry.ownerId,
+      placement: entry.placement,
+      to: entry.path,
     })),
     ...contributions.flatMap((contribution) =>
       contribution.navigation.map((entry) => ({
-        ownerId: contribution.moduleId,
-        navigationId: entry.id,
-        label: entry.label,
-        description: entry.description,
-        to: entry.to,
-        icon: entry.icon ?? contribution.defaultIcon,
         audience: entry.audience,
-        placement: entry.placement,
+        description: entry.description,
+        icon: entry.icon ?? contribution.defaultIcon,
+        label: entry.label,
+        navigationId: entry.id,
         order: entry.order,
+        ownerId: contribution.moduleId,
+        placement: entry.placement,
         sectionId: entry.sectionId,
+        to: entry.to,
       })),
     ),
   ].toSorted(compareNavigation)
   const pages: readonly PlatformPageMetadata[] = contributions
     .flatMap((contribution) =>
       contribution.pages.map((page) => ({
+        audience: page.audience,
         moduleId: contribution.moduleId,
         pageId: page.id,
         pageName: page.name,
-        audience: page.audience,
         sectionId: page.sectionId,
       })),
     )

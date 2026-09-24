@@ -50,7 +50,9 @@ export function useAuthVerification() {
     currentGeneration: number,
     { retainPrivateData }: { retainPrivateData: boolean },
   ) {
-    if (!ownsVerification(state.value, currentGeneration)) return false
+    if (!ownsVerification(state.value, currentGeneration)) {
+      return false
+    }
     state.value = { generation: currentGeneration, status: 'unavailable' }
     if (retainPrivateData) {
       suspendPrivateQueryAdmission(queryCache)
@@ -69,7 +71,9 @@ export function useAuthVerification() {
     signal?: AbortSignal,
     admission?: CacheAdmissionBootstrap,
   ) {
-    if (!ownsVerification(state.value, currentGeneration) || signal?.aborted) return false
+    if (!ownsVerification(state.value, currentGeneration) || signal?.aborted) {
+      return false
+    }
     const previousSession = queryCache.getQueryData<AuthSession>(PRIVATE_QUERY_KEYS.session())
     if (
       previousSession?.authenticated !== session.authenticated ||
@@ -80,7 +84,9 @@ export function useAuthVerification() {
       state.value = { generation: currentGeneration, status: 'verifying' }
     }
     await applyVerifiedQueryIdentity(queryCache, session, loadAdmission, signal, admission)
-    if (!ownsVerification(state.value, currentGeneration) || signal?.aborted) return false
+    if (!ownsVerification(state.value, currentGeneration) || signal?.aborted) {
+      return false
+    }
     state.value = { generation: currentGeneration, status: 'verified' }
     return true
   }

@@ -34,8 +34,9 @@ const previewMutation = useMutation({
         reason: reason.value,
       },
     })
-    if (response.status !== 200)
+    if (response.status !== 200) {
       throw await toApiQueryError(response, 'Transfer preview could not be created.')
+    }
     return response.json()
   },
   onSuccess: ({ preview }) => {
@@ -52,12 +53,15 @@ const previewMutation = useMutation({
 
 const approvalMutation = useMutation({
   mutation: async () => {
-    if (!transferPreview.value?.eligible) throw new Error('Create an eligible preview first.')
+    if (!transferPreview.value?.eligible) {
+      throw new Error('Create an eligible preview first.')
+    }
     const response = await apiClient.api.admin['character-transfer-approvals'].$post({
       json: { previewId: transferPreview.value.previewId },
     })
-    if (response.status !== 201)
+    if (response.status !== 201) {
       throw await toApiQueryError(response, 'Transfer approval could not be created.')
+    }
     return response.json()
   },
   onSuccess: (result) => {
@@ -74,8 +78,9 @@ const inspectionMutation = useMutation({
     const response = await apiClient.api.admin['character-transfer-approvals'][':approvalId'].$get({
       param: { approvalId: approvalId.value },
     })
-    if (response.status !== 200)
+    if (response.status !== 200) {
       throw await toApiQueryError(response, 'Transfer approval could not be loaded.')
+    }
     return response.json()
   },
   onSuccess: (result) => {
@@ -88,15 +93,18 @@ const inspectionMutation = useMutation({
 
 const revocationMutation = useMutation({
   mutation: async () => {
-    if (!approval.value) throw new Error('Load an approval before revoking it.')
+    if (!approval.value) {
+      throw new Error('Load an approval before revoking it.')
+    }
     const response = await apiClient.api.admin['character-transfer-approvals'][
       ':approvalId'
     ].revoke.$post({
-      param: { approvalId: approval.value.approvalId },
       json: { reason: revocationReason.value },
+      param: { approvalId: approval.value.approvalId },
     })
-    if (response.status !== 200)
+    if (response.status !== 200) {
       throw await toApiQueryError(response, 'Transfer approval could not be revoked.')
+    }
     return response.json()
   },
   onSuccess: (result) => {
@@ -115,7 +123,9 @@ const errorMessage = computed(() => {
     inspectionMutation,
     revocationMutation,
   ]) {
-    if (mutation.error.value instanceof Error) return mutation.error.value.message
+    if (mutation.error.value instanceof Error) {
+      return mutation.error.value.message
+    }
   }
   return ''
 })
@@ -129,7 +139,9 @@ watch([characterId, destinationMainCharacterId, reason], () => {
 })
 
 async function copyTransferLink() {
-  if (!transferLink.value) return
+  if (!transferLink.value) {
+    return
+  }
   try {
     await navigator.clipboard.writeText(transferLink.value)
     feedback.value = 'Transfer link copied.'
@@ -145,16 +157,21 @@ function formatTransferDate(value: string) {
 }
 
 function transferBlockerGuidance(blocker: Exclude<TransferPreview, { eligible: true }>['blocker']) {
-  if (blocker === 'main-character')
+  if (blocker === 'main-character') {
     return 'Select another source main character, then preview again.'
-  if (blocker === 'authority-evidence')
+  }
+  if (blocker === 'authority-evidence') {
     return 'Remove active organization-owner authority through the authorized organization workflow.'
-  if (blocker === 'corporation-source')
+  }
+  if (blocker === 'corporation-source') {
     return 'Replace or revoke the active corporation data source through the authorized workflow.'
-  if (blocker === 'destination-main')
+  }
+  if (blocker === 'destination-main') {
     return 'Enter the destination account’s current main-character ID.'
-  if (blocker === 'same-account')
+  }
+  if (blocker === 'same-account') {
     return 'The selected characters already belong to the same account.'
+  }
   return 'The specified transfer identities are unavailable.'
 }
 </script>

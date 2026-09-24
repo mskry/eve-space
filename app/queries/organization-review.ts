@@ -44,8 +44,9 @@ export const organizationReviewEntryQuery = defineEsiQueryOptions(
     key: PRIVATE_QUERY_KEYS.organizationReviewerEntry(),
     query: async ({ signal }) => {
       const response = await apiClient.api.organization.review.$get(undefined, { init: { signal } })
-      if (response.status !== 200)
+      if (response.status !== 200) {
         throw await toApiQueryError(response, 'Organization review workspace is unavailable.')
+      }
       return response.json()
     },
     enabled: import.meta.client && authenticated,
@@ -87,8 +88,9 @@ export const organizationReviewDirectoryQuery = defineEsiQueryOptions(
         },
         { init: { signal } },
       )
-      if (response.status !== 200)
+      if (response.status !== 200) {
         throw await toApiQueryError(response, 'Managed member directory is unavailable.')
+      }
       return response.json()
     },
     enabled:
@@ -124,8 +126,9 @@ export const organizationReviewTargetQuery = defineEsiQueryOptions(
         { param: { userId: input.targetUserId } },
         { init: { signal } },
       )
-      if (response.status !== 200)
+      if (response.status !== 200) {
         throw await toApiQueryError(response, 'Managed member target is unavailable.')
+      }
       const target = await response.json()
       const candidate = target.member
       const member =

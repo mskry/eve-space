@@ -13,16 +13,16 @@ export async function appendPermissionBundleAudit(
   },
 ) {
   return appendOrganizationAuditEvent(transaction, {
-    deploymentId: 1,
-    organizationVersion: organization.organizationVersion,
-    policyVersion: organization.policyVersion,
-    eventType: input.eventType,
-    actorType: 'user',
     actorId: input.actorUserId,
-    subjectType: 'permission_bundle',
-    subjectId: input.bundleId,
-    reason: input.reason,
-    outcome: input.eventType === 'permission-bundle.created' ? 'granted' : 'transitioned',
+    actorType: 'user',
+    deploymentId: 1,
+    eventType: input.eventType,
     occurredAt: input.now,
+    organizationVersion: organization.organizationVersion,
+    outcome: input.eventType === 'permission-bundle.created' ? 'granted' : 'transitioned',
+    policyVersion: organization.policyVersion,
+    reason: input.reason,
+    subjectId: input.bundleId,
+    subjectType: 'permission_bundle',
   })
 }

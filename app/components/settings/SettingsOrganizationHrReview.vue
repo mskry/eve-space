@@ -59,15 +59,23 @@ function isExceptionActive(exception: CharacterException) {
 
 function scheduleNextExpiration() {
   clearTimeout(expirationTimer)
-  if (!import.meta.client) return
+  if (!import.meta.client) {
+    return
+  }
   currentTime.value = Date.now()
   const nextExpiration = exceptions.value.reduce<number | null>((nearest, exception) => {
-    if (exception.expiredAt || exception.revokedAt || !exception.expiresAt) return nearest
+    if (exception.expiredAt || exception.revokedAt || !exception.expiresAt) {
+      return nearest
+    }
     const expirationTimestamp = new Date(exception.expiresAt).getTime()
-    if (expirationTimestamp <= currentTime.value) return nearest
+    if (expirationTimestamp <= currentTime.value) {
+      return nearest
+    }
     return nearest === null || expirationTimestamp < nearest ? expirationTimestamp : nearest
   }, null)
-  if (nextExpiration === null) return
+  if (nextExpiration === null) {
+    return
+  }
   expirationTimer = setTimeout(
     () => {
       currentTime.value = Date.now()
@@ -95,10 +103,10 @@ function closeApproval() {
 
 async function submitApproval(candidate: ReviewCandidate) {
   await approveException({
-    userId: candidate.userId,
     characterId: candidate.characterId,
-    reason: approvalReason.value.trim(),
     expiresAt: expiresAt.value ? new Date(expiresAt.value).toISOString() : null,
+    reason: approvalReason.value.trim(),
+    userId: candidate.userId,
   })
   closeApproval()
 }
@@ -114,7 +122,9 @@ function closeDecision() {
 }
 
 async function submitDecision(decision: 'expire' | 'revoke') {
-  if (!selectedExceptionId.value) return
+  if (!selectedExceptionId.value) {
+    return
+  }
   await decideException(selectedExceptionId.value, decision, decisionReason.value.trim())
   closeDecision()
 }

@@ -83,8 +83,8 @@ describe('generated operation contract tests', () => {
     const context = emitterContext(outputDirectory, model);
     const emitter = createGeneratedTestsEmitter([generatedOperationContractTestsComponent]);
 
-    await expect(emitter.emit(context)).resolves.toEqual([
-      { target: 'tests/generated', kind: 'directory' },
+    await expect(emitter.emit(context)).resolves.toStrictEqual([
+      { kind: 'directory', target: 'tests/generated' },
     ]);
     const generatedPath = join(outputDirectory, 'tests/generated/operation-contracts.test.ts');
     await expect(readFile(generatedPath, 'utf8')).resolves.toContain(
@@ -143,9 +143,8 @@ describe('generated operation contract tests', () => {
 function representativeModel(): NormalizedOpenApiModel {
   const operations = [
     operation({
-      operationId: 'GetThing',
       method: 'GET',
-      path: '/things/{thing_id}',
+      operationId: 'GetThing',
       parameters: [
         parameter('thing_id', 'path', true, { type: 'integer', minimum: 1 }),
         parameter('labels', 'query', true, {
@@ -155,17 +154,16 @@ function representativeModel(): NormalizedOpenApiModel {
         }),
         parameter('X-Trace', 'header', false, { type: 'string', minLength: 1 }),
       ],
+      path: '/things/{thing_id}',
       security: [{ schemes: [{ name: 'oauth2', scopes: ['esi-things.read.v1'] }] }],
       successResponses: [jsonResponse('200', { type: 'object', properties: {} })],
     }),
     operation({
-      operationId: 'PutThing',
       method: 'PUT',
-      path: '/things/{thing_id}',
+      operationId: 'PutThing',
       parameters: [parameter('thing_id', 'path', true, { type: 'integer', minimum: 1 })],
+      path: '/things/{thing_id}',
       requestBody: {
-        required: true,
-        description: null,
         content: [
           {
             mediaType: 'application/json',
@@ -177,22 +175,24 @@ function representativeModel(): NormalizedOpenApiModel {
             extensions: {},
           },
         ],
+        description: null,
         extensions: {},
+        required: true,
       },
       successResponses: [noContentResponse('204')],
     }),
   ];
   const operationIds = operations.map(({ operationId }) => operationId);
   return {
-    models: [],
-    operations,
+    accounting: {
+      excludedOperationIds: [],
+      normalizedOperationIds: operationIds,
+      sourceOperationIds: operationIds,
+    },
     exclusions: [],
     inventory: { openapi: [], schemas: [] },
-    accounting: {
-      sourceOperationIds: operationIds,
-      normalizedOperationIds: operationIds,
-      excludedOperationIds: [],
-    },
+    models: [],
+    operations,
   };
 }
 
@@ -201,21 +201,21 @@ function operation(
     Pick<NormalizedOperation, 'operationId' | 'method' | 'path'>,
 ): NormalizedOperation {
   return {
-    domainSource: 'Things',
-    tags: ['Things'],
-    summary: null,
-    description: null,
-    parameters: [],
-    requestBody: null,
-    successResponses: [jsonResponse('200', { type: 'object', properties: {} })],
-    security: [],
-    pagination: { kind: 'none', requestParameters: [], responseHeaders: [] },
-    cache: { responseHeaders: [], extensions: {} },
+    cache: { extensions: {}, responseHeaders: [] },
     conditionalRequestValidators: [],
+    description: null,
+    domainSource: 'Things',
+    extensions: {},
+    maximumBatchSize: null,
+    pagination: { kind: 'none', requestParameters: [], responseHeaders: [] },
+    parameters: [],
     rateLimit: { kind: 'legacy-only' },
     requestArrayLimits: [],
-    maximumBatchSize: null,
-    extensions: {},
+    requestBody: null,
+    security: [],
+    successResponses: [jsonResponse('200', { type: 'object', properties: {} })],
+    summary: null,
+    tags: ['Things'],
     ...overrides,
   };
 }
@@ -227,38 +227,38 @@ function parameter(
   schema: NormalizedSchema,
 ): NormalizedParameter {
   return {
+    allowReserved: null,
+    deprecated: false,
+    description: null,
+    explode: null,
+    extensions: {},
     name,
     placement,
     required,
-    description: null,
-    deprecated: false,
-    style: null,
-    explode: null,
-    allowReserved: null,
     schema,
-    extensions: {},
+    style: null,
   };
 }
 
 function jsonResponse(status: string, schema: NormalizedSchema) {
   return {
-    status,
-    description: 'Success',
-    noContent: false,
     content: [{ mediaType: 'application/json', schema, extensions: {} }],
-    headers: [],
+    description: 'Success',
     extensions: {},
+    headers: [],
+    noContent: false,
+    status,
   };
 }
 
 function noContentResponse(status: string) {
   return {
-    status,
-    description: 'No content',
-    noContent: true,
     content: [],
-    headers: [],
+    description: 'No content',
     extensions: {},
+    headers: [],
+    noContent: true,
+    status,
   };
 }
 
@@ -281,8 +281,8 @@ function emitterContext(
   return {
     compatibilityDate: provenance.compatibilityDate,
     correctedDocument: {},
-    normalizedModel,
     namingReviewReport: 'test naming review\n',
+    normalizedModel,
     operationMetadata: [],
     outputDirectory,
     outputPath: (target) => join(outputDirectory, target),
@@ -305,7 +305,9 @@ function reversed<Value>(values: readonly Value[]): Value[] {
   const result: Value[] = [];
   for (let index = values.length - 1; index >= 0; index -= 1) {
     const value = values[index];
-    if (value !== undefined) result.push(value);
+    if (value !== undefined) {
+      result.push(value);
+    }
   }
   return result;
 }

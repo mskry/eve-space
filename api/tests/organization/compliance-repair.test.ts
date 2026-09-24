@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  selectResults: [] as unknown[][],
   expireExceptions: vi.fn(),
   recompute: vi.fn(),
+  selectResults: [] as unknown[][],
 }))
 
 vi.mock('../../src/db/client.js', () => ({
@@ -33,7 +33,7 @@ describe('organization compliance repair', () => {
   test('returns cleanly before exception expiry when no organization is configured', async () => {
     mocks.selectResults.push([])
 
-    await expect(repairOrganizationCompliance({ now })).resolves.toEqual({ repaired: 0 })
+    await expect(repairOrganizationCompliance({ now })).resolves.toStrictEqual({ repaired: 0 })
     expect(mocks.expireExceptions).not.toHaveBeenCalled()
     expect(mocks.recompute).not.toHaveBeenCalled()
   })
@@ -47,7 +47,9 @@ describe('organization compliance repair', () => {
       [{ userId: '00000000-0000-4000-8000-000000000003' }],
     )
 
-    await expect(repairOrganizationCompliance({ now, limit: 3 })).resolves.toEqual({ repaired: 3 })
+    await expect(repairOrganizationCompliance({ limit: 3, now })).resolves.toStrictEqual({
+      repaired: 3,
+    })
     expect(mocks.expireExceptions).toHaveBeenCalledWith(now, 3)
     expect(mocks.recompute).toHaveBeenCalledTimes(3)
   })
@@ -65,7 +67,7 @@ describe('organization compliance repair', () => {
       .mockRejectedValueOnce(new Error('invalid account state'))
       .mockResolvedValueOnce({ outcome: 'unchanged' })
 
-    await expect(repairOrganizationCompliance({ now, limit: 2 })).rejects.toThrow(
+    await expect(repairOrganizationCompliance({ limit: 2, now })).rejects.toThrow(
       'Failed to repair 1 compliance projection(s)',
     )
     expect(mocks.recompute).toHaveBeenCalledTimes(2)
@@ -74,7 +76,9 @@ describe('organization compliance repair', () => {
 
 function query(result: unknown[]) {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'where', 'orderBy', 'limit']) builder[method] = () => builder
+  for (const method of ['from', 'where', 'orderBy', 'limit']) {
+    builder[method] = () => builder
+  }
   // oxlint-disable-next-line unicorn/no-thenable -- Drizzle query builders are awaitable.
   builder.then = (resolve: (value: unknown[]) => unknown, reject: (error: unknown) => unknown) =>
     Promise.resolve(result).then(resolve, reject)

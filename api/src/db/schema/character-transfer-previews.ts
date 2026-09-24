@@ -18,21 +18,21 @@ import { platformSubjectLifecycles } from './installed-modules.js'
 export const characterTransferPreviews = pgTable(
   'character_transfer_previews',
   {
-    previewId: uuid('preview_id').defaultRandom().primaryKey().notNull(),
     administratorId: uuid('administrator_id').notNull(),
     characterId: bigint('character_id', { mode: 'number' }).notNull(),
     characterName: text('character_name').notNull(),
-    sourceUserId: uuid('source_user_id').notNull(),
-    sourceSubjectLifecycleId: uuid('source_subject_lifecycle_id').notNull(),
-    sourceCharacterCount: integer('source_character_count').notNull(),
-    destinationUserId: uuid('destination_user_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
     destinationMainCharacterId: bigint('destination_main_character_id', {
       mode: 'number',
     }).notNull(),
     destinationMainCharacterName: text('destination_main_character_name').notNull(),
-    reason: varchar({ length: 1000 }).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    destinationUserId: uuid('destination_user_id').notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+    previewId: uuid('preview_id').defaultRandom().primaryKey().notNull(),
+    reason: varchar({ length: 1000 }).notNull(),
+    sourceCharacterCount: integer('source_character_count').notNull(),
+    sourceSubjectLifecycleId: uuid('source_subject_lifecycle_id').notNull(),
+    sourceUserId: uuid('source_user_id').notNull(),
   },
   (table) => [
     foreignKey({

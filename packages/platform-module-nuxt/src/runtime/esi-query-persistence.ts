@@ -48,11 +48,11 @@ export function defineEsiQueryOptions<
 }
 
 export function characterEsiPersistence(characterId: number): EsiPersistence {
-  return { kind: 'character-esi', characterId }
+  return { characterId, kind: 'character-esi' }
 }
 
 export function organizationEsiPersistence(admissionScope: string): EsiPersistence {
-  return { kind: 'organization-esi', admissionScope }
+  return { admissionScope, kind: 'organization-esi' }
 }
 
 export function resolvePlatformEsiPersistence(
@@ -73,9 +73,15 @@ export function resolvePlatformEsiPersistence(
 }
 
 export function isEsiPersistence(value: unknown): value is EsiPersistence {
-  if (!isRecord(value)) return false
-  if (value.kind === 'none' || value.kind === 'public-esi') return true
-  if (value.kind === 'character-esi') return isPositiveInteger(value.characterId)
+  if (!isRecord(value)) {
+    return false
+  }
+  if (value.kind === 'none' || value.kind === 'public-esi') {
+    return true
+  }
+  if (value.kind === 'character-esi') {
+    return isPositiveInteger(value.characterId)
+  }
   return (
     value.kind === 'organization-esi' &&
     typeof value.admissionScope === 'string' &&
@@ -90,11 +96,18 @@ export function isEsiPersistenceEligible(
 }
 
 export function isEsiPersistenceCoherent(key: EntryKey, persistence: EsiPersistence) {
-  if (persistence.kind === 'none') return true
-  if (persistence.kind === 'public-esi') return key[0] === 'public'
-  if (persistence.kind === 'character-esi')
+  if (persistence.kind === 'none') {
+    return true
+  }
+  if (persistence.kind === 'public-esi') {
+    return key[0] === 'public'
+  }
+  if (persistence.kind === 'character-esi') {
     return key[0] === 'private' && key[1] === 'characters' && key[2] === persistence.characterId
-  if (key[0] !== 'private' || key[1] !== 'organization') return false
+  }
+  if (key[0] !== 'private' || key[1] !== 'organization') {
+    return false
+  }
   const moduleIndex = key.indexOf('modules')
   const expectedOwner = moduleIndex < 0 ? 'core' : key[moduleIndex + 1]
   return (

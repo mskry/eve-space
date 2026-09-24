@@ -16,7 +16,7 @@ export const diagnosticSchedulerId = 'diagnostic-planner'
 export const outboxRelaySchedulerId = 'outbox-relay'
 export const eventRetentionSchedulerId = 'domain-event-retention'
 export const diagnosticOverlapPolicy = 'skip' as const
-export const eventRetentionIntervalMs = 24 * 60 * 60 * 1_000
+export const eventRetentionIntervalMs = 24 * 60 * 60 * 1000
 
 type ScheduledJobName = 'planner' | 'outbox-relay' | 'domain-event-retention'
 
@@ -30,25 +30,25 @@ interface SchedulerDeclaration<Name extends ScheduledJobName> {
 
 const schedulerCatalog = [
   scheduler({
-    schedulerId: diagnosticSchedulerId,
     name: 'planner',
+    overlap: diagnosticOverlapPolicy,
     payload: { operationId: 'queue-planner' },
     schedule: () => schedulerOptions(diagnosticOverlapPolicy),
-    overlap: diagnosticOverlapPolicy,
+    schedulerId: diagnosticSchedulerId,
   }),
   scheduler({
-    schedulerId: outboxRelaySchedulerId,
     name: 'outbox-relay',
+    overlap: diagnosticOverlapPolicy,
     payload: { operationId: 'outbox-relay' },
     schedule: () => intervalSchedulerOptions(env.OUTBOX_RELAY_INTERVAL_MS),
-    overlap: diagnosticOverlapPolicy,
+    schedulerId: outboxRelaySchedulerId,
   }),
   scheduler({
-    schedulerId: eventRetentionSchedulerId,
     name: 'domain-event-retention',
+    overlap: diagnosticOverlapPolicy,
     payload: { operationId: 'domain-event-retention' },
     schedule: () => intervalSchedulerOptions(eventRetentionIntervalMs),
-    overlap: diagnosticOverlapPolicy,
+    schedulerId: eventRetentionSchedulerId,
   }),
 ] as const
 
@@ -58,14 +58,18 @@ export function createPlannerRepeatStrategy(
 ): RepeatStrategy {
   return async (millis, options, name) => {
     if (options.every) {
-      if (options.pattern) throw new Error('Scheduler cannot define both pattern and every')
+      if (options.pattern) {
+        throw new Error('Scheduler cannot define both pattern and every')
+      }
       return (
         Math.floor(millis / options.every) * options.every +
         (options.immediately ? 0 : options.every)
       )
     }
     const next = defaultRepeatStrategy(millis, options)
-    if (name !== 'planner' || next === undefined) return next
+    if (name !== 'planner' || next === undefined) {
+      return next
+    }
 
     const following = defaultRepeatStrategy(next, options)
     if (following !== undefined && next + deploymentOffsetMs + initialDelayMaximumMs >= following) {
@@ -85,16 +89,19 @@ export async function plannerInitialDelay(
     randomInt(1, maximumInclusive + 1),
 ) {
   const next = defaultRepeatStrategy(now, options ?? { pattern: env.QUEUE_PLANNER_SCHEDULE })
-  if (next === undefined) return 0
+  if (next === undefined) {
+    return 0
+  }
 
   const boundedMaximum = Math.min(maximumMs, Math.max(0, next - now - 1))
   return boundedMaximum > 0 ? sample(boundedMaximum) : 0
 }
 
 export async function registerSchedulers(queue: Queue) {
-  for (const declaration of schedulerCatalog)
+  for (const declaration of schedulerCatalog) {
     // oxlint-disable-next-line no-await-in-loop -- stable registration order is intentional.
     await registerScheduler(queue, declaration)
+  }
   await queue
     .getBackend()
     .client.then((connection) =>
@@ -109,8 +116,8 @@ async function registerScheduler<Name extends ScheduledJobName>(
 ) {
   const contract = getJobContract(declaration.name)
   await queue.upsertJobScheduler(declaration.schedulerId, declaration.schedule(), {
-    name: contract.name,
     data: parseJobPayload(declaration.name, declaration.payload),
+    name: contract.name,
     opts: schedulerJobOptions(contract.name),
   })
 }
@@ -119,14 +126,16 @@ function schedulerJobOptions(name: JobName) {
   const contract = getJobContract(name)
   return {
     attempts: contract.attempts,
-    backoff: { type: 'exponential' as const, delay: 1_000, jitter: 0.25 },
+    backoff: { delay: 1000, jitter: 0.25, type: 'exponential' as const },
     removeOnComplete: contract.retention.completed,
     removeOnFail: contract.retention.failed,
   }
 }
 
 function schedulerOptions(overlap: typeof diagnosticOverlapPolicy) {
-  if (overlap !== 'skip') throw new Error(`Unsupported scheduler overlap policy: ${overlap}`)
+  if (overlap !== 'skip') {
+    throw new Error(`Unsupported scheduler overlap policy: ${overlap}`)
+  }
   // BullMQ Job Schedulers implement skip overlap by producing the next occurrence only when the
   // preceding scheduled job begins processing.
   return { pattern: env.QUEUE_PLANNER_SCHEDULE }
@@ -139,7 +148,7 @@ function intervalSchedulerOptions(intervalMs: number) {
 export function getJobScheduler(jobName: string) {
   const declaration = schedulerCatalog.find((candidate) => candidate.name === jobName)
   return declaration
-    ? { schedulerId: declaration.schedulerId, overlap: declaration.overlap }
+    ? { overlap: declaration.overlap, schedulerId: declaration.schedulerId }
     : undefined
 }
 
@@ -155,16 +164,22 @@ export async function runWithSchedulerOverlapPolicy<T>(
   overlap: typeof diagnosticOverlapPolicy,
   operation: (signal: AbortSignal) => Promise<T>,
 ) {
-  if (overlap !== 'skip') throw new Error(`Unsupported scheduler overlap policy: ${overlap}`)
+  if (overlap !== 'skip') {
+    throw new Error(`Unsupported scheduler overlap policy: ${overlap}`)
+  }
   const key = schedulerLockKey(schedulerId)
   const token = randomUUID()
   const acquired = await connection.set(key, token, 'PX', schedulerLockTtlMs, 'NX')
-  if (acquired !== 'OK') return { executed: false as const }
+  if (acquired !== 'OK') {
+    return { executed: false as const }
+  }
 
   const lease = new AbortController()
   let held = true
   const loseLease = () => {
-    if (!held) return
+    if (!held) {
+      return
+    }
     held = false
     lease.abort(new SchedulerLeaseLostError(schedulerId))
   }
@@ -204,20 +219,23 @@ export async function runWithSchedulerOverlapPolicy<T>(
     // A new owner may have run this concurrently, so it is not this replica's completed run.
     if (!held) {
       const reason = lease.signal.reason
-      if (reason instanceof Error) throw reason
+      if (reason instanceof Error) {
+        throw reason
+      }
       throw new SchedulerLeaseLostError(schedulerId)
     }
     return { executed: true as const, result }
   } finally {
     clearInterval(renewal)
     clearTimeout(watchdog)
-    if (held)
+    if (held) {
       await releaseSchedulerLock(connection, key, token).catch((error) =>
         recordDiagnostic('scheduler.overlap-lock.release-failed', {
           context: { schedulerId },
           error,
         }),
       )
+    }
   }
 }
 

@@ -70,7 +70,7 @@ describe('generated LLM documentation', () => {
     );
 
     expect(second.llmsText).toBe(first.llmsText);
-    expect([...second.generatedFiles]).toEqual([...first.generatedFiles]);
+    expect([...second.generatedFiles]).toStrictEqual([...first.generatedFiles]);
     expect(first.llmsText.length).toBeLessThan(12_000);
     expect(first.llmsText).not.toContain('## Parameters');
     expect(first.generatedFiles.size).toBe(
@@ -85,13 +85,19 @@ describe('generated LLM documentation', () => {
     );
     expect(operationPaths).toHaveLength(operationCount);
     expect(domainPaths).toHaveLength(domainCount);
-    for (const path of conceptPaths) expect(first.generatedFiles.has(path)).toBe(true);
-    for (const path of examplePaths) expect(first.generatedFiles.has(path)).toBe(true);
+    for (const path of conceptPaths) {
+      expect(first.generatedFiles.has(path)).toBe(true);
+    }
+    for (const path of examplePaths) {
+      expect(first.generatedFiles.has(path)).toBe(true);
+    }
 
     for (const operation of fixture.manifest.operations) {
       const path = `operations/${operation.operationId}.md`;
       const page = first.generatedFiles.get(path);
-      if (page === undefined) throw new Error(`Missing operation documentation: ${path}`);
+      if (page === undefined) {
+        throw new Error(`Missing operation documentation: ${path}`);
+      }
       expect(page).toContain(`# ${operation.operationId}`);
       expect(page).toContain(`Stable ID: \`${operation.operationId}\``);
       expect(page).toContain(`client.${operation.facade.domain}.${operation.facade.method}(`);
@@ -113,13 +119,19 @@ describe('generated LLM documentation', () => {
       expect(page).toContain('## Pagination and cache');
       expect(page).toContain('## Structured errors');
       expect(page).toContain(operation.pagination.kind);
-      for (const scope of operation.authentication.scopes) expect(page).toContain(scope);
-      for (const response of operation.responses) expect(page).toContain(response.schema.export);
+      for (const scope of operation.authentication.scopes) {
+        expect(page).toContain(scope);
+      }
+      for (const response of operation.responses) {
+        expect(page).toContain(response.schema.export);
+      }
     }
 
     for (const path of domainPaths) {
       const page = first.generatedFiles.get(path);
-      if (page === undefined) throw new Error(`Missing domain documentation: ${path}`);
+      if (page === undefined) {
+        throw new Error(`Missing domain documentation: ${path}`);
+      }
       expect(page).toContain('## Standalone domain factory');
       expect(page).toContain('## Aggregate client');
       expect(page).toContain("from '@evespace/esi-client/domains/");
@@ -133,18 +145,18 @@ describe('generated LLM documentation', () => {
     const context: EmitterContext = {
       compatibilityDate: fixture.provenance.compatibilityDate,
       correctedDocument: {},
-      normalizedModel: fixture.model,
       namingReviewReport: fixture.namingReviewReport,
+      normalizedModel: fixture.model,
       operationMetadata: fixture.metadata,
       outputDirectory,
       outputPath: (target) => join(outputDirectory, target),
       provenance: fixture.provenance,
     };
 
-    await expect(emitGeneratedDocumentation(context)).resolves.toEqual([
-      { target: 'docs/generated', kind: 'directory' },
-      { target: 'llms.txt', kind: 'file' },
-      { target: 'docs/llms.txt', kind: 'file' },
+    await expect(emitGeneratedDocumentation(context)).resolves.toStrictEqual([
+      { kind: 'directory', target: 'docs/generated' },
+      { kind: 'file', target: 'llms.txt' },
+      { kind: 'file', target: 'docs/llms.txt' },
     ]);
     const [repositoryLlms, siteLlms] = await Promise.all([
       readFile(join(outputDirectory, 'llms.txt'), 'utf8'),
@@ -167,7 +179,7 @@ describe('generated LLM documentation', () => {
     const generatedRoot = new URL('../docs/generated/', import.meta.url);
     const materializedPaths = await listRelativeFiles(generatedRoot);
 
-    expect(materializedPaths).toEqual(sortedText(rendered.generatedFiles.keys()));
+    expect(materializedPaths).toStrictEqual(sortedText(rendered.generatedFiles.keys()));
     await Promise.all(
       materializedPaths.map(async (path) => {
         await expect(readFile(new URL(path, generatedRoot), 'utf8')).resolves.toBe(
@@ -219,7 +231,9 @@ describe('generated LLM documentation', () => {
   it('rejects unsafe and case-colliding operation output paths', async () => {
     const fixture = await loadFixture();
     const operation = fixture.manifest.operations[0];
-    if (operation === undefined) throw new Error('Fixture has no operations');
+    if (operation === undefined) {
+      throw new Error('Fixture has no operations');
+    }
     const unsafe: SerializableOperationManifest = {
       ...fixture.manifest,
       operations: [{ ...operation, operationId: '../escape' }],
@@ -320,7 +334,9 @@ function reversed<Value>(values: readonly Value[]): Value[] {
   const result: Value[] = [];
   for (let index = values.length - 1; index >= 0; index -= 1) {
     const value = values[index];
-    if (value !== undefined) result.push(value);
+    if (value !== undefined) {
+      result.push(value);
+    }
   }
   return result;
 }

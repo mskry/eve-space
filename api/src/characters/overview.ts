@@ -26,14 +26,14 @@ const characterLocationCacheSchema = z.object({
 })
 
 const characterLocationRead = createCharacterEsiRead({
-  operation: 'location',
-  name: 'character-location-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdLocation.transport,
   cacheSchema: characterLocationCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdLocation.transport,
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },
   }),
   map: (response) => mapCharacterLocationSnapshot(response.data),
+  name: 'character-location-core',
+  operation: 'location',
 })
 
 interface CharacterShipSnapshot {
@@ -41,27 +41,27 @@ interface CharacterShipSnapshot {
   name: string
 }
 
-const characterShipCacheSchema = z.object({ typeId: z.number(), name: z.string() })
-const universeTypeCacheSchema = z.object({ name: z.string(), groupId: z.number() })
+const characterShipCacheSchema = z.object({ name: z.string(), typeId: z.number() })
+const universeTypeCacheSchema = z.object({ groupId: z.number(), name: z.string() })
 
 const characterShipRead = createCharacterEsiRead({
-  operation: 'ship',
-  name: 'character-ship-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdShip.transport,
   cacheSchema: characterShipCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdShip.transport,
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },
   }),
   map: (response) => mapCharacterShipSnapshot(response.data),
+  name: 'character-ship-core',
+  operation: 'ship',
 })
 
 const universeTypeRead = createPublicEsiRead({
-  operation: 'universe-type',
-  name: 'universe-type-core',
-  descriptor: operationRegistry.GetUniverseTypesTypeId.transport,
   cacheSchema: universeTypeCacheSchema,
+  descriptor: operationRegistry.GetUniverseTypesTypeId.transport,
   encodeRequest: (input: { typeId: number }) => ({ path: { type_id: input.typeId } }),
   map: (response) => ({ name: response.data.name, groupId: response.data.group_id }),
+  name: 'universe-type-core',
+  operation: 'universe-type',
 })
 
 export const locationScope = characterLocationRead.requiredScope
@@ -93,17 +93,20 @@ export async function getCharacterLocation(
 
   const [system, station] = await Promise.all([
     getUniverseSolarSystem(position.solarSystemId),
-    position.stationId ? getUniverseStation(position.stationId) : Promise.resolve(undefined),
+    position.stationId ? getUniverseStation(position.stationId) : Promise.resolve(),
   ])
   let locationType: CharacterLocation['locationType'] = 'space'
-  if (position.stationId) locationType = 'station'
-  else if (position.structureId) locationType = 'structure'
+  if (position.stationId) {
+    locationType = 'station'
+  } else if (position.structureId) {
+    locationType = 'structure'
+  }
 
   return {
+    locationType,
     solarSystemId: position.solarSystemId,
     solarSystemName: system.data.name,
     solarSystemSecurityStatus: system.data.security_status,
-    locationType,
     ...(position.stationId
       ? { stationId: position.stationId, stationName: station?.data.name }
       : {}),
@@ -125,10 +128,10 @@ export async function getCharacterShip(
   const typeResult = await universeTypeRead.execute({ typeId: ship.typeId })
 
   return {
-    typeId: ship.typeId,
-    typeName: typeResult.data.name,
     groupId: typeResult.data.groupId,
     name: ship.name,
+    typeId: ship.typeId,
+    typeName: typeResult.data.name,
     ...combineEsiReadResultMetadata([
       toEsiReadResultMetadata(shipResult),
       toEsiReadResultMetadata(typeResult),
@@ -150,7 +153,7 @@ function mapCharacterShipSnapshot(
   result: GetCharactersCharacterIdShipResponse,
 ): CharacterShipSnapshot {
   return {
-    typeId: result.ship_type_id,
     name: result.ship_name,
+    typeId: result.ship_type_id,
   }
 }

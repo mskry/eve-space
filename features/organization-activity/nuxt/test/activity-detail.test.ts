@@ -18,12 +18,12 @@ const id = '11111111-1111-4111-8111-111111111111'
 const identity = reactive({
   authenticated: true,
   authorized: true,
-  version: 7,
   characters: [{ characterId: 9001, name: 'Pilot', corporationId: 9801 }],
+  version: 7,
 })
 const route = reactive({
-  query: { activityId: id, characterId: '9001' } as Record<string, string>,
   fullPath: '/jobs?characterId=9001',
+  query: { activityId: id, characterId: '9001' } as Record<string, string>,
 })
 const queries: {
   options: () => any
@@ -47,19 +47,19 @@ beforeEach(() => {
   mocks.route.mockReturnValue(route)
   mocks.identity.mockReturnValue({
     authenticated: computed(() => identity.authenticated),
+    characters: computed(() => identity.characters),
     organizationAuthorized: computed(() => identity.authorized),
     organizationVersion: computed(() => identity.version),
-    characters: computed(() => identity.characters),
   })
   vi.stubGlobal('usePlatformModuleRuntime', () => ({ enabledModuleIds: moduleIds }))
   vi.stubGlobal('usePlatformApi', () => ({
     api: {
       modules: {
         'organization-activity': {
-          details: { ':kind': { ':activityId': { $get: detailGet } } },
           characters: {
             ':characterId': { ':kind': { ':activityId': { $get: participationGet } } },
           },
+          details: { ':kind': { ':activityId': { $get: detailGet } } },
         },
       },
     },
@@ -75,12 +75,12 @@ beforeEach(() => {
   }))
   vi.stubGlobal('usePlatformProtectedQuery', (options: () => any) => {
     const query = {
-      options,
       data: ref<any>(),
       error: ref<Error | null>(null),
+      options,
       persistencePresentation: ref<any>({ kind: 'fresh' }),
-      status: ref('success'),
       refresh: vi.fn(),
+      status: ref('success'),
     }
     queries.push(query)
     return query
@@ -89,7 +89,7 @@ beforeEach(() => {
 
 function enabled(index: number, isClient = true) {
   const { access, subject } = queries[index]!.options()
-  return canRunPlatformProtectedQuery({ ...access, subject, isClient })
+  return canRunPlatformProtectedQuery({ ...access, isClient, subject })
 }
 
 test('allows authorized details and exact owned participation only on the client', () => {
@@ -163,23 +163,23 @@ test('maps participation authorization, failure, loading and empty states', () =
   const state = useActivityDetail('job')
   queries[1]!.data.value = {
     participation: [],
-    resource: { status: 'authorization-required', message: 'Grant the required scope.' },
+    resource: { message: 'Grant the required scope.', status: 'authorization-required' },
   }
 
   expect(state.participationState.value).toMatchObject({
+    action: { label: 'Authorize character' },
+    message: 'Grant the required scope.',
     status: 'authorization-required',
     title: 'Authorize Pilot',
-    message: 'Grant the required scope.',
-    action: { label: 'Authorize character' },
   })
 
   queries[1]!.data.value = undefined
   queries[1]!.error.value = new Error('ESI is unavailable')
-  expect(state.participationState.value).toEqual({
-    status: 'unavailable',
-    title: 'Participation unavailable',
+  expect(state.participationState.value).toStrictEqual({
     message: 'ESI is unavailable',
     retryLabel: 'Retry',
+    status: 'unavailable',
+    title: 'Participation unavailable',
   })
 
   queries[1]!.error.value = null
@@ -187,19 +187,19 @@ test('maps participation authorization, failure, loading and empty states', () =
   expect(state.participationState.value.status).toBe('loading')
 
   queries[1]!.status.value = 'success'
-  expect(state.participationState.value).toEqual({
+  expect(state.participationState.value).toStrictEqual({
+    message: 'No current participation collection is available.',
     status: 'unavailable',
     title: 'Participation unavailable',
-    message: 'No current participation collection is available.',
   })
 
   route.query.characterId = '9002'
   queries[1]!.error.value = new ApiQueryError('Character scope required', { status: 401 })
-  expect(state.participationState.value).toEqual({
+  expect(state.participationState.value).toStrictEqual({
+    action: null,
+    message: 'Character scope required',
     status: 'authorization-required',
     title: 'Character authorization required',
-    message: 'Character scope required',
-    action: null,
   })
 })
 
@@ -209,39 +209,39 @@ test('passes exact IDs and cancellation to typed routes and handles failures', a
     Response.json({
       activity: null,
       objectives: [],
+      refreshFailureClass: 'esi-unavailable',
       stale: true,
       validatedAt: '2026-09-07T10:00:00.000Z',
-      refreshFailureClass: 'esi-unavailable',
     }),
   )
   participationGet.mockResolvedValue(
     Response.json({
       characterId: 9001,
       participation: [],
+      refreshFailureClass: 'esi-cooldown',
       stale: true,
       validatedAt: '2026-09-07T09:55:00.000Z',
-      refreshFailureClass: 'esi-cooldown',
     }),
   )
   const signal = new AbortController().signal
   const detail = await queries[0]!.options().query({ signal })
   const participation = await queries[1]!.options().query({ signal })
   expect(detail).toMatchObject({
+    refreshFailureClass: 'esi-unavailable',
     stale: true,
     validatedAt: '2026-09-07T10:00:00.000Z',
-    refreshFailureClass: 'esi-unavailable',
   })
   expect(participation).toMatchObject({
+    refreshFailureClass: 'esi-cooldown',
     stale: true,
     validatedAt: '2026-09-07T09:55:00.000Z',
-    refreshFailureClass: 'esi-cooldown',
   })
-  expect(participationGet.mock.calls[0]?.[0].param).toEqual({
-    kind: 'job',
+  expect(participationGet.mock.calls[0]?.[0].param).toStrictEqual({
     activityId: id,
     characterId: '9001',
+    kind: 'job',
   })
-  expect(detailGet.mock.calls[0]?.[1]).toEqual({ init: { signal } })
+  expect(detailGet.mock.calls[0]?.[1]).toStrictEqual({ init: { signal } })
   expect(state.authorizationUrl.value).toContain('/9001')
   queries[0]!.error.value = new Error('Unavailable')
   expect(state.state.value.status).toBe('unavailable')
@@ -277,5 +277,5 @@ test('prefers public details and an explicit corporation when available', async 
   expect(state.state.value.status).toBe('ready')
   detailGet.mockResolvedValue(Response.json({ activity: null }))
   await queries[0]!.options().query({ signal: new AbortController().signal })
-  expect(detailGet.mock.calls[0]?.[0].query).toEqual({ corporationId: '9802' })
+  expect(detailGet.mock.calls[0]?.[0].query).toStrictEqual({ corporationId: '9802' })
 })

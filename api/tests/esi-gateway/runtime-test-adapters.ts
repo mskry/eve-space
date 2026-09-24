@@ -35,45 +35,52 @@ export function createRuntimeTestPorts(options: {
 }): EsiExecutionRuntimePorts {
   const ports: EsiExecutionRuntimePorts = {
     authorization: {
-      getCacheAuthorization: async () => ({ tokenVersion: 1 }),
       getAuthorization: async () => ({ accessToken: 'test-token', tokenVersion: 1 }),
+      getCacheAuthorization: async () => ({ tokenVersion: 1 }),
       withAuthorization: async (_characterId, _lifecycleId, _scope, operation) =>
         operation({ accessToken: 'test-token', tokenVersion: 1 }),
       ...options.overrides?.authorization,
     },
     cache: {
-      get: async () => null,
-      set: async () => {},
       delete: async () => {},
+      get: async () => null,
       recordResponse: async () => {},
+      set: async () => {},
       ...options.overrides?.cache,
     },
     coordination: {
-      initializeCacheNamespace: async () => {
-        throw new Error('coordination unavailable')
-      },
       acquireRequestLease: async () => undefined,
-      getRequestLeaseTtl: async () => 0,
-      renewRequestLease: async () => true,
-      releaseRequestLease: async () => true,
-      commitFence: async () => false,
-      getCommittedFence: async () => undefined,
-      getResourceRevision: async () => 0,
-      incrementResourceRevision: async () => 1,
       acquireRequestPermit: async () => ({
         coordinationAvailable: false,
         ttlMs: 30_000,
         renew: async () => true,
         release: async () => {},
       }),
+      commitFence: async () => false,
+      getCommittedFence: async () => undefined,
       getRequestCooldowns: async ({ requests }) =>
         requests.map(() => ({
           active: false,
           retryAfterSeconds: null,
           coordinationAvailable: true,
         })),
+      getRequestLeaseTtl: async () => 0,
+      getResourceRevision: async () => 0,
+      incrementResourceRevision: async () => 1,
+      initializeCacheNamespace: async () => {
+        throw new Error('coordination unavailable')
+      },
       recordResponse: async () => {},
+      releaseRequestLease: async () => true,
+      renewRequestLease: async () => true,
       ...options.overrides?.coordination,
+    },
+    timing: {
+      now: () => Date.now(),
+      randomInteger: () => 0,
+      repeat: () => () => {},
+      wait: async () => {},
+      ...options.overrides?.timing,
     },
     transport: {
       create:
@@ -81,7 +88,9 @@ export function createRuntimeTestPorts(options: {
         async (input, init) => {
           const response = await options.fetch(input, init)
           onResponseBodySettled()
-          if (response instanceof Response) return response
+          if (response instanceof Response) {
+            return response
+          }
           const status = options.status ?? 200
           return new Response(
             status === 204 || status === 304 ? null : JSON.stringify(options.response),
@@ -96,13 +105,6 @@ export function createRuntimeTestPorts(options: {
           )
         },
       ...options.overrides?.transport,
-    },
-    timing: {
-      now: () => Date.now(),
-      wait: async () => {},
-      randomInteger: () => 0,
-      repeat: () => () => {},
-      ...options.overrides?.timing,
     },
   }
   return ports

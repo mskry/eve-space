@@ -34,11 +34,11 @@ function createDialogHost() {
             UiDialog,
             {
               description: 'Compose and send a message.',
-              open: open.value,
-              title: 'New message',
               'onUpdate:open': (value: boolean) => {
                 open.value = value
               },
+              open: open.value,
+              title: 'New message',
             },
             {
               default: () => h('button', { type: 'button' }, 'Primary action'),
@@ -57,7 +57,9 @@ async function mountHost(component: Component) {
 }
 
 afterEach(async () => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   await settle()
   document.body.replaceChildren()
   document.body.removeAttribute('style')
@@ -135,24 +137,24 @@ describe('UiDialog', () => {
             UiDialog,
             {
               description: 'Compose and send a message.',
-              open: open.value,
-              title: 'New message',
               'onUpdate:open': (value: boolean) => {
                 open.value = value
               },
+              open: open.value,
+              title: 'New message',
             },
             {
               default: () =>
                 h(
                   'button',
                   {
-                    type: 'button',
                     onClick: () =>
                       openConfirmDialog({
                         description: 'The draft will be discarded.',
                         onConfirm: () => {},
                         title: 'Discard draft?',
                       }),
+                    type: 'button',
                   },
                   'Discard draft',
                 ),

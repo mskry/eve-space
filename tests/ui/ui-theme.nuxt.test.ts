@@ -7,8 +7,8 @@ import { useTheme } from '../../layers/ui/app/composables/useTheme'
 const ThemeHost = defineComponent({
   props: {
     initialTheme: {
-      type: String,
       required: true,
+      type: String,
     },
   },
   setup(props) {

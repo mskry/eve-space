@@ -15,14 +15,14 @@ import { deploymentModuleSections } from './installed-modules.js'
 export const characterReviewerDisclosureAcceptances = pgTable(
   'character_reviewer_disclosure_acceptances',
   {
-    characterId: bigint('character_id', { mode: 'number' }).notNull(),
-    moduleId: text('module_id').notNull(),
-    sectionId: text('section_id').notNull(),
-    disclosureVersion: integer('disclosure_version').notNull(),
-    authorizationGeneration: integer('authorization_generation').notNull(),
     acceptedAt: timestamp('accepted_at', { withTimezone: true, mode: 'date' })
       .defaultNow()
       .notNull(),
+    authorizationGeneration: integer('authorization_generation').notNull(),
+    characterId: bigint('character_id', { mode: 'number' }).notNull(),
+    disclosureVersion: integer('disclosure_version').notNull(),
+    moduleId: text('module_id').notNull(),
+    sectionId: text('section_id').notNull(),
   },
   (table) => [
     primaryKey({

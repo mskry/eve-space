@@ -17,13 +17,13 @@ vi.mock('../src/runtime/app/composables/usePlatformModuleRuntime.js', () => ({
 }))
 vi.mock('#build/eve-space-platform/navigation', () => ({
   platformNavigation: [
-    { ownerId: 'core', navigationId: 'home', placement: 'dashboard' },
-    { ownerId: 'alpha', navigationId: 'feed', placement: 'dashboard' },
-    { ownerId: 'alpha', navigationId: 'skills', placement: 'dashboard', sectionId: 'skills' },
-    { ownerId: 'alpha', navigationId: 'assets', placement: 'dashboard', sectionId: 'assets' },
-    { ownerId: 'core', navigationId: 'settings', placement: 'dashboard' },
-    { ownerId: 'beta', navigationId: 'feed', placement: 'dashboard' },
-    { ownerId: 'alpha', navigationId: 'character', placement: 'character' },
+    { navigationId: 'home', ownerId: 'core', placement: 'dashboard' },
+    { navigationId: 'feed', ownerId: 'alpha', placement: 'dashboard' },
+    { navigationId: 'skills', ownerId: 'alpha', placement: 'dashboard', sectionId: 'skills' },
+    { navigationId: 'assets', ownerId: 'alpha', placement: 'dashboard', sectionId: 'assets' },
+    { navigationId: 'settings', ownerId: 'core', placement: 'dashboard' },
+    { navigationId: 'feed', ownerId: 'beta', placement: 'dashboard' },
+    { navigationId: 'character', ownerId: 'alpha', placement: 'character' },
   ],
 }))
 
@@ -32,15 +32,15 @@ describe('runtime navigation', () => {
     data.value = undefined
     enabledModuleIds.value = new Set()
     const { navigation } = usePlatformNavigation('dashboard')
-    expect(navigation.value.map((entry) => entry.navigationId)).toEqual(['home', 'settings'])
+    expect(navigation.value.map((entry) => entry.navigationId)).toStrictEqual(['home', 'settings'])
     enabledModuleIds.value = new Set(['alpha'])
-    expect(navigation.value.map((entry) => entry.navigationId)).toEqual([
+    expect(navigation.value.map((entry) => entry.navigationId)).toStrictEqual([
       'home',
       'feed',
       'settings',
     ])
     enabledSectionKeys.value = new Set(['alpha/skills'])
-    expect(navigation.value.map((entry) => entry.navigationId)).toEqual([
+    expect(navigation.value.map((entry) => entry.navigationId)).toStrictEqual([
       'home',
       'feed',
       'skills',
@@ -48,7 +48,7 @@ describe('runtime navigation', () => {
     ])
     expect(
       usePlatformNavigation('character').navigation.value.map((entry) => entry.navigationId),
-    ).toEqual(['character'])
+    ).toStrictEqual(['character'])
   })
   it('uses owner-qualified server order and inserts missing entries beside their predecessors', () => {
     enabledModuleIds.value = new Set(['alpha', 'beta'])
@@ -56,22 +56,17 @@ describe('runtime navigation', () => {
     data.value = {
       shellNavigationOrder: {
         dashboard: [
-          { ownerId: 'beta', navigationId: 'feed' },
-          { ownerId: 'missing', navigationId: 'feed' },
-          { ownerId: 'alpha', navigationId: 'feed' },
+          { navigationId: 'feed', ownerId: 'beta' },
+          { navigationId: 'feed', ownerId: 'missing' },
+          { navigationId: 'feed', ownerId: 'alpha' },
         ],
       },
     }
     const { navigation } = usePlatformNavigation('dashboard')
-    expect(navigation.value.map((entry) => `${entry.ownerId}/${entry.navigationId}`)).toEqual([
-      'core/home',
-      'beta/feed',
-      'alpha/feed',
-      'alpha/skills',
-      'alpha/assets',
-      'core/settings',
-    ])
+    expect(navigation.value.map((entry) => `${entry.ownerId}/${entry.navigationId}`)).toStrictEqual(
+      ['core/home', 'beta/feed', 'alpha/feed', 'alpha/skills', 'alpha/assets', 'core/settings'],
+    )
     enabledModuleIds.value = new Set()
-    expect(navigation.value.map((entry) => entry.navigationId)).toEqual(['home', 'settings'])
+    expect(navigation.value.map((entry) => entry.navigationId)).toStrictEqual(['home', 'settings'])
   })
 })

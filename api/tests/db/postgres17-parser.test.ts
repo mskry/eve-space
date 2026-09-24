@@ -9,7 +9,7 @@ describe('PostgreSQL 17 parser adapter', () => {
   test('loads the versioned WASM parser and reports its grammar identity', async () => {
     await expect(parsePostgres17Migration('select 17')).resolves.toMatchObject({
       grammarMajorVersion: 17,
-      parserVersion: 170004,
+      parserVersion: 170_004,
       statements: [{ kind: 'SelectStmt' }],
     })
   })
@@ -17,8 +17,8 @@ describe('PostgreSQL 17 parser adapter', () => {
   test('passes exact migration text to the parser', async () => {
     const sql = 'select 1;\r\n-- exact bytes\r\nselect 2;'
     const parse = vi.fn(async () => ({
-      version: 170004,
       stmts: [{ stmt: { SelectStmt: {} } }],
+      version: 170_004,
     }))
 
     await parsePostgres17Migration(sql, () => ({ parse }))
@@ -48,14 +48,14 @@ describe('PostgreSQL 17 parser adapter', () => {
       'version',
       () =>
         parsePostgres17Migration('select 1', () => ({
-          parse: async () => ({ version: 160006, stmts: [] }),
+          parse: async () => ({ stmts: [], version: 160_006 }),
         })),
     ],
     [
       'result',
       () =>
         parsePostgres17Migration('select 1', () => ({
-          parse: async () => ({ version: 170004, stmts: [{ stmt: {} }] }),
+          parse: async () => ({ stmts: [{ stmt: {} }], version: 170_004 }),
         })),
     ],
   ])('maps a %s failure without exposing parser diagnostics', async (failure, parse) => {
@@ -70,7 +70,7 @@ describe('PostgreSQL 17 parser adapter', () => {
     expect(() =>
       assertModuleMigrationAstPolicy('eve_module_alpha', {
         grammarMajorVersion: 17,
-        parserVersion: 170004,
+        parserVersion: 170_004,
         statements: [
           {
             kind: 'SelectStmt',
@@ -85,7 +85,7 @@ describe('PostgreSQL 17 parser adapter', () => {
     expect(() =>
       assertModuleMigrationAstPolicy('eve_module_alpha', {
         grammarMajorVersion: 17,
-        parserVersion: 170004,
+        parserVersion: 170_004,
         statements: [
           {
             kind: 'SelectStmt',
@@ -112,7 +112,7 @@ describe('PostgreSQL 17 parser adapter', () => {
         'eve_module_alpha',
         {
           grammarMajorVersion: 17,
-          parserVersion: 170004,
+          parserVersion: 170_004,
           statements: [
             {
               kind: 'CreateFunctionStmt',
@@ -120,6 +120,11 @@ describe('PostgreSQL 17 parser adapter', () => {
                 funcname: [
                   { String: { sval: 'eve_module_alpha' } },
                   { String: { sval: 'persist_read_snapshot' } },
+                ],
+                options: [
+                  option('language', 'sql'),
+                  option('volatility', 'stable'),
+                  option('parallel', 'unsafe'),
                 ],
                 parameters: [
                   {
@@ -137,11 +142,6 @@ describe('PostgreSQL 17 parser adapter', () => {
                   names: [{ String: { sval: 'jsonb' } }],
                   typemod: -1,
                 },
-                options: [
-                  option('language', 'sql'),
-                  option('volatility', 'stable'),
-                  option('parallel', 'unsafe'),
-                ],
                 sql_body: { ReturnStmt: { returnval: { FutureRoutineNode: {} } } },
               },
             },
@@ -149,9 +149,9 @@ describe('PostgreSQL 17 parser adapter', () => {
         },
         [
           {
+            mode: 'read',
             operationId: 'read-snapshot',
             routineName: 'persist_read_snapshot',
-            mode: 'read',
           },
         ],
       ),
@@ -162,9 +162,9 @@ describe('PostgreSQL 17 parser adapter', () => {
 function option(name: string, value: string) {
   return {
     DefElem: {
-      defname: name,
       arg: { String: { sval: value } },
       defaction: 'DEFELEM_UNSPEC',
+      defname: name,
     },
   }
 }

@@ -6,7 +6,7 @@ describe('generated module route composition', () => {
     const response = await app.request('/api/modules/not-installed')
 
     expect(response.status).toBe(404)
-    await expect(response.json()).resolves.toEqual({ message: 'Route not found' })
+    await expect(response.json()).resolves.toStrictEqual({ message: 'Route not found' })
   })
 
   test('does not change existing core route composition', async () => {

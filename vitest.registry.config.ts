@@ -12,8 +12,14 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'node',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'lcov'],
+      reportsDirectory: 'coverage-registry',
+      thresholds: coverageThresholdScopes.registry.thresholds,
+    },
     env: { DATABASE_URL: 'postgres://localhost:5432/eve_space' },
+    environment: 'node',
     include: [
       'tests/platform/auth-boundaries.test.ts',
       'tests/platform/character-boundaries.test.ts',
@@ -30,11 +36,5 @@ export default defineConfig({
       'tests/platform/external-module-archives.test.ts',
       'tests/platform/platform-module-registry.test.ts',
     ],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json-summary', 'lcov'],
-      reportsDirectory: 'coverage-registry',
-      thresholds: coverageThresholdScopes.registry.thresholds,
-    },
   },
 })

@@ -15,7 +15,7 @@ export { prefetchQuery }
 
 export function removeCharacterQueries(queryCache: QueryCache, characterId: number) {
   removePlatformQueryScope(queryCache, PRIVATE_QUERY_KEYS.character(characterId))
-  void refreshPrivateAuthorization(queryCache, { kind: 'character', characterId })
+  void refreshPrivateAuthorization(queryCache, { characterId, kind: 'character' })
 }
 
 export async function refreshPrivateAuthorization(

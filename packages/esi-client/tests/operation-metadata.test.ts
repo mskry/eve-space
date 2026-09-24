@@ -27,7 +27,7 @@ describe('operation facade naming and safety metadata', () => {
 
     expect(defaultDomainName(makeOperation('get_item', 'GET', null))).toBe('item');
     expect(defaultMethodName('get_XML-items')).toBe('getXmlItems');
-    await expect(resolveSyntheticOperationMetadata(model)).resolves.toEqual([
+    await expect(resolveSyntheticOperationMetadata(model)).resolves.toStrictEqual([
       {
         classification: 'mutation',
         domain: 'esi',
@@ -59,23 +59,23 @@ describe('operation facade naming and safety metadata', () => {
     ]);
     const facadeCatalogPath = await writeFacadeCatalog('naming', [
       {
-        operationId: 'get_item',
         domain: 'inventory',
         method: 'findItem',
+        operationId: 'get_item',
         reviewed: true,
       },
       {
-        operationId: 'post_search',
         domain: 'search',
         method: 'search',
-        reviewed: true,
         note: 'POST is used for this read-like search.',
+        operationId: 'post_search',
+        reviewed: true,
       },
     ]);
     const safetyOverridesPath = await writeConfig('safety', [
       {
-        operationId: 'post_search',
         classification: 'read',
+        operationId: 'post_search',
         reason: 'Searches without changing server state.',
         reviewed: true,
       },
@@ -86,7 +86,7 @@ describe('operation facade naming and safety metadata', () => {
       safetyOverridesPath,
     });
 
-    expect(metadata).toEqual([
+    expect(metadata).toStrictEqual([
       {
         classification: 'read',
         domain: 'inventory',
@@ -115,7 +115,7 @@ describe('operation facade naming and safety metadata', () => {
       Object.fromEntries(
         metadata.map(({ classification, operationId }) => [operationId, classification]),
       ),
-    ).toEqual({
+    ).toStrictEqual({
       delete_item: 'mutation',
       get_item: 'read',
       head_item: 'mutation',
@@ -295,7 +295,7 @@ describe('operation facade naming and safety metadata', () => {
 
     const catalog = await loadFacadeCatalog(makeModel([makeOperation('get_item')]), path);
 
-    expect(catalog).toEqual([entry]);
+    expect(catalog).toStrictEqual([entry]);
     expect(Object.isFrozen(catalog)).toBe(true);
     expect(Object.isFrozen(catalog[0])).toBe(true);
   });
@@ -307,15 +307,21 @@ function makeOperation(
   domainSource: string | null = 'Items',
 ): NormalizedOperation {
   return {
-    operationId,
-    method,
-    path: '/items',
-    domainSource,
-    tags: domainSource === null ? [] : [domainSource],
-    summary: null,
+    cache: { extensions: {}, responseHeaders: [] },
+    conditionalRequestValidators: [],
     description: null,
+    domainSource,
+    extensions: {},
+    maximumBatchSize: null,
+    method,
+    operationId,
+    pagination: { kind: 'none', requestParameters: [], responseHeaders: [] },
     parameters: [],
+    path: '/items',
+    rateLimit: { kind: 'legacy-only' },
+    requestArrayLimits: [],
     requestBody: null,
+    security: [],
     successResponses: [
       {
         status: '204',
@@ -326,40 +332,34 @@ function makeOperation(
         extensions: {},
       },
     ],
-    security: [],
-    pagination: { kind: 'none', requestParameters: [], responseHeaders: [] },
-    cache: { responseHeaders: [], extensions: {} },
-    conditionalRequestValidators: [],
-    rateLimit: { kind: 'legacy-only' },
-    requestArrayLimits: [],
-    maximumBatchSize: null,
-    extensions: {},
+    summary: null,
+    tags: domainSource === null ? [] : [domainSource],
   };
 }
 
 function makeModel(operations: readonly NormalizedOperation[]): NormalizedOpenApiModel {
   const operationIds = operations.map(({ operationId }) => operationId);
   return {
-    operations,
-    models: [],
+    accounting: {
+      excludedOperationIds: [],
+      normalizedOperationIds: operationIds,
+      sourceOperationIds: operationIds,
+    },
     exclusions: [],
     inventory: { openapi: [], schemas: [] },
-    accounting: {
-      sourceOperationIds: operationIds,
-      normalizedOperationIds: operationIds,
-      excludedOperationIds: [],
-    },
+    models: [],
+    operations,
   };
 }
 
 function reviewedNaming(operationId: string) {
-  return { operationId, domain: 'items', method: 'getItem', reviewed: true };
+  return { domain: 'items', method: 'getItem', operationId, reviewed: true };
 }
 
 function reviewedSafety(operationId: string) {
   return {
-    operationId,
     classification: 'read',
+    operationId,
     reason: 'Reviewed as read-like.',
     reviewed: true,
   };
@@ -372,7 +372,7 @@ async function writeConfig(
 ): Promise<string> {
   const directory = await makeTemporaryDirectory(`esi-client-${name}-overrides-`);
   const path = join(directory, 'config.json');
-  await writeFile(path, `${JSON.stringify({ schemaVersion: 1, overrides, ...extra })}\n`);
+  await writeFile(path, `${JSON.stringify({ overrides, schemaVersion: 1, ...extra })}\n`);
   return path;
 }
 
@@ -383,7 +383,7 @@ async function writeFacadeCatalog(
 ): Promise<string> {
   const directory = await makeTemporaryDirectory(`esi-client-${name}-catalog-`);
   const path = join(directory, 'config.json');
-  await writeFile(path, `${JSON.stringify({ schemaVersion: 2, operations, ...extra })}\n`);
+  await writeFile(path, `${JSON.stringify({ operations, schemaVersion: 2, ...extra })}\n`);
   return path;
 }
 
@@ -392,13 +392,15 @@ async function resolveSyntheticOperationMetadata(model: NormalizedOpenApiModel) 
     'synthetic-naming',
     model.operations.reduce<ReturnType<typeof reviewedNaming>[]>((catalog, operation) => {
       const entry = {
-        operationId: operation.operationId,
         domain: defaultDomainName(operation),
         method: defaultMethodName(operation.operationId),
+        operationId: operation.operationId,
         reviewed: true as const,
       };
       const index = catalog.findIndex(({ operationId }) => entry.operationId < operationId);
-      if (index === -1) return [...catalog, entry];
+      if (index === -1) {
+        return [...catalog, entry];
+      }
       return [...catalog.slice(0, index), entry, ...catalog.slice(index)];
     }, []),
   );

@@ -11,20 +11,14 @@ const alphaReviewerPanel = `${alphaPackageRoot}/src/runtime/reviewer/overview.vu
 const betaReviewerPanel = `${betaPackageRoot}/src/runtime/reviewer/details.vue`
 
 export default defineNuxtConfig({
-  runtimeConfig: {
-    public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE ?? '',
-      eveImageBase: 'https://images.evetech.net',
-    },
-  },
   alias: {
     '@eve-space/alpha-nuxt/reviewer/overview': alphaReviewerPanel,
     '@eve-space/alpha-nuxt': `${alphaPackageRoot}/src/module.js`,
     '@eve-space/beta-nuxt/reviewer/details': betaReviewerPanel,
     '@eve-space/beta-nuxt': `${betaPackageRoot}/src/module.js`,
-    '@eve-space/platform-module-nuxt/runtime': platformRuntimeEntry,
     '@eve-space/platform-module-nuxt/runtime/platform-api': `${platformRuntime}/platform-api.ts`,
     '@eve-space/platform-module-nuxt/runtime/reviewer-panel': `${platformRuntime}/reviewer-panel.ts`,
+    '@eve-space/platform-module-nuxt/runtime': platformRuntimeEntry,
   },
   modules: [
     [
@@ -139,4 +133,10 @@ export default defineNuxtConfig({
     ],
     alphaNuxtModule,
   ],
+  runtimeConfig: {
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE ?? '',
+      eveImageBase: 'https://images.evetech.net',
+    },
+  },
 })

@@ -48,8 +48,9 @@ export function projectRegisteredEsiRequestIdentity(
 }
 
 function requireArrayBody(inputs: Readonly<Record<string, unknown>>, operation: string) {
-  if (!Array.isArray(inputs.body))
-    throw new Error(`ESI identity request body for ${operation} must be an array`)
+  if (!Array.isArray(inputs.body)) {
+    throw new TypeError(`ESI identity request body for ${operation} must be an array`)
+  }
   return inputs.body
 }
 
@@ -62,10 +63,12 @@ function assertBoundedIntegerBody(
   maximumItems: number,
   operation: string,
 ) {
-  if (values.length === 0 || values.length > maximumItems)
+  if (values.length === 0 || values.length > maximumItems) {
     throw new Error(
       `ESI identity request body for ${operation} must contain between 1 and ${maximumItems} items`,
     )
-  if (values.some((value) => typeof value !== 'number' || !Number.isSafeInteger(value)))
+  }
+  if (values.some((value) => typeof value !== 'number' || !Number.isSafeInteger(value))) {
     throw new Error(`ESI identity request body for ${operation} must contain safe integers`)
+  }
 }

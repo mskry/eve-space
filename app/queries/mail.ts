@@ -77,8 +77,8 @@ export interface CalculateMailCspaMutationParameters extends MailQueryParameters
 
 const mailIdentityMismatch = () =>
   new ApiQueryError('Mail response did not match the requested identity.', {
-    status: 409,
     code: 'MAIL_IDENTITY_MISMATCH',
+    status: 409,
   })
 
 export const mailHeadersQuery = defineEsiQueryOptions(
@@ -101,7 +101,9 @@ export const mailHeadersQuery = defineEsiQueryOptions(
           throw await toApiQueryError(response, 'Mail headers are unavailable.')
         }
         const mail: MailHeaders = await response.json()
-        if (mail.characterId !== characterId) throw mailIdentityMismatch()
+        if (mail.characterId !== characterId) {
+          throw mailIdentityMismatch()
+        }
         return mail
       },
       ...QUERY_POLICY.mailHeaders,
@@ -144,7 +146,9 @@ export const mailLabelsQuery = defineEsiQueryOptions(
         throw await toApiQueryError(response, 'Mail labels are unavailable.')
       }
       const labels: MailLabels = await response.json()
-      if (labels.characterId !== characterId) throw mailIdentityMismatch()
+      if (labels.characterId !== characterId) {
+        throw mailIdentityMismatch()
+      }
       return labels
     },
     ...QUERY_POLICY.mailLabels,
@@ -164,7 +168,9 @@ export const mailingListsQuery = defineEsiQueryOptions(
         throw await toApiQueryError(response, 'Mailing lists are unavailable.')
       }
       const lists: MailingLists = await response.json()
-      if (lists.characterId !== characterId) throw mailIdentityMismatch()
+      if (lists.characterId !== characterId) {
+        throw mailIdentityMismatch()
+      }
       return lists
     },
     ...QUERY_POLICY.mailingLists,
@@ -183,8 +189,8 @@ export const resolveMailRecipientsQuery = defineEsiQueryOptions(
           ':characterId'
         ].mail.recipients.resolve.$post(
           {
-            param: { characterId: String(characterId) },
             json: { names: normalizedNames },
+            param: { characterId: String(characterId) },
           },
           { init: { signal } },
         )
@@ -219,7 +225,9 @@ export const searchMailRecipientsQuery = defineEsiQueryOptions(
           throw await toApiQueryError(response, 'Mail recipients could not be searched.')
         }
         const result: MailRecipientSearch = await response.json()
-        if (result.characterId !== characterId) throw mailIdentityMismatch()
+        if (result.characterId !== characterId) {
+          throw mailIdentityMismatch()
+        }
         return result
       },
       ...QUERY_POLICY.mailRecipientSearch,
@@ -235,8 +243,8 @@ export async function mailReadMutation({
   read,
 }: MailReadMutationParameters) {
   const response = await apiClient.api.me.characters[':characterId'].mail[':mailId'].$put({
-    param: { characterId: String(characterId), mailId: String(mailId) },
     json: { read },
+    param: { characterId: String(characterId), mailId: String(mailId) },
   })
   if (response.status !== 204) {
     throw await toApiQueryError(response, 'Mail read state could not be changed.')
@@ -263,14 +271,16 @@ export async function createMailLabelMutation({
   color,
 }: CreateMailLabelMutationParameters) {
   const response = await apiClient.api.me.characters[':characterId'].mail.labels.$post({
-    param: { characterId: String(characterId) },
     json: { name, ...(color === undefined ? {} : { color }) },
+    param: { characterId: String(characterId) },
   })
   if (response.status !== 201) {
     throw await toApiQueryError(response, 'Mail label could not be created.')
   }
   const result = await response.json()
-  if (result.characterId !== characterId) throw mailIdentityMismatch()
+  if (result.characterId !== characterId) {
+    throw mailIdentityMismatch()
+  }
   return result.labelId
 }
 
@@ -296,8 +306,8 @@ export async function assignMailLabelsMutation({
   mailId,
 }: AssignMailLabelsMutationParameters) {
   const response = await apiClient.api.me.characters[':characterId'].mail[':mailId'].$put({
-    param: { characterId: String(characterId), mailId: String(mailId) },
     json: { labels: [...labels] },
+    param: { characterId: String(characterId), mailId: String(mailId) },
   })
   if (response.status !== 204) {
     throw await toApiQueryError(response, 'Mail labels could not be changed.')
@@ -313,14 +323,16 @@ export async function sendMailMutation({
   approvedCost,
 }: SendMailMutationParameters) {
   const response = await apiClient.api.me.characters[':characterId'].mail.$post({
-    param: { characterId: String(characterId) },
     json: { approvedCost, body, recipients, subject },
+    param: { characterId: String(characterId) },
   })
   if (response.status !== 201) {
     throw await toApiQueryError(response, 'Mail could not be sent.')
   }
   const result = await response.json()
-  if (result.characterId !== characterId) throw mailIdentityMismatch()
+  if (result.characterId !== characterId) {
+    throw mailIdentityMismatch()
+  }
   return result.mailId
 }
 
@@ -330,13 +342,15 @@ export async function calculateMailCspaMutation({
   recipientIds,
 }: CalculateMailCspaMutationParameters) {
   const response = await apiClient.api.me.characters[':characterId'].mail.cspa.$post({
-    param: { characterId: String(characterId) },
     json: { characterIds: [...new Set(recipientIds)] },
+    param: { characterId: String(characterId) },
   })
   if (response.status !== 200) {
     throw await toApiQueryError(response, 'The recipient charge could not be determined.')
   }
   const result: MailCspaCharge = await response.json()
-  if (result.characterId !== characterId) throw mailIdentityMismatch()
+  if (result.characterId !== characterId) {
+    throw mailIdentityMismatch()
+  }
   return result.cost
 }

@@ -13,19 +13,21 @@ import {
 describe('asset hierarchy', () => {
   it('groups roots by location and attaches nested children in deterministic display order', () => {
     const hierarchy = buildAssetHierarchy([
-      asset(4, { locationId: 2, locationName: 'Amarr', customName: 'Zulu' }),
-      asset(3, { locationId: 1, locationName: 'Jita', customName: null, typeName: 'Veldspar' }),
-      asset(2, { locationType: 'item', locationId: 1, parentItemId: 1, customName: 'Beta' }),
-      asset(1, { locationId: 1, locationName: 'Jita', customName: 'Alpha' }),
+      asset(4, { customName: 'Zulu', locationId: 2, locationName: 'Amarr' }),
+      asset(3, { customName: null, locationId: 1, locationName: 'Jita', typeName: 'Veldspar' }),
+      asset(2, { customName: 'Beta', locationId: 1, locationType: 'item', parentItemId: 1 }),
+      asset(1, { customName: 'Alpha', locationId: 1, locationName: 'Jita' }),
     ])
 
-    expect(hierarchy.map((group) => group.label)).toEqual(['Amarr', 'Jita'])
+    expect(hierarchy.map((group) => group.label)).toStrictEqual(['Amarr', 'Jita'])
     const jita = hierarchy[1]!
     expect(jita.assetCount).toBe(3)
     expect(jita.knownVolume).toBe(3)
-    expect(jita.rows.map((row) => row.asset.itemId)).toEqual([1, 3])
-    expect(jita.rows[0]?.children.map((row) => row.asset.itemId)).toEqual([2])
-    expect(flattenAssetRows(jita.rows, 'all').map(({ row }) => row.asset.itemId)).toEqual([1, 2, 3])
+    expect(jita.rows.map((row) => row.asset.itemId)).toStrictEqual([1, 3])
+    expect(jita.rows[0]?.children.map((row) => row.asset.itemId)).toStrictEqual([2])
+    expect(flattenAssetRows(jita.rows, 'all').map(({ row }) => row.asset.itemId)).toStrictEqual([
+      1, 2, 3,
+    ])
   })
 
   it('handles deep hierarchies without recursive traversal', () => {
@@ -33,8 +35,8 @@ describe('asset hierarchy', () => {
     for (let itemId = 2; itemId <= 20_000; itemId += 1) {
       assets.push(
         asset(itemId, {
-          locationType: 'item',
           locationId: itemId - 1,
+          locationType: 'item',
           parentItemId: itemId - 1,
         }),
       )
@@ -49,12 +51,12 @@ describe('asset hierarchy', () => {
   it('places orphans, self-links, and cycles safely while preserving unrelated branches', () => {
     const hierarchy = buildAssetHierarchy([
       asset(1),
-      asset(2, { locationType: 'item', locationId: 1, parentItemId: 1 }),
-      asset(10, { locationType: 'item', locationId: 999, parentItemId: 999 }),
-      asset(11, { locationType: 'item', locationId: 11, parentItemId: 11 }),
-      asset(20, { locationType: 'item', locationId: 21, parentItemId: 21 }),
-      asset(21, { locationType: 'item', locationId: 22, parentItemId: 22 }),
-      asset(22, { locationType: 'item', locationId: 20, parentItemId: 20 }),
+      asset(2, { locationId: 1, locationType: 'item', parentItemId: 1 }),
+      asset(10, { locationId: 999, locationType: 'item', parentItemId: 999 }),
+      asset(11, { locationId: 11, locationType: 'item', parentItemId: 11 }),
+      asset(20, { locationId: 21, locationType: 'item', parentItemId: 21 }),
+      asset(21, { locationId: 22, locationType: 'item', parentItemId: 22 }),
+      asset(22, { locationId: 20, locationType: 'item', parentItemId: 20 }),
     ])
     const byPlacement = new Map(hierarchy.map((group) => [group.placement, group]))
 
@@ -62,7 +64,7 @@ describe('asset hierarchy', () => {
     expect(byPlacement.get('unresolved-container')?.rows[0]?.asset.itemId).toBe(10)
     expect(byPlacement.get('unresolved-container')?.rows[0]?.issues).toContain('missing-parent')
     const broken = byPlacement.get('broken-cycle')!
-    expect(flattenAssetRows(broken.rows, 'all').map(({ row }) => row.asset.itemId)).toEqual([
+    expect(flattenAssetRows(broken.rows, 'all').map(({ row }) => row.asset.itemId)).toStrictEqual([
       11, 20, 22, 21,
     ])
     expect(broken.rows.find((row) => row.asset.itemId === 11)?.issues).toContain('self-link')
@@ -98,46 +100,46 @@ describe('asset contextual filtering', () => {
   const hierarchy = buildAssetHierarchy([
     asset(1, { customName: 'Travel Kit', typeName: 'Freight Container' }),
     asset(2, {
-      locationType: 'item',
+      categoryId: 6,
+      categoryName: 'Module',
+      groupId: 20,
+      groupName: 'Energy Weapon',
+      isBlueprintCopy: null,
+      isSingleton: true,
+      locationFlag: 'Cargo',
       locationId: 1,
+      locationType: 'item',
       parentItemId: 1,
       typeId: 200,
       typeName: 'Café Laser',
-      groupId: 20,
-      groupName: 'Energy Weapon',
-      categoryId: 6,
-      categoryName: 'Module',
-      isSingleton: true,
-      isBlueprintCopy: null,
-      locationFlag: 'Cargo',
     }),
     asset(3, {
-      locationType: 'item',
+      categoryId: 6,
+      categoryName: 'Module',
+      groupId: 30,
+      groupName: 'Shield',
+      isBlueprintCopy: null,
+      isSingleton: true,
+      locationFlag: 'Cargo',
       locationId: 1,
+      locationType: 'item',
       parentItemId: 1,
       typeId: 300,
       typeName: 'Shield Booster',
-      groupId: 30,
-      groupName: 'Shield',
-      categoryId: 6,
-      categoryName: 'Module',
-      isSingleton: true,
-      isBlueprintCopy: null,
-      locationFlag: 'Cargo',
     }),
     asset(4, {
-      locationType: 'item',
+      categoryId: 9,
+      categoryName: 'Blueprint',
+      groupId: 40,
+      groupName: 'Module Blueprint',
+      isBlueprintCopy: true,
+      isSingleton: true,
+      locationFlag: 'Cargo',
       locationId: 1,
+      locationType: 'item',
       parentItemId: 1,
       typeId: 400,
       typeName: 'Shield Booster Blueprint',
-      groupId: 40,
-      groupName: 'Module Blueprint',
-      categoryId: 9,
-      categoryName: 'Blueprint',
-      isSingleton: true,
-      isBlueprintCopy: true,
-      locationFlag: 'Cargo',
     }),
   ])
 
@@ -148,7 +150,7 @@ describe('asset contextual filtering', () => {
     expect(result.groups[0]?.label).toBe('Jita IV - Moon 4')
     expect(
       flattenAssetRows(result.groups[0]!.rows, 'all').map(({ row }) => row.asset.itemId),
-    ).toEqual([1, 2])
+    ).toStrictEqual([1, 2])
   })
 
   it('searches custom name, location, group, category, blueprint, singleton, and flag context', () => {
@@ -169,14 +171,14 @@ describe('asset contextual filtering', () => {
     const result = filterAssetHierarchy(
       hierarchy,
       filters({
-        typeIds: [200],
-        groupIds: [20],
+        blueprint: 'unknown',
         categoryIds: [6],
+        flags: ['Cargo'],
+        groupIds: [20],
         locationKeys: [hierarchy[0]!.key],
         locationTypes: ['station'],
-        flags: ['Cargo'],
         singleton: 'yes',
-        blueprint: 'unknown',
+        typeIds: [200],
       }),
     )
     expect(result.matchCount).toBe(1)
@@ -185,47 +187,47 @@ describe('asset contextual filtering', () => {
     expect(hierarchy[0]?.assetCount).toBe(4)
 
     const empty = filterAssetHierarchy(hierarchy, filters({ typeIds: [999] }))
-    expect(empty).toEqual({ groups: [], matchCount: 0, sourceCount: 4 })
+    expect(empty).toStrictEqual({ groups: [], matchCount: 0, sourceCount: 4 })
   })
 })
 
 function filters(overrides: Partial<Parameters<typeof filterAssetHierarchy>[1]> = {}) {
   return {
-    search: '',
-    typeIds: [],
-    groupIds: [],
+    blueprint: 'all' as const,
     categoryIds: [],
+    flags: [],
+    groupIds: [],
     locationKeys: [],
     locationTypes: [],
-    flags: [],
+    search: '',
     singleton: 'all' as const,
-    blueprint: 'all' as const,
+    typeIds: [],
     ...overrides,
   }
 }
 
 function asset(itemId: number, overrides: Partial<AssetRecord> = {}): AssetRecord {
   return {
-    itemId,
-    typeId: 100,
-    typeName: 'Container',
-    groupId: 12,
-    groupName: 'Cargo Container',
     categoryId: 65,
     categoryName: 'Structure',
-    unitVolume: 1,
-    totalVolume: 1,
-    quantity: 1,
-    isSingleton: true,
-    isBlueprintCopy: null,
     customName: null,
-    locationId: 60003760,
-    locationType: 'station',
+    groupId: 12,
+    groupName: 'Cargo Container',
+    isBlueprintCopy: null,
+    isSingleton: true,
+    itemId,
+    locationFlag: 'Hangar',
+    locationId: 60_003_760,
     locationName: 'Jita IV - Moon 4',
+    locationType: 'station',
+    parentItemId: null,
+    quantity: 1,
     solarSystemId: 30_000_142,
     solarSystemSecurityStatus: 0.9,
-    locationFlag: 'Hangar',
-    parentItemId: null,
+    totalVolume: 1,
+    typeId: 100,
+    typeName: 'Container',
+    unitVolume: 1,
     ...overrides,
   }
 }
@@ -275,12 +277,12 @@ describe('placement labels', () => {
 describe('group ordering', () => {
   it('sorts unresolved placements after resolved locations', () => {
     const groups = buildAssetHierarchy([
-      asset(1, { locationId: 1, locationType: 'item', locationName: null, parentItemId: 404 }),
+      asset(1, { locationId: 1, locationName: null, locationType: 'item', parentItemId: 404 }),
       asset(2, { locationId: 60_003_760, locationName: 'Zzz Station' }),
       asset(3, { locationId: 60_003_761, locationName: 'Aaa Station' }),
     ])
 
-    expect(groups.map((group) => group.label)).toEqual([
+    expect(groups.map((group) => group.label)).toStrictEqual([
       'Aaa Station',
       'Zzz Station',
       'Restricted structure',

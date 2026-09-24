@@ -122,7 +122,9 @@ export function validateDocumentationConsistency(
   for (const operationId of uniqueOperationIds) {
     const path = `docs/generated/operations/${operationId}.md`;
     const content = documents.get(path);
-    if (content === undefined) throw new Error(`Missing operation reference: ${operationId}`);
+    if (content === undefined) {
+      throw new Error(`Missing operation reference: ${operationId}`);
+    }
     assertSingleOccurrence(
       content,
       `Stable ID: \`${operationId}\``,
@@ -193,7 +195,9 @@ function validateDocumentationLink(
     );
   }
   const pathTarget = rawTarget.split(/[?#]/u, 1)[0];
-  if (pathTarget === undefined || pathTarget === '') return;
+  if (pathTarget === undefined || pathTarget === '') {
+    return;
+  }
 
   const decodedTarget = decodeDocumentationTarget(sourcePath, rawTarget, pathTarget);
   if (decodedTarget.includes('\\')) {
@@ -292,7 +296,9 @@ function assertExactPaths(
   actual: readonly string[],
   expected: readonly string[],
 ): void {
-  if (sameStrings(actual, expected)) return;
+  if (sameStrings(actual, expected)) {
+    return;
+  }
   const actualSet = new Set(actual);
   const expectedSet = new Set(expected);
   const missing = expected.filter((path) => !actualSet.has(path));
@@ -304,8 +310,9 @@ function assertExactPaths(
 
 function assertSingleOccurrence(content: string, text: string, label: string): void {
   const count = content.split(text).length - 1;
-  if (count !== 1)
+  if (count !== 1) {
     throw new Error(`Generated documentation must contain exactly one ${label}; found ${count}`);
+  }
 }
 
 function pathsUnder(files: ReadonlyMap<string, string>, prefix: string): string[] {
@@ -357,8 +364,12 @@ function formatList(values: readonly string[]): string {
 }
 
 function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
+  if (left < right) {
+    return -1;
+  }
+  if (left > right) {
+    return 1;
+  }
   return 0;
 }
 

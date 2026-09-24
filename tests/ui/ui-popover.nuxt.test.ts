@@ -25,10 +25,10 @@ function createHost(arrow = true) {
               'aria-label': 'Item information',
               arrow,
               'data-surface': 'item-information',
-              open: open.value,
               'onUpdate:open': (value: boolean) => {
                 open.value = value
               },
+              open: open.value,
             },
             {
               default: () => [
@@ -69,7 +69,9 @@ async function dismissWithClose(trigger: HTMLButtonElement) {
 }
 
 afterEach(async () => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   await settle()
   document.body.replaceChildren()
 })

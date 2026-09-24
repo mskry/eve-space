@@ -76,11 +76,11 @@ export async function collectDomainEventEvidence(
         reviewAll || changed.has(producer.file) || consumerAffectedTypes.has(producer.eventType),
     )
     .map((producer) => ({
-      id: producer.id,
-      producer,
+      consumers: consumers.get(producer.eventType) ?? [],
       definition:
         definitions.get(definitionKey(producer.eventType, producer.payloadVersion ?? 1)) ?? null,
-      consumers: consumers.get(producer.eventType) ?? [],
+      id: producer.id,
+      producer,
     }))
     .toSorted((left, right) => left.id.localeCompare(right.id))
 }
@@ -97,8 +97,9 @@ function affectedConsumerEventTypes(
           changedFiles.has(handler.file) ||
           handler.dependencyFiles.some((file) => changedFiles.has(file)),
       )
-    )
+    ) {
       affected.add(eventType)
+    }
   }
   return affected
 }
@@ -108,14 +109,18 @@ function producerEvidenceInSource(
   source: string,
   registeredEventTypes: readonly string[],
 ) {
-  if (!source) return []
+  if (!source) {
+    return []
+  }
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
   const appendBindings = importedBindings(
     sourceFile,
     (specifier) => specifier.endsWith('/domain-events/store.js'),
     'appendDomainEvent',
   )
-  if (appendBindings.size === 0) return []
+  if (appendBindings.size === 0) {
+    return []
+  }
   const lines = source.split('\n')
   const producers: DomainEventProducerEvidence[] = []
   visit(sourceFile, (node) => {
@@ -123,27 +128,32 @@ function producerEvidenceInSource(
       !ts.isCallExpression(node) ||
       !ts.isIdentifier(node.expression) ||
       !appendBindings.has(node.expression.text)
-    )
+    ) {
       return
+    }
     const input = unwrapExpression(node.arguments[1])
-    if (!input || !ts.isObjectLiteralExpression(input)) return
+    if (!input || !ts.isObjectLiteralExpression(input)) {
+      return
+    }
     const typeValue = propertyValue(input, 'type')
-    if (!typeValue) return
+    if (!typeValue) {
+      return
+    }
     const lineIndex = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line
     const eventTypeExpression = typeValue.getText(sourceFile)
     for (const eventType of eventTypesFrom(typeValue, registeredEventTypes)) {
       producers.push({
-        id: `${file}:${lineIndex + 1}:${eventType}`,
-        file,
-        line: lineIndex + 1,
-        functionName: enclosingFunctionName(node),
+        aggregateId: propertyCode(sourceFile, input, 'aggregateId'),
+        appendCall: node.getText(sourceFile),
         eventType,
         eventTypeExpression,
-        payloadVersion: numericProperty(input, 'payloadVersion'),
-        aggregateId: propertyCode(sourceFile, input, 'aggregateId'),
-        payload: propertyCode(sourceFile, input, 'payload'),
-        appendCall: node.getText(sourceFile),
+        file,
+        functionName: enclosingFunctionName(node),
+        id: `${file}:${lineIndex + 1}:${eventType}`,
+        line: lineIndex + 1,
         mutationContext: excerptAround(lines, lineIndex),
+        payload: propertyCode(sourceFile, input, 'payload'),
+        payloadVersion: numericProperty(input, 'payloadVersion'),
       })
     }
   })
@@ -152,11 +162,15 @@ function producerEvidenceInSource(
 
 function indexDomainEventDefinitions(source: string) {
   const definitions = new Map<string, DomainEventDefinitionEvidence>()
-  if (!source) return definitions
+  if (!source) {
+    return definitions
+  }
   const sourceFile = ts.createSourceFile(DEFINITIONS_FILE, source, ts.ScriptTarget.Latest, true)
   const schemas = variableDeclarations(sourceFile)
   const registry = objectVariable(sourceFile, 'domainEventRegistry')
-  if (!registry) return definitions
+  if (!registry) {
+    return definitions
+  }
   for (const property of registry.properties) {
     for (const definition of definitionsFromRegistryProperty(property, sourceFile, schemas)) {
       definitions.set(definitionKey(definition.eventType, definition.payloadVersion), definition)
@@ -170,23 +184,33 @@ function definitionsFromRegistryProperty(
   sourceFile: ts.SourceFile,
   schemas: ReadonlyMap<string, string>,
 ): DomainEventDefinitionEvidence[] {
-  if (!ts.isPropertyAssignment(property)) return []
+  if (!ts.isPropertyAssignment(property)) {
+    return []
+  }
   const eventType = propertyName(property.name)
   const entry = unwrapExpression(property.initializer)
-  if (!eventType || !entry || !ts.isObjectLiteralExpression(entry)) return []
+  if (!eventType || !entry || !ts.isObjectLiteralExpression(entry)) {
+    return []
+  }
   const versions = objectProperty(entry, 'versions')
-  if (!versions) return []
+  if (!versions) {
+    return []
+  }
   const definitions: DomainEventDefinitionEvidence[] = []
   for (const versionProperty of versions.properties) {
-    if (!ts.isPropertyAssignment(versionProperty)) continue
+    if (!ts.isPropertyAssignment(versionProperty)) {
+      continue
+    }
     const version = Number(propertyName(versionProperty.name))
-    if (!Number.isInteger(version)) continue
+    if (!Number.isInteger(version)) {
+      continue
+    }
     definitions.push({
-      eventType,
-      payloadVersion: version,
       aggregateType: propertyText(entry, 'aggregateType'),
-      registryEntry: property.getText(sourceFile),
+      eventType,
       payloadSchema: payloadSchemaText(versionProperty.initializer, sourceFile, schemas),
+      payloadVersion: version,
+      registryEntry: property.getText(sourceFile),
     })
   }
   return definitions
@@ -198,19 +222,27 @@ function payloadSchemaText(
   schemas: ReadonlyMap<string, string>,
 ) {
   const schema = unwrapExpression(initializer)
-  if (!schema) return null
-  if (ts.isIdentifier(schema)) return schemas.get(schema.text) ?? null
+  if (!schema) {
+    return null
+  }
+  if (ts.isIdentifier(schema)) {
+    return schemas.get(schema.text) ?? null
+  }
   return schema.getText(sourceFile)
 }
 
 function indexDomainEventConsumers(source: string, sourceByPath: ReadonlyMap<string, string>) {
   const consumers = new Map<string, DomainEventConsumerEvidence[]>()
-  if (!source) return consumers
+  if (!source) {
+    return consumers
+  }
   const sourceFile = ts.createSourceFile(HANDLERS_FILE, source, ts.ScriptTarget.Latest, true)
   const eventTypeArrays = stringArrayVariables(sourceFile)
   const imports = importedSymbols(sourceFile, HANDLERS_FILE)
   for (const statement of sourceFile.statements) {
-    if (!ts.isFunctionDeclaration(statement) || !statement.name) continue
+    if (!ts.isFunctionDeclaration(statement) || !statement.name) {
+      continue
+    }
     const indexed = indexDomainEventConsumer(
       statement,
       statement.name.text,
@@ -219,7 +251,9 @@ function indexDomainEventConsumers(source: string, sourceByPath: ReadonlyMap<str
       imports,
       sourceByPath,
     )
-    if (!indexed) continue
+    if (!indexed) {
+      continue
+    }
     for (const eventType of indexed.eventTypes) {
       const existing = consumers.get(eventType) ?? []
       consumers.set(eventType, [...existing, indexed.consumer])
@@ -239,29 +273,31 @@ function indexDomainEventConsumer(
   const identifiers = identifiersIn(statement)
   const eventTypes = consumerEventTypes(statement, eventTypeArrays, identifiers)
   const idempotency = firstStringProperty(statement, 'idempotency')
-  if (eventTypes.size === 0 || !idempotency) return null
+  if (eventTypes.size === 0 || !idempotency) {
+    return null
+  }
   const line = sourceFile.getLineAndCharacterOfPosition(statement.getStart(sourceFile)).line + 1
   const dependencies = [...imports]
     .filter(([name]) => identifiers.has(name))
     .map(([, dependency]) => ({
-      file: dependency.file,
-      symbol: dependency.symbol,
       code: namedDeclarationCode(
         dependency.file,
         sourceByPath.get(dependency.file) ?? '',
         dependency.symbol,
       ),
+      file: dependency.file,
+      symbol: dependency.symbol,
     }))
     .toSorted((left, right) => left.file.localeCompare(right.file))
   const consumer = {
-    id: `${HANDLERS_FILE}:${line}:${functionName}`,
-    file: HANDLERS_FILE,
-    line,
-    functionName,
-    idempotency,
     code: statement.getText(sourceFile),
-    dependencyFiles: dependencies.map(({ file }) => file),
     dependencies,
+    dependencyFiles: dependencies.map(({ file }) => file),
+    file: HANDLERS_FILE,
+    functionName,
+    id: `${HANDLERS_FILE}:${line}:${functionName}`,
+    idempotency,
+    line,
   } satisfies DomainEventConsumerEvidence
   return { consumer, eventTypes }
 }
@@ -273,20 +309,29 @@ function consumerEventTypes(
 ) {
   const eventTypes = new Set<string>()
   for (const [name, types] of eventTypeArrays) {
-    if (!identifiers.has(name)) continue
-    for (const eventType of types) eventTypes.add(eventType)
+    if (!identifiers.has(name)) {
+      continue
+    }
+    for (const eventType of types) {
+      eventTypes.add(eventType)
+    }
   }
-  for (const eventType of directEventTypesIn(statement)) eventTypes.add(eventType)
+  for (const eventType of directEventTypesIn(statement)) {
+    eventTypes.add(eventType)
+  }
   return eventTypes
 }
 
 function variableDeclarations(sourceFile: ts.SourceFile) {
   const declarations = new Map<string, string>()
   for (const statement of sourceFile.statements) {
-    if (!ts.isVariableStatement(statement)) continue
+    if (!ts.isVariableStatement(statement)) {
+      continue
+    }
     for (const declaration of statement.declarationList.declarations) {
-      if (ts.isIdentifier(declaration.name))
+      if (ts.isIdentifier(declaration.name)) {
         declarations.set(declaration.name.text, statement.getText(sourceFile))
+      }
     }
   }
   return declarations
@@ -295,16 +340,24 @@ function variableDeclarations(sourceFile: ts.SourceFile) {
 function stringArrayVariables(sourceFile: ts.SourceFile) {
   const arrays = new Map<string, string[]>()
   for (const statement of sourceFile.statements) {
-    if (!ts.isVariableStatement(statement)) continue
+    if (!ts.isVariableStatement(statement)) {
+      continue
+    }
     for (const declaration of statement.declarationList.declarations) {
-      if (!ts.isIdentifier(declaration.name)) continue
+      if (!ts.isIdentifier(declaration.name)) {
+        continue
+      }
       const value = unwrapExpression(declaration.initializer)
-      if (!value || !ts.isArrayLiteralExpression(value)) continue
+      if (!value || !ts.isArrayLiteralExpression(value)) {
+        continue
+      }
       const strings = value.elements.flatMap((element) => {
         const item = unwrapExpression(element)
         return item && ts.isStringLiteralLike(item) ? [item.text] : []
       })
-      if (strings.length > 0) arrays.set(declaration.name.text, strings)
+      if (strings.length > 0) {
+        arrays.set(declaration.name.text, strings)
+      }
     }
   }
   return arrays
@@ -313,35 +366,47 @@ function stringArrayVariables(sourceFile: ts.SourceFile) {
 function importedSymbols(sourceFile: ts.SourceFile, file: string) {
   const imports = new Map<string, { file: string; symbol: string }>()
   for (const statement of sourceFile.statements) {
-    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteralLike(statement.moduleSpecifier))
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteralLike(statement.moduleSpecifier)) {
       continue
+    }
     const specifier = statement.moduleSpecifier.text
-    if (!specifier.startsWith('.')) continue
+    if (!specifier.startsWith('.')) {
+      continue
+    }
     const importedFile = normalize(join(dirname(file), specifier.replace(/\.js$/, '.ts')))
     const bindings = statement.importClause?.namedBindings
-    if (!bindings || !ts.isNamedImports(bindings)) continue
-    for (const element of bindings.elements)
+    if (!bindings || !ts.isNamedImports(bindings)) {
+      continue
+    }
+    for (const element of bindings.elements) {
       imports.set(element.name.text, {
         file: importedFile,
         symbol: element.propertyName?.text ?? element.name.text,
       })
+    }
   }
   return imports
 }
 
 function namedDeclarationCode(file: string, source: string, symbol: string) {
-  if (!source) return null
+  if (!source) {
+    return null
+  }
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
   for (const statement of sourceFile.statements) {
-    if (ts.isFunctionDeclaration(statement) && statement.name?.text === symbol)
+    if (ts.isFunctionDeclaration(statement) && statement.name?.text === symbol) {
       return statement.getText(sourceFile)
-    if (!ts.isVariableStatement(statement)) continue
+    }
+    if (!ts.isVariableStatement(statement)) {
+      continue
+    }
     if (
       statement.declarationList.declarations.some(
         (declaration) => ts.isIdentifier(declaration.name) && declaration.name.text === symbol,
       )
-    )
+    ) {
       return statement.getText(sourceFile)
+    }
   }
   return null
 }
@@ -357,33 +422,47 @@ function importedBindings(
       !ts.isImportDeclaration(statement) ||
       !ts.isStringLiteralLike(statement.moduleSpecifier) ||
       !matchesModule(statement.moduleSpecifier.text)
-    )
+    ) {
       continue
+    }
     const named = statement.importClause?.namedBindings
-    if (!named || !ts.isNamedImports(named)) continue
+    if (!named || !ts.isNamedImports(named)) {
+      continue
+    }
     for (const element of named.elements) {
-      if ((element.propertyName?.text ?? element.name.text) === importedName)
+      if ((element.propertyName?.text ?? element.name.text) === importedName) {
         bindings.add(element.name.text)
+      }
     }
   }
   return bindings
 }
 
 function eventTypesFrom(value: ts.Expression, registeredEventTypes: readonly string[]) {
-  if (ts.isStringLiteralLike(value)) return [value.text]
-  if (!ts.isTemplateExpression(value)) return []
+  if (ts.isStringLiteralLike(value)) {
+    return [value.text]
+  }
+  if (!ts.isTemplateExpression(value)) {
+    return []
+  }
   const staticParts = [value.head.text, ...value.templateSpans.map(({ literal }) => literal.text)]
   return registeredEventTypes.filter((eventType) => matchesTemplate(eventType, staticParts))
 }
 
 function matchesTemplate(eventType: string, staticParts: readonly string[]) {
   const first = staticParts[0] ?? ''
-  if (!eventType.startsWith(first)) return false
+  if (!eventType.startsWith(first)) {
+    return false
+  }
   let offset = first.length
   for (const part of staticParts.slice(1)) {
-    if (!part) continue
+    if (!part) {
+      continue
+    }
     const index = eventType.indexOf(part, offset)
-    if (index === -1) return false
+    if (index === -1) {
+      return false
+    }
     offset = index + part.length
   }
   const last = staticParts.at(-1) ?? ''
@@ -393,9 +472,13 @@ function matchesTemplate(eventType: string, staticParts: readonly string[]) {
 function directEventTypesIn(node: ts.Node) {
   const eventTypes = new Set<string>()
   visit(node, (child) => {
-    if (!ts.isPropertyAssignment(child) || propertyName(child.name) !== 'eventType') return
+    if (!ts.isPropertyAssignment(child) || propertyName(child.name) !== 'eventType') {
+      return
+    }
     const value = unwrapExpression(child.initializer)
-    if (value && ts.isStringLiteralLike(value)) eventTypes.add(value.text)
+    if (value && ts.isStringLiteralLike(value)) {
+      eventTypes.add(value.text)
+    }
   })
   return eventTypes
 }
@@ -403,7 +486,9 @@ function directEventTypesIn(node: ts.Node) {
 function identifiersIn(node: ts.Node) {
   const identifiers = new Set<string>()
   visit(node, (child) => {
-    if (ts.isIdentifier(child)) identifiers.add(child.text)
+    if (ts.isIdentifier(child)) {
+      identifiers.add(child.text)
+    }
   })
   return identifiers
 }
@@ -411,9 +496,13 @@ function identifiersIn(node: ts.Node) {
 function firstStringProperty(node: ts.Node, name: string) {
   let result: string | null = null
   visit(node, (child) => {
-    if (result || !ts.isPropertyAssignment(child) || propertyName(child.name) !== name) return
+    if (result || !ts.isPropertyAssignment(child) || propertyName(child.name) !== name) {
+      return
+    }
     const value = unwrapExpression(child.initializer)
-    if (value && ts.isStringLiteralLike(value)) result = value.text
+    if (value && ts.isStringLiteralLike(value)) {
+      result = value.text
+    }
   })
   return result
 }
@@ -421,13 +510,16 @@ function firstStringProperty(node: ts.Node, name: string) {
 function enclosingFunctionName(node: ts.Node) {
   let current: ts.Node | undefined = node.parent
   while (current) {
-    if (ts.isFunctionDeclaration(current) && current.name) return current.name.text
+    if (ts.isFunctionDeclaration(current) && current.name) {
+      return current.name.text
+    }
     if (
       (ts.isArrowFunction(current) || ts.isFunctionExpression(current)) &&
       ts.isVariableDeclaration(current.parent) &&
       ts.isIdentifier(current.parent.name)
-    )
+    ) {
       return current.parent.name.text
+    }
     current = current.parent
   }
   return null
@@ -435,11 +527,17 @@ function enclosingFunctionName(node: ts.Node) {
 
 function objectVariable(sourceFile: ts.SourceFile, name: string) {
   for (const statement of sourceFile.statements) {
-    if (!ts.isVariableStatement(statement)) continue
+    if (!ts.isVariableStatement(statement)) {
+      continue
+    }
     for (const declaration of statement.declarationList.declarations) {
-      if (!ts.isIdentifier(declaration.name) || declaration.name.text !== name) continue
+      if (!ts.isIdentifier(declaration.name) || declaration.name.text !== name) {
+        continue
+      }
       const value = unwrapExpression(declaration.initializer)
-      if (value && ts.isObjectLiteralExpression(value)) return value
+      if (value && ts.isObjectLiteralExpression(value)) {
+        return value
+      }
     }
   }
   return null
@@ -466,7 +564,9 @@ function objectProperty(object: ts.ObjectLiteralExpression, name: string) {
 
 function propertyValue(object: ts.ObjectLiteralExpression, name: string) {
   for (const property of object.properties) {
-    if (!ts.isPropertyAssignment(property) || propertyName(property.name) !== name) continue
+    if (!ts.isPropertyAssignment(property) || propertyName(property.name) !== name) {
+      continue
+    }
     return unwrapExpression(property.initializer)
   }
   return null
@@ -487,8 +587,9 @@ function unwrapExpression(expression: ts.Expression | undefined): ts.Expression 
       ts.isTypeAssertionExpression(current) ||
       ts.isSatisfiesExpression(current) ||
       ts.isNonNullExpression(current))
-  )
+  ) {
     current = current.expression
+  }
   return current
 }
 

@@ -23,6 +23,8 @@ export async function loadResourceCollectionContext(
       and (source.source_id is null or source.organization_version = settings.organization_version)
   `
   signal?.throwIfAborted()
-  if (!context) throw new Error('Resource collection context is obsolete')
+  if (!context) {
+    throw new Error('Resource collection context is obsolete')
+  }
   return context
 }

@@ -6,7 +6,9 @@ import UiSelect from '../../layers/ui/app/components/ui/UiSelect.vue'
 const mountedWrappers: { unmount: () => void }[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   document.body.replaceChildren()
 })
 
@@ -21,13 +23,13 @@ describe('UiSelect', () => {
             h(UiSelect, {
               label: 'Type filter',
               modelValue: value.value,
+              'onUpdate:modelValue': (next: string) => {
+                value.value = next
+              },
               options: [
                 { label: 'All types', value: 'all' },
                 { label: 'Tritanium', value: '34' },
               ],
-              'onUpdate:modelValue': (next: string) => {
-                value.value = next
-              },
             }),
           ])
       },

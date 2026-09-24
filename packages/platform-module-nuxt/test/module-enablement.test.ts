@@ -7,12 +7,12 @@ import {
 } from '../src/runtime/app/composables/usePlatformModuleRuntime.js'
 
 const mocks = vi.hoisted(() => ({
-  refresh: vi.fn(),
-  getEntries: vi.fn(() => [] as { key: (number | string)[] }[]),
   cancel: vi.fn(),
-  remove: vi.fn(),
-  invalidateQueryPersistence: vi.fn(),
   dispose: vi.fn(),
+  getEntries: vi.fn(() => [] as { key: (number | string)[] }[]),
+  invalidateQueryPersistence: vi.fn(),
+  refresh: vi.fn(),
+  remove: vi.fn(),
 }))
 const data = ref<{
   enabledModuleIds: string[]
@@ -26,25 +26,25 @@ const data = ref<{
 }>()
 
 vi.mock('#imports', async () => ({
-  computed: (await import('vue')).computed,
-  useRuntimeConfig: () => ({ public: { apiBase: 'http://localhost' } }),
-  defineNuxtRouteMiddleware: (handler: unknown) => handler,
-  createError: (input: { statusCode: number; statusMessage: string }) =>
-    Object.assign(new Error(input.statusMessage), input),
   abortNavigation: (error: Error) => {
     throw error
   },
+  computed: (await import('vue')).computed,
+  createError: (input: { statusCode: number; statusMessage: string }) =>
+    Object.assign(new Error(input.statusMessage), input),
+  defineNuxtRouteMiddleware: (handler: unknown) => handler,
+  useRuntimeConfig: () => ({ public: { apiBase: 'http://localhost' } }),
 }))
 vi.mock('@pinia/colada', () => ({
+  useQuery: () => {
+    onScopeDispose(mocks.dispose)
+    return { data, refresh: mocks.refresh }
+  },
   useQueryCache: () => ({
     getEntries: mocks.getEntries,
     cancel: mocks.cancel,
     remove: mocks.remove,
   }),
-  useQuery: () => {
-    onScopeDispose(mocks.dispose)
-    return { data, refresh: mocks.refresh }
-  },
 }))
 beforeEach(() => {
   vi.clearAllMocks()
@@ -70,11 +70,13 @@ describe('module enablement middleware scope', () => {
   })
 
   it.each([404, 503])('disposes effects when navigation fails with %s', async (statusCode) => {
-    if (statusCode === 503) mocks.refresh.mockRejectedValueOnce(new Error('Unavailable'))
-    else
+    if (statusCode === 503) {
+      mocks.refresh.mockRejectedValueOnce(new Error('Unavailable'))
+    } else {
       mocks.refresh.mockImplementationOnce(async () => {
         data.value = { enabledModuleIds: [], enabledSections: [] }
       })
+    }
 
     await expect(
       middleware({ meta: { platformModuleId: 'alpha' } } as never, {} as never),
@@ -255,9 +257,11 @@ describe('module enablement server navigation', () => {
 
   it.each(['network', 'http', 'json'])('fails closed on %s failures', async (failure) => {
     const fetch = vi.fn()
-    if (failure === 'network') fetch.mockRejectedValue(new Error('Offline'))
-    else
+    if (failure === 'network') {
+      fetch.mockRejectedValue(new Error('Offline'))
+    } else {
       fetch.mockResolvedValue(new Response('invalid', { status: failure === 'http' ? 503 : 200 }))
+    }
     vi.stubGlobal('fetch', fetch)
     await expect(
       middleware({ meta: { platformModuleId: 'alpha' } } as never, {} as never),
@@ -267,10 +271,10 @@ describe('module enablement server navigation', () => {
 
 function enabledSection(sectionId: string) {
   return {
+    activationVersion: 1,
+    disclosureVersion: 1,
+    kind: 'sensitive-evidence' as const,
     moduleId: 'alpha',
     sectionId,
-    kind: 'sensitive-evidence' as const,
-    disclosureVersion: 1,
-    activationVersion: 1,
   }
 }

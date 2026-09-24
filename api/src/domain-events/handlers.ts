@@ -57,15 +57,17 @@ export function createPlatformCollectionStateEventHandlers(
 ): readonly DomainEventHandler[] {
   return characterCollectionStateEventTypes.map((eventType) => ({
     eventType,
-    payloadVersion: 1,
-    idempotency: 'convergent-state',
     async handle(event, signal) {
-      if (!isCharacterCollectionStateEvent(event)) return
+      if (!isCharacterCollectionStateEvent(event)) {
+        return
+      }
       await repair({
         characterId: event.payload.characterId,
         ...(signal ? { signal } : {}),
       })
     },
+    idempotency: 'convergent-state',
+    payloadVersion: 1,
   }))
 }
 
@@ -88,13 +90,15 @@ export function createManagedCorporationComplianceEventHandlers(
 ): readonly DomainEventHandler[] {
   return managedCorporationEventTypes.map((eventType) => ({
     eventType,
-    payloadVersion: 1,
-    idempotency: 'convergent-state',
     async handle(event, signal) {
-      if (!isManagedCorporationEvent(event)) return
+      if (!isManagedCorporationEvent(event)) {
+        return
+      }
       signal?.throwIfAborted()
       await recompute(event.payload)
     },
+    idempotency: 'convergent-state',
+    payloadVersion: 1,
   }))
 }
 
@@ -119,13 +123,15 @@ export function createCharacterComplianceEventHandlers(
 ): readonly DomainEventHandler[] {
   return characterComplianceEventTypes.map((eventType) => ({
     eventType,
-    payloadVersion: 1,
-    idempotency: 'convergent-state',
     async handle(event, signal) {
-      if (!isCharacterComplianceEvent(event)) return
+      if (!isCharacterComplianceEvent(event)) {
+        return
+      }
       signal?.throwIfAborted()
       await recompute(event.payload.userId)
     },
+    idempotency: 'convergent-state',
+    payloadVersion: 1,
   }))
 }
 
@@ -157,7 +163,9 @@ export async function dispatchDomainEvent(
   signal?.throwIfAborted()
   const event = await loader(eventId)
   signal?.throwIfAborted()
-  if (!event) throw new DomainEventNotFoundError()
+  if (!event) {
+    throw new DomainEventNotFoundError()
+  }
 
   await Promise.all(
     handlers

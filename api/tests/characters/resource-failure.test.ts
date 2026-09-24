@@ -7,7 +7,9 @@ const configuredScope = 'esi-configured.scope.v1'
 
 describe('character resource failure classifier', () => {
   test('retains cooldown retry timing', () => {
-    expect(classifyCharacterResourceFailure(new EsiQuotaError(17), { configuredScope })).toEqual({
+    expect(
+      classifyCharacterResourceFailure(new EsiQuotaError(17), { configuredScope }),
+    ).toStrictEqual({
       kind: 'cooldown',
       retryAfterSeconds: 17,
     })
@@ -16,7 +18,7 @@ describe('character resource failure classifier', () => {
   test('classifies token refresh unavailability', () => {
     expect(
       classifyCharacterResourceFailure(new TokenRefreshUnavailableError(), { configuredScope }),
-    ).toEqual({ kind: 'token-refresh-unavailable' })
+    ).toStrictEqual({ kind: 'token-refresh-unavailable' })
   })
 
   test.each([
@@ -36,7 +38,7 @@ describe('character resource failure classifier', () => {
         configuredScope,
         preferConfiguredScope,
       }),
-    ).toEqual({ kind: 'scope-required', requiredScope })
+    ).toStrictEqual({ kind: 'scope-required', requiredScope })
   })
 
   test.each([401, 403, '401', '403'])('extracts HTTP-like authorization status %s', (status) => {
@@ -44,7 +46,7 @@ describe('character resource failure classifier', () => {
       classifyCharacterResourceFailure(Object.assign(new Error('rejected'), { status }), {
         configuredScope,
       }),
-    ).toEqual({ kind: 'authorization-rejected', requiredScope: configuredScope })
+    ).toStrictEqual({ kind: 'authorization-rejected', requiredScope: configuredScope })
   })
 
   test.each([
@@ -52,7 +54,7 @@ describe('character resource failure classifier', () => {
     Object.assign(new Error('upstream failure'), { status: 500 }),
     Object.assign(new Error('invalid status'), { status: 'not-a-status' }),
   ])('classifies unknown failures as unavailable', (error) => {
-    expect(classifyCharacterResourceFailure(error, { configuredScope })).toEqual({
+    expect(classifyCharacterResourceFailure(error, { configuredScope })).toStrictEqual({
       kind: 'unavailable',
     })
   })

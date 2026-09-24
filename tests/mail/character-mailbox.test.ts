@@ -59,12 +59,12 @@ describe('character mailbox', () => {
         authenticated: computed(() => true),
         authenticationReady: computed(() => true),
         characterId: computed(() => 7),
-        ownsCharacter: computed(() => true),
         createdLabels: ref([]),
+        deletePendingIds: ref(new Set()),
         deletedLabelIds,
         deletedMailIds: ref(new Set()),
-        deletePendingIds: ref(new Set()),
         labelOverrides: ref(new Map()),
+        ownsCharacter: computed(() => true),
         readStateOverrides: ref(new Map()),
         reconcileCreatedLabels: vi.fn(),
         reconcileLabelState: vi.fn(),
@@ -72,9 +72,9 @@ describe('character mailbox', () => {
       }),
     )!
 
-    expect(mailbox.displayedHeaders.value[0]?.labelIds).toEqual([1])
-    expect(mailbox.displayedDetail.value?.labelIds).toEqual([1])
-    expect(mailbox.labels.value.map(({ labelId }) => labelId)).toEqual([1])
+    expect(mailbox.displayedHeaders.value[0]?.labelIds).toStrictEqual([1])
+    expect(mailbox.displayedDetail.value?.labelIds).toStrictEqual([1])
+    expect(mailbox.labels.value.map(({ labelId }) => labelId)).toStrictEqual([1])
 
     deletedLabelIds.value = new Set()
     mailbox.activeLabelId.value = 2
@@ -83,7 +83,7 @@ describe('character mailbox', () => {
 
     mailbox.removeLoadedLabel(2)
     expect(mailbox.displayedHeaders.value).toHaveLength(0)
-    expect(mailbox.selectedHeader.value?.labelIds).toEqual([1])
+    expect(mailbox.selectedHeader.value?.labelIds).toStrictEqual([1])
     scope.stop()
   })
 
@@ -108,12 +108,12 @@ describe('character mailbox', () => {
         authenticated: computed(() => authenticated.value),
         authenticationReady: computed(() => authenticationReady.value),
         characterId: computed(() => characterId.value),
-        ownsCharacter: computed(() => ownsCharacter.value),
         createdLabels: ref([]),
+        deletePendingIds: ref(new Set()),
         deletedLabelIds: ref(new Set()),
         deletedMailIds: ref(new Set()),
-        deletePendingIds: ref(new Set()),
         labelOverrides: ref(new Map()),
+        ownsCharacter: computed(() => ownsCharacter.value),
         readStateOverrides: ref(new Map()),
         reconcileCreatedLabels: vi.fn(),
         reconcileLabelState: vi.fn(),
@@ -123,21 +123,21 @@ describe('character mailbox', () => {
     const options = capturedQueryOptions()
     const enabled = () => options.map((queryOptions) => queryOptions().enabled)
 
-    expect(enabled()).toEqual([false, false, false, false, false])
+    expect(enabled()).toStrictEqual([false, false, false, false, false])
     authenticationReady.value = true
     authenticated.value = true
     characterId.value = 7
-    expect(enabled()).toEqual([false, false, false, false, false])
+    expect(enabled()).toStrictEqual([false, false, false, false, false])
 
     ownsCharacter.value = true
-    expect(enabled()).toEqual([true, true, true, false, false])
+    expect(enabled()).toStrictEqual([true, true, true, false, false])
 
     mailbox.selectMail(42)
-    expect(enabled()).toEqual([true, true, true, false, true])
+    expect(enabled()).toStrictEqual([true, true, true, false, true])
 
     mailbox.nextLastMailId.value = 99
     mailbox.loadOlder()
-    expect(enabled()).toEqual([true, true, true, true, true])
+    expect(enabled()).toStrictEqual([true, true, true, true, true])
     scope.stop()
   })
 
@@ -158,12 +158,12 @@ describe('character mailbox', () => {
         authenticated: computed(() => true),
         authenticationReady: computed(() => true),
         characterId: computed(() => 7),
-        ownsCharacter: computed(() => true),
         createdLabels: ref([]),
+        deletePendingIds: ref(new Set()),
         deletedLabelIds: ref(new Set()),
         deletedMailIds: ref(new Set()),
-        deletePendingIds: ref(new Set()),
         labelOverrides: ref(new Map()),
+        ownsCharacter: computed(() => true),
         readStateOverrides: ref(new Map()),
         reconcileCreatedLabels: vi.fn(),
         reconcileLabelState: vi.fn(),
@@ -173,13 +173,13 @@ describe('character mailbox', () => {
     const [headersOptions] = capturedQueryOptions()
 
     mailbox.selectLabel(2)
-    expect(headersOptions!().key).toEqual(PRIVATE_QUERY_KEYS.mailHeaders(7, [2], null))
+    expect(headersOptions!().key).toStrictEqual(PRIVATE_QUERY_KEYS.mailHeaders(7, [2], null))
     expect(mailbox.headerEmptyMessage.value).toBe('There are no messages in this folder.')
 
     mailbox.selectLabel(null)
     mailbox.search.value = 'priority'
     mailbox.unreadOnly.value = true
-    expect(headersOptions!().key).toEqual(PRIVATE_QUERY_KEYS.mailHeaders(7, [], null))
+    expect(headersOptions!().key).toStrictEqual(PRIVATE_QUERY_KEYS.mailHeaders(7, [], null))
     expect(mailbox.headerEmptyMessage.value).toBe(
       'No matches in loaded messages. Load older messages to search further.',
     )
@@ -206,12 +206,12 @@ describe('character mailbox', () => {
         authenticated: computed(() => true),
         authenticationReady: computed(() => true),
         characterId: computed(() => 7),
-        ownsCharacter: computed(() => true),
         createdLabels: ref([]),
+        deletePendingIds: ref(new Set()),
         deletedLabelIds: ref(new Set()),
         deletedMailIds: ref(new Set()),
-        deletePendingIds: ref(new Set()),
         labelOverrides: ref(new Map()),
+        ownsCharacter: computed(() => true),
         readStateOverrides: ref(new Map()),
         reconcileCreatedLabels: vi.fn(),
         reconcileLabelState: vi.fn(),
@@ -224,7 +224,7 @@ describe('character mailbox', () => {
     headers.data.value = undefined
     await nextTick()
 
-    expect(mailbox.displayedHeaders.value).toEqual([])
+    expect(mailbox.displayedHeaders.value).toStrictEqual([])
     expect(mailbox.nextLastMailId.value).toBeNull()
     expect(mailbox.selectedMailId.value).toBeNull()
 

@@ -40,7 +40,9 @@ export function deriveJumpCloneCapacity(
   installed: number,
   skills: SkillArchive | undefined,
 ): JumpCloneCapacity {
-  if (!skills) return { installed, maximum: null }
+  if (!skills) {
+    return { installed, maximum: null }
+  }
 
   let maximum = 0
   for (const group of skills.groups) {
@@ -48,8 +50,9 @@ export function deriveJumpCloneCapacity(
       if (
         skill.typeId === infomorphPsychologyTypeId ||
         skill.typeId === advancedInfomorphPsychologyTypeId
-      )
+      ) {
         maximum += skill.trainedLevel ?? skill.activeLevel ?? 0
+      }
     }
   }
   return { installed, maximum: maximum < installed ? null : maximum }
@@ -62,22 +65,29 @@ export function toImplantRack<Implant extends SlottedImplant>(
   const unslotted: Implant[] = []
   for (const implant of implants ?? []) {
     const slot = implant.slot
-    if (typeof slot === 'number' && Number.isInteger(slot) && slot >= 1 && slot <= implantSlotCount)
+    if (
+      typeof slot === 'number' &&
+      Number.isInteger(slot) &&
+      slot >= 1 &&
+      slot <= implantSlotCount
+    ) {
       bySlot.set(slot, implant)
-    else unslotted.push(implant)
+    } else {
+      unslotted.push(implant)
+    }
   }
 
   const entries = Array.from({ length: implantSlotCount }, (_unused, index) => ({
-    slot: index + 1,
     implant: bySlot.get(index + 1) ?? null,
+    slot: index + 1,
   }))
 
   return {
     attributes: entries.slice(0, attributeImplantSlotCount),
+    emptySlots: implantSlotCount - bySlot.size,
+    filledSlots: bySlot.size,
     hardwirings: entries.slice(attributeImplantSlotCount),
     unslotted,
-    filledSlots: bySlot.size,
-    emptySlots: implantSlotCount - bySlot.size,
   }
 }
 
@@ -101,7 +111,9 @@ export interface JumpCloneLocationGroup<Clone extends LocatedClone> {
 // Structure names never resolve without a docking-access scope, so the identifier is all
 // that keeps two unnamed locations apart.
 export function jumpCloneLocationLabel(location: CloneLocation) {
-  if (location.name) return location.name
+  if (location.name) {
+    return location.name
+  }
   const kind = location.locationType === 'station' ? 'Station' : 'Structure'
   return `${kind} ${location.locationId}`
 }
@@ -114,10 +126,10 @@ export function groupJumpClonesByLocation<Clone extends LocatedClone>(
   for (const clone of jumpClones ?? []) {
     const key = `${clone.location.locationType}:${clone.location.locationId}`
     const group = groups.get(key) ?? {
+      clones: [],
       key,
       label: jumpCloneLocationLabel(clone.location),
       locationType: clone.location.locationType,
-      clones: [],
     }
     group.clones.push(clone)
     groups.set(key, group)

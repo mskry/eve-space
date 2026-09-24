@@ -31,7 +31,9 @@ export function serializeQuery(
 ): string {
   const pairs: string[] = [];
   for (const parameter of descriptor.parameters) {
-    if (parameter.placement !== 'query' || !values.has(parameter.name)) continue;
+    if (parameter.placement !== 'query' || !values.has(parameter.name)) {
+      continue;
+    }
     const encodedName = encodeRfc3986(parameter.name);
     const value = values.get(parameter.name);
     if (parameter.schema.type !== 'array') {
@@ -40,7 +42,9 @@ export function serializeQuery(
     }
     const items = validatedArray(value);
     if (parameter.explode) {
-      if (items.length === 0) pairs.push(`${encodedName}=`);
+      if (items.length === 0) {
+        pairs.push(`${encodedName}=`);
+      }
       for (const item of items) {
         pairs.push(`${encodedName}=${encodeRfc3986(String(item))}`);
       }
@@ -57,7 +61,9 @@ export function createHeaderRecord(
 ): Record<string, string> {
   const headers: Record<string, string> = {};
   for (const parameter of descriptor.parameters) {
-    if (parameter.placement !== 'header' || !values.has(parameter.name)) continue;
+    if (parameter.placement !== 'header' || !values.has(parameter.name)) {
+      continue;
+    }
     const value = values.get(parameter.name);
     const serialized =
       parameter.schema.type === 'array'
@@ -65,9 +71,9 @@ export function createHeaderRecord(
         : String(value);
     validateHeaderValue(descriptor.operationId, ['headers', parameter.name], serialized);
     Object.defineProperty(headers, parameter.name.toLowerCase(), {
-      value: serialized,
-      enumerable: true,
       configurable: false,
+      enumerable: true,
+      value: serialized,
       writable: false,
     });
   }

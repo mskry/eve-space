@@ -48,12 +48,12 @@ export async function claimOrganizationOwnership(input: OrganizationOwnerClaimIn
   return db.transaction(async (transaction) => {
     const [organization] = await transaction
       .select({
+        authorityEvidenceFreshDurationSeconds:
+          deploymentSettings.authorityEvidenceFreshDurationSeconds,
         deploymentId: deploymentSettings.id,
         organizationId: deploymentSettings.organizationId,
         organizationVersion: deploymentSettings.organizationVersion,
         policyVersion: deploymentSettings.registrationPolicyVersion,
-        authorityEvidenceFreshDurationSeconds:
-          deploymentSettings.authorityEvidenceFreshDurationSeconds,
       })
       .from(deploymentSettings)
       .where(eq(deploymentSettings.id, 1))
@@ -61,8 +61,9 @@ export async function claimOrganizationOwnership(input: OrganizationOwnerClaimIn
     if (
       organization?.organizationId !== input.organizationId ||
       organization?.organizationVersion !== input.organizationVersion
-    )
+    ) {
       throw new OrganizationOwnerClaimError('stale-organization')
+    }
 
     const [activeBlock] = await transaction
       .select({ blockId: organizationMemberBlocks.blockId })
@@ -76,18 +77,20 @@ export async function claimOrganizationOwnership(input: OrganizationOwnerClaimIn
         ),
       )
       .limit(1)
-    if (activeBlock) throw new OrganizationOwnerClaimError('member-blocked')
+    if (activeBlock) {
+      throw new OrganizationOwnerClaimError('member-blocked')
+    }
 
     const [character] = await transaction
       .select({
-        userId: characters.userId,
-        corporationId: characters.corporationId,
-        allianceId: characters.allianceId,
         affiliationCheckedAt: characters.affiliationCheckedAt,
         affiliationResolutionState: characters.affiliationResolutionState,
-        subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+        allianceId: characters.allianceId,
         authorizationGeneration: eveTokens.tokenVersion,
+        corporationId: characters.corporationId,
         scopes: eveTokens.scopes,
+        subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+        userId: characters.userId,
       })
       .from(characters)
       .innerJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
@@ -97,43 +100,32 @@ export async function claimOrganizationOwnership(input: OrganizationOwnerClaimIn
       )
       .where(eq(characters.characterId, input.characterId))
       .for('update')
-    if (
-      character?.userId !== input.userId ||
-      character.subjectLifecycleId !== input.subjectLifecycleId
-    )
-      throw new OrganizationOwnerClaimError('character-not-owned')
-    if (character.authorizationGeneration !== input.authorizationGeneration)
-      throw new OrganizationOwnerClaimError('character-not-owned')
-    if (character.authorizationGeneration !== input.evidenceAuthorizationGeneration)
-      throw new OrganizationOwnerClaimError('character-not-owned')
-    if (
-      character.affiliationResolutionState !== 'resolved' ||
-      !character.affiliationCheckedAt ||
-      character.affiliationCheckedAt < input.affiliationCheckedAt ||
-      character.corporationId !== input.observedCorporationId ||
-      character.allianceId !== input.observedAllianceId ||
-      character.corporationId !== input.authorityCorporationId
-    )
+    assertClaimCharacterOwned(character, input)
+    if (!claimAffiliationMatches(character, input)) {
       throw new OrganizationOwnerClaimError('stale-affiliation')
-    if (!character.scopes.includes(input.requiredScope))
+    }
+    if (!character.scopes.includes(input.requiredScope)) {
       throw new OrganizationOwnerClaimError('missing-scope')
+    }
 
     const now = new Date()
     const freshUntil = new Date(
       Math.min(
         input.evidenceFreshUntil.getTime(),
-        now.getTime() + organization.authorityEvidenceFreshDurationSeconds * 1_000,
+        now.getTime() + organization.authorityEvidenceFreshDurationSeconds * 1000,
       ),
     )
-    if (freshUntil <= now) throw new OrganizationOwnerClaimError('stale-affiliation')
+    if (freshUntil <= now) {
+      throw new OrganizationOwnerClaimError('stale-affiliation')
+    }
     const [existingOwner] = await transaction
       .select({
-        grantId: organizationRoleGrants.grantId,
         evidenceId: organizationAuthorityEvidence.evidenceId,
-        status: organizationAuthorityEvidence.status,
         freshUntil: organizationAuthorityEvidence.freshUntil,
         graceUntil: organizationAuthorityEvidence.graceUntil,
+        grantId: organizationRoleGrants.grantId,
         invalidatedAt: organizationAuthorityEvidence.invalidatedAt,
+        status: organizationAuthorityEvidence.status,
       })
       .from(organizationRoleGrants)
       .leftJoin(
@@ -149,57 +141,58 @@ export async function claimOrganizationOwnership(input: OrganizationOwnerClaimIn
         ),
       )
       .limit(1)
-    if (existingOwner?.grantId && !isOrganizationOwnerClaimAvailable(existingOwner, now))
+    if (existingOwner?.grantId && !isOrganizationOwnerClaimAvailable(existingOwner, now)) {
       throw new OrganizationOwnerClaimError('owner-already-claimed')
+    }
     if (existingOwner) {
       await transaction
         .update(organizationRoleGrants)
         .set({
+          revocationReason: 'Replaced after organization-owner authority became invalid.',
           revokedAt: now,
           revokedByUserId: null,
-          revocationReason: 'Replaced after organization-owner authority became invalid.',
           updatedAt: now,
         })
         .where(eq(organizationRoleGrants.grantId, existingOwner.grantId))
       await transaction
         .update(organizationAuthorityEvidence)
         .set({
-          status: 'invalid',
-          graceUntil: null,
           failureClass: 'strict:source-replaced',
+          graceUntil: null,
           invalidatedAt: now,
           invalidationOutcome: 'source-replaced',
+          status: 'invalid',
           updatedAt: now,
         })
         .where(eq(organizationAuthorityEvidence.grantId, existingOwner.grantId))
       await appendOrganizationAuditEvents(transaction, [
         {
-          deploymentId: 1,
-          organizationVersion: organization.organizationVersion,
-          policyVersion: organization.policyVersion,
-          eventType: 'role.revoked',
-          actorType: 'system',
           actorId: null,
-          subjectType: 'role_grant',
-          subjectId: existingOwner.grantId,
-          reason: 'Replaced after organization-owner authority became invalid.',
-          outcome: 'revoked',
+          actorType: 'system',
+          deploymentId: 1,
+          eventType: 'role.revoked',
           occurredAt: now,
+          organizationVersion: organization.organizationVersion,
+          outcome: 'revoked',
+          policyVersion: organization.policyVersion,
+          reason: 'Replaced after organization-owner authority became invalid.',
+          subjectId: existingOwner.grantId,
+          subjectType: 'role_grant',
         },
         ...(existingOwner.evidenceId
           ? [
               {
-                deploymentId: 1 as const,
-                organizationVersion: organization.organizationVersion,
-                policyVersion: organization.policyVersion,
-                eventType: 'authority-source.invalidated' as const,
-                actorType: 'system' as const,
                 actorId: null,
-                subjectType: 'authority_source' as const,
-                subjectId: existingOwner.evidenceId,
-                reason: 'Invalid organization-owner evidence was replaced by a fresh source.',
-                outcome: 'revoked' as const,
+                actorType: 'system' as const,
+                deploymentId: 1 as const,
+                eventType: 'authority-source.invalidated' as const,
                 occurredAt: now,
+                organizationVersion: organization.organizationVersion,
+                outcome: 'revoked' as const,
+                policyVersion: organization.policyVersion,
+                reason: 'Invalid organization-owner evidence was replaced by a fresh source.',
+                subjectId: existingOwner.evidenceId,
+                subjectType: 'authority_source' as const,
               },
             ]
           : []),
@@ -210,77 +203,119 @@ export async function claimOrganizationOwnership(input: OrganizationOwnerClaimIn
       .insert(organizationRoleGrants)
       .values({
         deploymentId: organization.deploymentId,
-        organizationVersion: organization.organizationVersion,
-        userId: input.userId,
-        role: 'organization_owner',
-        grantedByUserId: input.userId,
-        reason: 'Verified initial EVE Director authority claim.',
         grantedAt: now,
+        grantedByUserId: input.userId,
+        organizationVersion: organization.organizationVersion,
+        reason: 'Verified initial EVE Director authority claim.',
+        role: 'organization_owner',
+        userId: input.userId,
       })
       .returning({ grantId: organizationRoleGrants.grantId })
-    if (!grant) throw new Error('Failed to create organization-owner grant')
+    if (!grant) {
+      throw new Error('Failed to create organization-owner grant')
+    }
 
     const [evidence] = await transaction
       .insert(organizationAuthorityEvidence)
       .values({
-        grantId: grant.grantId,
-        deploymentId: 1,
-        organizationVersion: organization.organizationVersion,
-        userId: input.userId,
-        role: 'organization_owner',
-        characterId: input.characterId,
-        sourceSubjectLifecycleId: input.subjectLifecycleId,
         authorityCorporationId: input.authorityCorporationId,
-        observedCorporationId: input.observedCorporationId,
-        observedAllianceId: input.observedAllianceId,
-        requiredScope: input.requiredScope,
         authorizationGeneration: input.authorizationGeneration,
-        roleEvidenceRevision: input.roleEvidenceRevision,
+        characterId: input.characterId,
+        deploymentId: 1,
         directorRolePresent: true,
-        status: 'fresh',
-        observedAt: now,
         freshUntil,
+        grantId: grant.grantId,
         lastCheckedAt: now,
+        observedAllianceId: input.observedAllianceId,
+        observedAt: now,
+        observedCorporationId: input.observedCorporationId,
+        organizationVersion: organization.organizationVersion,
+        requiredScope: input.requiredScope,
+        role: 'organization_owner',
+        roleEvidenceRevision: input.roleEvidenceRevision,
+        sourceSubjectLifecycleId: input.subjectLifecycleId,
+        status: 'fresh',
+        userId: input.userId,
       })
       .returning({ evidenceId: organizationAuthorityEvidence.evidenceId })
-    if (!evidence) throw new Error('Failed to create organization-owner evidence')
+    if (!evidence) {
+      throw new Error('Failed to create organization-owner evidence')
+    }
     await appendOrganizationAuditEvents(transaction, [
       {
-        deploymentId: 1,
-        organizationVersion: organization.organizationVersion,
-        policyVersion: organization.policyVersion,
-        eventType: 'role.granted',
-        actorType: 'user',
         actorId: input.userId,
-        subjectType: 'role_grant',
-        subjectId: grant.grantId,
-        reason: 'Verified initial EVE Director authority claim.',
-        outcome: 'granted',
+        actorType: 'user',
+        deploymentId: 1,
+        eventType: 'role.granted',
         occurredAt: now,
+        organizationVersion: organization.organizationVersion,
+        outcome: 'granted',
+        policyVersion: organization.policyVersion,
+        reason: 'Verified initial EVE Director authority claim.',
+        subjectId: grant.grantId,
+        subjectType: 'role_grant',
       },
       {
-        deploymentId: 1,
-        organizationVersion: organization.organizationVersion,
-        policyVersion: organization.policyVersion,
-        eventType: 'authority-source.observed',
-        actorType: 'user',
         actorId: input.userId,
-        subjectType: 'authority_source',
-        subjectId: evidence.evidenceId,
-        reason: 'Fresh organization-owner authority evidence was observed.',
-        outcome: 'granted',
+        actorType: 'user',
+        deploymentId: 1,
+        eventType: 'authority-source.observed',
         occurredAt: now,
+        organizationVersion: organization.organizationVersion,
+        outcome: 'granted',
+        policyVersion: organization.policyVersion,
+        reason: 'Fresh organization-owner authority evidence was observed.',
+        subjectId: evidence.evidenceId,
+        subjectType: 'authority_source',
       },
     ])
     await recomputeOrganizationAccountCompliance(
       {
         deploymentId: 1,
+        now,
         organizationVersion: organization.organizationVersion,
         userId: input.userId,
-        now,
       },
       transaction,
     )
     return grant
   })
+}
+
+function assertClaimCharacterOwned(
+  character:
+    | {
+        userId: string
+        subjectLifecycleId: string
+        authorizationGeneration: number
+      }
+    | undefined,
+  input: OrganizationOwnerClaimInput,
+): asserts character is NonNullable<typeof character> {
+  if (
+    character?.userId !== input.userId ||
+    character.subjectLifecycleId !== input.subjectLifecycleId ||
+    character.authorizationGeneration !== input.authorizationGeneration ||
+    character.authorizationGeneration !== input.evidenceAuthorizationGeneration
+  ) {
+    throw new OrganizationOwnerClaimError('character-not-owned')
+  }
+}
+
+function claimAffiliationMatches(
+  character: Pick<
+    typeof characters.$inferSelect,
+    'affiliationResolutionState' | 'affiliationCheckedAt' | 'corporationId' | 'allianceId'
+  >,
+  input: OrganizationOwnerClaimInput,
+) {
+  const checkedAt = character.affiliationCheckedAt
+  return (
+    character.affiliationResolutionState === 'resolved' &&
+    checkedAt !== null &&
+    checkedAt >= input.affiliationCheckedAt &&
+    character.corporationId === input.observedCorporationId &&
+    character.allianceId === input.observedAllianceId &&
+    character.corporationId === input.authorityCorporationId
+  )
 }

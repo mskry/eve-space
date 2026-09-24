@@ -3,7 +3,7 @@ import type { MailCompositionMode } from '../types/mail-composition'
 import { mailPartyName } from './mail-view'
 
 export const MAIL_RECIPIENT_LIMIT = 50
-export const MAIL_SUBJECT_LIMIT = 1_000
+export const MAIL_SUBJECT_LIMIT = 1000
 export const MAIL_BODY_LIMIT = 10_000
 export const MAIL_RECIPIENT_RESOLUTION_MIN_LENGTH = 1
 export const MAIL_RECIPIENT_SEARCH_MIN_LENGTH = 3
@@ -24,21 +24,31 @@ export function seedMailComposition(
   const recipients: MailRecipient[] = []
   const seen = new Set<string>()
   const add = (party: MailDetail['sender']) => {
-    if (!party) return
+    if (!party) {
+      return
+    }
     if (!addressableMailParty(party)) {
       omitted.push(mailPartyName(party, 'sender'))
       return
     }
-    if (party.type === 'character' && party.id === characterId) return
+    if (party.type === 'character' && party.id === characterId) {
+      return
+    }
     const key = mailRecipientKey(party)
-    if (seen.has(key)) return
+    if (seen.has(key)) {
+      return
+    }
     seen.add(key)
     recipients.push(party)
   }
 
-  if (mode !== 'forward') add(detail.sender)
+  if (mode !== 'forward') {
+    add(detail.sender)
+  }
   if (mode === 'reply-all') {
-    for (const recipient of detail.recipients) add(recipient)
+    for (const recipient of detail.recipients) {
+      add(recipient)
+    }
   }
 
   return {

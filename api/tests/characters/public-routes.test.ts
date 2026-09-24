@@ -24,15 +24,15 @@ import { publicCharacterRoutes } from '../../src/characters/public-routes.js'
 let testTime = new Date('2026-08-26T12:00:00.000Z').getTime()
 const freshness = {
   cachedUntil: '2026-08-26T12:01:00.000Z',
-  validatedAt: '2026-08-26T12:00:00.000Z',
   stale: false,
+  validatedAt: '2026-08-26T12:00:00.000Z',
 }
 
 function request(path: string, address?: string) {
   const environment = address
     ? {
         incoming: {
-          socket: { remoteAddress: address, remotePort: 1, remoteFamily: 'IPv4' },
+          socket: { remoteAddress: address, remoteFamily: 'IPv4', remotePort: 1 },
         },
       }
     : undefined
@@ -60,7 +60,7 @@ describe('public character routes', () => {
     expect(response.headers.get('cache-control')).toBe('private, no-store')
     expect(response.headers.get('vary')).toBe('Cookie')
     expect(mocks.getCharacterProfile).toHaveBeenCalledWith(90_000_001)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       profile: { id: 90_000_001, name: 'Capsuleer', ...freshness },
       ...freshness,
     })
@@ -68,13 +68,13 @@ describe('public character routes', () => {
 
   test('copies stale profile freshness onto the response root', async () => {
     mocks.getCharacterProfile.mockResolvedValue({
+      cachedUntil: '2026-08-26T11:56:00.000Z',
       id: 90_000_001,
       name: 'Capsuleer',
-      cachedUntil: '2026-08-26T11:56:00.000Z',
-      validatedAt: '2026-08-26T11:55:00.000Z',
-      stale: true,
-      retryAt: '2026-08-26T12:05:00.000Z',
       refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-08-26T12:05:00.000Z',
+      stale: true,
+      validatedAt: '2026-08-26T11:55:00.000Z',
     })
 
     const response = await request('/90000001')
@@ -82,10 +82,10 @@ describe('public character routes', () => {
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toMatchObject({
       profile: { id: 90_000_001, stale: true },
+      refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-08-26T12:05:00.000Z',
       stale: true,
       validatedAt: '2026-08-26T11:55:00.000Z',
-      retryAt: '2026-08-26T12:05:00.000Z',
-      refreshFailureClass: 'esi-unavailable',
     })
   })
 
@@ -108,7 +108,7 @@ describe('public character routes', () => {
 
       expect(response.status).toBe(404)
       expect(response.headers.get('cache-control')).toBe('private, no-store')
-      await expect(response.json()).resolves.toEqual({
+      await expect(response.json()).resolves.toStrictEqual({
         code: 'CHARACTER_NOT_FOUND',
         message: 'Character not found.',
       })
@@ -122,7 +122,7 @@ describe('public character routes', () => {
 
     expect(response.status).toBe(429)
     expect(response.headers.get('retry-after')).toBe('30')
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'ESI_COOLDOWN',
       message: 'Character data is temporarily rate limited by ESI.',
       retryAfterSeconds: 30,
@@ -135,7 +135,7 @@ describe('public character routes', () => {
     const response = await request('/90000001')
 
     expect(response.status).toBe(502)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       message: 'Character data is temporarily unavailable.',
     })
   })
@@ -162,7 +162,7 @@ describe('public character routes', () => {
   })
 
   test('bounds retained direct-peer limit state', async () => {
-    for (let index = 0; index <= 1_000; index += 1) {
+    for (let index = 0; index <= 1000; index += 1) {
       await request(`/${90_100_000 + index}`, `198.51.100.${index}`)
     }
 

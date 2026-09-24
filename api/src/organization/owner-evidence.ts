@@ -32,8 +32,8 @@ import {
 } from './authority-policy.js'
 import { hasActiveOrganizationMemberBlock } from './member-block.js'
 
-const failedEvidenceRetryIntervalMilliseconds = 5 * 60 * 1_000
-const evidenceRefreshAheadMilliseconds = 20 * 60 * 1_000
+const failedEvidenceRetryIntervalMilliseconds = 5 * 60 * 1000
+const evidenceRefreshAheadMilliseconds = 20 * 60 * 1000
 
 type AuthorityFailureKind = 'strict' | 'transient'
 
@@ -75,11 +75,11 @@ export async function selectDueOrganizationOwnerEvidence(
   const refreshBoundary = new Date(now.getTime() + evidenceRefreshAheadMilliseconds)
   return db
     .select({
+      authorizationGeneration: organizationAuthorityEvidence.authorizationGeneration,
       grantId: organizationAuthorityEvidence.grantId,
       organizationVersion: organizationAuthorityEvidence.organizationVersion,
-      sourceSubjectLifecycleId: organizationAuthorityEvidence.sourceSubjectLifecycleId,
-      authorizationGeneration: organizationAuthorityEvidence.authorizationGeneration,
       roleEvidenceRevision: organizationAuthorityEvidence.roleEvidenceRevision,
+      sourceSubjectLifecycleId: organizationAuthorityEvidence.sourceSubjectLifecycleId,
     })
     .from(organizationAuthorityEvidence)
     .innerJoin(
@@ -128,31 +128,36 @@ export async function refreshOrganizationOwnerEvidence(
   options.signal?.throwIfAborted()
   const snapshot = await loadRefreshSnapshot(candidate)
   options.signal?.throwIfAborted()
-  if (!snapshot) return 'ineligible' as const
+  if (!snapshot) {
+    return 'ineligible' as const
+  }
 
   const checkedAt = new Date()
-  if (snapshot.sourceSubjectLifecycleId !== snapshot.currentSubjectLifecycleId)
+  if (snapshot.sourceSubjectLifecycleId !== snapshot.currentSubjectLifecycleId) {
     return applyEvidenceFailure(
       snapshot,
       {
-        kind: 'strict',
         failureClass: 'lifecycle-replaced',
+        kind: 'strict',
       },
       checkedAt,
       options.signal,
     )
+  }
   try {
     const affiliation = await observeAndPersistCharacterAffiliation(
       snapshot.characterId,
       options.signal,
       convergeObservedAffiliationInTransaction,
     )
-    if (!affiliation || affiliation.stale) throw new OrganizationAuthorityError('stale-affiliation')
+    if (!affiliation || affiliation.stale) {
+      throw new OrganizationAuthorityError('stale-affiliation')
+    }
     options.signal?.throwIfAborted()
     const authorityCorporation = await resolveOrganizationAuthorityCorporationEvidence(
       {
-        organizationType: snapshot.organizationType,
         organizationId: snapshot.organizationId,
+        organizationType: snapshot.organizationType,
       },
       affiliation,
     )
@@ -163,34 +168,38 @@ export async function refreshOrganizationOwnerEvidence(
       options.signal,
     )
     options.signal?.throwIfAborted()
-    if (roles.stale) throw new OrganizationAuthorityError('stale-role-evidence')
+    if (roles.stale) {
+      throw new OrganizationAuthorityError('stale-role-evidence')
+    }
     assertOrganizationOwnerDirectorRole(roles)
     const outcome = await applySuccessfulEvidenceRefresh({
-      grantId: candidate.grantId,
-      organizationVersion: snapshot.organizationVersion,
-      characterId: snapshot.characterId,
-      subjectLifecycleId: snapshot.sourceSubjectLifecycleId,
+      affiliationObservedAt: affiliation.affiliationCheckedAt,
       authorityCorporationId: authorityCorporation.corporationId,
-      observedAllianceId: affiliation.allianceId,
-      sourceAuthorizationGeneration: snapshot.authorizationGeneration,
-      sourceRoleEvidenceRevision: snapshot.roleEvidenceRevision,
-      refreshedRoleEvidenceRevision: roles.roleEvidenceRevision,
+      characterId: snapshot.characterId,
+      checkedAt,
       evidenceAuthorizationGeneration: roles.authorizationGeneration,
       evidenceFreshUntil: earliestDate(
         affiliation.affiliationFreshUntil,
         roles.freshUntil,
         authorityCorporation.freshUntil,
       ),
-      affiliationObservedAt: affiliation.affiliationCheckedAt,
-      checkedAt,
+      grantId: candidate.grantId,
+      observedAllianceId: affiliation.allianceId,
+      organizationVersion: snapshot.organizationVersion,
+      refreshedRoleEvidenceRevision: roles.roleEvidenceRevision,
       signal: options.signal,
+      sourceAuthorizationGeneration: snapshot.authorizationGeneration,
+      sourceRoleEvidenceRevision: snapshot.roleEvidenceRevision,
+      subjectLifecycleId: snapshot.sourceSubjectLifecycleId,
     })
     options.signal?.throwIfAborted()
     return outcome
   } catch (error) {
     options.signal?.throwIfAborted()
     const failure = classifyOrganizationAuthorityFailure(error)
-    if (!failure) throw error
+    if (!failure) {
+      throw error
+    }
     return applyEvidenceFailure(snapshot, failure, checkedAt, options.signal)
   }
 }
@@ -200,42 +209,48 @@ export function classifyOrganizationAuthorityFailure(error: unknown): AuthorityF
     return error.code === 'stale-affiliation' ||
       error.code === 'stale-role-evidence' ||
       error.code === 'executor-unavailable'
-      ? { kind: 'transient', failureClass: 'affiliation-unavailable' }
-      : { kind: 'strict', failureClass: error.code }
+      ? { failureClass: 'affiliation-unavailable', kind: 'transient' }
+      : { failureClass: error.code, kind: 'strict' }
   }
-  if (error instanceof ScopeRequiredError) return { kind: 'strict', failureClass: 'missing-scope' }
-  if (error instanceof CharacterTokenNotFoundError)
-    return { kind: 'strict', failureClass: 'authorization-missing' }
-  if (error instanceof EveSsoTokenRefreshError)
+  if (error instanceof ScopeRequiredError) {
+    return { failureClass: 'missing-scope', kind: 'strict' }
+  }
+  if (error instanceof CharacterTokenNotFoundError) {
+    return { failureClass: 'authorization-missing', kind: 'strict' }
+  }
+  if (error instanceof EveSsoTokenRefreshError) {
     return error.authorizationRevoked
-      ? { kind: 'strict', failureClass: 'authorization-revoked' }
-      : { kind: 'transient', failureClass: 'sso-unavailable' }
+      ? { failureClass: 'authorization-revoked', kind: 'strict' }
+      : { failureClass: 'sso-unavailable', kind: 'transient' }
+  }
   if (
     error instanceof EsiQuotaError ||
     error instanceof TokenRefreshUnavailableError ||
     classifyEsiRefreshFailure(error) === 'esi-unavailable'
-  )
-    return { kind: 'transient', failureClass: 'esi-unavailable' }
+  ) {
+    return { failureClass: 'esi-unavailable', kind: 'transient' }
+  }
   const status = getEsiFailureStatus(error)
-  if (status === 401 || status === 403)
-    return { kind: 'strict', failureClass: 'authorization-rejected' }
+  if (status === 401 || status === 403) {
+    return { failureClass: 'authorization-rejected', kind: 'strict' }
+  }
   return null
 }
 
 async function loadRefreshSnapshot(candidate: OrganizationOwnerEvidenceJobCandidate) {
   const [snapshot] = await db
     .select({
-      grantId: organizationAuthorityEvidence.grantId,
-      organizationType: deploymentSettings.organizationType,
-      organizationId: deploymentSettings.organizationId,
-      organizationVersion: deploymentSettings.organizationVersion,
-      userId: organizationAuthorityEvidence.userId,
-      characterId: organizationAuthorityEvidence.characterId,
-      sourceSubjectLifecycleId: organizationAuthorityEvidence.sourceSubjectLifecycleId,
       authorizationGeneration: organizationAuthorityEvidence.authorizationGeneration,
-      currentSubjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+      characterId: organizationAuthorityEvidence.characterId,
       currentAuthorizationGeneration: eveTokens.tokenVersion,
+      currentSubjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+      grantId: organizationAuthorityEvidence.grantId,
+      organizationId: deploymentSettings.organizationId,
+      organizationType: deploymentSettings.organizationType,
+      organizationVersion: deploymentSettings.organizationVersion,
       roleEvidenceRevision: organizationAuthorityEvidence.roleEvidenceRevision,
+      sourceSubjectLifecycleId: organizationAuthorityEvidence.sourceSubjectLifecycleId,
+      userId: organizationAuthorityEvidence.userId,
     })
     .from(organizationAuthorityEvidence)
     .innerJoin(
@@ -275,9 +290,12 @@ async function loadRefreshSnapshot(candidate: OrganizationOwnerEvidenceJobCandid
         isNull(organizationRoleGrants.revokedAt),
       ),
     )
-  if (!snapshot) return null
-  if (await hasActiveOrganizationMemberBlock(db, snapshot.organizationVersion, snapshot.userId))
+  if (!snapshot) {
     return null
+  }
+  if (await hasActiveOrganizationMemberBlock(db, snapshot.organizationVersion, snapshot.userId)) {
+    return null
+  }
   return snapshot
 }
 
@@ -286,30 +304,31 @@ async function applySuccessfulEvidenceRefresh(input: SuccessfulEvidenceRefresh) 
   return db.transaction(async (transaction) => {
     const [organization] = await transaction
       .select({
+        freshDurationSeconds: deploymentSettings.authorityEvidenceFreshDurationSeconds,
         organizationVersion: deploymentSettings.organizationVersion,
         policyVersion: deploymentSettings.registrationPolicyVersion,
-        freshDurationSeconds: deploymentSettings.authorityEvidenceFreshDurationSeconds,
       })
       .from(deploymentSettings)
       .where(eq(deploymentSettings.id, 1))
       .for('update')
     input.signal?.throwIfAborted()
-    if (organization?.organizationVersion !== input.organizationVersion)
+    if (organization?.organizationVersion !== input.organizationVersion) {
       return 'superseded' as const
+    }
 
     const [current] = await transaction
       .select({
-        userId: organizationAuthorityEvidence.userId,
-        corporationId: characters.corporationId,
-        allianceId: characters.allianceId,
         affiliationCheckedAt: characters.affiliationCheckedAt,
-        subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+        allianceId: characters.allianceId,
         authorizationGeneration: eveTokens.tokenVersion,
-        scopes: eveTokens.scopes,
-        requiredScope: organizationAuthorityEvidence.requiredScope,
+        corporationId: characters.corporationId,
         evidenceAuthorizationGeneration: organizationAuthorityEvidence.authorizationGeneration,
-        roleEvidenceRevision: organizationAuthorityEvidence.roleEvidenceRevision,
         invalidatedAt: organizationAuthorityEvidence.invalidatedAt,
+        requiredScope: organizationAuthorityEvidence.requiredScope,
+        roleEvidenceRevision: organizationAuthorityEvidence.roleEvidenceRevision,
+        scopes: eveTokens.scopes,
+        subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+        userId: organizationAuthorityEvidence.userId,
       })
       .from(organizationAuthorityEvidence)
       .innerJoin(
@@ -332,7 +351,9 @@ async function applySuccessfulEvidenceRefresh(input: SuccessfulEvidenceRefresh) 
       )
       .for('update')
     input.signal?.throwIfAborted()
-    if (!current) return 'superseded' as const
+    if (!current) {
+      return 'superseded' as const
+    }
     const blocked = await hasActiveOrganizationMemberBlock(
       transaction,
       input.organizationVersion,
@@ -350,32 +371,35 @@ async function applySuccessfulEvidenceRefresh(input: SuccessfulEvidenceRefresh) 
       current.evidenceAuthorizationGeneration !== input.sourceAuthorizationGeneration ||
       current.roleEvidenceRevision !== input.sourceRoleEvidenceRevision ||
       !current.scopes.includes(current.requiredScope)
-    )
+    ) {
       return 'superseded' as const
+    }
 
     const freshUntil = earliestDate(
       input.evidenceFreshUntil,
-      new Date(input.checkedAt.getTime() + organization.freshDurationSeconds * 1_000),
+      new Date(input.checkedAt.getTime() + organization.freshDurationSeconds * 1000),
     )
-    if (freshUntil <= input.checkedAt) return 'superseded' as const
+    if (freshUntil <= input.checkedAt) {
+      return 'superseded' as const
+    }
 
     const [updated] = await transaction
       .update(organizationAuthorityEvidence)
       .set({
         authorityCorporationId: input.authorityCorporationId,
-        observedCorporationId: input.authorityCorporationId,
-        observedAllianceId: input.observedAllianceId,
-        directorRolePresent: true,
-        status: 'fresh',
         authorizationGeneration: current.authorizationGeneration,
-        roleEvidenceRevision: input.refreshedRoleEvidenceRevision,
-        observedAt: input.checkedAt,
+        directorRolePresent: true,
+        failureClass: null,
         freshUntil,
         graceUntil: null,
-        lastCheckedAt: input.checkedAt,
-        failureClass: null,
         invalidatedAt: null,
         invalidationOutcome: null,
+        lastCheckedAt: input.checkedAt,
+        observedAllianceId: input.observedAllianceId,
+        observedAt: input.checkedAt,
+        observedCorporationId: input.authorityCorporationId,
+        roleEvidenceRevision: input.refreshedRoleEvidenceRevision,
+        status: 'fresh',
         updatedAt: input.checkedAt,
       })
       .where(
@@ -391,19 +415,21 @@ async function applySuccessfulEvidenceRefresh(input: SuccessfulEvidenceRefresh) 
       )
       .returning({ evidenceId: organizationAuthorityEvidence.evidenceId })
     input.signal?.throwIfAborted()
-    if (!updated) return 'superseded' as const
+    if (!updated) {
+      return 'superseded' as const
+    }
     await appendOrganizationAuditEvent(transaction, {
-      deploymentId: 1,
-      organizationVersion: input.organizationVersion,
-      policyVersion: organization.policyVersion,
-      eventType: 'authority-source.observed',
-      actorType: 'system',
       actorId: null,
-      subjectType: 'authority_source',
-      subjectId: updated.evidenceId,
-      reason: 'Fresh organization-owner authority evidence was observed.',
-      outcome: 'unchanged',
+      actorType: 'system',
+      deploymentId: 1,
+      eventType: 'authority-source.observed',
       occurredAt: input.checkedAt,
+      organizationVersion: input.organizationVersion,
+      outcome: 'unchanged',
+      policyVersion: organization.policyVersion,
+      reason: 'Fresh organization-owner authority evidence was observed.',
+      subjectId: updated.evidenceId,
+      subjectType: 'authority_source',
     })
     return 'fresh' as const
   })
@@ -426,21 +452,22 @@ async function applyEvidenceFailure(
       .where(eq(deploymentSettings.id, 1))
       .for('update')
     signal?.throwIfAborted()
-    if (organization?.organizationVersion !== snapshot.organizationVersion)
+    if (organization?.organizationVersion !== snapshot.organizationVersion) {
       return 'superseded' as const
+    }
 
     const [current] = await transaction
       .select({
-        userId: organizationAuthorityEvidence.userId,
-        revokedAt: organizationRoleGrants.revokedAt,
-        status: organizationAuthorityEvidence.status,
+        authorizationGeneration: organizationAuthorityEvidence.authorizationGeneration,
+        directorRolePresent: organizationAuthorityEvidence.directorRolePresent,
+        failureClass: organizationAuthorityEvidence.failureClass,
         freshUntil: organizationAuthorityEvidence.freshUntil,
         graceUntil: organizationAuthorityEvidence.graceUntil,
-        failureClass: organizationAuthorityEvidence.failureClass,
-        directorRolePresent: organizationAuthorityEvidence.directorRolePresent,
-        authorizationGeneration: organizationAuthorityEvidence.authorizationGeneration,
-        roleEvidenceRevision: organizationAuthorityEvidence.roleEvidenceRevision,
         invalidatedAt: organizationAuthorityEvidence.invalidatedAt,
+        revokedAt: organizationRoleGrants.revokedAt,
+        roleEvidenceRevision: organizationAuthorityEvidence.roleEvidenceRevision,
+        status: organizationAuthorityEvidence.status,
+        userId: organizationAuthorityEvidence.userId,
       })
       .from(organizationAuthorityEvidence)
       .innerJoin(
@@ -458,15 +485,9 @@ async function applyEvidenceFailure(
         )
       : false
     signal?.throwIfAborted()
-    if (
-      !current ||
-      current.revokedAt ||
-      current.invalidatedAt ||
-      blocked ||
-      current.authorizationGeneration !== snapshot.authorizationGeneration ||
-      current.roleEvidenceRevision !== snapshot.roleEvidenceRevision
-    )
+    if (!isCurrentOwnerEvidence(current, snapshot, blocked)) {
       return 'superseded' as const
+    }
 
     const failureClass = `${failure.kind}:${failure.failureClass}`
     const directorRolePresent =
@@ -475,19 +496,19 @@ async function applyEvidenceFailure(
     if (failure.kind === 'strict') {
       await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
         characterId: snapshot.characterId,
-        outcome: authorityInvalidationOutcome(failure),
-        now: checkedAt,
         expected: {
+          authorizationGeneration: snapshot.authorizationGeneration,
           organizationVersion: snapshot.organizationVersion,
           sourceSubjectLifecycleId: snapshot.sourceSubjectLifecycleId,
-          authorizationGeneration: snapshot.authorizationGeneration,
         },
+        now: checkedAt,
+        outcome: authorityInvalidationOutcome(failure),
       })
       signal?.throwIfAborted()
       return 'revoked' as const
     }
 
-    const graceBoundary = new Date(current.freshUntil.getTime() + organization.staleSeconds * 1_000)
+    const graceBoundary = new Date(current.freshUntil.getTime() + organization.staleSeconds * 1000)
     const graceUntil = current.graceUntil
       ? new Date(Math.min(current.graceUntil.getTime(), graceBoundary.getTime()))
       : graceBoundary
@@ -503,13 +524,13 @@ async function applyEvidenceFailure(
     if (graceUntil <= checkedAt) {
       await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
         characterId: snapshot.characterId,
-        outcome: 'expired',
-        now: checkedAt,
         expected: {
+          authorizationGeneration: snapshot.authorizationGeneration,
           organizationVersion: snapshot.organizationVersion,
           sourceSubjectLifecycleId: snapshot.sourceSubjectLifecycleId,
-          authorizationGeneration: snapshot.authorizationGeneration,
         },
+        now: checkedAt,
+        outcome: 'expired',
       })
       signal?.throwIfAborted()
       return 'revoked' as const
@@ -518,11 +539,11 @@ async function applyEvidenceFailure(
     await transaction
       .update(organizationAuthorityEvidence)
       .set({
-        status: 'degraded',
         directorRolePresent,
-        lastCheckedAt: checkedAt,
-        graceUntil,
         failureClass,
+        graceUntil,
+        lastCheckedAt: checkedAt,
+        status: 'degraded',
         updatedAt: checkedAt,
       })
       .where(eq(organizationAuthorityEvidence.grantId, snapshot.grantId))
@@ -531,10 +552,34 @@ async function applyEvidenceFailure(
   })
 }
 
+function isCurrentOwnerEvidence(
+  current:
+    | {
+        revokedAt: Date | null
+        invalidatedAt: Date | null
+        authorizationGeneration: number
+        roleEvidenceRevision: string
+      }
+    | undefined,
+  snapshot: NonNullable<Awaited<ReturnType<typeof loadRefreshSnapshot>>>,
+  blocked: boolean,
+): current is NonNullable<typeof current> {
+  return Boolean(
+    current &&
+    !current.revokedAt &&
+    !current.invalidatedAt &&
+    !blocked &&
+    current.authorizationGeneration === snapshot.authorizationGeneration &&
+    current.roleEvidenceRevision === snapshot.roleEvidenceRevision,
+  )
+}
+
 function authorityInvalidationOutcome(
   failure: AuthorityFailure,
 ): OrganizationAuthorityInvalidationOutcome {
-  if (failure.kind === 'transient') return 'expired'
+  if (failure.kind === 'transient') {
+    return 'expired'
+  }
   switch (failure.failureClass) {
     case 'affiliation-changed':
     case 'authorization-generation-changed':

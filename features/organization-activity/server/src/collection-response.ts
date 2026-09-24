@@ -21,10 +21,6 @@ import {
 const collectionOperationHandlers: {
   readonly [Operation in ActivityOperationId]: CollectionOperationHandler
 } = {
-  'campaign-list': async ({ request, operations }) => {
-    const result = await requireOperation(operations, 'organization-activity-campaign-list')({})
-    return collected(result, mapCampaignList(request, result.data))
-  },
   'campaign-detail': async ({ request, operations }) => {
     const result = await requireOperation(
       operations,
@@ -34,12 +30,28 @@ const collectionOperationHandlers: {
     })
     return collected(result, single(campaignSnapshot(result.data)))
   },
-  'objective-list': async ({ request, query, operations }) => {
+  'campaign-list': async ({ request, operations }) => {
+    const result = await requireOperation(operations, 'organization-activity-campaign-list')({})
+    return collected(result, mapCampaignList(request, result.data))
+  },
+  'character-jobs': async ({ request, operations }) => {
     const result = await requireOperation(
       operations,
-      'organization-activity-objective-list',
+      'organization-activity-character-jobs',
     )({
-      path: { campaign_id: pathString(request, 'campaign_id') },
+      path: { character_id: pathInteger(request, 'character_id') },
+    })
+    return collected(result, {
+      ...mapJobDetails(request, result.data.freelance_jobs, undefined, 'job-participation'),
+      retainedIds: result.data.freelance_jobs.map((item) => item.id),
+    })
+  },
+  'character-objectives': async ({ request, query, operations }) => {
+    const result = await requireOperation(
+      operations,
+      'organization-activity-character-objectives',
+    )({
+      path: { character_id: pathInteger(request, 'character_id') },
       ...withQuery(query),
     })
     return collected(result, {
@@ -47,40 +59,9 @@ const collectionOperationHandlers: {
       cursor: result.data.cursor,
       count: result.data.objectives.length,
       requests: result.data.objectives.map((item) =>
-        detail(request, 'objective-detail', { ...request.path, objective_id: item.id }),
+        detail(request, 'objective-participation', { ...request.path, objective_id: item.id }),
       ),
     })
-  },
-  'objective-detail': async ({ request, operations }) => {
-    const campaignId = pathString(request, 'campaign_id')
-    const result = await requireOperation(
-      operations,
-      'organization-activity-objective-detail',
-    )({
-      path: { campaign_id: campaignId, objective_id: pathString(request, 'objective_id') },
-    })
-    return collected(result, single(objectiveSnapshot(result.data, campaignId)))
-  },
-  'job-list': async ({ request, query, operations }) => {
-    const result = await requireOperation(
-      operations,
-      'organization-activity-job-list',
-    )({
-      ...withQuery(query),
-    })
-    return collected(
-      result,
-      mapJobDetails(request, result.data.freelance_jobs, result.data.cursor, 'job-detail'),
-    )
-  },
-  'job-detail': async ({ request, operations }) => {
-    const result = await requireOperation(
-      operations,
-      'organization-activity-job-detail',
-    )({
-      path: { job_id: pathString(request, 'job_id') },
-    })
-    return collected(result, single(jobSnapshot(result.data)))
   },
   'corporation-jobs': async ({ request, query, operations }) => {
     const corporationId = pathInteger(request, 'corporation_id')
@@ -101,73 +82,26 @@ const collectionOperationHandlers: {
       count: summaries.length,
     })
   },
-  'project-list': async ({ request, query, operations, profile }) => {
-    const corporationId = pathInteger(request, 'corporation_id')
+  'job-detail': async ({ request, operations }) => {
     const result = await requireOperation(
       operations,
-      'organization-activity-project-list',
+      'organization-activity-job-detail',
     )({
-      path: { corporation_id: corporationId },
+      path: { job_id: pathString(request, 'job_id') },
+    })
+    return collected(result, single(jobSnapshot(result.data)))
+  },
+  'job-list': async ({ request, query, operations }) => {
+    const result = await requireOperation(
+      operations,
+      'organization-activity-job-list',
+    )({
       ...withQuery(query),
-    })
-    const detailOperation =
-      profile === 'character-projects' ? 'project-contribution' : 'project-detail'
-    return collected(result, {
-      snapshots: [],
-      cursor: result.data.cursor,
-      count: result.data.projects.length,
-      requests: result.data.projects.map((item) =>
-        detail(
-          request,
-          detailOperation,
-          { ...request.path, project_id: item.id },
-          summarySnapshot(item, 'project', corporationId),
-        ),
-      ),
-    })
-  },
-  'project-detail': async ({ request, operations }) => {
-    const corporationId = pathInteger(request, 'corporation_id')
-    const result = await requireOperation(
-      operations,
-      'organization-activity-project-detail',
-    )({
-      path: { corporation_id: corporationId, project_id: pathString(request, 'project_id') },
-    })
-    return collected(result, single(projectSnapshot(result.data, corporationId)))
-  },
-  'project-contribution': async ({ request, operations }) => {
-    const result = await requireOperation(
-      operations,
-      'organization-activity-project-contribution',
-    )({
-      path: {
-        corporation_id: pathInteger(request, 'corporation_id'),
-        project_id: pathString(request, 'project_id'),
-        character_id: pathInteger(request, 'character_id'),
-      },
     })
     return collected(
       result,
-      single({
-        ...requiredSnapshot(request),
-        contributed: result.data.contributed,
-        committed: result.data.contributed > 0,
-        eligibility: 'unrestricted',
-      }),
+      mapJobDetails(request, result.data.freelance_jobs, result.data.cursor, 'job-detail'),
     )
-  },
-  'character-jobs': async ({ request, operations }) => {
-    const result = await requireOperation(
-      operations,
-      'organization-activity-character-jobs',
-    )({
-      path: { character_id: pathInteger(request, 'character_id') },
-    })
-    return collected(result, {
-      ...mapJobDetails(request, result.data.freelance_jobs, undefined, 'job-participation'),
-      retainedIds: result.data.freelance_jobs.map((item) => item.id),
-    })
   },
   'job-participation': async ({ request, operations }) => {
     const result = await requireOperation(
@@ -188,12 +122,22 @@ const collectionOperationHandlers: {
       }),
     )
   },
-  'character-objectives': async ({ request, query, operations }) => {
+  'objective-detail': async ({ request, operations }) => {
+    const campaignId = pathString(request, 'campaign_id')
     const result = await requireOperation(
       operations,
-      'organization-activity-character-objectives',
+      'organization-activity-objective-detail',
     )({
-      path: { character_id: pathInteger(request, 'character_id') },
+      path: { campaign_id: campaignId, objective_id: pathString(request, 'objective_id') },
+    })
+    return collected(result, single(objectiveSnapshot(result.data, campaignId)))
+  },
+  'objective-list': async ({ request, query, operations }) => {
+    const result = await requireOperation(
+      operations,
+      'organization-activity-objective-list',
+    )({
+      path: { campaign_id: pathString(request, 'campaign_id') },
       ...withQuery(query),
     })
     return collected(result, {
@@ -201,7 +145,7 @@ const collectionOperationHandlers: {
       cursor: result.data.cursor,
       count: result.data.objectives.length,
       requests: result.data.objectives.map((item) =>
-        detail(request, 'objective-participation', { ...request.path, objective_id: item.id }),
+        detail(request, 'objective-detail', { ...request.path, objective_id: item.id }),
       ),
     })
   },
@@ -227,6 +171,62 @@ const collectionOperationHandlers: {
         eligibility: data.is_committed ? 'unrestricted' : 'unknown',
       }),
     )
+  },
+  'project-contribution': async ({ request, operations }) => {
+    const result = await requireOperation(
+      operations,
+      'organization-activity-project-contribution',
+    )({
+      path: {
+        corporation_id: pathInteger(request, 'corporation_id'),
+        project_id: pathString(request, 'project_id'),
+        character_id: pathInteger(request, 'character_id'),
+      },
+    })
+    return collected(
+      result,
+      single({
+        ...requiredSnapshot(request),
+        contributed: result.data.contributed,
+        committed: result.data.contributed > 0,
+        eligibility: 'unrestricted',
+      }),
+    )
+  },
+  'project-detail': async ({ request, operations }) => {
+    const corporationId = pathInteger(request, 'corporation_id')
+    const result = await requireOperation(
+      operations,
+      'organization-activity-project-detail',
+    )({
+      path: { corporation_id: corporationId, project_id: pathString(request, 'project_id') },
+    })
+    return collected(result, single(projectSnapshot(result.data, corporationId)))
+  },
+  'project-list': async ({ request, query, operations, profile }) => {
+    const corporationId = pathInteger(request, 'corporation_id')
+    const result = await requireOperation(
+      operations,
+      'organization-activity-project-list',
+    )({
+      path: { corporation_id: corporationId },
+      ...withQuery(query),
+    })
+    const detailOperation =
+      profile === 'character-projects' ? 'project-contribution' : 'project-detail'
+    return collected(result, {
+      snapshots: [],
+      cursor: result.data.cursor,
+      count: result.data.projects.length,
+      requests: result.data.projects.map((item) =>
+        detail(
+          request,
+          detailOperation,
+          { ...request.path, project_id: item.id },
+          summarySnapshot(item, 'project', corporationId),
+        ),
+      ),
+    })
   },
 }
 
@@ -286,9 +286,6 @@ function mapCampaignList(
 ): CollectionResponse {
   const activeCampaigns = data.campaigns.filter((item) => item.state === 'Active')
   return {
-    retainedIds: data.campaigns.map((item) => item.id),
-    retainedCampaignIds: activeCampaigns.map((item) => item.id),
-    snapshots: data.campaigns.map((item) => campaignSnapshot(item)),
     count: data.campaigns.length,
     requests: activeCampaigns.flatMap((item) => [
       detail(request, 'campaign-detail', { campaign_id: item.id }),
@@ -298,6 +295,9 @@ function mapCampaignList(
         cursorKey: item.id,
       },
     ]),
+    retainedCampaignIds: activeCampaigns.map((item) => item.id),
+    retainedIds: data.campaigns.map((item) => item.id),
+    snapshots: data.campaigns.map((item) => campaignSnapshot(item)),
   }
 }
 
@@ -310,12 +310,12 @@ function mapJobDetails(
   const corporationId = optionalPathInteger(request, 'corporation_id')
   const summaries = jobs.map((item) => summarySnapshot(item, 'job', corporationId))
   return {
-    snapshots: [],
-    cursor,
     count: summaries.length,
+    cursor,
     requests: summaries.map((item) =>
       detail(request, detailOperation, { ...request.path, job_id: item.id }, item),
     ),
+    snapshots: [],
   }
 }
 
@@ -324,7 +324,9 @@ function requireOperation<Operation extends ActivityEsiOperation>(
   operation: Operation,
 ) {
   const method = operations[operation]
-  if (!method) throw new Error(`Activity collection operation ${operation} is undeclared`)
+  if (!method) {
+    throw new Error(`Activity collection operation ${operation} is undeclared`)
+  }
   return method
 }
 
@@ -349,23 +351,29 @@ function withQuery(query: CollectionCursorQuery | undefined) {
 }
 
 function single(snapshot: ActivitySnapshot): CollectionResponse {
-  return { snapshots: [snapshot], requests: [], count: 1 }
+  return { count: 1, requests: [], snapshots: [snapshot] }
 }
 
 function requiredSnapshot(request: CollectionRequest) {
-  if (!request.snapshot) throw new Error('Participation requires an activity identity')
+  if (!request.snapshot) {
+    throw new Error('Participation requires an activity identity')
+  }
   return request.snapshot
 }
 
 function pathString(request: CollectionRequest, field: string) {
   const value = request.path[field]
-  if (typeof value !== 'string') throw new Error(`Activity collection request lacks ${field}`)
+  if (typeof value !== 'string') {
+    throw new TypeError(`Activity collection request lacks ${field}`)
+  }
   return value
 }
 
 function pathInteger(request: CollectionRequest, field: string) {
   const value = optionalPathInteger(request, field)
-  if (value === null) throw new Error(`Activity collection request lacks ${field}`)
+  if (value === null) {
+    throw new Error(`Activity collection request lacks ${field}`)
+  }
   return value
 }
 

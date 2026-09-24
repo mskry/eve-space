@@ -21,15 +21,16 @@ export async function resolveContributionReviewerPanels(
     contributions.flatMap((descriptor) =>
       descriptor.reviewerContributions.map(async (contribution) => {
         const packageRoot = packageRoots.get(descriptor.moduleId)
-        if (!packageRoot)
+        if (!packageRoot) {
           throw new Error(`Nuxt package ${descriptor.moduleId} could not be resolved`)
+        }
         const importSpecifier = `${descriptor.packageName}/${contribution.panelExport.slice(2)}`
         await resolveReviewerPanelFile(
           packageRoot,
           importSpecifier,
           `${descriptor.moduleId}/${contribution.contributionId}`,
         )
-        return { moduleId: descriptor.moduleId, contribution, importSpecifier }
+        return { contribution, importSpecifier, moduleId: descriptor.moduleId }
       }),
     ),
   )
@@ -59,12 +60,15 @@ export async function resolveReviewerPanelFile(
   } catch {
     throw new Error(`Reviewer panel ${identity} is missing its package export`)
   }
-  if (!isPathInside(owningPackageRoot, file))
+  if (!isPathInside(owningPackageRoot, file)) {
     throw new Error(`Reviewer panel ${identity} must resolve within its owning Nuxt package`)
+  }
   let regularFile = false
   try {
     regularFile = (await stat(file)).isFile()
   } catch {}
-  if (!regularFile) throw new Error(`Reviewer panel ${identity} must resolve to a regular file`)
+  if (!regularFile) {
+    throw new Error(`Reviewer panel ${identity} must resolve to a regular file`)
+  }
   return file
 }

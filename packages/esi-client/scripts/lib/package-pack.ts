@@ -65,11 +65,11 @@ export async function packPackage(
     const files = await collectPackedFiles(packageRoot);
     return [
       {
+        entryCount: files.length,
         filename: basename(tarball),
+        files,
         size: (await stat(tarball)).size,
         unpackedSize: files.reduce((total, file) => total + file.size, 0),
-        entryCount: files.length,
-        files,
       },
     ];
   } finally {
@@ -98,7 +98,9 @@ export function parsePnpmPackJson(stdout: string): {
     } catch {
       // pnpm may print lifecycle output before the final JSON payload.
     }
-    if (index === 0) break;
+    if (index === 0) {
+      break;
+    }
     index = stdout.lastIndexOf('{', index - 1);
   }
   throw new Error('pnpm pack did not produce a JSON result');
@@ -108,11 +110,13 @@ async function collectPackedFiles(directory: string, prefix = ''): Promise<Packa
   const files: PackagePackFile[] = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = prefix === '' ? entry.name : `${prefix}/${entry.name}`;
-    if (entry.isDirectory())
+    if (entry.isDirectory()) {
       files.push(...(await collectPackedFiles(join(directory, entry.name), path)));
-    else if (entry.isFile())
+    } else if (entry.isFile()) {
       files.push({ path, size: (await stat(join(directory, entry.name))).size });
-    else throw new Error(`Unsupported packed file type: ${path}`);
+    } else {
+      throw new Error(`Unsupported packed file type: ${path}`);
+    }
   }
   return files.toSorted((left, right) => left.path.localeCompare(right.path, 'en'));
 }

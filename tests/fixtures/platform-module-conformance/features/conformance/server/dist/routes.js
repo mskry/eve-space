@@ -6,15 +6,16 @@ export function conformanceRoutes(capabilities) {
     return new Hono().get('/', zValidator('query', querySchema), async (context) => {
         const { characterId } = context.var.platform.authorization;
         const { view } = context.req.valid('query');
-        if (view === 'conflict')
+        if (view === 'conflict') {
             throw platformModuleError(409, {
                 code: 'CONFORMANCE_CONFLICT',
                 message: 'The conformance activity is already current.',
             });
+        }
         const [resource, affiliation] = await Promise.all([
             context.var.platform.collectionStatus.read('conformance-status', {
-                kind: 'character',
                 characterId,
+                kind: 'character',
             }),
             context.var.platform.coreReads.loadAffiliation(),
         ]);

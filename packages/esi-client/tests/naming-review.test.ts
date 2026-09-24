@@ -30,8 +30,8 @@ describe('facade naming review', () => {
     const { catalog, model } = await loadLiveFixture();
     const reordered: NormalizedOpenApiModel = {
       ...model,
-      operations: reversed(model.operations),
       models: reversed(model.models),
+      operations: reversed(model.operations),
     };
 
     expect(renderNamingReviewReport(reordered, catalog, provenance)).toBe(
@@ -52,12 +52,15 @@ describe('facade naming review', () => {
     const entries = review.domains[0]?.operations ?? [];
     const report = renderNamingReviewReport(model, catalog, provenance);
 
-    expect(entries.map(({ candidateMethod }) => candidateMethod)).toEqual([
+    expect(entries.map(({ candidateMethod }) => candidateMethod)).toStrictEqual([
       'listWidgets',
       'listWidgets',
     ]);
     for (const entry of entries) {
-      expect(entry.candidateCollisionOperationIds).toEqual(['GetFirstItems', 'GetSecondItems']);
+      expect(entry.candidateCollisionOperationIds).toStrictEqual([
+        'GetFirstItems',
+        'GetSecondItems',
+      ]);
     }
     expect(report).toContain('`GetFirstItems`<br>`GetSecondItems` | `items.listFirstItems`');
     expect(report).not.toContain('listWidgets2');
@@ -91,7 +94,7 @@ describe('facade naming review', () => {
     const entry = review.domains[0]?.operations[0];
     const report = renderNamingReviewReport(model, catalog, provenance);
 
-    expect(entry?.positionalIdentifiers).toEqual(['owner_id', 'item_id']);
+    expect(entry?.positionalIdentifiers).toStrictEqual(['owner_id', 'item_id']);
     expect(entry?.derivedOptionsType).toBeNull();
     expect(report).toContain(
       '`GET /owners/{owner_id}/items/{item_id}` | `owner_id`, `item_id` | Get item',
@@ -117,15 +120,21 @@ async function loadLiveFixture(): Promise<{
 
 function operation(operationId: string, path: string, summary: string): NormalizedOperation {
   return {
-    operationId,
-    method: 'GET',
-    path,
-    domainSource: 'Items',
-    tags: ['Items'],
-    summary,
+    cache: { extensions: {}, responseHeaders: [] },
+    conditionalRequestValidators: [],
     description: null,
+    domainSource: 'Items',
+    extensions: {},
+    maximumBatchSize: null,
+    method: 'GET',
+    operationId,
+    pagination: { kind: 'none', requestParameters: [], responseHeaders: [] },
     parameters: [],
+    path,
+    rateLimit: { kind: 'legacy-only' },
+    requestArrayLimits: [],
     requestBody: null,
+    security: [],
     successResponses: [
       {
         status: '200',
@@ -138,48 +147,42 @@ function operation(operationId: string, path: string, summary: string): Normaliz
         extensions: {},
       },
     ],
-    security: [],
-    pagination: { kind: 'none', requestParameters: [], responseHeaders: [] },
-    cache: { responseHeaders: [], extensions: {} },
-    conditionalRequestValidators: [],
-    rateLimit: { kind: 'legacy-only' },
-    requestArrayLimits: [],
-    maximumBatchSize: null,
-    extensions: {},
+    summary,
+    tags: ['Items'],
   };
 }
 
 function pathParameter(name: string): NormalizedOperation['parameters'][number] {
   return {
+    allowReserved: null,
+    deprecated: false,
+    description: null,
+    explode: null,
+    extensions: {},
     name,
     placement: 'path',
     required: true,
-    description: null,
-    deprecated: false,
-    style: null,
-    explode: null,
-    allowReserved: null,
     schema: { type: 'integer' },
-    extensions: {},
+    style: null,
   };
 }
 
 function reviewed(operationId: string, method: string): FacadeCatalogEntry {
-  return { operationId, domain: 'items', method, reviewed: true };
+  return { domain: 'items', method, operationId, reviewed: true };
 }
 
 function syntheticModel(operations: readonly NormalizedOperation[]): NormalizedOpenApiModel {
   const operationIds = operations.map(({ operationId }) => operationId);
   return {
-    operations,
-    models: [],
+    accounting: {
+      excludedOperationIds: [],
+      normalizedOperationIds: operationIds,
+      sourceOperationIds: operationIds,
+    },
     exclusions: [],
     inventory: { openapi: [], schemas: [] },
-    accounting: {
-      sourceOperationIds: operationIds,
-      normalizedOperationIds: operationIds,
-      excludedOperationIds: [],
-    },
+    models: [],
+    operations,
   };
 }
 
@@ -197,7 +200,9 @@ function reversed<Value>(values: readonly Value[]): Value[] {
   const result: Value[] = [];
   for (let index = values.length - 1; index >= 0; index -= 1) {
     const value = values[index];
-    if (value !== undefined) result.push(value);
+    if (value !== undefined) {
+      result.push(value);
+    }
   }
   return result;
 }

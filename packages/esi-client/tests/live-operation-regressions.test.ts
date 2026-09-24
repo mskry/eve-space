@@ -20,8 +20,8 @@ const getUniverseBloodlinesNullableShipTypeIdFixture = [
 ] as const;
 
 const postUniverseNamesCharacter90666561Fixture = {
-  ids: [90_666_561],
   error: { error: 'Ensure all IDs are valid before resolving' },
+  ids: [90_666_561],
 } as const;
 
 describe('live ESI operation regressions', () => {
@@ -33,8 +33,8 @@ describe('live ESI operation regressions', () => {
     await expect(result).rejects.toBeInstanceOf(EsiResponseValidationError);
     await expect(result).rejects.toMatchObject({
       code: 'ESI_RESPONSE_VALIDATION_ERROR',
-      operationId: 'GetUniverseBloodlines',
       issues: [expect.objectContaining({ path: [0, 'ship_type_id'] })],
+      operationId: 'GetUniverseBloodlines',
     });
   });
 
@@ -43,7 +43,7 @@ describe('live ESI operation regressions', () => {
 
     const result = await createUniverseClient({ fetch, validateResponses: false }).listBloodlines();
 
-    expect(result).toEqual(getUniverseBloodlinesNullableShipTypeIdFixture);
+    expect(result).toStrictEqual(getUniverseBloodlinesNullableShipTypeIdFixture);
   });
 
   test('PostUniverseNames preserves the structured 90666561 live 404 error', async () => {
@@ -58,12 +58,12 @@ describe('live ESI operation regressions', () => {
 
     expect(error).toBeInstanceOf(EsiHttpError);
     expect(error).toMatchObject({
+      body: postUniverseNamesCharacter90666561Fixture.error,
+      bodyFormat: 'json',
+      bodyTruncated: false,
       code: 'ESI_HTTP_ERROR',
       operationId: 'PostUniverseNames',
       status: 404,
-      bodyFormat: 'json',
-      body: postUniverseNamesCharacter90666561Fixture.error,
-      bodyTruncated: false,
     });
     expect(fetch).toHaveBeenCalledOnce();
   });

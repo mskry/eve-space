@@ -21,22 +21,22 @@ describe('asset filters', () => {
 
   it('treats skin as a SKIN category term instead of fuzzy-matching singleton', () => {
     const groups = buildAssetHierarchy([
-      asset(1, { typeName: 'Amarr Shuttle', groupName: 'Shuttle', categoryName: 'Ship' }),
+      asset(1, { categoryName: 'Ship', groupName: 'Shuttle', typeName: 'Amarr Shuttle' }),
       asset(2, {
-        typeId: 57_006,
-        typeName: 'Raptor Aurora Universalis SKIN',
-        groupId: 1_950,
-        groupName: 'Permanent SKIN',
         categoryId: 91,
         categoryName: 'SKINs',
+        groupId: 1950,
+        groupName: 'Permanent SKIN',
+        typeId: 57_006,
+        typeName: 'Raptor Aurora Universalis SKIN',
       }),
     ])
 
     const result = filterAssetHierarchy(groups, { ...EMPTY_ASSET_FILTERS, search: 'skin' })
 
-    expect(result.groups.flatMap((group) => group.rows.map((row) => row.asset.typeName))).toEqual([
-      'Raptor Aurora Universalis SKIN',
-    ])
+    expect(
+      result.groups.flatMap((group) => group.rows.map((row) => row.asset.typeName)),
+    ).toStrictEqual(['Raptor Aurora Universalis SKIN'])
   })
 
   it('matches an exact prefix longer than the fuzzy-search pattern limit', () => {
@@ -51,32 +51,34 @@ describe('asset filters', () => {
       search: longIdentity.slice(0, 40),
     })
 
-    expect(result.groups.flatMap((group) => group.rows.map((row) => row.asset.itemId))).toEqual([1])
+    expect(
+      result.groups.flatMap((group) => group.rows.map((row) => row.asset.itemId)),
+    ).toStrictEqual([1])
   })
 })
 
 function asset(itemId: number, overrides: Partial<AssetRecord> = {}): AssetRecord {
   return {
-    itemId,
-    typeId: 100 + itemId,
-    typeName: `Inventory item ${itemId}`,
-    groupId: 12,
-    groupName: 'Cargo Container',
     categoryId: 65,
     categoryName: 'Structure',
-    unitVolume: 1,
-    totalVolume: 1,
-    quantity: 1,
-    isSingleton: true,
-    isBlueprintCopy: null,
     customName: null,
+    groupId: 12,
+    groupName: 'Cargo Container',
+    isBlueprintCopy: null,
+    isSingleton: true,
+    itemId,
+    locationFlag: 'Hangar',
     locationId: 60_003_760,
-    locationType: 'station',
     locationName: 'Jita IV - Moon 4',
+    locationType: 'station',
+    parentItemId: null,
+    quantity: 1,
     solarSystemId: 30_000_142,
     solarSystemSecurityStatus: 0.9,
-    locationFlag: 'Hangar',
-    parentItemId: null,
+    totalVolume: 1,
+    typeId: 100 + itemId,
+    typeName: `Inventory item ${itemId}`,
+    unitVolume: 1,
     ...overrides,
   }
 }
@@ -84,29 +86,29 @@ function asset(itemId: number, overrides: Partial<AssetRecord> = {}): AssetRecor
 describe('blueprint terms', () => {
   it('does not match every asset for "blueprint"', () => {
     const groups = buildAssetHierarchy([
-      filterAsset(1, { typeName: 'Amarr Shuttle', groupName: 'Shuttle', categoryName: 'Ship' }),
+      filterAsset(1, { categoryName: 'Ship', groupName: 'Shuttle', typeName: 'Amarr Shuttle' }),
       filterAsset(2, {
-        typeName: 'Zealot Blueprint',
-        groupName: 'Cruiser Blueprint',
         categoryId: 9,
         categoryName: 'Blueprint',
+        groupName: 'Cruiser Blueprint',
+        typeName: 'Zealot Blueprint',
       }),
     ])
     const result = filterAssetHierarchy(groups, { ...EMPTY_ASSET_FILTERS, search: 'blueprint' })
 
-    expect(result.groups.flatMap((group) => group.rows.map((row) => row.asset.typeName))).toEqual([
-      'Zealot Blueprint',
-    ])
+    expect(
+      result.groups.flatMap((group) => group.rows.map((row) => row.asset.typeName)),
+    ).toStrictEqual(['Zealot Blueprint'])
   })
 
   it('matches originals whose copy state ESI never reported', () => {
     const groups = buildAssetHierarchy([
-      filterAsset(1, { typeName: 'Amarr Shuttle', categoryId: 6, categoryName: 'Ship' }),
+      filterAsset(1, { categoryId: 6, categoryName: 'Ship', typeName: 'Amarr Shuttle' }),
       filterAsset(2, {
-        typeName: 'Zealot Blueprint',
         categoryId: 9,
         categoryName: 'Blueprint',
         isBlueprintCopy: null,
+        typeName: 'Zealot Blueprint',
       }),
     ])
     const result = filterAssetHierarchy(groups, {
@@ -114,34 +116,34 @@ describe('blueprint terms', () => {
       blueprint: 'original',
     })
 
-    expect(result.groups.flatMap((group) => group.rows.map((row) => row.asset.typeName))).toEqual([
-      'Zealot Blueprint',
-    ])
+    expect(
+      result.groups.flatMap((group) => group.rows.map((row) => row.asset.typeName)),
+    ).toStrictEqual(['Zealot Blueprint'])
   })
 })
 
 function filterAsset(itemId: number, overrides: Partial<AssetRecord> = {}): AssetRecord {
   return {
-    itemId,
-    typeId: 100 + itemId,
-    typeName: `Item ${itemId}`,
-    groupId: 1,
-    groupName: 'Group',
     categoryId: 2,
     categoryName: 'Category',
-    unitVolume: 1,
-    totalVolume: 1,
-    quantity: 1,
-    isSingleton: true,
-    isBlueprintCopy: null,
     customName: null,
+    groupId: 1,
+    groupName: 'Group',
+    isBlueprintCopy: null,
+    isSingleton: true,
+    itemId,
+    locationFlag: 'Hangar',
     locationId: 60_003_760,
-    locationType: 'station',
     locationName: 'Jita IV - Moon 4',
+    locationType: 'station',
+    parentItemId: null,
+    quantity: 1,
     solarSystemId: 30_000_142,
     solarSystemSecurityStatus: 0.9,
-    locationFlag: 'Hangar',
-    parentItemId: null,
+    totalVolume: 1,
+    typeId: 100 + itemId,
+    typeName: `Item ${itemId}`,
+    unitVolume: 1,
     ...overrides,
   }
 }

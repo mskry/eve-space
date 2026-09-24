@@ -66,7 +66,9 @@ vi.mock('../../api/src/esi-gateway/catalog-interface.js', async (importOriginal)
   return {
     ...actual,
     assertPlatformEsiOperation(operation: string) {
-      if (operation !== fixtureOperation) actual.assertPlatformEsiOperation(operation)
+      if (operation !== fixtureOperation) {
+        actual.assertPlatformEsiOperation(operation)
+      }
     },
     getEsiOperationAuthorization(operation: string) {
       return operation === fixtureOperation
@@ -89,18 +91,14 @@ const organizationDeclaration = {
   requiredPermission: 'conformance.view',
 } as const
 const organizationSession = {
-  organizationVersion: 4,
-  state: 'compliant' as const,
-  evidenceFreshness: 'fresh' as const,
-  reviewDeadline: null,
   accessValidUntil: new Date('2026-09-06T21:00:00Z'),
   blocked: false,
+  evidenceFreshness: 'fresh' as const,
+  organizationVersion: 4,
+  reviewDeadline: null,
+  state: 'compliant' as const,
 }
 const providerContext: PlatformActivityProviderContext = {
-  userId: 'user-1',
-  organizationVersion: 4,
-  requestedAt: '2026-09-06T20:00:00Z',
-  signal: new AbortController().signal,
   characters: [
     {
       characterId: 90_000_001,
@@ -114,11 +112,15 @@ const providerContext: PlatformActivityProviderContext = {
       affiliationCheckedAt: '2026-09-06T19:59:00Z',
     },
   ],
+  organizationVersion: 4,
+  requestedAt: '2026-09-06T20:00:00Z',
+  signal: new AbortController().signal,
+  userId: 'user-1',
 }
 
 beforeEach(() => {
   mocks.moduleEnabled.mockResolvedValue(true)
-  mocks.findSession.mockResolvedValue({ userId: 'user-1', mainCharacter: null })
+  mocks.findSession.mockResolvedValue({ mainCharacter: null, userId: 'user-1' })
   mocks.findOwnedCharacter.mockResolvedValue({
     characterId: 90_000_001,
     subjectLifecycleId: 'lifecycle-1',
@@ -126,10 +128,10 @@ beforeEach(() => {
   mocks.authorize.mockResolvedValue({
     authorized: true,
     context: {
-      organizationVersion: 4,
       audience: 'member',
-      requiredPermission: 'conformance.view',
       entitlementScope: 'all',
+      organizationVersion: 4,
+      requiredPermission: 'conformance.view',
     },
   })
   mocks.createCollectionStatus.mockReturnValue(mocks.collectionStatus)
@@ -151,16 +153,16 @@ describe('production-shaped module conformance', () => {
 
     expect(manifests).toHaveLength(1)
     expect(manifests[0]).toMatchObject({
-      id: 'conformance',
       defaultEnabled: true,
+      id: 'conformance',
+      nuxt: { package: '@eve-space/conformance-nuxt' },
       server: {
-        package: '@eve-space/conformance-server',
         migrations: [
           { name: 'conformance-001-initial.sql' },
           { name: 'conformance-002-persistence-operations.sql' },
         ],
+        package: '@eve-space/conformance-server',
       },
-      nuxt: { package: '@eve-space/conformance-nuxt' },
     })
     expect(files).toHaveLength(generatedRegistryPaths.length)
     expect(files.get('api/src/generated/platform/installed-module-routes.ts')).toContain(
@@ -216,7 +218,7 @@ describe('production-shaped module conformance', () => {
   it('composes authorization, ownership, validation, private responses, and safe errors', async () => {
     const server =
       await import('../fixtures/platform-module-conformance/features/conformance/server/src/index')
-    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+    const logger = { error: vi.fn(), info: vi.fn(), warn: vi.fn() }
     const capabilities: Parameters<typeof server.conformanceRoutes>[0] = {
       coreData: {},
       logger,
@@ -249,7 +251,7 @@ describe('production-shaped module conformance', () => {
     const conflict = await request('?view=conflict')
     expect(conflict.status).toBe(409)
     expectPrivate(conflict)
-    await expect(conflict.json()).resolves.toEqual({
+    await expect(conflict.json()).resolves.toStrictEqual({
       code: 'CONFORMANCE_CONFLICT',
       message: 'The conformance activity is already current.',
     })
@@ -278,7 +280,7 @@ describe('production-shaped module conformance', () => {
       validatedAt: '2026-09-06T20:00:00Z',
     })
     const upsertConformanceSnapshot = vi.fn().mockResolvedValue({ applied: true })
-    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+    const logger = { error: vi.fn(), info: vi.fn(), warn: vi.fn() }
     const providerCapabilities = {
       collectionStatus: { read: vi.fn().mockResolvedValue(currentStatus()) },
       coreData: {},
@@ -286,33 +288,35 @@ describe('production-shaped module conformance', () => {
       persistence: { readConformanceSnapshot },
     }
     const publishedTypeGroups = vi.fn().mockResolvedValue({
-      rows: [{ typeId: 34, typeName: 'Tritanium', groupId: 18, groupName: 'Mineral' }],
-      revision: { buildNumber: 1234, ingestVersion: 2, ingestedAt: '2026-09-06T19:00:00Z' },
       complete: true,
+      revision: { buildNumber: 1234, ingestVersion: 2, ingestedAt: '2026-09-06T19:00:00Z' },
+      rows: [{ typeId: 34, typeName: 'Tritanium', groupId: 18, groupName: 'Mineral' }],
     })
     const executeEsiOperation = vi.fn().mockResolvedValue(conformanceExecution(statusData))
 
     const observation = await executeInstalledResourceOperation(
       conformanceIdentity('conformance-status'),
       {
-        resources,
-        guardExecution: conformanceGuard(resources),
-        executeEsiOperation,
         createMappingCapabilities: vi.fn().mockReturnValue({ coreData: { publishedTypeGroups } }),
+        executeEsiOperation,
+        guardExecution: conformanceGuard(resources),
+        resources,
       },
     )
-    if (observation.outcome !== 'loaded') throw new Error('Conformance resource did not load')
+    if (observation.outcome !== 'loaded') {
+      throw new Error('Conformance resource did not load')
+    }
     await server.conformanceStatusResource.materialize({
-      subject: conformanceSubject,
-      data: observation.result.data as { readonly players: number },
-      validatedAt: observation.result.validatedAt,
       authorizationGeneration: null,
-      organizationVersion: null,
-      managedAuthority: null,
       capabilities: {
         logger,
         persistence: { upsertConformanceSnapshot },
       },
+      data: observation.result.data as { readonly players: number },
+      managedAuthority: null,
+      organizationVersion: null,
+      subject: conformanceSubject,
+      validatedAt: observation.result.validatedAt,
     })
     const provider = server.conformanceActivityProvider(providerCapabilities)
     const result = await provider(providerContext)
@@ -322,12 +326,12 @@ describe('production-shaped module conformance', () => {
     expect(server.conformanceStatusOperation.sdkOperationId).toBe('GetStatus')
     expect(executeEsiOperation).toHaveBeenCalledOnce()
     expect(executeEsiOperation).toHaveBeenCalledWith({
-      operation: 'conformance-status-operation',
-      inputs: {},
       authorization: { kind: 'public' },
+      inputs: {},
+      operation: 'conformance-status-operation',
     })
     expect(publishedTypeGroups).toHaveBeenCalledWith({ typeIds: [34] })
-    expect(observation.result.data).toEqual({
+    expect(observation.result.data).toStrictEqual({
       players: 23,
       publishedTypeCount: 1,
       sdeBuildNumber: 1234,
@@ -342,7 +346,6 @@ describe('production-shaped module conformance', () => {
     })
     expect(readConformanceSnapshot).toHaveBeenCalledWith({ characterId: 90_000_001 })
     expect(result).toMatchObject({
-      freshness: { state: 'current' },
       activities: [
         {
           id: 'status:90000001',
@@ -350,6 +353,7 @@ describe('production-shaped module conformance', () => {
           linkTarget: { pageId: 'conformance-activity-page', characterId: 90_000_001 },
         },
       ],
+      freshness: { state: 'current' },
     })
   })
 
@@ -365,24 +369,24 @@ describe('production-shaped module conformance', () => {
     const executeEsiOperation = vi.fn(async ({ operation }: { readonly operation: string }) =>
       conformanceExecution(
         operation === 'universe-resolve-names'
-          ? [{ id: 90_000_001, name: 'Conformance Pilot', category: 'character' }]
+          ? [{ category: 'character', id: 90_000_001, name: 'Conformance Pilot' }]
           : statusData,
       ),
     )
     const observation = await executeInstalledResourceOperation(
       conformanceIdentity('conformance-collection'),
       {
-        resources,
-        guardExecution: conformanceGuard(resources),
-        executeEsiOperation,
-        loadCollectionContext: vi
-          .fn()
-          .mockResolvedValue({ organizationVersion: 4, corporationId: 98_000_001 }),
         createCapabilities: vi.fn().mockReturnValue({
           coreData: {},
           logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
           persistence: { readConformanceSnapshot },
         }),
+        executeEsiOperation,
+        guardExecution: conformanceGuard(resources),
+        loadCollectionContext: vi
+          .fn()
+          .mockResolvedValue({ organizationVersion: 4, corporationId: 98_000_001 }),
+        resources,
       },
     )
     const operationNames = executeEsiOperation.mock.calls.map(([request]) => request.operation)
@@ -391,26 +395,26 @@ describe('production-shaped module conformance', () => {
     expect(server.conformanceCollectionResource).not.toHaveProperty('request')
     expect(server.conformanceCollectionResource).not.toHaveProperty('map')
     expect(observation).toMatchObject({
-      outcome: 'loaded',
       complete: true,
       organizationVersion: 4,
+      outcome: 'loaded',
       result: {
-        data: { players: 23, characterName: 'Conformance Pilot', previousPlayers: 21 },
+        data: { characterName: 'Conformance Pilot', players: 23, previousPlayers: 21 },
       },
     })
-    expect(operationNames).toEqual(['conformance-status-operation', 'universe-resolve-names'])
+    expect(operationNames).toStrictEqual(['conformance-status-operation', 'universe-resolve-names'])
     expect(executeEsiOperation).toHaveBeenLastCalledWith({
-      operation: 'universe-resolve-names',
-      inputs: { body: [90_000_001] },
       authorization: { kind: 'public' },
+      inputs: { body: [90_000_001] },
+      operation: 'universe-resolve-names',
     })
     expect(readConformanceSnapshot).toHaveBeenCalledWith({ characterId: 90_000_001 })
   })
 })
 
 const conformanceSubject = {
-  kind: 'character' as const,
   characterId: 90_000_001,
+  kind: 'character' as const,
   lifecycleId: 'lifecycle-1',
 }
 const statusData = { players: 23, server_version: '1', start_time: '2026-09-06T11:00:00Z' }
@@ -421,16 +425,16 @@ async function conformanceResources(server: Readonly<Record<string, unknown>>) {
   return manifest!.server.resources.map(
     (resource) =>
       ({
-        moduleId: manifest!.id,
-        resourceId: resource.id,
-        operationId: resource.operationId,
         coreDataProducts: resource.coreDataProducts ?? [],
         dependentOperationIds: resource.dependentOperationIds,
-        subjectKind: resource.subjectKind,
-        materializationIntervalSeconds: resource.materializationIntervalSeconds,
         eligibility: resource.eligibility,
-        persistence: resource.persistence,
         implementation: server[resource.exportName],
+        materializationIntervalSeconds: resource.materializationIntervalSeconds,
+        moduleId: manifest!.id,
+        operationId: resource.operationId,
+        persistence: resource.persistence,
+        resourceId: resource.id,
+        subjectKind: resource.subjectKind,
       }) as PlatformInstalledResourceDescriptor,
   )
 }
@@ -439,34 +443,34 @@ function conformanceIdentity(resourceId: string) {
   return {
     moduleId: 'conformance',
     resourceId,
+    subjectId: String(conformanceSubject.characterId),
     subjectKind: 'character' as const,
     subjectLifecycleId: conformanceSubject.lifecycleId,
-    subjectId: String(conformanceSubject.characterId),
   }
 }
 
 function conformanceGuard(resources: readonly PlatformInstalledResourceDescriptor[]) {
   return vi.fn(async (identity: { readonly resourceId: string }) => ({
-    outcome: 'ready' as const,
-    resource: resources.find((resource) => resource.resourceId === identity.resourceId)!,
-    subject: conformanceSubject,
-    characterId: conformanceSubject.characterId,
     authorization: null,
     authorizationCharacterId: conformanceSubject.characterId,
     authorizationCharacterLifecycleId: conformanceSubject.lifecycleId,
+    characterId: conformanceSubject.characterId,
     managedAuthority: null,
+    outcome: 'ready' as const,
+    resource: resources.find((resource) => resource.resourceId === identity.resourceId)!,
+    subject: conformanceSubject,
   }))
 }
 
 function conformanceExecution(data: unknown) {
   return {
-    data,
     authorizationGeneration: null,
     cachedUntil: '2026-09-06T20:01:00Z',
-    validatedAt: '2026-09-06T20:00:00Z',
+    data,
+    quota: {},
     source: 'esi' as const,
     stale: false,
-    quota: {},
+    validatedAt: '2026-09-06T20:00:00Z',
   }
 }
 
@@ -476,9 +480,12 @@ function conformanceRouteApp(route: Hono) {
     platformModuleRouteComposers['owned-character']('conformance', organizationDeclaration, route),
   )
   app.onError((error, context) => {
-    if (error instanceof PlatformModuleHttpError) return context.json(error.body, error.status)
-    if (error instanceof HTTPException)
+    if (error instanceof PlatformModuleHttpError) {
+      return context.json(error.body, error.status)
+    }
+    if (error instanceof HTTPException) {
       return context.json({ message: error.message }, error.status)
+    }
     return context.json({ message: 'Internal server error' }, 500)
   })
   return app
@@ -486,9 +493,9 @@ function conformanceRouteApp(route: Hono) {
 
 function currentStatus() {
   return {
-    status: 'current' as const,
     authorizationGeneration: 2,
     lastFailureClass: null,
+    status: 'current' as const,
     validatedAt: '2026-09-06T20:00:00Z',
   }
 }

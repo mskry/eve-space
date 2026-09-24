@@ -15,12 +15,14 @@ export function isOrganizationOwnerClaimAvailable(
   owner: OrganizationOwnerClaimState | undefined,
   now = new Date(),
 ) {
-  if (!owner?.status || !owner.freshUntil) return true
+  if (!owner?.status || !owner.freshUntil) {
+    return true
+  }
   const evidence: AuthorityEvidenceClock = {
-    status: owner.status,
     freshUntil: owner.freshUntil,
     graceUntil: owner.graceUntil,
     invalidatedAt: owner.invalidatedAt,
+    status: owner.status,
   }
   return resolveAuthorityEvidenceState(evidence, now) === 'invalid'
 }

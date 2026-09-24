@@ -29,14 +29,16 @@ export const organizationActivityProvider =
     const corporationIds = [...new Set(characters.map((character) => character.corporationId))]
     const requests: SourceRequest[] = ['campaigns', 'public-jobs'].map((resourceId) => ({
       resourceId,
-      subject: { kind: 'deployment', deploymentId: 1 },
+      subject: { deploymentId: 1, kind: 'deployment' },
     }))
-    for (const corporationId of corporationIds)
+    for (const corporationId of corporationIds) {
       for (const resourceId of ['corporation-projects', 'corporation-jobs'])
-        requests.push({ resourceId, subject: { kind: 'corporation', corporationId } })
-    for (const { characterId } of characters)
+        requests.push({ resourceId, subject: { corporationId, kind: 'corporation' } })
+    }
+    for (const { characterId } of characters) {
       for (const resourceId of ['character-projects', 'character-jobs', 'character-campaigns'])
-        requests.push({ resourceId, characterId, subject: { kind: 'character', characterId } })
+        requests.push({ characterId, resourceId, subject: { characterId, kind: 'character' } })
+    }
     const reads = await mapWithConcurrency(
       requests,
       maximumConcurrentReads,
@@ -64,12 +66,14 @@ export const organizationActivityProvider =
         .toSorted((left, right) => left.localeCompare(right))[0] ?? null
     return {
       activities: combineActivitySources(sources, characters, participation),
-      freshness: { state: sourceFreshness(sources, collectedAt), collectedAt },
+      freshness: { collectedAt, state: sourceFreshness(sources, collectedAt) },
     }
   }
 
 function sourceFreshness(sources: readonly ActivitySourceRead[], collectedAt: string | null) {
-  if (!collectedAt) return 'unavailable' as const
+  if (!collectedAt) {
+    return 'unavailable' as const
+  }
   return sources.every((source) => source.status.status === 'current')
     ? ('current' as const)
     : ('stale' as const)

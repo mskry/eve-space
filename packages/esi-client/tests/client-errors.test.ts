@@ -30,10 +30,10 @@ describe('ESI structured errors', () => {
     const unconfirmed = new EsiGenericMutationUnconfirmedError({ operationId });
 
     expect(unknown).toBeInstanceOf(EsiError);
-    expect(unknown.toJSON()).toEqual({
-      name: 'EsiUnknownOperationError',
+    expect(unknown.toJSON()).toStrictEqual({
       code: 'ESI_UNKNOWN_OPERATION',
       message: 'Unknown ESI operation: missing_operation',
+      name: 'EsiUnknownOperationError',
       operationId: 'missing_operation',
     });
     expect(authentication.toJSON()).toMatchObject({
@@ -52,8 +52,6 @@ describe('ESI structured errors', () => {
       scopes: ['before', 123, 'after'] as unknown as string[],
     });
     const response = new EsiResponseParseError({
-      operationId,
-      status: 200,
       metadata: {
         // oxlint-disable-next-line typescript/no-unsafe-type-assertion
         headers: {
@@ -62,22 +60,24 @@ describe('ESI structured errors', () => {
           after: 'last',
         } as unknown as Record<string, string>,
       },
+      operationId,
+      status: 200,
     });
     const validation = new EsiRequestValidationError({
       operationId,
       // oxlint-disable-next-line typescript/no-unsafe-type-assertion
       issues: [
-        { path: ['before'], message: 'first', code: 'first' },
+        { code: 'first', message: 'first', path: ['before'] },
         null,
-        { path: ['after'], message: 'last', code: 'last' },
+        { code: 'last', message: 'last', path: ['after'] },
       ] as unknown as ConstructorParameters<typeof EsiRequestValidationError>[0]['issues'],
     });
 
-    expect(authentication.scopes).toEqual(['before', 'after']);
-    expect(response.metadata.headers).toEqual({ before: 'first', after: 'last' });
-    expect(validation.issues).toEqual([
-      { path: ['before'], message: 'first', code: 'first' },
-      { path: ['after'], message: 'last', code: 'last' },
+    expect(authentication.scopes).toStrictEqual(['before', 'after']);
+    expect(response.metadata.headers).toStrictEqual({ after: 'last', before: 'first' });
+    expect(validation.issues).toStrictEqual([
+      { code: 'first', message: 'first', path: ['before'] },
+      { code: 'last', message: 'last', path: ['after'] },
     ]);
   });
 
@@ -85,16 +85,18 @@ describe('ESI structured errors', () => {
     const secret = 'cause-secret-credential';
     const cause = new Error(`provider failed with ${secret}`);
     const error = new EsiUnknownOperationError({
-      operationId,
-      message: `Unknown operation with ${secret}`,
-      redaction: { secrets: [secret] },
       cause,
+      message: `Unknown operation with ${secret}`,
+      operationId,
+      redaction: { secrets: [secret] },
     });
     const serialized = error.toJSON();
 
     expect(Object.isFrozen(error)).toBe(true);
     expect(Object.isFrozen(serialized)).toBe(true);
-    expect(Object.keys(serialized)).toEqual(['name', 'code', 'message', 'operationId']);
+    expect(
+      Object.keys(serialized).toSorted((left, right) => left.localeCompare(right)),
+    ).toStrictEqual(['code', 'message', 'name', 'operationId']);
     expect(error.cause).toBe(cause);
     expect(Object.keys(error)).not.toContain('cause');
     expect(JSON.stringify(error)).toBe(JSON.stringify(serialized));
@@ -113,41 +115,41 @@ describe('ESI structured errors', () => {
       'X-Debug': `value ${secret}`,
     };
     const error = new EsiResponseParseError({
-      operationId,
-      status: 200,
       message: `Could not parse Bearer ${secret}`,
-      redaction: { secrets: [secret] },
       metadata: {
-        headers,
-        requestId: `request-${secret}`,
-        pagination: { pages: 2, nextCursor: secret },
         cache: { etag: secret },
         errorLimit: { remaining: 99, reset: 12 },
+        headers,
+        pagination: { nextCursor: secret, pages: 2 },
+        requestId: `request-${secret}`,
         retryAfterSeconds: 4,
-        routeRateLimit: { group: `group-${secret}`, limit: 150, used: 2, remaining: 148 },
+        routeRateLimit: { group: `group-${secret}`, limit: 150, remaining: 148, used: 2 },
       },
+      operationId,
+      redaction: { secrets: [secret] },
+      status: 200,
     });
     headers['X-Debug'] = secret;
     const serialized = JSON.stringify(error);
 
     expect(error.code).toBe('ESI_RESPONSE_PARSE_ERROR');
     expect(error.metadata).toMatchObject({
-      status: 200,
+      cache: { etag: '[REDACTED]' },
+      errorLimit: { remaining: 99, reset: 12 },
       headers: {
         authorization: '[REDACTED]',
         'set-cookie': '[REDACTED]',
         'x-debug': 'value [REDACTED]',
       },
-      pagination: { pages: 2, nextCursor: '[REDACTED]' },
-      cache: { etag: '[REDACTED]' },
-      errorLimit: { remaining: 99, reset: 12 },
+      pagination: { nextCursor: '[REDACTED]', pages: 2 },
       retryAfterSeconds: 4,
       routeRateLimit: {
         group: 'group-[REDACTED]',
         limit: 150,
-        used: 2,
         remaining: 148,
+        used: 2,
       },
+      status: 200,
     });
     expect(Object.isFrozen(error.metadata)).toBe(true);
     expect(Object.isFrozen(error.metadata.headers)).toBe(true);
@@ -165,24 +167,24 @@ describe('ESI structured errors', () => {
       nested = { nested };
     }
     const responseBody = JSON.stringify({
-      error: `Bearer ${token}`,
-      detail: providerValue,
       access_token: token,
-      password: providerValue,
+      detail: providerValue,
+      error: `Bearer ${token}`,
       nested,
+      password: providerValue,
       values: Array.from({ length: ESI_ERROR_BODY_LIMITS.arrayItems + 20 }, (_, index) => index),
     });
     const error = new EsiHttpError({
-      operationId,
-      status: 403,
-      responseBodyText: responseBody,
-      redaction: { secrets: [token, providerValue] },
       metadata: {
         headers: {
           authorization: `Basic ${token}`,
           'x-provider-debug': providerValue,
         },
       },
+      operationId,
+      redaction: { secrets: [token, providerValue] },
+      responseBodyText: responseBody,
+      status: 403,
     });
     const serialized = JSON.stringify(error);
 
@@ -203,9 +205,9 @@ describe('ESI structured errors', () => {
     const secret = 'text-body-secret';
     const error = new EsiHttpError({
       operationId,
-      status: 502,
-      responseBodyText: `not-json Authorization: ${secret} ${'x'.repeat(50_000)}`,
       redaction: { secrets: [secret] },
+      responseBodyText: `not-json Authorization: ${secret} ${'x'.repeat(50_000)}`,
+      status: 502,
     });
     const serialized = JSON.stringify(error);
 
@@ -213,7 +215,9 @@ describe('ESI structured errors', () => {
     expect(error.bodyTruncated).toBe(true);
     const body = error.body;
     expect(typeof body).toBe('string');
-    if (typeof body !== 'string') throw new TypeError('Expected a text error body');
+    if (typeof body !== 'string') {
+      throw new TypeError('Expected a text error body');
+    }
     expect(body.length).toBeLessThanOrEqual(ESI_ERROR_BODY_LIMITS.characters);
     expect(serialized).not.toContain(secret);
     expect(serialized.length).toBeLessThan(ESI_ERROR_BODY_LIMITS.bytes * 2);
@@ -224,22 +228,22 @@ describe('ESI structured errors', () => {
     const rawInput = { authorization: `Bearer ${credential}`, payload: credential };
     const issues = [
       {
-        path: ['body', credential, 3],
-        message: `Expected string, received ${credential}`,
         code: `invalid_${credential}`,
         input: rawInput,
+        message: `Expected string, received ${credential}`,
+        path: ['body', credential, 3],
       },
     ];
     const request = new EsiRequestValidationError({
-      operationId,
       issues,
+      operationId,
       redaction: { secrets: [credential] },
     });
     const response = new EsiResponseValidationError({
-      operationId,
-      status: 200,
       issues,
+      operationId,
       redaction: { secrets: [credential] },
+      status: 200,
     });
 
     expect(request).toBeInstanceOf(EsiValidationError);
@@ -248,11 +252,11 @@ describe('ESI structured errors', () => {
     expect(request.direction).toBe('request');
     expect(response.code).toBe('ESI_RESPONSE_VALIDATION_ERROR');
     expect(response.direction).toBe('response');
-    expect(request.issues).toEqual([
+    expect(request.issues).toStrictEqual([
       {
-        path: ['body', '[REDACTED]', 3],
-        message: 'Expected string, received [REDACTED]',
         code: 'invalid_[REDACTED]',
+        message: 'Expected string, received [REDACTED]',
+        path: ['body', '[REDACTED]', 3],
       },
     ]);
     expect(Object.isFrozen(request.issues)).toBe(true);
@@ -267,48 +271,48 @@ describe('ESI structured errors', () => {
   it('serializes transport and not-modified outcomes without causes or response bodies', () => {
     const secret = 'transport-secret';
     const transport = new EsiTransportError({
-      operationId,
-      reason: 'network',
-      phase: 'response',
-      status: 502,
-      metadata: { headers: { Authorization: `Bearer ${secret}` } },
-      redaction: { secrets: [secret] },
       cause: new Error(secret),
+      metadata: { headers: { Authorization: `Bearer ${secret}` } },
+      operationId,
+      phase: 'response',
+      reason: 'network',
+      redaction: { secrets: [secret] },
+      status: 502,
     });
     const notModified = new EsiNotModifiedError({
-      operationId,
       metadata: { headers: { etag: 'revision-1' } },
+      operationId,
     });
 
     expect(transport.toJSON()).toMatchObject({
       code: 'ESI_TRANSPORT_ERROR',
-      reason: 'network',
-      phase: 'response',
-      status: 502,
       metadata: { headers: { authorization: '[REDACTED]' } },
+      phase: 'response',
+      reason: 'network',
+      status: 502,
     });
     expect(JSON.stringify(transport)).not.toContain(secret);
     expect(JSON.stringify(transport)).not.toContain('cause');
-    expect(notModified.toJSON()).toEqual({
-      name: 'EsiNotModifiedError',
+    expect(notModified.toJSON()).toStrictEqual({
       code: 'ESI_NOT_MODIFIED',
       message: `ESI operation ${operationId} returned an unmodified representation`,
+      metadata: { headers: { etag: 'revision-1' }, status: 304 },
+      name: 'EsiNotModifiedError',
       operationId,
       status: 304,
-      metadata: { status: 304, headers: { etag: 'revision-1' } },
     });
     expect(JSON.stringify(notModified)).not.toContain('body');
   });
 
   it.each([
-    [new EsiTransportError({ operationId, reason: 'network', phase: 'request' }), 'transient'],
+    [new EsiTransportError({ operationId, phase: 'request', reason: 'network' }), 'transient'],
     [new EsiHttpError({ operationId, status: 503 }), 'transient'],
     [new EsiHttpError({ operationId, status: 429 }), 'throttled'],
     [new EsiNotModifiedError({ operationId }), 'not-modified'],
     [new EsiResponseParseError({ operationId, status: 200 }), 'invalid-response'],
-    [new EsiResponseValidationError({ operationId, status: 200, issues: [] }), 'invalid-response'],
+    [new EsiResponseValidationError({ issues: [], operationId, status: 200 }), 'invalid-response'],
     [new EsiHttpError({ operationId, status: 404 }), 'permanent'],
-    [new EsiRequestValidationError({ operationId, issues: [] }), 'permanent'],
+    [new EsiRequestValidationError({ issues: [], operationId }), 'permanent'],
     [new Error('outside the SDK'), 'unknown'],
   ] as const)('classifies policy-neutral failure facts', (error, expected) => {
     expect(classifyEsiFailure(error)).toBe(expected);

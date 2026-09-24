@@ -39,15 +39,17 @@ export async function replaceCharacterReviewerDisclosureAcceptances(
   await connection
     .delete(characterReviewerDisclosureAcceptances)
     .where(eq(characterReviewerDisclosureAcceptances.characterId, input.characterId))
-  if (disclosures.length === 0) return
+  if (disclosures.length === 0) {
+    return
+  }
 
   await connection.insert(characterReviewerDisclosureAcceptances).values(
     disclosures.map((disclosure) => ({
+      authorizationGeneration: input.authorizationGeneration,
       characterId: input.characterId,
+      disclosureVersion: disclosure.disclosureVersion,
       moduleId: disclosure.moduleId,
       sectionId: disclosure.sectionId,
-      disclosureVersion: disclosure.disclosureVersion,
-      authorizationGeneration: input.authorizationGeneration,
     })),
   )
 }
@@ -81,14 +83,14 @@ export async function resolveCharacterReviewerDisclosureEligibility(
 ): Promise<CharacterReviewerDisclosureEligibility> {
   const [record] = await connection
     .select({
+      acceptedAuthorizationGeneration:
+        characterReviewerDisclosureAcceptances.authorizationGeneration,
+      acceptedDisclosureVersion: characterReviewerDisclosureAcceptances.disclosureVersion,
+      disclosureVersion: deploymentModuleSections.disclosureVersion,
       moduleEnabled: deploymentModules.enabled,
       sectionEnabled: deploymentModuleSections.enabled,
       sectionKind: deploymentModuleSections.kind,
-      disclosureVersion: deploymentModuleSections.disclosureVersion,
       tokenVersion: eveTokens.tokenVersion,
-      acceptedDisclosureVersion: characterReviewerDisclosureAcceptances.disclosureVersion,
-      acceptedAuthorizationGeneration:
-        characterReviewerDisclosureAcceptances.authorizationGeneration,
     })
     .from(deploymentModuleSections)
     .innerJoin(deploymentModules, eq(deploymentModules.moduleId, deploymentModuleSections.moduleId))
@@ -112,24 +114,26 @@ export async function resolveCharacterReviewerDisclosureEligibility(
     !record?.moduleEnabled ||
     !record.sectionEnabled ||
     record.sectionKind !== 'sensitive-evidence'
-  )
+  ) {
     return { status: 'disabled' }
+  }
 
   const authorizationGeneration = record.tokenVersion ?? null
   if (
     authorizationGeneration === null ||
     record.acceptedAuthorizationGeneration !== authorizationGeneration ||
     record.acceptedDisclosureVersion !== record.disclosureVersion
-  )
+  ) {
     return {
-      status: 'authorization-required',
       authorizationGeneration,
       disclosureVersion: record.disclosureVersion,
+      status: 'authorization-required',
     }
+  }
 
   return {
-    status: 'eligible',
     authorizationGeneration,
     disclosureVersion: record.disclosureVersion,
+    status: 'eligible',
   }
 }

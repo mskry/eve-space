@@ -13,8 +13,9 @@ const int32Max = 2 ** 31 - 1
 describe('character advisory lock key', () => {
   test('leaves every ID EVE allocates today mapping to itself', () => {
     // Unchanged identity means a rolling deploy cannot split one character across two keys.
-    for (const characterId of [90_000_000, 95_465_499, 2_100_000_000, int32Max])
+    for (const characterId of [90_000_000, 95_465_499, 2_100_000_000, int32Max]) {
       expect(characterLockKey(characterId)).toBe(characterId)
+    }
   })
 
   test('keeps IDs past the integer boundary inside the signed 32-bit slot', () => {
@@ -50,7 +51,7 @@ describe('module migration advisory lock key', () => {
       moduleMigrationLockKey('alpha'),
       moduleMigrationLockKey('beta'),
       moduleMigrationLockKey('member-audit'),
-    ]).toEqual([-335_810_923, 1_367_506_850, 1_771_844_603])
+    ]).toStrictEqual([-335_810_923, 1_367_506_850, 1_771_844_603])
   })
 
   test('rejects collisions while allowing repeated migrations for one module', () => {

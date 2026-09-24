@@ -10,12 +10,12 @@ import { queryServer } from '../support/query-server'
 
 const mountedWrappers: { unmount: () => void }[] = []
 const item = {
-  typeId: 34,
-  name: 'Tritanium',
-  description: 'The main building block in space structures.',
-  group: { id: 18, name: 'Mineral' },
   category: { id: 4, name: 'Material' },
+  description: 'The main building block in space structures.',
   detail: null,
+  group: { id: 18, name: 'Mineral' },
+  name: 'Tritanium',
+  typeId: 34,
 }
 
 async function settle() {
@@ -29,7 +29,9 @@ afterAll(() => queryServer.close())
 
 afterEach(async () => {
   queryServer.resetHandlers()
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   await settle()
   document.body.replaceChildren()
 })
@@ -64,11 +66,11 @@ describe('EveItemInformationPopover', () => {
             h(
               EveItemInformationPopover,
               {
-                open: popoverOpen.value,
-                typeId: item.typeId,
                 'onUpdate:open': (value: boolean) => {
                   popoverOpen.value = value
                 },
+                open: popoverOpen.value,
+                typeId: item.typeId,
               },
               {
                 trigger: () => h('button', { type: 'button' }, 'View Tritanium'),
@@ -78,10 +80,10 @@ describe('EveItemInformationPopover', () => {
             h(
               'button',
               {
-                type: 'button',
                 onClick: () => {
                   showFutureHost.value = true
                 },
+                type: 'button',
               },
               'Mount future route',
             ),

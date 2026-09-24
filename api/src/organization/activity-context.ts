@@ -17,17 +17,17 @@ export async function loadOrganizationActivityCharacters(
 ): Promise<readonly PlatformActivityProviderCharacter[]> {
   const rows = await db
     .select({
-      characterId: characters.characterId,
-      subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
-      name: characters.name,
-      corporationId: characters.corporationId,
-      allianceId: characters.allianceId,
-      isMain: characters.isMain,
       affiliationCheckedAt: characters.affiliationCheckedAt,
-      nextAffiliationCheck: characters.nextAffiliationCheck,
       affiliationResolutionState: characters.affiliationResolutionState,
-      managedCorporationId: organizationManagedCorporations.corporationId,
+      allianceId: characters.allianceId,
+      characterId: characters.characterId,
+      corporationId: characters.corporationId,
       exceptionId: organizationCharacterExceptions.exceptionId,
+      isMain: characters.isMain,
+      managedCorporationId: organizationManagedCorporations.corporationId,
+      name: characters.name,
+      nextAffiliationCheck: characters.nextAffiliationCheck,
+      subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
     })
     .from(characters)
     .innerJoin(
@@ -68,21 +68,23 @@ export async function loadOrganizationActivityCharacters(
     .where(eq(characters.userId, userId))
     .orderBy(desc(characters.isMain), asc(characters.name), asc(characters.characterId))
 
-  if (rows.length === 0)
+  if (rows.length === 0) {
     throw new Error('Organization activity context is not current for the authorized account')
+  }
   return rows.map((row) => {
-    if (row.managedCorporationId === null && row.exceptionId === null)
+    if (row.managedCorporationId === null && row.exceptionId === null) {
       throw new Error('Organization activity context contains an unclassified character')
+    }
     return {
-      characterId: row.characterId,
-      subjectLifecycleId: row.subjectLifecycleId,
-      name: row.name,
-      corporationId: row.corporationId,
+      affiliationCheckedAt: row.affiliationCheckedAt?.toISOString() ?? null,
+      affiliationFreshness: resolveAffiliationFreshness(row, now),
       allianceId: row.allianceId,
+      characterId: row.characterId,
+      corporationId: row.corporationId,
       isMain: row.isMain,
       membership: row.managedCorporationId === null ? 'approved-external' : 'managed',
-      affiliationFreshness: resolveAffiliationFreshness(row, now),
-      affiliationCheckedAt: row.affiliationCheckedAt?.toISOString() ?? null,
+      name: row.name,
+      subjectLifecycleId: row.subjectLifecycleId,
     }
   })
 }

@@ -37,8 +37,8 @@ export const characterAssetsQuery = defineEsiQueryOptions(
       const assets: CharacterAssetsResponse = await response.json()
       if (assets.characterId !== characterId) {
         throw new ApiQueryError('Assets response did not match the requested identity.', {
-          status: 409,
           code: 'ASSETS_IDENTITY_MISMATCH',
+          status: 409,
         })
       }
       return assets

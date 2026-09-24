@@ -35,8 +35,12 @@ export function createSchemaContractFixture(
   models: readonly NormalizedModel[],
   options: SchemaContractFixtureOptions = {},
 ): unknown {
-  if (!Array.isArray(models)) throw new TypeError('Normalized models must be an array');
-  if (!isObject(options)) throw new TypeError('Schema fixture options must be an object');
+  if (!Array.isArray(models)) {
+    throw new TypeError('Normalized models must be an array');
+  }
+  if (!isObject(options)) {
+    throw new TypeError('Schema fixture options must be an object');
+  }
   const fixture = deriveSchemaFixture(schema, indexModels(models), {
     nonEmptyStrings: options.nonEmptyStrings === true,
     populate: options.populate === true,
@@ -54,8 +58,12 @@ function deriveSchemaFixture(
   options: SchemaContractFixtureOptions,
   active: Set<string> = new Set(),
 ): unknown {
-  if (!isObject(schema)) return unavailable;
-  if (isNullableSchema(schema) && options.preferNonNull !== true) return null;
+  if (!isObject(schema)) {
+    return unavailable;
+  }
+  if (isNullableSchema(schema) && options.preferNonNull !== true) {
+    return null;
+  }
 
   const meaningfulKeys = Object.keys(schema).filter(
     (key) => !annotationKeywords.has(key) && !key.startsWith('x-') && key !== 'nullable',
@@ -108,7 +116,9 @@ function deriveReferencedSchemaFixture(
     return unavailable;
   }
   const target = state.modelsByPointer.get(schema.$ref);
-  if (target === undefined || active.has(target.pointer)) return unavailable;
+  if (target === undefined || active.has(target.pointer)) {
+    return unavailable;
+  }
   return deriveSchemaFixture(target.schema, state, options, new Set([...active, target.pointer]));
 }
 
@@ -120,7 +130,9 @@ function deriveComposedSchemaFixture(
   options: SchemaContractFixtureOptions,
   active: Set<string>,
 ): unknown {
-  if (meaningfulKeys.some((key) => key !== composition)) return unavailable;
+  if (meaningfulKeys.some((key) => key !== composition)) {
+    return unavailable;
+  }
   return deriveCompositionFixture(composition, schema[composition], state, options, active);
 }
 
@@ -129,7 +141,9 @@ function deriveCandidateFixture(
   schema: Record<string, unknown>,
   type: string | null,
 ): unknown {
-  if (!Array.isArray(candidates)) return unavailable;
+  if (!Array.isArray(candidates)) {
+    return unavailable;
+  }
   const candidate = candidates.find((value) => valueSatisfiesSimpleSchema(value, schema, type));
   return candidate === undefined ? unavailable : candidate;
 }
@@ -140,14 +154,22 @@ function deriveArrayFixture(
   options: SchemaContractFixtureOptions,
   active: Set<string>,
 ): unknown {
-  if (!isObject(schema.items)) return unavailable;
+  if (!isObject(schema.items)) {
+    return unavailable;
+  }
   const minimum = integerConstraint(schema.minItems, 0);
   const maximum = integerConstraint(schema.maxItems, Number.POSITIVE_INFINITY);
-  if (minimum === unavailable || maximum === unavailable || minimum > maximum) return unavailable;
+  if (minimum === unavailable || maximum === unavailable || minimum > maximum) {
+    return unavailable;
+  }
   const count = options.populate === true && maximum > 0 ? Math.max(1, minimum) : minimum;
-  if (count > maximum || (schema.uniqueItems === true && count > 1)) return unavailable;
+  if (count > maximum || (schema.uniqueItems === true && count > 1)) {
+    return unavailable;
+  }
   const item = deriveSchemaFixture(schema.items, state, options, active);
-  if (item === unavailable) return unavailable;
+  if (item === unavailable) {
+    return unavailable;
+  }
   return Array.from({ length: count }, () => item);
 }
 
@@ -158,15 +180,21 @@ function deriveObjectFixture(
   active: Set<string>,
 ): unknown {
   const properties = schema.properties ?? {};
-  if (!isObject(properties) || !Array.isArray(schema.required ?? [])) return unavailable;
+  if (!isObject(properties) || !Array.isArray(schema.required ?? [])) {
+    return unavailable;
+  }
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Array.isArray confirms array-ness; normalized required entries are strings
   const required = new Set((schema.required ?? []) as readonly string[]);
   const fixture: Record<string, unknown> = {};
   for (const name of Object.keys(properties).toSorted(compareText)) {
-    if (!required.has(name) && options.populate !== true) continue;
+    if (!required.has(name) && options.populate !== true) {
+      continue;
+    }
     const value = deriveSchemaFixture(properties[name], state, options, active);
     if (value === unavailable) {
-      if (required.has(name)) return unavailable;
+      if (required.has(name)) {
+        return unavailable;
+      }
       continue;
     }
     fixture[name] = value;
@@ -181,7 +209,9 @@ function deriveCompositionFixture(
   options: SchemaContractFixtureOptions,
   active: Set<string>,
 ): unknown {
-  if (!Array.isArray(branches) || branches.length === 0) return unavailable;
+  if (!Array.isArray(branches) || branches.length === 0) {
+    return unavailable;
+  }
 
   switch (keyword) {
     case 'allOf':
@@ -201,7 +231,9 @@ function deriveAnyOfFixture(
 ): unknown {
   for (const branch of branches) {
     const fixture = deriveSchemaFixture(branch, state, options, active);
-    if (fixture !== unavailable) return fixture;
+    if (fixture !== unavailable) {
+      return fixture;
+    }
   }
   return unavailable;
 }
@@ -215,9 +247,13 @@ function deriveOneOfFixture(
   const kinds = branches.map((branch) => disjointJsonKind(branch, state));
   for (const [index, branch] of branches.entries()) {
     const kind = kinds[index];
-    if (kind === null || kinds.filter((entry) => entry === kind).length !== 1) continue;
+    if (kind === null || kinds.filter((entry) => entry === kind).length !== 1) {
+      continue;
+    }
     const fixture = deriveSchemaFixture(branch, state, options, active);
-    if (fixture !== unavailable) return fixture;
+    if (fixture !== unavailable) {
+      return fixture;
+    }
   }
   return unavailable;
 }
@@ -230,7 +266,9 @@ function deriveAllOfFixture(
 ): unknown {
   const merged: Record<string, unknown> = {};
   for (const branch of branches) {
-    if (!mergeAllOfBranch(branch, merged, state, options, active)) return unavailable;
+    if (!mergeAllOfBranch(branch, merged, state, options, active)) {
+      return unavailable;
+    }
   }
   return merged;
 }
@@ -243,13 +281,21 @@ function mergeAllOfBranch(
   active: Set<string>,
 ): boolean {
   const resolved = resolveDirectSchema(branch, state);
-  if (!isObject(resolved) || schemaType(resolved) !== 'object') return false;
+  if (!isObject(resolved) || schemaType(resolved) !== 'object') {
+    return false;
+  }
   const additionalProperties = resolved.additionalProperties;
-  if (additionalProperties !== undefined && additionalProperties !== true) return false;
+  if (additionalProperties !== undefined && additionalProperties !== true) {
+    return false;
+  }
   const fixture = deriveSchemaFixture(branch, state, options, active);
-  if (!isObject(fixture)) return false;
+  if (!isObject(fixture)) {
+    return false;
+  }
   for (const [key, value] of Object.entries(fixture)) {
-    if (Object.hasOwn(merged, key) && stableJson(merged[key]) !== stableJson(value)) return false;
+    if (Object.hasOwn(merged, key) && stableJson(merged[key]) !== stableJson(value)) {
+      return false;
+    }
     merged[key] = value;
   }
   return true;
@@ -261,14 +307,23 @@ function deriveStringFixture(
 ): AvailableResult<string> {
   const declaredMinimum = integerConstraint(schema.minLength, 0);
   const maximum = integerConstraint(schema.maxLength, Number.POSITIVE_INFINITY);
-  if (declaredMinimum === unavailable || maximum === unavailable) return unavailableResult;
+  if (declaredMinimum === unavailable || maximum === unavailable) {
+    return unavailableResult;
+  }
   const minimum = options.nonEmptyStrings === true ? Math.max(1, declaredMinimum) : declaredMinimum;
-  if (minimum > maximum) return unavailableResult;
+  if (minimum > maximum) {
+    return unavailableResult;
+  }
   let formatted: string | null = null;
-  if (schema.format === 'date-time') formatted = '2026-08-18T12:30:00Z';
-  else if (schema.format === 'date') formatted = '2026-08-18';
-  else if (schema.format === 'uuid') formatted = '123e4567-e89b-42d3-a456-426614174000';
-  else if (schema.format !== undefined) return unavailableResult;
+  if (schema.format === 'date-time') {
+    formatted = '2026-08-18T12:30:00Z';
+  } else if (schema.format === 'date') {
+    formatted = '2026-08-18';
+  } else if (schema.format === 'uuid') {
+    formatted = '123e4567-e89b-42d3-a456-426614174000';
+  } else if (schema.format !== undefined) {
+    return unavailableResult;
+  }
   const candidates =
     formatted === null
       ? ['x'.repeat(minimum), 'a'.repeat(minimum), '0'.repeat(minimum)]
@@ -323,9 +378,15 @@ function valueSatisfiesSimpleSchema(
 }
 
 function valueSatisfiesStringSchema(value: unknown, schema: Record<string, unknown>): boolean {
-  if (typeof value !== 'string') return false;
-  if (typeof schema.minLength === 'number' && value.length < schema.minLength) return false;
-  if (typeof schema.maxLength === 'number' && value.length > schema.maxLength) return false;
+  if (typeof value !== 'string') {
+    return false;
+  }
+  if (typeof schema.minLength === 'number' && value.length < schema.minLength) {
+    return false;
+  }
+  if (typeof schema.maxLength === 'number' && value.length > schema.maxLength) {
+    return false;
+  }
   if (typeof schema.pattern === 'string' && !new RegExp(schema.pattern, 'u').test(value)) {
     return false;
   }
@@ -351,16 +412,30 @@ function valueSatisfiesNumberSchema(
   schema: Record<string, unknown>,
   type: 'number' | 'integer',
 ): boolean {
-  if (typeof value !== 'number') return false;
-  if (!Number.isFinite(value)) return false;
-  if (type === 'integer' && !Number.isInteger(value)) return false;
+  if (typeof value !== 'number') {
+    return false;
+  }
+  if (!Number.isFinite(value)) {
+    return false;
+  }
+  if (type === 'integer' && !Number.isInteger(value)) {
+    return false;
+  }
   if (schema.format === 'int32' && (value < -2_147_483_648 || value > 2_147_483_647)) {
     return false;
   }
-  if (typeof schema.minimum === 'number' && value < schema.minimum) return false;
-  if (typeof schema.maximum === 'number' && value > schema.maximum) return false;
-  if (typeof schema.exclusiveMinimum === 'number' && value <= schema.exclusiveMinimum) return false;
-  if (typeof schema.exclusiveMaximum === 'number' && value >= schema.exclusiveMaximum) return false;
+  if (typeof schema.minimum === 'number' && value < schema.minimum) {
+    return false;
+  }
+  if (typeof schema.maximum === 'number' && value > schema.maximum) {
+    return false;
+  }
+  if (typeof schema.exclusiveMinimum === 'number' && value <= schema.exclusiveMinimum) {
+    return false;
+  }
+  if (typeof schema.exclusiveMaximum === 'number' && value >= schema.exclusiveMaximum) {
+    return false;
+  }
   return typeof schema.multipleOf !== 'number' || Number.isInteger(value / schema.multipleOf);
 }
 
@@ -369,8 +444,12 @@ function resolveDirectSchema(
   state: ModelIndex,
   active: Set<string> = new Set(),
 ): unknown {
-  if (!isObject(schema)) return unavailable;
-  if (schema.$ref === undefined) return schema;
+  if (!isObject(schema)) {
+    return unavailable;
+  }
+  if (schema.$ref === undefined) {
+    return schema;
+  }
   const meaningful = Object.keys(schema).filter(
     (key) => !annotationKeywords.has(key) && !key.startsWith('x-') && key !== 'nullable',
   );
@@ -378,20 +457,28 @@ function resolveDirectSchema(
     return unavailable;
   }
   const target = state.modelsByPointer.get(schema.$ref);
-  if (target === undefined || active.has(target.pointer)) return unavailable;
+  if (target === undefined || active.has(target.pointer)) {
+    return unavailable;
+  }
   return resolveDirectSchema(target.schema, state, new Set([...active, target.pointer]));
 }
 
 function disjointJsonKind(schema: unknown, state: ModelIndex): string | null {
   const resolved = resolveDirectSchema(schema, state);
-  if (resolved === unavailable || compositionKeyword(resolved) !== null) return null;
+  if (resolved === unavailable || compositionKeyword(resolved) !== null) {
+    return null;
+  }
   const type = schemaType(resolved);
   return type === 'integer' ? 'number' : type;
 }
 
 function schemaType(schema: unknown): string | null {
-  if (!isObject(schema)) return null;
-  if (typeof schema.type === 'string') return schema.type;
+  if (!isObject(schema)) {
+    return null;
+  }
+  if (typeof schema.type === 'string') {
+    return schema.type;
+  }
   if (Array.isArray(schema.type) && schema.type.length === 2 && schema.type.includes('null')) {
     return (
       schema.type.find((entry): entry is string => typeof entry === 'string' && entry !== 'null') ??
@@ -409,7 +496,9 @@ function isNullableSchema(schema: unknown): boolean {
 }
 
 function compositionKeyword(schema: unknown): string | null {
-  if (!isObject(schema)) return null;
+  if (!isObject(schema)) {
+    return null;
+  }
   const found = ['allOf', 'oneOf', 'anyOf'].filter((keyword) => schema[keyword] !== undefined);
   return found.length === 1 ? found[0] : null;
 }
@@ -420,15 +509,18 @@ function indexModels(models: readonly NormalizedModel[]): ModelIndex {
     if (!isObject(model) || typeof model.name !== 'string' || typeof model.pointer !== 'string') {
       throw new TypeError('Normalized model must contain a name and pointer');
     }
-    if (modelsByPointer.has(model.pointer))
+    if (modelsByPointer.has(model.pointer)) {
       throw new Error(`Duplicate normalized model: ${model.name}`);
+    }
     modelsByPointer.set(model.pointer, model);
   }
   return { modelsByPointer };
 }
 
 function integerConstraint(value: unknown, fallback: number): number | typeof unavailable {
-  if (value === undefined) return fallback;
+  if (value === undefined) {
+    return fallback;
+  }
   return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : unavailable;
 }
 

@@ -41,49 +41,6 @@ interface JobHandler<Name extends JobName> {
 type JobHandlerRegistry = { readonly [Name in JobName]: JobHandler<Name> }
 
 const jobHandlers = {
-  diagnostic: handler({
-    name: 'diagnostic',
-    classifyError: retryable,
-    async process() {
-      await sql`select 1`
-    },
-  }),
-  planner: handler({
-    name: 'planner',
-    classifyError: retryable,
-    async process(_payload, context) {
-      await runQueuePlanner(context)
-    },
-  }),
-  'domain-event': handler({
-    name: 'domain-event',
-    classifyError: (error) =>
-      error instanceof DomainEventValidationError || error instanceof DomainEventNotFoundError
-        ? { type: 'permanent' }
-        : retryable(error),
-    async process({ eventId }, context) {
-      await dispatchDomainEvent(eventId, undefined, undefined, context.signal)
-    },
-  }),
-  'outbox-relay': handler({
-    name: 'outbox-relay',
-    classifyError: retryable,
-    async process(_payload, context) {
-      await runOutboxRelayBatch(context.producer, context.outcomes, outboxRelayStore, {
-        signal: context.signal,
-      })
-    },
-  }),
-  'domain-event-retention': handler({
-    name: 'domain-event-retention',
-    classifyError: retryable,
-    async process(_payload, context) {
-      context.signal.throwIfAborted()
-      await deletePublishedDomainEvents({
-        retentionMs: env.DOMAIN_EVENT_PUBLISHED_RETENTION_DAYS * 24 * 60 * 60 * 1_000,
-      })
-    },
-  }),
   affiliation: handler({
     name: 'affiliation',
     classifyError: delayedOr(retryable),
@@ -93,13 +50,6 @@ const jobHandlers = {
         context.signal,
         convergeObservedAffiliationInTransaction,
       )
-    },
-  }),
-  'organization-owner-evidence': handler({
-    name: 'organization-owner-evidence',
-    classifyError: retryable,
-    async process(payload, context) {
-      await refreshOrganizationOwnerEvidence(payload, { signal: context.signal })
     },
   }),
   'corporation-source-evidence': handler({
@@ -116,11 +66,54 @@ const jobHandlers = {
       await refreshDerivedDirectorAuthority(payload, { signal: context.signal })
     },
   }),
-  'resource-refresh': handler({
-    name: 'resource-refresh',
-    classifyError: delayedOr(() => ({ type: 'permanent' })),
+  diagnostic: handler({
+    name: 'diagnostic',
+    classifyError: retryable,
+    async process() {
+      await sql`select 1`
+    },
+  }),
+  'domain-event': handler({
+    name: 'domain-event',
+    classifyError: (error) =>
+      error instanceof DomainEventValidationError || error instanceof DomainEventNotFoundError
+        ? { type: 'permanent' }
+        : retryable(error),
+    async process({ eventId }, context) {
+      await dispatchDomainEvent(eventId, undefined, undefined, context.signal)
+    },
+  }),
+  'domain-event-retention': handler({
+    name: 'domain-event-retention',
+    classifyError: retryable,
+    async process(_payload, context) {
+      context.signal.throwIfAborted()
+      await deletePublishedDomainEvents({
+        retentionMs: env.DOMAIN_EVENT_PUBLISHED_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+      })
+    },
+  }),
+  'organization-owner-evidence': handler({
+    name: 'organization-owner-evidence',
+    classifyError: retryable,
     async process(payload, context) {
-      await processInstalledResourceRefresh(payload, { signal: context.signal })
+      await refreshOrganizationOwnerEvidence(payload, { signal: context.signal })
+    },
+  }),
+  'outbox-relay': handler({
+    name: 'outbox-relay',
+    classifyError: retryable,
+    async process(_payload, context) {
+      await runOutboxRelayBatch(context.producer, context.outcomes, outboxRelayStore, {
+        signal: context.signal,
+      })
+    },
+  }),
+  planner: handler({
+    name: 'planner',
+    classifyError: retryable,
+    async process(_payload, context) {
+      await runQueuePlanner(context)
     },
   }),
   'resource-batch': handler({
@@ -128,6 +121,13 @@ const jobHandlers = {
     classifyError: delayedOr(() => ({ type: 'permanent' })),
     async process(payload, context) {
       await processInstalledResourceBatch(payload, context.producer, context.signal)
+    },
+  }),
+  'resource-refresh': handler({
+    name: 'resource-refresh',
+    classifyError: delayedOr(() => ({ type: 'permanent' })),
+    async process(payload, context) {
+      await processInstalledResourceRefresh(payload, { signal: context.signal })
     },
   }),
 } satisfies JobHandlerRegistry
@@ -155,12 +155,17 @@ export function verifyJobHandlers(handlerNames: readonly string[] = listJobHandl
   const contractNames = new Set(listJobContracts().map(({ name }) => name))
   const registered = new Set<string>()
   for (const name of handlerNames) {
-    if (registered.has(name)) throw new Error(`Duplicate job handler ${name}`)
-    if (!hasJobContract(name)) throw new Error(`Job handler ${name} has no contract`)
+    if (registered.has(name)) {
+      throw new Error(`Duplicate job handler ${name}`)
+    }
+    if (!hasJobContract(name)) {
+      throw new Error(`Job handler ${name} has no contract`)
+    }
     registered.add(name)
   }
-  for (const name of contractNames)
+  for (const name of contractNames) {
     if (!registered.has(name)) throw new Error(`Job contract ${name} has no handler`)
+  }
 }
 
 function delayedRetryAt(error: unknown) {
@@ -169,14 +174,15 @@ function delayedRetryAt(error: unknown) {
     error === null ||
     !('retryAt' in error) ||
     !(error.retryAt instanceof Date)
-  )
+  ) {
     return null
+  }
   const retryAt = error.retryAt.getTime()
   return Number.isFinite(retryAt) ? retryAt : null
 }
 
 function retryable(error: unknown): FailureDisposition {
-  return { type: 'retryable', error }
+  return { error, type: 'retryable' }
 }
 
 function delayedOr(
@@ -184,7 +190,7 @@ function delayedOr(
 ): (error: unknown) => FailureDisposition {
   return (error) => {
     const retryAt = delayedRetryAt(error)
-    return retryAt === null ? fallback(error) : { type: 'delayed', retryAt }
+    return retryAt === null ? fallback(error) : { retryAt, type: 'delayed' }
   }
 }
 

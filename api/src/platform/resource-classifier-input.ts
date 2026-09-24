@@ -11,20 +11,21 @@ export function createPlatformResourceClassifierInput(
   const seen = new Set<string>()
   return resources.map((resource) => {
     const identity = installedResourceIdentityKey(resource)
-    if (seen.has(identity))
+    if (seen.has(identity)) {
       throw new Error(
         `Duplicate installed resource planning identity: ${resource.moduleId}/${resource.resourceId}/${resource.subjectKind}`,
       )
+    }
     seen.add(identity)
     assertRegisteredEsiOperation(resource.operationId)
     return {
+      eligibility_kind: resource.eligibility.kind,
       module_id: resource.moduleId,
-      section_id: resource.sectionId,
-      resource_id: resource.resourceId,
-      subject_kind: resource.subjectKind,
       operation_id: resource.operationId,
       required_scope: getOptionalCharacterEsiScope(resource.operationId),
-      eligibility_kind: resource.eligibility.kind,
+      resource_id: resource.resourceId,
+      section_id: resource.sectionId,
+      subject_kind: resource.subjectKind,
     }
   })
 }

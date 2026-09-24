@@ -63,11 +63,11 @@ export async function processInstalledResourceRefresh(
     | undefined
   try {
     execution = await (options.executeOperation ?? executeInstalledResourceOperation)(identity, {
-      signal: options.signal,
       guardExecution: guardCoreInstalledResourceExecution,
       onAuthorityResolved(authority) {
         attemptAuthority = authority
       },
+      signal: options.signal,
     })
   } catch (error) {
     options.signal?.throwIfAborted()
@@ -83,24 +83,26 @@ export async function processInstalledResourceRefresh(
     )
     throw error
   }
-  if (execution.outcome === 'noop') return
+  if (execution.outcome === 'noop') {
+    return
+  }
   options.signal?.throwIfAborted()
 
   try {
     await (options.applyObservation ?? applyInstalledResourceObservation)({
-      identity,
-      resource: execution.resource,
-      subject: execution.subject,
-      authorizationGeneration: execution.authorizationGeneration,
       authorizationCharacterId: execution.authorizationCharacterId,
       authorizationCharacterLifecycleId: execution.authorizationCharacterLifecycleId,
-      managedAuthority: execution.managedAuthority,
-      validatedAt: execution.result.validatedAt,
-      organizationVersion: execution.organizationVersion,
+      authorizationGeneration: execution.authorizationGeneration,
       complete: execution.complete,
-      outcome: 'complete',
       data: execution.result.data,
+      identity,
+      managedAuthority: execution.managedAuthority,
+      organizationVersion: execution.organizationVersion,
+      outcome: 'complete',
+      resource: execution.resource,
       signal: options.signal,
+      subject: execution.subject,
+      validatedAt: execution.result.validatedAt,
     })
   } catch (error) {
     options.signal?.throwIfAborted()
@@ -158,7 +160,7 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
       where module_id = ${observation.identity.moduleId}
       for share
     `
-    if (observation.resource.sectionId)
+    if (observation.resource.sectionId) {
       await transaction`
         select module_id, section_id
         from deployment_module_sections
@@ -166,14 +168,16 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
           and section_id = ${observation.resource.sectionId}
         for share
       `
+    }
     observation.signal?.throwIfAborted()
-    if (observation.subject.kind === 'character')
+    if (observation.subject.kind === 'character') {
       await transaction`
         select pg_advisory_xact_lock_shared(
           ${characterLockNamespace},
           ${characterLockKey(observation.subject.characterId)}
         )
       `
+    }
     observation.signal?.throwIfAborted()
     const eligibility = await resolveInstalledResourceEligibility(observation.identity, {
       connection: transaction,
@@ -185,21 +189,18 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
       !eligibility.due ||
       eligibility.authorizationGeneration !== observation.authorizationGeneration ||
       !managedCollectionAuthorityEquals(eligibility.managedAuthority, observation.managedAuthority)
-    )
+    ) {
       return
+    }
     if (
       observation.subject.kind === 'corporation' &&
       !(await lockCurrentCorporationSource(transaction, observation, eligibility))
-    )
+    ) {
       return
+    }
 
-    if (observation.organizationVersion !== undefined) {
-      await transaction`select id from deployment_settings where id = 1 for share`
-      const [settings] = await transaction<{ version: number }[]>`
-        select organization_version::integer as version from deployment_settings where id = 1
-      `
-      observation.signal?.throwIfAborted()
-      if (settings?.version !== observation.organizationVersion) return
+    if (!(await observationOrganizationVersionMatches(transaction, observation))) {
+      return
     }
     if (observation.outcome === 'complete') {
       const materialized = await materializeInstalledResourceObservation(
@@ -208,31 +209,13 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
         implementation,
       )
       observation.signal?.throwIfAborted()
-      if (materialized?.outcome === 'obsolete') return
+      if (materialized?.outcome === 'obsolete') {
+        return
+      }
     }
 
     if (observation.complete === false) {
-      const previous = await transaction<{ validatedAt: Date | null }[]>`
-        select validated_at as "validatedAt" from platform_collection_state
-        where module_id = ${observation.identity.moduleId}
-          and resource_id = ${observation.identity.resourceId}
-          and subject_kind = ${observation.identity.subjectKind}
-          and subject_lifecycle_id = ${observation.identity.subjectLifecycleId}
-          and subject_id = ${observation.identity.subjectId}
-      `
-      observation.signal?.throwIfAborted()
-      await upsertPlatformCollectionStateInTransaction(
-        {
-          ...observation.identity,
-          nextEligibleAt: new Date(0),
-          authorizationGeneration: observation.authorizationGeneration,
-          ...eligibility.managedAuthority,
-          validatedAt: previous[0]?.validatedAt ?? null,
-          lastFailureClass: null,
-        },
-        transaction,
-      )
-      observation.signal?.throwIfAborted()
+      await recordIncompleteObservation(transaction, observation, eligibility)
       return
     }
     await recordInstalledResourceCollectionSuccess(
@@ -240,13 +223,59 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
       { validatedAt: observation.validatedAt },
       observation.authorizationGeneration,
       {
-        resources: [observation.resource],
         managedAuthority: eligibility.managedAuthority,
+        resources: [observation.resource],
         upsertState: (input) => upsertPlatformCollectionStateInTransaction(input, transaction),
       },
     )
     observation.signal?.throwIfAborted()
   })
+}
+
+async function observationOrganizationVersionMatches(
+  transaction: postgres.TransactionSql,
+  observation: PlatformResourceObservation,
+) {
+  if (observation.organizationVersion === undefined) {
+    return true
+  }
+  await transaction`select id from deployment_settings where id = 1 for share`
+  const [settings] = await transaction<{ version: number }[]>`
+    select organization_version::integer as version from deployment_settings where id = 1
+  `
+  observation.signal?.throwIfAborted()
+  return settings?.version === observation.organizationVersion
+}
+
+async function recordIncompleteObservation(
+  transaction: postgres.TransactionSql,
+  observation: PlatformResourceObservation,
+  eligibility: Extract<
+    Awaited<ReturnType<typeof resolveInstalledResourceEligibility>>,
+    { status: 'eligible' }
+  >,
+) {
+  const previous = await transaction<{ validatedAt: Date | null }[]>`
+    select validated_at as "validatedAt" from platform_collection_state
+    where module_id = ${observation.identity.moduleId}
+      and resource_id = ${observation.identity.resourceId}
+      and subject_kind = ${observation.identity.subjectKind}
+      and subject_lifecycle_id = ${observation.identity.subjectLifecycleId}
+      and subject_id = ${observation.identity.subjectId}
+  `
+  observation.signal?.throwIfAborted()
+  await upsertPlatformCollectionStateInTransaction(
+    {
+      ...observation.identity,
+      nextEligibleAt: new Date(0),
+      authorizationGeneration: observation.authorizationGeneration,
+      ...eligibility.managedAuthority,
+      validatedAt: previous[0]?.validatedAt ?? null,
+      lastFailureClass: null,
+    },
+    transaction,
+  )
+  observation.signal?.throwIfAborted()
 }
 
 async function materializeInstalledResourceObservation(
@@ -269,7 +298,9 @@ async function materializeInstalledResourceObservation(
       },
     })
     const suppressed = persistence.suppressedFailure()
-    if (suppressed) throw suppressed.error
+    if (suppressed) {
+      throw suppressed.error
+    }
     return result
   } finally {
     persistence.close()
@@ -284,22 +315,27 @@ async function lockCurrentCorporationSource(
     { status: 'eligible' }
   >,
 ) {
-  if (observation.subject.kind !== 'corporation') return true
+  if (observation.subject.kind !== 'corporation') {
+    return true
+  }
   const characterId = observation.authorizationCharacterId
   const characterSubjectLifecycleId = observation.authorizationCharacterLifecycleId
   const authorizationGeneration = observation.authorizationGeneration
-  if (!characterId || !characterSubjectLifecycleId || authorizationGeneration === null) return false
+  if (!characterId || !characterSubjectLifecycleId || authorizationGeneration === null) {
+    return false
+  }
   if (
     eligibility.authorizationCharacterId !== characterId ||
     eligibility.authorizationCharacterLifecycleId !== characterSubjectLifecycleId ||
     eligibility.authorizationGeneration !== authorizationGeneration
-  )
+  ) {
     return false
+  }
   return lockCorporationSourceExecutionCurrent(transaction, {
-    corporationSubjectLifecycleId: observation.subject.lifecycleId,
+    authorizationGeneration,
     characterId,
     characterSubjectLifecycleId,
-    authorizationGeneration,
+    corporationSubjectLifecycleId: observation.subject.lifecycleId,
   })
 }
 
@@ -307,21 +343,24 @@ function materializationContext(
   observation: Extract<PlatformResourceObservation, { outcome: 'complete' }>,
 ) {
   return {
-    subject: observation.subject,
-    data: observation.data,
-    validatedAt: observation.validatedAt,
     authorizationGeneration: observation.authorizationGeneration,
+    data: observation.data,
+    managedAuthority: observation.managedAuthority,
     organizationVersion:
       observation.organizationVersion ?? observation.managedAuthority?.organizationVersion ?? null,
-    managedAuthority: observation.managedAuthority,
+    subject: observation.subject,
+    validatedAt: observation.validatedAt,
   }
 }
 
 async function applyCoreResourceObservation(observation: PlatformResourceObservation) {
-  if (observation.outcome !== 'complete') return
+  if (observation.outcome !== 'complete') {
+    return
+  }
   const validatedAt = new Date(observation.validatedAt)
-  if (Number.isNaN(validatedAt.getTime()))
-    throw new Error('ESI representation validation time is invalid')
+  if (Number.isNaN(validatedAt.getTime())) {
+    throw new TypeError('ESI representation validation time is invalid')
+  }
 
   await db.transaction(async (transaction) => {
     await transaction.execute(
@@ -333,22 +372,27 @@ async function applyCoreResourceObservation(observation: PlatformResourceObserva
     observation.signal?.throwIfAborted()
     const currentState = await loadPlatformCollectionState(observation.identity, transaction)
     observation.signal?.throwIfAborted()
-    if (currentState?.validatedAt && currentState.validatedAt >= validatedAt) return
+    if (currentState?.validatedAt && currentState.validatedAt >= validatedAt) {
+      return
+    }
     if (
       observation.subject.kind === 'corporation' &&
       !(await lockCoreCorporationSource(transaction, observation))
-    )
+    ) {
       return
+    }
 
     const applied = await materializeCoreResourceObservation(transaction, {
+      authorizationGeneration: observation.authorizationGeneration,
+      data: observation.data,
       resourceId: observation.resource.resourceId,
       subject: observation.subject,
-      data: observation.data,
       validatedAt,
-      authorizationGeneration: observation.authorizationGeneration,
     })
     observation.signal?.throwIfAborted()
-    if (!applied) return
+    if (!applied) {
+      return
+    }
 
     const rotateManagedMemberLifecycles = Boolean(
       applied.recomputeAllAccounts &&
@@ -368,20 +412,21 @@ async function applyCoreResourceObservation(observation: PlatformResourceObserva
       },
     )
     observation.signal?.throwIfAborted()
-    if (applied.recomputeAllAccounts)
+    if (applied.recomputeAllAccounts) {
       await recomputeAllOrganizationAccountsInTransaction(transaction, {
         deploymentId: 1,
-        organizationVersion: applied.organizationVersion,
         now: new Date(),
+        organizationVersion: applied.organizationVersion,
         rotateManagedMemberLifecycles,
       })
-    else if (applied.affectedCorporationIds.length > 0)
+    } else if (applied.affectedCorporationIds.length > 0) {
       await recomputeComplianceForManagedCorporationsInTransaction(transaction, {
-        deploymentId: 1,
-        organizationVersion: applied.organizationVersion,
         corporationIds: applied.affectedCorporationIds,
+        deploymentId: 1,
         now: new Date(),
+        organizationVersion: applied.organizationVersion,
       })
+    }
     observation.signal?.throwIfAborted()
   })
 }
@@ -390,19 +435,22 @@ async function lockCoreCorporationSource(
   transaction: DatabaseTransaction,
   observation: PlatformResourceObservation,
 ) {
-  if (observation.subject.kind !== 'corporation') return true
+  if (observation.subject.kind !== 'corporation') {
+    return true
+  }
   if (
     !observation.authorizationCharacterId ||
     !observation.authorizationCharacterLifecycleId ||
     observation.authorizationGeneration === null
-  )
+  ) {
     return false
+  }
   return isCorporationSourceExecutionCurrent(
     {
-      corporationSubjectLifecycleId: observation.subject.lifecycleId,
+      authorizationGeneration: observation.authorizationGeneration,
       characterId: observation.authorizationCharacterId,
       characterSubjectLifecycleId: observation.authorizationCharacterLifecycleId,
-      authorizationGeneration: observation.authorizationGeneration,
+      corporationSubjectLifecycleId: observation.subject.lifecycleId,
     },
     transaction,
   )

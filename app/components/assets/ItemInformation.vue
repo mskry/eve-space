@@ -17,21 +17,24 @@ const imageKind = computed(() => assetImageKind(props.asset))
 const imageSource = computed(() => (isSkinAsset(props.asset) ? '/images/eve-skin.png' : undefined))
 const fallbackItem = computed<PublicTypeDetail | undefined>(() => {
   const { categoryId, categoryName, groupId, groupName, typeId, typeName } = props.asset
-  if (categoryId === null || categoryName === null || groupId === null || groupName === null)
-    return undefined
+  if (categoryId === null || categoryName === null || groupId === null || groupName === null) {
+    return
+  }
   return {
-    typeId,
-    name: typeName,
-    description: null,
-    group: { id: groupId, name: groupName },
     category: { id: categoryId, name: categoryName },
+    description: null,
     detail: null,
+    group: { id: groupId, name: groupName },
+    name: typeName,
+    typeId,
   }
 })
 
 function updateOpen(value: boolean) {
   open.value = value
-  if (value) emit('activate', props.asset)
+  if (value) {
+    emit('activate', props.asset)
+  }
 }
 
 function openInformation() {

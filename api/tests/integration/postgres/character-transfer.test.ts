@@ -134,8 +134,8 @@ describe('approved character transfer', () => {
     )
     await characterLifecycle.attachCharacter({
       ...authorization(sourceCharacterId, 'Source Pilot', [], 'rotated-source'),
-      userId: sourceUserId,
       sessionToken: sourceSession,
+      userId: sourceUserId,
     })
     const [sourceTokenBefore] = await connection<
       { encrypted_tokens: string; token_version: number; scopes: string[] }[]
@@ -175,25 +175,25 @@ describe('approved character transfer', () => {
 
     const startBinding = await transferApprovals.loadTransferApprovalForStart({
       approvalId: approval.approvalId,
-      secret,
       destinationUserId,
+      secret,
     })
-    expect(startBinding).toEqual({
+    expect(startBinding).toStrictEqual({
       approvalId: approval.approvalId,
-      sourceUserId,
-      sourceSubjectLifecycleId: sourceLifecycle!.subjectLifecycleId,
-      userId: destinationUserId,
       characterId: sourceCharacterId,
+      sourceSubjectLifecycleId: sourceLifecycle!.subjectLifecycleId,
+      sourceUserId,
+      userId: destinationUserId,
     })
 
     const result = await characterTransfer.transferCharacter({
       approvalId: approval.approvalId,
-      sourceUserId,
-      sourceSubjectLifecycleId: sourceLifecycle!.subjectLifecycleId,
-      destinationUserId,
+      authorization: authorization(sourceCharacterId, 'Transferred Pilot', ['scope.new']),
       characterId: sourceCharacterId,
       destinationSessionToken: destinationSession,
-      authorization: authorization(sourceCharacterId, 'Transferred Pilot', ['scope.new']),
+      destinationUserId,
+      sourceSubjectLifecycleId: sourceLifecycle!.subjectLifecycleId,
+      sourceUserId,
     })
 
     expect(result.subjectLifecycleId).not.toBe(sourceLifecycle!.subjectLifecycleId)
@@ -202,16 +202,16 @@ describe('approved character transfer', () => {
     >`
       select character_id, user_id, is_main from characters order by character_id
     `
-    expect(characters).toEqual([
-      { character_id: String(sourceCharacterId), user_id: destinationUserId, is_main: false },
-      { character_id: String(destinationCharacterId), user_id: destinationUserId, is_main: true },
+    expect([...characters]).toStrictEqual([
+      { character_id: String(sourceCharacterId), is_main: false, user_id: destinationUserId },
+      { character_id: String(destinationCharacterId), is_main: true, user_id: destinationUserId },
     ])
     const accountPurgeWork = await connection<{ resource_id: string; target_user_id: string }[]>`
       select resource_id, target_user_id from platform_resource_purge_work
       where mode = 'account'
       order by module_id, resource_id
     `
-    expect(accountPurgeWork.map(({ resource_id }) => resource_id)).toEqual([
+    expect([...accountPurgeWork].map(({ resource_id }) => resource_id)).toStrictEqual([
       'assets',
       'mail-details',
       'mail-headers',
@@ -229,7 +229,7 @@ describe('approved character transfer', () => {
       select character_lifecycle_id, target_user_id from platform_resource_purge_work
       where mode = 'authority'
     `
-    expect(lifecyclePurgeWork).toEqual([
+    expect([...lifecyclePurgeWork]).toStrictEqual([
       {
         character_lifecycle_id: sourceLifecycle!.subjectLifecycleId,
         target_user_id: sourceUserId,
@@ -242,13 +242,13 @@ describe('approved character transfer', () => {
       where character_id = ${sourceCharacterId}
     `
     expect(token?.token_version).toBe(sourceTokenBefore!.token_version + 1)
-    expect(token?.scopes).toEqual(['scope.new'])
+    expect(token?.scopes).toStrictEqual(['scope.new'])
     expect(token?.encrypted_tokens).not.toBe(sourceTokenBefore?.encrypted_tokens)
-    expect(security.decryptTokens(token!.encrypted_tokens)).toEqual({
+    expect(security.decryptTokens(token!.encrypted_tokens)).toStrictEqual({
       accessToken: 'new-access-token',
       refreshToken: 'new-refresh-token',
     })
-    expect(security.decryptTokens(sourceTokenBefore!.encrypted_tokens)).toEqual({
+    expect(security.decryptTokens(sourceTokenBefore!.encrypted_tokens)).toStrictEqual({
       accessToken: 'rotated-source-access-token',
       refreshToken: 'rotated-source-refresh-token',
     })
@@ -258,8 +258,8 @@ describe('approved character transfer', () => {
     await expect(
       characterLifecycle.findOwnedCharacter(destinationUserId, sourceCharacterId),
     ).resolves.toMatchObject({
-      subjectLifecycleId: result.subjectLifecycleId,
       isMain: false,
+      subjectLifecycleId: result.subjectLifecycleId,
     })
 
     const [sourceUser] = await connection<{ id: string }[]>`
@@ -277,7 +277,7 @@ describe('approved character transfer', () => {
     const [retainedAudit] = await connection<{ actor_id: string; subject_id: string }[]>`
       select actor_id, subject_id from organization_audit_events where audit_id = ${retainedAuditId}
     `
-    expect(retainedAudit).toEqual({ actor_id: sourceUserId, subject_id: sourceUserId })
+    expect(retainedAudit).toStrictEqual({ actor_id: sourceUserId, subject_id: sourceUserId })
 
     const characterEvents = await connection<
       {
@@ -300,25 +300,25 @@ describe('approved character transfer', () => {
     `
     expect(characterEvents).toHaveLength(2)
     expect(characterEvents[0]).toMatchObject({
-      event_type: 'character.detached',
-      payload_version: 1,
-      aggregate_type: 'character',
       aggregate_id: String(sourceCharacterId),
+      aggregate_type: 'character',
+      event_type: 'character.detached',
       payload: {
-        userId: sourceUserId,
         characterId: sourceCharacterId,
+        userId: sourceUserId,
       },
+      payload_version: 1,
       published_at: null,
     })
     expect(characterEvents[1]).toMatchObject({
-      event_type: 'character.attached',
-      payload_version: 1,
-      aggregate_type: 'character',
       aggregate_id: String(sourceCharacterId),
+      aggregate_type: 'character',
+      event_type: 'character.attached',
       payload: {
-        userId: destinationUserId,
         characterId: sourceCharacterId,
+        userId: destinationUserId,
       },
+      payload_version: 1,
       published_at: null,
     })
     expect(BigInt(characterEvents[0]!.event_sequence)).toBeLessThan(
@@ -331,7 +331,7 @@ describe('approved character transfer', () => {
       domainEventStore.loadDomainEvent(characterEvents[0]!.event_id),
     ).resolves.toMatchObject({
       eventType: 'character.detached',
-      payload: { userId: sourceUserId, characterId: sourceCharacterId },
+      payload: { characterId: sourceCharacterId, userId: sourceUserId },
     })
     const [consumed] = await connection<
       { consumed_by_user_id: string; new_subject_lifecycle_id: string }[]
@@ -339,7 +339,7 @@ describe('approved character transfer', () => {
       select consumed_by_user_id, new_subject_lifecycle_id
       from character_transfer_approvals where approval_id = ${approval.approvalId}
     `
-    expect(consumed).toEqual({
+    expect(consumed).toStrictEqual({
       consumed_by_user_id: destinationUserId,
       new_subject_lifecycle_id: result.subjectLifecycleId,
     })
@@ -350,15 +350,15 @@ describe('approved character transfer', () => {
       where approval_id = ${approval.approvalId}
       order by occurred_at, audit_id
     `
-    expect(audit.map(({ action }) => action).toSorted()).toEqual(['consumed', 'created'])
+    expect(audit.map(({ action }) => action).toSorted()).toStrictEqual(['consumed', 'created'])
     expect(audit.find(({ action }) => action === 'consumed')).toMatchObject({
-      source_event_id: characterEvents[0]!.event_id,
       destination_event_id: characterEvents[1]!.event_id,
+      source_event_id: characterEvents[0]!.event_id,
     })
 
     const claims = await domainEventStore.claimPendingDomainEvents({
-      limit: 100,
       claimTtlMs: 30_000,
+      limit: 100,
     })
     const transferClaims = claims.filter(({ event }) =>
       characterEvents.some(({ event_id }) => event_id === event.eventId),
@@ -366,10 +366,10 @@ describe('approved character transfer', () => {
     expect(transferClaims).toHaveLength(2)
     for (const claim of transferClaims) {
       await domainEventStore.recordDomainEventPublishFailure({
-        eventId: claim.event.eventId,
-        claimToken: claim.claimToken,
         category: 'queue-unavailable',
-        retryDelayMs: 1_000,
+        claimToken: claim.claimToken,
+        eventId: claim.event.eventId,
+        retryDelayMs: 1000,
       })
     }
     const failedPublications = await connection<
@@ -379,7 +379,7 @@ describe('approved character transfer', () => {
       where event_id in (${characterEvents[0]!.event_id}, ${characterEvents[1]!.event_id})
       order by event_sequence
     `
-    expect(failedPublications).toEqual([
+    expect([...failedPublications]).toStrictEqual([
       {
         event_id: characterEvents[0]!.event_id,
         last_failure_category: 'queue-unavailable',
@@ -409,7 +409,7 @@ describe('approved character transfer', () => {
     ).resolves.toBeNull()
     await expect(
       characterLifecycle.findOwnedCharacter(destinationUserId, sourceCharacterId),
-    ).resolves.toMatchObject({ subjectLifecycleId: result.subjectLifecycleId, isMain: false })
+    ).resolves.toMatchObject({ isMain: false, subjectLifecycleId: result.subjectLifecycleId })
     const [oldLifecycle] = await connection<{ subject_lifecycle_id: string }[]>`
       select subject_lifecycle_id from platform_subject_lifecycles
       where subject_lifecycle_id = ${sourceLifecycle!.subjectLifecycleId}
@@ -423,12 +423,12 @@ describe('approved character transfer', () => {
     const [eventCountAfterReplay] = await connection<{ count: number }[]>`
       select count(*)::integer as count from domain_events
     `
-    expect(eventCountAfterReplay).toEqual(eventCountBeforeReplay)
+    expect(eventCountAfterReplay).toStrictEqual(eventCountBeforeReplay)
 
     const publicationTime = new Date(Date.now() + 60_000)
     const retentionClaims = await domainEventStore.claimPendingDomainEvents({
-      limit: 100,
       claimTtlMs: 30_000,
+      limit: 100,
       now: publicationTime,
     })
     const retainedTransferClaims = retentionClaims.filter(({ event }) =>
@@ -444,13 +444,14 @@ describe('approved character transfer', () => {
     }
     await expect(
       domainEventStore.deletePublishedDomainEvents({
-        retentionMs: 1,
         now: new Date(publicationTime.getTime() + 2),
+        retentionMs: 1,
       }),
     ).resolves.toBe(2)
-    for (const event of characterEvents)
+    for (const event of characterEvents) {
       await expect(domainEventStore.loadDomainEvent(event.event_id)).resolves.toBeNull()
-    await expect(transferAuditActions(approval.approvalId)).resolves.toEqual([
+    }
+    await expect(transferAuditActions(approval.approvalId)).resolves.toStrictEqual([
       ['created', 'created'],
       ['consumed', 'consumed'],
     ])
@@ -467,8 +468,8 @@ describe('approved character transfer', () => {
     await expect(
       characterLifecycle.attachCharacter({
         ...authorization(sourceCharacterId, 'Source Pilot', []),
-        userId: destinationUserId,
         sessionToken: 'destination-session-token',
+        userId: destinationUserId,
       }),
     ).rejects.toBeInstanceOf(characterLifecycle.CharacterTransferApprovalRequiredError)
     await expect(characterUserId(sourceCharacterId)).resolves.toBe(sourceUserId)
@@ -500,7 +501,7 @@ describe('approved character transfer', () => {
     await expect(findSession(transfer.destinationSession)).resolves.toBe(transfer.destinationUserId)
     expect(result.subjectLifecycleId).not.toBe(transfer.sourceSubjectLifecycleId)
     const events = await transferCharacterEvents()
-    expect(events).toEqual([
+    expect(events).toStrictEqual([
       { event_type: 'character.detached', user_id: transfer.sourceUserId },
       { event_type: 'character.attached', user_id: transfer.destinationUserId },
     ])
@@ -577,7 +578,7 @@ describe('approved character transfer', () => {
       select character_id, evidence_character_id, registered_by_user_id
       from organization_corporation_sources where source_id = ${sourceId}
     `
-    expect(historicalSource).toEqual({
+    expect(historicalSource).toStrictEqual({
       character_id: null,
       evidence_character_id: String(sourceAlternateCharacterId),
       registered_by_user_id: transfer.sourceUserId,
@@ -601,15 +602,15 @@ describe('approved character transfer', () => {
 
     await characterLifecycle.attachCharacter({
       ...authorization(sourceCharacterId, 'Source Pilot', []),
-      userId: sourceUserId,
       sessionToken: 'source-session-token',
+      userId: sourceUserId,
     })
 
     await expect(
       characterLifecycle.findOwnedCharacter(sourceUserId, sourceCharacterId),
     ).resolves.toMatchObject({
-      subjectLifecycleId: lifecycleBefore!.subjectLifecycleId,
       isMain: true,
+      subjectLifecycleId: lifecycleBefore!.subjectLifecycleId,
     })
     const [events] = await connection<{ count: number }[]>`
       select count(*)::integer as count from domain_events
@@ -630,7 +631,9 @@ describe('approved character transfer', () => {
       destinationMainCharacterId: destinationCharacterId,
       reason: 'Preview binding test',
     })
-    if (!preview.eligible) throw new Error(`Expected eligible preview, got ${preview.blocker}`)
+    if (!preview.eligible) {
+      throw new Error(`Expected eligible preview, got ${preview.blocker}`)
+    }
 
     if (scenario === 'expired') {
       await connection`
@@ -648,14 +651,14 @@ describe('approved character transfer', () => {
       )
       await characterLifecycle.attachCharacter({
         ...authorization(sourceAlternateCharacterId, 'Reattached Source Alt', ['scope.old']),
-        userId: transfer.sourceUserId,
         sessionToken: transfer.sourceSession,
+        userId: transfer.sourceUserId,
       })
     } else {
       await characterLifecycle.attachCharacter({
         ...authorization(secondAlternateCharacterId, 'Replacement Destination Main', []),
-        userId: transfer.destinationUserId,
         sessionToken: transfer.destinationSession,
+        userId: transfer.destinationUserId,
       })
       await characterLifecycle.setMainCharacter(
         transfer.destinationUserId,
@@ -692,16 +695,16 @@ describe('approved character transfer', () => {
     `
 
     expect(stored).toMatchObject({
-      link_secret_hash: security.hashToken(transfer.approvalSecret),
-      character_id: String(sourceAlternateCharacterId),
-      source_user_id: transfer.sourceUserId,
-      source_subject_lifecycle_id: transfer.sourceSubjectLifecycleId,
-      destination_user_id: transfer.destinationUserId,
       approved_by_administrator_id: transfer.administratorId,
+      character_id: String(sourceAlternateCharacterId),
+      destination_user_id: transfer.destinationUserId,
+      link_secret_hash: security.hashToken(transfer.approvalSecret),
       reason: 'Repair split account',
+      source_subject_lifecycle_id: transfer.sourceSubjectLifecycleId,
+      source_user_id: transfer.sourceUserId,
     })
     expect(stored?.link_secret_hash).not.toBe(transfer.approvalSecret)
-    expect(stored!.expires_at.getTime() - stored!.created_at.getTime()).toBe(15 * 60 * 1_000)
+    expect(stored!.expires_at.getTime() - stored!.created_at.getTime()).toBe(15 * 60 * 1000)
 
     await expect(
       connection`
@@ -727,15 +730,15 @@ describe('approved character transfer', () => {
         destination_user_id, approved_by_administrator_id, reason, created_at, expires_at
       from character_transfer_approvals where approval_id = ${transfer.approvalId}
     `
-    expect(unchanged).toEqual(stored)
+    expect(unchanged).toStrictEqual(stored)
   })
 
   test('keeps an approval bound to its destination user after that account changes main', async () => {
     const transfer = await prepareNonMainTransfer()
     await characterLifecycle.attachCharacter({
       ...authorization(secondAlternateCharacterId, 'Replacement Destination Main', []),
-      userId: transfer.destinationUserId,
       sessionToken: transfer.destinationSession,
+      userId: transfer.destinationUserId,
     })
     await characterLifecycle.setMainCharacter(
       transfer.destinationUserId,
@@ -765,7 +768,9 @@ describe('approved character transfer', () => {
       destinationMainCharacterId: destinationCharacterId,
       reason: 'Atomic approval creation',
     })
-    if (!preview.eligible) throw new Error(`Expected eligible preview, got ${preview.blocker}`)
+    if (!preview.eligible) {
+      throw new Error(`Expected eligible preview, got ${preview.blocker}`)
+    }
     const [baseline] = await connection<{ approvals: number; audit: number }[]>`
       select
         (select count(*)::integer from character_transfer_approvals) as approvals,
@@ -799,7 +804,7 @@ describe('approved character transfer', () => {
         (select count(*)::integer from character_transfer_previews
           where preview_id = ${preview.previewId}) as preview
     `
-    expect(afterCreationFailure).toEqual({ ...baseline!, preview: 1 })
+    expect(afterCreationFailure).toStrictEqual({ ...baseline!, preview: 1 })
 
     await connection`
       alter table character_transfer_audit add constraint reject_transfer_revocation_audit
@@ -824,7 +829,7 @@ describe('approved character transfer', () => {
       select revoked_at from character_transfer_approvals where approval_id = ${transfer.approvalId}
     `
     expect(approval?.revoked_at).toBeNull()
-    await expect(transferAuditActions(transfer.approvalId)).resolves.toEqual([
+    await expect(transferAuditActions(transfer.approvalId)).resolves.toStrictEqual([
       ['created', 'created'],
     ])
   })
@@ -839,7 +844,7 @@ describe('approved character transfer', () => {
       reason: 'Approval no longer needed',
     })
 
-    await expect(transferAuditActions(transfer.approvalId)).resolves.toEqual([
+    await expect(transferAuditActions(transfer.approvalId)).resolves.toStrictEqual([
       ['created', 'created'],
       ['revoked', 'revoked'],
     ])
@@ -848,7 +853,7 @@ describe('approved character transfer', () => {
       where table_schema = current_schema() and table_name = 'character_transfer_audit'
         and column_name ~ '(secret|token|scope|oauth|session)'
     `
-    expect(auditColumns).toEqual([])
+    expect([...auditColumns]).toStrictEqual([])
     const auditRows = await connection<{ record: unknown }[]>`
       select row_to_json(audit)::jsonb as record
       from character_transfer_audit audit where approval_id = ${transfer.approvalId}
@@ -902,12 +907,12 @@ describe('approved character transfer', () => {
 
     await characterTransfer.transferCharacter({
       approvalId: approval.approvalId,
-      sourceUserId,
-      sourceSubjectLifecycleId: sourceLifecycle!.subjectLifecycleId,
-      destinationUserId,
+      authorization: authorization(sourceCharacterId, 'Transferred Pilot', ['scope.new']),
       characterId: sourceCharacterId,
       destinationSessionToken: destinationSession,
-      authorization: authorization(sourceCharacterId, 'Transferred Pilot', ['scope.new']),
+      destinationUserId,
+      sourceSubjectLifecycleId: sourceLifecycle!.subjectLifecycleId,
+      sourceUserId,
     })
 
     const [retainedSource] = await connection<{ id: string }[]>`
@@ -920,26 +925,26 @@ describe('approved character transfer', () => {
     const pendingStates = await connection<{ intent: string }[]>`
       select intent from oauth_states where user_id = ${sourceUserId} order by intent
     `
-    expect(pendingStates).toEqual([{ intent: 'attach' }])
+    expect([...pendingStates]).toStrictEqual([{ intent: 'attach' }])
     const grants = await connection<
       { grant_id: string; user_id: string; granted_by_user_id: string; role: string }[]
     >`
       select grant_id, user_id, granted_by_user_id, role
       from organization_role_grants order by grant_id
     `
-    expect(grants).toEqual(
+    expect(grants).toStrictEqual(
       expect.arrayContaining([
         {
           grant_id: sourceGrantId,
-          user_id: sourceUserId,
           granted_by_user_id: sourceUserId,
           role: 'hr_auditor',
+          user_id: sourceUserId,
         },
         {
           grant_id: destinationGrantId,
-          user_id: destinationUserId,
           granted_by_user_id: destinationUserId,
           role: 'director',
+          user_id: destinationUserId,
         },
       ]),
     )
@@ -951,8 +956,8 @@ describe('approved character transfer', () => {
     const transfer = await prepareNonMainTransfer()
     await characterLifecycle.attachCharacter({
       ...authorization(sourceAlternateCharacterId, 'Source Alt', ['scope.old'], 'source-rotated'),
-      userId: transfer.sourceUserId,
       sessionToken: transfer.sourceSession,
+      userId: transfer.sourceUserId,
     })
     const originalToken = await characterTokenStore.findCharacterTokenForLifecycle(
       sourceAlternateCharacterId,
@@ -982,17 +987,17 @@ describe('approved character transfer', () => {
 
     const returned = await characterTransfer.transferCharacter({
       approvalId: returnApproval.approvalId,
-      sourceUserId: transfer.destinationUserId,
-      sourceSubjectLifecycleId: first.subjectLifecycleId,
-      destinationUserId: transfer.sourceUserId,
-      characterId: sourceAlternateCharacterId,
-      destinationSessionToken: transfer.sourceSession,
       authorization: authorization(
         sourceAlternateCharacterId,
         'Returned Alt',
         ['scope.returned'],
         'return-callback',
       ),
+      characterId: sourceAlternateCharacterId,
+      destinationSessionToken: transfer.sourceSession,
+      destinationUserId: transfer.sourceUserId,
+      sourceSubjectLifecycleId: first.subjectLifecycleId,
+      sourceUserId: transfer.destinationUserId,
     })
     const returnedToken = await characterTokenStore.findCharacterTokenForLifecycle(
       sourceAlternateCharacterId,
@@ -1008,7 +1013,7 @@ describe('approved character transfer', () => {
     ).toHaveLength(3)
     expect(firstToken?.tokenVersion).toBe(originalToken!.tokenVersion + 1)
     expect(returnedToken?.tokenVersion).toBe(firstToken!.tokenVersion + 1)
-    expect(security.decryptTokens(returnedToken!.encryptedTokens)).toEqual({
+    expect(security.decryptTokens(returnedToken!.encryptedTokens)).toStrictEqual({
       accessToken: 'return-callback-access-token',
       refreshToken: 'return-callback-refresh-token',
     })
@@ -1033,14 +1038,14 @@ describe('approved character transfer', () => {
     await expect(
       characterTransfer.transferCharacter({
         approvalId: staleApproval.approvalId,
-        sourceUserId: transfer.sourceUserId,
-        sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
-        destinationUserId: transfer.destinationUserId,
-        characterId: sourceAlternateCharacterId,
-        destinationSessionToken: transfer.destinationSession,
         authorization: authorization(sourceAlternateCharacterId, 'Stale Return Proof', [
           'scope.new',
         ]),
+        characterId: sourceAlternateCharacterId,
+        destinationSessionToken: transfer.destinationSession,
+        destinationUserId: transfer.destinationUserId,
+        sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
+        sourceUserId: transfer.sourceUserId,
       }),
     ).rejects.toMatchObject({ code: 'approval-unusable' })
     await expect(characterUserId(sourceAlternateCharacterId)).resolves.toBe(transfer.sourceUserId)
@@ -1069,12 +1074,12 @@ describe('approved character transfer', () => {
     `
     await characterLifecycle.reauthorizeCharacter({
       ...authorization(sourceAlternateCharacterId, 'Source Alt', ['scope.old']),
-      userId: transfer.sourceUserId,
       expectedCharacterId: sourceAlternateCharacterId,
-      sessionToken: transfer.sourceSession,
       reviewerUseDisclosures: [
         { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 1 },
       ],
+      sessionToken: transfer.sourceSession,
+      userId: transfer.sourceUserId,
     })
     await connection`
       update deployment_module_sections
@@ -1084,17 +1089,17 @@ describe('approved character transfer', () => {
 
     const result = await characterTransfer.transferCharacter({
       approvalId: transfer.approvalId,
-      sourceUserId: transfer.sourceUserId,
-      sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
-      destinationUserId: transfer.destinationUserId,
-      characterId: sourceAlternateCharacterId,
-      destinationSessionToken: transfer.destinationSession,
       authorization: {
         ...authorization(sourceAlternateCharacterId, 'Transferred Alt', ['scope.new']),
         reviewerUseDisclosures: [
           { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 2 },
         ],
       },
+      characterId: sourceAlternateCharacterId,
+      destinationSessionToken: transfer.destinationSession,
+      destinationUserId: transfer.destinationUserId,
+      sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
+      sourceUserId: transfer.sourceUserId,
     })
     const token = await characterTokenStore.findCharacterTokenForLifecycle(
       sourceAlternateCharacterId,
@@ -1108,10 +1113,10 @@ describe('approved character transfer', () => {
       where character_id = ${sourceAlternateCharacterId}
     `
 
-    expect(acceptances).toEqual([
+    expect([...acceptances]).toStrictEqual([
       {
-        disclosure_version: 2,
         authorization_generation: token!.tokenVersion,
+        disclosure_version: 2,
       },
     ])
     expect(token?.tokenVersion).toBe(2)
@@ -1130,7 +1135,7 @@ describe('approved character transfer', () => {
     )
     expect(result.subjectLifecycleId).not.toBe(transfer.sourceSubjectLifecycleId)
     expect(currentToken?.tokenVersion).toBe(0)
-    expect(security.decryptTokens(currentToken!.encryptedTokens)).toEqual({
+    expect(security.decryptTokens(currentToken!.encryptedTokens)).toStrictEqual({
       accessToken: 'new-access-token',
       refreshToken: 'new-refresh-token',
     })
@@ -1159,36 +1164,36 @@ describe('approved character transfer', () => {
 
     const result = await characterTransfer.transferCharacter({
       approvalId: transfer.approvalId,
-      sourceUserId: transfer.sourceUserId,
-      sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
-      destinationUserId: transfer.destinationUserId,
+      authorization: authorization(sourceAlternateCharacterId, 'Transferred Alt', [requiredScope]),
       characterId: sourceAlternateCharacterId,
       destinationSessionToken: transfer.destinationSession,
-      authorization: authorization(sourceAlternateCharacterId, 'Transferred Alt', [requiredScope]),
+      destinationUserId: transfer.destinationUserId,
+      sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
+      sourceUserId: transfer.sourceUserId,
     })
     await connection`delete from domain_events`
 
     await expect(
       collectionStateRepair.repairPlatformCollectionState({
+        characterId: sourceAlternateCharacterId,
         connection,
         resources: [resource],
-        characterId: sourceAlternateCharacterId,
       }),
-    ).resolves.toEqual({ repairedResources: 1 })
+    ).resolves.toStrictEqual({ repairedResources: 1 })
     await expect(
       resourceEligibility.selectDueInstalledResources({
         connection,
-        resources: [resource],
         limit: 10,
+        resources: [resource],
       }),
-    ).resolves.toEqual([
+    ).resolves.toStrictEqual([
       {
         identity: {
           moduleId: resource.moduleId,
           resourceId: resource.resourceId,
+          subjectId: String(sourceAlternateCharacterId),
           subjectKind: 'character',
           subjectLifecycleId: result.subjectLifecycleId,
-          subjectId: String(sourceAlternateCharacterId),
         },
         operationId: resource.operationId,
       },
@@ -1212,14 +1217,14 @@ describe('approved character transfer', () => {
       () =>
         characterTransfer.transferCharacter({
           approvalId: thirdApproval.approvalId,
-          sourceUserId: transfer.sourceUserId,
-          sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
-          destinationUserId: thirdUserId,
-          characterId: sourceAlternateCharacterId,
-          destinationSessionToken: thirdSession,
           authorization: authorization(sourceAlternateCharacterId, 'Transferred Alt', [
             'scope.new',
           ]),
+          characterId: sourceAlternateCharacterId,
+          destinationSessionToken: thirdSession,
+          destinationUserId: thirdUserId,
+          sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
+          sourceUserId: transfer.sourceUserId,
         }),
     ])
 
@@ -1238,16 +1243,16 @@ describe('approved character transfer', () => {
     await expect(
       characterTransfer.transferCharacter({
         approvalId: losingApproval!.approval_id,
-        sourceUserId: transfer.sourceUserId,
-        sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
-        destinationUserId: losingDestinationIsThird ? thirdUserId : transfer.destinationUserId,
+        authorization: authorization(sourceAlternateCharacterId, 'Losing Approval Proof', [
+          'scope.new',
+        ]),
         characterId: sourceAlternateCharacterId,
         destinationSessionToken: losingDestinationIsThird
           ? thirdSession
           : transfer.destinationSession,
-        authorization: authorization(sourceAlternateCharacterId, 'Losing Approval Proof', [
-          'scope.new',
-        ]),
+        destinationUserId: losingDestinationIsThird ? thirdUserId : transfer.destinationUserId,
+        sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
+        sourceUserId: transfer.sourceUserId,
       }),
     ).rejects.toMatchObject({ code: 'approval-unusable' })
     const [stillPending] = await connection<{ consumed_at: Date | null }[]>`
@@ -1268,7 +1273,7 @@ describe('approved character transfer', () => {
     ])
 
     expect(outcomes.filter(({ status }) => status === 'fulfilled')).toHaveLength(1)
-    expect(outcomes.filter(({ status }) => status === 'rejected')).toEqual([
+    expect(outcomes.filter(({ status }) => status === 'rejected')).toStrictEqual([
       expect.objectContaining({ reason: expect.objectContaining({ code: 'approval-unusable' }) }),
     ])
     await expect(characterUserId(sourceAlternateCharacterId)).resolves.toBe(
@@ -1285,7 +1290,7 @@ describe('approved character transfer', () => {
         (select count(*)::integer from domain_events
           where event_type in ('character.detached', 'character.attached')) as events
     `
-    expect(terminal).toEqual({ consumed: 1, consumed_audit: 1, events: 2 })
+    expect(terminal).toStrictEqual({ consumed: 1, consumed_audit: 1, events: 2 })
     await assertCharacterAccountInvariants()
   })
 
@@ -1321,13 +1326,14 @@ describe('approved character transfer', () => {
       characterLockHeld = false
       await expect(firstRedemption).rejects.toMatchObject({ code: 'approval-unusable' })
     } finally {
-      if (characterLockHeld)
+      if (characterLockHeld) {
         await characterHolder`
           select pg_advisory_unlock(
             ${dbLocks.characterLockNamespace},
             ${dbLocks.characterLockKey(sourceAlternateCharacterId)}
           )
         `
+      }
       await Promise.allSettled(firstRedemption ? [firstRedemption] : [])
       await characterHolder.end()
     }
@@ -1363,7 +1369,9 @@ describe('approved character transfer', () => {
       })
       await expect(revocation).rejects.toMatchObject({ code: 'approval-consumed' })
     } finally {
-      if (authorityTransactionOpen) await authorityHolder`rollback`
+      if (authorityTransactionOpen) {
+        await authorityHolder`rollback`
+      }
       await Promise.allSettled([
         ...(secondRedemption ? [secondRedemption] : []),
         ...(revocation ? [revocation] : []),
@@ -1371,11 +1379,11 @@ describe('approved character transfer', () => {
       await authorityHolder.end()
     }
 
-    await expect(transferAuditActions(transfer.approvalId)).resolves.toEqual([
+    await expect(transferAuditActions(transfer.approvalId)).resolves.toStrictEqual([
       ['created', 'created'],
       ['revoked', 'revoked'],
     ])
-    await expect(transferAuditActions(replacement.approvalId)).resolves.toEqual([
+    await expect(transferAuditActions(replacement.approvalId)).resolves.toStrictEqual([
       ['created', 'created'],
       ['consumed', 'consumed'],
     ])
@@ -1423,9 +1431,9 @@ describe('approved character transfer', () => {
         join pg_stat_activity activity on activity.pid = ${blocked.pid}
         where approval.approval_id = ${transfer.approvalId}
       `
-      expect(clockBoundary).toEqual({
-        transaction_started_before_expiry: true,
+      expect(clockBoundary).toStrictEqual({
         database_clock_expired: true,
+        transaction_started_before_expiry: true,
       })
 
       await holder`
@@ -1437,20 +1445,21 @@ describe('approved character transfer', () => {
       lockHeld = false
       await expect(redemption).rejects.toMatchObject({ code: 'approval-unusable' })
     } finally {
-      if (lockHeld)
+      if (lockHeld) {
         await holder`
           select pg_advisory_unlock(
             ${dbLocks.characterLockNamespace},
             ${dbLocks.characterLockKey(sourceAlternateCharacterId)}
           )
         `
+      }
       await Promise.allSettled(redemption ? [redemption] : [])
       await expirationWriter.end()
       await holder.end()
     }
 
     await expect(characterUserId(sourceAlternateCharacterId)).resolves.toBe(transfer.sourceUserId)
-    await expect(transferAuditActions(transfer.approvalId)).resolves.toEqual([
+    await expect(transferAuditActions(transfer.approvalId)).resolves.toStrictEqual([
       ['created', 'created'],
     ])
   })
@@ -1485,13 +1494,14 @@ describe('approved character transfer', () => {
       lockHeld = false
       await expect(redemption).rejects.toMatchObject({ code: 'approval-unusable' })
     } finally {
-      if (lockHeld)
+      if (lockHeld) {
         await holder`
           select pg_advisory_unlock(
             ${dbLocks.characterLockNamespace},
             ${dbLocks.characterLockKey(sourceAlternateCharacterId)}
           )
         `
+      }
       await Promise.allSettled(redemption ? [redemption] : [])
       await authorityWriter.end()
       await holder.end()
@@ -1508,8 +1518,8 @@ describe('approved character transfer', () => {
     const transfer = await prepareNonMainTransfer()
     await characterLifecycle.attachCharacter({
       ...authorization(secondAlternateCharacterId, 'Destination Alt', ['scope.old']),
-      userId: transfer.destinationUserId,
       sessionToken: transfer.destinationSession,
+      userId: transfer.destinationUserId,
     })
     const oppositeSource = await characterLifecycle.findOwnedCharacter(
       transfer.destinationUserId,
@@ -1527,14 +1537,14 @@ describe('approved character transfer', () => {
       () =>
         characterTransfer.transferCharacter({
           approvalId: oppositeApproval.approvalId,
-          sourceUserId: transfer.destinationUserId,
-          sourceSubjectLifecycleId: oppositeSource!.subjectLifecycleId,
-          destinationUserId: transfer.sourceUserId,
-          characterId: secondAlternateCharacterId,
-          destinationSessionToken: transfer.sourceSession,
           authorization: authorization(secondAlternateCharacterId, 'Returned Destination Alt', [
             'scope.new',
           ]),
+          characterId: secondAlternateCharacterId,
+          destinationSessionToken: transfer.sourceSession,
+          destinationUserId: transfer.sourceUserId,
+          sourceSubjectLifecycleId: oppositeSource!.subjectLifecycleId,
+          sourceUserId: transfer.destinationUserId,
         }),
     ])
 
@@ -1565,7 +1575,7 @@ describe('approved character transfer', () => {
     expect(transferOutcome).toMatchObject(
       transferSucceeded
         ? { status: 'fulfilled' }
-        : { status: 'rejected', reason: { code: 'main-character' } },
+        : { reason: { code: 'main-character' }, status: 'rejected' },
     )
     expect(mainOutcome).toMatchObject(
       transferSucceeded
@@ -1603,7 +1613,7 @@ describe('approved character transfer', () => {
     expect(transferOutcome).toMatchObject(
       transferSucceeded
         ? { status: 'fulfilled' }
-        : { status: 'rejected', reason: { code: 'approval-unusable' } },
+        : { reason: { code: 'approval-unusable' }, status: 'rejected' },
     )
     expect(deletionOutcome).toMatchObject({
       status: 'fulfilled',
@@ -1658,8 +1668,8 @@ describe('approved character transfer', () => {
               ['scope.new'],
               'concurrent-login',
             ),
-            sessionToken: loginSession,
             sessionExpiresAt: new Date(Date.now() + 60_000),
+            sessionToken: loginSession,
           }),
       ],
     )
@@ -1709,18 +1719,18 @@ describe('approved character transfer', () => {
       () =>
         characterTransfer.transferCharacter({
           approvalId: outgoingApproval.approvalId,
-          sourceUserId: transfer.destinationUserId,
-          sourceSubjectLifecycleId: destinationLifecycle!.subjectLifecycleId,
-          destinationUserId: thirdUserId,
-          characterId: destinationCharacterId,
-          destinationSessionToken: thirdSession,
           authorization: authorization(destinationCharacterId, 'Moved Destination Main', [
             'scope.new',
           ]),
+          characterId: destinationCharacterId,
+          destinationSessionToken: thirdSession,
+          destinationUserId: thirdUserId,
+          sourceSubjectLifecycleId: destinationLifecycle!.subjectLifecycleId,
+          sourceUserId: transfer.destinationUserId,
         }),
     ])
 
-    expect([incoming?.status, outgoing?.status].toSorted()).toEqual(['fulfilled', 'rejected'])
+    expect([incoming?.status, outgoing?.status].toSorted()).toStrictEqual(['fulfilled', 'rejected'])
     const incomingSucceeded = incoming!.status === 'fulfilled'
     const failedTransfer = incomingSucceeded ? outgoing : incoming
     const actualOwnerIds = await Promise.all([
@@ -1728,10 +1738,10 @@ describe('approved character transfer', () => {
       ...(incomingSucceeded ? [] : [characterUserId(destinationCharacterId)]),
     ])
     expect(failedTransfer).toMatchObject({
-      status: 'rejected',
       reason: { code: incomingSucceeded ? 'main-character' : 'approval-unusable' },
+      status: 'rejected',
     })
-    expect(actualOwnerIds).toEqual(
+    expect(actualOwnerIds).toStrictEqual(
       incomingSucceeded ? [transfer.destinationUserId] : [transfer.sourceUserId, thirdUserId],
     )
     await assertCharacterAccountInvariants()
@@ -1750,8 +1760,8 @@ describe('approved character transfer', () => {
       await releaseRefresh.promise
       return {
         access_token: 'late-refresh-access',
+        expires_in: 1200,
         refresh_token: 'late-refresh-token',
-        expires_in: 1_200,
         token_type: 'Bearer',
       }
     })
@@ -1827,53 +1837,55 @@ describe('approved character transfer', () => {
     const ownerScope = 'esi-characters.read_corporation_roles.v1'
     await characterLifecycle.attachCharacter({
       ...authorization(sourceAlternateCharacterId, 'Source Alt', [ownerScope]),
-      userId: transfer.sourceUserId,
       sessionToken: transfer.sourceSession,
+      userId: transfer.sourceUserId,
     })
     const ownerAuthorization =
       await characterTokenStore.findCharacterCacheAuthorizationForLifecycle(
         sourceAlternateCharacterId,
         transfer.sourceSubjectLifecycleId,
       )
-    if (!ownerAuthorization) throw new Error('Owner authorization is missing')
+    if (!ownerAuthorization) {
+      throw new Error('Owner authorization is missing')
+    }
 
     const [claim, redemption] = await raceBehindDeploymentSettingsLock([
       () =>
         ownerClaim.claimOrganizationOwnership({
-          userId: transfer.sourceUserId,
-          characterId: sourceAlternateCharacterId,
-          subjectLifecycleId: transfer.sourceSubjectLifecycleId,
+          affiliationCheckedAt: new Date(0),
+          authorityCorporationId: 1_000_166,
           authorizationGeneration: ownerAuthorization.tokenVersion,
-          roleEvidenceRevision: new Date().toISOString(),
+          characterId: sourceAlternateCharacterId,
           evidenceAuthorizationGeneration: ownerAuthorization.tokenVersion,
           evidenceFreshUntil: new Date(Date.now() + 60_000),
+          observedAllianceId: null,
+          observedCorporationId: 1_000_166,
           organizationId: 1_000_166,
           organizationVersion: 1,
-          authorityCorporationId: 1_000_166,
-          observedCorporationId: 1_000_166,
-          observedAllianceId: null,
-          affiliationCheckedAt: new Date(0),
           requiredScope: ownerScope,
+          roleEvidenceRevision: new Date().toISOString(),
+          subjectLifecycleId: transfer.sourceSubjectLifecycleId,
+          userId: transfer.sourceUserId,
         }),
       () => redeemPreparedTransfer(transfer),
     ])
 
-    expect([claim?.status, redemption?.status].toSorted()).toEqual(['fulfilled', 'rejected'])
+    expect([claim?.status, redemption?.status].toSorted()).toStrictEqual(['fulfilled', 'rejected'])
     const claimSucceeded = claim!.status === 'fulfilled'
     const failedOperation = claimSucceeded ? redemption : claim
     const characterOwner = await characterUserId(sourceAlternateCharacterId)
     expect(failedOperation).toMatchObject({
-      status: 'rejected',
       reason: { code: claimSucceeded ? 'authority-evidence' : 'character-not-owned' },
+      status: 'rejected',
     })
     expect(characterOwner).toBe(claimSucceeded ? transfer.sourceUserId : transfer.destinationUserId)
     const evidence = await connection<{ user_id: string; character_id: number }[]>`
       select user_id, character_id::integer as character_id
       from organization_authority_evidence
     `
-    expect(evidence).toEqual(
+    expect([...evidence]).toStrictEqual(
       claim!.status === 'fulfilled'
-        ? [{ user_id: transfer.sourceUserId, character_id: sourceAlternateCharacterId }]
+        ? [{ character_id: sourceAlternateCharacterId, user_id: transfer.sourceUserId }]
         : [],
     )
     await assertCharacterAccountInvariants()
@@ -1888,22 +1900,25 @@ describe('approved character transfer', () => {
         corporationSources.registerOrganizationCorporationSource(
           {
             actorUserId: transfer.sourceUserId,
-            corporationId: 1_000_166,
             characterId: sourceAlternateCharacterId,
+            corporationId: 1_000_166,
           },
           { evidence },
         ),
       () => redeemPreparedTransfer(transfer),
     ])
 
-    expect([registration?.status, redemption?.status].toSorted()).toEqual(['fulfilled', 'rejected'])
+    expect([registration?.status, redemption?.status].toSorted()).toStrictEqual([
+      'fulfilled',
+      'rejected',
+    ])
     const registrationSucceeded = registration!.status === 'fulfilled'
     const failedOperation = registrationSucceeded ? redemption : registration
     expect(failedOperation).toMatchObject({
-      status: 'rejected',
       reason: {
         code: registrationSucceeded ? 'corporation-source' : 'source-character-ineligible',
       },
+      status: 'rejected',
     })
     const activeSources = await connection<
       { character_id: number; registered_by_user_id: string }[]
@@ -1911,7 +1926,7 @@ describe('approved character transfer', () => {
       select character_id::integer as character_id, registered_by_user_id
       from organization_corporation_sources where revoked_at is null
     `
-    expect(activeSources).toEqual(
+    expect([...activeSources]).toStrictEqual(
       registration!.status === 'fulfilled'
         ? [
             {
@@ -1933,8 +1948,8 @@ describe('approved character transfer', () => {
     const original = await corporationSources.registerOrganizationCorporationSource(
       {
         actorUserId: transfer.sourceUserId,
-        corporationId: 1_000_166,
         characterId: sourceAlternateCharacterId,
+        corporationId: 1_000_166,
       },
       { evidence: originalEvidence },
     )
@@ -1945,8 +1960,8 @@ describe('approved character transfer', () => {
         corporationSources.registerOrganizationCorporationSource(
           {
             actorUserId: transfer.sourceUserId,
-            corporationId: 1_000_166,
             characterId: sourceCharacterId,
+            corporationId: 1_000_166,
           },
           { evidence: replacementEvidence },
         ),
@@ -1961,7 +1976,7 @@ describe('approved character transfer', () => {
         : null,
       failureCode: redemptionSucceeded ? null : redemption!.reason.code,
     }
-    expect(redemptionResult).toEqual(
+    expect(redemptionResult).toStrictEqual(
       redemptionSucceeded
         ? { characterOwner: transfer.destinationUserId, failureCode: null }
         : { characterOwner: null, failureCode: 'corporation-source' },
@@ -1982,10 +1997,10 @@ describe('approved character transfer', () => {
     `
     expect(sources).toHaveLength(2)
     expect(sources[0]).toMatchObject({
-      source_id: original.source.sourceId,
       evidence_character_id: sourceAlternateCharacterId,
       registered_by_user_id: transfer.sourceUserId,
       revoked_at: expect.any(Date),
+      source_id: original.source.sourceId,
     })
     expect(sources[1]).toMatchObject({
       character_id: sourceCharacterId,
@@ -2003,7 +2018,7 @@ describe('approved character transfer', () => {
       () => redeemPreparedTransfer(transfer),
       () =>
         adminStore.updateDeploymentOrganization(
-          { type: 'corporation', id: 98_000_002, name: 'Second Corporation', ticker: 'TWO' },
+          { id: 98_000_002, name: 'Second Corporation', ticker: 'TWO', type: 'corporation' },
           transfer.administratorId,
         ),
     ])
@@ -2025,7 +2040,7 @@ describe('approved character transfer', () => {
           as current_authoritative
       from organization_account_compliance
     `
-    expect(projections).toEqual({ old_authoritative: 0, current_authoritative: 2 })
+    expect(projections).toStrictEqual({ current_authoritative: 2, old_authoritative: 0 })
     await expect(characterUserId(sourceAlternateCharacterId)).resolves.toBe(
       transfer.destinationUserId,
     )
@@ -2050,8 +2065,8 @@ describe('approved character transfer', () => {
     const sourceUserId = await characterUserId(sourceCharacterId)
     await characterLifecycle.attachCharacter({
       ...authorization(sourceAlternateCharacterId, 'Source Alt', ['scope.old']),
-      userId: sourceUserId,
       sessionToken: sourceSession,
+      userId: sourceUserId,
     })
     await saveLogin(destinationCharacterId, destinationSession, 'Destination Pilot')
     const destinationUserId = await characterUserId(destinationCharacterId)
@@ -2067,12 +2082,12 @@ describe('approved character transfer', () => {
 
     await characterTransfer.transferCharacter({
       approvalId: approval.approvalId,
-      sourceUserId,
-      sourceSubjectLifecycleId: source!.subjectLifecycleId,
-      destinationUserId,
+      authorization: authorization(sourceAlternateCharacterId, 'Transferred Alt', ['scope.new']),
       characterId: sourceAlternateCharacterId,
       destinationSessionToken: destinationSession,
-      authorization: authorization(sourceAlternateCharacterId, 'Transferred Alt', ['scope.new']),
+      destinationUserId,
+      sourceSubjectLifecycleId: source!.subjectLifecycleId,
+      sourceUserId,
     })
 
     await expect(characterUserId(sourceAlternateCharacterId)).resolves.toBe(destinationUserId)
@@ -2084,8 +2099,8 @@ describe('approved character transfer', () => {
         (select count(*)::integer from organization_group_assignments) as assignments,
         (select count(*)::integer from organization_audit_events) as organization_audit
     `
-    expect(effects).toEqual({ compliance: 0, assignments: 0, organization_audit: 0 })
-    await expect(transferAuditActions(approval.approvalId)).resolves.toEqual([
+    expect(effects).toStrictEqual({ assignments: 0, compliance: 0, organization_audit: 0 })
+    await expect(transferAuditActions(approval.approvalId)).resolves.toStrictEqual([
       ['created', 'created'],
       ['consumed', 'consumed'],
     ])
@@ -2113,33 +2128,35 @@ describe('approved character transfer', () => {
 
     await characterTransfer.transferCharacter({
       approvalId: approval.approvalId,
-      sourceUserId,
-      sourceSubjectLifecycleId: source!.subjectLifecycleId,
-      destinationUserId,
+      authorization: authorization(sourceCharacterId, 'Transferred Pilot', []),
       characterId: sourceCharacterId,
       destinationSessionToken: destinationSession,
-      authorization: authorization(sourceCharacterId, 'Transferred Pilot', []),
+      destinationUserId,
+      sourceSubjectLifecycleId: source!.subjectLifecycleId,
+      sourceUserId,
     })
 
     await expect(complianceState(sourceUserId)).resolves.toMatchObject({
-      state: 'pending',
-      evidence_freshness: 'unavailable',
       access_valid_until: null,
+      evidence_freshness: 'unavailable',
+      state: 'pending',
     })
-    await expect(complianceIssues(sourceUserId)).resolves.toEqual([
+    await expect(complianceIssues(sourceUserId)).resolves.toStrictEqual([
       ['account:no-characters', 'no-attached-characters', null, null],
     ])
     await expect(complianceState(destinationUserId)).resolves.toMatchObject({
-      state: 'compliant',
       evidence_freshness: 'fresh',
+      state: 'compliant',
     })
     await expect(activeComplianceAssignment(groupId, sourceUserId)).resolves.toBe(false)
     await expect(activeComplianceAssignment(groupId, destinationUserId)).resolves.toBe(true)
-    await expect(groupPermissions.getOrganizationGroupPermissions(sourceUserId)).resolves.toEqual({
+    await expect(
+      groupPermissions.getOrganizationGroupPermissions(sourceUserId),
+    ).resolves.toStrictEqual({
       modules: [],
       services: [],
     })
-    await expect(organizationAuditEffects(auditSequence)).resolves.toEqual([
+    await expect(organizationAuditEffects(auditSequence)).resolves.toStrictEqual([
       ['compliance.transitioned', 'transitioned', sourceUserId],
       ['entitlement.revoked', 'revoked', 'discord.member'],
       ['group.revoked', 'revoked', sourceUserId],
@@ -2148,8 +2165,6 @@ describe('approved character transfer', () => {
 
   test.each([
     {
-      name: 'outside-organization character',
-      requiredScopes: [] as string[],
       callback: authorization(sourceAlternateCharacterId, 'External Alt', []),
       issue: [
         `character:${sourceAlternateCharacterId}:external`,
@@ -2157,10 +2172,10 @@ describe('approved character transfer', () => {
         sourceAlternateCharacterId,
         null,
       ],
+      name: 'outside-organization character',
+      requiredScopes: [] as string[],
     },
     {
-      name: 'missing-scope character',
-      requiredScopes: ['scope.required'],
       callback: authorization(sourceAlternateCharacterId, 'Unscoped Alt', []),
       issue: [
         `character:${sourceAlternateCharacterId}:scope:scope.required`,
@@ -2168,6 +2183,8 @@ describe('approved character transfer', () => {
         sourceAlternateCharacterId,
         'scope.required',
       ],
+      name: 'missing-scope character',
+      requiredScopes: ['scope.required'],
     },
   ])('revokes destination compliance effects for a transferred $name', async (scenario) => {
     const transfer = await prepareNonMainTransfer()
@@ -2179,34 +2196,36 @@ describe('approved character transfer', () => {
 
     await characterTransfer.transferCharacter({
       approvalId: transfer.approvalId,
-      sourceUserId: transfer.sourceUserId,
-      sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
-      destinationUserId: transfer.destinationUserId,
-      characterId: sourceAlternateCharacterId,
-      destinationSessionToken: transfer.destinationSession,
       authorization:
         scenario.name === 'outside-organization character'
           ? { ...scenario.callback, corporationId: 1_000_167 }
           : scenario.callback,
+      characterId: sourceAlternateCharacterId,
+      destinationSessionToken: transfer.destinationSession,
+      destinationUserId: transfer.destinationUserId,
+      sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
+      sourceUserId: transfer.sourceUserId,
     })
 
     await expect(complianceState(transfer.sourceUserId)).resolves.toMatchObject({
       state: 'compliant',
     })
     await expect(complianceState(transfer.destinationUserId)).resolves.toMatchObject({
-      state: 'suspended',
-      evidence_freshness: 'fresh',
       access_valid_until: null,
+      evidence_freshness: 'fresh',
+      state: 'suspended',
     })
-    await expect(complianceIssues(transfer.destinationUserId)).resolves.toEqual([scenario.issue])
+    await expect(complianceIssues(transfer.destinationUserId)).resolves.toStrictEqual([
+      scenario.issue,
+    ])
     await expect(activeComplianceAssignment(groupId, transfer.sourceUserId)).resolves.toBe(true)
     await expect(activeComplianceAssignment(groupId, transfer.destinationUserId)).resolves.toBe(
       false,
     )
     await expect(
       groupPermissions.getOrganizationGroupPermissions(transfer.destinationUserId),
-    ).resolves.toEqual({ modules: [], services: [] })
-    await expect(organizationAuditEffects(auditSequence)).resolves.toEqual([
+    ).resolves.toStrictEqual({ modules: [], services: [] })
+    await expect(organizationAuditEffects(auditSequence)).resolves.toStrictEqual([
       ['compliance.transitioned', 'transitioned', transfer.destinationUserId],
       ['entitlement.revoked', 'revoked', 'discord.member'],
       ['group.revoked', 'revoked', transfer.destinationUserId],
@@ -2235,15 +2254,15 @@ describe('approved character transfer', () => {
 
     await characterTransfer.transferCharacter({
       approvalId: transfer.approvalId,
-      sourceUserId: transfer.sourceUserId,
-      sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
-      destinationUserId: transfer.destinationUserId,
-      characterId: sourceAlternateCharacterId,
-      destinationSessionToken: transfer.destinationSession,
       authorization: {
         ...authorization(sourceAlternateCharacterId, 'Transferred External Alt', []),
         corporationId: 1_000_167,
       },
+      characterId: sourceAlternateCharacterId,
+      destinationSessionToken: transfer.destinationSession,
+      destinationUserId: transfer.destinationUserId,
+      sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
+      sourceUserId: transfer.sourceUserId,
     })
 
     const [exceptions] = await connection<{ count: number }[]>`
@@ -2254,7 +2273,7 @@ describe('approved character transfer', () => {
     await expect(complianceState(transfer.sourceUserId)).resolves.toMatchObject({
       state: 'compliant',
     })
-    await expect(complianceIssues(transfer.destinationUserId)).resolves.toEqual([
+    await expect(complianceIssues(transfer.destinationUserId)).resolves.toStrictEqual([
       [
         `character:${sourceAlternateCharacterId}:external`,
         'character-outside-managed-organization',
@@ -2277,24 +2296,24 @@ describe('approved character transfer', () => {
     await insertRoleGrant(transfer.sourceUserId, transfer.sourceUserId, 'director')
     await blockStore.blockOrganizationMember({
       actorUserId: transfer.sourceUserId,
-      targetUserId: transfer.destinationUserId,
       reason: 'Transfer test destination block',
+      targetUserId: transfer.destinationUserId,
     })
     const auditSequence = await latestOrganizationAuditSequence()
 
     await redeemPreparedTransfer(transfer)
 
     await expect(complianceState(transfer.destinationUserId)).resolves.toMatchObject({
-      state: 'compliant',
       evidence_freshness: 'fresh',
+      state: 'compliant',
     })
     await expect(activeComplianceAssignment(groupId, transfer.destinationUserId)).resolves.toBe(
       true,
     )
     await expect(
       groupPermissions.getOrganizationGroupPermissions(transfer.destinationUserId),
-    ).resolves.toEqual({ modules: [], services: [] })
-    await expect(organizationAuditEffects(auditSequence)).resolves.toEqual([])
+    ).resolves.toStrictEqual({ modules: [], services: [] })
+    await expect(organizationAuditEffects(auditSequence)).resolves.toStrictEqual([])
   })
 
   test('invalidates materialization that commits under the old lifecycle before transfer', async () => {
@@ -2353,13 +2372,14 @@ describe('approved character transfer', () => {
       expect(await collectionStateCount(observation.identity.subjectLifecycleId)).toBe(0)
       expect(await collectionStateCount(transferred.subjectLifecycleId)).toBe(0)
     } finally {
-      if (lockHeld)
+      if (lockHeld) {
         await holder`
           select pg_advisory_unlock(
             ${dbLocks.resourceRefreshLockNamespace},
             ${dbLocks.resourceRefreshLockKey(observation.identity)}
           )
         `
+      }
       await holder.end()
     }
   })
@@ -2384,7 +2404,7 @@ describe('approved character transfer', () => {
       await removeFailure()
     }
 
-    expect(await loadTransferRollbackState(transfer.approvalId)).toEqual(transfer.baseline)
+    expect(await loadTransferRollbackState(transfer.approvalId)).toStrictEqual(transfer.baseline)
     await expect(oauthStateStore.consumeOAuthState(transfer.oauthState)).resolves.toBeNull()
   })
 
@@ -2415,7 +2435,7 @@ describe('approved character transfer', () => {
     await expect(findSession(transfer.destinationSession)).resolves.toBe(transfer.destinationUserId)
     await expect(
       characterLifecycle.findOwnedCharacter(transfer.destinationUserId, sourceCharacterId),
-    ).resolves.toMatchObject({ subjectLifecycleId: result.subjectLifecycleId, isMain: false })
+    ).resolves.toMatchObject({ isMain: false, subjectLifecycleId: result.subjectLifecycleId })
     const [approval] = await connection<{ consumed_at: Date | null }[]>`
       select consumed_at from character_transfer_approvals where approval_id = ${transfer.approvalId}
     `
@@ -2448,7 +2468,7 @@ describe('approved character transfer', () => {
       await connection`drop function reject_transfer_source_delete()`
     }
 
-    expect(await loadTransferRollbackState(transfer.approvalId)).toEqual(transfer.baseline)
+    expect(await loadTransferRollbackState(transfer.approvalId)).toStrictEqual(transfer.baseline)
     await expect(oauthStateStore.consumeOAuthState(transfer.oauthState)).resolves.toBeNull()
   })
 })
@@ -2496,8 +2516,8 @@ async function insertAdministrator() {
 async function saveLogin(characterId: number, sessionToken: string, characterName: string) {
   await characterLifecycle.saveLogin({
     ...authorization(characterId, characterName, [], `login-${characterId}`),
-    sessionToken,
     sessionExpiresAt: new Date(Date.now() + 60_000),
+    sessionToken,
   })
 }
 
@@ -2512,7 +2532,9 @@ async function createApproval(
     destinationMainCharacterId,
     reason: 'Repair split account',
   })
-  if (!preview.eligible) throw new Error(`Expected eligible preview, got ${preview.blocker}`)
+  if (!preview.eligible) {
+    throw new Error(`Expected eligible preview, got ${preview.blocker}`)
+  }
   return transferApprovals.createCharacterTransferApproval({
     administratorId,
     previewId: preview.previewId,
@@ -2527,8 +2549,8 @@ async function prepareNonMainTransfer() {
   const sourceUserId = await characterUserId(sourceCharacterId)
   await characterLifecycle.attachCharacter({
     ...authorization(sourceAlternateCharacterId, 'Source Alt', ['scope.old']),
-    userId: sourceUserId,
     sessionToken: sourceSession,
+    userId: sourceUserId,
   })
   await saveLogin(destinationCharacterId, destinationSession, 'Destination Pilot')
   const destinationUserId = await characterUserId(destinationCharacterId)
@@ -2545,23 +2567,23 @@ async function prepareNonMainTransfer() {
     administratorId,
     approvalId: approval.approvalId,
     approvalSecret: secret,
-    sourceUserId,
-    sourceSubjectLifecycleId: sourceCharacter!.subjectLifecycleId,
+    destinationSession,
     destinationUserId,
     sourceSession,
-    destinationSession,
+    sourceSubjectLifecycleId: sourceCharacter!.subjectLifecycleId,
+    sourceUserId,
   }
 }
 
 function redeemPreparedTransfer(transfer: Awaited<ReturnType<typeof prepareNonMainTransfer>>) {
   return characterTransfer.transferCharacter({
     approvalId: transfer.approvalId,
-    sourceUserId: transfer.sourceUserId,
-    sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
-    destinationUserId: transfer.destinationUserId,
+    authorization: authorization(sourceAlternateCharacterId, 'Transferred Alt', ['scope.new']),
     characterId: sourceAlternateCharacterId,
     destinationSessionToken: transfer.destinationSession,
-    authorization: authorization(sourceAlternateCharacterId, 'Transferred Alt', ['scope.new']),
+    destinationUserId: transfer.destinationUserId,
+    sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
+    sourceUserId: transfer.sourceUserId,
   })
 }
 
@@ -2628,20 +2650,24 @@ async function loadCharacterAuthorityBinding(characterId: number) {
     join eve_tokens token on token.character_id = lifecycle.character_id
     where lifecycle.character_id = ${characterId}
   `
-  if (!binding) throw new Error('Character authority binding is missing')
+  if (!binding) {
+    throw new Error('Character authority binding is missing')
+  }
   return {
-    subjectLifecycleId: binding.subject_lifecycle_id,
     authorizationGeneration: binding.authorization_generation,
+    subjectLifecycleId: binding.subject_lifecycle_id,
   }
 }
 
 async function transferCharacterEvents() {
-  return connection<{ event_type: string; user_id: string }[]>`
+  return [
+    ...(await connection<{ event_type: string; user_id: string }[]>`
     select event_type, payload ->> 'userId' as user_id
     from domain_events
     where event_type in ('character.detached', 'character.attached')
     order by event_sequence
-  `
+  `),
+  ]
 }
 
 async function transferAuditActions(approvalId: string) {
@@ -2690,7 +2716,9 @@ async function insertManagedCollectionState(
     where deployment_id = 1 and organization_version = 1 and user_id = ${userId}
       and ended_at is null
   `
-  if (!memberLifecycle) throw new Error('Managed member lifecycle is unavailable')
+  if (!memberLifecycle) {
+    throw new Error('Managed member lifecycle is unavailable')
+  }
   await connection`
     insert into platform_collection_state (
       module_id, resource_id, subject_kind, subject_lifecycle_id, subject_id,
@@ -2708,22 +2736,22 @@ async function insertManagedCollectionState(
 async function storeSourceOAuthStates(userId: string, characterId: number) {
   await oauthStateStore.storeOAuthState('pending-source-attachment-state', {
     intent: 'attach',
-    userId,
     reviewerUseDisclosures: [],
+    userId,
   })
   await oauthStateStore.storeOAuthState('pending-source-reauthorization-state', {
-    intent: 'reauthorize',
-    userId,
     characterId,
+    intent: 'reauthorize',
     reviewerUseDisclosures: [],
+    userId,
   })
   await oauthStateStore.storeOAuthState('pending-source-owner-claim-state', {
-    intent: 'claim-organization-owner',
-    userId,
     characterId,
+    intent: 'claim-organization-owner',
     organizationId: 1_000_166,
     organizationVersion: 1,
     reviewerUseDisclosures: [],
+    userId,
   })
 }
 
@@ -2769,45 +2797,45 @@ async function prepareSoleTransferFailure() {
   await insertCollectionState(sourceCharacterId, source!.subjectLifecycleId, 0)
   const oauthState = `transfer-${randomUUID()}`
   await oauthStateStore.storeOAuthState(oauthState, {
-    intent: 'transfer',
     approvalId: approval.approvalId,
-    sourceUserId,
-    sourceSubjectLifecycleId: source!.subjectLifecycleId,
-    userId: destinationUserId,
     characterId: sourceCharacterId,
+    intent: 'transfer',
     reviewerUseDisclosures: [],
+    sourceSubjectLifecycleId: source!.subjectLifecycleId,
+    sourceUserId,
+    userId: destinationUserId,
   })
   await expect(oauthStateStore.consumeOAuthState(oauthState)).resolves.toMatchObject({
-    intent: 'transfer',
     approvalId: approval.approvalId,
-    sourceUserId,
-    sourceSubjectLifecycleId: source!.subjectLifecycleId,
-    userId: destinationUserId,
     characterId: sourceCharacterId,
+    intent: 'transfer',
+    sourceSubjectLifecycleId: source!.subjectLifecycleId,
+    sourceUserId,
+    userId: destinationUserId,
   })
   await connection`delete from domain_events`
   const baseline = await loadTransferRollbackState(approval.approvalId)
   return {
     approvalId: approval.approvalId,
-    sourceUserId,
-    sourceSubjectLifecycleId: source!.subjectLifecycleId,
-    destinationUserId,
-    sourceSession,
-    destinationSession,
-    oauthState,
     baseline,
+    destinationSession,
+    destinationUserId,
+    oauthState,
+    sourceSession,
+    sourceSubjectLifecycleId: source!.subjectLifecycleId,
+    sourceUserId,
   }
 }
 
 function redeemSoleTransfer(transfer: Awaited<ReturnType<typeof prepareSoleTransferFailure>>) {
   return characterTransfer.transferCharacter({
     approvalId: transfer.approvalId,
-    sourceUserId: transfer.sourceUserId,
-    sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
-    destinationUserId: transfer.destinationUserId,
+    authorization: authorization(sourceCharacterId, 'Transferred Pilot', ['scope.new']),
     characterId: sourceCharacterId,
     destinationSessionToken: transfer.destinationSession,
-    authorization: authorization(sourceCharacterId, 'Transferred Pilot', ['scope.new']),
+    destinationUserId: transfer.destinationUserId,
+    sourceSubjectLifecycleId: transfer.sourceSubjectLifecycleId,
+    sourceUserId: transfer.sourceUserId,
   })
 }
 
@@ -2924,18 +2952,18 @@ async function loadTransferRollbackState(approvalId: string) {
     `,
   ])
   return {
-    users,
-    characters,
-    lifecycles,
-    tokens,
-    collectionState,
-    sessions,
-    compliance,
-    groupAssignments,
-    organizationAudit,
-    domainEvents,
     approvals,
+    characters,
+    collectionState,
+    compliance,
+    domainEvents,
+    groupAssignments,
+    lifecycles,
+    organizationAudit,
+    sessions,
+    tokens,
     transferAudit,
+    users,
   }
 }
 
@@ -2946,14 +2974,14 @@ function authorization(
   credentialLabel = 'new',
 ) {
   return {
+    accessToken: `${credentialLabel}-access-token`,
+    allianceId: null,
     characterId,
     characterName,
-    ownerHash: `owner-${characterId}`,
     corporationId: 1_000_166,
-    allianceId: null,
-    accessToken: `${credentialLabel}-access-token`,
+    expiresIn: 1200,
+    ownerHash: `owner-${characterId}`,
     refreshToken: `${credentialLabel}-refresh-token`,
-    expiresIn: 1_200,
     scopes,
   }
 }
@@ -2962,7 +2990,9 @@ async function characterUserId(characterId: number) {
   const [record] = await connection<{ user_id: string }[]>`
     select user_id from characters where character_id = ${characterId}
   `
-  if (!record) throw new Error('Character is missing')
+  if (!record) {
+    throw new Error('Character is missing')
+  }
   return record.user_id
 }
 
@@ -2995,7 +3025,9 @@ async function raceBehindDeploymentSettingsLock(operations: readonly (() => Prom
     transactionOpen = false
     return await Promise.allSettled(pending)
   } finally {
-    if (transactionOpen) await holder`rollback`
+    if (transactionOpen) {
+      await holder`rollback`
+    }
     await Promise.allSettled(pending)
     await holder.end()
   }
@@ -3054,7 +3086,9 @@ async function raceBehindUserTableLock(operations: readonly (() => Promise<unkno
     transactionOpen = false
     return await Promise.allSettled(pending)
   } finally {
-    if (transactionOpen) await holder`rollback`
+    if (transactionOpen) {
+      await holder`rollback`
+    }
     await Promise.allSettled(pending)
     await holder.end()
   }
@@ -3070,7 +3104,9 @@ async function waitForBlockedDatabaseOperations(expected: number) {
         and pid <> pg_backend_pid()
         and wait_event_type = 'Lock'
     `
-    if ((record?.count ?? 0) >= expected) return
+    if ((record?.count ?? 0) >= expected) {
+      return
+    }
     await new Promise((resolve) => setTimeout(resolve, 10))
   }
   throw new Error(`Timed out waiting for ${expected} blocked PostgreSQL operations`)
@@ -3090,7 +3126,9 @@ async function waitForBlockedDatabaseOperation(excludedPid: number) {
       order by query_start
       limit 1
     `
-    if (record) return record
+    if (record) {
+      return record
+    }
     await new Promise((resolve) => setTimeout(resolve, 10))
   }
   throw new Error('Timed out waiting for a blocked PostgreSQL operation')
@@ -3129,11 +3167,12 @@ async function configureTransferCompliance(
       required_registration_scopes = ${connection.json([...requiredScopes])}
     where id = 1
   `
-  if (requiredScopes.length > 0)
+  if (requiredScopes.length > 0) {
     await connection`
       update eve_tokens set scopes = ${connection.json([...requiredScopes])}
       where character_id in (${sourceCharacterId}, ${sourceAlternateCharacterId}, ${destinationCharacterId})
     `
+  }
   const bundleId = randomUUID()
   const groupId = randomUUID()
   await connection`
@@ -3174,7 +3213,7 @@ async function configureTransferCompliance(
     set assigned_at = clock_timestamp() - interval '1 second'
     where group_id = ${groupId}
   `
-  return { groupId, auditSequence: await latestOrganizationAuditSequence() }
+  return { auditSequence: await latestOrganizationAuditSequence(), groupId }
 }
 
 async function complianceState(userId: string) {
@@ -3247,8 +3286,8 @@ async function prepareCorporationSourceCandidate(
   const rolesScope = 'esi-characters.read_corporation_roles.v1'
   await characterLifecycle.attachCharacter({
     ...authorization(characterId, `Source ${characterId}`, [membershipScope, rolesScope]),
-    userId: transfer.sourceUserId,
     sessionToken: transfer.sourceSession,
+    userId: transfer.sourceUserId,
   })
   await connection`
     update characters set next_affiliation_check = now() + interval '1 hour'
@@ -3293,26 +3332,28 @@ async function prepareCorporationSourceCandidate(
     join platform_subject_lifecycles lifecycle on lifecycle.character_id = character.character_id
     where character.character_id = ${characterId}
   `
-  if (!binding) throw new Error('Corporation-source candidate binding is missing')
+  if (!binding) {
+    throw new Error('Corporation-source candidate binding is missing')
+  }
   const observedAt = new Date()
   return {
     affiliation: {
+      affiliationCheckedAt: binding.affiliation_checked_at,
+      affiliationFreshUntil: new Date(observedAt.getTime() + 60 * 60 * 1000),
+      allianceId: null,
       characterId,
       corporationId: 1_000_166,
-      allianceId: null,
-      affiliationCheckedAt: binding.affiliation_checked_at,
-      affiliationFreshUntil: new Date(observedAt.getTime() + 60 * 60 * 1_000),
       stale: false,
     },
     roles: {
+      authorizationGeneration: binding.token_version,
+      freshUntil: new Date(observedAt.getTime() + 60 * 60 * 1000),
+      observedAt,
+      roleEvidenceRevision: observedAt.toISOString(),
       roles: ['Director'],
       rolesAtBase: [],
       rolesAtHeadquarters: [],
       rolesAtOther: [],
-      authorizationGeneration: binding.token_version,
-      roleEvidenceRevision: observedAt.toISOString(),
-      observedAt,
-      freshUntil: new Date(observedAt.getTime() + 60 * 60 * 1_000),
       stale: false,
     },
   }
@@ -3325,8 +3366,8 @@ async function prepareCharacterResourceObservation(
   const requiredScope = 'esi-characters.read_freelance_jobs.v1'
   await characterLifecycle.attachCharacter({
     ...authorization(sourceAlternateCharacterId, 'Source Alt', [requiredScope]),
-    userId: transfer.sourceUserId,
     sessionToken: transfer.sourceSession,
+    userId: transfer.sourceUserId,
   })
   const token = await characterTokenStore.findCharacterTokenForLifecycle(
     sourceAlternateCharacterId,
@@ -3340,55 +3381,55 @@ async function prepareCharacterResourceObservation(
   const identity = {
     moduleId: 'organization-activity',
     resourceId: 'character-jobs',
+    subjectId: String(sourceAlternateCharacterId),
     subjectKind: 'character' as const,
     subjectLifecycleId: transfer.sourceSubjectLifecycleId,
-    subjectId: String(sourceAlternateCharacterId),
   }
   const implementation = {
-    mode: 'bounded-collection',
-    operation: 'character-jobs',
     collect: vi.fn(),
     materialize,
+    mode: 'bounded-collection',
+    operation: 'character-jobs',
   } satisfies PlatformBoundedCollectionResourceImplementation
   return {
+    authorizationGeneration: token!.tokenVersion,
+    data: { source: 'old-lifecycle' },
     identity,
+    managedAuthority: null,
+    outcome: 'complete' as const,
     resource: {
-      moduleId: identity.moduleId,
-      resourceId: identity.resourceId,
-      operationId: 'organization-activity-character-jobs' as const,
-      subjectKind: 'character' as const,
-      materializationIntervalSeconds: 60,
       eligibility: { kind: 'current-owned-character' as const },
       implementation,
+      materializationIntervalSeconds: 60,
+      moduleId: identity.moduleId,
+      operationId: 'organization-activity-character-jobs' as const,
+      resourceId: identity.resourceId,
+      subjectKind: 'character' as const,
     },
     subject: {
-      kind: 'character' as const,
       characterId: sourceAlternateCharacterId,
+      kind: 'character' as const,
       lifecycleId: transfer.sourceSubjectLifecycleId,
     },
-    authorizationGeneration: token!.tokenVersion,
-    managedAuthority: null,
     validatedAt: new Date().toISOString(),
-    outcome: 'complete' as const,
-    data: { source: 'old-lifecycle' },
   }
 }
 
 function characterResourceDescriptor() {
   const implementation = {
-    mode: 'bounded-collection',
-    operation: 'character-jobs',
     collect: vi.fn(),
     materialize: vi.fn(),
+    mode: 'bounded-collection',
+    operation: 'character-jobs',
   } satisfies PlatformBoundedCollectionResourceImplementation
   return {
-    moduleId: 'transfer-repair',
-    resourceId: 'character-jobs',
-    operationId: 'organization-activity-character-jobs' as const,
-    subjectKind: 'character' as const,
-    materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-owned-character' as const },
     implementation,
+    materializationIntervalSeconds: 60,
+    moduleId: 'transfer-repair',
+    operationId: 'organization-activity-character-jobs' as const,
+    resourceId: 'character-jobs',
+    subjectKind: 'character' as const,
   } satisfies PlatformInstalledResourceDescriptor
 }
 

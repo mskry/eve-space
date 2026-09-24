@@ -50,36 +50,35 @@ export function evaluateAccountCompliance(input: {
   previous: PreviousCompliance | null
   now: Date
 }): AccountComplianceEvaluation {
-  if (input.characters.length === 0)
+  if (input.characters.length === 0) {
     return {
-      state: 'pending',
-      evidenceFreshness: 'unavailable',
-      evidenceAt: null,
-      reviewDeadline: null,
       accessValidUntil: null,
       establishedCompliantAt: input.previous?.establishedCompliantAt ?? null,
+      evidenceAt: null,
+      evidenceFreshness: 'unavailable',
       issues: [issue('account:no-characters', 'no-attached-characters')],
+      reviewDeadline: null,
+      state: 'pending',
     }
+  }
 
   const evidence = evaluateEvidence(input)
   const policyIssues = evaluatePolicyIssues(input, evidence)
 
-  if (policyIssues.length > 0)
+  if (policyIssues.length > 0) {
     return evaluatePolicyViolation(input, policyIssues, evidence.issues, evidence.evidenceTimes)
+  }
 
-  if (evidence.issues.length > 0)
+  if (evidence.issues.length > 0) {
     return evaluateIncompleteEvidence(
       input,
       evidence.issues,
       oldestDate(evidence.evidenceTimes),
       oldestDate(evidence.staleSinceTimes),
     )
+  }
 
   return {
-    state: 'compliant',
-    evidenceFreshness: 'fresh',
-    evidenceAt: freshEvidenceAt(input),
-    reviewDeadline: null,
     accessValidUntil: earliestDate([
       ...input.characters.map((character) => character.nextAffiliationCheck),
       ...input.characters.map((character) =>
@@ -90,7 +89,11 @@ export function evaluateAccountCompliance(input: {
       input.managedCorporationEvidence.freshUntil,
     ]),
     establishedCompliantAt: input.previous?.establishedCompliantAt ?? input.now,
+    evidenceAt: freshEvidenceAt(input),
+    evidenceFreshness: 'fresh',
     issues: [],
+    reviewDeadline: null,
+    state: 'compliant',
   }
 }
 
@@ -108,48 +111,60 @@ function evaluateEvidence(input: Parameters<typeof evaluateAccountCompliance>[0]
     }
 
     issues.push(evidence.issue)
-    if (evidence.evidenceAt) evidenceTimes.push(evidence.evidenceAt)
-    if (evidence.staleSince) staleSinceTimes.push(evidence.staleSince)
+    if (evidence.evidenceAt) {
+      evidenceTimes.push(evidence.evidenceAt)
+    }
+    if (evidence.staleSince) {
+      staleSinceTimes.push(evidence.staleSince)
+    }
   }
 
-  if (input.managedCorporationEvidence.freshness === 'fresh')
-    return { issues, evidenceTimes, staleSinceTimes, freshAffiliations }
+  if (input.managedCorporationEvidence.freshness === 'fresh') {
+    return { evidenceTimes, freshAffiliations, issues, staleSinceTimes }
+  }
 
   issues.push(
     issue('account:managed-corporations-stale', 'managed-corporation-evidence-unavailable'),
   )
-  if (input.managedCorporationEvidence.evidenceAt)
+  if (input.managedCorporationEvidence.evidenceAt) {
     evidenceTimes.push(input.managedCorporationEvidence.evidenceAt)
-  if (input.managedCorporationEvidence.staleSince)
+  }
+  if (input.managedCorporationEvidence.staleSince) {
     staleSinceTimes.push(input.managedCorporationEvidence.staleSince)
+  }
 
-  return { issues, evidenceTimes, staleSinceTimes, freshAffiliations }
+  return { evidenceTimes, freshAffiliations, issues, staleSinceTimes }
 }
 
 function evaluateCharacterAffiliation(character: ComplianceCharacter, now: Date) {
-  if (character.affiliationResolutionState !== 'resolved' || !character.affiliationCheckedAt)
+  if (character.affiliationResolutionState !== 'resolved' || !character.affiliationCheckedAt) {
     return {
+      evidenceAt: character.affiliationCheckedAt,
       issue: issue(
         `character:${character.characterId}:affiliation-unavailable`,
         'character-affiliation-unavailable',
         character.characterId,
       ),
-      evidenceAt: character.affiliationCheckedAt,
       staleSince: character.affiliationCheckedAt,
     }
+  }
 
-  if (!character.nextAffiliationCheck || character.nextAffiliationCheck.getTime() <= now.getTime())
+  if (
+    !character.nextAffiliationCheck ||
+    character.nextAffiliationCheck.getTime() <= now.getTime()
+  ) {
     return {
+      evidenceAt: character.affiliationCheckedAt,
       issue: issue(
         `character:${character.characterId}:affiliation-stale`,
         'character-affiliation-stale',
         character.characterId,
       ),
-      evidenceAt: character.affiliationCheckedAt,
       staleSince: character.nextAffiliationCheck ?? character.affiliationCheckedAt,
     }
+  }
 
-  return { issue: null, evidenceAt: null, staleSince: null }
+  return { evidenceAt: null, issue: null, staleSince: null }
 }
 
 function evaluatePolicyIssues(
@@ -159,8 +174,9 @@ function evaluatePolicyIssues(
   const organizationPolicy = evaluateOrganizationPolicy(input, evidence.freshAffiliations)
   const issues = [...organizationPolicy.issues, ...evaluateRequiredScopePolicy(input)]
 
-  if (evidence.issues.length === 0 && !organizationPolicy.hasManagedCharacter)
+  if (evidence.issues.length === 0 && !organizationPolicy.hasManagedCharacter) {
     issues.push(issue('account:no-managed-character', 'no-managed-organization-character'))
+  }
 
   return issues
 }
@@ -171,14 +187,18 @@ function evaluateOrganizationPolicy(
 ) {
   const issues: AccountComplianceIssue[] = []
   let hasManagedCharacter = false
-  if (input.managedCorporationEvidence.freshness !== 'fresh') return { issues, hasManagedCharacter }
+  if (input.managedCorporationEvidence.freshness !== 'fresh') {
+    return { hasManagedCharacter, issues }
+  }
 
   for (const character of input.characters) {
-    if (!freshAffiliations.has(character.characterId)) continue
+    if (!freshAffiliations.has(character.characterId)) {
+      continue
+    }
 
     const managed = input.managedCorporationIds.has(character.corporationId)
     hasManagedCharacter ||= managed
-    if (!managed && !character.hasActiveException)
+    if (!managed && !character.hasActiveException) {
       issues.push(
         issue(
           `character:${character.characterId}:external`,
@@ -186,9 +206,10 @@ function evaluateOrganizationPolicy(
           character.characterId,
         ),
       )
+    }
   }
 
-  return { issues, hasManagedCharacter }
+  return { hasManagedCharacter, issues }
 }
 
 function evaluateRequiredScopePolicy(input: Parameters<typeof evaluateAccountCompliance>[0]) {
@@ -205,7 +226,7 @@ function evaluateRequiredScopePolicy(input: Parameters<typeof evaluateAccountCom
       continue
     }
     const scopes = new Set(character.scopes)
-    for (const requiredScope of input.requiredScopes)
+    for (const requiredScope of input.requiredScopes) {
       if (!scopes.has(requiredScope))
         issues.push(
           issue(
@@ -215,6 +236,7 @@ function evaluateRequiredScopePolicy(input: Parameters<typeof evaluateAccountCom
             requiredScope,
           ),
         )
+    }
   }
   return issues
 }
@@ -232,26 +254,31 @@ function evaluatePolicyViolation(
     input.now,
   )
   let evidenceFreshness: OrganizationEvidenceFreshness = 'unavailable'
-  if (evidenceIssues.length === 0) evidenceFreshness = 'fresh'
-  else if (evidenceTimes.length > 0) evidenceFreshness = 'stale'
+  if (evidenceIssues.length === 0) {
+    evidenceFreshness = 'fresh'
+  } else if (evidenceTimes.length > 0) {
+    evidenceFreshness = 'stale'
+  }
 
   let evidenceAt: Date | null = null
-  if (evidenceFreshness === 'fresh') evidenceAt = freshEvidenceAt(input)
-  else if (evidenceFreshness === 'stale')
+  if (evidenceFreshness === 'fresh') {
+    evidenceAt = freshEvidenceAt(input)
+  } else if (evidenceFreshness === 'stale') {
     evidenceAt = oldestDate(evidenceTimes) ?? input.previous?.evidenceAt ?? null
+  }
 
   const state = reviewDeadline > input.now ? 'review_required' : 'suspended'
   return {
-    state,
-    evidenceFreshness,
-    evidenceAt,
-    reviewDeadline,
     accessValidUntil:
       state === 'review_required' && input.previous?.establishedCompliantAt ? reviewDeadline : null,
     establishedCompliantAt: input.previous?.establishedCompliantAt ?? null,
+    evidenceAt,
+    evidenceFreshness,
     issues: [...policyIssues, ...evidenceIssues].toSorted((left, right) =>
       left.issueKey.localeCompare(right.issueKey),
     ),
+    reviewDeadline,
+    state,
   }
 }
 
@@ -274,7 +301,7 @@ function evaluateIncompleteEvidence(
 ): AccountComplianceEvaluation {
   const previous = input.previous
   const staleDeadline = staleSince
-    ? new Date(staleSince.getTime() + input.staleEvidenceGraceDurationSeconds * 1_000)
+    ? new Date(staleSince.getTime() + input.staleEvidenceGraceDurationSeconds * 1000)
     : null
   if (
     previous?.establishedCompliantAt &&
@@ -284,25 +311,33 @@ function evaluateIncompleteEvidence(
     const reviewExpired =
       previous.reviewDeadline !== null && previous.reviewDeadline.getTime() <= input.now.getTime()
     return {
-      state: reviewExpired ? 'suspended' : previous.state,
-      evidenceFreshness: 'stale',
-      evidenceAt: previous.evidenceAt ?? staleEvidenceAt,
-      reviewDeadline: previous.reviewDeadline,
       accessValidUntil: accessValidUntilDuringStaleGrace(previous, staleDeadline, reviewExpired),
       establishedCompliantAt: previous.establishedCompliantAt,
+      evidenceAt: previous.evidenceAt ?? staleEvidenceAt,
+      evidenceFreshness: 'stale',
       issues: previous.issues,
+      reviewDeadline: previous.reviewDeadline,
+      state: reviewExpired ? 'suspended' : previous.state,
     }
   }
 
+  return incompleteEvidenceWithoutGrace(previous, issues, staleEvidenceAt)
+}
+
+function incompleteEvidenceWithoutGrace(
+  previous: PreviousCompliance | null,
+  issues: readonly AccountComplianceIssue[],
+  staleEvidenceAt: Date | null,
+): AccountComplianceEvaluation {
   return {
-    state: previous?.establishedCompliantAt ? 'suspended' : 'pending',
-    evidenceFreshness:
-      staleEvidenceAt && !previous?.establishedCompliantAt ? 'stale' : 'unavailable',
-    evidenceAt: staleEvidenceAt && !previous?.establishedCompliantAt ? staleEvidenceAt : null,
-    reviewDeadline: previous?.establishedCompliantAt ? previous.reviewDeadline : null,
     accessValidUntil: null,
     establishedCompliantAt: previous?.establishedCompliantAt ?? null,
+    evidenceAt: staleEvidenceAt && !previous?.establishedCompliantAt ? staleEvidenceAt : null,
+    evidenceFreshness:
+      staleEvidenceAt && !previous?.establishedCompliantAt ? 'stale' : 'unavailable',
     issues: mergeIssues(previous?.issues ?? [], issues),
+    reviewDeadline: previous?.establishedCompliantAt ? previous.reviewDeadline : null,
+    state: previous?.establishedCompliantAt ? 'suspended' : 'pending',
   }
 }
 
@@ -311,10 +346,15 @@ function accessValidUntilDuringStaleGrace(
   staleDeadline: Date,
   reviewExpired: boolean,
 ) {
-  if (reviewExpired) return null
-  if (previous.state === 'compliant') return staleDeadline
-  if (previous.state === 'review_required' && previous.accessValidUntil)
+  if (reviewExpired) {
+    return null
+  }
+  if (previous.state === 'compliant') {
+    return staleDeadline
+  }
+  if (previous.state === 'review_required' && previous.accessValidUntil) {
     return earliestDate([previous.accessValidUntil, staleDeadline])
+  }
   return null
 }
 
@@ -345,7 +385,7 @@ function earliestReviewDeadline(
     Math.min(
       ...issues.map(
         ({ issueKey }) =>
-          (firstObservedAt?.get(issueKey) ?? now).getTime() + durationSeconds * 1_000,
+          (firstObservedAt?.get(issueKey) ?? now).getTime() + durationSeconds * 1000,
       ),
     ),
   )
@@ -357,5 +397,5 @@ function issue(
   characterId: number | null = null,
   requiredScope: string | null = null,
 ): AccountComplianceIssue {
-  return { issueKey, issueCode, characterId, requiredScope }
+  return { characterId, issueCode, issueKey, requiredScope }
 }

@@ -4,39 +4,39 @@ import ServiceStatus from '../../app/components/ServiceStatus.vue'
 import type { SystemStatusTelemetry } from '../../app/queries/system-status'
 
 const telemetry = {
-  status: 'degraded',
   checkedAt: '2026-08-20T12:30:00.000Z',
   services: {
-    api: { status: 'operational', uptimeSeconds: 100, checkedAt: '2026-08-20T12:30:00.000Z' },
-    database: { status: 'unavailable', latencyMs: 3_000, checkedAt: '2026-08-20T12:30:00.000Z' },
-    sde: {
-      status: 'unavailable',
-      latencyMs: 4,
+    api: { checkedAt: '2026-08-20T12:30:00.000Z', status: 'operational', uptimeSeconds: 100 },
+    database: { checkedAt: '2026-08-20T12:30:00.000Z', latencyMs: 3000, status: 'unavailable' },
+    esi: {
       checkedAt: '2026-08-20T12:30:00.000Z',
+      latencyMs: 210,
+      players: 20_000,
+      status: 'stale',
+    },
+    sde: {
       buildNumber: null,
+      checkedAt: '2026-08-20T12:30:00.000Z',
       ingestVersion: null,
       ingestedAt: null,
-    },
-    esi: {
-      status: 'stale',
-      latencyMs: 210,
-      checkedAt: '2026-08-20T12:30:00.000Z',
-      players: 20_000,
+      latencyMs: 4,
+      status: 'unavailable',
     },
   },
+  status: 'degraded',
 } as unknown as SystemStatusTelemetry
 
 describe('ServiceStatus', () => {
   it('labels non-operational services and missing SDE projection', async () => {
     const wrapper = await mountSuspended(ServiceStatus, {
-      props: { telemetry, apiLatencyMs: 12 },
+      props: { apiLatencyMs: 12, telemetry },
     })
 
     expect(wrapper.get('.service-status-badge').attributes('data-status')).toBe('degraded')
     const rows = wrapper
       .findAll('.service-status-services li')
       .map((row) => [row.get('strong').text(), row.get('span').text()])
-    expect(rows).toEqual([
+    expect(rows).toStrictEqual([
       ['API', '12 ms'],
       ['Database', 'UNAVAILABLE / 3000 ms'],
       ['Tranquility', 'STALE / 210 ms'],

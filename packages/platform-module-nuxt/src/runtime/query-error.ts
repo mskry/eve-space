@@ -55,9 +55,8 @@ export async function toApiQueryError(response: ApiErrorResponse, fallbackMessag
   const retryAfterHeader = retryAfterValue === null ? undefined : Number(retryAfterValue)
 
   return new ApiQueryError(body.message ?? fallbackMessage, {
-    status: response.status,
-    code: body.code,
     authorizeUrl: body.authorizeUrl,
+    code: body.code,
     requiredScope: body.requiredScope,
     retryAfterSeconds:
       body.retryAfterSeconds ??
@@ -65,23 +64,26 @@ export async function toApiQueryError(response: ApiErrorResponse, fallbackMessag
         ? retryAfterHeader
         : undefined),
     retryAt: body.retryAt,
-    state: body.state,
     reviewDeadline: body.reviewDeadline,
+    state: body.state,
+    status: response.status,
   })
 }
 
 export function reduceApiQueryError(value: unknown): SerializedApiQueryError | false {
-  if (!(value instanceof ApiQueryError)) return false
+  if (!(value instanceof ApiQueryError)) {
+    return false
+  }
   return {
-    message: value.message,
-    status: value.status,
-    code: value.code,
     authorizeUrl: value.authorizeUrl,
+    code: value.code,
+    message: value.message,
     requiredScope: value.requiredScope,
     retryAfterSeconds: value.retryAfterSeconds,
     retryAt: value.retryAt,
-    state: value.state,
     reviewDeadline: value.reviewDeadline,
+    state: value.state,
+    status: value.status,
   }
 }
 
@@ -90,8 +92,12 @@ export function reviveApiQueryError(value: SerializedApiQueryError) {
 }
 
 export function reduceNativeError(value: unknown): SerializedNativeError | false {
-  if (!(value instanceof Error) || value instanceof ApiQueryError) return false
-  if (!nativeErrorConstructors.has(value.constructor)) return false
+  if (!(value instanceof Error) || value instanceof ApiQueryError) {
+    return false
+  }
+  if (!nativeErrorConstructors.has(value.constructor)) {
+    return false
+  }
   return [value.name, value.message]
 }
 
@@ -114,18 +120,20 @@ const nativeErrorConstructors = new Set<Function>(nativeErrorByName.values())
 async function readErrorBody(response: ApiErrorResponse): Promise<ApiErrorBody> {
   try {
     const body: unknown = await response.json()
-    if (!body || typeof body !== 'object') return {}
+    if (!body || typeof body !== 'object') {
+      return {}
+    }
 
     const record = body as Record<string, unknown>
     return {
+      authorizeUrl: stringValue(record.authorizeUrl),
       code: stringValue(record.code),
       message: stringValue(record.message),
-      authorizeUrl: stringValue(record.authorizeUrl),
       requiredScope: stringValue(record.requiredScope),
       retryAfterSeconds: numberValue(record.retryAfterSeconds),
       retryAt: stringValue(record.retryAt),
-      state: stringValue(record.state),
       reviewDeadline: stringValue(record.reviewDeadline),
+      state: stringValue(record.state),
     }
   } catch {
     return {}

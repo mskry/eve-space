@@ -37,11 +37,11 @@ test('translates invalid authenticated cursors into the typed validation respons
 
   expect(failure).toBeInstanceOf(PlatformModuleHttpError)
   expect(failure).toMatchObject({
-    status: 400,
     body: {
       code: 'INVALID_REVIEWER_SEARCH_INPUT',
       message: 'Invalid reviewer account search input.',
     },
+    status: 400,
   })
 })
 
@@ -56,41 +56,41 @@ test('does not relabel unexpected reviewer search failures as validation errors'
 
 test('adds safe evidence summaries only after resolving each current search target', async () => {
   const item = {
-    managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
     account: {
-      userId: '00000000-0000-4000-8000-000000000002',
       mainCharacter: { characterId: 90_000_001, name: 'Pilot' },
-    },
-    managedAffiliation: {
-      characterId: 90_000_001,
-      name: 'Pilot',
-      corporationId: 98_000_001,
-      allianceId: null,
-      checkedAt: '2026-09-18T10:00:00.000Z',
-    },
-    compliance: {
-      state: 'compliant',
-      evidenceFreshness: 'fresh',
-      evidenceAt: '2026-09-18T10:00:00.000Z',
-      reviewDeadline: null,
-      accessValidUntil: null,
-      evaluatedAt: '2026-09-18T10:00:00.000Z',
+      userId: '00000000-0000-4000-8000-000000000002',
     },
     block: { blocked: false },
+    compliance: {
+      accessValidUntil: null,
+      evaluatedAt: '2026-09-18T10:00:00.000Z',
+      evidenceAt: '2026-09-18T10:00:00.000Z',
+      evidenceFreshness: 'fresh',
+      reviewDeadline: null,
+      state: 'compliant',
+    },
     evidenceSections: [],
+    managedAffiliation: {
+      allianceId: null,
+      characterId: 90_000_001,
+      checkedAt: '2026-09-18T10:00:00.000Z',
+      corporationId: 98_000_001,
+      name: 'Pilot',
+    },
+    managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
   } as const
   mocks.searchManagedOrganizationAccounts.mockResolvedValue({
-    organizationVersion: 7,
-    status: 'available',
     items: [item],
     nextCursor: null,
+    organizationVersion: 7,
+    status: 'available',
   })
   const target = { account: item.account }
   mocks.resolveOrganizationReviewerTarget.mockResolvedValue(target)
   const sections = [
     {
-      sectionId: 'skills',
       resources: [{ resourceId: 'trained-skills', status: 'current', validatedAt: null }],
+      sectionId: 'skills',
     },
   ]
   mocks.createSummaryReads.mockReturnValue({
@@ -99,16 +99,16 @@ test('adds safe evidence summaries only after resolving each current search targ
 
   await expect(
     createPlatformReviewerAccountSearch('member-audit', 7).search({ limit: 25 }),
-  ).resolves.toEqual({
-    organizationVersion: 7,
-    status: 'available',
+  ).resolves.toStrictEqual({
     items: [{ ...item, evidenceSections: sections }],
     nextCursor: null,
+    organizationVersion: 7,
+    status: 'available',
   })
   expect(mocks.resolveOrganizationReviewerTarget).toHaveBeenCalledWith({
+    characterId: item.managedAffiliation.characterId,
     organizationVersion: 7,
     targetUserId: item.account.userId,
-    characterId: item.managedAffiliation.characterId,
   })
   expect(mocks.createSummaryReads).toHaveBeenCalledWith({ moduleId: 'member-audit', target })
 })

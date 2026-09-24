@@ -41,8 +41,11 @@ describe('universe topology cache', () => {
     await vi.waitFor(() => expect(mocks.loadUniverseTopologySnapshot).toHaveBeenCalledTimes(1))
     loading.resolve(topology(1234))
 
-    await expect(Promise.all([first, second])).resolves.toEqual([topology(1234), topology(1234)])
-    await expect(getUniverseTopology()).resolves.toEqual(topology(1234))
+    await expect(Promise.all([first, second])).resolves.toStrictEqual([
+      topology(1234),
+      topology(1234),
+    ])
+    await expect(getUniverseTopology()).resolves.toStrictEqual(topology(1234))
     expect(mocks.loadUniverseTopologySnapshot).toHaveBeenCalledTimes(1)
     expect(mocks.readActiveUniverseTopologyRevision).not.toHaveBeenCalled()
   })
@@ -61,7 +64,10 @@ describe('universe topology cache', () => {
     )
     checking.resolve(revision(1234))
 
-    await expect(Promise.all([first, second])).resolves.toEqual([topology(1234), topology(1234)])
+    await expect(Promise.all([first, second])).resolves.toStrictEqual([
+      topology(1234),
+      topology(1234),
+    ])
     expect(mocks.loadUniverseTopologySnapshot).toHaveBeenCalledTimes(1)
   })
 
@@ -70,10 +76,10 @@ describe('universe topology cache', () => {
       .mockResolvedValueOnce(topology(1234))
       .mockResolvedValueOnce(topology(1235))
 
-    await expect(getUniverseTopology()).resolves.toEqual(topology(1234))
+    await expect(getUniverseTopology()).resolves.toStrictEqual(topology(1234))
     monotonicNow = universeTopologyRevisionCheckIntervalMilliseconds
     mocks.readActiveUniverseTopologyRevision.mockResolvedValueOnce(revision(1235))
-    await expect(getUniverseTopology()).resolves.toEqual(topology(1235))
+    await expect(getUniverseTopology()).resolves.toStrictEqual(topology(1235))
     expect(mocks.loadUniverseTopologySnapshot).toHaveBeenCalledTimes(2)
   })
 
@@ -84,10 +90,10 @@ describe('universe topology cache', () => {
       .mockResolvedValueOnce(previous)
       .mockResolvedValueOnce(replacement)
 
-    await expect(getUniverseTopology()).resolves.toEqual(previous)
+    await expect(getUniverseTopology()).resolves.toStrictEqual(previous)
     monotonicNow = universeTopologyRevisionCheckIntervalMilliseconds
     mocks.readActiveUniverseTopologyRevision.mockResolvedValueOnce(replacement.revision)
-    await expect(getUniverseTopology()).resolves.toEqual(replacement)
+    await expect(getUniverseTopology()).resolves.toStrictEqual(replacement)
     expect(mocks.loadUniverseTopologySnapshot).toHaveBeenCalledTimes(2)
   })
 
@@ -100,7 +106,7 @@ describe('universe topology cache', () => {
     const superseded = getUniverseTopology()
     await vi.waitFor(() => expect(mocks.loadUniverseTopologySnapshot).toHaveBeenCalledTimes(1))
     resetUniverseTopologyForTests()
-    await expect(getUniverseTopology()).resolves.toEqual(topology(1235))
+    await expect(getUniverseTopology()).resolves.toStrictEqual(topology(1235))
 
     oldLoad.resolve(topology(1234))
     await expect(superseded).rejects.toThrow('superseded')
@@ -116,13 +122,13 @@ describe('universe topology cache', () => {
     mocks.readActiveUniverseTopologyRevision.mockRejectedValueOnce(
       new Error('Database unavailable'),
     )
-    await expect(getUniverseTopology()).resolves.toEqual(topology(1234))
-    await expect(getUniverseTopology()).resolves.toEqual(topology(1234))
+    await expect(getUniverseTopology()).resolves.toStrictEqual(topology(1234))
+    await expect(getUniverseTopology()).resolves.toStrictEqual(topology(1234))
     expect(mocks.readActiveUniverseTopologyRevision).toHaveBeenCalledTimes(1)
 
     monotonicNow += universeTopologyRevisionCheckIntervalMilliseconds
     mocks.readActiveUniverseTopologyRevision.mockResolvedValueOnce(revision(1235))
-    await expect(getUniverseTopology()).resolves.toEqual(topology(1235))
+    await expect(getUniverseTopology()).resolves.toStrictEqual(topology(1235))
   })
 
   test('throttles cold failures and initializes after the retry interval', async () => {
@@ -135,7 +141,7 @@ describe('universe topology cache', () => {
 
     monotonicNow = universeTopologyRevisionCheckIntervalMilliseconds
     mocks.loadUniverseTopologySnapshot.mockResolvedValueOnce(topology(1234))
-    await expect(getUniverseTopology()).resolves.toEqual(topology(1234))
+    await expect(getUniverseTopology()).resolves.toStrictEqual(topology(1234))
     expect(mocks.loadUniverseTopologySnapshot).toHaveBeenCalledTimes(2)
   })
 
@@ -161,7 +167,7 @@ function topology(
 ): UniverseTopologySnapshot {
   return {
     revision: revision(buildNumber, ingestVersion, ingestedAt),
-    systems: new Map([[1, { id: 1, securityStatus: 0.9, neighbors: [] }]]),
+    systems: new Map([[1, { id: 1, neighbors: [], securityStatus: 0.9 }]]),
   }
 }
 

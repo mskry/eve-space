@@ -57,50 +57,61 @@ export function assertCoreMigrationInventory(
 ) {
   const expectedNames = new Set(manifest.map(({ name }) => name))
   const missing = manifest.find(({ name }) => !diskNames.includes(name))
-  if (missing) throw new Error(`Core migration manifest is missing file ${missing.name}`)
+  if (missing) {
+    throw new Error(`Core migration manifest is missing file ${missing.name}`)
+  }
   const extra = diskNames.find((name) => !expectedNames.has(name))
-  if (extra) throw new Error(`Core migration file is absent from manifest: ${extra}`)
+  if (extra) {
+    throw new Error(`Core migration file is absent from manifest: ${extra}`)
+  }
 }
 
 export function assertCoreMigrationContent(
   migration: CoreMigrationIdentity,
   contents: Uint8Array | string,
 ) {
-  if (migrationSha256(contents) !== migration.sha256)
+  if (migrationSha256(contents) !== migration.sha256) {
     throw new Error(`Core migration content identity mismatch: ${migration.name}`)
+  }
 }
 
 export function assertCoreMigrationManifest(manifest: readonly CoreMigrationIdentity[]) {
   const names = new Set<string>()
   for (const entry of manifest) {
-    if (!migrationNamePattern.test(entry.name))
+    if (!migrationNamePattern.test(entry.name)) {
       throw new Error(`Invalid core migration manifest name: ${entry.name}`)
-    if (!sha256Pattern.test(entry.sha256))
+    }
+    if (!sha256Pattern.test(entry.sha256)) {
       throw new Error(`Invalid core migration content identity: ${entry.name}`)
-    if (names.has(entry.name))
+    }
+    if (names.has(entry.name)) {
       throw new Error(`Duplicate core migration manifest name: ${entry.name}`)
+    }
     names.add(entry.name)
   }
 
   const initialManifest = manifest.slice(0, initialManifestLength)
-  if (manifestSha256(initialManifest) !== initialManifestSha256)
+  if (manifestSha256(initialManifest) !== initialManifestSha256) {
     throw new Error('Core migrations must preserve the reviewed canonical order')
+  }
 
   let previousSequence = initialTailSequence
   for (const entry of manifest.slice(initialManifestLength)) {
     const sequence = Number(entry.name.slice(0, 3))
-    if (sequence <= previousSequence)
+    if (sequence <= previousSequence) {
       throw new Error(
         `Core migration must append a unique sequence after ${previousSequence}: ${entry.name}`,
       )
+    }
     previousSequence = sequence
   }
 
   if (
     manifest.length !== acceptedManifestLength ||
     manifestSha256(manifest) !== acceptedManifestSha256
-  )
+  ) {
     throw new Error('Core migration manifest must match the accepted frozen inventory')
+  }
 }
 
 export function migrationSha256(contents: Uint8Array | string) {

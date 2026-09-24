@@ -118,8 +118,9 @@ async function loadInvalidAuthorities(
   if (
     resource.subjectKind !== 'character' ||
     resource.eligibility.kind !== 'current-managed-member-character'
-  )
+  ) {
     return []
+  }
   return connection<PlatformResourceInvalidAuthority[]>`
     select
       state.organization_version::integer as "organizationVersion",

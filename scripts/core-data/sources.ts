@@ -20,8 +20,12 @@ async function loadSourceDirectory(
       .toSorted((left, right) => left.name.localeCompare(right.name))
       .map(async (entry) => {
         const path = join(directory, entry.name)
-        if (entry.isDirectory()) return loadSourceDirectory(root, path)
-        if (!entry.isFile() || extname(entry.name) !== '.ts') return []
+        if (entry.isDirectory()) {
+          return loadSourceDirectory(root, path)
+        }
+        if (!entry.isFile() || extname(entry.name) !== '.ts') {
+          return []
+        }
         return [
           {
             path: relative(root, path).replaceAll('\\', '/'),

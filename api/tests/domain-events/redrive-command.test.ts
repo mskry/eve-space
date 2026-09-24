@@ -18,12 +18,12 @@ const baseArgs = [
 describe('domain-event re-drive command', () => {
   test('parses bounded occurrence and publication selections', () => {
     expect(parseDomainEventRedriveArgs(baseArgs)).toMatchObject({
-      from: new Date('2026-08-01T00:00:00Z'),
-      to: new Date('2026-08-02T00:00:00Z'),
-      timeField: 'publishedAt',
-      limit: 100,
       dryRun: false,
+      from: new Date('2026-08-01T00:00:00Z'),
+      limit: 100,
       queueDiscardConfirmed: false,
+      timeField: 'publishedAt',
+      to: new Date('2026-08-02T00:00:00Z'),
     })
     expect(
       parseDomainEventRedriveArgs([
@@ -66,7 +66,7 @@ describe('domain-event re-drive command', () => {
     const dependencies = redriveDependencies({ count })
     const options = parseDomainEventRedriveArgs([...baseArgs, '--dry-run'])
 
-    await expect(runDomainEventRedriveCommand(options, dependencies)).resolves.toEqual({
+    await expect(runDomainEventRedriveCommand(options, dependencies)).resolves.toStrictEqual({
       dryRun: true,
       matched: 17,
     })
@@ -92,8 +92,8 @@ describe('domain-event re-drive command', () => {
       '16b7570c-f6ea-43c5-9669-4692245b6667',
     ]
     const dependencies = redriveDependencies({
-      select: vi.fn().mockResolvedValue(eventIds),
       redrive: vi.fn().mockResolvedValue(eventIds),
+      select: vi.fn().mockResolvedValue(eventIds),
     })
 
     await expect(
@@ -101,7 +101,7 @@ describe('domain-event re-drive command', () => {
         parseDomainEventRedriveArgs([...baseArgs, '--confirm-queue-discard']),
         dependencies,
       ),
-    ).resolves.toEqual({ dryRun: false, redriven: 2, eventIds })
+    ).resolves.toStrictEqual({ dryRun: false, eventIds, redriven: 2 })
     expect(dependencies.assertQueueJobsAbsent).toHaveBeenCalledWith(eventIds)
     expect(dependencies.redrive).toHaveBeenCalledWith(eventIds)
   })
@@ -109,8 +109,8 @@ describe('domain-event re-drive command', () => {
   test('fails closed before PostgreSQL mutation when selected jobs remain in Redis', async () => {
     const eventIds = ['98a782d2-e042-47d7-9659-03b218121a1a']
     const dependencies = redriveDependencies({
-      select: vi.fn().mockResolvedValue(eventIds),
       assertQueueJobsAbsent: vi.fn().mockRejectedValue(new Error('queue jobs remain')),
+      select: vi.fn().mockResolvedValue(eventIds),
     })
 
     await expect(
@@ -125,10 +125,10 @@ describe('domain-event re-drive command', () => {
 
 function redriveDependencies(overrides: Record<string, ReturnType<typeof vi.fn>> = {}) {
   return {
-    count: vi.fn().mockResolvedValue(0),
-    select: vi.fn().mockResolvedValue([]),
     assertQueueJobsAbsent: vi.fn().mockResolvedValue(undefined),
+    count: vi.fn().mockResolvedValue(0),
     redrive: vi.fn().mockResolvedValue([]),
+    select: vi.fn().mockResolvedValue([]),
     ...overrides,
   }
 }

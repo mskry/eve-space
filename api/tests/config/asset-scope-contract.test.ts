@@ -14,8 +14,8 @@ describe('character asset startup scope contract', () => {
     )
 
     expect(composeScopes).toHaveLength(2)
-    expect(composeScopes[0]).toEqual(exampleScopes)
-    expect(composeScopes[1]).toEqual(exampleScopes)
+    expect(composeScopes[0]).toStrictEqual(exampleScopes)
+    expect(composeScopes[1]).toStrictEqual(exampleScopes)
     expect(exampleScopes).toContain(assetScope)
     expect(exampleScopes).not.toContain(prohibitedStructureScope)
     expect(new Set(exampleScopes).size).toBe(exampleScopes.length)

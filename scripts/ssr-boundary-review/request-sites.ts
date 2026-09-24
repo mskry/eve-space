@@ -19,10 +19,10 @@ const ENTRY_HELPER_DECLARATIONS = new Map([
   [
     'prefetchProtectedQuery',
     [
-      { source: 'app/queries/query-cache.ts', name: 'prefetchProtectedQuery' },
+      { name: 'prefetchProtectedQuery', source: 'app/queries/query-cache.ts' },
       {
-        source: 'app/queries/protected-character-query-access.ts',
         name: 'canRunProtectedCharacterQuery',
+        source: 'app/queries/protected-character-query-access.ts',
       },
     ],
   ],
@@ -82,7 +82,9 @@ const sitesInSource = (
   const excludedLines = inlineMutationCallbackLines(file, source)
 
   return lines.flatMap((line, index) => {
-    if (excludedLines.has(index)) return []
+    if (excludedLines.has(index)) {
+      return []
+    }
     return requestSiteOnLine(file, lines, line, index, definitions, entryHelpers)
   })
 }
@@ -94,7 +96,9 @@ const inlineMutationCallbackLines = (file: string, source: string) => {
   const visit = (node: ts.Node) => {
     if (isUseMutationCall(node)) {
       const callback = inlineMutationCallback(node.arguments[0])
-      if (callback) addNodeLines(excludedLines, sourceFile, callback)
+      if (callback) {
+        addNodeLines(excludedLines, sourceFile, callback)
+      }
     }
     ts.forEachChild(node, visit)
   }
@@ -109,11 +113,17 @@ const isUseMutationCall = (node: ts.Node): node is ts.CallExpression =>
   node.expression.text === 'useMutation'
 
 const inlineMutationCallback = (argument: ts.Expression | undefined) => {
-  if (!argument || !ts.isObjectLiteralExpression(argument)) return null
+  if (!argument || !ts.isObjectLiteralExpression(argument)) {
+    return null
+  }
 
   const property = argument.properties.find((candidate) => propertyName(candidate) === 'mutation')
-  if (property && ts.isMethodDeclaration(property)) return property
-  if (!property || !ts.isPropertyAssignment(property)) return null
+  if (property && ts.isMethodDeclaration(property)) {
+    return property
+  }
+  if (!property || !ts.isPropertyAssignment(property)) {
+    return null
+  }
 
   const { initializer } = property
   return ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer)
@@ -132,7 +142,9 @@ const addNodeLines = (lines: Set<number>, sourceFile: ts.SourceFile, node: ts.No
     Math.max(node.getStart(sourceFile), node.end - 1),
   ).line
 
-  for (let line = start; line <= end; line += 1) lines.add(line)
+  for (let line = start; line <= end; line += 1) {
+    lines.add(line)
+  }
 }
 
 const requestSiteOnLine = (
@@ -145,15 +157,17 @@ const requestSiteOnLine = (
 ): RequestSite[] => {
   const entry = entryIn(line)
 
-  if (!entry) return []
+  if (!entry) {
+    return []
+  }
 
   return [
     {
-      id: `${file}:${index + 1}`,
-      file,
-      line: index + 1,
       entry,
       excerpt: excerptAround(lines, index),
+      file,
+      id: `${file}:${index + 1}`,
+      line: index + 1,
       localHelpers: combineHelperEvidence(localHelpersFor(lines, index), entryHelpers.get(entry)),
       ...resolveRequest(resolutionScope(lines, index), definitions),
     },
@@ -234,7 +248,9 @@ const declarationLines = (lines: readonly string[], name: string, before: number
   const pattern = new RegExp(String.raw`^\s*(?:const|let|function)\s+${name}\b`)
   const start = lines.findIndex((line, offset) => offset < before && pattern.test(line))
 
-  if (start === -1) return []
+  if (start === -1) {
+    return []
+  }
 
   return lines.slice(start, declarationEnd(lines, start, before))
 }
@@ -253,47 +269,53 @@ const resolveRequest = (scope: string, definitions: DefinitionIndex) =>
   resolveDefinitionRequest(scope, definitions) ??
   resolveClientRequest(scope) ??
   resolveFetchRequest(scope) ?? {
+    definitionExcerpt: null,
+    definitionSource: null,
     method: null,
     requestPath: null,
-    definitionSource: null,
-    definitionExcerpt: null,
   }
 
 const resolveDefinitionRequest = (scope: string, definitions: DefinitionIndex) => {
   const definition = referencedDefinition(scope, definitions)
 
-  if (!definition) return null
+  if (!definition) {
+    return null
+  }
 
   return {
+    definitionExcerpt: definition.excerpt,
+    definitionSource: `${definition.source} (${definition.name})`,
     method: definition.method,
     requestPath: definition.requestPath,
-    definitionSource: `${definition.source} (${definition.name})`,
-    definitionExcerpt: definition.excerpt,
   }
 }
 
 const resolveClientRequest = (scope: string) => {
   const request = clientRequestIn(scope)
 
-  if (!request) return null
+  if (!request) {
+    return null
+  }
 
   return {
+    definitionExcerpt: null,
+    definitionSource: null,
     method: request.method,
     requestPath: request.requestPath,
-    definitionSource: null,
-    definitionExcerpt: null,
   }
 }
 
 const resolveFetchRequest = (scope: string) => {
   const fetch = FETCH_REQUEST_PATTERN.exec(scope)
 
-  if (!fetch) return null
+  if (!fetch) {
+    return null
+  }
 
   return {
+    definitionExcerpt: null,
+    definitionSource: null,
     method: FETCH_METHOD_PATTERN.exec(scope)?.[1]?.toUpperCase() ?? 'GET',
     requestPath: fetch[1],
-    definitionSource: null,
-    definitionExcerpt: null,
   }
 }

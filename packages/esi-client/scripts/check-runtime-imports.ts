@@ -28,12 +28,18 @@ export async function assertNoUnexpectedRuntimeImports(directory: string): Promi
   const violations: string[] = [];
   const runtimeImports = new Set<string>();
   for (const file of await listFiles(directory)) {
-    if (!file.endsWith('.js') && !file.endsWith('.d.ts')) continue;
+    if (!file.endsWith('.js') && !file.endsWith('.d.ts')) {
+      continue;
+    }
     const source = await readFile(file, 'utf8');
     const imports = findUnexpectedRuntimeImports(source);
-    if (imports.length > 0) violations.push(`${file}: ${imports.join(', ')}`);
+    if (imports.length > 0) {
+      violations.push(`${file}: ${imports.join(', ')}`);
+    }
     if (file.endsWith('.js')) {
-      for (const specifier of findRuntimeImports(source)) runtimeImports.add(specifier);
+      for (const specifier of findRuntimeImports(source)) {
+        runtimeImports.add(specifier);
+      }
     }
   }
   if (violations.length > 0) {
@@ -48,7 +54,9 @@ export function findRuntimeImports(source: string): string[] {
   const positionedImports: [number, string][] = [];
   const [esmImports] = parse(source);
   for (const entry of esmImports) {
-    if (entry.n !== undefined) positionedImports.push([entry.ss, entry.n]);
+    if (entry.n !== undefined) {
+      positionedImports.push([entry.ss, entry.n]);
+    }
   }
   for (const match of source.matchAll(requirePattern)) {
     positionedImports.push([match.index, match[2]]);
@@ -61,8 +69,11 @@ async function listFiles(directory: string): Promise<string[]> {
   const files: string[] = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name);
-    if (entry.isDirectory()) files.push(...(await listFiles(path)));
-    else files.push(path);
+    if (entry.isDirectory()) {
+      files.push(...(await listFiles(path)));
+    } else {
+      files.push(path);
+    }
   }
   return files;
 }

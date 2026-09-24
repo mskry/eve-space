@@ -33,7 +33,7 @@ describe('query persistence boundaries', () => {
           storage: "import './envelope'; import './shape'",
         }),
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it.each(['storage', 'notifications'] as const)(
@@ -77,7 +77,7 @@ describe('query persistence boundaries', () => {
       ...sources({ envelope: "import './runtime'", runtime: "import './envelope'" }),
       { path: 'app/query-persistence/facade.ts', source: '' },
     ]
-    expect(queryPersistenceImportViolations(sourceSet)).toEqual(
+    expect(queryPersistenceImportViolations(sourceSet)).toStrictEqual(
       expect.arrayContaining([
         'app/query-persistence/envelope.ts: query persistence module envelope cannot import module runtime',
         'app/query-persistence/facade.ts: Query persistence module facade is not declared',
@@ -98,7 +98,7 @@ describe('query persistence boundaries', () => {
           source: "import { installQueryPersistence } from '../query-persistence/runtime'",
         },
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'app/composables/useInternal.ts: application caller cannot import query persistence module envelope',
     ])
   })

@@ -23,7 +23,9 @@ export async function verifyReleaseCandidate({
   readonly tarballPath: string;
 }): Promise<VerifiedReleaseCandidate> {
   for (const path of [tarballPath, digestPath]) {
-    if (!(await stat(path)).isFile()) throw new Error(`Release candidate is not a file: ${path}`);
+    if (!(await stat(path)).isFile()) {
+      throw new Error(`Release candidate is not a file: ${path}`);
+    }
   }
 
   const digestSource = await readFile(digestPath, 'utf8');
@@ -34,7 +36,9 @@ export async function verifyReleaseCandidate({
   const sha256 = createHash('sha256')
     .update(await readFile(tarballPath))
     .digest('hex');
-  if (sha256 !== match[1]) throw new Error('Release candidate SHA-256 does not match');
+  if (sha256 !== match[1]) {
+    throw new Error('Release candidate SHA-256 does not match');
+  }
 
   const temporaryDirectory = await mkdtemp(join(tmpdir(), 'esi-client-release-verify-'));
   try {

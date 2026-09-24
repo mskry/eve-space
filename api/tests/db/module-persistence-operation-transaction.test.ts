@@ -16,7 +16,7 @@ describe('standalone module persistence operation transactions', () => {
       operation,
     ])
 
-    await expect(invoke(operation, { key: 'snapshot' })).resolves.toEqual({ applied: true })
+    await expect(invoke(operation, { key: 'snapshot' })).resolves.toStrictEqual({ applied: true })
     expect(database.begin).toHaveBeenCalledOnce()
     expect(database.commands()).not.toContain('set transaction read only')
     expect(database.commands()).toContain('set local role')
@@ -30,10 +30,10 @@ describe('standalone module persistence operation transactions', () => {
       database.connection,
       'alpha',
       [operation],
-      { readOnly: true, statementTimeoutMilliseconds: 2_000 },
+      { readOnly: true, statementTimeoutMilliseconds: 2000 },
     )
 
-    await expect(invoke(operation, { key: 'snapshot' })).resolves.toEqual({ applied: true })
+    await expect(invoke(operation, { key: 'snapshot' })).resolves.toStrictEqual({ applied: true })
     expect(database.commands()).toContain('set transaction read only')
     expect(database.commands()).toContain("'statement_timeout'")
   })
@@ -108,7 +108,9 @@ describe('transaction-scoped module persistence operations', () => {
       [operation],
     )
 
-    await expect(scoped.invoke(operation, { key: 'snapshot' })).resolves.toEqual({ applied: true })
+    await expect(scoped.invoke(operation, { key: 'snapshot' })).resolves.toStrictEqual({
+      applied: true,
+    })
     expect(outer.savepoint).toHaveBeenCalledOnce()
     expect(outer.commands()).toContain('set local role')
     expect(outer.commands()).toContain("set_config('search_path'")
@@ -148,8 +150,12 @@ describe('transaction-scoped module persistence operations', () => {
       [first, second],
     )
 
-    await expect(scoped.invoke(first, { key: 'snapshot' })).resolves.toEqual({ applied: true })
-    await expect(scoped.invoke(second, { key: 'snapshot' })).resolves.toEqual({ applied: true })
+    await expect(scoped.invoke(first, { key: 'snapshot' })).resolves.toStrictEqual({
+      applied: true,
+    })
+    await expect(scoped.invoke(second, { key: 'snapshot' })).resolves.toStrictEqual({
+      applied: true,
+    })
     await expect(scoped.invoke(first, { key: 'snapshot' })).rejects.toMatchObject({
       category: 'repeated',
     })
@@ -181,15 +187,6 @@ function descriptor(
   method = `${mode}Snapshot`,
 ): PlatformInstalledPersistenceOperationDescriptor {
   return {
-    moduleId,
-    operationId,
-    method,
-    revision: 1,
-    mode,
-    migration: `${moduleId}-001-${mode}-snapshot.sql`,
-    schemaName: `eve_module_${moduleId}`,
-    routineName: `persist_${operationId.replaceAll('-', '_')}`,
-    definitionFingerprint: '0'.repeat(64),
     definition: definePlatformPersistenceOperation({
       id: operationId,
       method,
@@ -197,15 +194,24 @@ function descriptor(
       mode,
       inputSchema: z.object({ key: z.string() }).strict(),
       outputSchema: z.object({ applied: z.boolean() }).strict(),
-      maximumInputBytes: 1_024,
-      maximumOutputBytes: 1_024,
+      maximumInputBytes: 1024,
+      maximumOutputBytes: 1024,
     }),
+    definitionFingerprint: '0'.repeat(64),
     grants: {
-      routes: [],
       activityProviders: [],
-      resourceProjections: [],
       resourceMaterializations: [],
+      resourceProjections: [],
+      routes: [],
     },
+    method,
+    migration: `${moduleId}-001-${mode}-snapshot.sql`,
+    mode,
+    moduleId,
+    operationId,
+    revision: 1,
+    routineName: `persist_${operationId.replaceAll('-', '_')}`,
+    schemaName: `eve_module_${moduleId}`,
   }
 }
 
@@ -214,9 +220,13 @@ function fakeDatabase(result: { readonly result: unknown }, afterFirstCommand?: 
   let commandCount = 0
   const transaction = Object.assign(
     vi.fn((parts: TemplateStringsArray | string, ..._values: unknown[]) => {
-      if (typeof parts === 'string') return `"${parts}"`
+      if (typeof parts === 'string') {
+        return `"${parts}"`
+      }
       statements.push(parts.join(' '))
-      if (++commandCount === 1) afterFirstCommand?.()
+      if (++commandCount === 1) {
+        afterFirstCommand?.()
+      }
       return Promise.resolve([])
     }),
     {
@@ -235,15 +245,17 @@ function fakeOuterTransaction(result: { readonly result: unknown }) {
   let rolledBack = false
   const transaction = Object.assign(
     vi.fn((parts: TemplateStringsArray | string, ..._values: unknown[]) => {
-      if (typeof parts === 'string') return `"${parts}"`
+      if (typeof parts === 'string') {
+        return `"${parts}"`
+      }
       const statement = parts.join(' ')
       statements.push(statement)
-      if (statement.includes('select current_user as role'))
+      if (statement.includes('select current_user as role')) {
         return Promise.resolve([{ role: 'eve_space', searchPath: 'public' }])
+      }
       return Promise.resolve([])
     }),
     {
-      unsafe: vi.fn(() => Object.assign(Promise.resolve([result]), { cancel: vi.fn() })),
       savepoint: vi.fn(
         async (execute: (transaction: postgres.TransactionSql) => Promise<unknown>) => {
           try {
@@ -254,6 +266,7 @@ function fakeOuterTransaction(result: { readonly result: unknown }) {
           }
         },
       ),
+      unsafe: vi.fn(() => Object.assign(Promise.resolve([result]), { cancel: vi.fn() })),
     },
   )
   return {

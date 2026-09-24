@@ -18,6 +18,8 @@ export function provideCorporationRecord(context: CorporationRecordContext) {
 
 export function useCorporationRecord() {
   const context = inject(corporationRecordKey)
-  if (!context) throw new Error('Corporation record context is unavailable.')
+  if (!context) {
+    throw new Error('Corporation record context is unavailable.')
+  }
   return context
 }

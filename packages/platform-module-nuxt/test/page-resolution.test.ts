@@ -14,7 +14,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
-  await rm(root, { recursive: true, force: true })
+  await rm(root, { force: true, recursive: true })
 })
 
 describe('Nuxt feature page resolution', () => {

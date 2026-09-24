@@ -3,7 +3,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   createPersistence: vi.fn(() => ({ purgeEvidence: vi.fn() })),
-  logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  logger: { debug: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }))
 
 vi.mock('../../src/platform/module-persistence-capabilities.js', () => ({
@@ -21,26 +21,26 @@ test('runs maintenance for non-scheduled resources with invalid authority contex
   const maintain = vi.fn()
   const connection = vi.fn().mockResolvedValue([
     {
-      organizationVersion: 2,
-      targetUserId: '11111111-1111-4111-8111-111111111111',
-      managedMemberLifecycleId: '22222222-2222-4222-8222-222222222222',
+      authorizationGeneration: 4,
       characterId: 90_000_001,
       characterLifecycleId: '33333333-3333-4333-8333-333333333333',
-      authorizationGeneration: 4,
       disclosureVersion: 2,
+      managedMemberLifecycleId: '22222222-2222-4222-8222-222222222222',
+      organizationVersion: 2,
       sectionActivationVersion: 3,
+      targetUserId: '11111111-1111-4111-8111-111111111111',
     },
   ])
   const resource = {
-    moduleId: 'member-audit',
-    resourceId: 'wallet-balance',
-    operationId: 'wallet-balance',
-    sectionId: 'wallet',
-    scheduled: false,
-    subjectKind: 'character',
-    materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     implementation: { maintain },
+    materializationIntervalSeconds: 900,
+    moduleId: 'member-audit',
+    operationId: 'wallet-balance',
+    resourceId: 'wallet-balance',
+    scheduled: false,
+    sectionId: 'wallet',
+    subjectKind: 'character',
   } as unknown as PlatformInstalledResourceDescriptor
 
   await expect(
@@ -49,18 +49,18 @@ test('runs maintenance for non-scheduled resources with invalid authority contex
       now: new Date('2026-09-18T10:00:00Z'),
       resources: [resource],
     }),
-  ).resolves.toEqual({ maintained: 1 })
+  ).resolves.toStrictEqual({ maintained: 1 })
 
   expect(maintain).toHaveBeenCalledWith(
     expect.objectContaining({
-      now: '2026-09-18T10:00:00.000Z',
-      purgeAccountIds: [],
-      invalidAuthorities: [expect.objectContaining({ characterId: 90_000_001 })],
-      purgeRetention: true,
       capabilities: {
         logger: mocks.logger,
         persistence: expect.any(Object),
       },
+      invalidAuthorities: [expect.objectContaining({ characterId: 90_000_001 })],
+      now: '2026-09-18T10:00:00.000Z',
+      purgeAccountIds: [],
+      purgeRetention: true,
     }),
   )
   expect(mocks.createPersistence).toHaveBeenCalledWith('member-audit', 'wallet-balance', undefined)
@@ -70,49 +70,50 @@ test('consumes durable account and lifecycle purge work after maintenance succee
   const maintain = vi.fn()
   const connection = vi.fn((strings: TemplateStringsArray) => {
     const statement = strings.join(' ')
-    if (statement.includes('from platform_resource_purge_work'))
+    if (statement.includes('from platform_resource_purge_work')) {
       return Promise.resolve([
         {
-          purgeWorkId: '11111111-1111-4111-8111-111111111111',
-          moduleId: 'member-audit',
-          resourceId: 'trained-skills',
           mode: 'account',
+          moduleId: 'member-audit',
+          purgeWorkId: '11111111-1111-4111-8111-111111111111',
+          resourceId: 'trained-skills',
           targetUserId: '22222222-2222-4222-8222-222222222222',
         },
         {
-          purgeWorkId: '33333333-3333-4333-8333-333333333333',
-          moduleId: 'member-audit',
-          resourceId: 'trained-skills',
-          mode: 'authority',
-          organizationVersion: 2,
-          targetUserId: '22222222-2222-4222-8222-222222222222',
-          managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
+          authorizationGeneration: 4,
           characterId: 90_000_001,
           characterLifecycleId: '55555555-5555-4555-8555-555555555555',
-          authorizationGeneration: 4,
           disclosureVersion: 2,
+          managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
+          mode: 'authority',
+          moduleId: 'member-audit',
+          organizationVersion: 2,
+          purgeWorkId: '33333333-3333-4333-8333-333333333333',
+          resourceId: 'trained-skills',
           sectionActivationVersion: 3,
+          targetUserId: '22222222-2222-4222-8222-222222222222',
         },
       ])
+    }
     return Promise.resolve([])
   })
   const resource = {
-    moduleId: 'member-audit',
-    resourceId: 'trained-skills',
-    operationId: 'skills',
-    sectionId: 'skills',
-    subjectKind: 'character',
-    materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     implementation: { maintain },
+    materializationIntervalSeconds: 900,
+    moduleId: 'member-audit',
+    operationId: 'skills',
+    resourceId: 'trained-skills',
+    sectionId: 'skills',
+    subjectKind: 'character',
   } as unknown as PlatformInstalledResourceDescriptor
 
   await runInstalledResourceMaintenance({ connection: connection as never, resources: [resource] })
 
   expect(maintain).toHaveBeenCalledWith(
     expect.objectContaining({
-      purgeAccountIds: ['22222222-2222-4222-8222-222222222222'],
       invalidAuthorities: [expect.objectContaining({ characterId: 90_000_001 })],
+      purgeAccountIds: ['22222222-2222-4222-8222-222222222222'],
     }),
   )
   expect(

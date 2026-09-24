@@ -59,7 +59,9 @@ export function createIndexedDbQueryPersistenceStorage(
   } = {},
 ): QueryPersistenceStorage {
   const indexedDb = options.indexedDb ?? globalThis.indexedDB
-  if (!indexedDb) return unavailableStorage
+  if (!indexedDb) {
+    return unavailableStorage
+  }
 
   const now = options.now ?? Date.now
   const durableState = options.localStorage ?? readBrowserLocalStorage()
@@ -69,8 +71,8 @@ export function createIndexedDbQueryPersistenceStorage(
   function run<T>(operation: () => Promise<T>) {
     const result = operationQueue.then(operation, operation)
     operationQueue = result.then(
-      () => undefined,
-      () => undefined,
+      () => {},
+      () => {},
     )
     return result
   }
@@ -146,8 +148,11 @@ export function createIndexedDbQueryPersistenceStorage(
                     effectiveScope,
                     now(),
                   )
-                  if (nextValue === null) store.delete(PERSISTED_ESI_QUERY_CACHE_KEY)
-                  else store.put(nextValue, PERSISTED_ESI_QUERY_CACHE_KEY)
+                  if (nextValue === null) {
+                    store.delete(PERSISTED_ESI_QUERY_CACHE_KEY)
+                  } else {
+                    store.put(nextValue, PERSISTED_ESI_QUERY_CACHE_KEY)
+                  }
                 }
                 complete({ generation, scope: effectiveScope })
               })
@@ -178,9 +183,9 @@ export function createIndexedDbQueryPersistenceStorage(
                 store,
                 complete,
                 {
-                  value: storedValue,
-                  control: storedControl,
                   barrier: storedBarrier,
+                  control: storedControl,
+                  value: storedValue,
                 },
                 recoverPendingInvalidation,
                 now(),
@@ -243,8 +248,9 @@ export function createIndexedDbQueryPersistenceStorage(
               }
 
               const generation = control?.invalidationGeneration ?? 0
-              if (!control)
+              if (!control) {
                 store.put(createInvalidationControl(generation), INVALIDATION_CONTROL_KEY)
+              }
               const invalidationPending =
                 readInvalidationBarrier(durableState) !== null || storedBarrier !== undefined
               const privateAccepted =
@@ -275,7 +281,7 @@ const unavailableStorage: QueryPersistenceStorage = {
   invalidate: async () => null,
   read: async () => ({ generation: null, value: null }),
   readGeneration: async () => null,
-  removeEnvelope: async () => undefined,
+  removeEnvelope: async () => {},
   write: async () => ({ generation: null, privateAccepted: false }),
 }
 
@@ -315,7 +321,7 @@ function completeRecoveredStorageRead(
   if (invalidControl || control?.invalidationGeneration === Number.MAX_SAFE_INTEGER) {
     poisonPrivatePersistence(store)
     store.delete(INVALIDATION_BARRIER_KEY)
-    complete({ value: null, generation: null })
+    complete({ generation: null, value: null })
     return true
   }
 
@@ -324,7 +330,7 @@ function completeRecoveredStorageRead(
   store.delete(INVALIDATION_BARRIER_KEY)
   const value = toPublicOnlySerializedEnvelope(storedState.value, generation, now)
   storeSerializedEnvelope(store, value)
-  complete({ value, generation })
+  complete({ generation, value })
   return false
 }
 
@@ -340,7 +346,7 @@ function completeStorageReadWithInvalidControl(
   } else {
     store.put(publicOnly, PERSISTED_ESI_QUERY_CACHE_KEY)
   }
-  complete({ value: publicOnly, generation: null })
+  complete({ generation: null, value: publicOnly })
 }
 
 function completeStorageReadAtGeneration(
@@ -351,18 +357,20 @@ function completeStorageReadAtGeneration(
   now: number,
 ) {
   const generation = control?.invalidationGeneration ?? 0
-  if (!control) store.put(createInvalidationControl(generation), INVALIDATION_CONTROL_KEY)
+  if (!control) {
+    store.put(createInvalidationControl(generation), INVALIDATION_CONTROL_KEY)
+  }
 
   const envelopeGeneration = readSerializedEnvelopeGeneration(storedValue)
   if (storedValue === null || envelopeGeneration === generation) {
-    complete({ value: storedValue, generation })
+    complete({ generation, value: storedValue })
     return
   }
 
   const value = toPublicOnlySerializedEnvelope(storedValue, generation, now)
   if (value === null) {
     store.delete(PERSISTED_ESI_QUERY_CACHE_KEY)
-    complete({ value: null, generation })
+    complete({ generation, value: null })
     return
   }
   if (value === storedValue && envelopeGeneration === null) {
@@ -371,19 +379,22 @@ function completeStorageReadAtGeneration(
     store.put(value, PERSISTED_ESI_QUERY_CACHE_KEY)
   }
   complete({
-    value: envelopeGeneration === null ? storedValue : value,
     generation,
+    value: envelopeGeneration === null ? storedValue : value,
   })
 }
 
 function storeSerializedEnvelope(store: IDBObjectStore, value: string | null) {
-  if (value === null) store.delete(PERSISTED_ESI_QUERY_CACHE_KEY)
-  else store.put(value, PERSISTED_ESI_QUERY_CACHE_KEY)
+  if (value === null) {
+    store.delete(PERSISTED_ESI_QUERY_CACHE_KEY)
+  } else {
+    store.put(value, PERSISTED_ESI_QUERY_CACHE_KEY)
+  }
 }
 
 function poisonPrivatePersistence(store: IDBObjectStore) {
   store.put(
-    { version: INVALIDATION_CONTROL_VERSION, invalidationGeneration: null },
+    { invalidationGeneration: null, version: INVALIDATION_CONTROL_VERSION },
     INVALIDATION_CONTROL_KEY,
   )
   store.delete(PERSISTED_ESI_QUERY_CACHE_KEY)
@@ -393,13 +404,15 @@ function readBrowserLocalStorage() {
   try {
     return globalThis.localStorage
   } catch {
-    return undefined
+    return
   }
 }
 
 function beginInvalidationBarrier(storage: Storage | undefined) {
   try {
-    if (!storage) return { pending: false, token: undefined }
+    if (!storage) {
+      return { pending: false, token: undefined }
+    }
     const pending = storage.getItem(INVALIDATION_BARRIER_KEY) !== null
     const token = globalThis.crypto.randomUUID()
     storage.setItem(INVALIDATION_BARRIER_KEY, token)
@@ -455,7 +468,9 @@ function readStoredState(
   let controlReady = false
   let barrierReady = false
   const finish = () => {
-    if (!valueReady || !controlReady || !barrierReady) return
+    if (!valueReady || !controlReady || !barrierReady) {
+      return
+    }
     complete(
       typeof valueRequest.result === 'string' ? valueRequest.result : null,
       controlRequest.result,
@@ -500,13 +515,13 @@ function parseInvalidationControl(value: unknown): InvalidationControl | null {
     return null
   }
   return {
-    version: INVALIDATION_CONTROL_VERSION,
     invalidationGeneration: value.invalidationGeneration,
+    version: INVALIDATION_CONTROL_VERSION,
   }
 }
 
 function createInvalidationControl(generation: number): InvalidationControl {
-  return { version: INVALIDATION_CONTROL_VERSION, invalidationGeneration: generation }
+  return { invalidationGeneration: generation, version: INVALIDATION_CONTROL_VERSION }
 }
 
 function completeTransaction(
@@ -558,8 +573,11 @@ function completeValueTransaction<T>(
     transaction.addEventListener(
       'complete',
       () => {
-        if (hasResult) resolve(result)
-        else reject(new Error('Persisted query cache transaction completed without a result.'))
+        if (hasResult) {
+          resolve(result)
+        } else {
+          reject(new Error('Persisted query cache transaction completed without a result.'))
+        }
       },
       { once: true },
     )

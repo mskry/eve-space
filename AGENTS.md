@@ -10,6 +10,7 @@ These instructions apply to the entire repository. Preserve the architecture and
 ## Code Style
 
 - Prefer optional chaining over separate nullish guards when reading a property from a nullable value.
+- Prefer `const name = (...) => ...` or a const-bound function expression over `function name(...)` declarations when writing or materially changing functions. Keep declarations when their hoisting or overload semantics are required; do not migrate untouched code solely for style.
 
 ### Sonar Authoring Guardrails
 
@@ -133,8 +134,8 @@ These rules apply to every source directory. Keep a directory flat by default, w
 
 ### File Composition
 
-- Order every module: imports, module constants, exported types and interfaces, the primary export (the class or entry function), remaining exports, then non-exported helpers.
-- Place each non-exported helper below its first caller and keep leaf helpers last, so a file reads top-down from its entry point.
+- Order every module: imports, module constants, exported types and interfaces, then function expressions in dependency order, keeping the primary export easy to find.
+- Define const-bound helpers before their first use. Keep leaf helpers close to their callers rather than relying on declaration hoisting.
 - If a file needs a banner or section comment to separate its parts, split it into one file per part instead.
 
 ### Shared Helpers

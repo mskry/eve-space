@@ -1,8 +1,8 @@
 <script setup lang="ts">
 definePageMeta({
   layout: 'auth',
-  title: 'Organization Review Disclosure',
   platformAudience: 'public',
+  title: 'Organization Review Disclosure',
 })
 
 const runtimeConfig = useRuntimeConfig()
@@ -25,17 +25,23 @@ onMounted(async () => {
 
 async function loadDisclosure() {
   const response = await apiClient.auth.eve.disclosure.$get()
-  if (!response.ok) throw new Error('Disclosure unavailable')
+  if (!response.ok) {
+    throw new Error('Disclosure unavailable')
+  }
   return response.json()
 }
 
 async function continueAuthorization() {
-  if (submitting.value) return
+  if (submitting.value) {
+    return
+  }
   submitting.value = true
   errorMessage.value = ''
   try {
     const response = await apiClient.auth.eve.disclosure.$post()
-    if (!response.ok) throw new Error('Disclosure acceptance failed')
+    if (!response.ok) {
+      throw new Error('Disclosure acceptance failed')
+    }
     const { authorizationUrl } = await response.json()
     announcer.polite('Disclosure accepted. Continuing to EVE Online.')
     await navigateTo(authorizationUrl, { external: true })

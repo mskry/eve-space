@@ -83,54 +83,32 @@ interface MappingCase {
 
 const cases: readonly MappingCase[] = [
   {
-    name: 'universe-names-core',
+    expected: [{ category: 'character', id: 7, name: 'Pilot' }],
     input: { body: [7] },
+    name: 'universe-names-core',
     response: [{ category: 'character', id: 7, name: 'Pilot' }],
-    expected: [{ category: 'character', id: 7, name: 'Pilot' }],
   },
   {
-    name: 'universe-ids-core',
+    expected: [{ category: 'character', id: 7, name: 'Pilot' }],
     input: { body: ['Pilot'] },
+    name: 'universe-ids-core',
     response: { characters: [{ id: 7, name: 'Pilot' }] },
-    expected: [{ category: 'character', id: 7, name: 'Pilot' }],
   },
   {
-    name: 'universe-ids-core',
+    expected: [
+      { category: 'alliance', id: 10, name: 'Alliance' },
+      { category: 'solar_system', id: 30_000_142, name: 'Jita' },
+    ],
     input: { body: ['Alliance', 'Jita'] },
+    name: 'universe-ids-core',
     response: {
       alliances: [{ id: 10, name: 'Alliance' }],
       corporations: [{ id: 9 }, { name: 'Corporation' }],
       systems: [{ id: 30_000_142, name: 'Jita' }],
     },
-    expected: [
-      { category: 'alliance', id: 10, name: 'Alliance' },
-      { category: 'solar_system', id: 30_000_142, name: 'Jita' },
-    ],
   },
   {
-    name: 'public-corporation-core',
-    input: { corporationId: 7 },
-    response: {
-      alliance_id: 10,
-      ceo_id: 8,
-      creator_id: 9,
-      date_founded: '2026-01-01T00:00:00Z',
-      description: '<b>Corporation</b>',
-      enlisted_faction_id: 500_001,
-      friendly_fire: 'legal',
-      home_station_id: 11,
-      member_count: 12,
-      name: 'Corporation',
-      shares: 1_000,
-      state: 'active',
-      tax_rates: { isk: 0.05, loyalty_point: 0 },
-      ticker: 'CORP',
-      type: 'player_owned',
-      url: 'https://example.com',
-      war_eligible: true,
-    },
     expected: {
-      found: true,
       corporation: {
         allianceId: 10,
         allianceName: 'Resolved 10',
@@ -144,10 +122,10 @@ const cases: readonly MappingCase[] = [
         friendlyFire: 'legal',
         homeStationId: 11,
         homeStationName: 'Resolved 11',
+        loyaltyPointTaxRate: 0,
         memberCount: 12,
         name: 'Corporation',
-        loyaltyPointTaxRate: 0,
-        shares: 1_000,
+        shares: 1000,
         state: 'active',
         taxRate: 0.05,
         ticker: 'CORP',
@@ -155,26 +133,32 @@ const cases: readonly MappingCase[] = [
         url: 'https://example.com',
         warEligible: true,
       },
+      found: true,
+    },
+    input: { corporationId: 7 },
+    name: 'public-corporation-core',
+    response: {
+      alliance_id: 10,
+      ceo_id: 8,
+      creator_id: 9,
+      date_founded: '2026-01-01T00:00:00Z',
+      description: '<b>Corporation</b>',
+      enlisted_faction_id: 500_001,
+      friendly_fire: 'legal',
+      home_station_id: 11,
+      member_count: 12,
+      name: 'Corporation',
+      shares: 1000,
+      state: 'active',
+      tax_rates: { isk: 0.05, loyalty_point: 0 },
+      ticker: 'CORP',
+      type: 'player_owned',
+      url: 'https://example.com',
+      war_eligible: true,
     },
   },
   {
-    name: 'public-corporation-core',
-    input: { corporationId: 7 },
-    response: {
-      description: '',
-      friendly_fire: 'illegal',
-      home_station_id: 11,
-      member_count: 1,
-      name: 'Minimal corporation',
-      shares: 0,
-      state: 'closed',
-      tax_rates: { isk: 0, loyalty_point: 0 },
-      ticker: 'MIN',
-      type: 'npc_owned',
-      war_eligible: false,
-    },
     expected: {
-      found: true,
       corporation: {
         allianceId: null,
         allianceName: null,
@@ -188,9 +172,9 @@ const cases: readonly MappingCase[] = [
         friendlyFire: 'illegal',
         homeStationId: 11,
         homeStationName: 'Resolved 11',
+        loyaltyPointTaxRate: 0,
         memberCount: 1,
         name: 'Minimal corporation',
-        loyaltyPointTaxRate: 0,
         shares: 0,
         state: 'closed',
         taxRate: 0,
@@ -199,19 +183,32 @@ const cases: readonly MappingCase[] = [
         url: null,
         warEligible: false,
       },
+      found: true,
+    },
+    input: { corporationId: 7 },
+    name: 'public-corporation-core',
+    response: {
+      description: '',
+      friendly_fire: 'illegal',
+      home_station_id: 11,
+      member_count: 1,
+      name: 'Minimal corporation',
+      shares: 0,
+      state: 'closed',
+      tax_rates: { isk: 0, loyalty_point: 0 },
+      ticker: 'MIN',
+      type: 'npc_owned',
+      war_eligible: false,
     },
   },
   {
-    name: 'public-corporation-core',
-    input: { corporationId: 404 },
-    response: { error: 'Corporation not found' },
     expected: { found: false },
+    input: { corporationId: 404 },
+    name: 'public-corporation-core',
+    response: { error: 'Corporation not found' },
     status: 404,
   },
   {
-    name: 'corporation-alliance-history-core',
-    input: { corporationId: 7 },
-    response: [{ record_id: 2, start_date: '2026-01-01T00:00:00Z' }],
     expected: [
       {
         allianceId: null,
@@ -221,18 +218,11 @@ const cases: readonly MappingCase[] = [
         startDate: '2026-01-01T00:00:00Z',
       },
     ],
+    input: { corporationId: 7 },
+    name: 'corporation-alliance-history-core',
+    response: [{ record_id: 2, start_date: '2026-01-01T00:00:00Z' }],
   },
   {
-    name: 'corporation-alliance-history-core',
-    input: { corporationId: 7 },
-    response: [
-      {
-        alliance_id: 10,
-        is_deleted: true,
-        record_id: 3,
-        start_date: '2026-02-01T00:00:00Z',
-      },
-    ],
     expected: [
       {
         allianceId: 10,
@@ -242,28 +232,24 @@ const cases: readonly MappingCase[] = [
         startDate: '2026-02-01T00:00:00Z',
       },
     ],
-  },
-  {
-    name: 'corporation-npc-list-core',
-    input: {},
-    response: [1_000_001],
-    expected: [1_000_001],
-  },
-  {
-    name: 'character-assets-page-core',
-    input: { characterId, page: 1, subjectLifecycleId },
+    input: { corporationId: 7 },
+    name: 'corporation-alliance-history-core',
     response: [
       {
-        is_blueprint_copy: true,
-        is_singleton: true,
-        item_id: 10,
-        location_flag: 'Hangar',
-        location_id: 9,
-        location_type: 'item',
-        quantity: 2,
-        type_id: 34,
+        alliance_id: 10,
+        is_deleted: true,
+        record_id: 3,
+        start_date: '2026-02-01T00:00:00Z',
       },
     ],
+  },
+  {
+    expected: [1_000_001],
+    input: {},
+    name: 'corporation-npc-list-core',
+    response: [1_000_001],
+  },
+  {
     expected: {
       assets: [
         {
@@ -282,21 +268,22 @@ const cases: readonly MappingCase[] = [
       totalPages: 1,
     },
     headers: { 'X-Pages': '1' },
-  },
-  {
-    name: 'character-assets-page-core',
     input: { characterId, page: 1, subjectLifecycleId },
+    name: 'character-assets-page-core',
     response: [
       {
-        is_singleton: false,
-        item_id: 11,
-        location_flag: 'Cargo',
-        location_id: 60_000_001,
-        location_type: 'station',
-        quantity: 4,
-        type_id: 35,
+        is_blueprint_copy: true,
+        is_singleton: true,
+        item_id: 10,
+        location_flag: 'Hangar',
+        location_id: 9,
+        location_type: 'item',
+        quantity: 2,
+        type_id: 34,
       },
     ],
+  },
+  {
     expected: {
       assets: [
         {
@@ -315,20 +302,21 @@ const cases: readonly MappingCase[] = [
       totalPages: 1,
     },
     headers: { 'X-Pages': '1' },
+    input: { characterId, page: 1, subjectLifecycleId },
+    name: 'character-assets-page-core',
+    response: [
+      {
+        is_singleton: false,
+        item_id: 11,
+        location_flag: 'Cargo',
+        location_id: 60_000_001,
+        location_type: 'station',
+        quantity: 4,
+        type_id: 35,
+      },
+    ],
   },
   {
-    name: 'character-attributes-core',
-    input: { characterId, subjectLifecycleId },
-    response: {
-      accrued_remap_cooldown_date: '2026-02-01T00:00:00Z',
-      bonus_remaps: 2,
-      charisma: 19,
-      intelligence: 20,
-      last_remap_date: '2026-01-01T00:00:00Z',
-      memory: 21,
-      perception: 22,
-      willpower: 23,
-    },
     expected: {
       accruedRemapCooldownDate: '2026-02-01T00:00:00Z',
       bonusRemaps: 2,
@@ -339,10 +327,35 @@ const cases: readonly MappingCase[] = [
       perception: 22,
       willpower: 23,
     },
+    input: { characterId, subjectLifecycleId },
+    name: 'character-attributes-core',
+    response: {
+      accrued_remap_cooldown_date: '2026-02-01T00:00:00Z',
+      bonus_remaps: 2,
+      charisma: 19,
+      intelligence: 20,
+      last_remap_date: '2026-01-01T00:00:00Z',
+      memory: 21,
+      perception: 22,
+      willpower: 23,
+    },
   },
   {
-    name: 'character-clones-core',
+    expected: {
+      homeLocation: { locationId: 60_000_001, locationType: 'station' },
+      jumpClones: [
+        {
+          implantTypeIds: [1, 2],
+          jumpCloneId: 10,
+          location: { locationId: 60_000_002, locationType: 'station' },
+          name: 'Travel clone',
+        },
+      ],
+      lastCloneJumpAt: '2026-01-01T00:00:00Z',
+      lastStationChangeAt: '2026-01-02T00:00:00Z',
+    },
     input: { characterId, subjectLifecycleId },
+    name: 'character-clones-core',
     response: {
       home_location: { location_id: 60_000_001, location_type: 'station' },
       jump_clones: [
@@ -357,57 +370,30 @@ const cases: readonly MappingCase[] = [
       last_clone_jump_date: '2026-01-01T00:00:00Z',
       last_station_change_date: '2026-01-02T00:00:00Z',
     },
-    expected: {
-      homeLocation: { locationId: 60_000_001, locationType: 'station' },
-      jumpClones: [
-        {
-          implantTypeIds: [1, 2],
-          jumpCloneId: 10,
-          location: { locationId: 60_000_002, locationType: 'station' },
-          name: 'Travel clone',
-        },
-      ],
-      lastCloneJumpAt: '2026-01-01T00:00:00Z',
-      lastStationChangeAt: '2026-01-02T00:00:00Z',
-    },
   },
   {
-    name: 'character-implants-core',
-    input: { characterId, subjectLifecycleId },
-    response: [1, 1, 2],
     expected: { implantTypeIds: [1, 2] },
+    input: { characterId, subjectLifecycleId },
+    name: 'character-implants-core',
+    response: [1, 1, 2],
   },
   {
-    name: 'character-skills-core',
+    expected: {
+      skills: [{ activeLevel: 3, skillpoints: 100, trainedLevel: 4, typeId: 34 }],
+      totalSp: 1000,
+      unallocatedSp: 50,
+    },
     input: { characterId, subjectLifecycleId },
+    name: 'character-skills-core',
     response: {
       skills: [
         { active_skill_level: 3, skill_id: 34, skillpoints_in_skill: 100, trained_skill_level: 4 },
       ],
-      total_sp: 1_000,
+      total_sp: 1000,
       unallocated_sp: 50,
-    },
-    expected: {
-      skills: [{ activeLevel: 3, skillpoints: 100, trainedLevel: 4, typeId: 34 }],
-      totalSp: 1_000,
-      unallocatedSp: 50,
     },
   },
   {
-    name: 'character-skill-queue-core',
-    input: { characterId, subjectLifecycleId },
-    response: [
-      {
-        finish_date: '2026-02-01T00:00:00Z',
-        finished_level: 4,
-        level_end_sp: 100,
-        level_start_sp: 0,
-        queue_position: 1,
-        skill_id: 34,
-        start_date: '2026-01-01T00:00:00Z',
-        training_start_sp: 25,
-      },
-    ],
     expected: {
       entries: [
         {
@@ -427,31 +413,28 @@ const cases: readonly MappingCase[] = [
         },
       ],
     },
-  },
-  {
-    name: 'character-asset-names-core',
-    input: { path: { character_id: characterId }, body: [10], subjectLifecycleId },
-    response: [{ item_id: 10, name: 'Named asset' }],
-    expected: [{ itemId: 10, name: 'Named asset' }],
-  },
-  {
-    name: 'character-contracts-core',
-    input: { characterId, page: 2, subjectLifecycleId },
+    input: { characterId, subjectLifecycleId },
+    name: 'character-skill-queue-core',
     response: [
       {
-        acceptor_id: 8,
-        assignee_id: characterId,
-        availability: 'personal',
-        contract_id: 20,
-        date_expired: '2026-02-01T00:00:00Z',
-        date_issued: '2026-01-01T00:00:00Z',
-        for_corporation: false,
-        issuer_corporation_id: 9,
-        issuer_id: 10,
-        status: 'outstanding',
-        type: 'courier',
+        finish_date: '2026-02-01T00:00:00Z',
+        finished_level: 4,
+        level_end_sp: 100,
+        level_start_sp: 0,
+        queue_position: 1,
+        skill_id: 34,
+        start_date: '2026-01-01T00:00:00Z',
+        training_start_sp: 25,
       },
     ],
+  },
+  {
+    expected: [{ itemId: 10, name: 'Named asset' }],
+    input: { body: [10], path: { character_id: characterId }, subjectLifecycleId },
+    name: 'character-asset-names-core',
+    response: [{ item_id: 10, name: 'Named asset' }],
+  },
+  {
     expected: {
       contracts: [
         {
@@ -478,20 +461,25 @@ const cases: readonly MappingCase[] = [
       page: 2,
       totalPages: 2,
     },
-  },
-  {
-    name: 'character-contract-items-core',
-    input: { characterId, contractId: 20, subjectLifecycleId },
+    input: { characterId, page: 2, subjectLifecycleId },
+    name: 'character-contracts-core',
     response: [
       {
-        is_included: true,
-        is_singleton: false,
-        quantity: 3,
-        raw_quantity: -2,
-        record_id: 1,
-        type_id: 34,
+        acceptor_id: 8,
+        assignee_id: characterId,
+        availability: 'personal',
+        contract_id: 20,
+        date_expired: '2026-02-01T00:00:00Z',
+        date_issued: '2026-01-01T00:00:00Z',
+        for_corporation: false,
+        issuer_corporation_id: 9,
+        issuer_id: 10,
+        status: 'outstanding',
+        type: 'courier',
       },
     ],
+  },
+  {
     expected: {
       items: [
         {
@@ -505,17 +493,26 @@ const cases: readonly MappingCase[] = [
         },
       ],
     },
-  },
-  {
-    name: 'character-contract-bids-core',
     input: { characterId, contractId: 20, subjectLifecycleId },
-    response: [{ amount: 10, bid_id: 2, bidder_id: 8, date_bid: '2026-01-02T00:00:00Z' }],
-    expected: { bids: [{ amount: 10, bidAt: '2026-01-02T00:00:00Z', bidId: 2 }] },
+    name: 'character-contract-items-core',
+    response: [
+      {
+        is_included: true,
+        is_singleton: false,
+        quantity: 3,
+        raw_quantity: -2,
+        record_id: 1,
+        type_id: 34,
+      },
+    ],
   },
   {
-    name: 'market-orders-core',
-    input: { characterId, subjectLifecycleId },
-    response: [marketOrder()],
+    expected: { bids: [{ amount: 10, bidAt: '2026-01-02T00:00:00Z', bidId: 2 }] },
+    input: { characterId, contractId: 20, subjectLifecycleId },
+    name: 'character-contract-bids-core',
+    response: [{ amount: 10, bid_id: 2, bidder_id: 8, date_bid: '2026-01-02T00:00:00Z' }],
+  },
+  {
     expected: {
       orders: [
         {
@@ -538,40 +535,32 @@ const cases: readonly MappingCase[] = [
         },
       ],
     },
+    input: { characterId, subjectLifecycleId },
+    name: 'market-orders-core',
+    response: [marketOrder()],
   },
   {
-    name: 'market-orders-core',
+    expected: {
+      orders: [{ ...mappedMarketOrder(), escrow: 12, isBuy: true, minimumVolume: 2 }],
+    },
     input: { characterId, subjectLifecycleId },
+    name: 'market-orders-core',
     response: [
       { ...marketOrder(), escrow: 12, is_buy_order: true, min_volume: 2 },
       { ...marketOrder(), is_corporation: true, order_id: 31 },
     ],
-    expected: {
-      orders: [{ ...mappedMarketOrder(), escrow: 12, isBuy: true, minimumVolume: 2 }],
-    },
   },
   {
-    name: 'market-order-history-core',
-    input: { characterId, page: 3, subjectLifecycleId },
-    response: [{ ...marketOrder(), state: 'cancelled' }],
     expected: {
       orders: [{ ...mappedMarketOrder(), state: 'cancelled' }],
       page: 3,
       totalPages: 3,
     },
+    input: { characterId, page: 3, subjectLifecycleId },
+    name: 'market-order-history-core',
+    response: [{ ...marketOrder(), state: 'cancelled' }],
   },
   {
-    name: 'public-character-core',
-    input: { characterId },
-    response: {
-      achievement_score: 0,
-      birthday: '2026-01-01T00:00:00Z',
-      bloodline_id: 5,
-      corporation_id: 9,
-      gender: 'female',
-      name: 'Pilot',
-      race_id: 4,
-    },
     expected: {
       achievementScore: 0,
       allianceId: null,
@@ -584,24 +573,19 @@ const cases: readonly MappingCase[] = [
       raceId: 4,
       securityStatus: 0,
     },
-  },
-  {
-    name: 'public-character-core',
     input: { characterId },
+    name: 'public-character-core',
     response: {
-      achievement_score: 1,
-      alliance_id: 10,
+      achievement_score: 0,
       birthday: '2026-01-01T00:00:00Z',
       bloodline_id: 5,
       corporation_id: 9,
-      corporation_title: 'Director',
-      description: '<i>Biography</i>',
-      faction_id: 500_001,
-      gender: 'male',
+      gender: 'female',
       name: 'Pilot',
       race_id: 4,
-      security_status: 1.5,
     },
+  },
+  {
     expected: {
       achievementScore: 1,
       allianceId: 10,
@@ -616,30 +600,46 @@ const cases: readonly MappingCase[] = [
       raceId: 4,
       securityStatus: 1.5,
     },
+    input: { characterId },
+    name: 'public-character-core',
+    response: {
+      achievement_score: 1,
+      alliance_id: 10,
+      birthday: '2026-01-01T00:00:00Z',
+      bloodline_id: 5,
+      corporation_id: 9,
+      corporation_title: 'Director',
+      description: '<i>Biography</i>',
+      faction_id: 500_001,
+      gender: 'male',
+      name: 'Pilot',
+      race_id: 4,
+      security_status: 1.5,
+    },
   },
   {
-    name: 'universe-races-core',
-    input: {},
-    response: [{ alliance_id: 10, description: 'Caldari', name: 'Caldari', race_id: 1 }],
     expected: [{ name: 'Caldari', raceId: 1 }],
-  },
-  {
-    name: 'universe-bloodlines-core',
     input: {},
-    response: [{ bloodline_id: 1, name: 'Deteis', race_id: 1 }],
+    name: 'universe-races-core',
+    response: [{ alliance_id: 10, description: 'Caldari', name: 'Caldari', race_id: 1 }],
+  },
+  {
     expected: [{ bloodlineId: 1, name: 'Deteis' }],
+    input: {},
+    name: 'universe-bloodlines-core',
+    response: [{ bloodline_id: 1, name: 'Deteis', race_id: 1 }],
   },
   {
-    name: 'universe-solar-system-core',
+    expected: {
+      constellation_id: 20_000_020,
+      name: 'Jita',
+      position: { x: 1, y: 2, z: 3 },
+      security_status: 0.9,
+      system_id: 30_000_142,
+    },
     input: { systemId: 30_000_142 },
+    name: 'universe-solar-system-core',
     response: {
-      constellation_id: 20_000_020,
-      name: 'Jita',
-      position: { x: 1, y: 2, z: 3 },
-      security_status: 0.9,
-      system_id: 30_000_142,
-    },
-    expected: {
       constellation_id: 20_000_020,
       name: 'Jita',
       position: { x: 1, y: 2, z: 3 },
@@ -648,8 +648,20 @@ const cases: readonly MappingCase[] = [
     },
   },
   {
-    name: 'universe-station-core',
+    expected: {
+      max_dockable_ship_volume: 1,
+      name: 'Jita IV - Moon 4',
+      office_rental_cost: 1,
+      position: { x: 1, y: 2, z: 3 },
+      reprocessing_efficiency: 0.5,
+      reprocessing_stations_take: 0.05,
+      services: ['docking'],
+      station_id: 60_000_001,
+      system_id: 30_000_142,
+      type_id: 1526,
+    },
     input: { stationId: 60_000_001 },
+    name: 'universe-station-core',
     response: {
       max_dockable_ship_volume: 1,
       name: 'Jita IV - Moon 4',
@@ -660,60 +672,34 @@ const cases: readonly MappingCase[] = [
       services: ['docking'],
       station_id: 60_000_001,
       system_id: 30_000_142,
-      type_id: 1_526,
-    },
-    expected: {
-      max_dockable_ship_volume: 1,
-      name: 'Jita IV - Moon 4',
-      office_rental_cost: 1,
-      position: { x: 1, y: 2, z: 3 },
-      reprocessing_efficiency: 0.5,
-      reprocessing_stations_take: 0.05,
-      services: ['docking'],
-      station_id: 60_000_001,
-      system_id: 30_000_142,
-      type_id: 1_526,
+      type_id: 1526,
     },
   },
   {
-    name: 'character-location-core',
-    input: { characterId, subjectLifecycleId },
-    response: { solar_system_id: 30_000_142, station_id: 60_000_001, structure_id: 9 },
     expected: { solarSystemId: 30_000_142, stationId: 60_000_001, structureId: 9 },
+    input: { characterId, subjectLifecycleId },
+    name: 'character-location-core',
+    response: { solar_system_id: 30_000_142, station_id: 60_000_001, structure_id: 9 },
   },
   {
-    name: 'character-ship-core',
-    input: { characterId, subjectLifecycleId },
-    response: { ship_item_id: 1, ship_name: 'Pod', ship_type_id: 670 },
     expected: { name: 'Pod', typeId: 670 },
-  },
-  {
-    name: 'universe-type-core',
-    input: { typeId: 670 },
-    response: { description: '', group_id: 29, name: 'Capsule', published: true, type_id: 670 },
-    expected: { name: 'Capsule', groupId: 29 },
-  },
-  {
-    name: 'wallet-balance-core',
     input: { characterId, subjectLifecycleId },
-    response: 123.45,
-    expected: 123.45,
+    name: 'character-ship-core',
+    response: { ship_item_id: 1, ship_name: 'Pod', ship_type_id: 670 },
   },
   {
-    name: 'wallet-journal-core',
-    input: { characterId, page: 2, subjectLifecycleId },
-    response: [
-      {
-        amount: -50,
-        balance: 950,
-        context_id: 60_000_001,
-        context_id_type: 'station_id',
-        date: '2026-01-01T00:00:00Z',
-        description: 'Market transaction',
-        id: 40,
-        ref_type: 'market_transaction',
-      },
-    ],
+    expected: { groupId: 29, name: 'Capsule' },
+    input: { typeId: 670 },
+    name: 'universe-type-core',
+    response: { description: '', group_id: 29, name: 'Capsule', published: true, type_id: 670 },
+  },
+  {
+    expected: 123.45,
+    input: { characterId, subjectLifecycleId },
+    name: 'wallet-balance-core',
+    response: 123.45,
+  },
+  {
     expected: {
       entries: [
         {
@@ -731,24 +717,22 @@ const cases: readonly MappingCase[] = [
       page: 2,
       totalPages: 2,
     },
-  },
-  {
-    name: 'wallet-transactions-core',
-    input: { characterId, fromId: null, subjectLifecycleId },
+    input: { characterId, page: 2, subjectLifecycleId },
+    name: 'wallet-journal-core',
     response: [
       {
-        client_id: 8,
+        amount: -50,
+        balance: 950,
+        context_id: 60_000_001,
+        context_id_type: 'station_id',
         date: '2026-01-01T00:00:00Z',
-        is_buy: true,
-        is_personal: true,
-        journal_ref_id: 11,
-        location_id: 1_000_000_000_000,
-        quantity: 5,
-        transaction_id: 50,
-        type_id: 34,
-        unit_price: 10,
+        description: 'Market transaction',
+        id: 40,
+        ref_type: 'market_transaction',
       },
     ],
+  },
+  {
     expected: {
       fromId: null,
       nextFromId: null,
@@ -768,29 +752,29 @@ const cases: readonly MappingCase[] = [
         },
       ],
     },
-  },
-  {
-    name: 'wallet-journal-core',
-    input: { characterId, page: 1, subjectLifecycleId },
+    input: { characterId, fromId: null, subjectLifecycleId },
+    name: 'wallet-transactions-core',
     response: [
       {
-        amount: 50,
-        balance: 1_000,
-        context_id: 7,
-        context_id_type: 'contract_id',
+        client_id: 8,
         date: '2026-01-01T00:00:00Z',
-        description: 'Contract reward',
-        id: 41,
-        reason: 'Reward',
-        ref_type: 'contract_reward',
-        tax: 2.5,
+        is_buy: true,
+        is_personal: true,
+        journal_ref_id: 11,
+        location_id: 1_000_000_000_000,
+        quantity: 5,
+        transaction_id: 50,
+        type_id: 34,
+        unit_price: 10,
       },
     ],
+  },
+  {
     expected: {
       entries: [
         {
           amount: 50,
-          balance: 1_000,
+          balance: 1000,
           context: { id: 7, type: 'contract_id' },
           date: '2026-01-01T00:00:00Z',
           description: 'Contract reward',
@@ -804,18 +788,24 @@ const cases: readonly MappingCase[] = [
       totalPages: 1,
     },
     headers: { 'X-Pages': '1' },
-  },
-  {
-    name: 'corporation-alliance-history-core',
-    input: { corporationId: 7 },
+    input: { characterId, page: 1, subjectLifecycleId },
+    name: 'wallet-journal-core',
     response: [
       {
-        alliance_id: 10,
-        is_deleted: true,
-        record_id: 3,
-        start_date: '2026-01-02T00:00:00Z',
+        amount: 50,
+        balance: 1000,
+        context_id: 7,
+        context_id_type: 'contract_id',
+        date: '2026-01-01T00:00:00Z',
+        description: 'Contract reward',
+        id: 41,
+        reason: 'Reward',
+        ref_type: 'contract_reward',
+        tax: 2.5,
       },
     ],
+  },
+  {
     expected: [
       {
         allianceId: 10,
@@ -825,18 +815,18 @@ const cases: readonly MappingCase[] = [
         startDate: '2026-01-02T00:00:00Z',
       },
     ],
-  },
-  {
-    name: 'employment-history-core',
-    input: { characterId },
+    input: { corporationId: 7 },
+    name: 'corporation-alliance-history-core',
     response: [
       {
-        corporation_id: 9,
-        is_deleted: false,
+        alliance_id: 10,
+        is_deleted: true,
         record_id: 3,
         start_date: '2026-01-02T00:00:00Z',
       },
     ],
+  },
+  {
     expected: [
       {
         corporation: { id: 9, isNpc: true, name: 'Resolved 9' },
@@ -845,17 +835,28 @@ const cases: readonly MappingCase[] = [
         startDate: '2026-01-02T00:00:00Z',
       },
     ],
+    input: { characterId },
+    name: 'employment-history-core',
+    response: [
+      {
+        corporation_id: 9,
+        is_deleted: false,
+        record_id: 3,
+        start_date: '2026-01-02T00:00:00Z',
+      },
+    ],
   },
   {
-    name: 'character-location-core',
-    input: { characterId, subjectLifecycleId },
-    response: { solar_system_id: 30_000_142 },
     expected: { solarSystemId: 30_000_142 },
+    input: { characterId, subjectLifecycleId },
+    name: 'character-location-core',
+    response: { solar_system_id: 30_000_142 },
   },
   {
-    name: 'wallet-transactions-core',
+    expected: { fromId: 50, nextFromId: 1, transactions: [] },
     input: { characterId, fromId: 50, subjectLifecycleId },
-    response: Array.from({ length: 2_500 }, (_, index) => ({
+    name: 'wallet-transactions-core',
+    response: Array.from({ length: 2500 }, (_, index) => ({
       client_id: 8,
       date: '2026-01-01T00:00:00Z',
       is_buy: true,
@@ -867,22 +868,8 @@ const cases: readonly MappingCase[] = [
       type_id: 34,
       unit_price: 10,
     })),
-    expected: { fromId: 50, nextFromId: 1, transactions: [] },
   },
   {
-    name: 'mail-headers-core',
-    input: { characterId, labels: [1], lastMailId: 100, subjectLifecycleId },
-    response: [
-      {
-        from: 8,
-        is_read: true,
-        labels: [1, 2],
-        mail_id: 61,
-        recipients: [{ recipient_id: 9, recipient_type: 'corporation' }],
-        subject: 'Subject',
-        timestamp: '2026-01-01T00:00:00Z',
-      },
-    ],
     expected: {
       messages: [
         {
@@ -897,19 +884,21 @@ const cases: readonly MappingCase[] = [
       ],
       nextLastMailId: null,
     },
+    input: { characterId, labels: [1], lastMailId: 100, subjectLifecycleId },
+    name: 'mail-headers-core',
+    response: [
+      {
+        from: 8,
+        is_read: true,
+        labels: [1, 2],
+        mail_id: 61,
+        recipients: [{ recipient_id: 9, recipient_type: 'corporation' }],
+        subject: 'Subject',
+        timestamp: '2026-01-01T00:00:00Z',
+      },
+    ],
   },
   {
-    name: 'mail-message-core',
-    input: { characterId, mailId: 61, subjectLifecycleId },
-    response: {
-      body: '',
-      from: 8,
-      labels: [1],
-      read: false,
-      recipients: [{ recipient_id: 10, recipient_type: 'alliance' }],
-      subject: 'Subject',
-      timestamp: '2026-01-01T00:00:00Z',
-    },
     expected: {
       body: null,
       isRead: false,
@@ -920,29 +909,35 @@ const cases: readonly MappingCase[] = [
       sentAt: '2026-01-01T00:00:00Z',
       subject: 'Subject',
     },
+    input: { characterId, mailId: 61, subjectLifecycleId },
+    name: 'mail-message-core',
+    response: {
+      body: '',
+      from: 8,
+      labels: [1],
+      read: false,
+      recipients: [{ recipient_id: 10, recipient_type: 'alliance' }],
+      subject: 'Subject',
+      timestamp: '2026-01-01T00:00:00Z',
+    },
   },
   {
-    name: 'mail-labels-core',
-    input: { characterId, subjectLifecycleId },
-    response: {},
     expected: { labels: [], totalUnreadCount: null },
+    input: { characterId, subjectLifecycleId },
+    name: 'mail-labels-core',
+    response: {},
   },
   {
-    name: 'character-search-mail',
-    input: { characterId, search: 'pilot', subjectLifecycleId },
-    response: { alliance: [10], character: [8], corporation: [9] },
     expected: [
       { id: 10, name: 'Resolved 10', type: 'alliance' },
       { id: 8, name: 'Resolved 8', type: 'character' },
       { id: 9, name: 'Resolved 9', type: 'corporation' },
     ],
+    input: { characterId, search: 'pilot', subjectLifecycleId },
+    name: 'character-search-mail',
+    response: { alliance: [10], character: [8], corporation: [9] },
   },
   {
-    name: 'employment-history-core',
-    input: { characterId },
-    response: [
-      { corporation_id: 1, is_deleted: true, record_id: 2, start_date: '2026-01-01T00:00:00Z' },
-    ],
     expected: [
       {
         corporation: { id: 1, isNpc: true, name: 'Deleted corporation' },
@@ -951,19 +946,13 @@ const cases: readonly MappingCase[] = [
         startDate: '2026-01-01T00:00:00Z',
       },
     ],
+    input: { characterId },
+    name: 'employment-history-core',
+    response: [
+      { corporation_id: 1, is_deleted: true, record_id: 2, start_date: '2026-01-01T00:00:00Z' },
+    ],
   },
   {
-    name: 'mail-headers-core',
-    input: { characterId, labels: null, lastMailId: null, subjectLifecycleId },
-    response: [
-      {
-        is_read: false,
-        labels: [1],
-        mail_id: 60,
-        subject: 'Subject',
-        timestamp: '2026-01-01T00:00:00Z',
-      },
-    ],
     expected: {
       messages: [
         {
@@ -978,32 +967,44 @@ const cases: readonly MappingCase[] = [
       ],
       nextLastMailId: null,
     },
+    input: { characterId, labels: null, lastMailId: null, subjectLifecycleId },
+    name: 'mail-headers-core',
+    response: [
+      {
+        is_read: false,
+        labels: [1],
+        mail_id: 60,
+        subject: 'Subject',
+        timestamp: '2026-01-01T00:00:00Z',
+      },
+    ],
   },
   {
-    name: 'bulk-affiliation-core',
-    input: { body: [characterId] },
-    response: [{ alliance_id: 10, character_id: characterId, corporation_id: 9 }],
     expected: [{ allianceId: 10, characterId, corporationId: 9 }],
+    input: { body: [characterId] },
+    name: 'bulk-affiliation-core',
+    response: [{ alliance_id: 10, character_id: characterId, corporation_id: 9 }],
   },
   {
-    name: 'character-corporation-roles-core',
-    input: { characterId, subjectLifecycleId },
-    response: {
-      roles: ['Director'],
-      roles_at_base: ['Accountant'],
-      roles_at_hq: ['Station_Manager'],
-      roles_at_other: ['Personnel_Manager'],
-    },
     expected: {
       roles: ['Director'],
       rolesAtBase: ['Accountant'],
       rolesAtHeadquarters: ['Station_Manager'],
       rolesAtOther: ['Personnel_Manager'],
     },
+    input: { characterId, subjectLifecycleId },
+    name: 'character-corporation-roles-core',
+    response: {
+      roles: ['Director'],
+      roles_at_base: ['Accountant'],
+      roles_at_hq: ['Station_Manager'],
+      roles_at_other: ['Personnel_Manager'],
+    },
   },
   {
-    name: 'public-alliance-core',
+    expected: { executorCorporationId: 7, name: 'Alliance', ticker: 'ALLY' },
     input: { allianceId: 10 },
+    name: 'public-alliance-core',
     response: {
       creator_corporation_id: 9,
       creator_id: 8,
@@ -1012,28 +1013,24 @@ const cases: readonly MappingCase[] = [
       name: 'Alliance',
       ticker: 'ALLY',
     },
-    expected: { executorCorporationId: 7, name: 'Alliance', ticker: 'ALLY' },
   },
   {
-    name: 'esi-status-core',
-    input: {},
-    response: {
-      players: 10_000,
-      server_version: '1.2.3',
-      start_time: '2026-01-01T00:00:00Z',
-      vip: false,
-    },
     expected: {
       players: 10_000,
       serverVersion: '1.2.3',
       startedAt: '2026-01-01T00:00:00Z',
       vip: false,
     },
+    input: {},
+    name: 'esi-status-core',
+    response: {
+      players: 10_000,
+      server_version: '1.2.3',
+      start_time: '2026-01-01T00:00:00Z',
+      vip: false,
+    },
   },
   {
-    name: 'character-attributes-core',
-    input: { characterId, subjectLifecycleId },
-    response: { charisma: 19, intelligence: 20, memory: 21, perception: 22, willpower: 23 },
     expected: {
       accruedRemapCooldownDate: null,
       bonusRemaps: 0,
@@ -1044,20 +1041,11 @@ const cases: readonly MappingCase[] = [
       perception: 22,
       willpower: 23,
     },
+    input: { characterId, subjectLifecycleId },
+    name: 'character-attributes-core',
+    response: { charisma: 19, intelligence: 20, memory: 21, perception: 22, willpower: 23 },
   },
   {
-    name: 'character-clones-core',
-    input: { characterId, subjectLifecycleId },
-    response: {
-      jump_clones: [
-        {
-          implants: [],
-          jump_clone_id: 11,
-          location_id: 1_000_000_000_000,
-          location_type: 'structure',
-        },
-      ],
-    },
     expected: {
       homeLocation: null,
       jumpClones: [
@@ -1071,34 +1059,47 @@ const cases: readonly MappingCase[] = [
       lastCloneJumpAt: null,
       lastStationChangeAt: null,
     },
+    input: { characterId, subjectLifecycleId },
+    name: 'character-clones-core',
+    response: {
+      jump_clones: [
+        {
+          implants: [],
+          jump_clone_id: 11,
+          location_id: 1_000_000_000_000,
+          location_type: 'structure',
+        },
+      ],
+    },
   },
   {
-    name: 'character-skills-core',
-    input: { characterId, subjectLifecycleId },
-    response: { skills: [], total_sp: 0 },
     expected: { skills: [], totalSp: 0, unallocatedSp: 0 },
+    input: { characterId, subjectLifecycleId },
+    name: 'character-skills-core',
+    response: { skills: [], total_sp: 0 },
   },
   {
-    name: 'character-skill-queue-core',
-    input: { characterId, subjectLifecycleId },
-    response: [],
     expected: { entries: [] },
-  },
-  {
-    name: 'character-corporation-roles-core',
     input: { characterId, subjectLifecycleId },
-    response: {},
+    name: 'character-skill-queue-core',
+    response: [],
+  },
+  {
     expected: { roles: [], rolesAtBase: [], rolesAtHeadquarters: [], rolesAtOther: [] },
+    input: { characterId, subjectLifecycleId },
+    name: 'character-corporation-roles-core',
+    response: {},
   },
   {
-    name: 'bulk-affiliation-core',
-    input: { body: [characterId] },
-    response: [{ character_id: characterId, corporation_id: 9 }],
     expected: [{ allianceId: null, characterId, corporationId: 9 }],
+    input: { body: [characterId] },
+    name: 'bulk-affiliation-core',
+    response: [{ character_id: characterId, corporation_id: 9 }],
   },
   {
-    name: 'public-alliance-core',
+    expected: { executorCorporationId: null, name: 'Alliance', ticker: 'ALLY' },
     input: { allianceId: 10 },
+    name: 'public-alliance-core',
     response: {
       creator_corporation_id: 9,
       creator_id: 8,
@@ -1106,11 +1107,36 @@ const cases: readonly MappingCase[] = [
       name: 'Alliance',
       ticker: 'ALLY',
     },
-    expected: { executorCorporationId: null, name: 'Alliance', ticker: 'ALLY' },
   },
   {
-    name: 'character-contracts-core',
+    expected: {
+      contracts: [
+        {
+          acceptedAt: '2026-01-02T00:00:00Z',
+          availability: 'public',
+          buyout: 50,
+          collateral: 40,
+          completedAt: '2026-01-03T00:00:00Z',
+          contractId: 21,
+          daysToComplete: 3,
+          endLocationId: 2,
+          expiredAt: '2026-02-01T00:00:00Z',
+          issuedAt: '2026-01-01T00:00:00Z',
+          price: 30,
+          reward: 20,
+          role: 'issued',
+          startLocationId: 1,
+          status: 'finished',
+          title: 'Complete',
+          type: 'item_exchange',
+          volume: 10,
+        },
+      ],
+      page: 1,
+      totalPages: 1,
+    },
     input: { characterId, page: 1, subjectLifecycleId },
+    name: 'character-contracts-core',
     response: [
       {
         acceptor_id: 8,
@@ -1150,47 +1176,8 @@ const cases: readonly MappingCase[] = [
         type: 'courier',
       },
     ],
-    expected: {
-      contracts: [
-        {
-          acceptedAt: '2026-01-02T00:00:00Z',
-          availability: 'public',
-          buyout: 50,
-          collateral: 40,
-          completedAt: '2026-01-03T00:00:00Z',
-          contractId: 21,
-          daysToComplete: 3,
-          endLocationId: 2,
-          expiredAt: '2026-02-01T00:00:00Z',
-          issuedAt: '2026-01-01T00:00:00Z',
-          price: 30,
-          reward: 20,
-          role: 'issued',
-          startLocationId: 1,
-          status: 'finished',
-          title: 'Complete',
-          type: 'item_exchange',
-          volume: 10,
-        },
-      ],
-      page: 1,
-      totalPages: 1,
-    },
   },
   {
-    name: 'character-contract-items-core',
-    input: { characterId, contractId: 20, subjectLifecycleId },
-    response: [
-      {
-        is_included: false,
-        is_singleton: true,
-        quantity: 1,
-        raw_quantity: -1,
-        record_id: 2,
-        type_id: 35,
-      },
-      { is_included: false, is_singleton: false, quantity: 2, record_id: 3, type_id: 36 },
-    ],
     expected: {
       items: [
         {
@@ -1213,20 +1200,21 @@ const cases: readonly MappingCase[] = [
         },
       ],
     },
-  },
-  {
-    name: 'wallet-journal-core',
-    input: { characterId, page: 1, subjectLifecycleId },
+    input: { characterId, contractId: 20, subjectLifecycleId },
+    name: 'character-contract-items-core',
     response: [
       {
-        context_id: 0,
-        context_id_type: 'station_id',
-        date: '2026-01-01T00:00:00Z',
-        description: 'Invalid context',
-        id: 42,
-        ref_type: 'market_transaction',
+        is_included: false,
+        is_singleton: true,
+        quantity: 1,
+        raw_quantity: -1,
+        record_id: 2,
+        type_id: 35,
       },
+      { is_included: false, is_singleton: false, quantity: 2, record_id: 3, type_id: 36 },
     ],
+  },
+  {
     expected: {
       entries: [
         {
@@ -1245,17 +1233,20 @@ const cases: readonly MappingCase[] = [
       totalPages: 1,
     },
     headers: { 'X-Pages': '1' },
+    input: { characterId, page: 1, subjectLifecycleId },
+    name: 'wallet-journal-core',
+    response: [
+      {
+        context_id: 0,
+        context_id_type: 'station_id',
+        date: '2026-01-01T00:00:00Z',
+        description: 'Invalid context',
+        id: 42,
+        ref_type: 'market_transaction',
+      },
+    ],
   },
   {
-    name: 'mail-message-core',
-    input: { characterId, mailId: 60, subjectLifecycleId },
-    response: {
-      body: '<b>Body</b>',
-      labels: [1],
-      read: true,
-      subject: 'Subject',
-      timestamp: '2026-01-01T00:00:00Z',
-    },
     expected: {
       body: 'Body',
       isRead: true,
@@ -1266,75 +1257,84 @@ const cases: readonly MappingCase[] = [
       sentAt: '2026-01-01T00:00:00Z',
       subject: 'Subject',
     },
+    input: { characterId, mailId: 60, subjectLifecycleId },
+    name: 'mail-message-core',
+    response: {
+      body: '<b>Body</b>',
+      labels: [1],
+      read: true,
+      subject: 'Subject',
+      timestamp: '2026-01-01T00:00:00Z',
+    },
   },
   {
-    name: 'mail-labels-core',
-    input: { characterId, subjectLifecycleId },
-    response: {
-      labels: [{ color: '#ffffff', label_id: 1, name: 'Inbox', unread_count: 2 }],
-      total_unread_count: 2,
-    },
     expected: {
       labels: [{ color: '#ffffff', labelId: 1, name: 'Inbox', unreadCount: 2 }],
       totalUnreadCount: 2,
     },
-  },
-  {
-    name: 'mail-lists-core',
     input: { characterId, subjectLifecycleId },
-    response: [{ mailing_list_id: 9, name: 'List' }],
+    name: 'mail-labels-core',
+    response: {
+      labels: [{ color: '#ffffff', label_id: 1, name: 'Inbox', unread_count: 2 }],
+      total_unread_count: 2,
+    },
+  },
+  {
     expected: [{ mailingListId: 9, name: 'List' }],
+    input: { characterId, subjectLifecycleId },
+    name: 'mail-lists-core',
+    response: [{ mailing_list_id: 9, name: 'List' }],
   },
   {
-    name: 'character-search-mail',
-    input: { characterId, search: 'pilot', subjectLifecycleId },
-    response: { alliance: [], character: [], corporation: [] },
     expected: [],
+    input: { characterId, search: 'pilot', subjectLifecycleId },
+    name: 'character-search-mail',
+    response: { alliance: [], character: [], corporation: [] },
   },
   {
-    name: 'character-cspa-charge-mail',
-    input: { characterId, characterIds: [8], subjectLifecycleId },
-    response: 12.5,
     expected: 12.5,
+    input: { characterId, characterIds: [8], subjectLifecycleId },
+    name: 'character-cspa-charge-mail',
+    response: 12.5,
     status: 201,
   },
   {
-    name: 'mail-send-core',
+    expected: { characterId, mailId: 70 },
     input: {
       characterId,
       input: { body: 'Body', recipients: [{ id: 8, type: 'character' }], subject: 'Subject' },
       subjectLifecycleId,
     },
+    name: 'mail-send-core',
     response: 70,
-    expected: { characterId, mailId: 70 },
     status: 201,
   },
   {
-    name: 'mail-create-label-core',
-    input: { characterId, input: { color: '#ffffff', name: 'Inbox' }, subjectLifecycleId },
-    response: 71,
     expected: { characterId, labelId: 71 },
+    input: { characterId, input: { color: '#ffffff', name: 'Inbox' }, subjectLifecycleId },
+    name: 'mail-create-label-core',
+    response: 71,
     status: 201,
   },
   {
-    name: 'mail-update-core',
+    expected: { characterId, mailId: 60 },
     input: { characterId, input: { read: true }, mailId: 60, subjectLifecycleId },
+    name: 'mail-update-core',
     response: undefined,
-    expected: { characterId, mailId: 60 },
     status: 204,
   },
   {
-    name: 'mail-delete-core',
+    expected: { characterId, mailId: 60 },
     input: { characterId, mailId: 60, subjectLifecycleId },
+    name: 'mail-delete-core',
     response: undefined,
-    expected: { characterId, mailId: 60 },
     status: 204,
   },
   {
-    name: 'mail-delete-label-core',
-    input: { characterId, labelId: 1, subjectLifecycleId },
-    response: undefined,
     expected: { characterId, labelId: 1 },
+    input: { characterId, labelId: 1, subjectLifecycleId },
+    name: 'mail-delete-label-core',
+    response: undefined,
     status: 204,
   },
 ]
@@ -1363,7 +1363,9 @@ describe('registered representation mapping', () => {
       )
       gatewayMocks.getProductionRuntime.mockResolvedValue(runtime)
       const caller = gatewayMocks.callables.get(fixture.name)
-      if (!caller) throw new Error(`Missing registered ESI caller ${fixture.name}`)
+      if (!caller) {
+        throw new Error(`Missing registered ESI caller ${fixture.name}`)
+      }
 
       const result = await caller.execute(fixture.input)
       expect(cacheSchemaAcceptsResult(caller, result, fixture.name)).toBe(true)
@@ -1386,21 +1388,23 @@ describe('registered representation mapping', () => {
 
   test('rejects an unknown wallet journal reference type', () => {
     const schema = gatewayMocks.callables.get('wallet-journal-core')?.cacheSchema
-    if (!schema) throw new Error('Missing wallet journal cache schema')
+    if (!schema) {
+      throw new Error('Missing wallet journal cache schema')
+    }
 
     expect(
       schema.safeParse({
         entries: [
           {
-            journalId: 40,
-            date: '2026-01-01T00:00:00Z',
             amount: null,
             balance: null,
-            referenceType: 'not-a-wallet-reference-type',
-            description: '',
-            reason: null,
-            taxAmount: null,
             context: null,
+            date: '2026-01-01T00:00:00Z',
+            description: '',
+            journalId: 40,
+            reason: null,
+            referenceType: 'not-a-wallet-reference-type',
+            taxAmount: null,
           },
         ],
         page: 1,
@@ -1411,10 +1415,15 @@ describe('registered representation mapping', () => {
 })
 
 function cacheSchemaAcceptsResult(caller: CapturedEsiCallable, result: unknown, name: string) {
-  if (caller.execution === 'mutation') return true
-  if (!caller.cacheSchema) throw new Error(`Missing cache schema for ${name}`)
-  if (typeof result !== 'object' || result === null || !('data' in result))
+  if (caller.execution === 'mutation') {
+    return true
+  }
+  if (!caller.cacheSchema) {
+    throw new Error(`Missing cache schema for ${name}`)
+  }
+  if (typeof result !== 'object' || result === null || !('data' in result)) {
     throw new Error(`Missing read result data for ${name}`)
+  }
   return caller.cacheSchema.safeParse(result.data).success
 }
 

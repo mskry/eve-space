@@ -21,7 +21,7 @@ const forbiddenTierImports = [
 
 describe('character module boundaries', () => {
   it('declares the exact post-refactor module membership', () => {
-    expect(declaredCharacterModules).toEqual([
+    expect(declaredCharacterModules).toStrictEqual([
       'affiliation-planning',
       'affiliation-sync',
       'assets',
@@ -128,14 +128,14 @@ describe('character module boundaries', () => {
         characterBoundaryViolations(
           characterSources({ assets: `import type {} from '${specifier}'` }),
         ),
-      ).toEqual([])
+      ).toStrictEqual([])
     },
   )
 
   it.each(['assets', 'affiliation-sync'])('allows representation schemas in %s', (module) => {
     expect(
       characterBoundaryViolations(characterSources({ [module]: "import { z } from 'zod'" })),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it.each([
@@ -146,7 +146,7 @@ describe('character module boundaries', () => {
   ])('allows the pure shared projection from %s to %s', (module, specifier) => {
     expect(
       characterBoundaryViolations(characterSources({ [module]: `import '${specifier}'` })),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it.each([
@@ -172,7 +172,7 @@ describe('character module boundaries', () => {
   ])('allows reviewed cross-subsystem read from %s to %s', (module, specifier) => {
     expect(
       characterBoundaryViolations(characterSources({ [module]: `import '${specifier}'` })),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it('rejects unapproved external subsystem imports', () => {
@@ -199,7 +199,7 @@ describe('character module boundaries', () => {
   it('rejects undeclared and missing modules', () => {
     expect(
       characterBoundaryViolations([...characterSources({}, ['skills']), source('new-reader', '')]),
-    ).toEqual([
+    ).toStrictEqual([
       'api/src/characters/new-reader.ts: Character module new-reader has no declared tier',
       'Declared character module skills has no source file',
     ])
@@ -212,7 +212,7 @@ describe('character module boundaries', () => {
     ]
     expect(
       characterBoundaryViolations([...characterSources(), source('skills', '')], declarations),
-    ).toEqual([
+    ).toStrictEqual([
       'Character module assets has duplicate tier declarations: read-projection, pure-leaf',
       'Character module skills has duplicate source ownership: api/src/characters/skills.ts, api/src/characters/skills.ts',
     ])
@@ -226,7 +226,7 @@ describe('character module boundaries', () => {
       await writeFile(join(nested, 'undeclared.ts'), 'export const undeclared = true\n')
 
       const sources = await loadCharacterSources(root)
-      expect(sources).toEqual([
+      expect(sources).toStrictEqual([
         {
           path: join('api', 'src', 'characters', 'nested', 'deeper', 'undeclared.ts'),
           source: 'export const undeclared = true\n',
@@ -236,7 +236,7 @@ describe('character module boundaries', () => {
         `${join('api', 'src', 'characters', 'nested', 'deeper', 'undeclared.ts')}: Character module nested/deeper/undeclared has no declared tier`,
       )
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 })

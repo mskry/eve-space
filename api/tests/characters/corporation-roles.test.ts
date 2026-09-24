@@ -32,14 +32,16 @@ describe('character corporation roles', () => {
     const { characterCorporationRolesScope, getCharacterCorporationRoles } =
       await import('../../src/characters/corporation-roles.js')
 
-    await expect(getCharacterCorporationRoles(characterId, subjectLifecycleId)).resolves.toEqual({
+    await expect(
+      getCharacterCorporationRoles(characterId, subjectLifecycleId),
+    ).resolves.toStrictEqual({
       roles: ['Director', 'Accountant'],
       rolesAtBase: ['Factory_Manager'],
       rolesAtHeadquarters: ['Station_Manager'],
       rolesAtOther: ['Starbase_Defense_Operator'],
     })
     expect(characterCorporationRolesScope).toBe('esi-characters.read_corporation_roles.v1')
-    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toStrictEqual({
       characterId,
       subjectLifecycleId,
     })
@@ -51,7 +53,9 @@ describe('character corporation roles', () => {
     const { getCharacterCorporationRoles } =
       await import('../../src/characters/corporation-roles.js')
 
-    await expect(getCharacterCorporationRoles(characterId, subjectLifecycleId)).resolves.toEqual({
+    await expect(
+      getCharacterCorporationRoles(characterId, subjectLifecycleId),
+    ).resolves.toStrictEqual({
       roles: [],
       rolesAtBase: [],
       rolesAtHeadquarters: [],
@@ -68,16 +72,16 @@ function response<Data>(data: Data) {
     roles_at_other?: string[]
   }
   return {
+    cachedUntil: '',
     data: {
       roles: value.roles ?? [],
       rolesAtBase: value.roles_at_base ?? [],
       rolesAtHeadquarters: value.roles_at_hq ?? [],
       rolesAtOther: value.roles_at_other ?? [],
     },
-    cachedUntil: '',
-    validatedAt: '',
     quota: {},
     source: 'esi' as const,
     stale: false,
+    validatedAt: '',
   }
 }

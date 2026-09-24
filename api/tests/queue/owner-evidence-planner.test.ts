@@ -5,11 +5,11 @@ import { createInMemoryQueueProducer } from '../../src/queue/producer.js'
 
 const grantId = '98a782d2-e042-47d7-9659-03b218121a1a'
 const candidate = {
+  authorizationGeneration: 4,
   grantId,
   organizationVersion: 2,
-  sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
-  authorizationGeneration: 4,
   roleEvidenceRevision: '2026-09-21T12:00:00.000Z',
+  sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
 } as const
 const selectDue = vi.hoisted(() => vi.fn())
 
@@ -27,11 +27,11 @@ describe('organization owner evidence planner', () => {
     const subject = context()
     selectDue.mockResolvedValue([candidate])
 
-    await expect(runOrganizationOwnerEvidencePlanner(subject)).resolves.toEqual({
+    await expect(runOrganizationOwnerEvidencePlanner(subject)).resolves.toStrictEqual({
       planned: 1,
       reason: 'scheduled',
     })
-    expect(subject.producer.commands).toEqual([
+    expect(subject.producer.commands).toStrictEqual([
       {
         name: 'organization-owner-evidence',
         payload: candidate,
@@ -49,7 +49,7 @@ describe('organization owner evidence planner', () => {
       source: 'planner',
     })
 
-    await expect(runOrganizationOwnerEvidencePlanner(subject)).resolves.toEqual({
+    await expect(runOrganizationOwnerEvidencePlanner(subject)).resolves.toStrictEqual({
       planned: 0,
       reason: 'idle',
     })
@@ -60,10 +60,10 @@ describe('organization owner evidence planner', () => {
 
 function context() {
   return {
-    producer: createInMemoryQueueProducer(),
     outcomes: {
       recordAffiliation: vi.fn().mockResolvedValue(undefined),
       recordOutbox: vi.fn().mockResolvedValue(undefined),
     },
+    producer: createInMemoryQueueProducer(),
   }
 }

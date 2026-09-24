@@ -18,7 +18,9 @@ async function settle() {
 }
 
 afterEach(async () => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   await settle()
   document.body.replaceChildren()
 })
@@ -39,8 +41,6 @@ describe('mail label dialogs', () => {
             deletePendingIds: new Set<number>(),
             labels,
             name: name.value,
-            open: true,
-            undeletableLabelIds: new Set([1]),
             onCreate: create,
             onDelete: remove,
             'onUpdate:color': (value: string | undefined) => {
@@ -49,6 +49,8 @@ describe('mail label dialogs', () => {
             'onUpdate:name': (value: string) => {
               name.value = value
             },
+            open: true,
+            undeletableLabelIds: new Set([1]),
           })
       },
     })
@@ -94,15 +96,15 @@ describe('mail label dialogs', () => {
     const change = vi.fn()
     const wrapper = await mountSuspended(MailLabelAssignmentDialog, {
       attachTo: document.body,
-      route: false,
       props: {
         assignedLabelIds: new Set([1]),
         feedback: 'Assignment refused.',
         labels,
+        onChange: change,
         open: true,
         pending: false,
-        onChange: change,
       },
+      route: false,
     })
     mountedWrappers.push(wrapper)
     await settle()

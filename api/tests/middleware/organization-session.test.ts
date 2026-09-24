@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  selectResults: [] as unknown[][],
   recompute: vi.fn(),
+  selectResults: [] as unknown[][],
 }))
 
 vi.mock('../../src/db/client.js', () => ({
@@ -30,13 +30,13 @@ describe('organization session context', () => {
       [{ blockId: 'blocked-account' }],
     )
 
-    await expect(loadOrganizationSessionContext(userId)).resolves.toEqual({
-      organizationVersion: 7,
-      state: 'compliant',
-      evidenceFreshness: 'fresh',
-      reviewDeadline: null,
+    await expect(loadOrganizationSessionContext(userId)).resolves.toStrictEqual({
       accessValidUntil: validUntil,
       blocked: true,
+      evidenceFreshness: 'fresh',
+      organizationVersion: 7,
+      reviewDeadline: null,
+      state: 'compliant',
     })
     expect(mocks.recompute).not.toHaveBeenCalled()
   })
@@ -46,21 +46,21 @@ describe('organization session context', () => {
     mocks.selectResults.push(
       [organizationRow({ accessValidUntil: new Date(0) })],
       [],
-      [organizationRow({ state: 'suspended', accessValidUntil: renewedUntil })],
+      [organizationRow({ accessValidUntil: renewedUntil, state: 'suspended' })],
       [],
     )
 
     await expect(loadOrganizationSessionContext(userId)).resolves.toMatchObject({
-      state: 'suspended',
       accessValidUntil: renewedUntil,
       blocked: false,
+      state: 'suspended',
     })
     expect(mocks.recompute).toHaveBeenCalledWith(
       expect.objectContaining({
         deploymentId: 1,
+        now: expect.any(Date),
         organizationVersion: 7,
         userId,
-        now: expect.any(Date),
       }),
     )
   })
@@ -69,31 +69,31 @@ describe('organization session context', () => {
     mocks.selectResults.push(
       [
         organizationRow({
-          state: 'review_required',
-          reviewDeadline: new Date(0),
           accessValidUntil: null,
+          reviewDeadline: new Date(0),
+          state: 'review_required',
         }),
       ],
       [],
       [
         {
-          organizationVersion: 7,
-          state: null,
-          evidenceFreshness: null,
-          reviewDeadline: null,
           accessValidUntil: null,
+          evidenceFreshness: null,
+          organizationVersion: 7,
+          reviewDeadline: null,
+          state: null,
         },
       ],
       [],
     )
 
-    await expect(loadOrganizationSessionContext(userId)).resolves.toEqual({
-      organizationVersion: 7,
-      state: 'pending',
-      evidenceFreshness: 'unavailable',
-      reviewDeadline: null,
+    await expect(loadOrganizationSessionContext(userId)).resolves.toStrictEqual({
       accessValidUntil: null,
       blocked: false,
+      evidenceFreshness: 'unavailable',
+      organizationVersion: 7,
+      reviewDeadline: null,
+      state: 'pending',
     })
     expect(mocks.recompute).toHaveBeenCalledOnce()
   })
@@ -103,19 +103,19 @@ describe('organization session context', () => {
     mocks.selectResults.push(
       [
         organizationRow({
-          state: 'review_required',
-          reviewDeadline,
           accessValidUntil: new Date(0),
+          reviewDeadline,
+          state: 'review_required',
         }),
       ],
       [],
-      [organizationRow({ state: 'suspended', reviewDeadline, accessValidUntil: null })],
+      [organizationRow({ accessValidUntil: null, reviewDeadline, state: 'suspended' })],
       [],
     )
 
     await expect(loadOrganizationSessionContext(userId)).resolves.toMatchObject({
-      state: 'suspended',
       accessValidUntil: null,
+      state: 'suspended',
     })
     expect(mocks.recompute).toHaveBeenCalledOnce()
   })
@@ -124,9 +124,9 @@ describe('organization session context', () => {
     mocks.selectResults.push(
       [
         organizationRow({
-          state: 'suspended',
-          reviewDeadline: new Date(0),
           accessValidUntil: null,
+          reviewDeadline: new Date(0),
+          state: 'suspended',
         }),
       ],
       [],
@@ -143,12 +143,12 @@ describe('organization session context', () => {
     mocks.selectResults.push(
       [
         {
+          accessValidUntil: null,
+          evidenceFreshness: null,
           organizationVersion: 7,
           projectedUserId: null,
-          state: null,
-          evidenceFreshness: null,
           reviewDeadline: null,
-          accessValidUntil: null,
+          state: null,
         },
       ],
       [],
@@ -157,8 +157,8 @@ describe('organization session context', () => {
     )
 
     await expect(loadOrganizationSessionContext(userId)).resolves.toMatchObject({
-      state: 'compliant',
       accessValidUntil: validUntil,
+      state: 'compliant',
     })
     expect(mocks.recompute).toHaveBeenCalledOnce()
   })
@@ -181,19 +181,21 @@ function organizationRow(
   }> = {},
 ) {
   return {
+    accessValidUntil: null,
+    evidenceFreshness: 'fresh' as const,
     organizationVersion: 7,
     projectedUserId: userId,
-    state: 'compliant' as const,
-    evidenceFreshness: 'fresh' as const,
     reviewDeadline: null,
-    accessValidUntil: null,
+    state: 'compliant' as const,
     ...overrides,
   }
 }
 
 function query(result: unknown[]) {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'leftJoin', 'where']) builder[method] = () => builder
+  for (const method of ['from', 'leftJoin', 'where']) {
+    builder[method] = () => builder
+  }
   // oxlint-disable-next-line unicorn/no-thenable -- Drizzle query builders are awaitable.
   builder.then = (resolve: (value: unknown[]) => unknown, reject: (error: unknown) => unknown) =>
     Promise.resolve(result).then(resolve, reject)

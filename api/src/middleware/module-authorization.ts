@@ -77,18 +77,21 @@ function requireOrganizationAuthorization(
 ) {
   return createMiddleware<ModuleOrganizationAuthorizationEnv>(async (context, next) => {
     const session = context.var.session
-    if (!session) return context.json(authRequiredBody, 401)
+    if (!session) {
+      return context.json(authRequiredBody, 401)
+    }
     const organization = context.var.organization
-    if (!organization)
+    if (!organization) {
       return context.json(
         {
           code: 'ORGANIZATION_COMPLIANCE_REQUIRED',
           message: 'Current organization compliance is required.',
-          state: 'pending',
           reviewDeadline: null,
+          state: 'pending',
         },
         403,
       )
+    }
 
     const authorization = reviewer
       ? await authorizeOrganizationReviewerContribution(session.userId, organization, declaration)
@@ -116,28 +119,30 @@ function organizationAuthorizationDenied(
   authorization: Extract<OrganizationContributionAuthorizationResult, { authorized: false }>,
   reviewer: boolean,
 ) {
-  if (authorization.reason === 'blocked')
+  if (authorization.reason === 'blocked') {
     return context.json(
       {
         code: 'ORGANIZATION_MEMBER_BLOCKED',
         message: 'Organization access is blocked.',
-        state: organization.state,
         reviewDeadline: organization.reviewDeadline?.toISOString() ?? null,
+        state: organization.state,
       },
       403,
     )
-  if (authorization.reason === 'compliance')
+  }
+  if (authorization.reason === 'compliance') {
     return context.json(
       {
         code: 'ORGANIZATION_COMPLIANCE_REQUIRED',
         message: 'Current organization compliance is required.',
-        state: organization.state,
         reviewDeadline: organization.reviewDeadline?.toISOString() ?? null,
+        state: organization.state,
       },
       403,
     )
+  }
   if (authorization.reason === 'audience') {
-    if (reviewer)
+    if (reviewer) {
       return context.json(
         {
           code: 'ORGANIZATION_REVIEWER_REQUIRED',
@@ -145,6 +150,7 @@ function organizationAuthorizationDenied(
         },
         403,
       )
+    }
     return declaration.audience === 'hr'
       ? context.json(
           {
@@ -173,7 +179,9 @@ function organizationAuthorizationDenied(
 export function exposeAuthenticatedSessionModuleContext(moduleId: string, sectionId?: string) {
   return createMiddleware<AuthenticatedSessionModuleEnv>(async (context, next) => {
     const session = context.var.session
-    if (!session) return context.json(authRequiredBody, 401)
+    if (!session) {
+      return context.json(authRequiredBody, 401)
+    }
     const organization = context.var.moduleOrganizationAuthorization!
 
     context.set('platform', {
@@ -183,8 +191,8 @@ export function exposeAuthenticatedSessionModuleContext(moduleId: string, sectio
       },
       collectionStatus: createPlatformModuleCollectionStatusReads({
         moduleId,
-        sectionId,
         organizationVersion: organization.organizationVersion,
+        sectionId,
       }),
       organization,
     })
@@ -195,16 +203,18 @@ export function exposeAuthenticatedSessionModuleContext(moduleId: string, sectio
 export function exposeOwnedCharacterModuleContext(moduleId: string, sectionId?: string) {
   return createMiddleware<OwnedCharacterModuleEnv>(async (context, next) => {
     const session = context.var.session
-    if (!session) return context.json(authRequiredBody, 401)
+    if (!session) {
+      return context.json(authRequiredBody, 401)
+    }
 
     const { characterId, subjectLifecycleId } = context.var.ownedCharacter
     const organization = context.var.moduleOrganizationAuthorization!
     context.set('platform', {
       authorization: {
-        strategy: 'owned-character',
-        userId: session.userId,
         characterId,
+        strategy: 'owned-character',
         subjectLifecycleId,
+        userId: session.userId,
       },
       collectionStatus: createPlatformModuleCollectionStatusReads({
         moduleId,
@@ -242,13 +252,16 @@ export function exposeReviewerTargetModuleContext<
 ) {
   return createMiddleware<ReviewerTargetModuleEnv<CommandIds>>(async (context, next) => {
     const session = context.var.session
-    if (!session) return context.json(authRequiredBody, 401)
+    if (!session) {
+      return context.json(authRequiredBody, 401)
+    }
     const reviewerTarget = context.var.organizationReviewerTarget
-    if (!reviewerTarget)
+    if (!reviewerTarget) {
       return context.json(
         { code: 'REVIEW_TARGET_NOT_FOUND', message: 'Review target not found.' },
         404,
       )
+    }
 
     const organization = context.var.moduleOrganizationAuthorization!
     const collectionStatus = createPlatformReviewerCollectionStatusReads({
@@ -262,13 +275,13 @@ export function exposeReviewerTargetModuleContext<
         strategy: 'authenticated-session',
         userId: session.userId,
       },
-      organization,
       collectionStatus,
       evidenceSummary: createPlatformReviewerEvidenceSummaryReads({
         moduleId,
         ...(contribution ? { sectionId, resourceIds: contribution.resourceIds } : {}),
         target: reviewerTarget,
       }),
+      organization,
       reviewerTarget,
       ...(evidenceBinding
         ? {
@@ -282,9 +295,9 @@ export function exposeReviewerTargetModuleContext<
         ? {
             organizationCommands: createPlatformOrganizationCommandCapabilities(commandIds, {
               actorUserId: session.userId,
-              publisherPackage,
               moduleId,
               organization,
+              publisherPackage,
               target: reviewerTarget,
             }),
           }
@@ -301,7 +314,9 @@ export function exposeReviewerTargetModuleContext<
 export function exposeReviewerSearchModuleContext(moduleId: string) {
   return createMiddleware<ReviewerSearchModuleEnv>(async (context, next) => {
     const session = context.var.session
-    if (!session) return context.json(authRequiredBody, 401)
+    if (!session) {
+      return context.json(authRequiredBody, 401)
+    }
     const organization = context.var.moduleOrganizationAuthorization!
 
     context.set('platform', {

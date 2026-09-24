@@ -84,12 +84,18 @@ function isPlatformContractSource(file: string) {
 }
 
 async function changedModuleIds(repository: URL, changedFiles: readonly string[]) {
-  if (changedFiles.some((file) => REVIEW_ALL_FILES.has(file))) return installedModuleIds(repository)
+  if (changedFiles.some((file) => REVIEW_ALL_FILES.has(file))) {
+    return installedModuleIds(repository)
+  }
   const ids = new Set<string>()
   for (const file of changedFiles) {
-    if (!isPlatformContractSource(file)) continue
+    if (!isPlatformContractSource(file)) {
+      continue
+    }
     const moduleId = file.split('/')[1]
-    if (moduleId) ids.add(moduleId)
+    if (moduleId) {
+      ids.add(moduleId)
+    }
   }
   return [...ids].toSorted((left, right) => left.localeCompare(right))
 }
@@ -121,7 +127,9 @@ async function evidenceForModule(
   const manifestFile = `features/${moduleId}/module.config.ts`
   const manifestSource = await readRepositoryFile(repository, manifestFile)
   const manifest = indexManifest(manifestFile, manifestSource)
-  if (!manifest) return []
+  if (!manifest) {
+    return []
+  }
   const implementations = await loadRouteImplementations(root, moduleId)
   return manifest.routes.map((route) =>
     routeEvidence(manifestFile, manifest, route, implementations, compositionFunctions),
@@ -148,31 +156,31 @@ function routeEvidence(
   const implementation = route.exportName ? implementations.get(route.exportName) : undefined
   const composition = compositionFor(route, Boolean(reviewerContribution), compositionFunctions)
   return {
+    composition,
     id: `${manifest.moduleId}:${route.id}`,
-    moduleId: manifest.moduleId,
+    implementation: implementation ?? { file: null, line: null, code: null },
     manifestFile,
     manifestLine: indexedRoute.line,
-    route,
+    moduleId: manifest.moduleId,
     permission: permission?.code ?? null,
-    section: section?.code ?? null,
     reviewerContribution: reviewerContribution?.code ?? null,
-    implementation: implementation ?? { file: null, line: null, code: null },
-    composition,
+    route,
+    section: section?.code ?? null,
   }
 }
 
 function declarationFrom(route: IndexedObject): PlatformContractDeclaration {
   return {
+    audience: propertyText(route.node, 'audience'),
+    authorization: propertyText(route.node, 'authorization'),
+    code: route.code,
+    exportName: propertyText(route.node, 'exportName'),
+    exposure: propertyText(route.node, 'exposure'),
     id: propertyText(route.node, 'id') ?? '<unknown-route>',
     namespace: propertyText(route.node, 'namespace'),
-    exportName: propertyText(route.node, 'exportName'),
-    authorization: propertyText(route.node, 'authorization'),
-    audience: propertyText(route.node, 'audience'),
     requiredPermission: propertyText(route.node, 'requiredPermission'),
     sectionId: propertyText(route.node, 'sectionId'),
     target: propertyText(route.node, 'target'),
-    exposure: propertyText(route.node, 'exposure'),
-    code: route.code,
   }
 }
 
@@ -191,14 +199,18 @@ function compositionFor(
 }
 
 function composerNameFor(route: PlatformContractDeclaration) {
-  if (route.target === 'managed-organization-account-search')
+  if (route.target === 'managed-organization-account-search') {
     return 'composeReviewerSearchModuleRoute'
+  }
   if (
     route.target === 'managed-organization-account' ||
     route.target === 'managed-organization-character'
-  )
+  ) {
     return 'composeReviewerTargetModuleRoute'
-  if (route.authorization === 'owned-character') return 'composeOwnedCharacterModuleRoute'
+  }
+  if (route.authorization === 'owned-character') {
+    return 'composeOwnedCharacterModuleRoute'
+  }
   return 'composeAuthenticatedSessionModuleRoute'
 }
 
@@ -208,8 +220,9 @@ async function loadRouteImplementations(root: string, moduleId: string) {
     const sources = await loadTypescriptSourceDirectory(root, directory)
     const implementations = new Map<string, RouteImplementation>()
     for (const { path, source } of sources) {
-      for (const [name, implementation] of namedFunctionsIn(path, source))
+      for (const [name, implementation] of namedFunctionsIn(path, source)) {
         implementations.set(name, implementation)
+      }
     }
     return implementations
   } catch {
@@ -218,27 +231,37 @@ async function loadRouteImplementations(root: string, moduleId: string) {
 }
 
 function indexManifest(file: string, source: string): ManifestIndex | null {
-  if (!source) return null
+  if (!source) {
+    return null
+  }
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
   const manifest = manifestObject(sourceFile)
-  if (!manifest) return null
+  if (!manifest) {
+    return null
+  }
   const server = objectProperty(manifest, 'server')
   return {
     moduleId: propertyText(manifest, 'id') ?? file.split('/')[1] ?? '<unknown-module>',
-    routes: server ? indexedArray(sourceFile, server, 'routes') : [],
     permissions: indexedArray(sourceFile, manifest, 'permissions'),
-    sections: indexedArray(sourceFile, manifest, 'sections'),
     reviewerContributions: indexedArray(sourceFile, manifest, 'reviewerContributions'),
+    routes: server ? indexedArray(sourceFile, server, 'routes') : [],
+    sections: indexedArray(sourceFile, manifest, 'sections'),
   }
 }
 
 function manifestObject(sourceFile: ts.SourceFile) {
   for (const statement of sourceFile.statements) {
-    if (!ts.isVariableStatement(statement)) continue
+    if (!ts.isVariableStatement(statement)) {
+      continue
+    }
     for (const declaration of statement.declarationList.declarations) {
-      if (!ts.isIdentifier(declaration.name) || declaration.name.text !== 'manifest') continue
+      if (!ts.isIdentifier(declaration.name) || declaration.name.text !== 'manifest') {
+        continue
+      }
       const value = unwrapExpression(declaration.initializer)
-      if (value && ts.isObjectLiteralExpression(value)) return value
+      if (value && ts.isObjectLiteralExpression(value)) {
+        return value
+      }
     }
   }
   return null
@@ -246,28 +269,36 @@ function manifestObject(sourceFile: ts.SourceFile) {
 
 function indexedArray(sourceFile: ts.SourceFile, object: ts.ObjectLiteralExpression, name: string) {
   const array = arrayProperty(object, name)
-  if (!array) return []
+  if (!array) {
+    return []
+  }
   return array.elements.flatMap((element) => {
     const value = unwrapExpression(element)
-    if (!value || !ts.isObjectLiteralExpression(value)) return []
+    if (!value || !ts.isObjectLiteralExpression(value)) {
+      return []
+    }
     return {
-      node: value,
       code: value.getText(sourceFile),
       line: sourceFile.getLineAndCharacterOfPosition(value.getStart(sourceFile)).line + 1,
+      node: value,
     }
   })
 }
 
 function namedFunctionsIn(file: string, source: string) {
   const functions = new Map<string, RouteImplementation>()
-  if (!source) return functions
+  if (!source) {
+    return functions
+  }
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
   visit(sourceFile, (node) => {
-    if (!ts.isFunctionDeclaration(node) || !node.name) return
+    if (!ts.isFunctionDeclaration(node) || !node.name) {
+      return
+    }
     functions.set(node.name.text, {
+      code: node.getText(sourceFile),
       file,
       line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
-      code: node.getText(sourceFile),
     })
   })
   return functions
@@ -290,7 +321,9 @@ function arrayProperty(object: ts.ObjectLiteralExpression, name: string) {
 
 function propertyValue(object: ts.ObjectLiteralExpression, name: string) {
   for (const property of object.properties) {
-    if (!ts.isPropertyAssignment(property) || propertyName(property.name) !== name) continue
+    if (!ts.isPropertyAssignment(property) || propertyName(property.name) !== name) {
+      continue
+    }
     return unwrapExpression(property.initializer)
   }
   return null
@@ -309,8 +342,9 @@ function unwrapExpression(expression: ts.Expression | undefined): ts.Expression 
       ts.isTypeAssertionExpression(current) ||
       ts.isSatisfiesExpression(current) ||
       ts.isNonNullExpression(current))
-  )
+  ) {
     current = current.expression
+  }
   return current
 }
 

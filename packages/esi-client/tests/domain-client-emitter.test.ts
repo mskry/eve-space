@@ -44,7 +44,7 @@ describe('generated domain clients', () => {
       provenance,
     );
 
-    expect(second).toEqual(first);
+    expect(second).toStrictEqual(first);
     expect(first.domains).toHaveLength(1);
     expect(first.rootIndexSource).toContain("export * from './esi-client.js';");
     expect(first.rootIndexSource).toContain("export * from './domains/index.js';");
@@ -108,7 +108,9 @@ describe('generated domain clients', () => {
         ],
       ),
     ];
-    for (const source of sources) expect(source).not.toMatch(/[ \t]+$/mu);
+    for (const source of sources) {
+      expect(source).not.toMatch(/[ \t]+$/mu);
+    }
   });
 
   it('emits clients that compile against maintained transport and execute representative calls', async () => {
@@ -145,8 +147,6 @@ describe('generated domain clients', () => {
     const requests: Request[] = [];
     const configuration = new EsiClientConfiguration({
       baseUrl: 'https://esi.example.test',
-      token: 'secret-token',
-      validateRequests: true,
       fetch: async (input, init) => {
         const request = new Request(input, init);
         requests.push(request);
@@ -156,14 +156,16 @@ describe('generated domain clients', () => {
           headers: { 'content-type': 'application/json', 'x-pages': '4' },
         });
       },
+      token: 'secret-token',
+      validateRequests: true,
     });
     const domainClient = module.createItemsClient({ fetch: configuration.fetch });
     const minimalClient = new module.EsiClient();
     const client = new module.EsiClient({
       baseUrl: 'https://esi.example.test',
+      fetch: configuration.fetch,
       token: 'secret-token',
       validateRequests: true,
-      fetch: configuration.fetch,
     });
 
     expect(minimalClient.configuration).toMatchObject({
@@ -198,7 +200,7 @@ describe('generated domain clients', () => {
 
     await expect(client.items.withMetadata().getItem(7)).resolves.toMatchObject({
       data: { id: 7 },
-      meta: { status: 200, pagination: { pages: 4 } },
+      meta: { pagination: { pages: 4 }, status: 200 },
     });
 
     await expect(client.items.createItem({ body: { name: 'created' } })).resolves.toMatchObject({
@@ -208,7 +210,7 @@ describe('generated domain clients', () => {
     expect(configuration.allowGenericMutations).toBe(false);
     expect(requests[2]?.method).toBe('POST');
     expect(requests[2]?.headers.get('authorization')).toBe('Bearer secret-token');
-    await expect(requests[2]?.json()).resolves.toEqual({ name: 'created' });
+    await expect(requests[2]?.json()).resolves.toStrictEqual({ name: 'created' });
   });
 
   it('rejects metadata gaps and facade option collisions', () => {
@@ -256,7 +258,9 @@ describe('generated domain clients', () => {
       provenance,
     );
     const domain = artifacts.domains[0];
-    if (domain === undefined) throw new Error('Missing domain fixture');
+    if (domain === undefined) {
+      throw new Error('Missing domain fixture');
+    }
     expect(() =>
       validateDomainClientArtifacts({
         ...artifacts,
@@ -327,8 +331,8 @@ function assertDomainModule(value: unknown): RuntimeDomainModule {
 
 function representativeModel(): NormalizedOpenApiModel {
   const getItem = makeOperation('GetItem', 'GET', '/items/{item_id}', [
-    parameter('item_id', 'path', true, { type: 'integer', format: 'int64' }),
-    parameter('page', 'query', false, { type: 'integer', format: 'int32' }),
+    parameter('item_id', 'path', true, { format: 'int64', type: 'integer' }),
+    parameter('page', 'query', false, { format: 'int32', type: 'integer' }),
     parameter('Accept-Language', 'header', false, { type: 'string' }),
     parameter('If-None-Match', 'header', false, { type: 'string' }),
     compatibilityDateParameter(),
@@ -337,8 +341,6 @@ function representativeModel(): NormalizedOpenApiModel {
   const createItem = {
     ...makeOperation('CreateItem', 'POST', '/items', [compatibilityDateParameter()]),
     requestBody: {
-      required: true,
-      description: null,
       content: [
         {
           mediaType: 'application/json',
@@ -350,7 +352,9 @@ function representativeModel(): NormalizedOpenApiModel {
           extensions: {},
         },
       ],
+      description: null,
       extensions: {},
+      required: true,
     },
     security: [{ schemes: [{ name: 'OAuth2', scopes: ['esi-items.write.v1'] }] }],
   } satisfies NormalizedOperation;
@@ -361,9 +365,9 @@ function representativeModel(): NormalizedOpenApiModel {
         name: 'Item',
         pointer: '#/components/schemas/Item',
         schema: {
-          type: 'object',
-          required: ['id'],
           properties: { id: { type: 'integer' }, name: { type: 'string' } },
+          required: ['id'],
+          type: 'object',
         },
       },
     ],
@@ -383,10 +387,10 @@ function operationMetadata(
   classification: 'mutation' | 'read' = 'read',
 ): ResolvedOperationMetadata {
   return {
-    operationId,
+    classification,
     domain: 'items',
     method,
-    classification,
+    operationId,
     safetyOverrideReason: null,
   };
 }
@@ -398,15 +402,21 @@ function makeOperation(
   parameters: readonly NormalizedParameter[],
 ): NormalizedOperation {
   return {
-    operationId,
-    method,
-    path,
-    domainSource: 'Items',
-    tags: ['Items'],
-    summary: null,
+    cache: { extensions: {}, responseHeaders: [] },
+    conditionalRequestValidators: [],
     description: null,
+    domainSource: 'Items',
+    extensions: { 'x-compatibility-date': '2026-08-18' },
+    maximumBatchSize: null,
+    method,
+    operationId,
+    pagination: { kind: 'none', requestParameters: [], responseHeaders: [] },
     parameters,
+    path,
+    rateLimit: { kind: 'legacy-only' },
+    requestArrayLimits: [],
     requestBody: null,
+    security: [],
     successResponses: [
       {
         status: '200',
@@ -423,22 +433,16 @@ function makeOperation(
         extensions: {},
       },
     ],
-    security: [],
-    pagination: { kind: 'none', requestParameters: [], responseHeaders: [] },
-    cache: { responseHeaders: [], extensions: {} },
-    conditionalRequestValidators: [],
-    rateLimit: { kind: 'legacy-only' },
-    requestArrayLimits: [],
-    maximumBatchSize: null,
-    extensions: { 'x-compatibility-date': '2026-08-18' },
+    summary: null,
+    tags: ['Items'],
   };
 }
 
 function compatibilityDateParameter(): NormalizedParameter {
   return parameter('X-Compatibility-Date', 'header', true, {
-    type: 'string',
-    format: 'date',
     enum: ['2026-08-18'],
+    format: 'date',
+    type: 'string',
   });
 }
 
@@ -449,31 +453,31 @@ function parameter(
   schema: NormalizedParameter['schema'],
 ): NormalizedParameter {
   return {
+    allowReserved: null,
+    deprecated: false,
+    description: null,
+    explode: null,
+    extensions: {},
     name,
     placement,
     required,
-    description: null,
-    deprecated: false,
-    style: null,
-    explode: null,
-    allowReserved: null,
     schema,
-    extensions: {},
+    style: null,
   };
 }
 
 function normalized(operations: readonly NormalizedOperation[]): NormalizedOpenApiModel {
   const operationIds = operations.map(({ operationId }) => operationId);
   return {
-    operations,
-    models: [],
+    accounting: {
+      excludedOperationIds: [],
+      normalizedOperationIds: operationIds,
+      sourceOperationIds: operationIds,
+    },
     exclusions: [],
     inventory: { openapi: [], schemas: [] },
-    accounting: {
-      sourceOperationIds: operationIds,
-      normalizedOperationIds: operationIds,
-      excludedOperationIds: [],
-    },
+    models: [],
+    operations,
   };
 }
 
@@ -484,8 +488,8 @@ function emitterContext(
   return {
     compatibilityDate: provenance.compatibilityDate,
     correctedDocument: representativeOpenApiDocument(),
-    normalizedModel,
     namingReviewReport: 'test naming review\n',
+    normalizedModel,
     operationMetadata: representativeMetadata(),
     outputDirectory,
     outputPath: (target) => join(outputDirectory, target),
@@ -507,52 +511,52 @@ function emitterContext(
 function representativeOpenApiDocument(): Record<string, unknown> {
   const commonParameters = [
     {
-      name: 'Accept-Language',
       in: 'header',
-      schema: { type: 'string', default: 'en' },
+      name: 'Accept-Language',
+      schema: { default: 'en', type: 'string' },
     },
     {
-      name: 'X-Compatibility-Date',
       in: 'header',
+      name: 'X-Compatibility-Date',
       required: true,
-      schema: { type: 'string', enum: ['2026-08-18'] },
+      schema: { enum: ['2026-08-18'], type: 'string' },
     },
   ];
   return {
-    openapi: '3.1.0',
-    info: { title: 'Domain fixture', version: '1.0.0' },
     components: {
       schemas: {
         Item: {
-          type: 'object',
-          required: ['id'],
           properties: { id: { type: 'integer' }, name: { type: 'string' } },
+          required: ['id'],
+          type: 'object',
         },
       },
     },
+    info: { title: 'Domain fixture', version: '1.0.0' },
+    openapi: '3.1.0',
     paths: {
       '/items': {
         post: {
           operationId: 'CreateItem',
           parameters: commonParameters,
           requestBody: {
-            required: true,
             content: {
               'application/json': {
                 schema: {
-                  type: 'object',
-                  required: ['name'],
                   properties: { name: { type: 'string' } },
+                  required: ['name'],
+                  type: 'object',
                 },
               },
             },
+            required: true,
           },
           responses: {
             200: {
-              description: 'Success',
               content: {
                 'application/json': { schema: { $ref: '#/components/schemas/Item' } },
               },
+              description: 'Success',
             },
           },
         },
@@ -573,10 +577,10 @@ function representativeOpenApiDocument(): Record<string, unknown> {
           ],
           responses: {
             200: {
-              description: 'Success',
               content: {
                 'application/json': { schema: { $ref: '#/components/schemas/Item' } },
               },
+              description: 'Success',
             },
           },
         },
@@ -589,7 +593,9 @@ function reversed<Value>(values: readonly Value[]): Value[] {
   const result: Value[] = [];
   for (let index = values.length - 1; index >= 0; index -= 1) {
     const value = values[index];
-    if (value !== undefined) result.push(value);
+    if (value !== undefined) {
+      result.push(value);
+    }
   }
   return result;
 }

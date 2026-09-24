@@ -25,16 +25,16 @@ describe('installed reviewer contributions', () => {
         enabledModuleIds: ['alpha', 'beta'],
         enabledSections: [
           {
+            activationVersion: 1,
+            disclosureVersion: 0,
+            kind: 'workspace',
             moduleId: 'alpha',
             sectionId: 'overview',
-            kind: 'workspace',
-            disclosureVersion: 0,
-            activationVersion: 1,
           },
         ],
-        shellNavigationOrder: { dashboard: [], character: [] },
+        shellNavigationOrder: { character: [], dashboard: [] },
       })),
-    ).resolves.toEqual([alpha])
+    ).resolves.toStrictEqual([alpha])
   })
 })
 
@@ -44,20 +44,20 @@ function contribution(
   sectionId: string,
 ): PlatformInstalledReviewerContributionDescriptor {
   return {
-    publisherPackage: `@example/${moduleId}-manifest`,
-    moduleId,
+    audience: 'hr',
     contributionId,
+    description: `Review ${moduleId}.`,
+    icon: 'overview',
+    label: `${moduleId} ${contributionId}`,
+    moduleId,
+    order: moduleId === 'alpha' ? 10 : 20,
+    panelExport: `./reviewer/${contributionId}`,
+    panelPackage: `@example/${moduleId}-nuxt`,
+    publisherPackage: `@example/${moduleId}-manifest`,
+    requiredPermission: `${moduleId}.review`,
     routeId: `${moduleId}-route`,
     routePath: `/api/modules/${moduleId}/accounts/:userId`,
     sectionId,
-    audience: 'hr',
-    requiredPermission: `${moduleId}.review`,
     target: 'managed-organization-account',
-    panelPackage: `@example/${moduleId}-nuxt`,
-    panelExport: `./reviewer/${contributionId}`,
-    label: `${moduleId} ${contributionId}`,
-    description: `Review ${moduleId}.`,
-    icon: 'overview',
-    order: moduleId === 'alpha' ? 10 : 20,
   }
 }

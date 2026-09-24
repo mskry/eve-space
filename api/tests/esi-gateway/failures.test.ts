@@ -26,64 +26,64 @@ const incompleteErrors = { isErrorCompleted: () => false, markErrorCompleted: ()
 describe('application ESI failure compatibility', () => {
   test.each([
     {
-      label: 'request transport timeout',
       error: new EsiTransportError({
         operationId,
         reason: 'timeout',
         phase: 'request',
       }),
+      label: 'request transport timeout',
       retryable: true,
       staleClass: 'esi-unavailable',
     },
     {
-      label: 'response transport failure with a server status',
       error: new EsiTransportError({
         operationId,
         reason: 'network',
         phase: 'response',
         status: 503,
       }),
+      label: 'response transport failure with a server status',
       retryable: true,
       staleClass: 'esi-unavailable',
     },
     {
-      label: 'response transport failure with a client status',
       error: new EsiTransportError({
         operationId,
         reason: 'network',
         phase: 'response',
         status: 400,
       }),
+      label: 'response transport failure with a client status',
       retryable: false,
       staleClass: 'unknown',
     },
     {
-      label: 'HTTP server failure',
       error: new EsiHttpError({ operationId, status: 503 }),
+      label: 'HTTP server failure',
       retryable: true,
       staleClass: 'esi-unavailable',
     },
     {
-      label: 'HTTP client failure',
       error: new EsiHttpError({ operationId, status: 404 }),
+      label: 'HTTP client failure',
       retryable: false,
       staleClass: 'unknown',
     },
     {
-      label: 'response parse failure',
       error: new EsiResponseParseError({ operationId, status: 200 }),
+      label: 'response parse failure',
       retryable: false,
       staleClass: 'response-invalid',
     },
     {
-      label: 'response validation failure',
       error: new EsiResponseValidationError({ operationId, status: 200, issues: [] }),
+      label: 'response validation failure',
       retryable: false,
       staleClass: 'response-invalid',
     },
     {
-      label: 'unknown failure',
       error: new Error('outside the SDK'),
+      label: 'unknown failure',
       retryable: false,
       staleClass: 'unknown',
     },
@@ -97,27 +97,27 @@ describe('application ESI failure compatibility', () => {
 
   test('recovers typed not-modified status and metadata', () => {
     const error = new EsiNotModifiedError({
-      operationId,
       metadata: {
-        headers: { etag: 'status-v1' },
         cache: { cacheControl: 'max-age=30', maxAgeSeconds: 30 },
+        headers: { etag: 'status-v1' },
       },
+      operationId,
     })
 
     expect(getEsiFailureStatus(error)).toBe(304)
     expect(getEsiResponseErrorMetadata(error)).toStrictEqual({
-      status: 304,
-      headers: { etag: 'status-v1' },
       cache: { cacheControl: 'max-age=30', maxAgeSeconds: 30 },
+      headers: { etag: 'status-v1' },
+      status: 304,
     })
     expect(shouldRetryEsiError(error, incompleteErrors)).toBe(false)
   })
 
   test('converts a typed throttling response using SDK Retry-After metadata', () => {
     const error = new EsiHttpError({
+      metadata: { headers: {}, retryAfterSeconds: 12 },
       operationId,
       status: 429,
-      metadata: { headers: {}, retryAfterSeconds: 12 },
     })
 
     const converted = toEsiQuotaError(error)
@@ -129,13 +129,14 @@ describe('application ESI failure compatibility', () => {
   test('treats typed transport and invalid-response failures as mutation-ambiguous', () => {
     const mutation = getEsiOperationContract('mail-send')
     const failures = [
-      new EsiTransportError({ operationId, reason: 'network', phase: 'request' }),
+      new EsiTransportError({ operationId, phase: 'request', reason: 'network' }),
       new EsiResponseParseError({ operationId, status: 200 }),
-      new EsiResponseValidationError({ operationId, status: 200, issues: [] }),
+      new EsiResponseValidationError({ issues: [], operationId, status: 200 }),
     ]
 
-    for (const failure of failures)
+    for (const failure of failures) {
       expect(shouldAdvanceRevisionAfterMutationError(mutation, failure)).toBe(true)
+    }
     expect(
       shouldAdvanceRevisionAfterMutationError(mutation, new EsiNotModifiedError({ operationId })),
     ).toBe(false)
@@ -144,10 +145,10 @@ describe('application ESI failure compatibility', () => {
   test('returns a safe stable classification without retaining raw dependency errors', () => {
     const cause = new Error('socket failed at redis://cache.internal:6379 with bearer-secret')
     const failure = classifyEsiOperationFailure(
-      new EsiTransportError({ operationId, reason: 'network', phase: 'request', cause }),
+      new EsiTransportError({ cause, operationId, phase: 'request', reason: 'network' }),
     )
 
-    expect(failure).toEqual({ kind: 'unavailable' })
+    expect(failure).toStrictEqual({ kind: 'unavailable' })
     expect(JSON.stringify(failure)).not.toContain('redis://')
     expect(JSON.stringify(failure)).not.toContain('bearer-secret')
     expect(failure).not.toHaveProperty('cause')

@@ -33,24 +33,28 @@ const sourceViolations = ({ path, source }: TypeScriptSource) => {
 }
 
 const importViolations = (path: string, node: ts.Node, sourceFile: ts.SourceFile) => {
-  if (!ts.isImportDeclaration(node) || !ts.isStringLiteralLike(node.moduleSpecifier)) return []
+  if (!ts.isImportDeclaration(node) || !ts.isStringLiteralLike(node.moduleSpecifier)) {
+    return []
+  }
 
   const specifier = node.moduleSpecifier.text
   const location = `${path}:${lineOf(node, sourceFile)}`
 
-  if (specifier === COOKIE_SPECIFIER && normalize(path) !== COOKIE_OWNER)
+  if (specifier === COOKIE_SPECIFIER && normalize(path) !== COOKIE_OWNER) {
     return [
       `${location}: imports ${COOKIE_SPECIFIER} directly; set, read, and delete cookies through ${COOKIE_OWNER} so HttpOnly, SameSite, Secure, and the __Host- prefix are preserved`,
     ]
+  }
 
   if (
     importsBinding(node, VALIDATOR_EXPORT) &&
     normalize(path) !== VALIDATION_WRAPPER &&
     !specifier.endsWith(VALIDATION_SPECIFIER)
-  )
+  ) {
     return [
       `${location}: imports ${VALIDATOR_EXPORT} from '${specifier}'; use the wrapper in ${VALIDATION_WRAPPER} so validation failures keep the API's JSON error contract`,
     ]
+  }
 
   return []
 }

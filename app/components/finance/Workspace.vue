@@ -28,12 +28,12 @@ defineSlots<{
 }>()
 
 const services: ReadonlyArray<{ label: string; value: FinanceService }> = [
-  { value: 'journal', label: 'Journal' },
-  { value: 'transactions', label: 'Transactions' },
-  { value: 'orders', label: 'Orders' },
-  { value: 'contracts', label: 'Contracts' },
+  { label: 'Journal', value: 'journal' },
+  { label: 'Transactions', value: 'transactions' },
+  { label: 'Orders', value: 'orders' },
+  { label: 'Contracts', value: 'contracts' },
 ]
-const rangeOptions = FINANCE_RANGES.map((value) => ({ value, label: value }))
+const rangeOptions = FINANCE_RANGES.map((value) => ({ label: value, value }))
 const selectedService = computed<string>({
   get: () => props.activeService,
   set: (value) => emit('activate-service', value as FinanceService),

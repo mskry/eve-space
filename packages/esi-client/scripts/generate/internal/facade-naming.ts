@@ -75,12 +75,16 @@ export function splitWords(value: string): string[] {
 /** Derives the camelCase identifier a wire parameter name is exposed as on the facade. */
 export function facadeParameterName(value: string): string {
   const words = splitWords(value);
-  if (words.length === 0) throw new Error(`Cannot derive facade parameter name from ${value}`);
+  if (words.length === 0) {
+    throw new Error(`Cannot derive facade parameter name from ${value}`);
+  }
   let identifier = `${words[0].toLowerCase()}${words
     .slice(1)
     .map((word) => capitalize(word.toLowerCase()))
     .join('')}`;
-  if (!/^[A-Za-z_$]/u.test(identifier)) identifier = `value${capitalize(identifier)}`;
+  if (!/^[A-Za-z_$]/u.test(identifier)) {
+    identifier = `value${capitalize(identifier)}`;
+  }
   if (!generatedIdentifierPattern.test(identifier)) {
     throw new Error(`Invalid generated facade parameter identifier: ${identifier}`);
   }

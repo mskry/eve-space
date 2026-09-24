@@ -28,7 +28,9 @@ describe('API shutdown coordinator', () => {
     })
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
     const address = server.address()
-    if (!address || typeof address === 'string') throw new Error('Expected a TCP server address')
+    if (!address || typeof address === 'string') {
+      throw new Error('Expected a TCP server address')
+    }
     const response = new Promise<void>((resolve, reject) => {
       get(`http://127.0.0.1:${address.port}`, (incoming) => {
         incoming.resume()
@@ -38,8 +40,8 @@ describe('API shutdown coordinator', () => {
     await requestActive
     const closeCacheRedis = vi.fn().mockResolvedValue(undefined)
     const dependencies = createDependencies({
-      getServer: () => server,
       closeCacheRedis,
+      getServer: () => server,
     })
 
     const closing = createApiShutdownCoordinator(dependencies)()
@@ -64,19 +66,19 @@ describe('API shutdown coordinator', () => {
       }),
     })
     const dependencies = createDependencies({
-      getServer: () => server,
       closeCacheRedis: vi.fn(async () => {
         order.push('cache')
-      }),
-      closeEsiRuntime: vi.fn(async () => {
-        order.push('runtime')
       }),
       closeCoordinationRedis: vi.fn(async () => {
         order.push('coordination')
       }),
+      closeEsiRuntime: vi.fn(async () => {
+        order.push('runtime')
+      }),
       closePostgres: vi.fn(async () => {
         order.push('postgres')
       }),
+      getServer: () => server,
     })
     const shutdown = createApiShutdownCoordinator(dependencies)
 
@@ -84,14 +86,14 @@ describe('API shutdown coordinator', () => {
     const second = shutdown()
 
     expect(second).toBe(first)
-    expect(order).toEqual(['http'])
+    expect(order).toStrictEqual(['http'])
     finishHttp()
     await first
     const third = shutdown()
     await third
 
     expect(third).toBe(first)
-    expect(order).toEqual(['http', 'runtime', 'cache', 'coordination', 'postgres'])
+    expect(order).toStrictEqual(['http', 'runtime', 'cache', 'coordination', 'postgres'])
     expect(server.close).toHaveBeenCalledOnce()
     expect(server.closeAllConnections).not.toHaveBeenCalled()
     expect(dependencies.closeEsiRuntime).toHaveBeenCalledOnce()
@@ -103,11 +105,11 @@ describe('API shutdown coordinator', () => {
   test('forces HTTP cleanup and starts remaining resource cleanup at the deadline', async () => {
     vi.useFakeTimers()
     const server = createServer()
-    const dependencies = createDependencies({ getServer: () => server, timeoutMs: 1_000 })
+    const dependencies = createDependencies({ getServer: () => server, timeoutMs: 1000 })
     const shutdown = createApiShutdownCoordinator(dependencies)
 
     const closing = shutdown()
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
     await closing
 
     expect(server.close).toHaveBeenCalledOnce()
@@ -123,11 +125,11 @@ describe('API shutdown coordinator', () => {
 
   test('continues startup cleanup when resources are absent or unavailable', async () => {
     const dependencies = createDependencies({
-      getServer: () => undefined,
-      closeEsiRuntime: vi.fn().mockRejectedValue(new Error('runtime unavailable')),
       closeCacheRedis: vi.fn().mockRejectedValue(new Error('cache unavailable')),
       closeCoordinationRedis: vi.fn().mockResolvedValue(undefined),
+      closeEsiRuntime: vi.fn().mockRejectedValue(new Error('runtime unavailable')),
       closePostgres: vi.fn().mockRejectedValue(new Error('postgres unavailable')),
+      getServer: () => undefined,
     })
 
     await createApiShutdownCoordinator(dependencies)()
@@ -146,15 +148,15 @@ function createDependencies(
   overrides: Partial<ApiShutdownDependencies> = {},
 ): ApiShutdownDependencies {
   return {
-    timeoutMs: 30_000,
-    getServer: () => undefined,
-    closeEsiRuntime: vi.fn().mockResolvedValue(undefined),
     closeCacheRedis: vi.fn().mockResolvedValue(undefined),
     closeCoordinationRedis: vi.fn().mockResolvedValue(undefined),
+    closeEsiRuntime: vi.fn().mockResolvedValue(undefined),
     closePostgres: vi.fn().mockResolvedValue(undefined),
+    getServer: () => undefined,
+    markFailed: vi.fn(),
     recordFailure: vi.fn(),
     recordTimeout: vi.fn(),
-    markFailed: vi.fn(),
+    timeoutMs: 30_000,
     ...overrides,
   }
 }

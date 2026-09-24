@@ -10,7 +10,7 @@ const heartbeatToleranceFactor = 4
 
 export const workerHeartbeatIntervalMs = env.WORKER_HEARTBEAT_INTERVAL_MS
 export const workerHeartbeatStaleAfterMs = workerHeartbeatIntervalMs * heartbeatToleranceFactor
-export const workerHeartbeatTtlSeconds = Math.ceil(workerHeartbeatStaleAfterMs / 1_000)
+export const workerHeartbeatTtlSeconds = Math.ceil(workerHeartbeatStaleAfterMs / 1000)
 
 export const schedulerLockTtlMs = 30_000
 export const schedulerLockRenewalMs = 10_000
@@ -21,8 +21,9 @@ export const derivedResourcePriorityBand = {
 } as const
 
 export function resourceRefreshPriority(materializationIntervalSeconds: number) {
-  if (!isPositiveSafeInteger(materializationIntervalSeconds))
+  if (!isPositiveSafeInteger(materializationIntervalSeconds)) {
     throw new Error('Resource materialization interval must be a positive safe integer')
+  }
 
   return Math.min(materializationIntervalSeconds, derivedResourcePriorityBand.lowest)
 }

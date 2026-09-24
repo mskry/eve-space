@@ -166,20 +166,22 @@ export async function probeEsiResilienceTelemetry(
       cooldownPending,
       upstreamPending,
     ])
-    if (coordinationAvailable && cooldownResult.status === 'rejected')
+    if (coordinationAvailable && cooldownResult.status === 'rejected') {
       coordination = coordinationTelemetry(false, checkedAt)
-    if (cacheAvailable && upstreamResult.status === 'rejected')
+    }
+    if (cacheAvailable && upstreamResult.status === 'rejected') {
       cache = cacheDependencyTelemetry(false, checkedAt)
+    }
     const upstreamStatus = getUpstreamStatus(resolvedUpstreamObservation)
     return {
-      checkedAt,
       cache,
-      coordination,
+      checkedAt,
       cooldown: resolveProbeResult<EsiCooldownStatus, EsiCooldownStatus>(
         cooldownResult,
         (value) => value,
         () => ({ status: 'unavailable', checkedAt, globalRetryAt: null, activeOperations: [] }),
       ),
+      coordination,
       upstream: resolveProbeResult<EsiUpstreamOperationTelemetry[], EsiStatusTelemetry['upstream']>(
         upstreamResult,
         (operations) => ({ status: upstreamStatus, checkedAt, operations }),
@@ -197,12 +199,15 @@ export async function probeEsiResilienceTelemetry(
 function getUpstreamStatus(
   observation: EsiUpstreamObservation,
 ): EsiStatusTelemetry['upstream']['status'] {
-  if (observation.status === 'operational') return 'operational'
+  if (observation.status === 'operational') {
+    return 'operational'
+  }
   if (
     observation.status === 'unavailable' ||
     (observation.status === 'stale' && observation.refreshFailureClass === 'esi-unavailable')
-  )
+  ) {
     return 'unavailable'
+  }
   return 'degraded'
 }
 
@@ -211,12 +216,16 @@ function createOwnedConnection(
   providedConnection: Redis | undefined,
   createConnection: () => Redis,
 ) {
-  if (!available || providedConnection) return undefined
+  if (!available || providedConnection) {
+    return
+  }
   return createConnection()
 }
 
 async function probeCooldown(available: boolean, connection: Redis | undefined) {
-  if (!available) throw new Error('Coordination unavailable')
+  if (!available) {
+    throw new Error('Coordination unavailable')
+  }
   return getSharedEsiCooldownStatus(connection!)
 }
 
@@ -225,8 +234,12 @@ async function probeUpstreamOperations(
   providedConnection: Redis | undefined,
   ownedConnection: Redis | undefined,
 ) {
-  if (!available) throw new Error('Cache unavailable')
-  if (ownedConnection) await waitForCacheRedisConnection(ownedConnection)
+  if (!available) {
+    throw new Error('Cache unavailable')
+  }
+  if (ownedConnection) {
+    await waitForCacheRedisConnection(ownedConnection)
+  }
   return readUpstreamOperations(providedConnection ?? ownedConnection!)
 }
 
@@ -235,7 +248,9 @@ function resolveProbeResult<Value, Result>(
   fulfilled: (value: Value) => Result,
   rejected: () => Result,
 ) {
-  if (result.status === 'fulfilled') return fulfilled(result.value)
+  if (result.status === 'fulfilled') {
+    return fulfilled(result.value)
+  }
   return rejected()
 }
 
@@ -243,7 +258,9 @@ function closeOwnedConnection(
   connection: Redis | undefined,
   closeConnection: (connection: Redis) => Promise<void>,
 ) {
-  if (!connection) return undefined
+  if (!connection) {
+    return
+  }
   return closeConnection(connection).catch(() => {})
 }
 
@@ -281,39 +298,39 @@ async function readUpstreamOperations(connection: Redis) {
     ),
   )
   return values.map(([operation, value]) => ({
-    operation,
-    policy: operationPolicy(esiOperationCatalog[operation]),
-    outcomes: {
-      success: parseCount(value.success),
-      notModified: parseCount(value.notModified),
-      redirect: parseCount(value.redirect),
-      rateLimited: parseCount(value.rateLimited),
-      clientError: parseCount(value.clientError),
-      serverError: parseCount(value.serverError),
-    },
-    observedRateGroup: value.observedRateGroup || null,
-    rateGroupMismatches: parseCount(value.rateGroupMismatches),
     cacheSources: getEsiCacheSourceCounts(operation),
     checkedAt: parseTimestamp(value.checkedAt),
+    observedRateGroup: value.observedRateGroup || null,
+    operation,
+    outcomes: {
+      clientError: parseCount(value.clientError),
+      notModified: parseCount(value.notModified),
+      rateLimited: parseCount(value.rateLimited),
+      redirect: parseCount(value.redirect),
+      serverError: parseCount(value.serverError),
+      success: parseCount(value.success),
+    },
+    policy: operationPolicy(esiOperationCatalog[operation]),
+    rateGroupMismatches: parseCount(value.rateGroupMismatches),
   }))
 }
 
 function emptyUpstreamOperations() {
   return (Object.keys(esiOperationCatalog) as EsiOperation[]).map((operation) => ({
-    operation,
-    policy: operationPolicy(esiOperationCatalog[operation]),
-    outcomes: {
-      success: 0,
-      notModified: 0,
-      redirect: 0,
-      rateLimited: 0,
-      clientError: 0,
-      serverError: 0,
-    },
-    observedRateGroup: null,
-    rateGroupMismatches: 0,
     cacheSources: getEsiCacheSourceCounts(operation),
     checkedAt: null,
+    observedRateGroup: null,
+    operation,
+    outcomes: {
+      clientError: 0,
+      notModified: 0,
+      rateLimited: 0,
+      redirect: 0,
+      serverError: 0,
+      success: 0,
+    },
+    policy: operationPolicy(esiOperationCatalog[operation]),
+    rateGroupMismatches: 0,
   }))
 }
 
@@ -323,19 +340,19 @@ function cacheDependencyTelemetry(
 ): EsiCacheDependencyTelemetry {
   const counters = getEsiCacheEnvelopeCounterSnapshot()
   return {
-    status: recordEsiDependencyProbe('cache', available),
     checkedAt,
     connectionErrors: getCacheConnectionErrorCounts(),
     envelopeRejections: counters.rejections,
     envelopeVersionMismatches: counters.versionMismatches,
+    status: recordEsiDependencyProbe('cache', available),
   }
 }
 
 function coordinationTelemetry(available: boolean, checkedAt: string) {
   return {
-    status: recordEsiDependencyProbe('coordination', available),
     checkedAt,
     operationFailures: getEsiCoordinationFailureCount(),
+    status: recordEsiDependencyProbe('coordination', available),
   }
 }
 
@@ -343,9 +360,9 @@ function operationPolicy(policy: EsiOperationContract): EsiUpstreamOperationTele
   return {
     authorization: policy.authorization.kind,
     cache: policy.cache.kind,
+    declaredRateGroup: getDeclaredEsiRateLimit(policy)?.group ?? null,
     freshness: policy.freshness.kind,
     rateGroup: policy.rateGroup.kind,
-    declaredRateGroup: getDeclaredEsiRateLimit(policy)?.group ?? null,
   }
 }
 

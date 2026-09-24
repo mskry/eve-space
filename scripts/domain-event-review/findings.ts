@@ -26,18 +26,21 @@ export function classifyDomainEvent(
     (item) => item.severe && item.confidence >= AUTO_REPORT_CONFIDENCE,
   )
   let verdict: JevReviewVerdict = 'pass'
-  if (reportable) verdict = 'report'
-  else if (concerns.length > 0) verdict = 'review'
+  if (reportable) {
+    verdict = 'report'
+  } else if (concerns.length > 0) {
+    verdict = 'review'
+  }
   const schema = evidence.definition
     ? `${evidence.definition.eventType} v${evidence.definition.payloadVersion}`
     : 'not found'
   return {
-    verdict,
-    location: `${evidence.producer.file}:${evidence.producer.line} (${evidence.producer.eventType})`,
     details: [`schema: ${schema}`, `consumers: ${evidence.consumers.length}`],
-    reason: reasonFor(verdict, concerns),
     eventType: evidence.producer.eventType,
+    location: `${evidence.producer.file}:${evidence.producer.line} (${evidence.producer.eventType})`,
+    reason: reasonFor(verdict, concerns),
     signals: judgment,
+    verdict,
   }
 }
 
@@ -62,20 +65,23 @@ function concern(
   severeChoices: readonly string[],
   reviewChoices: readonly string[] = [],
 ) {
-  if (severeChoices.includes(judgment.choice))
+  if (severeChoices.includes(judgment.choice)) {
     return { label, ...judgment, severe: true } satisfies Concern
+  }
   if (
     reviewChoices.includes(judgment.choice) ||
     judgment.choice === 'unclear' ||
     judgment.confidence < MINIMUM_PASS_CONFIDENCE
-  )
+  ) {
     return { label, ...judgment, severe: false } satisfies Concern
+  }
   return null
 }
 
 function reasonFor(verdict: JevReviewVerdict, concerns: readonly Concern[]) {
-  if (verdict === 'pass')
+  if (verdict === 'pass') {
     return 'Mutation meaning, schema, convergence identity, delivery safety, and payload sensitivity are aligned.'
+  }
   return concerns
     .map(({ label, choice, confidence }) => `${label}=${choice} (${confidence.toFixed(2)})`)
     .join('; ')

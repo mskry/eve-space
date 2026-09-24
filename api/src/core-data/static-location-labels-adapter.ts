@@ -54,7 +54,7 @@ export function loadStaticLocationLabelsProduct(
         locationIds.length === 0
           ? []
           : await selectStaticLocationLabels(transaction, signal, locationIds)
-      return { rows: sourceRows.map(mapStaticLocationLabel), revision, complete: true }
+      return { complete: true, revision, rows: sourceRows.map(mapStaticLocationLabel) }
     },
   )
 }
@@ -92,11 +92,12 @@ async function selectStaticLocationLabels(
 }
 
 function mapStaticLocationLabel(row: StaticLocationLabelRow): StaticLocationLabel {
-  if (row.kind !== 'solar_system' && row.kind !== 'station')
+  if (row.kind !== 'solar_system' && row.kind !== 'station') {
     throw new CoreDataProductUnavailableError('Core-data location kind is invalid')
+  }
   return {
-    locationId: positiveSafeInteger(row.location_id, 'location ID'),
     kind: row.kind,
+    locationId: positiveSafeInteger(row.location_id, 'location ID'),
     name: nonemptyString(row.name, 'location name'),
     solarSystemId: positiveSafeInteger(row.solar_system_id, 'location solar-system ID'),
   }

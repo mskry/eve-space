@@ -57,12 +57,12 @@ const oauthStateCookie = 'eve_space_oauth_state'
 const reviewerDisclosureCookie = 'eve_space_reviewer_disclosure'
 const reviewerDisclosurePath = '/auth/eve/disclosure'
 const sessionLifetime = {
-  idleSeconds: 14 * 24 * 60 * 60,
   absoluteSeconds: 30 * 24 * 60 * 60,
+  idleSeconds: 14 * 24 * 60 * 60,
   renewalIntervalSeconds: 24 * 60 * 60,
 }
 const maxReturnPathDecodeDepth = 4
-const bootstrapAdmissionTimeoutMs = 1_000
+const bootstrapAdmissionTimeoutMs = 1000
 const sessionQuery = z.object({ includeAdmission: z.literal('true').optional() })
 type CharacterAuthorization = Omit<Parameters<typeof attachCharacter>[0], 'userId'>
 const callbackQuery = z.object({
@@ -93,9 +93,9 @@ const invalidReturnDestination = new HTTPException(400, {
 export const ssoRoutes = new Hono<OwnedCharacterEnv>()
   .get('/config', (context) =>
     context.json({
+      attachUrl: new URL('/auth/eve/attach', env.EVE_CALLBACK_URL).toString(),
       configured: isSsoConfigured(),
       loginUrl: new URL('/auth/eve/start', env.EVE_CALLBACK_URL).toString(),
-      attachUrl: new URL('/auth/eve/attach', env.EVE_CALLBACK_URL).toString(),
     }),
   )
   .get(
@@ -122,8 +122,9 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
   .get('/eve/attach', loadSession, async (context) => {
     const session = context.var.session
     setPrivateHeaders(context)
-    if (!session)
+    if (!session) {
       return context.json({ code: 'AUTH_REQUIRED', message: 'Log in with EVE Online first.' }, 401)
+    }
     return startAuthorization(context, { intent: 'attach', userId: session.userId })
   })
   .post(
@@ -132,7 +133,9 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
     requireTrustedMutationOrigin,
     loadSession,
     async (context, next) => {
-      if (!context.var.session) return context.json(authRequiredBody, 401)
+      if (!context.var.session) {
+        return context.json(authRequiredBody, 401)
+      }
       await next()
     },
     zValidator('json', transferStartBody),
@@ -141,7 +144,7 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
         ...context.req.valid('json'),
         destinationUserId: context.var.session!.userId,
       })
-      if (!binding)
+      if (!binding) {
         return context.json(
           {
             code: 'TRANSFER_APPROVAL_UNUSABLE',
@@ -149,6 +152,7 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
           },
           409,
         )
+      }
       const { authorizationUrl } = await prepareAuthorization(context, {
         intent: 'transfer',
         ...binding,
@@ -165,11 +169,11 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       setPrivateHeaders(context)
       const organization = await loadCurrentOrganizationIdentity()
       return startAuthorization(context, {
-        intent: 'claim-organization-owner',
-        userId: context.var.session!.userId,
         characterId: context.var.ownedCharacter.characterId,
+        intent: 'claim-organization-owner',
         organizationId: organization.organizationId,
         organizationVersion: organization.organizationVersion,
+        userId: context.var.session!.userId,
       })
     },
   )
@@ -194,9 +198,9 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       const session = context.var.session
       const { returnTo } = context.req.valid('query')
       return startAuthorization(context, {
+        characterId: context.var.ownedCharacter.characterId,
         intent: 'reauthorize',
         userId: session!.userId,
-        characterId: context.var.ownedCharacter.characterId,
         ...(returnTo
           ? {
               returnPath: normalizeCharacterReturnPath(
@@ -211,12 +215,15 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
   .get('/eve/disclosure', privateNoStore, async (context) => {
     const token = readAuthCookie(context, reviewerDisclosureCookie, reviewerDisclosurePath)
     const stateContext = token ? await findOAuthState(token) : null
-    if (!stateContext)
+    if (!stateContext) {
       return context.json(
         { code: 'DISCLOSURE_EXPIRED', message: 'The authorization disclosure has expired.' },
         400,
       )
-    if (!(await hasBoundSession(context, stateContext))) return context.json(authRequiredBody, 401)
+    }
+    if (!(await hasBoundSession(context, stateContext))) {
+      return context.json(authRequiredBody, 401)
+    }
     return context.json({
       disclosures: presentReviewerUseDisclosures(stateContext.reviewerUseDisclosures),
       undisclosedCharacterWarning:
@@ -227,12 +234,15 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
     const token = readAuthCookie(context, reviewerDisclosureCookie, reviewerDisclosurePath)
     const stateContext = token ? await consumeOAuthState(token) : null
     deleteAuthCookie(context, reviewerDisclosureCookie, reviewerDisclosurePath)
-    if (!stateContext)
+    if (!stateContext) {
       return context.json(
         { code: 'DISCLOSURE_EXPIRED', message: 'The authorization disclosure has expired.' },
         400,
       )
-    if (!(await hasBoundSession(context, stateContext))) return context.json(authRequiredBody, 401)
+    }
+    if (!(await hasBoundSession(context, stateContext))) {
+      return context.json(authRequiredBody, 401)
+    }
     const { authorizationUrl } = await prepareEveAuthorization(
       context,
       stateContext,
@@ -246,16 +256,23 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
     const stateContext = await consumeValidOAuthState(state, cookieState)
 
     deleteAuthCookie(context, oauthStateCookie, '/auth/eve/callback')
-    if (!stateContext) return redirectForIntent(context, { intent: 'login' }, 'error')
-    if (authorizationError) return redirectForIntent(context, stateContext, 'cancelled')
-    if (!code) return redirectForIntent(context, stateContext, 'error')
+    if (!stateContext) {
+      return redirectForIntent(context, { intent: 'login' }, 'error')
+    }
+    if (authorizationError) {
+      return redirectForIntent(context, stateContext, 'cancelled')
+    }
+    if (!code) {
+      return redirectForIntent(context, stateContext, 'error')
+    }
 
-    if (!(await hasBoundSession(context, stateContext)))
+    if (!(await hasBoundSession(context, stateContext))) {
       return redirectForIntent(
         context,
         stateContext,
         stateContext.intent === 'transfer' ? 'approval-unusable' : 'error',
       )
+    }
 
     try {
       const tokens = await exchangeAuthorizationCode(code, context.req.raw.signal)
@@ -276,17 +293,20 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
         stateContext.intent === 'claim-organization-owner'
           ? await observeCharacterAffiliation(identity.characterId)
           : await getCharacterAffiliation(identity.characterId)
-      if (!affiliation) throw new OrganizationAuthorityError('stale-affiliation')
-      if (stateContext.intent === 'claim-organization-owner' && affiliation.stale)
+      if (!affiliation) {
         throw new OrganizationAuthorityError('stale-affiliation')
+      }
+      if (stateContext.intent === 'claim-organization-owner' && affiliation.stale) {
+        throw new OrganizationAuthorityError('stale-affiliation')
+      }
       const authorization = {
         ...identity,
-        corporationId: affiliation.corporationId,
-        allianceId: affiliation.allianceId,
-        affiliationCheckedAt: affiliation.affiliationCheckedAt,
         accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        affiliationCheckedAt: affiliation.affiliationCheckedAt,
+        allianceId: affiliation.allianceId,
+        corporationId: affiliation.corporationId,
         expiresIn: tokens.expires_in,
+        refreshToken: tokens.refresh_token,
       }
 
       await saveAuthorizationForIntent(context, stateContext, authorization)
@@ -300,20 +320,26 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
     '/local-fixture-session',
     async (context, next) => {
       setPrivateHeaders(context)
-      if (env.NODE_ENV !== 'development') return context.json(routeNotFoundBody, 404)
+      if (env.NODE_ENV !== 'development') {
+        return context.json(routeNotFoundBody, 404)
+      }
       await next()
     },
     zValidator('form', localFixtureSessionForm),
     async (context) => {
       const { sessionToken } = context.req.valid('form')
-      if (!(await findSession(sessionToken))) return context.json(authRequiredBody, 401)
+      if (!(await findSession(sessionToken))) {
+        return context.json(authRequiredBody, 401)
+      }
       setAuthCookie(context, sessionCookie, sessionToken, sessionLifetime.idleSeconds)
       return context.redirect(new URL('/', env.WEB_ORIGIN).toString(), 303)
     },
   )
   .get('/session', privateNoStore, zValidator('query', sessionQuery), async (context) => {
     const sessionToken = readAuthCookie(context, sessionCookie)
-    if (!sessionToken) return context.json({ authenticated: false as const })
+    if (!sessionToken) {
+      return context.json({ authenticated: false as const })
+    }
 
     const session = await findSession(sessionToken)
     if (!session) {
@@ -328,12 +354,14 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
     if (context.req.valid('query').includeAdmission) {
       bootstrap.cacheAdmission = await loadBootstrapAdmission(session.userId)
     }
-    return context.json({ authenticated: true as const, account: session, ...bootstrap })
+    return context.json({ account: session, authenticated: true as const, ...bootstrap })
   })
   .post('/logout', async (context) => {
     setPrivateHeaders(context)
     const sessionToken = readAuthCookie(context, sessionCookie)
-    if (sessionToken) await deleteSession(sessionToken)
+    if (sessionToken) {
+      await deleteSession(sessionToken)
+    }
     deleteAuthCookie(context, sessionCookie)
     return context.body(null, 204)
   })
@@ -360,10 +388,12 @@ function redirectForCallbackError(
   stateContext: OAuthStateContext,
   error: unknown,
 ) {
-  if (stateContext.intent === 'attach' && error instanceof CharacterTransferApprovalRequiredError)
+  if (stateContext.intent === 'attach' && error instanceof CharacterTransferApprovalRequiredError) {
     return redirectForIntent(context, stateContext, 'approval-required')
-  if (stateContext.intent === 'transfer' && error instanceof CharacterTransferError)
+  }
+  if (stateContext.intent === 'transfer' && error instanceof CharacterTransferError) {
     return redirectForIntent(context, stateContext, error.code)
+  }
   recordDiagnostic('auth.sso-callback.failed', { error })
   return redirectForIntent(context, stateContext, 'error')
 }
@@ -409,15 +439,21 @@ async function prepareEveAuthorization(
 }
 
 async function consumeValidOAuthState(state: string | undefined, cookieState: string | undefined) {
-  if (!state || !tokensMatch(state, cookieState)) return null
+  if (!state || !tokensMatch(state, cookieState)) {
+    return null
+  }
   return consumeOAuthState(state)
 }
 
 async function hasBoundSession(context: Context, stateContext: OAuthStateContext) {
-  if (stateContext.intent === 'login') return true
+  if (stateContext.intent === 'login') {
+    return true
+  }
 
   const sessionToken = readAuthCookie(context, sessionCookie)
-  if (!sessionToken) return false
+  if (!sessionToken) {
+    return false
+  }
 
   const session = await findSession(sessionToken)
   return session?.userId === stateContext.userId
@@ -437,8 +473,8 @@ async function saveAuthorizationForIntent(
       const sessionToken = createOpaqueToken()
       await saveLogin({
         ...disclosedAuthorization,
-        sessionToken,
         sessionExpiresAt: new Date(Date.now() + sessionLifetime.idleSeconds * 1000),
+        sessionToken,
       })
       setAuthCookie(context, sessionCookie, sessionToken, sessionLifetime.idleSeconds)
       return
@@ -446,16 +482,16 @@ async function saveAuthorizationForIntent(
     case 'attach':
       await attachCharacter({
         ...disclosedAuthorization,
-        userId: stateContext.userId,
         sessionToken: readAuthCookie(context, sessionCookie)!,
+        userId: stateContext.userId,
       })
       return
     case 'reauthorize':
       await reauthorizeCharacter({
         ...disclosedAuthorization,
-        userId: stateContext.userId,
         expectedCharacterId: stateContext.characterId,
         sessionToken: readAuthCookie(context, sessionCookie)!,
+        userId: stateContext.userId,
       })
       return
     case 'claim-organization-owner':
@@ -468,12 +504,12 @@ async function saveAuthorizationForIntent(
     case 'transfer':
       await transferCharacter({
         approvalId: stateContext.approvalId,
-        sourceUserId: stateContext.sourceUserId,
-        sourceSubjectLifecycleId: stateContext.sourceSubjectLifecycleId,
-        destinationUserId: stateContext.userId,
+        authorization: disclosedAuthorization,
         characterId: stateContext.characterId,
         destinationSessionToken: readAuthCookie(context, sessionCookie)!,
-        authorization: disclosedAuthorization,
+        destinationUserId: stateContext.userId,
+        sourceSubjectLifecycleId: stateContext.sourceSubjectLifecycleId,
+        sourceUserId: stateContext.sourceUserId,
       })
       return
   }
@@ -488,8 +524,9 @@ async function saveOrganizationOwnerClaim(
   if (
     organization.organizationId !== state.organizationId ||
     organization.organizationVersion !== state.organizationVersion
-  )
+  ) {
     throw new OrganizationOwnerClaimError('stale-organization')
+  }
 
   assertOrganizationOwnerScope(characterCorporationRolesScope, authorization.scopes)
   const authorityCorporation = await resolveOrganizationAuthorityCorporationEvidence(
@@ -499,28 +536,30 @@ async function saveOrganizationOwnerClaim(
   const { affiliationCheckedAt, subjectLifecycleId, authorizationGeneration } =
     await reauthorizeCharacter({
       ...authorization,
-      userId: state.userId,
       expectedCharacterId: state.characterId,
       sessionToken,
+      userId: state.userId,
     })
   const roles = await getCharacterCorporationRolesEvidence(state.characterId, subjectLifecycleId)
-  if (roles.stale) throw new OrganizationOwnerClaimError('stale-affiliation')
+  if (roles.stale) {
+    throw new OrganizationOwnerClaimError('stale-affiliation')
+  }
   assertOrganizationOwnerDirectorRole(roles)
   await claimOrganizationOwnership({
-    userId: state.userId,
-    characterId: state.characterId,
-    subjectLifecycleId,
+    affiliationCheckedAt,
+    authorityCorporationId: authorityCorporation.corporationId,
     authorizationGeneration,
-    roleEvidenceRevision: roles.roleEvidenceRevision,
+    characterId: state.characterId,
     evidenceAuthorizationGeneration: roles.authorizationGeneration,
     evidenceFreshUntil: earliestDate(roles.freshUntil, authorityCorporation.freshUntil),
+    observedAllianceId: authorization.allianceId,
+    observedCorporationId: authorization.corporationId,
     organizationId: state.organizationId,
     organizationVersion: state.organizationVersion,
-    authorityCorporationId: authorityCorporation.corporationId,
-    observedCorporationId: authorization.corporationId,
-    observedAllianceId: authorization.allianceId,
-    affiliationCheckedAt,
     requiredScope: characterCorporationRolesScope,
+    roleEvidenceRevision: roles.roleEvidenceRevision,
+    subjectLifecycleId,
+    userId: state.userId,
   })
 }
 
@@ -553,9 +592,12 @@ function redirectForIntent(
       'auth',
       status === 'success' || status === 'cancelled' ? status : 'error',
     )
-    if (status === 'success' && characterId)
+    if (status === 'success' && characterId) {
       destination.searchParams.set('character', String(characterId))
-    if (state.returnPath) destination.searchParams.set('redirect', state.returnPath)
+    }
+    if (state.returnPath) {
+      destination.searchParams.set('redirect', state.returnPath)
+    }
     return context.redirect(destination.toString())
   }
 
@@ -586,19 +628,22 @@ function redirectForIntent(
     (state.intent === 'attach' || state.intent === 'transfer') &&
     status === 'success' &&
     characterId
-  )
+  ) {
     destination.searchParams.set('character', String(characterId))
+  }
   return context.redirect(destination.toString())
 }
 
 function secondsUntil(expiresAt: Date) {
-  return Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1_000))
+  return Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000))
 }
 
 function assertUniqueQueryParameters(url: string) {
   const names = new Set<string>()
   for (const name of new URL(url).searchParams.keys()) {
-    if (names.has(name)) throw invalidReturnDestination
+    if (names.has(name)) {
+      throw invalidReturnDestination
+    }
     names.add(name)
   }
 }
@@ -614,19 +659,25 @@ function normalizeCharacterReturnPath(value: string, characterId: number) {
   assertUniqueQueryParameters(destination.toString())
 
   const normalized = `${destination.pathname}${destination.search}`
-  if (normalized.length > 512) throw invalidReturnDestination
+  if (normalized.length > 512) {
+    throw invalidReturnDestination
+  }
   return normalized
 }
 
 function normalizeLoginReturnPath(value: string) {
-  if (!value.startsWith('/') || value.startsWith('//')) throw invalidReturnDestination
+  if (!value.startsWith('/') || value.startsWith('//')) {
+    throw invalidReturnDestination
+  }
 
   const destination = parseLocalReturnDestination(value)
   assertReturnPathLayers(value, checkNonAuthorizationLayer)
   assertUniqueQueryParameters(destination.toString())
 
   const normalized = `${destination.pathname}${destination.search}${destination.hash}`
-  if (normalized.length > 512) throw invalidReturnDestination
+  if (normalized.length > 512) {
+    throw invalidReturnDestination
+  }
   return normalized
 }
 
@@ -635,8 +686,12 @@ function assertReturnPathLayers(value: string, checkLayer: (layer: string) => st
   let layer = value
   for (let depth = 0; depth <= maxReturnPathDecodeDepth; depth += 1) {
     const checked = checkLayer(layer)
-    if (!/%[\dA-Fa-f]{2}/.test(checked)) return
-    if (depth === maxReturnPathDecodeDepth) throw invalidReturnDestination
+    if (!/%[\dA-Fa-f]{2}/.test(checked)) {
+      return
+    }
+    if (depth === maxReturnPathDecodeDepth) {
+      throw invalidReturnDestination
+    }
     try {
       layer = decodeURIComponent(checked)
     } catch {
@@ -647,7 +702,9 @@ function assertReturnPathLayers(value: string, checkLayer: (layer: string) => st
 
 function checkNonAuthorizationLayer(value: string) {
   const destination = parseLocalReturnDestination(value)
-  if (['/auth', '/auth/'].includes(destination.pathname)) throw invalidReturnDestination
+  if (['/auth', '/auth/'].includes(destination.pathname)) {
+    throw invalidReturnDestination
+  }
   return destination.pathname
 }
 
@@ -659,7 +716,9 @@ function parseLocalReturnDestination(value: string) {
     throw invalidReturnDestination
   }
 
-  if (destination.origin !== 'https://application.local') throw invalidReturnDestination
+  if (destination.origin !== 'https://application.local') {
+    throw invalidReturnDestination
+  }
   return destination
 }
 

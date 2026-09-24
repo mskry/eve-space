@@ -80,7 +80,9 @@ function assertGenericOperationSafety(
   classification: 'read' | 'mutation',
   options: CallOperationOptions,
 ): void {
-  if (classification === 'read') return;
+  if (classification === 'read') {
+    return;
+  }
 
   if (!configuration.allowGenericMutations) {
     throw new EsiGenericMutationDisabledError({ operationId });
@@ -121,7 +123,7 @@ function callOptionsValidationError(
   message: string,
 ): EsiRequestValidationError {
   return new EsiRequestValidationError({
-    operationId,
     issues: [{ path, message, code: 'invalid_call_option' }],
+    operationId,
   });
 }

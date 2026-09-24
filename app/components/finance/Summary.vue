@@ -27,7 +27,9 @@ defineSlots<{
 
 const resourceState = computed(() => {
   const state = toFinanceEsiResourceState(props.state, 'Wallet')
-  if (state.status !== 'authorization-required') return state
+  if (state.status !== 'authorization-required') {
+    return state
+  }
   return {
     ...state,
     code: 'ESI 403 / WALLET',

@@ -69,31 +69,33 @@ export async function executePlatformEsiOperation<Operation extends PlatformEsiO
   const authorization = getEsiOperationAuthorization(request.operation)
 
   if (authorization.kind === 'public') {
-    if (request.authorization.kind !== 'public')
+    if (request.authorization.kind !== 'public') {
       throw new PlatformEsiRequestError(
         'Public platform ESI operation received character authority',
       )
+    }
     const execution = await (
       await getProductionEsiExecutionRuntime()
     ).executePlatformOperation(request, definition, inputs)
     return {
       ...execution.result,
-      data: narrowPlatformEsiOperationOutput(request.operation, execution.result.data),
       authorizationGeneration: null,
+      data: narrowPlatformEsiOperationOutput(request.operation, execution.result.data),
     }
   }
 
-  if (request.authorization.kind !== 'character-lifecycle')
+  if (request.authorization.kind !== 'character-lifecycle') {
     throw new PlatformEsiRequestError(
       'Character platform ESI operation requires lifecycle authority',
     )
+  }
   const execution = await (
     await getProductionEsiExecutionRuntime()
   ).executePlatformOperation(request, definition, inputs)
   return {
     ...execution.result,
-    data: narrowPlatformEsiOperationOutput(request.operation, execution.result.data),
     authorizationGeneration: execution.authorizationGeneration,
+    data: narrowPlatformEsiOperationOutput(request.operation, execution.result.data),
   }
 }
 
@@ -105,8 +107,8 @@ export function executeUntypedPlatformEsiOperation(
   assertPlatformEsiOperation(operation)
   return executePlatformEsiOperation({
     ...request,
-    operation,
     inputs: validatePlatformInputs(operation, request.inputs),
+    operation,
   })
 }
 

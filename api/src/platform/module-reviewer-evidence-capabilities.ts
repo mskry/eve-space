@@ -28,12 +28,13 @@ export function createPlatformReviewerEvidenceReads(
     sql,
     binding.moduleId,
     installedModulePersistenceOperations,
-    { readOnly: true, statementTimeoutMilliseconds: 2_000 },
+    { readOnly: true, statementTimeoutMilliseconds: 2000 },
   )
   return {
     async read(options = {}) {
-      if (binding.target.selection.kind !== 'character')
+      if (binding.target.selection.kind !== 'character') {
         throw new Error('Reviewer evidence is unavailable')
+      }
       const status = await collectionStatus.read(
         binding.resourceId,
         binding.target.selection.characterId,
@@ -41,17 +42,18 @@ export function createPlatformReviewerEvidenceReads(
       if (
         status.authorizationGeneration === null ||
         (status.status !== 'current' && status.status !== 'stale')
-      )
+      ) {
         return null
+      }
       return invoke(operation, {
-        organizationVersion: status.organizationVersion,
-        targetUserId: status.targetUserId,
-        managedMemberLifecycleId: status.managedMemberLifecycleId,
+        authorizationGeneration: status.authorizationGeneration,
         characterId: status.characterId,
         characterLifecycleId: status.characterLifecycleId,
-        authorizationGeneration: status.authorizationGeneration,
         disclosureVersion: status.disclosureVersion,
+        managedMemberLifecycleId: status.managedMemberLifecycleId,
+        organizationVersion: status.organizationVersion,
         sectionActivationVersion: status.sectionActivationVersion,
+        targetUserId: status.targetUserId,
         ...(options.limit === undefined ? {} : { limit: options.limit }),
       })
     },
@@ -63,7 +65,8 @@ function resolveOperation(binding: ReviewerEvidenceBinding) {
     Record<string, PlatformInstalledPersistenceOperationDescriptor>
   >
   const operation = catalog[`${binding.moduleId}/${binding.operationId}`]
-  if (operation?.mode !== 'read' || !operation.grants.routes.includes(binding.routeId))
+  if (operation?.mode !== 'read' || !operation.grants.routes.includes(binding.routeId)) {
     throw new Error('Reviewer evidence operation is unavailable')
+  }
   return operation
 }

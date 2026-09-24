@@ -23,31 +23,38 @@ export async function readActivitySnapshots(
   } catch {
     return {
       resourceId,
+      snapshots: [],
       status: {
-        status: 'unavailable',
-        validatedAt: null,
         authorizationGeneration: null,
         lastFailureClass: null,
+        status: 'unavailable',
+        validatedAt: null,
       },
-      snapshots: [],
     }
   }
-  const result = { resourceId, status, snapshots: [] as readonly ActivitySnapshot[] }
-  if (!status.subjectLifecycleId || !canReadSnapshots(status, subject.kind === 'deployment'))
+  const result = { resourceId, snapshots: [] as readonly ActivitySnapshot[], status }
+  if (!status.subjectLifecycleId || !canReadSnapshots(status, subject.kind === 'deployment')) {
     return result
+  }
   const snapshots = await capabilities.persistence.readActivitySnapshots({
+    activityId: activityId ?? null,
+    authorizationGeneration: status.authorizationGeneration ?? -1,
+    organizationVersion,
     resourceId,
     subjectLifecycleId: status.subjectLifecycleId,
-    organizationVersion,
-    authorizationGeneration: status.authorizationGeneration ?? -1,
-    activityId: activityId ?? null,
   })
   return { ...result, snapshots }
 }
 
 function canReadSnapshots(status: PlatformCollectionStatus, isPublic: boolean) {
-  if (status.status === 'current') return true
-  if (status.status !== 'stale') return false
-  if (isPublic) return true
+  if (status.status === 'current') {
+    return true
+  }
+  if (status.status !== 'stale') {
+    return false
+  }
+  if (isPublic) {
+    return true
+  }
   return status.lastFailureClass === 'esi-unavailable' || status.lastFailureClass === 'esi-cooldown'
 }

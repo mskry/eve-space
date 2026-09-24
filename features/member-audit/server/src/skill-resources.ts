@@ -14,8 +14,6 @@ import { createObservationId } from './observation-identity.js'
 import type { CurrentSnapshotPersistence, EvidenceMaintenancePersistence } from './persistence.js'
 
 const trainedSkillsResponseSchema = z.strictObject({
-  total_sp: z.number().int().nonnegative(),
-  unallocated_sp: z.number().int().nonnegative().optional(),
   skills: z.array(
     z.strictObject({
       skill_id: z.number().int().positive(),
@@ -24,6 +22,8 @@ const trainedSkillsResponseSchema = z.strictObject({
       skillpoints_in_skill: z.number().int().nonnegative(),
     }),
   ),
+  total_sp: z.number().int().nonnegative(),
+  unallocated_sp: z.number().int().nonnegative().optional(),
 })
 type SkillProducts = readonly ['published-skill-catalogue']
 type TrainedSkillsData = { readonly kind: 'trained-skills' } & ProjectedTrainedSkills
@@ -66,10 +66,8 @@ type SkillSnapshotMaterializationContext = PlatformResourceMaterializationContex
 >
 
 export const trainedSkillsResource: TrainedSkillsResource = {
-  mode: 'single-request',
-  operation: 'skills',
-  request(subject) {
-    return { path: { character_id: subject.characterId } }
+  maintain(context) {
+    return maintainEvidence('trained-skills', context, true)
   },
   async map({ data, capabilities }) {
     const response = trainedSkillsResponseSchema.parse(data)
@@ -94,8 +92,10 @@ export const trainedSkillsResource: TrainedSkillsResource = {
   materialize(context) {
     return persistSkillSnapshot('trained-skills', context)
   },
-  maintain(context) {
-    return maintainEvidence('trained-skills', context, true)
+  mode: 'single-request',
+  operation: 'skills',
+  request(subject) {
+    return { path: { character_id: subject.characterId } }
   },
 }
 
@@ -118,11 +118,11 @@ function catalogueFromRows(rows: readonly PublishedSkillRow[]) {
       groupId: group.groupId,
       name: group.name,
       skills: group.skills.map((skill) => ({
-        typeId: skill.typeId,
         name: skill.typeName,
-        rank: skill.rank,
         primaryAttribute: skill.primaryAttribute,
+        rank: skill.rank,
         secondaryAttribute: skill.secondaryAttribute,
+        typeId: skill.typeId,
       })),
     })),
   }
@@ -136,23 +136,24 @@ async function persistSkillSnapshot(
   if (
     context.organizationVersion !== authority?.organizationVersion ||
     context.authorizationGeneration === null
-  )
+  ) {
     return { outcome: 'obsolete' }
+  }
   const common = {
-    organizationVersion: authority.organizationVersion,
-    targetUserId: authority.targetUserId,
-    managedMemberLifecycleId: authority.managedMemberLifecycleId,
+    authorizationGeneration: context.authorizationGeneration,
     characterId: context.subject.characterId,
     characterLifecycleId: context.subject.lifecycleId,
-    authorizationGeneration: context.authorizationGeneration,
     disclosureVersion: authority.disclosureVersion,
-    sectionActivationVersion: authority.sectionActivationVersion,
+    dtoRevision: 1,
+    managedMemberLifecycleId: authority.managedMemberLifecycleId,
     observationId: createObservationId(
       resourceId,
       context.subject.lifecycleId,
       context.validatedAt,
     ),
-    dtoRevision: 1,
+    organizationVersion: authority.organizationVersion,
+    sectionActivationVersion: authority.sectionActivationVersion,
+    targetUserId: authority.targetUserId,
     validatedAt: context.validatedAt,
   }
   const result = await context.capabilities.persistence.materializeCurrentSnapshot({

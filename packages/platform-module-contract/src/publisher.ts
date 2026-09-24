@@ -10,11 +10,11 @@ import type { PlatformModuleManifest } from './manifest.js'
 import { platformCoreNavigation } from './nuxt.js'
 
 export const platformModulePublisherAuthorities = {
-  reservedModuleIds: platformReservedModuleIds,
-  navigationIds: platformCoreNavigation.map(({ navigationId }) => navigationId),
-  esiOperationIds: platformCoreEsiOperationCatalog.operationIds,
   coreDataProductContracts: CORE_DATA_PRODUCT_CONTRACTS,
+  esiOperationIds: platformCoreEsiOperationCatalog.operationIds,
+  navigationIds: platformCoreNavigation.map(({ navigationId }) => navigationId),
   policies: [],
+  reservedModuleIds: platformReservedModuleIds,
 } as const satisfies PlatformModuleCompilationAuthorities
 
 export function canonicalizePlatformModuleManifest(
@@ -29,9 +29,9 @@ export function canonicalizePlatformModuleManifest(
   const compiled = compilePlatformModules(
     [
       {
+        declaration,
         expectedModuleId,
         expectedPublisherPackage,
-        declaration,
       },
     ],
     authorities,

@@ -11,12 +11,12 @@ import {
 } from '../../src/esi-gateway/feature-execution.js'
 
 const status = createPublicEsiRead({
-  operation: 'status',
-  name: 'callable-status-typing',
-  descriptor: operationRegistry.GetStatus.transport,
   cacheSchema: z.object({ playerCount: z.number() }),
+  descriptor: operationRegistry.GetStatus.transport,
   encodeRequest: (_input: undefined) => ({}),
   map: ({ data }) => ({ playerCount: data.players }),
+  name: 'callable-status-typing',
+  operation: 'status',
 })
 
 expectTypeOf(status.operation).toEqualTypeOf<'status'>()
@@ -27,21 +27,21 @@ expectTypeOf(status.execute(undefined)).toEqualTypeOf<
 
 // @ts-expect-error only a factory can construct the opaque registered type
 const forged: RegisteredPublicEsiRead<'status', undefined, { playerCount: number }> = {
+  execute: () => status.execute(undefined),
   operation: 'status',
   requiredScope: null,
-  execute: () => status.execute(undefined),
 }
 void forged
 
 const skills = createCharacterEsiRead({
-  operation: 'skills',
-  name: 'callable-skills-typing',
-  descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
   cacheSchema: z.object({ totalSp: z.number() }),
+  descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },
   }),
   map: ({ data }) => ({ totalSp: data.total_sp }),
+  name: 'callable-skills-typing',
+  operation: 'skills',
 })
 
 expectTypeOf(skills.execute({ characterId: 1, subjectLifecycleId: 'lifecycle' })).toEqualTypeOf<
@@ -52,14 +52,14 @@ expectTypeOf(skills.execute({ characterId: 1, subjectLifecycleId: 'lifecycle' })
 skills.execute({ characterId: 1 })
 
 const mutation = createCharacterEsiMutation({
-  operation: 'mail-send',
-  name: 'callable-mail-send-typing',
   descriptor: operationRegistry.PostCharactersCharacterIdMail.transport,
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },
     body: { approved_cost: 0, body: '', recipients: [], subject: '' },
   }),
   map: ({ data }) => data,
+  name: 'callable-mail-send-typing',
+  operation: 'mail-send',
 })
 
 expectTypeOf(mutation.execute({ characterId: 1, subjectLifecycleId: 'lifecycle' })).toEqualTypeOf<
@@ -76,8 +76,8 @@ createCharacterEsiRead({
   cacheSchema: operationRegistry.GetCharactersCharacterIdSkills.responseSchema,
   // @ts-expect-error revalidation headers remain executor-owned
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
-    path: { character_id: input.characterId },
     headers: { 'If-None-Match': 'caller-value' },
+    path: { character_id: input.characterId },
   }),
   map: ({ data }) => data,
 })

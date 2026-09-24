@@ -41,7 +41,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  if (clock) globalThis.clearInterval(clock)
+  if (clock) {
+    globalThis.clearInterval(clock)
+  }
 })
 </script>
 

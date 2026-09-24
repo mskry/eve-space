@@ -16,9 +16,9 @@ describe('platform module server surface', () => {
     )
 
     const response = await app.request('/', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ name: '' }),
+      headers: { 'content-type': 'application/json' },
+      method: 'POST',
     })
 
     expect(response.status).toBe(400)
@@ -34,13 +34,13 @@ describe('platform module server surface', () => {
     )
 
     const response = await app.request('/', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ count: 2 }),
+      headers: { 'content-type': 'application/json' },
+      method: 'POST',
     })
 
     expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({ count: 2 })
+    await expect(response.json()).resolves.toStrictEqual({ count: 2 })
   })
 
   test('constructs only bounded expected HTTP errors', () => {
@@ -52,7 +52,7 @@ describe('platform module server surface', () => {
 
     expect(error).toBeInstanceOf(PlatformModuleHttpError)
     expect(error.status).toBe(409)
-    expect(error.body).toEqual({
+    expect(error.body).toStrictEqual({
       code: 'ACTIVITY_ALREADY_EXISTS',
       message: 'The activity already exists.',
     })

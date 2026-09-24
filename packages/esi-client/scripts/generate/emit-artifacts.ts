@@ -35,7 +35,9 @@ export async function emitGeneratedArtifacts(
     if (!Array.isArray(emitted)) {
       throw new TypeError(`Emitter ${emitter.name} did not return output claims`);
     }
-    for (const claim of emitted) claims.push({ ...claim, emitter: emitter.name });
+    for (const claim of emitted) {
+      claims.push({ ...claim, emitter: emitter.name });
+    }
   }
 
   const claimedTargets = new Set<string>();

@@ -12,7 +12,9 @@ async function settle() {
 }
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   document.body.replaceChildren()
 })
 
@@ -29,13 +31,13 @@ describe('UiRadioGroup', () => {
               {
                 label: 'Label color',
                 modelValue: value.value,
+                'onUpdate:modelValue': (next: string | undefined) => {
+                  value.value = next ?? ''
+                },
                 options: [
                   { label: 'White', value: 'white' },
                   { label: 'Blue', value: 'blue' },
                 ],
-                'onUpdate:modelValue': (next: string | undefined) => {
-                  value.value = next ?? ''
-                },
               },
               {
                 option: ({ option }: { option: { label: string } }) => h('span', option.label),
@@ -52,7 +54,7 @@ describe('UiRadioGroup', () => {
     expect(group?.getAttribute('aria-label')).toBe('Label color')
     expect(radios).toHaveLength(2)
     expect(radios[0]?.getAttribute('aria-checked')).toBe('true')
-    expect(radios[0]?.textContent).toContain(String.fromCharCode(10003))
+    expect(radios[0]?.textContent).toContain(String.fromCharCode(10_003))
 
     radios[0]?.focus()
     radios[0]?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'ArrowRight' }))

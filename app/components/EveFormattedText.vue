@@ -30,7 +30,9 @@ function splitFormattedLines(runs: EveFormattedTextValue['runs']): readonly Form
           ...(run.color && { color: run.color }),
         })
       }
-      if (newline === -1) break
+      if (newline === -1) {
+        break
+      }
 
       lines.push({ runs: [], start: run.start + newline + 1 })
       offset = newline + 1
@@ -47,9 +49,13 @@ function splitFormattedLines(runs: EveFormattedTextValue['runs']): readonly Form
 function isBlockElementLine(text: string) {
   let hasBlockElement = false
   for (const character of text) {
-    if (character === ' ' || character === '\t') continue
+    if (character === ' ' || character === '\t') {
+      continue
+    }
     const codePoint = character.codePointAt(0)!
-    if (codePoint < 0x2580 || codePoint > 0x259f) return false
+    if (codePoint < 0x25_80 || codePoint > 0x25_9f) {
+      return false
+    }
     hasBlockElement = true
   }
   return hasBlockElement

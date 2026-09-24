@@ -10,6 +10,7 @@ const corePages = platformCoreNavigation.filter(
 )
 
 const RouteAudienceProbe = defineComponent({
+  render: () => h('div'),
   setup() {
     const routes = useRouter().getRoutes()
     const routeAudiences = corePages.map((page) => {
@@ -22,13 +23,12 @@ const RouteAudienceProbe = defineComponent({
     })
     return { routeAudiences }
   },
-  render: () => h('div'),
 })
 
 describe('core route audience contract', () => {
   it('matches routed page metadata to canonical navigation audiences', async () => {
     const wrapper = await mountSuspended(RouteAudienceProbe, { route: '/' })
-    expect(wrapper.vm.routeAudiences).toEqual(
+    expect(wrapper.vm.routeAudiences).toStrictEqual(
       corePages.map(({ audience, path }) => ({ actual: audience, expected: audience, path })),
     )
     wrapper.unmount()

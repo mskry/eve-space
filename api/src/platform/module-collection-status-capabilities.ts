@@ -54,17 +54,21 @@ export function createPlatformModuleCollectionStatusReads(
         { moduleId: binding.moduleId, resourceId, subjectKind: subject.kind },
         resources,
       )
-      if (!resource) throw new Error('Module collection resource is unavailable')
-      if (binding.sectionId && resource.sectionId !== binding.sectionId)
+      if (!resource) {
         throw new Error('Module collection resource is unavailable')
+      }
+      if (binding.sectionId && resource.sectionId !== binding.sectionId) {
+        throw new Error('Module collection resource is unavailable')
+      }
       if (
         binding.sectionId &&
         !(await (options.isContributionEnabled ?? isInstalledModuleContributionEnabled)(
           binding.moduleId,
           binding.sectionId,
         ))
-      )
+      ) {
         throw new Error('Module collection resource is unavailable')
+      }
 
       const lifecycle =
         subject.kind === 'character'
@@ -73,22 +77,25 @@ export function createPlatformModuleCollectionStatusReads(
               binding.organizationVersion,
               subject,
             )
-      if (!lifecycle) throw new Error('Collection subject is outside the authorized module context')
-      if (!lifecycle.subjectLifecycleId)
+      if (!lifecycle) {
+        throw new Error('Collection subject is outside the authorized module context')
+      }
+      if (!lifecycle.subjectLifecycleId) {
         return {
-          status: 'never-configured',
           authorizationGeneration: null,
-          validatedAt: null,
           lastFailureClass: null,
+          status: 'never-configured',
+          validatedAt: null,
         }
+      }
 
       const status = await (options.readStatus ?? getInstalledResourceCollectionStatus)(
         {
           moduleId: binding.moduleId,
           resourceId: resource.resourceId,
+          subjectId: lifecycle.subjectId,
           subjectKind: subject.kind,
           subjectLifecycleId: lifecycle.subjectLifecycleId,
-          subjectId: lifecycle.subjectId,
         },
         { resources: [resource] },
       )
@@ -103,7 +110,7 @@ function resolveCharacterLifecycle(
   characters: ReadonlyMap<number, string>,
 ) {
   const subjectLifecycleId = characters.get(subject.characterId)
-  return subjectLifecycleId ? { subjectLifecycleId, subjectId: String(subject.characterId) } : null
+  return subjectLifecycleId ? { subjectId: String(subject.characterId), subjectLifecycleId } : null
 }
 
 async function loadOrganizationSubjectLifecycle(
@@ -161,7 +168,9 @@ async function loadOrganizationSubjectLifecycle(
         eq(organizationManagedCorporations.isCurrent, true),
       ),
     )
-  if (lifecycle) return { ...lifecycle, subjectId: String(subject.corporationId) }
+  if (lifecycle) {
+    return { ...lifecycle, subjectId: String(subject.corporationId) }
+  }
   const [corporation] = await db
     .select({ corporationId: organizationManagedCorporations.corporationId })
     .from(organizationManagedCorporations)
@@ -174,20 +183,28 @@ async function loadOrganizationSubjectLifecycle(
       ),
     )
   return corporation
-    ? { subjectLifecycleId: null, subjectId: String(corporation.corporationId) }
+    ? { subjectId: String(corporation.corporationId), subjectLifecycleId: null }
     : null
 }
 
 function assertActive(signal: AbortSignal | undefined) {
-  if (signal?.aborted) throw new Error('Module collection-status read was aborted')
+  if (signal?.aborted) {
+    throw new Error('Module collection-status read was aborted')
+  }
 }
 
 function assertPositiveSubjectId(subject: PlatformCollectionStatusSubject) {
   let subjectId: number
-  if (subject.kind === 'character') subjectId = subject.characterId
-  else if (subject.kind === 'corporation') subjectId = subject.corporationId
-  else if (subject.kind === 'alliance') subjectId = subject.allianceId
-  else subjectId = subject.deploymentId
-  if (!Number.isSafeInteger(subjectId) || subjectId <= 0)
+  if (subject.kind === 'character') {
+    subjectId = subject.characterId
+  } else if (subject.kind === 'corporation') {
+    subjectId = subject.corporationId
+  } else if (subject.kind === 'alliance') {
+    subjectId = subject.allianceId
+  } else {
+    subjectId = subject.deploymentId
+  }
+  if (!Number.isSafeInteger(subjectId) || subjectId <= 0) {
     throw new Error('Module collection subject must use a positive safe integer')
+  }
 }

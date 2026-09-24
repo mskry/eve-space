@@ -21,7 +21,9 @@ export async function repairOrganizationCompliance(
     .from(deploymentSettings)
     .where(eq(deploymentSettings.id, 1))
   options.signal?.throwIfAborted()
-  if (!organization) return { repaired: 0 }
+  if (!organization) {
+    return { repaired: 0 }
+  }
   await expireOrganizationCharacterExceptions(now, limit)
   options.signal?.throwIfAborted()
 
@@ -118,9 +120,9 @@ export async function repairOrganizationCompliance(
       // oxlint-disable-next-line no-await-in-loop -- Continue after isolated account failures.
       await recomputeOrganizationAccountCompliance({
         deploymentId: 1,
+        now,
         organizationVersion: organization.organizationVersion,
         userId,
-        now,
       })
       repaired += 1
     } catch (error) {
@@ -128,10 +130,11 @@ export async function repairOrganizationCompliance(
       failures.push(error)
     }
   }
-  if (failures.length > 0)
+  if (failures.length > 0) {
     throw new AggregateError(
       failures,
       `Failed to repair ${failures.length} compliance projection(s)`,
     )
+  }
   return { repaired }
 }

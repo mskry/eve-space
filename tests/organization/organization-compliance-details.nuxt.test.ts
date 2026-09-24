@@ -35,10 +35,9 @@ describe('OrganizationComplianceDetails', () => {
     expect(wrapper.text()).toContain('Main Pilot')
     expect(wrapper.text()).toContain('External Pilot')
     expect(wrapper.findAll('.character-compliance__card')).toHaveLength(2)
-    expect(wrapper.findAllComponents(RouterLinkStub).map((link) => link.props('to'))).toEqual([
-      '/characters/1404328063',
-      '/characters/90000002',
-    ])
+    expect(wrapper.findAllComponents(RouterLinkStub).map((link) => link.props('to'))).toStrictEqual(
+      ['/characters/1404328063', '/characters/90000002'],
+    )
     expect(wrapper.get('.character-compliance__actions a').attributes('href')).toBe(
       'http://localhost:8788/auth/eve/reauthorize/1404328063',
     )
@@ -47,8 +46,8 @@ describe('OrganizationComplianceDetails', () => {
   it('describes stale compliant state as retained rather than currently verified', async () => {
     const wrapper = await mountCompliance({
       ...complianceFixture,
-      state: 'compliant',
       evidenceFreshness: 'stale',
+      state: 'compliant',
     })
 
     expect(wrapper.text()).toContain('last verified compliant result')
@@ -60,26 +59,19 @@ describe('OrganizationComplianceDetails', () => {
 
 function mountCompliance(compliance: OrganizationCompliance) {
   return mountSuspended(OrganizationComplianceDetails, {
-    props: { compliance, apiBase: 'http://localhost:8788' },
     global: { stubs: { NuxtLink: RouterLinkStub } },
+    props: { apiBase: 'http://localhost:8788', compliance },
     route: false,
   })
 }
 
 const complianceFixture = {
-  organizationVersion: 1,
-  state: 'review_required',
-  evidenceFreshness: 'stale',
-  evidenceAt: '2026-09-08T10:00:00.000Z',
-  reviewDeadline: '2026-09-09T18:00:00.000Z',
   accessValidUntil: '2026-09-09T18:00:00.000Z',
-  evaluatedAt: '2026-09-08T10:00:00.000Z',
   accountReasons: [
     { code: 'no-attached-characters' },
     { code: 'managed-corporation-evidence-unavailable' },
     { code: 'no-managed-organization-character' },
   ],
-  remediationActions: [],
   characters: [
     {
       characterId: 1_404_328_063,
@@ -112,4 +104,11 @@ const complianceFixture = {
   ],
   disclosureNotice:
     'EVE SSO authorizes one selected character at a time. Registration completeness depends on member disclosure and organization policy.',
+  evaluatedAt: '2026-09-08T10:00:00.000Z',
+  evidenceAt: '2026-09-08T10:00:00.000Z',
+  evidenceFreshness: 'stale',
+  organizationVersion: 1,
+  remediationActions: [],
+  reviewDeadline: '2026-09-09T18:00:00.000Z',
+  state: 'review_required',
 } satisfies OrganizationCompliance

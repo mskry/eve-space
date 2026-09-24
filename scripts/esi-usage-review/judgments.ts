@@ -27,34 +27,34 @@ export async function judgeEsiUsage(
 ): Promise<EsiUsageJudgment> {
   const answers = await evaluateSystemOne(client, toModelState(state), esiUsageQuestions)
   return {
-    operationFit: answer(answers.operation_fit),
-    identityFit: answer(answers.identity_fit),
     cacheFit: answer(answers.cache_fit),
+    identityFit: answer(answers.identity_fit),
+    operationFit: answer(answers.operation_fit),
     versionFit: answer(answers.version_fit),
   }
 }
 
 function toModelState({ site, catalog }: EsiUsageState): EntryType {
   return {
-    representation: {
-      file: site.file,
-      line: site.line,
-      name: site.name,
-      factory: site.factory,
-      operation: site.operation,
-      current_definition: site.definition,
-      previous_definition: site.previousDefinition ?? 'No previous representation was found.',
-      context: site.context,
-    },
     catalog: {
-      current_contract: catalog.contract ?? 'No current core catalog contract was found.',
       current_cache_kind: catalog.cacheKind,
+      current_contract: catalog.contract ?? 'No current core catalog contract was found.',
       current_metadata: catalog.metadata ?? 'No current core operation metadata was found.',
       previous_contract: catalog.previousContract ?? 'No previous core catalog contract was found.',
       previous_metadata:
         catalog.previousMetadata ?? 'No previous core operation metadata was found.',
     },
     policy: esiUsagePolicy,
+    representation: {
+      context: site.context,
+      current_definition: site.definition,
+      factory: site.factory,
+      file: site.file,
+      line: site.line,
+      name: site.name,
+      operation: site.operation,
+      previous_definition: site.previousDefinition ?? 'No previous representation was found.',
+    },
   }
 }
 

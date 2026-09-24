@@ -54,7 +54,7 @@ describe('worker healthcheck entrypoint', () => {
       await import('../../src/worker/health.js')
 
       expect(consoleError).toHaveBeenCalledOnce()
-      expect(JSON.parse(String(consoleError.mock.calls[0]?.[0]))).toEqual(
+      expect(JSON.parse(String(consoleError.mock.calls[0]?.[0]))).toStrictEqual(
         expect.objectContaining({
           event: 'worker.healthcheck.unhealthy',
           healthState: 'database-unavailable',
@@ -77,7 +77,9 @@ async function expectCapturedDiagnostic(event: string) {
     expect(consoleError).toHaveBeenCalledOnce()
     expect(process.exitCode).toBe(1)
     const serialized = String(consoleError.mock.calls[0]?.[0])
-    expect(JSON.parse(serialized)).toEqual(expect.objectContaining({ event, thrownType: 'object' }))
+    expect(JSON.parse(serialized)).toStrictEqual(
+      expect.objectContaining({ event, thrownType: 'object' }),
+    )
     expect(serialized).not.toContain('private-sentinel')
   } finally {
     apiLogger.disableLogging()

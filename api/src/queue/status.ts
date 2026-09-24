@@ -88,7 +88,7 @@ export async function probeQueueStatus(): Promise<QueueStatus> {
     )
     const depth = (counts.waiting ?? 0) + (counts.delayed ?? 0) + (counts.prioritized ?? 0)
     const oldestWaitingAgeSeconds = oldest
-      ? Math.max(0, Math.floor((now - oldest.timestamp) / 1_000))
+      ? Math.max(0, Math.floor((now - oldest.timestamp) / 1000))
       : null
     const workerStale = heartbeat.workers === 0
     const lagged = (oldestWaitingAgeSeconds ?? 0) > env.QUEUE_LAG_DEGRADED_SECONDS
@@ -98,49 +98,52 @@ export async function probeQueueStatus(): Promise<QueueStatus> {
       memoryMaxBytes > 0 ? Math.round((memoryUsedBytes / memoryMaxBytes) * 10_000) / 100 : null
     const memoryPressure = memoryUsedPercent !== null && memoryUsedPercent >= 90
     return {
+      active: counts.active ?? 0,
+      depth,
+      failed: counts.failed ?? 0,
+      latestAffiliationPlannerOutcome: decodeAffiliationPlannerOutcome(affiliationPlannerOutcome),
+      latestOutboxRelayOutcome: decodeOutboxRelayOutcome(outboxRelayOutcome),
+      latestSchedulerOutcome: schedulerOutcome === 'registered' ? 'registered' : null,
+      memoryMaxBytes,
+      memoryUsedBytes,
+      memoryUsedPercent,
+      oldestWaitingAgeSeconds,
+      outboxRelayPaused: outboxRelayState === 'paused',
+      plannerPaused: plannerState === 'paused',
+      retrying: delayed.filter((job) => job.attemptsMade > 0).length,
       status: workerStale || lagged || memoryPressure ? 'degraded' : 'operational',
       workerHeartbeatAt: heartbeat.latest,
       workers: heartbeat.workers,
-      depth,
-      oldestWaitingAgeSeconds,
-      active: counts.active ?? 0,
-      retrying: delayed.filter((job) => job.attemptsMade > 0).length,
-      failed: counts.failed ?? 0,
-      memoryUsedBytes,
-      memoryMaxBytes,
-      memoryUsedPercent,
-      plannerPaused: plannerState === 'paused',
-      outboxRelayPaused: outboxRelayState === 'paused',
-      latestOutboxRelayOutcome: decodeOutboxRelayOutcome(outboxRelayOutcome),
-      latestSchedulerOutcome: schedulerOutcome === 'registered' ? 'registered' : null,
-      latestAffiliationPlannerOutcome: decodeAffiliationPlannerOutcome(affiliationPlannerOutcome),
     }
   } catch {
     return unavailableQueueStatus()
   } finally {
-    if (handle) await handle.close().catch(() => {})
-    else if (connection) await closeCoordinationRedisConnection(connection).catch(() => {})
+    if (handle) {
+      await handle.close().catch(() => {})
+    } else if (connection) {
+      await closeCoordinationRedisConnection(connection).catch(() => {})
+    }
   }
 }
 
 function unavailableQueueStatus(): QueueStatus {
   return {
+    active: null,
+    depth: null,
+    failed: null,
+    latestAffiliationPlannerOutcome: null,
+    latestOutboxRelayOutcome: null,
+    latestSchedulerOutcome: null,
+    memoryMaxBytes: null,
+    memoryUsedBytes: null,
+    memoryUsedPercent: null,
+    oldestWaitingAgeSeconds: null,
+    outboxRelayPaused: false,
+    plannerPaused: false,
+    retrying: null,
     status: 'unavailable',
     workerHeartbeatAt: null,
     workers: null,
-    depth: null,
-    oldestWaitingAgeSeconds: null,
-    active: null,
-    retrying: null,
-    failed: null,
-    memoryUsedBytes: null,
-    memoryMaxBytes: null,
-    memoryUsedPercent: null,
-    plannerPaused: false,
-    outboxRelayPaused: false,
-    latestOutboxRelayOutcome: null,
-    latestSchedulerOutcome: null,
-    latestAffiliationPlannerOutcome: null,
   }
 }
 
@@ -148,19 +151,25 @@ function parseMemoryInfo(info: string, metric: string) {
   const prefix = `${metric}:`
   const line = info.split('\n').find((candidate) => candidate.startsWith(prefix))
   const value = line ? Number(line.slice(prefix.length).trim()) : Number.NaN
-  if (!isNonnegativeSafeInteger(value)) throw new Error(`Invalid Redis ${metric}`)
+  if (!isNonnegativeSafeInteger(value)) {
+    throw new Error(`Invalid Redis ${metric}`)
+  }
   return value
 }
 
 function parseMaxMemory(configuration: string[]) {
   const value = Number(configuration.at(-1))
-  if (!isNonnegativeSafeInteger(value)) throw new Error('Invalid Redis maxmemory')
+  if (!isNonnegativeSafeInteger(value)) {
+    throw new Error('Invalid Redis maxmemory')
+  }
   return value
 }
 
 async function readWorkerHeartbeats(connection: CoordinationRedisConnection) {
   const registered = await connection.smembers(workerRegistryKey)
-  if (registered.length === 0) return []
+  if (registered.length === 0) {
+    return []
+  }
   return connection.mget(registered.map(workerHeartbeatKey))
 }
 
@@ -170,7 +179,9 @@ function summarizeHeartbeats(beats: (string | null)[], now: number) {
   let workers = 0
   for (const beat of beats) {
     const decoded = decodeWorkerHeartbeat(beat, now)
-    if (!decoded || now - decoded.time > workerHeartbeatStaleAfterMs) continue
+    if (!decoded || now - decoded.time > workerHeartbeatStaleAfterMs) {
+      continue
+    }
     workers += 1
     if (decoded.time > latestTime) {
       latest = decoded.heartbeatAt

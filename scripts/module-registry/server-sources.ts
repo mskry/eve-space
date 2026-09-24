@@ -27,7 +27,9 @@ export async function loadFeatureServerSources(
         try {
           return await sourceFiles(root, sourceDirectory, entry.name)
         } catch (error) {
-          if (isErrnoCode(error, 'ENOENT')) return []
+          if (isErrnoCode(error, 'ENOENT')) {
+            return []
+          }
           throw error
         }
       }),
@@ -44,8 +46,12 @@ async function sourceFiles(
   const nested = await Promise.all(
     entries.map(async (entry) => {
       const path = join(directory, entry.name)
-      if (entry.isDirectory()) return sourceFiles(root, path, moduleId)
-      if (!entry.isFile() || !moduleServerSourceExtensionSet.has(extname(entry.name))) return []
+      if (entry.isDirectory()) {
+        return sourceFiles(root, path, moduleId)
+      }
+      if (!entry.isFile() || !moduleServerSourceExtensionSet.has(extname(entry.name))) {
+        return []
+      }
       return [{ moduleId, path: relative(root, path), source: await readFile(path, 'utf8') }]
     }),
   )

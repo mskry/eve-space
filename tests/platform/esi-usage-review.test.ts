@@ -23,30 +23,30 @@ const walletRead = registerRead({
 `
 
 const state = (): EsiUsageState => ({
-  site: {
-    id: 'api/src/characters/wallet.ts:4:wallet-balance-core',
-    file: 'api/src/characters/wallet.ts',
-    line: 4,
-    factory: 'createCharacterEsiRead',
-    operation: 'wallet-balance',
-    name: 'wallet-balance-core',
-    definition: 'createCharacterEsiRead({...})',
-    context: 'wallet balance representation',
-    previousDefinition: 'createCharacterEsiRead({...})',
-  },
   catalog: {
-    contract: "defineContract('wallet-balance', { identity: { fields: ['characterId'] } })",
     cacheKind: 'private',
+    contract: "defineContract('wallet-balance', { identity: { fields: ['characterId'] } })",
     metadata: "'wallet-balance': { esiOperationId: 'GetCharactersCharacterIdWallet' }",
     previousContract: null,
     previousMetadata: null,
   },
+  site: {
+    context: 'wallet balance representation',
+    definition: 'createCharacterEsiRead({...})',
+    factory: 'createCharacterEsiRead',
+    file: 'api/src/characters/wallet.ts',
+    id: 'api/src/characters/wallet.ts:4:wallet-balance-core',
+    line: 4,
+    name: 'wallet-balance-core',
+    operation: 'wallet-balance',
+    previousDefinition: 'createCharacterEsiRead({...})',
+  },
 })
 
 const judgment = (overrides: Partial<EsiUsageJudgment> = {}): EsiUsageJudgment => ({
-  operationFit: { choice: 'aligned', confidence: 0.95 },
-  identityFit: { choice: 'complete', confidence: 0.95 },
   cacheFit: { choice: 'aligned', confidence: 0.95 },
+  identityFit: { choice: 'complete', confidence: 0.95 },
+  operationFit: { choice: 'aligned', confidence: 0.95 },
   versionFit: { choice: 'not_applicable', confidence: 0.95 },
   ...overrides,
 })
@@ -68,12 +68,12 @@ describe('ESI usage site discovery', () => {
       expect(sites).toHaveLength(1)
       expect(sites[0]).toMatchObject({
         factory: 'createCharacterEsiRead',
-        operation: 'wallet-balance',
         name: 'wallet-balance-core',
+        operation: 'wallet-balance',
       })
       expect(sites[0].previousDefinition).toContain('Number(response.data)')
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 })

@@ -15,9 +15,12 @@ export function isComplianceProjectionDue(
   projection: Pick<OrganizationSessionContext, 'state' | 'reviewDeadline' | 'accessValidUntil'>,
   now = new Date(),
 ) {
-  if (projection.state === 'compliant')
+  if (projection.state === 'compliant') {
     return !projection.accessValidUntil || projection.accessValidUntil <= now
-  if (projection.state !== 'review_required') return false
+  }
+  if (projection.state !== 'review_required') {
+    return false
+  }
   return (
     (projection.accessValidUntil !== null && projection.accessValidUntil <= now) ||
     (projection.reviewDeadline !== null && projection.reviewDeadline <= now)
@@ -31,13 +34,18 @@ export function resolveOrganizationEntitlementScope(
     | undefined,
   now = new Date(),
 ): OrganizationEntitlementScope {
-  if (!projection?.accessValidUntil || projection.accessValidUntil <= now) return 'none'
-  if (projection.state === 'compliant') return 'all'
+  if (!projection?.accessValidUntil || projection.accessValidUntil <= now) {
+    return 'none'
+  }
+  if (projection.state === 'compliant') {
+    return 'all'
+  }
   if (
     projection.state === 'review_required' &&
     projection.reviewDeadline !== null &&
     projection.reviewDeadline > now
-  )
+  ) {
     return 'review'
+  }
   return 'none'
 }

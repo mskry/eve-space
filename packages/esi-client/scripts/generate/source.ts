@@ -90,7 +90,9 @@ export async function generateSource(
   if (cleanupErrors.length > 0) {
     throw new AggregateError(cleanupErrors, 'Source generation cleanup failed');
   }
-  if (result === undefined) throw new Error('Source generation did not produce a result');
+  if (result === undefined) {
+    throw new Error('Source generation did not produce a result');
+  }
   return result;
 }
 

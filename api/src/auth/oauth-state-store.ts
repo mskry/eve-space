@@ -7,7 +7,7 @@ import {
 } from '../reviewer-use-disclosure.js'
 import { hashToken } from './security.js'
 
-const oauthStateTtlMs = 10 * 60 * 1_000
+const oauthStateTtlMs = 10 * 60 * 1000
 
 export type OAuthStateIntentContext =
   | { intent: 'login'; returnPath?: string }
@@ -37,29 +37,29 @@ export async function storeOAuthState(state: string, context: OAuthStateContext)
   const reviewerUseDisclosures = parseReviewerUseDisclosures(context.reviewerUseDisclosures)
   await db.delete(oauthStates).where(lte(oauthStates.expiresAt, new Date()))
   await db.insert(oauthStates).values({
-    stateHash: hashToken(state),
-    intent: context.intent,
-    userId: context.intent === 'login' ? null : context.userId,
     characterId:
       context.intent === 'reauthorize' ||
       context.intent === 'claim-organization-owner' ||
       context.intent === 'transfer'
         ? context.characterId
         : null,
-    returnPath:
-      context.intent === 'login' || context.intent === 'reauthorize'
-        ? (context.returnPath ?? null)
-        : null,
+    expiresAt: new Date(Date.now() + oauthStateTtlMs),
+    intent: context.intent,
     organizationDeploymentId: context.intent === 'claim-organization-owner' ? 1 : null,
     organizationId: context.intent === 'claim-organization-owner' ? context.organizationId : null,
     organizationVersion:
       context.intent === 'claim-organization-owner' ? context.organizationVersion : null,
+    returnPath:
+      context.intent === 'login' || context.intent === 'reauthorize'
+        ? (context.returnPath ?? null)
+        : null,
+    reviewerUseDisclosures,
+    stateHash: hashToken(state),
     transferApprovalId: context.intent === 'transfer' ? context.approvalId : null,
-    transferSourceUserId: context.intent === 'transfer' ? context.sourceUserId : null,
     transferSourceSubjectLifecycleId:
       context.intent === 'transfer' ? context.sourceSubjectLifecycleId : null,
-    reviewerUseDisclosures,
-    expiresAt: new Date(Date.now() + oauthStateTtlMs),
+    transferSourceUserId: context.intent === 'transfer' ? context.sourceUserId : null,
+    userId: context.intent === 'login' ? null : context.userId,
   })
 }
 
@@ -68,16 +68,16 @@ export async function consumeOAuthState(state: string): Promise<OAuthStateContex
     .delete(oauthStates)
     .where(and(eq(oauthStates.stateHash, hashToken(state)), gt(oauthStates.expiresAt, new Date())))
     .returning({
-      intent: oauthStates.intent,
-      userId: oauthStates.userId,
       characterId: oauthStates.characterId,
-      returnPath: oauthStates.returnPath,
+      intent: oauthStates.intent,
       organizationId: oauthStates.organizationId,
       organizationVersion: oauthStates.organizationVersion,
-      transferApprovalId: oauthStates.transferApprovalId,
-      transferSourceUserId: oauthStates.transferSourceUserId,
-      transferSourceSubjectLifecycleId: oauthStates.transferSourceSubjectLifecycleId,
+      returnPath: oauthStates.returnPath,
       reviewerUseDisclosures: oauthStates.reviewerUseDisclosures,
+      transferApprovalId: oauthStates.transferApprovalId,
+      transferSourceSubjectLifecycleId: oauthStates.transferSourceSubjectLifecycleId,
+      transferSourceUserId: oauthStates.transferSourceUserId,
+      userId: oauthStates.userId,
     })
 
   return parseOAuthStateRecord(record)
@@ -86,16 +86,16 @@ export async function consumeOAuthState(state: string): Promise<OAuthStateContex
 export async function findOAuthState(state: string): Promise<OAuthStateContext | null> {
   const [record] = await db
     .select({
-      intent: oauthStates.intent,
-      userId: oauthStates.userId,
       characterId: oauthStates.characterId,
-      returnPath: oauthStates.returnPath,
+      intent: oauthStates.intent,
       organizationId: oauthStates.organizationId,
       organizationVersion: oauthStates.organizationVersion,
-      transferApprovalId: oauthStates.transferApprovalId,
-      transferSourceUserId: oauthStates.transferSourceUserId,
-      transferSourceSubjectLifecycleId: oauthStates.transferSourceSubjectLifecycleId,
+      returnPath: oauthStates.returnPath,
       reviewerUseDisclosures: oauthStates.reviewerUseDisclosures,
+      transferApprovalId: oauthStates.transferApprovalId,
+      transferSourceSubjectLifecycleId: oauthStates.transferSourceSubjectLifecycleId,
+      transferSourceUserId: oauthStates.transferSourceUserId,
+      userId: oauthStates.userId,
     })
     .from(oauthStates)
     .where(and(eq(oauthStates.stateHash, hashToken(state)), gt(oauthStates.expiresAt, new Date())))
@@ -106,57 +106,82 @@ export async function findOAuthState(state: string): Promise<OAuthStateContext |
 function parseOAuthStateRecord(
   record: StoredOAuthStateRecord | undefined,
 ): OAuthStateContext | null {
-  if (!record) return null
+  if (!record) {
+    return null
+  }
   const reviewerUseDisclosures = parseReviewerUseDisclosures(record.reviewerUseDisclosures)
-  if (record.intent === 'login')
+  if (record.intent === 'login') {
     return {
       intent: 'login',
       reviewerUseDisclosures,
       ...(record.returnPath ? { returnPath: record.returnPath } : {}),
     }
-  if (record.intent === 'attach' && record.userId)
-    return { intent: 'attach', userId: record.userId, reviewerUseDisclosures }
-  if (record.intent === 'reauthorize' && record.userId && record.characterId)
+  }
+  if (record.intent === 'attach' && record.userId) {
+    return { intent: 'attach', reviewerUseDisclosures, userId: record.userId }
+  }
+  if (record.intent === 'reauthorize' && record.userId && record.characterId) {
     return {
-      intent: 'reauthorize',
-      userId: record.userId,
       characterId: record.characterId,
+      intent: 'reauthorize',
       reviewerUseDisclosures,
+      userId: record.userId,
       ...(record.returnPath ? { returnPath: record.returnPath } : {}),
     }
-  if (
-    record.intent === 'claim-organization-owner' &&
-    record.userId &&
-    record.characterId &&
-    record.organizationId &&
-    record.organizationVersion
-  )
-    return {
-      intent: 'claim-organization-owner',
-      userId: record.userId,
-      characterId: record.characterId,
-      organizationId: record.organizationId,
-      organizationVersion: record.organizationVersion,
-      reviewerUseDisclosures,
-    }
-  if (
-    record.intent === 'transfer' &&
-    record.transferApprovalId &&
-    record.transferSourceUserId &&
-    record.transferSourceSubjectLifecycleId &&
-    record.userId &&
-    record.characterId
-  )
-    return {
-      intent: 'transfer',
-      approvalId: record.transferApprovalId,
-      sourceUserId: record.transferSourceUserId,
-      sourceSubjectLifecycleId: record.transferSourceSubjectLifecycleId,
-      userId: record.userId,
-      characterId: record.characterId,
-      reviewerUseDisclosures,
-    }
+  }
+  if (record.intent === 'claim-organization-owner') {
+    return parseOwnerClaimState(record, reviewerUseDisclosures)
+  }
+  if (record.intent === 'transfer') {
+    return parseTransferState(record, reviewerUseDisclosures)
+  }
   throw new Error('Stored OAuth state has invalid authorization context')
+}
+
+function parseOwnerClaimState(
+  record: StoredOAuthStateRecord,
+  reviewerUseDisclosures: readonly ReviewerUseDisclosure[],
+): OAuthStateContext {
+  if (
+    !record.userId ||
+    !record.characterId ||
+    !record.organizationId ||
+    !record.organizationVersion
+  ) {
+    throw new Error('Stored OAuth state has invalid authorization context')
+  }
+  return {
+    characterId: record.characterId,
+    intent: 'claim-organization-owner',
+    organizationId: record.organizationId,
+    organizationVersion: record.organizationVersion,
+    reviewerUseDisclosures,
+    userId: record.userId,
+  }
+}
+
+function parseTransferState(
+  record: StoredOAuthStateRecord,
+  reviewerUseDisclosures: readonly ReviewerUseDisclosure[],
+): OAuthStateContext {
+  if (
+    !record.transferApprovalId ||
+    !record.transferSourceUserId ||
+    !record.transferSourceSubjectLifecycleId ||
+    !record.userId ||
+    !record.characterId
+  ) {
+    throw new Error('Stored OAuth state has invalid authorization context')
+  }
+  return {
+    approvalId: record.transferApprovalId,
+    characterId: record.characterId,
+    intent: 'transfer',
+    reviewerUseDisclosures,
+    sourceSubjectLifecycleId: record.transferSourceSubjectLifecycleId,
+    sourceUserId: record.transferSourceUserId,
+    userId: record.userId,
+  }
 }
 
 interface StoredOAuthStateRecord {

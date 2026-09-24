@@ -1,8 +1,5 @@
 import { definePlatformBoundedCollectionResource, definePlatformSingleRequestResource, } from '@eve-space/platform-module-contract/resources';
 export const conformanceStatusResource = definePlatformSingleRequestResource({
-    mode: 'single-request',
-    operation: 'conformance-status-operation',
-    request: () => ({}),
     async map({ data, capabilities }) {
         const typeGroups = await capabilities.coreData.publishedTypeGroups({ typeIds: [34] });
         return {
@@ -12,10 +9,11 @@ export const conformanceStatusResource = definePlatformSingleRequestResource({
         };
     },
     materialize: materializeConformanceStatus,
+    mode: 'single-request',
+    operation: 'conformance-status-operation',
+    request: () => ({}),
 });
 export const conformanceCollectionResource = definePlatformBoundedCollectionResource({
-    mode: 'bounded-collection',
-    operation: 'conformance-status-operation',
     async collect(context) {
         const previous = await context.capabilities.persistence.readConformanceSnapshot({
             characterId: context.subject.characterId,
@@ -34,6 +32,8 @@ export const conformanceCollectionResource = definePlatformBoundedCollectionReso
         };
     },
     materialize: materializeConformanceStatus,
+    mode: 'bounded-collection',
+    operation: 'conformance-status-operation',
 });
 async function materializeConformanceStatus({ subject, data, validatedAt, capabilities, }) {
     await capabilities.persistence.upsertConformanceSnapshot({

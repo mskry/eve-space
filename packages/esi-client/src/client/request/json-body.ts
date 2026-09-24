@@ -7,7 +7,9 @@ export function serializeBody(
   headers: Record<string, string>,
 ): string | undefined {
   const bodyDescriptor = descriptor.requestBody;
-  if (bodyDescriptor === null) return undefined;
+  if (bodyDescriptor === null) {
+    return undefined;
+  }
   const body = arguments_.body;
   if (body === undefined) {
     if (bodyDescriptor.required) {
@@ -22,9 +24,9 @@ export function serializeBody(
   }
   validateJsonValue(descriptor.operationId, body, ['body'], new WeakSet());
   Object.defineProperty(headers, 'content-type', {
-    value: bodyDescriptor.mediaType,
-    enumerable: true,
     configurable: false,
+    enumerable: true,
+    value: bodyDescriptor.mediaType,
     writable: false,
   });
   return JSON.stringify(body);
@@ -36,9 +38,13 @@ function validateJsonValue(
   path: readonly (string | number)[],
   ancestors: WeakSet<object>,
 ): void {
-  if (value === null || typeof value === 'boolean' || typeof value === 'string') return;
+  if (value === null || typeof value === 'boolean' || typeof value === 'string') {
+    return;
+  }
   if (typeof value === 'number') {
-    if (Number.isFinite(value)) return;
+    if (Number.isFinite(value)) {
+      return;
+    }
     throw requestError(operationId, path, 'JSON numbers must be finite', 'invalid_json');
   }
   if (typeof value !== 'object') {
@@ -107,7 +113,9 @@ function assertJsonArrayProperties(
   path: readonly (string | number)[],
 ): void {
   for (const key of Reflect.ownKeys(value)) {
-    if (key === 'length') continue;
+    if (key === 'length') {
+      continue;
+    }
     if (typeof key === 'symbol' || !/^(?:0|[1-9]\d*)$/u.test(key)) {
       throw requestError(
         operationId,

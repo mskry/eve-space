@@ -2,8 +2,8 @@ import { getLocalAuthRedirect } from '../utils/auth-redirect'
 import { resolveRouteAudience } from '../utils/route-audience'
 
 export default defineNuxtPlugin({
-  name: 'auth-session-resume',
   dependsOn: ['query-persistence-ready'],
+  name: 'auth-session-resume',
   setup() {
     const route = useRoute()
     const router = useRouter()
@@ -42,7 +42,9 @@ export default defineNuxtPlugin({
     }
 
     const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') void refreshSession()
+      if (document.visibilityState === 'visible') {
+        void refreshSession()
+      }
     }
 
     window.addEventListener('focus', refreshWhenVisible)

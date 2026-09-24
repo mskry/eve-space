@@ -9,16 +9,20 @@ export const QUERY_GC_TIME = 5 * 60_000
 export const QUERY_ERROR_EVENT = 'eve-space:query-error'
 
 export function shouldRetryQuery(failureCount: number, error: unknown) {
-  if (failureCount >= 2) return false
+  if (failureCount >= 2) {
+    return false
+  }
   if (error instanceof ApiQueryError) {
-    if (error.code === 'ESI_RESPONSE_INVALID') return false
+    if (error.code === 'ESI_RESPONSE_INVALID') {
+      return false
+    }
     return error.status >= 500
   }
   return error instanceof TypeError
 }
 
 export function queryRetryDelay(attempt: number) {
-  return Math.min(500 * 2 ** attempt, 5_000)
+  return Math.min(500 * 2 ** attempt, 5000)
 }
 
 export function reportQueryError(meta: QueryMeta) {
@@ -35,10 +39,6 @@ export function reportQueryError(meta: QueryMeta) {
 }
 
 export const coladaOptions: PiniaColadaOptions = {
-  queryOptions: {
-    gcTime: QUERY_GC_TIME,
-    staleTime: 15_000,
-  },
   plugins: [
     PiniaColadaRetry({
       retry: shouldRetryQuery,
@@ -53,4 +53,8 @@ export const coladaOptions: PiniaColadaOptions = {
     installEsiQueryRecovery(),
     installQueryPersistence(),
   ],
+  queryOptions: {
+    gcTime: QUERY_GC_TIME,
+    staleTime: 15_000,
+  },
 }

@@ -12,7 +12,7 @@ export function describeOperation(stableId: string): SerializableOperationManife
 export function describeOperation(stableId: unknown): SerializableOperationManifestEntry {
   const operation =
     typeof stableId === 'string' ? descriptionsByOperationId.get(stableId) : undefined;
-  if (operation !== undefined) return operation;
+  if (operation !== undefined) {return operation;}
 
   throw new EsiUnknownOperationError({
     operationId: typeof stableId === 'string' ? stableId : 'unknown',

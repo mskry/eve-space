@@ -34,7 +34,9 @@ const trigger = ref<{ $el?: Element } | HTMLElement | null>(null)
 
 function updateOpen(value: boolean) {
   open.value = value
-  if (value) return
+  if (value) {
+    return
+  }
 
   void nextTick(() => {
     const triggerReference = trigger.value
@@ -46,8 +48,9 @@ function updateOpen(value: boolean) {
       triggerReference &&
       '$el' in triggerReference &&
       triggerReference.$el instanceof HTMLElement
-    )
+    ) {
       triggerReference.$el.focus()
+    }
   })
 }
 </script>

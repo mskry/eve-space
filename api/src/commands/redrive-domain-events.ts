@@ -14,10 +14,10 @@ import { recordDiagnostic } from '../logging.js'
 try {
   const options = parseDomainEventRedriveArgs(process.argv.slice(2))
   const result = await runDomainEventRedriveCommand(options, {
-    count: countPublishedDomainEventsForRedrive,
-    select: listPublishedDomainEventIdsForRedrive,
     assertQueueJobsAbsent: assertSelectedDomainEventJobsAbsent,
+    count: countPublishedDomainEventsForRedrive,
     redrive: redrivePublishedDomainEvents,
+    select: listPublishedDomainEventIdsForRedrive,
   })
   console.log(JSON.stringify(result))
 } catch (error) {

@@ -43,17 +43,15 @@ export function createBullMqQueueProducer(
 
   const producer: BullMqQueueProducer = {
     close: () => (ownsHandle ? handle.close() : Promise.resolve()),
-    pausePlanner: async () =>
-      handle.connection.set(plannerStateKey, 'paused').then(() => undefined),
-    resumePlanner: async () => handle.connection.del(plannerStateKey).then(() => undefined),
-    inspectCapacity: (query) => inspectCapacity(handle, query, highWaterMark),
     async enqueue(command, publication) {
       const [result] = await producer.enqueueMany([command], publication)
       return result!
     },
     async enqueueMany(commands, publication) {
       publication?.signal?.throwIfAborted()
-      if (commands.length === 0) return []
+      if (commands.length === 0) {
+        return []
+      }
       const capacity = await inspectBatchCapacity(
         handle,
         commands,
@@ -85,7 +83,7 @@ export function createBullMqQueueProducer(
         results.push({ status: 'accepted', depth: capacity.depth + accepted.length - 1 })
       }
       publication?.signal?.throwIfAborted()
-      if (accepted.length > 0)
+      if (accepted.length > 0) {
         await handle.queue.addBulk(
           accepted.map(({ command, deliveryOptions }) => ({
             name: command.name,
@@ -93,8 +91,12 @@ export function createBullMqQueueProducer(
             opts: deliveryOptions,
           })),
         )
+      }
       return results
     },
+    inspectCapacity: (query) => inspectCapacity(handle, query, highWaterMark),
+    pausePlanner: async () => handle.connection.set(plannerStateKey, 'paused').then(() => {}),
+    resumePlanner: async () => handle.connection.del(plannerStateKey).then(() => {}),
   }
   return producer
 }
@@ -111,13 +113,14 @@ async function inspectCapacity(
     capacity.remainingCapacity,
     query.preservePausedState,
   )
-  if (capacity.remainingCapacity === 0)
+  if (capacity.remainingCapacity === 0) {
     return {
       ...capacity,
+      reason: rejectionReason(query.source),
       remainingCapacity: 0,
       status: 'rejected',
-      reason: rejectionReason(query.source),
     }
+  }
   return { ...capacity, status: 'accepted' }
 }
 
@@ -148,13 +151,17 @@ async function updateCapacityState(
   remainingCapacity: number,
   preservePausedState?: boolean,
 ) {
-  if (source === 'on-demand') return
+  if (source === 'on-demand') {
+    return
+  }
   const stateKey = source === 'planner' ? plannerStateKey : outboxRelayStateKey
   if (remainingCapacity === 0) {
     await handle.connection.set(stateKey, 'paused')
     return
   }
-  if (!preservePausedState) await handle.connection.del(stateKey)
+  if (!preservePausedState) {
+    await handle.connection.del(stateKey)
+  }
 }
 
 async function prepareCommands(
@@ -195,7 +202,7 @@ async function prepareDeliveryOptions(
   signal?.throwIfAborted()
   return {
     attempts: contract.attempts,
-    backoff: { type: 'exponential' as const, delay: 1_000, jitter: 0.25 },
+    backoff: { delay: 1000, jitter: 0.25, type: 'exponential' as const },
     removeOnComplete: contract.retention.completed,
     removeOnFail: contract.retention.failed,
     ...(contract.activeWorkDeduplication === 'job-id' ? { jobId: identity } : {}),
@@ -221,17 +228,24 @@ async function findCoalescedCommands(
   const lookups = commands
     .map((command, commandIndex) => createCoalescingLookup(handle, command, commandIndex))
     .filter((lookup): lookup is CoalescingLookup => lookup !== undefined)
-  if (lookups.length === 0) return commands.map(() => false)
+  if (lookups.length === 0) {
+    return commands.map(() => false)
+  }
 
   const pipeline = handle.connection.pipeline()
-  for (const lookup of lookups) enqueueCoalescingLookup(pipeline, lookup)
+  for (const lookup of lookups) {
+    enqueueCoalescingLookup(pipeline, lookup)
+  }
   const responses = await pipeline.exec()
-  if (responses?.length !== lookups.length)
+  if (responses?.length !== lookups.length) {
     throw new Error('Queue deduplication batch returned an invalid response')
+  }
 
   const coalesced = commands.map(() => false)
   for (const [index, [error, value]] of responses.entries()) {
-    if (error) throw error
+    if (error) {
+      throw error
+    }
     const lookup = lookups[index]!
     coalesced[lookup.commandIndex] = isLookupCoalesced(lookup, value)
   }
@@ -244,14 +258,18 @@ function createCoalescingLookup(
   commandIndex: number,
 ): CoalescingLookup | undefined {
   if (contract.activeWorkDeduplication === 'job-id') {
-    if (command.name === 'domain-event') return
-    return { commandIndex, kind: 'job-id', key: handle.queue.toKey(identity) }
+    if (command.name === 'domain-event') {
+      return
+    }
+    return { commandIndex, key: handle.queue.toKey(identity), kind: 'job-id' }
   }
-  if (!usesSimpleDeduplication(command, contract.activeWorkDeduplication)) return
+  if (!usesSimpleDeduplication(command, contract.activeWorkDeduplication)) {
+    return
+  }
   return {
     commandIndex,
-    kind: 'simple',
     key: `${handle.queue.toKey('de')}:${identity}`,
+    kind: 'simple',
   }
 }
 

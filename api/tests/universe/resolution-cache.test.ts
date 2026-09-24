@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => {
   const values = new Map<string, string>()
   return {
-    values,
     mget: vi.fn(async (...keys: string[]) => keys.map((key) => values.get(key) ?? null)),
     multi: vi.fn(() => {
       const commands: Array<() => void> = []
@@ -17,12 +16,15 @@ const mocks = vi.hoisted(() => {
           return transaction
         }),
         exec: vi.fn(async () => {
-          for (const command of commands) command()
+          for (const command of commands) {
+            command()
+          }
           return []
         }),
       }
       return transaction
     }),
+    values,
   }
 })
 
@@ -52,14 +54,14 @@ describe('universe resolution cache', () => {
     await writeUniverseNames([entry])
 
     const cached = await readUniverseNames([entry.id])
-    expect(cached.fresh).toEqual(new Map([[entry.id, entry]]))
-    expect(cached.stale).toEqual(new Map())
+    expect(cached.fresh).toStrictEqual(new Map([[entry.id, entry]]))
+    expect(cached.stale).toStrictEqual(new Map())
     const transaction = mocks.multi.mock.results[0]!.value
     expect(transaction.set).toHaveBeenCalledWith(
       expect.stringContaining(':name:positive:90666561'),
       JSON.stringify({ freshUntil: Date.parse('2026-08-30T10:00:00.000Z'), value: entry }),
       'EX',
-      7_200,
+      7200,
     )
   })
 
@@ -75,8 +77,8 @@ describe('universe resolution cache', () => {
     await suppressUniverseNameIds([entry.id])
 
     const cached = await readUniverseNames([entry.id])
-    expect(cached.stale).toEqual(new Map([[entry.id, entry]]))
-    expect(cached.suppressed).toEqual(new Set([entry.id]))
+    expect(cached.stale).toStrictEqual(new Map([[entry.id, entry]]))
+    expect(cached.suppressed).toStrictEqual(new Set([entry.id]))
     const transaction = mocks.multi.mock.results[1]!.value
     expect(transaction.set).toHaveBeenCalledWith(
       expect.stringContaining(':name:negative:90666561'),
@@ -95,7 +97,7 @@ describe('universe resolution cache', () => {
 
     const cached = await readUniverseIds(['  known pilot  '])
 
-    expect(cached.fresh.get('  known pilot  ')).toEqual([entry])
+    expect(cached.fresh.get('  known pilot  ')).toStrictEqual([entry])
   })
 
   test('uses locale-independent persisted keys for ID lookups', async () => {
@@ -108,6 +110,6 @@ describe('universe resolution cache', () => {
     localeSpy.mockRestore()
 
     const cached = await readUniverseIds(['IPO Holdings'])
-    expect(cached.fresh.get('IPO Holdings')).toEqual([entry])
+    expect(cached.fresh.get('IPO Holdings')).toStrictEqual([entry])
   })
 })

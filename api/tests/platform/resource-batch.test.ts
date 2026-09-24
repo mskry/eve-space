@@ -53,17 +53,7 @@ describe('platform resource batch processing', () => {
       'typed-batch',
       { readonly changedCharacterIds: number[] }
     >({
-      mode: 'single-request',
-      operation: 'typed-detail',
-      request: ({ characterId }) => ({ characterId }),
-      map: ({ data }) => data,
-      materialize: async ({ data }) => {
-        expect(data.score).toBe(10)
-      },
       batch: {
-        mode: 'change-hint',
-        operation: 'typed-batch',
-        request: (subjects) => ({ ids: subjects.map(({ characterId }) => characterId) }),
         classify: ({ subjects, data }) =>
           subjects.map((batchSubject) => ({
             subject: batchSubject,
@@ -71,7 +61,17 @@ describe('platform resource batch processing', () => {
               ? ('changed' as const)
               : ('unchanged' as const),
           })),
+        mode: 'change-hint',
+        operation: 'typed-batch',
+        request: (subjects) => ({ ids: subjects.map(({ characterId }) => characterId) }),
       },
+      map: ({ data }) => data,
+      materialize: async ({ data }) => {
+        expect(data.score).toBe(10)
+      },
+      mode: 'single-request',
+      operation: 'typed-detail',
+      request: ({ characterId }) => ({ characterId }),
     })
 
     expect(typed.batch?.mode).toBe('change-hint')
@@ -82,37 +82,37 @@ describe('platform resource batch processing', () => {
 
     expect(() =>
       validatePlatformResourceBatchClassifications('complete-observation', subjects, [
-        { subject: subjects[0], outcome: 'complete', data: 1 },
+        { data: 1, outcome: 'complete', subject: subjects[0] },
       ]),
     ).toThrow('omitted a requested subject')
     expect(() =>
       validatePlatformResourceBatchClassifications('complete-observation', subjects, [
-        { subject: subjects[0], outcome: 'unchanged' },
-        { subject: subjects[0], outcome: 'unchanged' },
+        { outcome: 'unchanged', subject: subjects[0] },
+        { outcome: 'unchanged', subject: subjects[0] },
       ]),
     ).toThrow('duplicate subject')
     expect(() =>
       validatePlatformResourceBatchClassifications('change-hint', subjects, [
-        { subject: subjects[0], outcome: 'unchanged' },
-        { subject: subject(2), outcome: 'changed' },
+        { outcome: 'unchanged', subject: subjects[0] },
+        { outcome: 'changed', subject: subject(2) },
       ]),
     ).toThrow('unknown subject')
     expect(() =>
       validatePlatformResourceBatchClassifications('change-hint', subjects, [
-        { subject: subjects[0], outcome: 'complete', data: 1 },
-        { subject: subjects[1], outcome: 'unchanged' },
+        { data: 1, outcome: 'complete', subject: subjects[0] },
+        { outcome: 'unchanged', subject: subjects[1] },
       ]),
     ).toThrow('Change-hint batch cannot classify complete')
     expect(() =>
       validatePlatformResourceBatchClassifications('complete-observation', subjects, [
-        { subject: subjects[0], outcome: 'changed' },
-        { subject: subjects[1], outcome: 'unchanged' },
+        { outcome: 'changed', subject: subjects[0] },
+        { outcome: 'unchanged', subject: subjects[1] },
       ]),
     ).toThrow('Complete-observation batch cannot classify changed')
     expect(() =>
       validatePlatformResourceBatchClassifications('complete-observation', subjects, [
-        { subject: subjects[0], outcome: 'complete' },
-        { subject: subjects[1], outcome: 'unchanged' },
+        { outcome: 'complete', subject: subjects[0] },
+        { outcome: 'unchanged', subject: subjects[1] },
       ]),
     ).toThrow('Complete resource batch classification must carry data')
   })
@@ -124,24 +124,24 @@ describe('platform resource batch processing', () => {
     const queue = batchQueue()
 
     await processInstalledResourceBatch(payload, queue, undefined, {
-      resources: [resource],
-      resolveEligibility: eligible as never,
       executeEsiOperation,
+      resolveEligibility: eligible as never,
+      resources: [resource],
     })
 
     expect(executeEsiOperation).toHaveBeenCalledOnce()
     expect(executeEsiOperation).toHaveBeenCalledWith({
-      operation: 'universe-resolve-names',
-      inputs: { ids: [1_404_328_063, 1_404_328_064] },
       authorization: { kind: 'public' },
+      inputs: { ids: [1_404_328_063, 1_404_328_064] },
+      operation: 'universe-resolve-names',
     })
     expect(resource.implementation.batch.classify).toHaveBeenCalledWith({
-      subjects: [subject(0), subject(1)],
       data: { observed: true },
+      subjects: [subject(0), subject(1)],
     })
     expect(resource.implementation.map).not.toHaveBeenCalled()
     expect(processorMocks.applyObservation).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: 'complete', data: { score: 10 } }),
+      expect.objectContaining({ data: { score: 10 }, outcome: 'complete' }),
     )
     expect(processorMocks.applyObservation).toHaveBeenCalledWith(
       expect.objectContaining({ outcome: 'unchanged' }),
@@ -157,9 +157,9 @@ describe('platform resource batch processing', () => {
 
     await expect(
       processInstalledResourceBatch(payload, batchQueue(), undefined, {
-        resources: [resource],
-        resolveEligibility: eligible as never,
         executeEsiOperation,
+        resolveEligibility: eligible as never,
+        resources: [resource],
       }),
     ).rejects.toThrow('Platform resource mapping failed')
     expect(executeEsiOperation).not.toHaveBeenCalled()
@@ -172,9 +172,9 @@ describe('platform resource batch processing', () => {
 
     await expect(
       executeInstalledResourceBatchOperation(oversizedBatchPayload(), {
-        resources: [completeResource()],
-        resolveEligibility,
         executeEsiOperation,
+        resolveEligibility,
+        resources: [completeResource()],
       }),
     ).rejects.toThrow('batch exceeds 1000 subjects')
     expect(resolveEligibility).not.toHaveBeenCalled()
@@ -190,9 +190,9 @@ describe('platform resource batch processing', () => {
 
     await expect(
       processInstalledResourceBatch(payload, batchQueue(), undefined, {
-        resources: [resource],
-        resolveEligibility: eligible as never,
         executeEsiOperation,
+        resolveEligibility: eligible as never,
+        resources: [resource],
       }),
     ).rejects.toThrow('Platform resource mapping failed')
     expect(executeEsiOperation).toHaveBeenCalledOnce()
@@ -204,7 +204,7 @@ describe('platform resource batch processing', () => {
 
     await expect(
       processInstalledResourceBatch(payload, batchQueue(), undefined, {
-        resources: [completeResource()],
+        executeEsiOperation: vi.fn().mockRejectedValue(failure),
         resolveEligibility: vi
           .fn()
           .mockResolvedValueOnce({
@@ -215,15 +215,15 @@ describe('platform resource batch processing', () => {
             nextEligibleAt: null,
           })
           .mockResolvedValueOnce({ status: 'eligible', due: false }),
-        executeEsiOperation: vi.fn().mockRejectedValue(failure),
+        resources: [completeResource()],
       }),
     ).rejects.toBe(failure)
 
     expect(processorMocks.recordFailure).toHaveBeenCalledOnce()
     expect(processorMocks.recordFailure).toHaveBeenCalledWith(identity(payload, 0), failure, {
-      resources: expect.any(Array),
       expectedAuthorizationGeneration: 4,
       expectedManagedAuthority: null,
+      resources: expect.any(Array),
     })
   })
 
@@ -239,9 +239,9 @@ describe('platform resource batch processing', () => {
       batchQueue(),
       controller.signal,
       {
-        resources: [completeResource()],
-        resolveEligibility: eligible as never,
         executeEsiOperation,
+        resolveEligibility: eligible as never,
+        resources: [completeResource()],
       },
     )
     const rejected = pending.catch((error: unknown) => error)
@@ -257,9 +257,9 @@ describe('platform resource batch processing', () => {
     const queue = createInMemoryQueueProducer({ highWaterMark: 1 })
 
     await processInstalledResourceBatch(payload, queue, undefined, {
-      resources: [resource],
-      resolveEligibility: eligible as never,
       executeEsiOperation: vi.fn().mockResolvedValue(platformExecution({ observed: true })),
+      resolveEligibility: eligible as never,
+      resources: [resource],
     })
 
     expect(processorMocks.applyObservation).toHaveBeenCalledOnce()
@@ -267,12 +267,12 @@ describe('platform resource batch processing', () => {
       expect.objectContaining({ outcome: 'unchanged' }),
     )
     const firstIdentity = identity(payload, 0)
-    expect(queue.commands).toEqual([
+    expect(queue.commands).toStrictEqual([
       {
+        materializationIntervalSeconds: 900,
         name: 'resource-refresh',
         payload: firstIdentity,
         source: 'on-demand',
-        materializationIntervalSeconds: 900,
       },
     ])
     expect(resource.implementation.map).not.toHaveBeenCalled()
@@ -281,23 +281,23 @@ describe('platform resource batch processing', () => {
 
 function completeResource() {
   const implementation = baseImplementation({
-    mode: 'complete-observation',
     classify: vi.fn(({ subjects }: { subjects: readonly PlatformCharacterResourceSubject[] }) => [
       { subject: subjects[0]!, outcome: 'complete' as const, data: { score: 10 } },
       { subject: subjects[1]!, outcome: 'unchanged' as const },
     ]),
+    mode: 'complete-observation',
   })
   return descriptor('complete-observation', implementation)
 }
 
 function changeHintResource() {
   const implementation = baseImplementation({
-    mode: 'change-hint',
     classify: vi.fn(({ subjects }: { subjects: readonly PlatformCharacterResourceSubject[] }) => [
       { subject: subjects[0]!, outcome: 'changed' as const },
       { subject: subjects[1]!, outcome: 'changed' as const },
       { subject: subjects[2]!, outcome: 'unchanged' as const },
     ]),
+    mode: 'change-hint',
   })
   return descriptor('change-hint', implementation)
 }
@@ -307,19 +307,19 @@ function baseImplementation(batch: {
   readonly classify: ReturnType<typeof vi.fn>
 }) {
   return {
-    mode: 'single-request' as const,
-    operation: 'skills',
-    request: vi.fn(),
-    map: vi.fn(),
-    materialize: vi.fn(),
     batch: {
-      operation: 'universe-resolve-names',
+      classify: batch.classify,
       mode: batch.mode,
+      operation: 'universe-resolve-names',
       request: vi.fn((subjects: readonly PlatformCharacterResourceSubject[]) => ({
         ids: subjects.map(({ characterId }) => characterId),
       })),
-      classify: batch.classify,
     },
+    map: vi.fn(),
+    materialize: vi.fn(),
+    mode: 'single-request' as const,
+    operation: 'skills',
+    request: vi.fn(),
   }
 }
 
@@ -328,14 +328,14 @@ function descriptor(
   implementation: ReturnType<typeof baseImplementation>,
 ) {
   return {
-    moduleId: 'member-audit',
-    resourceId: 'trained-skills',
-    operationId: 'skills',
     batch: { mode, operationId: 'universe-resolve-names' },
-    subjectKind: 'character',
-    materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-owned-character' },
     implementation,
+    materializationIntervalSeconds: 900,
+    moduleId: 'member-audit',
+    operationId: 'skills',
+    resourceId: 'trained-skills',
+    subjectKind: 'character',
   } as PlatformInstalledResourceDescriptor<PlatformResourceImplementation> & {
     readonly implementation: typeof implementation
   }
@@ -347,8 +347,8 @@ function batchPayload(count: number) {
     resourceId: 'trained-skills',
     subjectKind: 'character' as const,
     subjects: lifecycleIds.slice(0, count).map((subjectLifecycleId, index) => ({
-      subjectLifecycleId,
       subjectId: String(1_404_328_063 + index),
+      subjectLifecycleId,
     })),
   }
 }
@@ -358,17 +358,17 @@ function oversizedBatchPayload() {
     moduleId: 'member-audit',
     resourceId: 'trained-skills',
     subjectKind: 'character' as const,
-    subjects: Array.from({ length: 1_001 }, (_, index) => ({
-      subjectLifecycleId: `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`,
+    subjects: Array.from({ length: 1001 }, (_, index) => ({
       subjectId: String(1_404_328_063 + index),
+      subjectLifecycleId: `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`,
     })),
   }
 }
 
 function subject(index: number): PlatformCharacterResourceSubject {
   return {
-    kind: 'character',
     characterId: 1_404_328_063 + index,
+    kind: 'character',
     lifecycleId: lifecycleIds[index]!,
   }
 }
@@ -384,22 +384,22 @@ function identity(payload: ReturnType<typeof batchPayload>, index: number) {
 
 function eligible() {
   return Promise.resolve({
-    status: 'eligible' as const,
-    due: true,
     authorizationGeneration: 4,
+    due: true,
     nextEligibleAt: null,
+    status: 'eligible' as const,
   })
 }
 
 function platformExecution(data: unknown) {
   return {
-    data,
     authorizationGeneration: null,
     cachedUntil: '2026-08-26T15:00:00.000Z',
-    validatedAt: '2026-08-26T14:58:00.000Z',
+    data,
+    quota: {},
     source: 'esi' as const,
     stale: false,
-    quota: {},
+    validatedAt: '2026-08-26T14:58:00.000Z',
   }
 }
 

@@ -10,19 +10,19 @@ const recordedAt = '2026-09-10T12:00:00.000Z'
 
 describe('queue outcome codecs', () => {
   test('round trips strict outbox and affiliation outcomes', () => {
-    const outbox = { outcome: 'published', category: null, recordedAt } as const
+    const outbox = { category: null, outcome: 'published', recordedAt } as const
     const affiliation = { outcome: 'scheduled', planned: 2, recordedAt } as const
-    expect(decodeOutboxRelayOutcome(encodeOutboxRelayOutcome(outbox))).toEqual(outbox)
-    expect(decodeAffiliationPlannerOutcome(encodeAffiliationPlannerOutcome(affiliation))).toEqual(
-      affiliation,
-    )
+    expect(decodeOutboxRelayOutcome(encodeOutboxRelayOutcome(outbox))).toStrictEqual(outbox)
+    expect(
+      decodeAffiliationPlannerOutcome(encodeAffiliationPlannerOutcome(affiliation)),
+    ).toStrictEqual(affiliation)
   })
 
   test('rejects malformed JSON, fields, counts, and timestamps', () => {
     expect(decodeOutboxRelayOutcome('{')).toBeNull()
     expect(
       decodeOutboxRelayOutcome(
-        JSON.stringify({ outcome: 'published', category: null, recordedAt, extra: true }),
+        JSON.stringify({ category: null, extra: true, outcome: 'published', recordedAt }),
       ),
     ).toBeNull()
     expect(
@@ -38,23 +38,23 @@ describe('queue outcome codecs', () => {
   })
 
   test.each([
-    { outcome: 'idle', category: null, recordedAt },
-    { outcome: 'paused', category: null, recordedAt },
-    { outcome: 'failed', category: 'queue-unavailable', recordedAt },
-    { outcome: 'partial-failure', category: 'invalid-event', recordedAt },
+    { category: null, outcome: 'idle', recordedAt },
+    { category: null, outcome: 'paused', recordedAt },
+    { category: 'queue-unavailable', outcome: 'failed', recordedAt },
+    { category: 'invalid-event', outcome: 'partial-failure', recordedAt },
   ] as const)('decodes valid relay outcome $outcome', (outcome) => {
-    expect(decodeOutboxRelayOutcome(JSON.stringify(outcome))).toEqual(outcome)
+    expect(decodeOutboxRelayOutcome(JSON.stringify(outcome))).toStrictEqual(outcome)
   })
 
   test.each([
     null,
     '[]',
     '"published"',
-    JSON.stringify({ outcome: 'unknown', category: null, recordedAt }),
-    JSON.stringify({ outcome: 'published', category: 'queue-unavailable', recordedAt }),
-    JSON.stringify({ outcome: 'failed', category: null, recordedAt }),
-    JSON.stringify({ outcome: 'failed', category: 'secret-host', recordedAt }),
-    JSON.stringify({ outcome: 'failed', category: 'unknown', recordedAt: '2026-09-10' }),
+    JSON.stringify({ category: null, outcome: 'unknown', recordedAt }),
+    JSON.stringify({ category: 'queue-unavailable', outcome: 'published', recordedAt }),
+    JSON.stringify({ category: null, outcome: 'failed', recordedAt }),
+    JSON.stringify({ category: 'secret-host', outcome: 'failed', recordedAt }),
+    JSON.stringify({ category: 'unknown', outcome: 'failed', recordedAt: '2026-09-10' }),
   ])('rejects invalid relay representation %#', (value) => {
     expect(decodeOutboxRelayOutcome(value)).toBeNull()
   })
@@ -72,7 +72,7 @@ describe('queue outcome codecs', () => {
 
   test('rejects invalid runtime values before encoding', () => {
     expect(() =>
-      encodeOutboxRelayOutcome({ outcome: 'published', category: 'unknown', recordedAt } as never),
+      encodeOutboxRelayOutcome({ category: 'unknown', outcome: 'published', recordedAt } as never),
     ).toThrow('Relay failure outcomes and categories must correspond')
     expect(() =>
       encodeAffiliationPlannerOutcome({ outcome: 'idle', planned: 1, recordedAt } as never),

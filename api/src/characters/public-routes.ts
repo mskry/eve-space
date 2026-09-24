@@ -25,10 +25,10 @@ export const publicCharacterRoutes = new Hono().get(
     try {
       const profile = await getCharacterProfile(characterId)
       return context.json({
-        profile,
         cachedUntil: profile.cachedUntil,
-        validatedAt: profile.validatedAt,
+        profile,
         stale: profile.stale,
+        validatedAt: profile.validatedAt,
         ...(profile.retryAt ? { retryAt: profile.retryAt } : {}),
         ...(profile.refreshFailureClass
           ? { refreshFailureClass: profile.refreshFailureClass }

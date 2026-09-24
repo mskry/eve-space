@@ -11,8 +11,8 @@ const now = '2026-09-07T10:00:00.000Z'
 const summary = {
   id,
   name: 'Deliver supplies',
-  state: 'Active',
   progress: { current: 1, desired: 10 },
+  state: 'Active',
 }
 const unavailableItem = { code: 'ESI_HTTP_ERROR', status: 404 }
 function context(execute: ReturnType<typeof vi.fn>, checkpoint?: unknown) {
@@ -20,33 +20,33 @@ function context(execute: ReturnType<typeof vi.fn>, checkpoint?: unknown) {
     .fn()
     .mockResolvedValue(checkpoint ? { checkpoint, revision: 3 } : null)
   return {
-    subject: { kind: 'character', characterId: 9001, lifecycleId: id },
-    organizationVersion: 7,
-    corporationId: 9801,
     authorizationGeneration: 4,
-    requestBudget: 32,
+    capabilities: {
+      persistence: { readActivityCheckpoint },
+    },
+    corporationId: 9801,
     operations: new Proxy(
       {},
       { get: (_target, operationId) => (inputs: unknown) => execute(operationId, inputs) },
     ),
-    capabilities: {
-      persistence: { readActivityCheckpoint },
-    },
+    organizationVersion: 7,
+    requestBudget: 32,
+    subject: { characterId: 9001, kind: 'character', lifecycleId: id },
   } as unknown as ActivityCollectionContext
 }
 
 describe('activity collection', () => {
   test('resumes a bounded exact-character contribution without losing its before cursor', async () => {
     const execute = vi.fn().mockResolvedValueOnce({
-      data: { projects: [summary], cursor: { before: 'older', after: 'initial' } },
+      data: { cursor: { after: 'initial', before: 'older' }, projects: [summary] },
       validatedAt: now,
     })
     const first = await collectActivityResource(
-      { id: 'character-projects', rootOperation: 'project-list', paginated: true },
+      { id: 'character-projects', paginated: true, rootOperation: 'project-list' },
       { ...context(execute), requestBudget: 1 },
     )
     expect(first.complete).toBe(false)
-    expect(first.data.checkpoint.requests[0]?.path).toEqual({
+    expect(first.data.checkpoint.requests[0]?.path).toStrictEqual({
       character_id: 9001,
       corporation_id: 9801,
       project_id: id,
@@ -54,19 +54,19 @@ describe('activity collection', () => {
     const resumed = vi
       .fn()
       .mockResolvedValueOnce({ data: { contributed: 3 }, validatedAt: now })
-      .mockResolvedValueOnce({ data: { projects: [], cursor: {} }, validatedAt: now })
+      .mockResolvedValueOnce({ data: { cursor: {}, projects: [] }, validatedAt: now })
     const last = await collectActivityResource(
-      { id: 'character-projects', rootOperation: 'project-list', paginated: true },
+      { id: 'character-projects', paginated: true, rootOperation: 'project-list' },
       context(resumed, first.data.checkpoint),
     )
     expect(last.complete).toBe(true)
     expect(last.data.expectedRevision).toBe(3)
-    expect(last.data.checkpoint.cursors.root).toEqual({ after: 'initial' })
+    expect(last.data.checkpoint.cursors.root).toStrictEqual({ after: 'initial' })
     expect(last.data.snapshots[0]).toMatchObject({
       replace: false,
-      snapshot: { id, contributed: 3 },
+      snapshot: { contributed: 3, id },
     })
-    expect(resumed.mock.calls[1]?.[1].query).toEqual({ limit: 100, before: 'older' })
+    expect(resumed.mock.calls[1]?.[1].query).toStrictEqual({ before: 'older', limit: 100 })
   })
 
   test('retains a complete character job membership list including an empty replacement', async () => {
@@ -74,10 +74,10 @@ describe('activity collection', () => {
       .fn()
       .mockResolvedValueOnce({ data: { freelance_jobs: [summary] }, validatedAt: now })
       .mockResolvedValueOnce({ data: { contributed: 2, state: 'Committed' }, validatedAt: now })
-    const profile = { id: 'character-jobs', rootOperation: 'character-jobs', paginated: false }
+    const profile = { id: 'character-jobs', paginated: false, rootOperation: 'character-jobs' }
     const result = await collectActivityResource(profile, context(execute))
-    expect(result.data.checkpoint.retainedIds).toEqual([id])
-    expect(result.data.snapshots[0]?.snapshot).toMatchObject({ contributed: 2, committed: true })
+    expect(result.data.checkpoint.retainedIds).toStrictEqual([id])
+    expect(result.data.snapshots[0]?.snapshot).toMatchObject({ committed: true, contributed: 2 })
     const empty = await collectActivityResource(
       profile,
       context(
@@ -85,20 +85,20 @@ describe('activity collection', () => {
         result.data.checkpoint,
       ),
     )
-    expect(empty.data.checkpoint.retainedIds).toEqual([])
+    expect(empty.data.checkpoint.retainedIds).toStrictEqual([])
   })
 
   test('replaces incremental observations and rejects broken cursor progress', async () => {
-    const profile = { id: 'corporation-jobs', rootOperation: 'corporation-jobs', paginated: true }
+    const profile = { id: 'corporation-jobs', paginated: true, rootOperation: 'corporation-jobs' }
     const corporationContext = (execute: ReturnType<typeof vi.fn>, stored?: unknown) => ({
       ...context(execute, stored),
-      subject: { kind: 'corporation' as const, corporationId: 9801, lifecycleId: id },
+      subject: { corporationId: 9801, kind: 'corporation' as const, lifecycleId: id },
     })
-    const checkpoint = { initialized: true, requests: [], cursors: { root: { after: 'old' } } }
+    const checkpoint = { cursors: { root: { after: 'old' } }, initialized: true, requests: [] }
     const execute = vi
       .fn()
       .mockResolvedValueOnce({
-        data: { freelance_jobs: [summary], cursor: { after: 'new' } },
+        data: { cursor: { after: 'new' }, freelance_jobs: [summary] },
         validatedAt: now,
       })
       .mockResolvedValueOnce({ data: { freelance_jobs: [] }, validatedAt: now })
@@ -109,7 +109,7 @@ describe('activity collection', () => {
         profile,
         corporationContext(
           vi.fn().mockResolvedValue({
-            data: { freelance_jobs: [summary], cursor: { after: 'old' } },
+            data: { cursor: { after: 'old' }, freelance_jobs: [summary] },
             validatedAt: now,
           }),
           checkpoint,
@@ -122,13 +122,13 @@ describe('activity collection', () => {
     const execute = vi
       .fn()
       .mockResolvedValueOnce({
-        data: { campaigns: [{ id, state: 'Active', progress: 0 }] },
+        data: { campaigns: [{ id, progress: 0, state: 'Active' }] },
         validatedAt: now,
       })
       .mockRejectedValueOnce(new Error('cooldown'))
     await expect(
       collectActivityResource(
-        { id: 'campaigns', rootOperation: 'campaign-list', paginated: false },
+        { id: 'campaigns', paginated: false, rootOperation: 'campaign-list' },
         context(execute),
       ),
     ).rejects.toThrow('cooldown')
@@ -146,23 +146,23 @@ describe('activity collection', () => {
   ])('recovers when a listed item disappears before %s', async (operation, path, snapshot) => {
     const execute = vi.fn().mockRejectedValue(unavailableItem)
     const result = await collectActivityResource(
-      { id: 'campaigns', rootOperation: 'campaign-list', paginated: false },
+      { id: 'campaigns', paginated: false, rootOperation: 'campaign-list' },
       context(execute, {
+        cursors: {},
         initialized: true,
         requests: [{ operation, path, replace: true, snapshot, validatedAt: now }],
-        cursors: {},
       }),
     )
     expect(result.complete).toBe(true)
-    expect(result.data.snapshots).toEqual(
-      snapshot ? [{ snapshot, validatedAt: now, replace: true }] : [],
+    expect(result.data.snapshots).toStrictEqual(
+      snapshot ? [{ replace: true, snapshot, validatedAt: now }] : [],
     )
   })
 
   test('does not recover an unavailable root collection request', async () => {
     await expect(
       collectActivityResource(
-        { id: 'campaigns', rootOperation: 'campaign-list', paginated: false },
+        { id: 'campaigns', paginated: false, rootOperation: 'campaign-list' },
         context(vi.fn().mockRejectedValue(unavailableItem)),
       ),
     ).rejects.toBe(unavailableItem)
@@ -171,14 +171,14 @@ describe('activity collection', () => {
   test('retains objective parents only while campaigns are active', async () => {
     const inactiveId = '22222222-2222-4222-8222-222222222222'
     const result = await collectActivityResource(
-      { id: 'campaigns', rootOperation: 'campaign-list', paginated: false },
+      { id: 'campaigns', paginated: false, rootOperation: 'campaign-list' },
       {
         ...context(
           vi.fn().mockResolvedValue({
             data: {
               campaigns: [
-                { id, state: 'Active', progress: 0 },
-                { id: inactiveId, state: 'Completed', progress: 1 },
+                { id, progress: 0, state: 'Active' },
+                { id: inactiveId, progress: 1, state: 'Completed' },
               ],
             },
             validatedAt: now,
@@ -187,8 +187,8 @@ describe('activity collection', () => {
         requestBudget: 1,
       },
     )
-    expect(result.data.checkpoint.retainedIds).toEqual([id, inactiveId])
-    expect(result.data.checkpoint.retainedCampaignIds).toEqual([id])
+    expect(result.data.checkpoint.retainedIds).toStrictEqual([id, inactiveId])
+    expect(result.data.checkpoint.retainedCampaignIds).toStrictEqual([id])
   })
 
   test('rejects obsolete checkpoint writers before touching snapshots', async () => {
@@ -196,18 +196,18 @@ describe('activity collection', () => {
       .fn()
       .mockResolvedValue({ outcome: 'obsolete' as const })
     const result = await materializeActivityResource({
-      subject: { lifecycleId: id },
       authorizationGeneration: 4,
+      capabilities: { persistence: { materializeActivityObservation } },
       data: {
-        resourceId: 'character-jobs',
-        organizationVersion: 7,
+        checkpoint: { cursors: {}, initialized: true, requests: [] },
         expectedRevision: 3,
-        checkpoint: { initialized: true, requests: [], cursors: {} },
+        organizationVersion: 7,
+        resourceId: 'character-jobs',
         snapshots: [],
       },
-      capabilities: { persistence: { materializeActivityObservation } },
+      subject: { lifecycleId: id },
     } as never)
-    expect(result).toEqual({ outcome: 'obsolete' })
+    expect(result).toStrictEqual({ outcome: 'obsolete' })
     expect(materializeActivityObservation).toHaveBeenCalledOnce()
   })
 
@@ -216,25 +216,25 @@ describe('activity collection', () => {
       .fn()
       .mockResolvedValue({ outcome: 'applied' as const, revision: 1 })
     const collect = await collectActivityResource(
-      { id: 'character-jobs', rootOperation: 'character-jobs', paginated: false },
+      { id: 'character-jobs', paginated: false, rootOperation: 'character-jobs' },
       context(vi.fn().mockResolvedValue({ data: { freelance_jobs: [] }, validatedAt: now })),
     )
     await materializeActivityResource({
-      subject: { lifecycleId: id },
       authorizationGeneration: 4,
-      validatedAt: now,
-      data: collect.data,
       capabilities: { persistence: { materializeActivityObservation } },
+      data: collect.data,
+      subject: { lifecycleId: id },
+      validatedAt: now,
     } as never)
     expect(materializeActivityObservation).toHaveBeenCalledWith(
       expect.objectContaining({
-        resourceId: 'character-jobs',
-        subjectLifecycleId: id,
-        organizationVersion: 7,
         authorizationGeneration: 4,
-        expectedRevision: 0,
         checkpoint: expect.objectContaining({ retainedIds: [], retainedCampaignIds: undefined }),
+        expectedRevision: 0,
+        organizationVersion: 7,
+        resourceId: 'character-jobs',
         snapshots: [],
+        subjectLifecycleId: id,
       }),
     )
     expect(materializeActivityObservation.mock.calls[0]?.[0].materializationId).toMatch(
@@ -247,17 +247,17 @@ describe('activity collection', () => {
       .fn()
       .mockResolvedValue({ outcome: 'applied' as const, revision: 1 })
     await materializeActivityResource({
-      subject: { lifecycleId: id },
       authorizationGeneration: 4,
-      validatedAt: now,
+      capabilities: { persistence: { materializeActivityObservation } },
       data: {
-        resourceId: 'corporation-jobs',
-        organizationVersion: 7,
+        checkpoint: { cursors: { root: { after: 'next' } }, initialized: true, requests: [] },
         expectedRevision: 0,
-        checkpoint: { initialized: true, requests: [], cursors: { root: { after: 'next' } } },
+        organizationVersion: 7,
+        resourceId: 'corporation-jobs',
         snapshots: [],
       },
-      capabilities: { persistence: { materializeActivityObservation } },
+      subject: { lifecycleId: id },
+      validatedAt: now,
     } as never)
     expect(materializeActivityObservation).toHaveBeenCalledWith(
       expect.objectContaining({ snapshots: [] }),

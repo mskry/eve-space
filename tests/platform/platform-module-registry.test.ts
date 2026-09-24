@@ -41,7 +41,7 @@ function validatePlatformModuleManifests(
 ) {
   return readCompiledPlatformModules(
     compilePlatformModules(
-      manifests.map((declaration) => ({ expectedModuleId: declaration.id, declaration })),
+      manifests.map((declaration) => ({ declaration, expectedModuleId: declaration.id })),
       authorities,
     ),
   )
@@ -57,7 +57,7 @@ function generateRegistryFiles(
 ) {
   const manifests = Array.isArray(input) ? input : input.manifests
   const compiled = compilePlatformModules(
-    manifests.map((declaration) => ({ expectedModuleId: declaration.id, declaration })),
+    manifests.map((declaration) => ({ declaration, expectedModuleId: declaration.id })),
     coreModuleValidationAuthorities,
   )
   return Array.isArray(input)
@@ -71,21 +71,24 @@ describe('platform module declarations', () => {
     const beta = manifest('beta')
     const compiled = compilePlatformModules(
       [
-        { expectedModuleId: 'beta', declaration: beta },
-        { expectedModuleId: 'alpha', declaration: alpha },
+        { declaration: beta, expectedModuleId: 'beta' },
+        { declaration: alpha, expectedModuleId: 'alpha' },
       ],
       coreModuleValidationAuthorities,
     )
 
-    expect(readCompiledPlatformModules(compiled).map(({ id }) => id)).toEqual(['alpha', 'beta'])
+    expect(readCompiledPlatformModules(compiled).map(({ id }) => id)).toStrictEqual([
+      'alpha',
+      'beta',
+    ])
 
     let result: ReturnType<typeof compilePlatformModules> | undefined
     let caught: unknown
     try {
       result = compilePlatformModules(
         [
-          { expectedModuleId: 'beta', declaration: null },
-          { expectedModuleId: 'alpha', declaration: { id: 42 } },
+          { declaration: null, expectedModuleId: 'beta' },
+          { declaration: { id: 42 }, expectedModuleId: 'alpha' },
         ],
         coreModuleValidationAuthorities,
       )
@@ -94,7 +97,7 @@ describe('platform module declarations', () => {
     }
     expect(result).toBeUndefined()
     expect(caught).toBeInstanceOf(PlatformModuleValidationError)
-    expect((caught as PlatformModuleValidationError).issues).toEqual([
+    expect((caught as PlatformModuleValidationError).issues).toStrictEqual([
       'installed module alpha defaultEnabled must be a boolean',
       'installed module alpha icon must be a string',
       'installed module alpha id must be a string',
@@ -108,7 +111,7 @@ describe('platform module declarations', () => {
   it('isolates compiled state and registry text from later authoring mutation', () => {
     const source = authoringManifest('alpha')
     const compiled = compilePlatformModules(
-      [{ expectedModuleId: 'alpha', declaration: source }],
+      [{ declaration: source, expectedModuleId: 'alpha' }],
       coreModuleValidationAuthorities,
     )
     const before = renderRegistryFiles(compiled)
@@ -124,12 +127,12 @@ describe('platform module declarations', () => {
     const canonical = readCompiledPlatformModules(compiled)
     expect(canonical[0]!.id).toBe('alpha')
     expect(canonical[0]!.release.version).toBe('0.1.0')
-    expect(canonical[0]!.permissions![0]!.audiences).toEqual(['hr'])
-    expect(canonical[0]!.permissionProfiles![0]!.permissions).toEqual(['alpha.review'])
+    expect(canonical[0]!.permissions![0]!.audiences).toStrictEqual(['hr'])
+    expect(canonical[0]!.permissionProfiles![0]!.permissions).toStrictEqual(['alpha.review'])
     expect(canonical[0]!.reviewerContributions![0]!.label).toBe('Overview')
     expect(canonical[0]!.server.routes[0]!.namespace).toBe('/alpha/accounts/:userId')
     expect(canonical[0]!.nuxt.pages[0]!.name).toBe('eve-alpha-audit')
-    expect(renderRegistryFiles(compiled)).toEqual(before)
+    expect(renderRegistryFiles(compiled)).toStrictEqual(before)
     expect(Object.isFrozen(compiled)).toBe(true)
     expect(Object.isFrozen(canonical[0]!.server.routes)).toBe(true)
     expect(Object.isFrozen(canonical[0]!.permissions![0]!.audiences)).toBe(true)
@@ -146,9 +149,9 @@ describe('platform module declarations', () => {
       compilePlatformModules(
         [
           {
+            declaration: invalid,
             expectedModuleId: 'alpha',
             expectedPublisherPackage: '@example/alpha-manifest',
-            declaration: invalid,
           },
         ],
         coreModuleValidationAuthorities,
@@ -200,8 +203,8 @@ describe('platform module declarations', () => {
     duplicateRouteLink.reviewerContributions!.push({
       ...duplicateRouteLink.reviewerContributions![0]!,
       id: 'details',
-      panelExport: './reviewer/details',
       order: 20,
+      panelExport: './reviewer/details',
     })
 
     expect(validationErrorMessage(duplicateRouteLink)).toContain(
@@ -211,15 +214,15 @@ describe('platform module declarations', () => {
     const duplicatePanelExport = authoringManifest('alpha')
     duplicatePanelExport.server.routes.push({
       ...duplicatePanelExport.server.routes[0]!,
+      exportName: 'alphaDetailsRoutes',
       id: 'alpha-details-route',
       namespace: '/alpha/reviews/:userId',
-      exportName: 'alphaDetailsRoutes',
     })
     duplicatePanelExport.reviewerContributions!.push({
       ...duplicatePanelExport.reviewerContributions![0]!,
       id: 'details',
-      routeId: 'alpha-details-route',
       order: 20,
+      routeId: 'alpha-details-route',
     })
 
     expect(validationErrorMessage(duplicatePanelExport)).toContain(
@@ -231,8 +234,8 @@ describe('platform module declarations', () => {
     const duplicateRouteId = authoringManifest('alpha')
     duplicateRouteId.server.routes.push({
       ...duplicateRouteId.server.routes[0]!,
-      namespace: '/alpha/reviews/:userId',
       exportName: 'alphaDetailsRoutes',
+      namespace: '/alpha/reviews/:userId',
     })
     expect(validationErrorMessage(duplicateRouteId)).toContain(
       'route ID in module alpha alpha-route conflicts between /alpha/accounts/:userId and /alpha/reviews/:userId',
@@ -292,8 +295,11 @@ describe('platform module declarations', () => {
 
     expect(platformModuleHostContractVersion).toBe('1.0.0')
     expect(canonical.endsWith('\n')).toBe(true)
-    expect(emitted.permissions?.map(({ key }) => key)).toEqual(['alpha.review', 'alpha.view'])
-    expect(emitted.permissionProfiles?.[0]?.permissions).toEqual(['alpha.review', 'alpha.view'])
+    expect(emitted.permissions?.map(({ key }) => key)).toStrictEqual(['alpha.review', 'alpha.view'])
+    expect(emitted.permissionProfiles?.[0]?.permissions).toStrictEqual([
+      'alpha.review',
+      'alpha.view',
+    ])
     expect(canonicalizePlatformModuleManifest(emitted, coreModuleValidationAuthorities)).toBe(
       canonical,
     )
@@ -301,8 +307,8 @@ describe('platform module declarations', () => {
 
   it('publishes the versioned core ESI reuse catalog and rejects unknown operations', () => {
     expect(platformCoreEsiOperationCatalog).toMatchObject({
-      version: 1,
       operationIds: expect.arrayContaining(['skills', 'wallet-balance', 'mail-headers']),
+      version: 1,
     })
 
     const declaration = actionManifest('member-audit')
@@ -311,17 +317,17 @@ describe('platform module declarations', () => {
       { ...baseResource, id: 'trained-skills', operationId: 'skills' },
       {
         ...baseResource,
+        exportName: 'walletBalanceResource',
         id: 'wallet-balance',
         operationId: 'wallet-balance',
         sectionId: 'wallet',
-        exportName: 'walletBalanceResource',
       },
       {
         ...baseResource,
+        exportName: 'mailHeadersResource',
         id: 'mail-headers',
         operationId: 'mail-headers',
         sectionId: 'mail',
-        exportName: 'mailHeadersResource',
       },
     ]
 
@@ -337,7 +343,7 @@ describe('platform module declarations', () => {
 
     expect(() =>
       compilePlatformModules(
-        [{ expectedModuleId: 'member-audit', declaration }],
+        [{ declaration, expectedModuleId: 'member-audit' }],
         coreModuleValidationAuthorities,
       ),
     ).toThrowError(
@@ -352,13 +358,13 @@ describe('platform module declarations', () => {
 
   it('rejects unknown keys at every declaration record boundary', () => {
     const declaration = authoringManifest('alpha', {
+      exposed: { components: [] },
       persistenceOperation: {},
       resource: {
         batch: { mode: 'complete-observation', operationId: 'alpha-operation' },
       },
-      exposed: { components: [] },
     })
-    declaration.sections = [{ id: 'overview', kind: 'workspace', defaultEnabled: false }]
+    declaration.sections = [{ defaultEnabled: false, id: 'overview', kind: 'workspace' }]
 
     const route = declaration.server.routes[0]!
     const resource = declaration.server.resources[0]!
@@ -387,17 +393,18 @@ describe('platform module declarations', () => {
       declaration.nuxt.exposed!,
       route.persistenceOperations[0]!,
       resource.persistence.projection[0]!,
-    ])
+    ]) {
       Object.assign(record, { unexpected: true })
+    }
     Object.assign(route, {
       additionalRequiredPermission: [],
-      targte: 'caller',
       exposuer: 'standard',
+      targte: 'caller',
     })
 
     expect(() =>
       compilePlatformModules(
-        [{ expectedModuleId: 'alpha', declaration }],
+        [{ declaration, expectedModuleId: 'alpha' }],
         coreModuleValidationAuthorities,
       ),
     ).toThrowError(
@@ -443,7 +450,7 @@ describe('platform module declarations', () => {
 
     expect(() =>
       compilePlatformModules(
-        [{ expectedModuleId: 'alpha', declaration }],
+        [{ declaration, expectedModuleId: 'alpha' }],
         coreModuleValidationAuthorities,
       ),
     ).toThrowError(
@@ -461,32 +468,35 @@ describe('platform module declarations', () => {
       ['generated/platform/installed-module-navigation.ts', 'installed'],
       ['scripts/verify-core-migrations.ts', 'compiler'],
       ['tests/platform/platform-boundaries.test.ts', 'manifest'],
-    ])
+    ]) {
       expect(
         platformModuleContractImportViolations(
           path!,
           `@eve-space/platform-module-contract/${subpath}`,
         ),
-      ).toEqual([expect.stringContaining(`cannot import ${subpath}`)])
+      ).toStrictEqual([expect.stringContaining(`cannot import ${subpath}`)])
+    }
 
     expect(
       platformModuleContractImportViolations(
         'api/src/generated/platform/installed-module-worker.ts',
         '@eve-space/platform-module-contract/resources',
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
     expect(
       platformModuleContractImportViolations(
         'tests/platform/platform-module-registry.test.ts',
         '@eve-space/platform-module-contract/compiler',
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
     expect(
       platformModuleContractImportViolations(
         'tools/new-platform-consumer.ts',
         '@eve-space/platform-module-contract/compiler',
       ),
-    ).toEqual(['tools/new-platform-consumer.ts: unregistered caller role cannot import compiler'])
+    ).toStrictEqual([
+      'tools/new-platform-consumer.ts: unregistered caller role cannot import compiler',
+    ])
   })
 
   it('scans JavaScript sources and TypeScript import-equals declarations', () => {
@@ -497,7 +507,7 @@ describe('platform module declarations', () => {
           `source.${extension}`,
           "import '@eve-space/platform-module-contract/compiler'",
         ),
-      ).toEqual(['@eve-space/platform-module-contract/compiler'])
+      ).toStrictEqual(['@eve-space/platform-module-contract/compiler'])
     }
 
     expect(
@@ -505,7 +515,7 @@ describe('platform module declarations', () => {
         'source.cts',
         "import contract = require('@eve-space/platform-module-contract')",
       ),
-    ).toEqual(['@eve-space/platform-module-contract'])
+    ).toStrictEqual(['@eve-space/platform-module-contract'])
   })
 
   it('rejects Nuxt source that performs runtime or server work', () => {
@@ -523,7 +533,7 @@ describe('platform module declarations', () => {
       },
     ])
 
-    expect(violations).toEqual(
+    expect(violations).toStrictEqual(
       expect.arrayContaining([
         expect.stringContaining('must not call fetch'),
         expect.stringContaining('must not call addServerHandler'),
@@ -535,20 +545,20 @@ describe('platform module declarations', () => {
 
   it('derives an executable operation contract from one SDK identity', async () => {
     const definition = definePlatformExecutableEsiOperation({
-      sdkOperationId: 'GetStatus',
       policy: executableOperationPolicy(),
+      sdkOperationId: 'GetStatus',
     })
 
     expect(definition.sdkOperationId).toBe('GetStatus')
-    expect(definition.contract.audit).toEqual({
+    expect(definition.contract.audit).toStrictEqual({
       esiOperationId: 'GetStatus',
       reviewedDate: '2026-08-18',
     })
     expect(definition.descriptor).toBeDefined()
     expect(() =>
       definePlatformExecutableEsiOperation({
-        sdkOperationId: 'UnknownOperation' as never,
         policy: executableOperationPolicy(),
+        sdkOperationId: 'UnknownOperation' as never,
       }),
     ).toThrow('Unknown ESI SDK operation identity')
   })
@@ -557,26 +567,26 @@ describe('platform module declarations', () => {
     const alpha = manifest('alpha')
     const beta = manifest('beta')
 
-    expect(validatePlatformModuleManifests([beta, alpha], coreModuleValidationAuthorities)).toEqual(
-      validatePlatformModuleManifests([alpha, beta], coreModuleValidationAuthorities),
-    )
+    expect(
+      validatePlatformModuleManifests([beta, alpha], coreModuleValidationAuthorities),
+    ).toStrictEqual(validatePlatformModuleManifests([alpha, beta], coreModuleValidationAuthorities))
   })
 
   it('accepts module-local persistence operations with phase-compatible grants', () => {
     const readDeclaration = manifest('alpha', { persistenceOperation: {} })
     const writeDeclaration = manifest('beta', {
       persistenceOperation: {
+        exportName: 'saveSnapshotOperation',
         id: 'save-snapshot',
         method: 'saveSnapshot',
         mode: 'write',
-        exportName: 'saveSnapshotOperation',
       },
     })
     writeDeclaration.server.routes[0]!.persistenceOperations = []
     writeDeclaration.server.activityProviders[0]!.persistenceOperations = []
     writeDeclaration.server.resources[0]!.persistence = {
-      projection: [],
       materialization: [{ operationId: 'save-snapshot' }],
+      projection: [],
     }
 
     expect(() =>
@@ -590,17 +600,17 @@ describe('platform module declarations', () => {
   it('rejects invalid persistence identities, metadata, and migration links', () => {
     const invalid = manifest('alpha', {
       persistenceOperation: {
+        exportName: 'read-snapshot',
         id: 'ReadSnapshot',
         method: 'read-snapshot',
-        revision: 0,
-        mode: 'execute' as never,
-        exportName: 'read-snapshot',
         migration: 'alpha-999-missing.sql',
+        mode: 'execute' as never,
+        revision: 0,
       },
     })
     invalid.server.routes[0]!.persistenceOperations = []
     invalid.server.activityProviders[0]!.persistenceOperations = []
-    invalid.server.resources[0]!.persistence = { projection: [], materialization: [] }
+    invalid.server.resources[0]!.persistence = { materialization: [], projection: [] }
     invalid.server.persistenceOperations.push({ ...invalid.server.persistenceOperations[0]! })
 
     const message = validationErrorMessage(invalid)
@@ -610,15 +620,16 @@ describe('platform module declarations', () => {
       'must use a positive whole revision',
       'uses unsupported mode execute',
       'references undeclared migration alpha-999-missing.sql',
-    ])
+    ]) {
       expect(message).toContain(fragment)
+    }
   })
 
   it('rejects duplicate operation IDs while allowing retained operations with zero grants', () => {
     const invalid = manifest('alpha', { persistenceOperation: {} })
     invalid.server.routes[0]!.persistenceOperations = []
     invalid.server.activityProviders[0]!.persistenceOperations = []
-    invalid.server.resources[0]!.persistence = { projection: [], materialization: [] }
+    invalid.server.resources[0]!.persistence = { materialization: [], projection: [] }
     invalid.server.persistenceOperations.push({ ...invalid.server.persistenceOperations[0]! })
 
     const message = validationErrorMessage(invalid)
@@ -630,10 +641,10 @@ describe('platform module declarations', () => {
     const alpha = manifest('alpha', { persistenceOperation: {} })
     const beta = manifest('beta', {
       persistenceOperation: {
+        exportName: 'saveSnapshotOperation',
         id: 'save-snapshot',
         method: 'saveSnapshot',
         mode: 'write',
-        exportName: 'saveSnapshotOperation',
       },
     })
     alpha.server.routes[0]!.persistenceOperations = [
@@ -644,8 +655,8 @@ describe('platform module declarations', () => {
     ]
     beta.server.activityProviders[0]!.persistenceOperations = [{ operationId: 'save-snapshot' }]
     beta.server.resources[0]!.persistence = {
-      projection: [{ operationId: 'save-snapshot' }],
       materialization: [{ operationId: 'save-snapshot' }],
+      projection: [{ operationId: 'save-snapshot' }],
     }
 
     const message = validationErrorMessage([alpha, beta])
@@ -720,11 +731,11 @@ describe('platform module declarations', () => {
 
   it('rejects migration, icon, authorization, and exposed-import violations together', () => {
     const invalid = manifest('alpha', {
-      moduleIcon: 'unknown-default' as never,
-      route: { authorization: 'module-admin' as never },
-      migration: { name: '001.sql' },
-      navigation: { icon: 'unknown' as never },
       exposed: { components: ['Button'] },
+      migration: { name: '001.sql' },
+      moduleIcon: 'unknown-default' as never,
+      navigation: { icon: 'unknown' as never },
+      route: { authorization: 'module-admin' as never },
     })
 
     const message = validationErrorMessage(invalid)
@@ -734,8 +745,9 @@ describe('platform module declarations', () => {
       'uses invalid icon unknown',
       'uses unsupported authorization module-admin',
       'must begin with EveAlpha',
-    ])
+    ]) {
       expect(message).toContain(fragment)
+    }
   })
 
   it('requires organization authorization metadata on every server contribution', () => {
@@ -759,12 +771,12 @@ describe('platform module declarations', () => {
   it('requires exact section and sensitive reviewer classifications for sectioned modules', () => {
     const invalid = manifest('alpha')
     invalid.sections = [
-      { id: 'overview', kind: 'workspace', defaultEnabled: false },
+      { defaultEnabled: false, id: 'overview', kind: 'workspace' },
       {
-        id: 'skills',
-        kind: 'sensitive-evidence',
         defaultEnabled: false,
         disclosureRevision: 1,
+        id: 'skills',
+        kind: 'sensitive-evidence',
       },
     ]
     invalid.server.routes[0]!.sectionId = 'skills'
@@ -787,26 +799,26 @@ describe('platform module declarations', () => {
     const declaration = manifest('alpha')
     declaration.sections = [
       {
-        id: 'skills',
-        kind: 'sensitive-evidence',
         defaultEnabled: false,
         disclosureRevision: 2,
+        id: 'skills',
+        kind: 'sensitive-evidence',
       },
     ]
     Object.assign(declaration.server.routes[0]!, {
-      namespace: '/alpha/accounts/:userId/characters/:characterId',
-      authorization: 'authenticated-session',
       audience: 'hr',
+      authorization: 'authenticated-session',
+      exposure: 'sensitive-evidence',
+      namespace: '/alpha/accounts/:userId/characters/:characterId',
       requiredPermission: 'alpha.skills.read',
       sectionId: 'skills',
       target: 'managed-organization-character',
-      exposure: 'sensitive-evidence',
     })
     declaration.permissions.push(permissionDeclaration('alpha.skills.read', ['hr']))
     declaration.server.resources[0]!.sectionId = 'skills'
     declaration.server.resources[0]!.eligibility = { kind: 'current-managed-member-character' }
     declaration.server.activityProviders[0]!.sectionId = 'overview'
-    declaration.sections.push({ id: 'overview', kind: 'workspace', defaultEnabled: false })
+    declaration.sections.push({ defaultEnabled: false, id: 'overview', kind: 'workspace' })
     declaration.nuxt.pages[0]!.sectionId = 'skills'
     declaration.nuxt.navigation[0]!.sectionId = 'skills'
 
@@ -855,13 +867,13 @@ describe('platform module declarations', () => {
   it('retains reviewer classification for a sectionless account-search route', () => {
     const declaration = manifest('alpha')
     Object.assign(declaration.server.routes[0]!, {
-      namespace: '/alpha/accounts',
-      authorization: 'authenticated-session',
-      audience: 'hr',
-      requiredPermission: 'alpha.search',
       additionalRequiredPermissions: ['alpha.summary.read'],
-      target: 'managed-organization-account-search',
+      audience: 'hr',
+      authorization: 'authenticated-session',
       exposure: 'standard',
+      namespace: '/alpha/accounts',
+      requiredPermission: 'alpha.search',
+      target: 'managed-organization-account-search',
     })
     declaration.permissions.push(
       permissionDeclaration('alpha.search', ['hr']),
@@ -880,11 +892,11 @@ describe('platform module declarations', () => {
   it('requires account-search routes to declare a separate summary permission', () => {
     const invalid = manifest('alpha')
     Object.assign(invalid.server.routes[0]!, {
-      namespace: '/alpha/accounts',
-      authorization: 'authenticated-session',
       audience: 'hr',
-      target: 'managed-organization-account-search',
+      authorization: 'authenticated-session',
       exposure: 'standard',
+      namespace: '/alpha/accounts',
+      target: 'managed-organization-account-search',
     })
 
     expect(validationErrorMessage(invalid)).toContain(
@@ -895,20 +907,20 @@ describe('platform module declarations', () => {
   it('requires exact search, summary, and sensitive section permissions', () => {
     const search = manifest('alpha')
     Object.assign(search.server.routes[0]!, {
-      namespace: '/alpha/accounts',
-      authorization: 'authenticated-session',
-      audience: 'hr',
-      requiredPermission: 'alpha.view',
       additionalRequiredPermissions: ['alpha.other'],
-      target: 'managed-organization-account-search',
+      audience: 'hr',
+      authorization: 'authenticated-session',
       exposure: 'standard',
+      namespace: '/alpha/accounts',
+      requiredPermission: 'alpha.view',
+      target: 'managed-organization-account-search',
     })
     const sensitive = actionManifest('alpha')
     Object.assign(sensitive.server.routes[0]!, {
+      exposure: 'sensitive-evidence',
       namespace: '/alpha/accounts/:userId/evidence',
       requiredPermission: 'alpha.summary.read',
       sectionId: 'evidence',
-      exposure: 'sensitive-evidence',
     })
 
     expect(validationErrorMessage(search)).toContain(
@@ -925,11 +937,11 @@ describe('platform module declarations', () => {
   it('rejects generic persistence on managed reviewer routes', () => {
     const invalid = manifest('alpha', { persistenceOperation: {} })
     Object.assign(invalid.server.routes[0]!, {
-      namespace: '/alpha/accounts/:userId',
-      authorization: 'authenticated-session',
       audience: 'hr',
-      target: 'managed-organization-account',
+      authorization: 'authenticated-session',
       exposure: 'standard',
+      namespace: '/alpha/accounts/:userId',
+      target: 'managed-organization-account',
     })
 
     expect(validationErrorMessage(invalid)).toContain(
@@ -941,21 +953,21 @@ describe('platform module declarations', () => {
     const invalid = manifest('alpha', { persistenceOperation: {} })
     invalid.sections = [
       {
-        id: 'evidence',
-        kind: 'sensitive-evidence',
         defaultEnabled: false,
         disclosureRevision: 1,
+        id: 'evidence',
+        kind: 'sensitive-evidence',
       },
     ]
     Object.assign(invalid.server.routes[0]!, {
-      namespace: '/alpha/accounts/:userId/characters/:characterId/evidence',
-      authorization: 'authenticated-session',
       audience: 'hr',
+      authorization: 'authenticated-session',
+      exposure: 'sensitive-evidence',
+      namespace: '/alpha/accounts/:userId/characters/:characterId/evidence',
       requiredPermission: 'alpha.evidence.read',
+      reviewerEvidenceResourceId: 'alpha-resource',
       sectionId: 'evidence',
       target: 'managed-organization-character',
-      exposure: 'sensitive-evidence',
-      reviewerEvidenceResourceId: 'alpha-resource',
     })
     invalid.server.resources[0]!.sectionId = 'evidence'
     invalid.server.resources[0]!.eligibility = { kind: 'current-owned-character' }
@@ -967,12 +979,12 @@ describe('platform module declarations', () => {
 
   it('requires managed reviewer routes to use reviewer authorization and target parameters', () => {
     const invalid = manifest('alpha')
-    invalid.sections = [{ id: 'overview', kind: 'workspace', defaultEnabled: false }]
+    invalid.sections = [{ defaultEnabled: false, id: 'overview', kind: 'workspace' }]
     Object.assign(invalid.server.routes[0]!, {
+      exposure: 'standard',
       namespace: '/alpha/review',
       sectionId: 'overview',
       target: 'managed-organization-character',
-      exposure: 'standard',
     })
 
     const message = validationErrorMessage(invalid)
@@ -991,7 +1003,7 @@ describe('platform module declarations', () => {
   })
 
   it('defines exactly the four bounded organization command identities', () => {
-    expect(platformOrganizationCommandIds).toEqual([
+    expect(platformOrganizationCommandIds).toStrictEqual([
       'assign-ordinary-group',
       'revoke-ordinary-group',
       'block-member',
@@ -1023,18 +1035,18 @@ describe('platform module declarations', () => {
   it('enforces Member Audit as a closed reviewer-only section model', () => {
     const caller = actionManifest('member-audit')
     Object.assign(caller.server.routes[0]!, {
+      audience: 'member',
+      organizationCommands: undefined,
+      requiredPermission: 'member-audit.search',
       sectionId: 'overview',
       target: 'caller',
-      audience: 'member',
-      requiredPermission: 'member-audit.search',
-      organizationCommands: undefined,
     })
     const summary = actionManifest('member-audit')
     Object.assign(summary.server.routes[0]!, {
+      organizationCommands: undefined,
+      requiredPermission: 'member-audit.search',
       sectionId: 'overview',
       target: 'managed-organization-account',
-      requiredPermission: 'member-audit.search',
-      organizationCommands: undefined,
     })
     ;(summary.server.resources[0] as { subjectKind: string }).subjectKind = 'organization'
 
@@ -1056,7 +1068,7 @@ describe('platform module declarations', () => {
 
   it('requires exactly the six reviewed Member Audit sections', () => {
     const valid = actionManifest('member-audit')
-    expect(valid.sections?.map(({ id }) => id)).toEqual([
+    expect(valid.sections?.map(({ id }) => id)).toStrictEqual([
       'overview',
       'skills',
       'assets',
@@ -1069,7 +1081,7 @@ describe('platform module declarations', () => {
     const invalid = actionManifest('member-audit')
     invalid.sections = [
       ...invalid.sections!.filter(({ id }) => id !== 'mail'),
-      { id: 'contracts', kind: 'sensitive-evidence', defaultEnabled: false, disclosureRevision: 1 },
+      { defaultEnabled: false, disclosureRevision: 1, id: 'contracts', kind: 'sensitive-evidence' },
     ]
     const message = validationErrorMessage(invalid)
     expect(message).toContain('module member-audit must declare section mail')
@@ -1080,16 +1092,16 @@ describe('platform module declarations', () => {
     const declaration = actionManifest('member-audit')
     declaration.server.resources[0]!.operationId = 'mail-headers'
     declaration.server.esiOperations.push({
-      id: 'competing-operation',
       exportName: 'competingOperation',
+      id: 'competing-operation',
     })
     declaration.nuxt.pages.push({
+      audience: 'authenticated',
+      extensionPoint: 'root',
+      file: 'src/runtime/app/pages/MemberAuditWorkspace.vue',
       id: 'workspace',
       name: 'eve-member-audit-workspace',
       path: '/member-audit',
-      file: 'src/runtime/app/pages/MemberAuditWorkspace.vue',
-      extensionPoint: 'root',
-      audience: 'authenticated',
       sectionId: 'overview',
     })
 
@@ -1155,7 +1167,7 @@ describe('platform module declarations', () => {
     const wrongSection = actionManifest('beta')
     wrongSection.server.routes[0]!.organizationCommands = ['unblock-member']
     wrongSection.sections = [
-      { id: 'access-management', kind: 'workspace', defaultEnabled: false },
+      { defaultEnabled: false, id: 'access-management', kind: 'workspace' },
       wrongSection.sections![1]!,
     ]
 
@@ -1208,16 +1220,17 @@ describe('platform module declarations', () => {
     for (const fragment of [
       'server package must be a valid npm package name',
       'Nuxt package must be a valid npm package name',
-    ])
+    ]) {
       expect(message).toContain(fragment)
+    }
   })
 
   it('rejects unsupported resource eligibility and scheduling metadata', () => {
     const invalid = manifest('alpha', {
       resource: {
-        subjectKind: 'solar-system' as never,
-        materializationIntervalSeconds: 0,
         eligibility: { kind: 'module-callback' } as never,
+        materializationIntervalSeconds: 0,
+        subjectKind: 'solar-system' as never,
       },
     })
 
@@ -1234,13 +1247,13 @@ describe('platform module declarations', () => {
     const declaration = manifest('alpha')
     declaration.server.resources = [
       {
-        id: 'alpha-resource',
-        operationId: 'alpha-operation',
-        subjectKind,
-        materializationIntervalSeconds: 900,
         eligibility: { kind: eligibilityKind },
-        persistence: { projection: [], materialization: [] },
         exportName: 'alphaResource',
+        id: 'alpha-resource',
+        materializationIntervalSeconds: 900,
+        operationId: 'alpha-operation',
+        persistence: { materialization: [], projection: [] },
+        subjectKind,
       },
     ]
 
@@ -1252,8 +1265,8 @@ describe('platform module declarations', () => {
   it('rejects a legal resource eligibility paired with the wrong subject kind', () => {
     const invalid = manifest('alpha', {
       resource: {
-        subjectKind: 'alliance' as never,
         eligibility: { kind: 'current-owned-character' } as never,
+        subjectKind: 'alliance' as never,
       },
     })
 
@@ -1265,8 +1278,8 @@ describe('platform module declarations', () => {
   it('validates and renders a pure batch resource descriptor', () => {
     const declaration = manifest('alpha')
     declaration.server.esiOperations.push({
-      id: 'alpha-batch',
       exportName: 'alphaBatchOperation',
+      id: 'alpha-batch',
     })
     declaration.server.resources[0]!.batch = {
       mode: 'complete-observation',
@@ -1300,8 +1313,8 @@ describe('platform module declarations', () => {
 
   it('validates contribution-scoped core-data product declarations', () => {
     const valid = manifest('alpha', {
-      route: { coreDataProducts: ['published-type-groups'] },
       resource: { coreDataProducts: ['published-type-groups'] },
+      route: { coreDataProducts: ['published-type-groups'] },
     })
     expect(() =>
       validatePlatformModuleManifests([valid], coreModuleValidationAuthorities),
@@ -1403,7 +1416,7 @@ describe('platform module declarations', () => {
       validatePlatformModuleManifests(
         [
           manifest('alpha', {
-            route: { namespace: '/alpha', authorization: 'authenticated-session' },
+            route: { authorization: 'authenticated-session', namespace: '/alpha' },
           }),
           manifest('beta', { route: { namespace: '/beta/characters/:characterId' } }),
         ],
@@ -1416,19 +1429,19 @@ describe('platform module declarations', () => {
     const invalid = manifest('alpha')
     invalid.server.routes = [
       {
+        audience: 'member',
+        authorization: 'authenticated-session',
+        exportName: 'firstRoutes',
         id: 'first-route',
         namespace: '/alpha/items/:id',
-        exportName: 'firstRoutes',
-        authorization: 'authenticated-session',
-        audience: 'member',
         requiredPermission: 'alpha.view',
       },
       {
+        audience: 'member',
+        authorization: 'authenticated-session',
+        exportName: 'secondRoutes',
         id: 'second-route',
         namespace: '/alpha/items/:itemId',
-        exportName: 'secondRoutes',
-        authorization: 'authenticated-session',
-        audience: 'member',
         requiredPermission: 'alpha.view',
       },
     ]
@@ -1453,16 +1466,16 @@ describe('platform module declarations', () => {
     ['/alpha/*', '/alpha/characters/:characterId'],
   ])('rejects intersecting route namespaces %s and %s before generation', (first, second) => {
     const invalid = manifest('alpha', {
-      route: { namespace: first, authorization: 'authenticated-session' },
+      route: { authorization: 'authenticated-session', namespace: first },
     })
     invalid.server.routes.push({
+      audience: 'member',
+      authorization: 'owned-character',
+      exportName: 'ownedCharacterRoutes',
       id: 'owned-character-route',
       namespace: second,
-      exportName: 'ownedCharacterRoutes',
-      authorization: 'owned-character',
-      audience: 'member',
-      requiredPermission: 'alpha.view',
       persistenceOperations: [],
+      requiredPermission: 'alpha.view',
     })
 
     expect(() => generateRegistryFiles([invalid])).toThrow(
@@ -1472,16 +1485,16 @@ describe('platform module declarations', () => {
 
   it('allows disjoint authorization namespaces in one module', () => {
     const valid = manifest('alpha', {
-      route: { namespace: '/alpha/profile', authorization: 'authenticated-session' },
+      route: { authorization: 'authenticated-session', namespace: '/alpha/profile' },
     })
     valid.server.routes.push({
+      audience: 'member',
+      authorization: 'owned-character',
+      exportName: 'ownedCharacterRoutes',
       id: 'owned-character-route',
       namespace: '/alpha/characters/:characterId',
-      exportName: 'ownedCharacterRoutes',
-      authorization: 'owned-character',
-      audience: 'member',
-      requiredPermission: 'alpha.view',
       persistenceOperations: [],
+      requiredPermission: 'alpha.view',
     })
 
     expect(() => generateRegistryFiles([valid])).not.toThrow()
@@ -1493,7 +1506,7 @@ describe('platform module registry generation', () => {
     const first = generateRegistryFiles([])
     const second = generateRegistryFiles([])
 
-    expect([...first]).toEqual([...second])
+    expect([...first]).toStrictEqual([...second])
     const routes = first.get('api/src/generated/platform/installed-module-routes.ts')
     expect(routes).toContain('export const installedModuleRoutes = new Hono()')
     expect(routes).not.toContain('requireInstalledModuleEnabled')
@@ -1549,12 +1562,12 @@ describe('platform module registry generation', () => {
   it('generates an exact path-free reviewer contribution catalog', () => {
     const declaration = authoringManifest('alpha')
     declaration.sections = [
-      { id: 'overview', kind: 'workspace', defaultEnabled: false },
+      { defaultEnabled: false, id: 'overview', kind: 'workspace' },
       {
-        id: 'evidence',
-        kind: 'sensitive-evidence',
         defaultEnabled: false,
         disclosureRevision: 1,
+        id: 'evidence',
+        kind: 'sensitive-evidence',
       },
     ]
     declaration.server.routes[0]!.sectionId = 'overview'
@@ -1573,21 +1586,21 @@ describe('platform module registry generation', () => {
       JSON.stringify(
         [
           {
-            publisherPackage: '@eve-space/alpha-manifest',
-            moduleId: 'alpha',
+            audience: 'hr',
             contributionId: 'overview',
+            description: 'Review a managed member.',
+            icon: 'overview',
+            label: 'Overview',
+            moduleId: 'alpha',
+            order: 10,
+            panelExport: './reviewer/overview',
+            panelPackage: '@eve-space/alpha-nuxt',
+            publisherPackage: '@eve-space/alpha-manifest',
+            requiredPermission: 'alpha.review',
             routeId: 'alpha-route',
             routePath: '/api/modules/alpha/accounts/:userId',
             sectionId: 'overview',
-            audience: 'hr',
-            requiredPermission: 'alpha.review',
             target: 'managed-organization-account',
-            panelPackage: '@eve-space/alpha-nuxt',
-            panelExport: './reviewer/overview',
-            label: 'Overview',
-            description: 'Review a managed member.',
-            icon: 'overview',
-            order: 10,
           },
         ],
         undefined,
@@ -1598,20 +1611,20 @@ describe('platform module registry generation', () => {
     expect(catalog).not.toContain("from '@eve-space/alpha-server'")
     expectInOrder(nuxtCatalog, [
       '"reviewerContributions": [',
+      '"audience": "hr"',
       '"contributionId": "overview"',
+      '"description": "Review a managed member."',
+      '"icon": "overview"',
+      '"label": "Overview"',
+      '"order": 10',
+      '"panelExport": "./reviewer/overview"',
+      '"requiredPermission": "alpha.review"',
       '"routeId": "alpha-route"',
       '"routePath": "/api/modules/alpha/accounts/:userId"',
       '"sectionId": "overview"',
-      '"audience": "hr"',
-      '"requiredPermission": "alpha.review"',
       '"target": "managed-organization-account"',
-      '"panelExport": "./reviewer/overview"',
-      '"label": "Overview"',
-      '"description": "Review a managed member."',
-      '"icon": "overview"',
-      '"order": 10',
-      '"queryAdmissionScopes": [',
     ])
+    expect(nuxtCatalog).toContain('"queryAdmissionScopes": [')
     expect(routes).toContain('createPlatformReviewerContributionRouteCapabilities(')
     expect(routes).toContain('composePlatformReviewerContributionRoute(')
     expect(routes).toContain('installedReviewerContributions[0]!')
@@ -1654,10 +1667,10 @@ describe('platform module registry generation', () => {
   it('generates canonical persistence bindings and exact contribution grants', async () => {
     const declaration = manifest('alpha', { persistenceOperation: {} })
     const routine = await canonicalizePersistenceRoutineSql({
+      mode: 'read',
       moduleId: 'alpha',
       operationId: 'alpha-read',
       revision: 1,
-      mode: 'read',
       sql: `
         create function eve_module_alpha.persist_alpha_read(input jsonb)
         returns jsonb language sql stable parallel unsafe return input
@@ -1675,7 +1688,7 @@ describe('platform module registry generation', () => {
     expect(persistence).toContain(`definitionFingerprint: '${routine.definitionFingerprint}'`)
     expect(persistence).toMatch(/installedModulePersistenceContractFingerprint = '[0-9a-f]{64}'/)
     expect(persistence).toContain(
-      'grants: {"routes":["alpha-route"],"activityProviders":["alpha-activity"],"resourceProjections":["alpha-resource"],"resourceMaterializations":[]}',
+      'grants: {"activityProviders":["alpha-activity"],"resourceMaterializations":[],"resourceProjections":["alpha-resource"],"routes":["alpha-route"]}',
     )
     expect(persistence).toContain("'alpha/alpha-read': installedModulePersistenceOperations[0]!")
     expect(persistence).toContain(
@@ -1701,7 +1714,7 @@ describe('platform module registry generation', () => {
     const alpha = manifest('alpha', { navigation: { order: 20 } })
     const beta = manifest('beta', { navigation: { order: 10 } })
 
-    expect([...generateRegistryFiles([alpha, beta])]).toEqual([
+    expect([...generateRegistryFiles([alpha, beta])]).toStrictEqual([
       ...generateRegistryFiles([beta, alpha]),
     ])
     const api = generateRegistryFiles([beta, alpha]).get(
@@ -1747,13 +1760,13 @@ describe('platform module registry generation', () => {
   it('wraps every contributed route in its owning module enablement guard', () => {
     const alpha = manifest('alpha')
     alpha.server.routes.push({
+      audience: 'hr',
+      authorization: 'authenticated-session',
+      exportName: 'alphaSummaryRoutes',
       id: 'alpha-summary',
       namespace: '/alpha/summary',
-      exportName: 'alphaSummaryRoutes',
-      authorization: 'authenticated-session',
-      audience: 'hr',
-      requiredPermission: 'alpha.summary',
       persistenceOperations: [],
+      requiredPermission: 'alpha.summary',
     })
     alpha.permissions.push(permissionDeclaration('alpha.summary', ['hr']))
 
@@ -1775,8 +1788,8 @@ describe('platform module registry generation', () => {
 
   it('emits each contribution exact core-data product declaration', () => {
     const declaration = manifest('alpha', {
-      route: { coreDataProducts: ['published-type-groups'] },
       resource: { coreDataProducts: ['published-type-groups'] },
+      route: { coreDataProducts: ['published-type-groups'] },
     })
     const files = generateRegistryFiles([declaration])
 
@@ -1845,8 +1858,8 @@ describe('platform module registry generation', () => {
   it('combines ESI operation imports from the same server package', () => {
     const declaration = manifest('alpha')
     declaration.server.esiOperations.push({
-      id: 'alpha-secondary-operation',
       exportName: 'alphaSecondaryOperation',
+      id: 'alpha-secondary-operation',
     })
 
     const esi = generateRegistryFiles([declaration]).get(
@@ -1862,31 +1875,31 @@ describe('platform module registry generation', () => {
   it('combines same-package imports in every server registry', () => {
     const declaration = manifest('alpha')
     declaration.server.routes.push({
+      audience: 'member',
+      authorization: 'authenticated-session',
+      exportName: 'alphaSecondaryRoutes',
       id: 'alpha-secondary-route',
       namespace: '/alpha/secondary',
-      exportName: 'alphaSecondaryRoutes',
-      authorization: 'authenticated-session',
-      audience: 'member',
-      requiredPermission: 'alpha.view',
       persistenceOperations: [],
+      requiredPermission: 'alpha.view',
     })
     declaration.server.resources.push({
-      id: 'alpha-secondary-resource',
-      operationId: 'alpha-operation',
       dependentOperationIds: [],
-      subjectKind: 'character',
-      materializationIntervalSeconds: 900,
       eligibility: { kind: 'current-owned-character' },
-      persistence: { projection: [], materialization: [] },
       exportName: 'alphaSecondaryResource',
+      id: 'alpha-secondary-resource',
+      materializationIntervalSeconds: 900,
+      operationId: 'alpha-operation',
+      persistence: { materialization: [], projection: [] },
+      subjectKind: 'character',
     })
     declaration.server.activityProviders.push({
-      id: 'alpha-secondary-activity',
-      exportName: 'alphaSecondaryActivityProvider',
       audience: 'member',
-      requiredPermission: 'alpha.view',
-      persistenceOperations: [],
+      exportName: 'alphaSecondaryActivityProvider',
       freshness: { staleAfterSeconds: 900 },
+      id: 'alpha-secondary-activity',
+      persistenceOperations: [],
+      requiredPermission: 'alpha.view',
     })
 
     const files = generateRegistryFiles([declaration])
@@ -1895,22 +1908,23 @@ describe('platform module registry generation', () => {
       'api/src/generated/platform/installed-module-worker.ts',
       'api/src/generated/platform/installed-module-activity-providers.ts',
       'api/src/generated/platform/installed-module-esi.ts',
-    ])
+    ]) {
       expect(files.get(path)?.match(/from '@eve-space\/alpha-server'/g)).toHaveLength(1)
+    }
   })
 
   it('aliases repeated package export names in every generated server registry', () => {
     const alpha = manifest('alpha', {
-      route: { exportName: 'routes' },
-      resource: { exportName: 'resource' },
-      operation: { exportName: 'operation' },
       activityProvider: { exportName: 'activityProvider' },
+      operation: { exportName: 'operation' },
+      resource: { exportName: 'resource' },
+      route: { exportName: 'routes' },
     })
     const beta = manifest('beta', {
-      route: { exportName: 'routes' },
-      resource: { exportName: 'resource' },
-      operation: { exportName: 'operation' },
       activityProvider: { exportName: 'activityProvider' },
+      operation: { exportName: 'operation' },
+      resource: { exportName: 'resource' },
+      route: { exportName: 'routes' },
     })
     const files = generateRegistryFiles([beta, alpha])
 
@@ -1921,10 +1935,10 @@ describe('platform module registry generation', () => {
       "import { routes as module1Route0Factory } from '@eve-space/beta-server'",
     )
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      "({ moduleId: 'alpha', resourceId: 'alpha-resource', operationId: 'alpha-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"projection\":[],\"materialization\":[]} as const, implementation: module0Resource0 satisfies PlatformResourceImplementationForContract<typeof module0Resource0, 'alpha-operation', PlatformEsiOperationProtocol<'alpha-operation'>, readonly [], InstalledModuleResourceProjectionPersistence<'alpha/alpha-resource'>, InstalledModuleResourceMaterializationPersistence<'alpha/alpha-resource'>> } as const)",
+      "({ moduleId: 'alpha', resourceId: 'alpha-resource', operationId: 'alpha-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"materialization\":[],\"projection\":[]} as const, implementation: module0Resource0 satisfies PlatformResourceImplementationForContract<typeof module0Resource0, 'alpha-operation', PlatformEsiOperationProtocol<'alpha-operation'>, readonly [], InstalledModuleResourceProjectionPersistence<'alpha/alpha-resource'>, InstalledModuleResourceMaterializationPersistence<'alpha/alpha-resource'>> } as const)",
     )
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      "({ moduleId: 'beta', resourceId: 'beta-resource', operationId: 'beta-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"projection\":[],\"materialization\":[]} as const, implementation: module1Resource0 satisfies PlatformResourceImplementationForContract<typeof module1Resource0, 'beta-operation', PlatformEsiOperationProtocol<'beta-operation'>, readonly [], InstalledModuleResourceProjectionPersistence<'beta/beta-resource'>, InstalledModuleResourceMaterializationPersistence<'beta/beta-resource'>> } as const)",
+      "({ moduleId: 'beta', resourceId: 'beta-resource', operationId: 'beta-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"materialization\":[],\"projection\":[]} as const, implementation: module1Resource0 satisfies PlatformResourceImplementationForContract<typeof module1Resource0, 'beta-operation', PlatformEsiOperationProtocol<'beta-operation'>, readonly [], InstalledModuleResourceProjectionPersistence<'beta/beta-resource'>, InstalledModuleResourceMaterializationPersistence<'beta/beta-resource'>> } as const)",
     )
     expect(files.get('api/src/generated/platform/installed-module-esi.ts')).toContain(
       "'alpha-operation': module0EsiOperation0.contract,\n  'beta-operation': module1EsiOperation0.contract,",
@@ -1958,36 +1972,36 @@ describe('resolved module releases', () => {
 
       expect(releases).toHaveLength(1)
       expect(releases[0]).toMatchObject({
+        manifestExport: './manifest',
         moduleId: 'alpha',
+        packages: {
+          manifest: { integrity: 'workspace', name: '@example/alpha-manifest', version: '1.2.3' },
+          nuxt: { integrity: 'workspace', name: '@example/alpha-nuxt', version: '1.2.3' },
+          server: { integrity: 'workspace', name: '@example/alpha-server', version: '1.2.3' },
+        },
         publisherPackage: '@example/alpha-manifest',
         version: '1.2.3',
-        manifestExport: './manifest',
-        packages: {
-          manifest: { name: '@example/alpha-manifest', version: '1.2.3', integrity: 'workspace' },
-          server: { name: '@example/alpha-server', version: '1.2.3', integrity: 'workspace' },
-          nuxt: { name: '@example/alpha-nuxt', version: '1.2.3', integrity: 'workspace' },
-        },
       })
       expect(inventory).toContain('"publisherPackage": "@example/alpha-manifest"')
       expect(inventory).toContain('"releaseVersion": "1.2.3"')
       expect(inventory).not.toContain(root)
       expect(inventory).not.toContain('node_modules')
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 
   it('forwards a custom manifest export into host artifact verification', async () => {
     const root = await createResolvedReleaseFixture({
-      selectionExport: './release-manifest',
       manifestPackageExport: './release-manifest',
+      selectionExport: './release-manifest',
     })
     try {
       const registry = await loadInstalledModuleManifests(root)
 
       expect(registry.releases[0]?.manifestExport).toBe('./release-manifest')
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 
@@ -1998,7 +2012,7 @@ describe('resolved module releases', () => {
         releases: [expect.objectContaining({ moduleId: 'alpha' })],
       })
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 
@@ -2009,7 +2023,7 @@ describe('resolved module releases', () => {
         'PACKAGE_SIDE_EFFECTS_INVALID',
       )
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 
@@ -2052,14 +2066,14 @@ describe('resolved module releases', () => {
     try {
       expect(() => resolveInstalledModuleReleases(root)).toThrow(expected)
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 
   it.each(['9.0', '11.0'] as const)(
     'resolves local file archives from pnpm %s lock identities',
     async (lockfileVersion) => {
-      const root = await createResolvedReleaseFixture({ serverArchive: true, lockfileVersion })
+      const root = await createResolvedReleaseFixture({ lockfileVersion, serverArchive: true })
       try {
         const { compiled, releases } = resolveInstalledModuleReleases(root)
         const inventory =
@@ -2068,14 +2082,14 @@ describe('resolved module releases', () => {
           ) ?? ''
 
         expect(releases[0]?.packages.server).toMatchObject({
-          version: '1.2.3',
           integrity: 'sha512-file-archive-fixture',
+          version: '1.2.3',
           workspace: false,
         })
         expect(inventory).not.toContain('alpha-server.tgz')
         expect(inventory).not.toContain(root)
       } finally {
-        await rm(root, { recursive: true, force: true })
+        await rm(root, { force: true, recursive: true })
       }
     },
   )
@@ -2083,7 +2097,7 @@ describe('resolved module releases', () => {
   it.each([
     [
       'missing file archive integrity',
-      { serverArchive: true, omitArchiveIntegrity: true },
+      { omitArchiveIntegrity: true, serverArchive: true },
       'Lockfile integrity for @example/alpha-server@1.2.3 is missing',
     ],
     [
@@ -2104,7 +2118,7 @@ describe('resolved module releases', () => {
       expect(message).not.toContain('alpha-server.tgz')
       expect(message).not.toContain(root)
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 })
@@ -2121,7 +2135,7 @@ describe('feature server import boundaries', () => {
           `,
         },
       ]),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it.each([
@@ -2146,7 +2160,7 @@ describe('feature server import boundaries', () => {
   it('discovers every executable server source extension and rejects CommonJS', async () => {
     const root = await mkdtemp(join(tmpdir(), 'eve-space-module-boundaries-'))
     const sourceDirectory = join(root, 'features', 'alpha', 'server', 'src')
-    expect(moduleServerSourceExtensions).toEqual([
+    expect(moduleServerSourceExtensions).toStrictEqual([
       '.cjs',
       '.cts',
       '.js',
@@ -2173,7 +2187,7 @@ describe('feature server import boundaries', () => {
       const sources = await loadFeatureServerSources(root)
       expect(
         sources.map(({ path }) => path).toSorted((left, right) => left.localeCompare(right)),
-      ).toEqual(
+      ).toStrictEqual(
         extensions
           .map((extension) => `features/alpha/server/src/forbidden.${extension}`)
           .toSorted((left, right) => left.localeCompare(right)),
@@ -2189,7 +2203,7 @@ describe('feature server import boundaries', () => {
         ),
       ).toHaveLength(2)
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 })
@@ -2218,31 +2232,31 @@ async function createResolvedReleaseFixture(options: ResolvedReleaseFixtureOptio
   const serverRoot = join(root, 'features/alpha/server')
   const nuxtRoot = join(root, 'features/alpha/nuxt')
   const selection = {
-    moduleId: 'alpha',
     manifest: {
-      package: '@example/alpha-manifest',
       export: options.selectionExport ?? './manifest',
+      package: '@example/alpha-manifest',
     },
+    moduleId: 'alpha',
   }
   const manifestArtifact = {
+    defaultEnabled: true,
+    icon: 'corporation',
     id: 'alpha',
+    nuxt: { navigation: [], package: '@example/alpha-nuxt', pages: [] },
     release: {
+      hostContractRange: '^1.0.0',
       publisherPackage: '@example/alpha-manifest',
       version: '1.2.3',
-      hostContractRange: '^1.0.0',
     },
-    icon: 'corporation',
-    defaultEnabled: true,
     server: {
-      package: '@example/alpha-server',
-      routes: [],
+      activityProviders: [],
+      esiOperations: [],
       migrations: [{ name: 'alpha-001-initial.sql' }],
+      package: '@example/alpha-server',
       persistenceOperations: [],
       resources: [],
-      esiOperations: [],
-      activityProviders: [],
+      routes: [],
     },
-    nuxt: { package: '@example/alpha-nuxt', pages: [], navigation: [] },
   }
   const rootDependencies: Record<string, string> = {
     '@example/alpha-manifest': 'workspace:*',
@@ -2252,24 +2266,17 @@ async function createResolvedReleaseFixture(options: ResolvedReleaseFixtureOptio
   const apiDependencies: Record<string, string> = {
     '@example/alpha-server': options.serverArchive ? archiveReference : 'workspace:*',
   }
-  if (options.apiIncludesNuxt) apiDependencies['@example/alpha-nuxt'] = 'workspace:*'
+  if (options.apiIncludesNuxt) {
+    apiDependencies['@example/alpha-nuxt'] = 'workspace:*'
+  }
 
   const files: Record<string, string> = {
-    'features/installed-modules.json': `${JSON.stringify(
-      { modules: options.duplicateSelection ? [selection, selection] : [selection] },
-      null,
-      2,
-    )}\n`,
-    'package.json': `${JSON.stringify(
-      { name: 'fixture-host', private: true, dependencies: rootDependencies },
-      null,
-      2,
-    )}\n`,
     'api/package.json': `${JSON.stringify(
       { name: 'fixture-api', private: true, dependencies: apiDependencies },
       null,
       2,
     )}\n`,
+    'features/alpha/manifest/manifest.json': `${JSON.stringify(manifestArtifact, null, 2)}\n`,
     'features/alpha/manifest/package.json': `${JSON.stringify(
       {
         name: '@example/alpha-manifest',
@@ -2285,7 +2292,24 @@ async function createResolvedReleaseFixture(options: ResolvedReleaseFixtureOptio
       null,
       2,
     )}\n`,
-    'features/alpha/manifest/manifest.json': `${JSON.stringify(manifestArtifact, null, 2)}\n`,
+    'features/alpha/nuxt/dist/module.d.ts': 'declare const module: object\nexport default module\n',
+    'features/alpha/nuxt/dist/module.js': 'export default {}\n',
+    'features/alpha/nuxt/package.json': `${JSON.stringify(
+      {
+        name: '@example/alpha-nuxt',
+        version: '1.2.3',
+        type: 'module',
+        sideEffects: ['**/*.vue'],
+        exports: {
+          '.': { types: './dist/module.d.ts', import: './dist/module.js' },
+        },
+        files: ['dist'],
+      },
+      null,
+      2,
+    )}\n`,
+    'features/alpha/server/dist/index.d.ts': 'export {}\n',
+    'features/alpha/server/dist/index.js': '',
     'features/alpha/server/package.json': `${JSON.stringify(
       {
         name: options.declaredServerName ?? '@example/alpha-server',
@@ -2301,58 +2325,27 @@ async function createResolvedReleaseFixture(options: ResolvedReleaseFixtureOptio
       null,
       2,
     )}\n`,
-    'features/alpha/server/dist/index.js': '',
-    'features/alpha/server/dist/index.d.ts': 'export {}\n',
-    'features/alpha/nuxt/package.json': `${JSON.stringify(
-      {
-        name: '@example/alpha-nuxt',
-        version: '1.2.3',
-        type: 'module',
-        sideEffects: ['**/*.vue'],
-        exports: {
-          '.': { types: './dist/module.d.ts', import: './dist/module.js' },
-        },
-        files: ['dist'],
-      },
+    'features/installed-modules.json': `${JSON.stringify(
+      { modules: options.duplicateSelection ? [selection, selection] : [selection] },
       null,
       2,
     )}\n`,
-    'features/alpha/nuxt/dist/module.js': 'export default {}\n',
-    'features/alpha/nuxt/dist/module.d.ts': 'declare const module: object\nexport default module\n',
-    'pnpm-lock.yaml': `lockfileVersion: '${options.lockfileVersion ?? '9.0'}'
-importers:
-  .:
-    dependencies:
-      '@example/alpha-manifest':
-        specifier: workspace:*
-        version: link:features/alpha/manifest
-      '@example/alpha-nuxt':
-        specifier: workspace:*
-        version: link:features/alpha/nuxt
-  api:
-    dependencies:
-      '@example/alpha-server':
-        specifier: ${options.serverArchive ? archiveReference : 'workspace:*'}
-        version: ${options.serverArchive ? archiveReference : `link:${options.serverLockTarget ?? '../features/alpha/server'}`}
-${options.apiIncludesNuxt ? "      '@example/alpha-nuxt':\n        specifier: workspace:*\n        version: link:../features/alpha/nuxt\n" : ''}${
-      options.serverArchive
-        ? `packages:
-  '@example/alpha-server@${archiveReference}':
-    resolution:
-${options.omitArchiveIntegrity ? '' : '      integrity: sha512-file-archive-fixture\n'}      tarball: ${archiveReference}
-    version: ${options.serverVersion ?? '1.2.3'}
-snapshots:
-  '@example/alpha-server@${archiveReference}': {}
-`
-        : ''
-    }`,
+    'package.json': `${JSON.stringify(
+      { name: 'fixture-host', private: true, dependencies: rootDependencies },
+      null,
+      2,
+    )}\n`,
+    'pnpm-lock.yaml': resolvedReleaseLockfile(options, archiveReference),
   }
-  if (!options.omitMigration)
+  if (!options.omitMigration) {
     files['features/alpha/server/migrations/alpha-001-initial.sql'] = 'select 1;\n'
-  if (options.extraMigration)
+  }
+  if (options.extraMigration) {
     files['features/alpha/server/migrations/alpha-002-extra.sql'] = 'select 2;\n'
-  if (options.sourceOnlyViolation)
+  }
+  if (options.sourceOnlyViolation) {
     files['features/alpha/server/src/unsafe.ts'] = "import postgres from 'postgres'\n"
+  }
 
   await Promise.all(
     Object.entries(files).map(async ([path, source]) => {
@@ -2367,6 +2360,44 @@ snapshots:
     linkFixturePackage(join(root, 'api'), serverRoot, '@example/alpha-server'),
   ])
   return root
+}
+
+function resolvedReleaseLockfile(options: ResolvedReleaseFixtureOptions, archiveReference: string) {
+  const serverSpecifier = options.serverArchive ? archiveReference : 'workspace:*'
+  const linkedServer = `link:${options.serverLockTarget ?? '../features/alpha/server'}`
+  const serverVersion = options.serverArchive ? archiveReference : linkedServer
+  const nuxtDependency = options.apiIncludesNuxt
+    ? "      '@example/alpha-nuxt':\n        specifier: workspace:*\n        version: link:../features/alpha/nuxt\n"
+    : ''
+  const integrity = options.omitArchiveIntegrity
+    ? ''
+    : '      integrity: sha512-file-archive-fixture\n'
+  const archiveEntries = options.serverArchive
+    ? `packages:
+  '@example/alpha-server@${archiveReference}':
+    resolution:
+${integrity}      tarball: ${archiveReference}
+    version: ${options.serverVersion ?? '1.2.3'}
+snapshots:
+  '@example/alpha-server@${archiveReference}': {}
+`
+    : ''
+  return `lockfileVersion: '${options.lockfileVersion ?? '9.0'}'
+importers:
+  .:
+    dependencies:
+      '@example/alpha-manifest':
+        specifier: workspace:*
+        version: link:features/alpha/manifest
+      '@example/alpha-nuxt':
+        specifier: workspace:*
+        version: link:features/alpha/nuxt
+  api:
+    dependencies:
+      '@example/alpha-server':
+        specifier: ${serverSpecifier}
+        version: ${serverVersion}
+${nuxtDependency}${archiveEntries}`
 }
 
 async function linkFixturePackage(hostRoot: string, packageRoot: string, packageName: string) {
@@ -2394,24 +2425,47 @@ function manifest(id: string, overrides: ManifestOverrides = {}): PlatformModule
   const operationId = overrides.operation?.id ?? `${id}-operation`
   const persistenceOperation = overrides.persistenceOperation
     ? {
+        exportName: `${camelCase(id)}ReadOperation`,
         id: `${id}-read`,
         method: `${camelCase(id)}Read`,
-        revision: 1,
-        mode: 'read' as const,
-        exportName: `${camelCase(id)}ReadOperation`,
         migration: `${id}-001-initial.sql`,
+        mode: 'read' as const,
+        revision: 1,
         ...overrides.persistenceOperation,
       }
     : undefined
   return {
-    id,
-    release: {
-      publisherPackage: `@eve-space/${id}-manifest`,
-      version: '0.1.0',
-      hostContractRange: '^1.0.0',
-    },
-    icon: overrides.moduleIcon ?? 'character',
     defaultEnabled: overrides.defaultEnabled ?? false,
+    icon: overrides.moduleIcon ?? 'character',
+    id,
+    nuxt: {
+      exposed: overrides.exposed,
+      navigation: [
+        {
+          id: `${id}-navigation`,
+          label: `${pascalCase(id)} audit`,
+          description: `${pascalCase(id)} audit details`,
+          to: `/characters/:characterId/${id}`,
+          audience: 'owned-character',
+          placement: 'character',
+          order: 10,
+          pageName,
+          ...overrides.navigation,
+        },
+      ],
+      package: `@eve-space/${id}-nuxt`,
+      pages: [
+        {
+          id: `${id}-page`,
+          name: pageName,
+          path: `/characters/:characterId/${id}`,
+          file: `src/runtime/app/pages/${id}.vue`,
+          extensionPoint: 'character-shell',
+          audience: 'owned-character',
+          ...overrides.page,
+        },
+      ],
+    },
     permissions: [
       {
         key: `${id}.view`,
@@ -2422,23 +2476,34 @@ function manifest(id: string, overrides: ManifestOverrides = {}): PlatformModule
         reviewAllowed: false,
       },
     ],
+    release: {
+      hostContractRange: '^1.0.0',
+      publisherPackage: `@eve-space/${id}-manifest`,
+      version: '0.1.0',
+    },
     server: {
-      package: `@eve-space/${id}-server`,
-      routes: [
+      activityProviders: [
         {
-          id: `${id}-route`,
-          namespace: `/${id}/characters/:characterId`,
-          exportName: `${camelCase(id)}Routes`,
-          authorization: 'owned-character',
+          id: `${id}-activity`,
+          exportName: `${camelCase(id)}ActivityProvider`,
           audience: 'member',
           requiredPermission: `${id}.view`,
           persistenceOperations: persistenceOperation
             ? [{ operationId: persistenceOperation.id }]
             : [],
-          ...overrides.route,
+          freshness: { staleAfterSeconds: 300 },
+          ...overrides.activityProvider,
+        },
+      ],
+      esiOperations: [
+        {
+          id: operationId,
+          exportName: `${camelCase(id)}Operation`,
+          ...overrides.operation,
         },
       ],
       migrations: [{ name: `${id}-001-initial.sql`, ...overrides.migration }],
+      package: `@eve-space/${id}-server`,
       persistenceOperations: persistenceOperation ? [persistenceOperation] : [],
       resources: [
         {
@@ -2455,54 +2520,20 @@ function manifest(id: string, overrides: ManifestOverrides = {}): PlatformModule
           ...overrides.resource,
         },
       ],
-      esiOperations: [
+      routes: [
         {
-          id: operationId,
-          exportName: `${camelCase(id)}Operation`,
-          ...overrides.operation,
-        },
-      ],
-      activityProviders: [
-        {
-          id: `${id}-activity`,
-          exportName: `${camelCase(id)}ActivityProvider`,
+          id: `${id}-route`,
+          namespace: `/${id}/characters/:characterId`,
+          exportName: `${camelCase(id)}Routes`,
+          authorization: 'owned-character',
           audience: 'member',
           requiredPermission: `${id}.view`,
           persistenceOperations: persistenceOperation
             ? [{ operationId: persistenceOperation.id }]
             : [],
-          freshness: { staleAfterSeconds: 300 },
-          ...overrides.activityProvider,
+          ...overrides.route,
         },
       ],
-    },
-    nuxt: {
-      package: `@eve-space/${id}-nuxt`,
-      pages: [
-        {
-          id: `${id}-page`,
-          name: pageName,
-          path: `/characters/:characterId/${id}`,
-          file: `src/runtime/app/pages/${id}.vue`,
-          extensionPoint: 'character-shell',
-          audience: 'owned-character',
-          ...overrides.page,
-        },
-      ],
-      navigation: [
-        {
-          id: `${id}-navigation`,
-          label: `${pascalCase(id)} audit`,
-          description: `${pascalCase(id)} audit details`,
-          to: `/characters/:characterId/${id}`,
-          audience: 'owned-character',
-          placement: 'character',
-          order: 10,
-          pageName,
-          ...overrides.navigation,
-        },
-      ],
-      exposed: overrides.exposed,
     },
   }
 }
@@ -2510,74 +2541,74 @@ function manifest(id: string, overrides: ManifestOverrides = {}): PlatformModule
 function authoringManifest(id: string, overrides: ManifestOverrides = {}): PlatformModuleManifest {
   const declaration = manifest(id, overrides)
   Object.assign(declaration.server.routes[0]!, {
-    namespace: `/${id}/accounts/:userId`,
-    authorization: 'authenticated-session',
     audience: 'hr',
+    authorization: 'authenticated-session',
+    exposure: 'standard',
+    namespace: `/${id}/accounts/:userId`,
     requiredPermission: `${id}.review`,
     target: 'managed-organization-account',
-    exposure: 'standard',
   })
   declaration.permissions = [
     {
+      audiences: ['hr'],
       key: 'member-audit.groups.manage',
       label: 'Manage ordinary groups',
       purpose: 'Assign and revoke ordinary groups for managed members.',
-      audiences: ['hr'],
-      sensitivity: 'sensitive',
       reviewAllowed: false,
+      sensitivity: 'sensitive',
     },
     ...(id === 'member-audit'
       ? []
       : [
           {
+            audiences: ['member' as const],
             key: `${id}.view`,
             label: 'View module data',
             purpose: 'View module data made available to members.',
-            audiences: ['member' as const],
-            sensitivity: 'standard' as const,
             reviewAllowed: false,
+            sensitivity: 'standard' as const,
           },
         ]),
   ]
   declaration.permissions = [
     {
+      audiences: ['member', 'hr'],
       key: `${id}.view`,
       label: 'View activity',
       purpose: 'View member-safe activity.',
-      audiences: ['member', 'hr'],
-      sensitivity: 'standard',
       reviewAllowed: true,
+      sensitivity: 'standard',
     },
     {
+      audiences: ['hr'],
       key: `${id}.review`,
       label: 'Review members',
       purpose: 'Review one managed member.',
-      audiences: ['hr'],
-      sensitivity: 'sensitive',
       reviewAllowed: false,
+      sensitivity: 'sensitive',
     },
   ]
   declaration.permissionProfiles = [
     {
+      audiences: ['hr'],
+      description: 'Suggested least-privilege reviewer access.',
       id: 'reviewer',
       label: 'Reviewer',
-      description: 'Suggested least-privilege reviewer access.',
-      audiences: ['hr'],
       permissions: [`${id}.review`],
     },
   ]
   declaration.reviewerContributions = [
     {
-      id: 'overview',
-      routeId: `${id}-route`,
       audience: 'hr',
-      requiredPermission: `${id}.review`,
-      target: 'managed-organization-account',
-      panelExport: './reviewer/overview',
-      label: 'Overview',
       description: 'Review a managed member.',
       icon: 'overview',
+      id: 'overview',
+      label: 'Overview',
       order: 10,
+      panelExport: './reviewer/overview',
+      requiredPermission: `${id}.review`,
+      routeId: `${id}-route`,
+      target: 'managed-organization-account',
     },
   ]
   return declaration
@@ -2585,57 +2616,58 @@ function authoringManifest(id: string, overrides: ManifestOverrides = {}): Platf
 
 function actionManifest(id: string) {
   const declaration = manifest(id)
-  if (id === 'member-audit')
+  if (id === 'member-audit') {
     declaration.permissions.push(
       permissionDeclaration('member-audit.groups.manage', ['hr'], 'sensitive'),
     )
+  }
   declaration.sections =
     id === 'member-audit'
       ? [
-          { id: 'overview', kind: 'workspace', defaultEnabled: false },
+          { defaultEnabled: false, id: 'overview', kind: 'workspace' },
           {
+            defaultEnabled: false,
+            disclosureRevision: 1,
             id: 'skills',
             kind: 'sensitive-evidence',
-            defaultEnabled: false,
-            disclosureRevision: 1,
           },
           {
+            defaultEnabled: false,
+            disclosureRevision: 1,
             id: 'assets',
             kind: 'sensitive-evidence',
-            defaultEnabled: false,
-            disclosureRevision: 1,
           },
           {
+            defaultEnabled: false,
+            disclosureRevision: 1,
             id: 'wallet',
             kind: 'sensitive-evidence',
-            defaultEnabled: false,
-            disclosureRevision: 1,
           },
           {
+            defaultEnabled: false,
+            disclosureRevision: 1,
             id: 'mail',
             kind: 'sensitive-evidence',
-            defaultEnabled: false,
-            disclosureRevision: 1,
           },
-          { id: 'access-management', kind: 'access-management', defaultEnabled: false },
+          { defaultEnabled: false, id: 'access-management', kind: 'access-management' },
         ]
       : [
-          { id: 'access-management', kind: 'access-management', defaultEnabled: false },
+          { defaultEnabled: false, id: 'access-management', kind: 'access-management' },
           {
-            id: 'evidence',
-            kind: 'sensitive-evidence',
             defaultEnabled: false,
             disclosureRevision: 1,
+            id: 'evidence',
+            kind: 'sensitive-evidence',
           },
         ]
   Object.assign(declaration.server.routes[0]!, {
-    namespace: `/${id}/accounts/:userId/actions`,
-    authorization: 'authenticated-session',
     audience: 'hr',
+    authorization: 'authenticated-session',
+    exposure: 'standard',
+    namespace: `/${id}/accounts/:userId/actions`,
     requiredPermission: id === 'member-audit' ? 'member-audit.groups.manage' : `${id}.view`,
     sectionId: 'access-management',
     target: 'managed-organization-account',
-    exposure: 'standard',
   })
   declaration.server.resources[0]!.sectionId = id === 'member-audit' ? 'skills' : 'evidence'
   declaration.server.resources[0]!.eligibility = { kind: 'current-managed-member-character' }
@@ -2658,33 +2690,33 @@ function permissionDeclaration(
   sensitivity: 'standard' | 'sensitive' = 'standard',
 ) {
   return {
+    audiences,
     key,
     label: `Use ${key}`,
     purpose: `Use the ${key} capability.`,
-    audiences,
-    sensitivity,
     reviewAllowed: false,
+    sensitivity,
   }
 }
 
 function executableOperationPolicy() {
   return {
     audit: { reviewedDate: '2026-08-18' },
-    representationVersion: 'v1',
     authorization: { kind: 'public' },
-    identity: { kind: 'ordered', fields: ['subjectId'] },
-    freshness: { kind: 'relative', seconds: 60 },
     cache: {
-      kind: 'shared',
       collapse: true,
+      kind: 'shared',
+      retentionMilliseconds: 60_000,
       revalidate: true,
       stale: { kind: 'none' },
-      retentionMilliseconds: 60_000,
     },
-    rateGroup: { kind: 'legacy-only' },
-    retry: { kind: 'none' },
     compatibility: { minimumDate: '2026-01-01' },
+    freshness: { kind: 'relative', seconds: 60 },
+    identity: { fields: ['subjectId'], kind: 'ordered' },
+    rateGroup: { kind: 'legacy-only' },
+    representationVersion: 'v1',
     responseValidation: { kind: 'enabled' },
+    retry: { kind: 'none' },
   } as const
 }
 
@@ -2698,7 +2730,9 @@ function validationErrorMessage(
     )
     throw new Error('Expected validation to fail')
   } catch (error) {
-    if (error instanceof PlatformModuleValidationError) return error.message
+    if (error instanceof PlatformModuleValidationError) {
+      return error.message
+    }
     throw error
   }
 }

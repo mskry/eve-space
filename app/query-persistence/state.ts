@@ -26,19 +26,19 @@ export function createQueryPersistenceState(
   const hydration = deferred()
   const restoration = deferred()
   return {
-    queryCache,
     entryState: createQueryPersistenceEntryState(),
     envelope,
-    hydrationReady: hydration.promise,
     hydrationFinished: false,
+    hydrationReady: hydration.promise,
     officialPersisterInstalled: false,
     pendingPublicHydration: {},
     presentationRevision: shallowRef(0),
-    retainedDataExpiryTimer: undefined,
+    queryCache,
     resolveHydration: hydration.resolve,
     resolveRestoration: restoration.resolve,
     restorationReady: restoration.promise,
     restorationSettled: false,
+    retainedDataExpiryTimer: undefined,
   }
 }
 

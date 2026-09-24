@@ -9,10 +9,10 @@ withDefaults(
     arrow?: boolean
   }>(),
   {
+    arrow: true,
     content: '',
     disabled: false,
     side: 'top',
-    arrow: true,
   },
 )
 </script>

@@ -18,8 +18,8 @@ beforeAll(async () => {
   container = await new GenericContainer('postgres:17-alpine')
     .withEnvironment({
       POSTGRES_DB: 'eve_space',
-      POSTGRES_USER: 'eve_space',
       POSTGRES_PASSWORD: password,
+      POSTGRES_USER: 'eve_space',
     })
     .withExposedPorts(5432)
     .withWaitStrategy(Wait.forLogMessage(/database system is ready to accept connections/, 2))
@@ -61,7 +61,7 @@ afterAll(async () => {
 describe('static location snapshot store', () => {
   test('distinguishes same-build revisions and preserves timestamp precision', async () => {
     const first = await readStaticLocationRevision(connection)
-    expect(first).toEqual({
+    expect(first).toStrictEqual({
       buildNumber: 1234,
       ingestVersion: 2,
       ingestedAt: '2026-08-26 12:00:00.123456+00',
@@ -73,7 +73,7 @@ describe('static location snapshot store', () => {
       where build_number = 1234
     `
 
-    expect(await readStaticLocationRevision(connection)).toEqual({
+    expect(await readStaticLocationRevision(connection)).toStrictEqual({
       buildNumber: 1234,
       ingestVersion: 3,
       ingestedAt: '2026-08-26 12:00:00.654321+00',
@@ -83,15 +83,15 @@ describe('static location snapshot store', () => {
   test('loads one validated snapshot with exact security values', async () => {
     const snapshot = await loadStaticLocationSnapshot(connection)
 
-    expect([...snapshot.systems.values()]).toEqual([
-      { id: 30000001, name: 'Negative', securityStatus: -0.06 },
-      { id: 30000002, name: 'Zero', securityStatus: 0 },
-      { id: 30000003, name: 'Precise', securityStatus: 0.945913 },
+    expect([...snapshot.systems.values()]).toStrictEqual([
+      { id: 30_000_001, name: 'Negative', securityStatus: -0.06 },
+      { id: 30_000_002, name: 'Zero', securityStatus: 0 },
+      { id: 30_000_003, name: 'Precise', securityStatus: 0.945913 },
     ])
-    expect([...snapshot.stationSystemIds]).toEqual([
-      [60000001, 30000001],
-      [60000002, 30000002],
-      [60000003, 30000003],
+    expect([...snapshot.stationSystemIds]).toStrictEqual([
+      [60_000_001, 30_000_001],
+      [60_000_002, 30_000_002],
+      [60_000_003, 30_000_003],
     ])
   })
 
@@ -131,15 +131,15 @@ describe('static location snapshot store', () => {
     release.resolve()
     await ingestion
     const snapshot = await loading
-    expect(snapshot.revision).toEqual({
+    expect(snapshot.revision).toStrictEqual({
       buildNumber: 1234,
       ingestVersion: 3,
       ingestedAt: '2026-08-26 12:01:00.000001+00',
     })
-    expect([...snapshot.systems.values()]).toEqual([
-      { id: 30000142, name: 'Jita', securityStatus: 0.945913 },
+    expect([...snapshot.systems.values()]).toStrictEqual([
+      { id: 30_000_142, name: 'Jita', securityStatus: 0.945913 },
     ])
-    expect([...snapshot.stationSystemIds]).toEqual([[60003760, 30000142]])
+    expect([...snapshot.stationSystemIds]).toStrictEqual([[60_003_760, 30_000_142]])
   })
 
   test('rejects missing and invalid projections', async () => {
@@ -176,7 +176,7 @@ describe('static location snapshot store', () => {
     await expect(readStaticLocationRevision(singleConnection)).rejects.toMatchObject({
       code: expect.stringMatching(/^(55P03|57014)$/),
     })
-    expect(Date.now() - startedAt).toBeLessThan(staticLocationDatabaseTimeoutMilliseconds + 2_000)
+    expect(Date.now() - startedAt).toBeLessThan(staticLocationDatabaseTimeoutMilliseconds + 2000)
 
     release.resolve()
     await lock

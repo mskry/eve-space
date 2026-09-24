@@ -15,33 +15,33 @@ import { resolveDeploymentOrganization } from '../../src/deployment/organization
 beforeEach(() => {
   mocks.executeRepresentation.mockImplementation((definition) =>
     definition.operation === 'public-corporation'
-      ? completeResult({ found: true, corporation: { name: 'Test Corporation', ticker: 'CORP' } })
-      : completeResult({ name: 'Test Alliance', ticker: 'TEST', executorCorporationId: 98 }),
+      ? completeResult({ corporation: { name: 'Test Corporation', ticker: 'CORP' }, found: true })
+      : completeResult({ executorCorporationId: 98, name: 'Test Alliance', ticker: 'TEST' }),
   )
 })
 
 describe('deployment organization resolution', () => {
   test('maps an alliance ID to stable deployment details', async () => {
-    await expect(resolveDeploymentOrganization('alliance', 99)).resolves.toEqual({
-      type: 'alliance',
+    await expect(resolveDeploymentOrganization('alliance', 99)).resolves.toStrictEqual({
       id: 99,
       name: 'Test Alliance',
       ticker: 'TEST',
+      type: 'alliance',
     })
-    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({ allianceId: 99 })
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toStrictEqual({ allianceId: 99 })
   })
 
   test('maps a corporation ID to stable deployment details', async () => {
-    await expect(resolveDeploymentOrganization('corporation', 98)).resolves.toEqual({
-      type: 'corporation',
+    await expect(resolveDeploymentOrganization('corporation', 98)).resolves.toStrictEqual({
       id: 98,
       name: 'Test Corporation',
       ticker: 'CORP',
+      type: 'corporation',
     })
-    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({ corporationId: 98 })
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toStrictEqual({ corporationId: 98 })
   })
 })
 
 function completeResult<Data>(data: Data) {
-  return { data, cachedUntil: '', validatedAt: '', quota: {}, source: 'esi' as const, stale: false }
+  return { cachedUntil: '', data, quota: {}, source: 'esi' as const, stale: false, validatedAt: '' }
 }

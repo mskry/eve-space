@@ -23,15 +23,20 @@ export function resolveSkillQueueState(
   entries: readonly SkillQueueEntry[],
   now: number,
 ): SkillQueueStatus {
-  if (entries.length === 0) return { state: 'empty', activeQueuePosition: null }
-  if (entries.every((entry) => entry.startDate === null))
-    return { state: 'paused', activeQueuePosition: null }
+  if (entries.length === 0) {
+    return { activeQueuePosition: null, state: 'empty' }
+  }
+  if (entries.every((entry) => entry.startDate === null)) {
+    return { activeQueuePosition: null, state: 'paused' }
+  }
 
   const active = entries.find(
     (entry) => entry.finishDate === null || Date.parse(entry.finishDate) > now,
   )
-  if (!active) return { state: 'lapsed', activeQueuePosition: null }
-  return { state: 'training', activeQueuePosition: active.queuePosition }
+  if (!active) {
+    return { activeQueuePosition: null, state: 'lapsed' }
+  }
+  return { activeQueuePosition: active.queuePosition, state: 'training' }
 }
 
 /** Highest level each skill is queued toward, used to mark queued levels in the catalogue. */
@@ -41,8 +46,9 @@ export function queuedLevelsByType(
   const levels = new Map<number, number>()
   for (const entry of queue?.entries ?? []) {
     const current = levels.get(entry.typeId)
-    if (current === undefined || entry.finishedLevel > current)
+    if (current === undefined || entry.finishedLevel > current) {
       levels.set(entry.typeId, entry.finishedLevel)
+    }
   }
   return levels
 }
@@ -63,12 +69,16 @@ export function trainingRatePerMinute(entry: SkillQueueEntry): number | null {
 }
 
 export function entryRemainingMs(entry: SkillQueueEntry, now: number): number | null {
-  if (!entry.finishDate) return null
+  if (!entry.finishDate) {
+    return null
+  }
   return Math.max(0, Date.parse(entry.finishDate) - now)
 }
 
 export function entryDurationMs(entry: SkillQueueEntry): number | null {
-  if (!entry.startDate || !entry.finishDate) return null
+  if (!entry.startDate || !entry.finishDate) {
+    return null
+  }
   return Math.max(0, Date.parse(entry.finishDate) - Date.parse(entry.startDate))
 }
 
@@ -100,7 +110,7 @@ export function entryProgress(entry: SkillQueueEntry, now: number): SkillQueuePr
       : (currentSpValue - levelStartSp) / (levelEndSp - levelStartSp)
   const percent = Math.max(0, Math.min(100, Math.round(levelProgress * 100)))
   const currentSp = currentSpValue === null ? null : Math.round(currentSpValue)
-  return { percent, currentSp, targetSp: levelEndSp }
+  return { currentSp, percent, targetSp: levelEndSp }
 }
 
 /** Time until the last dated entry finishes, or null when nothing in the queue is scheduled. */
@@ -108,18 +118,26 @@ export function queueRemainingMs(entries: readonly SkillQueueEntry[], now: numbe
   const finishes = entries
     .map((entry) => (entry.finishDate ? Date.parse(entry.finishDate) : null))
     .filter((value): value is number => value !== null)
-  if (finishes.length === 0) return null
+  if (finishes.length === 0) {
+    return null
+  }
   return Math.max(0, Math.max(...finishes) - now)
 }
 
 export function queueRemainingSp(entries: readonly SkillQueueEntry[], now: number): number | null {
-  if (entries.length === 0) return null
+  if (entries.length === 0) {
+    return null
+  }
   let total = 0
 
   for (const entry of entries) {
-    if (entry.levelEndSp === null) return null
+    if (entry.levelEndSp === null) {
+      return null
+    }
     const currentSp = entryProgress(entry, now).currentSp
-    if (currentSp === null) return null
+    if (currentSp === null) {
+      return null
+    }
     total += Math.max(0, entry.levelEndSp - currentSp)
   }
 
@@ -135,23 +153,31 @@ export interface SkillQueueSegment {
 export function queueSegments(entries: readonly SkillQueueEntry[]): SkillQueueSegment[] {
   const durations = entries.flatMap((entry) => {
     const duration = entryDurationMs(entry)
-    return duration === null || duration === 0 ? [] : [{ entry, duration }]
+    return duration === null || duration === 0 ? [] : [{ duration, entry }]
   })
   const totalDuration = durations.reduce((total, segment) => total + segment.duration, 0)
   return durations.map(({ entry, duration }) => ({
-    queuePosition: entry.queuePosition,
     flex: duration / totalDuration,
+    queuePosition: entry.queuePosition,
   }))
 }
 
 export function formatQueueDuration(milliseconds: number | null): string {
-  if (milliseconds === null) return 'UNSCHEDULED'
-  if (milliseconds <= 0) return 'DONE'
+  if (milliseconds === null) {
+    return 'UNSCHEDULED'
+  }
+  if (milliseconds <= 0) {
+    return 'DONE'
+  }
 
   const days = Math.floor(milliseconds / DAY)
-  if (days > 0) return `${days}d ${Math.floor((milliseconds % DAY) / HOUR)}h`
+  if (days > 0) {
+    return `${days}d ${Math.floor((milliseconds % DAY) / HOUR)}h`
+  }
   const hours = Math.floor(milliseconds / HOUR)
-  if (hours > 0) return `${hours}h ${Math.floor((milliseconds % HOUR) / MINUTE)}m`
+  if (hours > 0) {
+    return `${hours}h ${Math.floor((milliseconds % HOUR) / MINUTE)}m`
+  }
   return `${Math.max(1, Math.floor(milliseconds / MINUTE))}m`
 }
 

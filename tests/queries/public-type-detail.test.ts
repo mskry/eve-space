@@ -6,11 +6,11 @@ import { createApiClient } from '../../app/utils/api-client'
 
 describe('public type-detail query', () => {
   it('uses a hierarchical public key scoped only by type ID', () => {
-    expect(PUBLIC_QUERY_KEYS.universeType(34)).toEqual(['public', 'universe', 'types', 34])
-    expect(PUBLIC_QUERY_KEYS.universeType(34)).not.toEqual(PUBLIC_QUERY_KEYS.universeType(35))
+    expect(PUBLIC_QUERY_KEYS.universeType(34)).toStrictEqual(['public', 'universe', 'types', 34])
+    expect(PUBLIC_QUERY_KEYS.universeType(34)).not.toStrictEqual(PUBLIC_QUERY_KEYS.universeType(35))
 
     const apiClient = createApiClient('http://localhost:8788')
-    expect(publicTypeDetailQuery({ apiClient, typeId: 34 }).key).toEqual(
+    expect(publicTypeDetailQuery({ apiClient, typeId: 34 }).key).toStrictEqual(
       PUBLIC_QUERY_KEYS.universeType(34),
     )
   })

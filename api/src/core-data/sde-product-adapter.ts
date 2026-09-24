@@ -31,7 +31,9 @@ export async function selectCoreDataRevision(
     `,
     signal,
   )
-  if (!row) throw new CoreDataProductUnavailableError('Committed SDE revision is missing')
+  if (!row) {
+    throw new CoreDataProductUnavailableError('Committed SDE revision is missing')
+  }
   return {
     buildNumber: positiveSafeInteger(row.build_number, 'build number'),
     ingestVersion: positiveSafeInteger(row.ingest_version, 'ingest version'),
@@ -45,37 +47,48 @@ export function boundedPositiveIds(
   productLabel: string,
   maximum: number,
 ) {
-  if (!isRecord(request) || !Array.isArray(request[property]))
+  if (!isRecord(request) || !Array.isArray(request[property])) {
     throw new TypeError(`${productLabel} request must contain a ${property} array`)
+  }
   const values = request[property]
-  for (const value of values)
+  for (const value of values) {
     if (!isPositiveSafeInteger(value))
       throw new TypeError(`${productLabel} IDs must be positive safe integers`)
+  }
   const uniqueValues = [...new Set(values)]
-  if (uniqueValues.length > maximum)
+  if (uniqueValues.length > maximum) {
     throw new RangeError(`${productLabel} lookup cannot exceed ${maximum} IDs`)
+  }
   return uniqueValues
 }
 
 export function positiveSafeInteger(value: unknown, label: string) {
   let parsed = Number.NaN
-  if (isPositiveSafeInteger(value)) parsed = value
-  else if (typeof value === 'string' && /^[1-9]\d*$/.test(value)) parsed = Number(value)
-  if (!Number.isSafeInteger(parsed) || parsed <= 0)
+  if (isPositiveSafeInteger(value)) {
+    parsed = value
+  } else if (typeof value === 'string' && /^[1-9]\d*$/.test(value)) {
+    parsed = Number(value)
+  }
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
     throw new CoreDataProductUnavailableError(`Core-data ${label} is invalid`)
+  }
   return parsed
 }
 
 export function nonemptyString(value: unknown, label: string) {
-  if (typeof value !== 'string' || value.trim().length === 0)
+  if (typeof value !== 'string' || value.trim().length === 0) {
     throw new CoreDataProductUnavailableError(`Core-data ${label} is invalid`)
+  }
   return value
 }
 
 export function nullableNonnegativeFinite(value: unknown, label: string) {
-  if (value === null) return null
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0)
+  if (value === null) {
+    return null
+  }
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
     throw new CoreDataProductUnavailableError(`Core-data ${label} is invalid`)
+  }
   return value
 }
 

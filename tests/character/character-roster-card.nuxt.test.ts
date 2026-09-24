@@ -6,27 +6,27 @@ import CharacterRosterCard from '../../app/components/CharacterRosterCard.vue'
 import type { CharacterRosterEntry } from '../../app/queries/characters'
 
 const character = {
-  characterId: 7,
-  name: 'Roster Pilot',
-  corporationId: 98_000_001,
+  alliance: null,
   allianceId: null,
-  isMain: true,
   birthday: '2020-01-01T00:00:00.000Z',
-  securityStatus: 1.2,
-  raceFactionId: 500_001,
+  characterId: 7,
+  corporation: { id: 98_000_001, name: 'Roster Corporation' },
+  corporationId: 98_000_001,
+  isMain: true,
   location: {
+    locationType: 'station',
     solarSystemId: 30_000_142,
     solarSystemName: 'Jita',
     solarSystemSecurityStatus: 0.945,
-    locationType: 'station',
     stationId: 60_003_768,
     stationName: 'Jita IV - Moon 4',
   },
-  ship: { typeId: 670, typeName: 'Capsule', groupId: 29, name: 'Roster One' },
-  walletBalance: 9_876_543.21,
+  name: 'Roster Pilot',
+  raceFactionId: 500_001,
+  securityStatus: 1.2,
+  ship: { groupId: 29, name: 'Roster One', typeId: 670, typeName: 'Capsule' },
   totalSp: 5_000_000,
-  corporation: { id: 98_000_001, name: 'Roster Corporation' },
-  alliance: null,
+  walletBalance: 9_876_543.21,
 } satisfies CharacterRosterEntry
 
 describe('CharacterRosterCard', () => {
@@ -48,18 +48,18 @@ describe('CharacterRosterCard', () => {
     expect(wrapper.get('.system-security-status').classes()).toContain('system-security-status--9')
     expect(wrapper.find('.security-status').exists()).toBe(false)
     expect(wrapper.get('.roster-location-icon').attributes()).toMatchObject({
+      alt: '',
+      'aria-hidden': 'true',
+      height: '16',
       src: '/images/eve-brackets/station.png',
       width: '16',
-      height: '16',
-      alt: '',
-      'aria-hidden': 'true',
     })
     expect(wrapper.get('.roster-ship-icon').attributes()).toMatchObject({
-      src: '/images/eve-brackets/capsule_16.png',
-      width: '16',
-      height: '16',
       alt: '',
       'aria-hidden': 'true',
+      height: '16',
+      src: '/images/eve-brackets/capsule_16.png',
+      width: '16',
     })
 
     await wrapper.get('.roster-card-link').trigger('pointerenter')

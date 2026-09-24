@@ -3,7 +3,7 @@ import { useQueryCache } from '@pinia/colada'
 import { characterOverviewQuery, type CharacterRosterEntry } from '../../queries/characters'
 import { prefetchProtectedQuery } from '../../queries/query-cache'
 
-definePageMeta({ title: 'Characters', layout: 'headerless' })
+definePageMeta({ layout: 'headerless', title: 'Characters' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
@@ -30,7 +30,9 @@ const attachStatus = computed(() =>
   typeof route.query.attach === 'string' ? route.query.attach : '',
 )
 const attachFeedback = computed(() => {
-  if (attachStatus.value === 'success') return 'Character authorization completed.'
+  if (attachStatus.value === 'success') {
+    return 'Character authorization completed.'
+  }
   if (attachStatus.value === 'approval-required') {
     return 'Moving this character requires deployment-administrator approval. Ask for a valid transfer link and open it while signed in to the intended destination account.'
   }
@@ -49,8 +51,12 @@ const attachFeedback = computed(() => {
   if (attachStatus.value === 'conflict') {
     return 'The character could not be added. Start a new character authorization and try again.'
   }
-  if (attachStatus.value === 'cancelled') return 'Adding the character was cancelled.'
-  if (attachStatus.value === 'error') return 'The character could not be added.'
+  if (attachStatus.value === 'cancelled') {
+    return 'Adding the character was cancelled.'
+  }
+  if (attachStatus.value === 'error') {
+    return 'The character could not be added.'
+  }
   return ''
 })
 const attachFeedbackIsError = computed(
@@ -62,9 +68,9 @@ function prefetchCharacterOverview(characterId: number) {
     queryCache,
     characterOverviewQuery({ apiClient, characterId }),
     {
-      isClient: import.meta.client,
       authenticated: authSession.value.authenticated,
       authenticationReady: !authLoading.value,
+      isClient: import.meta.client,
       ownsCharacter: characters.value.some((character) => character.characterId === characterId),
     },
     characterId,
@@ -89,7 +95,9 @@ function requestCharacterDeletion(character: CharacterRosterEntry) {
 
 async function confirmCharacterDeletion(character: CharacterRosterEntry) {
   const deleted = await removeCharacter(character.characterId)
-  if (!deleted) throw new Error(rosterMessage.value || 'Character could not be deleted.')
+  if (!deleted) {
+    throw new Error(rosterMessage.value || 'Character could not be deleted.')
+  }
   return true
 }
 
@@ -105,7 +113,9 @@ async function restoreCharacterDeletionFocus(characterId: number) {
 watch(
   [authLoading, () => authSession.value.authenticated, attachStatus],
   async ([loading, authenticated, callbackStatus]) => {
-    if (loading || !authenticated) return
+    if (loading || !authenticated) {
+      return
+    }
 
     if (callbackStatus === 'success' && callbackHandled.value !== route.fullPath) {
       callbackHandled.value = route.fullPath

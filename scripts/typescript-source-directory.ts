@@ -17,8 +17,12 @@ export async function loadTypescriptSourceDirectory(
       .toSorted((left, right) => left.name.localeCompare(right.name))
       .map(async (entry) => {
         const path = join(directory, entry.name)
-        if (entry.isDirectory()) return loadTypescriptSourceDirectory(root, path, extensions)
-        if (!entry.isFile() || !extensions.includes(extname(entry.name))) return []
+        if (entry.isDirectory()) {
+          return loadTypescriptSourceDirectory(root, path, extensions)
+        }
+        if (!entry.isFile() || !extensions.includes(extname(entry.name))) {
+          return []
+        }
         return { path: relative(root, path), source: await readFile(path, 'utf8') }
       }),
   )

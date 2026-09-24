@@ -13,8 +13,8 @@ it('extracts package contents from the supplied tarball', async () => {
   await writeFile(
     tarball,
     createTarball({
-      'package/package.json': '{"name":"fixture"}\n',
       'package/dist/index.js': 'export const source = "tarball";\n',
+      'package/package.json': '{"name":"fixture"}\n',
     }),
   );
 

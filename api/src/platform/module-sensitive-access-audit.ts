@@ -24,8 +24,9 @@ interface ModuleSensitiveAccessDecision {
 export async function recordModuleSensitiveAccessDecision(input: ModuleSensitiveAccessDecision) {
   await db.transaction(async (transaction) => {
     const organization = await lockCurrentOrganization(transaction, 'key share')
-    if (organization.organizationVersion !== input.organizationVersion)
+    if (organization.organizationVersion !== input.organizationVersion) {
       throw new Error('Sensitive access organization changed before audit recording')
+    }
 
     const [section] = await transaction
       .select({ disclosureVersion: deploymentModuleSections.disclosureVersion })
@@ -43,20 +44,21 @@ export async function recordModuleSensitiveAccessDecision(input: ModuleSensitive
           eq(deploymentModuleSections.enabled, true),
         ),
       )
-    if (!section || section.disclosureVersion < 1)
+    if (!section || section.disclosureVersion < 1) {
       throw new Error('Sensitive access section changed before audit recording')
+    }
 
     await appendOrganizationSensitiveAccessDecision(transaction, {
       actorUserId: input.actorUserId,
-      targetUserId: input.targetUserId,
-      targetCharacterId: input.targetCharacterId,
-      sectionId: input.sectionId,
       decision: input.decision,
-      reason: input.reason,
-      organizationVersion: organization.organizationVersion,
-      policyVersion: organization.policyVersion,
       disclosureVersion: section.disclosureVersion,
       occurredAt: input.occurredAt ?? new Date(),
+      organizationVersion: organization.organizationVersion,
+      policyVersion: organization.policyVersion,
+      reason: input.reason,
+      sectionId: input.sectionId,
+      targetCharacterId: input.targetCharacterId,
+      targetUserId: input.targetUserId,
     })
   })
 }

@@ -3,18 +3,18 @@ import { describe, expect, it } from 'vitest'
 import { validateResolvedExposures } from '../src/resolved-exposures.js'
 
 const contribution: PlatformNuxtContributionDescriptor = {
-  moduleId: 'alpha',
-  packageName: '@example/alpha-nuxt',
   defaultIcon: 'character',
-  reviewerContributions: [],
-  queryAdmissionScopes: [],
-  sections: [],
-  pages: [],
-  navigation: [],
   exposed: {
     components: ['EveAlphaCard'],
     composables: ['useEveAlphaData'],
   },
+  moduleId: 'alpha',
+  navigation: [],
+  packageName: '@example/alpha-nuxt',
+  pages: [],
+  queryAdmissionScopes: [],
+  reviewerContributions: [],
+  sections: [],
 }
 const roots = new Map([['alpha', '/workspace/features/alpha/nuxt']])
 
@@ -24,7 +24,7 @@ describe('resolved Nuxt exposure validation', () => {
       validateResolvedExposures(
         [contribution],
         roots,
-        [{ name: 'EveAlphaCard', from: '/workspace/features/alpha/nuxt/src/card.vue' }],
+        [{ from: '/workspace/features/alpha/nuxt/src/card.vue', name: 'EveAlphaCard' }],
         'components',
       ),
     ).not.toThrow()
@@ -36,8 +36,8 @@ describe('resolved Nuxt exposure validation', () => {
         [contribution],
         roots,
         [
-          { name: 'EveAlphaCard', from: '/workspace/features/alpha/nuxt/src/card.vue' },
-          { name: 'EveAlphaCard', from: '/workspace/app/components/EveAlphaCard.vue' },
+          { from: '/workspace/features/alpha/nuxt/src/card.vue', name: 'EveAlphaCard' },
+          { from: '/workspace/app/components/EveAlphaCard.vue', name: 'EveAlphaCard' },
         ],
         'components',
       ),
@@ -49,7 +49,7 @@ describe('resolved Nuxt exposure validation', () => {
       validateResolvedExposures(
         [contribution],
         roots,
-        [{ name: 'useEveAlphaData', from: '/workspace/app/composables/useEveAlphaData.ts' }],
+        [{ from: '/workspace/app/composables/useEveAlphaData.ts', name: 'useEveAlphaData' }],
         'composables',
       ),
     ).toThrow('Nuxt composable useEveAlphaData from alpha must resolve exactly once')
@@ -64,7 +64,7 @@ describe('resolved Nuxt exposure validation', () => {
       validateResolvedExposures(
         [contribution],
         roots,
-        [{ name: 'EveAlphaCard', from }],
+        [{ from, name: 'EveAlphaCard' }],
         'components',
       ),
     ).toThrow('Nuxt component EveAlphaCard from alpha must resolve exactly once')

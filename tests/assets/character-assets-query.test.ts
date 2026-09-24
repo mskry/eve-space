@@ -23,18 +23,25 @@ import { queryServer } from '../support/query-server'
 
 const apiClient = createApiClient('http://localhost')
 const allowed: ProtectedCharacterQueryAccess = {
-  isClient: true,
   authenticated: true,
   authenticationReady: true,
+  isClient: true,
   ownsCharacter: true,
 }
 
 describe('character Assets private query', () => {
   it('uses isolated hierarchical identities and the 24-hour persistence policy', () => {
-    expect(PRIVATE_QUERY_KEYS.characterAssets(7)).toEqual(['private', 'characters', 7, 'assets'])
-    expect(PRIVATE_QUERY_KEYS.characterAssets(7)).not.toEqual(PRIVATE_QUERY_KEYS.characterAssets(8))
+    expect(PRIVATE_QUERY_KEYS.characterAssets(7)).toStrictEqual([
+      'private',
+      'characters',
+      7,
+      'assets',
+    ])
+    expect(PRIVATE_QUERY_KEYS.characterAssets(7)).not.toStrictEqual(
+      PRIVATE_QUERY_KEYS.characterAssets(8),
+    )
     expect(QUERY_POLICY.characterAssets.staleTime).toBe(60 * 60_000)
-    expect(characterAssetsQuery({ apiClient, characterId: 7, access: allowed }).gcTime).toBe(
+    expect(characterAssetsQuery({ access: allowed, apiClient, characterId: 7 }).gcTime).toBe(
       ESI_QUERY_RETENTION_MS,
     )
   })
@@ -56,9 +63,9 @@ describe('character Assets private query', () => {
       setup() {
         useQuery(
           characterAssetsQuery({
+            access: { ...allowed, isClient: false },
             apiClient,
             characterId: 7,
-            access: { ...allowed, isClient: false },
           }),
         )
         return () => h('span', 'assets locked')
@@ -83,7 +90,7 @@ describe('character Assets private query', () => {
     const Root = defineComponent({
       setup() {
         const result = useQuery({
-          ...characterAssetsQuery({ apiClient, characterId: 7, access: allowed }),
+          ...characterAssetsQuery({ access: allowed, apiClient, characterId: 7 }),
           retry: 0,
         })
         return () => {
@@ -96,7 +103,7 @@ describe('character Assets private query', () => {
     await flushPromises()
 
     expect(error).toBeInstanceOf(ApiQueryError)
-    expect(error).toMatchObject({ status: 409, code: 'ASSETS_IDENTITY_MISMATCH' })
+    expect(error).toMatchObject({ code: 'ASSETS_IDENTITY_MISMATCH', status: 409 })
     wrapper.unmount()
   })
 
@@ -105,9 +112,9 @@ describe('character Assets private query', () => {
       http.get('http://localhost/api/me/characters/7/assets', () =>
         HttpResponse.json(
           {
+            authorizeUrl: '/reauthorize/7',
             code: 'EVE_SCOPE_REQUIRED',
             message: 'Grant asset access.',
-            authorizeUrl: '/reauthorize/7',
             requiredScope: 'esi-assets.read_assets.v1',
           },
           { status: 403 },
@@ -118,7 +125,7 @@ describe('character Assets private query', () => {
     const Root = defineComponent({
       setup() {
         const result = useQuery({
-          ...characterAssetsQuery({ apiClient, characterId: 7, access: allowed }),
+          ...characterAssetsQuery({ access: allowed, apiClient, characterId: 7 }),
           retry: 0,
         })
         return () => {
@@ -131,11 +138,11 @@ describe('character Assets private query', () => {
     await flushPromises()
 
     expect(error).toMatchObject({
-      status: 403,
+      authorizeUrl: '/reauthorize/7',
       code: 'EVE_SCOPE_REQUIRED',
       message: 'Grant asset access.',
-      authorizeUrl: '/reauthorize/7',
       requiredScope: 'esi-assets.read_assets.v1',
+      status: 403,
     })
     wrapper.unmount()
   })
@@ -166,18 +173,20 @@ describe('character Assets private query', () => {
 
     clearAuthenticatedQueries(queryCache, unauthenticatedSession)
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(8))).toBeUndefined()
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(unauthenticatedSession)
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
+      unauthenticatedSession,
+    )
     wrapper.unmount()
   })
 })
 
 function assetResponse(characterId: number) {
   return {
-    characterId,
     assets: [],
-    enrichment: { types: 'complete', names: 'complete', locations: 'complete' },
     cachedUntil: '2026-09-03T13:00:00.000Z',
-    validatedAt: '2026-09-03T12:00:00.000Z',
+    characterId,
+    enrichment: { locations: 'complete', names: 'complete', types: 'complete' },
     stale: false,
+    validatedAt: '2026-09-03T12:00:00.000Z',
   }
 }

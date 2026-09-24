@@ -22,21 +22,23 @@ export async function enqueueInstalledResourceLifecyclePurges(
 ) {
   const authorities = await transaction
     .select({
-      moduleId: platformCollectionState.moduleId,
-      resourceId: platformCollectionState.resourceId,
-      targetUserId: platformCollectionState.targetUserId,
-      organizationVersion: platformCollectionState.organizationVersion,
-      managedMemberLifecycleId: platformCollectionState.managedMemberLifecycleId,
+      authorizationGeneration: platformCollectionState.authorizationGeneration,
       characterId: platformCollectionState.subjectId,
       characterLifecycleId: platformCollectionState.subjectLifecycleId,
-      authorizationGeneration: platformCollectionState.authorizationGeneration,
       disclosureVersion: platformCollectionState.disclosureVersion,
+      managedMemberLifecycleId: platformCollectionState.managedMemberLifecycleId,
+      moduleId: platformCollectionState.moduleId,
+      organizationVersion: platformCollectionState.organizationVersion,
+      resourceId: platformCollectionState.resourceId,
       sectionActivationVersion: platformCollectionState.sectionActivationVersion,
+      targetUserId: platformCollectionState.targetUserId,
     })
     .from(platformCollectionState)
     .where(eq(platformCollectionState.subjectLifecycleId, subjectLifecycleId))
   const work = authorities.flatMap((authority) => {
-    if (!maintainableResourceKeys.has(`${authority.moduleId}/${authority.resourceId}`)) return []
+    if (!maintainableResourceKeys.has(`${authority.moduleId}/${authority.resourceId}`)) {
+      return []
+    }
     if (
       authority.targetUserId === null ||
       authority.organizationVersion === null ||
@@ -44,27 +46,32 @@ export async function enqueueInstalledResourceLifecyclePurges(
       authority.authorizationGeneration === null ||
       authority.disclosureVersion === null ||
       authority.sectionActivationVersion === null
-    )
+    ) {
       return []
+    }
     const characterId = Number(authority.characterId)
-    if (!Number.isSafeInteger(characterId) || characterId < 1) return []
+    if (!Number.isSafeInteger(characterId) || characterId < 1) {
+      return []
+    }
     return [
       {
-        moduleId: authority.moduleId,
-        resourceId: authority.resourceId,
-        mode: 'authority' as const,
-        targetUserId: authority.targetUserId,
-        organizationVersion: authority.organizationVersion,
-        managedMemberLifecycleId: authority.managedMemberLifecycleId,
+        authorizationGeneration: authority.authorizationGeneration,
         characterId,
         characterLifecycleId: authority.characterLifecycleId,
-        authorizationGeneration: authority.authorizationGeneration,
         disclosureVersion: authority.disclosureVersion,
+        managedMemberLifecycleId: authority.managedMemberLifecycleId,
+        mode: 'authority' as const,
+        moduleId: authority.moduleId,
+        organizationVersion: authority.organizationVersion,
+        resourceId: authority.resourceId,
         sectionActivationVersion: authority.sectionActivationVersion,
+        targetUserId: authority.targetUserId,
       },
     ]
   })
-  if (work.length > 0) await transaction.insert(platformResourcePurgeWork).values(work)
+  if (work.length > 0) {
+    await transaction.insert(platformResourcePurgeWork).values(work)
+  }
 }
 
 export async function enqueueInstalledResourceAccountPurges(
@@ -72,7 +79,9 @@ export async function enqueueInstalledResourceAccountPurges(
   targetUserId: string,
 ) {
   const moduleIds = [...new Set(maintainableInstalledResources.map(({ moduleId }) => moduleId))]
-  if (moduleIds.length === 0) return
+  if (moduleIds.length === 0) {
+    return
+  }
   const installedModules = await transaction
     .select({ moduleId: deploymentModules.moduleId })
     .from(deploymentModules)
@@ -81,10 +90,12 @@ export async function enqueueInstalledResourceAccountPurges(
   const work = maintainableInstalledResources
     .filter(({ moduleId }) => installedModuleIds.has(moduleId))
     .map((resource) => ({
+      mode: 'account' as const,
       moduleId: resource.moduleId,
       resourceId: resource.resourceId,
-      mode: 'account' as const,
       targetUserId,
     }))
-  if (work.length > 0) await transaction.insert(platformResourcePurgeWork).values(work)
+  if (work.length > 0) {
+    await transaction.insert(platformResourcePurgeWork).values(work)
+  }
 }

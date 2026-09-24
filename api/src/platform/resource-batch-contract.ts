@@ -10,8 +10,8 @@ export const platformResourceBatchPayloadSchema = z
       .array(
         z
           .object({
-            subjectLifecycleId: platformCollectionStateIdentitySchema.shape.subjectLifecycleId,
             subjectId: platformCollectionStateIdentitySchema.shape.subjectId,
+            subjectLifecycleId: platformCollectionStateIdentitySchema.shape.subjectLifecycleId,
           })
           .strict(),
       )

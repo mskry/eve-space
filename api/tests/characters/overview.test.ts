@@ -19,27 +19,29 @@ const characterId = 90_000_001
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const freshness = {
   cachedUntil: '2026-09-01T11:10:00.000Z',
-  validatedAt: '2026-09-01T11:00:00.000Z',
+  quota: {},
   source: 'esi' as const,
   stale: false,
-  quota: {},
+  validatedAt: '2026-09-01T11:00:00.000Z',
 }
 
 beforeEach(() => {
   mocks.executeRepresentation.mockImplementation((definition) => {
-    if (definition.operation === 'location')
+    if (definition.operation === 'location') {
       return Promise.resolve(result({ solarSystemId: 30_000_142, stationId: 60_003_768 }))
-    if (definition.operation === 'ship')
-      return Promise.resolve(result({ typeId: 670, name: 'My Pod' }))
-    return Promise.resolve(result({ name: 'Capsule', groupId: 29 }))
+    }
+    if (definition.operation === 'ship') {
+      return Promise.resolve(result({ name: 'My Pod', typeId: 670 }))
+    }
+    return Promise.resolve(result({ groupId: 29, name: 'Capsule' }))
   })
   mocks.getUniverseSolarSystem.mockResolvedValue(result({ name: 'Jita', security_status: 0.945 }))
   mocks.getUniverseStation.mockResolvedValue({
     ...result({ name: 'Jita IV - Moon 4' }),
-    stale: true,
-    refreshFailureClass: 'esi-unavailable',
-    validatedAt: '2026-09-01T10:58:00.000Z',
     cachedUntil: '2026-09-01T11:08:00.000Z',
+    refreshFailureClass: 'esi-unavailable',
+    stale: true,
+    validatedAt: '2026-09-01T10:58:00.000Z',
   })
 })
 
@@ -48,14 +50,14 @@ describe('character overview resources', () => {
     const { getCharacterLocation } = await import('../../src/characters/overview.js')
 
     await expect(getCharacterLocation(characterId, subjectLifecycleId)).resolves.toMatchObject({
+      locationType: 'station',
+      refreshFailureClass: 'esi-unavailable',
       solarSystemId: 30_000_142,
       solarSystemName: 'Jita',
       solarSystemSecurityStatus: 0.945,
-      locationType: 'station',
+      stale: true,
       stationId: 60_003_768,
       stationName: 'Jita IV - Moon 4',
-      stale: true,
-      refreshFailureClass: 'esi-unavailable',
     })
     expect(mocks.executeRepresentation).toHaveBeenCalledWith(
       expect.objectContaining({ operation: 'location' }),
@@ -69,10 +71,13 @@ describe('character overview resources', () => {
     ['space', { solarSystemId: 30_000_142 }],
   ] as const)('classifies the current location as %s', async (locationType, position) => {
     mocks.executeRepresentation.mockImplementation((definition) => {
-      if (definition.operation === 'location') return Promise.resolve(result(position))
-      if (definition.operation === 'ship')
-        return Promise.resolve(result({ typeId: 670, name: 'My Pod' }))
-      return Promise.resolve(result({ name: 'Capsule', groupId: 29 }))
+      if (definition.operation === 'location') {
+        return Promise.resolve(result(position))
+      }
+      if (definition.operation === 'ship') {
+        return Promise.resolve(result({ name: 'My Pod', typeId: 670 }))
+      }
+      return Promise.resolve(result({ groupId: 29, name: 'Capsule' }))
     })
     const { getCharacterLocation } = await import('../../src/characters/overview.js')
 
@@ -86,12 +91,12 @@ describe('character overview resources', () => {
     const { getCharacterShip } = await import('../../src/characters/overview.js')
 
     await expect(getCharacterShip(characterId, subjectLifecycleId)).resolves.toMatchObject({
-      typeId: 670,
-      typeName: 'Capsule',
       groupId: 29,
       name: 'My Pod',
+      typeId: 670,
+      typeName: 'Capsule',
     })
-    expect(mocks.executeRepresentation.mock.calls.at(-1)?.[1]).toEqual({ typeId: 670 })
+    expect(mocks.executeRepresentation.mock.calls.at(-1)?.[1]).toStrictEqual({ typeId: 670 })
   })
 })
 

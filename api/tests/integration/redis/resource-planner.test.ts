@@ -41,7 +41,9 @@ describe('generic resource planner BullMQ integration', () => {
       operationsQueueName,
       async () => {
         invocations += 1
-        if (invocations === 1) return active
+        if (invocations === 1) {
+          return active
+        }
         markSecondStarted?.()
         return secondActive
       },
@@ -89,9 +91,9 @@ describe('generic resource planner BullMQ integration', () => {
     const bulkWrites = vi.spyOn(handle.queue, 'addBulk')
     const commands = [resourceCommand('1404328063'), resourceCommand('1404328064')]
     try {
-      await expect(queueProducer.enqueueMany(commands)).resolves.toEqual([
-        { status: 'accepted', depth: 0 },
-        { status: 'accepted', depth: 1 },
+      await expect(queueProducer.enqueueMany(commands)).resolves.toStrictEqual([
+        { depth: 0, status: 'accepted' },
+        { depth: 1, status: 'accepted' },
       ])
       expect(capacityReads).toHaveBeenCalledTimes(1)
       expect(deduplicationPipelines).toHaveBeenCalledTimes(2)
@@ -100,9 +102,9 @@ describe('generic resource planner BullMQ integration', () => {
       capacityReads.mockClear()
       deduplicationPipelines.mockClear()
       bulkWrites.mockClear()
-      await expect(queueProducer.enqueueMany(commands)).resolves.toEqual([
-        { status: 'rejected', depth: 2, reason: 'coalesced' },
-        { status: 'rejected', depth: 2, reason: 'coalesced' },
+      await expect(queueProducer.enqueueMany(commands)).resolves.toStrictEqual([
+        { depth: 2, reason: 'coalesced', status: 'rejected' },
+        { depth: 2, reason: 'coalesced', status: 'rejected' },
       ])
       expect(capacityReads).toHaveBeenCalledTimes(1)
       expect(deduplicationPipelines).toHaveBeenCalledTimes(1)
@@ -119,34 +121,36 @@ describe('generic resource planner BullMQ integration', () => {
 })
 
 const resource = {
-  moduleId: 'member-audit',
-  resourceId: 'character-skills',
-  operationId: 'skills',
-  subjectKind: 'character',
-  materializationIntervalSeconds: 900,
   eligibility: { kind: 'current-owned-character' },
   implementation: {},
+  materializationIntervalSeconds: 900,
+  moduleId: 'member-audit',
+  operationId: 'skills',
+  resourceId: 'character-skills',
+  subjectKind: 'character',
 } as const satisfies PlatformInstalledResourceDescriptor
 
 function resourceCommand(subjectId: string) {
   return {
+    materializationIntervalSeconds: resource.materializationIntervalSeconds,
     name: 'resource-refresh',
     payload: {
       moduleId: resource.moduleId,
       resourceId: resource.resourceId,
+      subjectId,
       subjectKind: 'character' as const,
       subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
-      subjectId,
     },
     source: 'planner',
-    materializationIntervalSeconds: resource.materializationIntervalSeconds,
   } as const
 }
 
-async function waitFor(predicate: () => Promise<boolean>, timeout = 5_000) {
+async function waitFor(predicate: () => Promise<boolean>, timeout = 5000) {
   const deadline = Date.now() + timeout
   while (!(await predicate())) {
-    if (Date.now() >= deadline) throw new Error('Timed out waiting for BullMQ state')
+    if (Date.now() >= deadline) {
+      throw new Error('Timed out waiting for BullMQ state')
+    }
     await new Promise((resolve) => setTimeout(resolve, 25))
   }
 }

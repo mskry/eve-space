@@ -1,6 +1,10 @@
 import type postgres from 'postgres'
 import { describe, expect, test, vi } from 'vitest'
 import {
+  installedModulePersistenceContractFingerprint,
+  installedModulePersistenceOperations,
+} from '../../src/generated/platform/installed-module-persistence.js'
+import {
   assertInstalledModulePersistenceContract,
   assertInstalledModulePersistenceContractWhenCurrent,
   persistenceContractFingerprintFor,
@@ -10,6 +14,15 @@ import { canonicalizePersistenceRoutineSql } from '../../src/db/module-persisten
 import type { ModulePersistenceRoutineDescriptor } from '../../src/db/module-persistence-routine-provisioner.js'
 
 describe('module persistence attestation', () => {
+  test('keeps the installed contract fingerprint compatible with persisted attestations', () => {
+    expect(installedModulePersistenceContractFingerprint).toBe(
+      'd56c90157d8cf064e41c1a20c47392098a22541fb00d0a3f61d76756956629f4',
+    )
+    expect(persistenceContractFingerprintFor(installedModulePersistenceOperations)).toBe(
+      installedModulePersistenceContractFingerprint,
+    )
+  })
+
   test('attests exact installed state through installed module filters', async () => {
     const operation = await readOperation()
     const contractFingerprint = persistenceContractFingerprintFor([operation], ['alpha'])
@@ -17,9 +30,10 @@ describe('module persistence attestation', () => {
     const connection = vi.fn((parts: TemplateStringsArray, ...values: unknown[]) => {
       const text = parts.join('?')
       queries.push({ text, values })
-      if (text.includes('from public.module_persistence_contract'))
+      if (text.includes('from public.module_persistence_contract')) {
         return Promise.resolve([{ contract_fingerprint: contractFingerprint, operation_count: 1 }])
-      if (text.includes('from public.module_persistence_operation_attestations'))
+      }
+      if (text.includes('from public.module_persistence_operation_attestations')) {
         return Promise.resolve([
           {
             definition_fingerprint: operation.definitionFingerprint,
@@ -32,7 +46,8 @@ describe('module persistence attestation', () => {
             schema_name: operation.schemaName,
           },
         ])
-      if (text.includes('pg_get_functiondef'))
+      }
+      if (text.includes('pg_get_functiondef')) {
         return Promise.resolve([
           {
             definition: readRoutineSql,
@@ -47,7 +62,8 @@ describe('module persistence attestation', () => {
             volatility: 's',
           },
         ])
-      if (text.includes('aclexplode'))
+      }
+      if (text.includes('aclexplode')) {
         return Promise.resolve([
           {
             grantable: false,
@@ -62,12 +78,14 @@ describe('module persistence attestation', () => {
             privilege: 'EXECUTE',
           },
         ])
-      if (text.includes('from pg_auth_members'))
+      }
+      if (text.includes('from pg_auth_members')) {
         return Promise.resolve([
           membership('eve_module_alpha_migrate'),
           membership('eve_module_alpha_runtime'),
         ])
-      if (text.includes('cross join pg_namespace'))
+      }
+      if (text.includes('cross join pg_namespace')) {
         return Promise.resolve([
           {
             create_access: true,
@@ -82,9 +100,13 @@ describe('module persistence attestation', () => {
             usage_access: true,
           },
         ])
-      if (text.includes('cross join pg_class')) return Promise.resolve([])
-      if (text.includes('from pg_roles'))
+      }
+      if (text.includes('cross join pg_class')) {
+        return Promise.resolve([])
+      }
+      if (text.includes('from pg_roles')) {
         return Promise.resolve([role('eve_module_alpha_migrate'), role('eve_module_alpha_runtime')])
+      }
       throw new Error(`Unexpected attestation query: ${text}`)
     })
 
@@ -101,12 +123,12 @@ describe('module persistence attestation', () => {
       queries.find(({ text }) =>
         text.includes('from public.module_persistence_operation_attestations'),
       )?.values,
-    ).toEqual([['alpha']])
+    ).toStrictEqual([['alpha']])
     expect(
       queries
         .filter(({ text }) => text.includes("routine.proname like 'persist"))
         .map(({ values }) => values),
-    ).toEqual([[['eve_module_alpha']], [['eve_module_alpha']]])
+    ).toStrictEqual([[['eve_module_alpha']], [['eve_module_alpha']]])
   })
 
   test('returns false without inspecting state when the current contract differs', async () => {
@@ -134,8 +156,9 @@ describe('module persistence attestation', () => {
         text.includes('from public.module_persistence_operation_attestations') ||
         text.includes('from pg_proc routine') ||
         text.includes('insert into public.module_persistence_contract')
-      )
+      ) {
         return Promise.resolve([])
+      }
       throw new Error(`Unexpected attestation query: ${text}`)
     })
     const contractFingerprint = persistenceContractFingerprintFor([], [])
@@ -152,8 +175,8 @@ describe('module persistence attestation', () => {
     const filters = queries
       .filter(({ text }) => text.includes(' = any('))
       .map(({ values }) => values)
-    expect(filters).toEqual([[[]], [[]], [[]]])
-    expect(queries.at(-1)?.values).toEqual([contractFingerprint, 0])
+    expect(filters).toStrictEqual([[[]], [[]], [[]]])
+    expect(queries.at(-1)?.values).toStrictEqual([contractFingerprint, 0])
   })
 })
 
@@ -168,10 +191,10 @@ const readRoutineSql = `
 
 async function readOperation(): Promise<ModulePersistenceRoutineDescriptor> {
   const canonical = await canonicalizePersistenceRoutineSql({
+    mode: 'read',
     moduleId: 'alpha',
     operationId: 'read-snapshot',
     revision: 1,
-    mode: 'read',
     sql: readRoutineSql,
   })
   return {

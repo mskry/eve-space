@@ -36,16 +36,16 @@ export async function startAuthE2eInfrastructure() {
 
   return {
     api,
-    connection,
-    container,
-    databaseUrl,
-    sso,
     async close() {
       await api.close()
       await sso.close()
       await connection.end()
       await container.stop()
     },
+    connection,
+    container,
+    databaseUrl,
+    sso,
   }
 }
 
@@ -63,6 +63,7 @@ async function startMutableApiServer() {
   await once(server, 'listening')
 
   return {
+    close: () => closeServer(server),
     origin: serverOrigin(server, '127.0.0.1'),
     requests,
     resetRequests() {
@@ -71,7 +72,6 @@ async function startMutableApiServer() {
     setHandler(next: (request: Request) => Response | Promise<Response>) {
       handler = next
     },
-    close: () => closeServer(server),
   }
 }
 
@@ -81,7 +81,9 @@ async function startFakeEveSso(apiOrigin: string) {
   const app = new Hono().get('/authorize', (context) => {
     const character = queuedCharacters.shift()
     const state = context.req.query('state')
-    if (!character || !state) return context.text('No deterministic EVE proof was queued.', 400)
+    if (!character || !state) {
+      return context.text('No deterministic EVE proof was queued.', 400)
+    }
     const code = randomUUID()
     proofByCode.set(code, character)
     const callback = new URL('/auth/eve/callback', apiOrigin)
@@ -93,13 +95,21 @@ async function startFakeEveSso(apiOrigin: string) {
   await once(server, 'listening')
 
   return {
-    origin: serverOrigin(server, 'localhost'),
-    queue(character: FakeEveCharacter) {
-      queuedCharacters.push(character)
+    affiliation(characterId: number) {
+      const character = [...proofByCode.values()].find(
+        (candidate) => candidate.characterId === characterId,
+      )
+      if (!character) {
+        throw new Error('Unknown deterministic EVE character')
+      }
+      return { corporationId: character.corporationId, allianceId: character.allianceId }
     },
+    close: () => closeServer(server),
     exchange(code: string) {
       const character = proofByCode.get(code)
-      if (!character) throw new Error('Unknown deterministic EVE authorization code')
+      if (!character) {
+        throw new Error('Unknown deterministic EVE authorization code')
+      }
       return {
         access_token: `fake-access:${code}`,
         refresh_token: `fake-refresh:${code}`,
@@ -107,9 +117,19 @@ async function startFakeEveSso(apiOrigin: string) {
         token_type: 'Bearer',
       }
     },
+    origin: serverOrigin(server, 'localhost'),
+    queue(character: FakeEveCharacter) {
+      queuedCharacters.push(character)
+    },
+    reset() {
+      queuedCharacters.length = 0
+      proofByCode.clear()
+    },
     verify(accessToken: string) {
       const character = proofByCode.get(accessToken.slice('fake-access:'.length))
-      if (!character) throw new Error('Unknown deterministic EVE access token')
+      if (!character) {
+        throw new Error('Unknown deterministic EVE access token')
+      }
       return {
         characterId: character.characterId,
         characterName: character.characterName,
@@ -117,25 +137,14 @@ async function startFakeEveSso(apiOrigin: string) {
         scopes: character.scopes,
       }
     },
-    affiliation(characterId: number) {
-      const character = [...proofByCode.values()].find(
-        (candidate) => candidate.characterId === characterId,
-      )
-      if (!character) throw new Error('Unknown deterministic EVE character')
-      return { corporationId: character.corporationId, allianceId: character.allianceId }
-    },
-    reset() {
-      queuedCharacters.length = 0
-      proofByCode.clear()
-    },
-    close: () => closeServer(server),
   }
 }
 
 function serverOrigin(server: Server, hostname: string) {
   const address = server.address()
-  if (!address || typeof address === 'string')
+  if (!address || typeof address === 'string') {
     throw new Error('Test server did not bind a TCP port')
+  }
   return `http://${hostname}:${address.port}`
 }
 

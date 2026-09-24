@@ -13,13 +13,13 @@ import {
 export const organizationEpochs = pgTable(
   'organization_epochs',
   {
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
     deploymentId: smallint('deployment_id').default(1).notNull(),
-    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
-    organizationType: text('organization_type').$type<'corporation' | 'alliance'>().notNull(),
     organizationId: bigint('organization_id', { mode: 'number' }).notNull(),
     organizationName: text('organization_name').notNull(),
     organizationTicker: text('organization_ticker').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    organizationType: text('organization_type').$type<'corporation' | 'alliance'>().notNull(),
+    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
     supersededAt: timestamp('superseded_at', { withTimezone: true, mode: 'date' }),
   },
   (table) => [

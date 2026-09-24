@@ -30,7 +30,7 @@ const results = await Promise.all(
 
     const judgment = await judgeSite(client, state)
 
-    return { label, judgment, verdict: classifySite(state, judgment) }
+    return { judgment, label, verdict: classifySite(state, judgment) }
   }),
 )
 
@@ -42,11 +42,12 @@ process.stdout.write(
   `credential_requirement agreement: ${requirementHits.length}/${results.length}\n`,
 )
 
-for (const result of results)
+for (const result of results) {
   if (result.judgment.credentialRequirement.choice !== result.label.credentialRequirement)
     process.stdout.write(
       `  ${result.label.name}: model ${result.judgment.credentialRequirement.choice} (${result.judgment.credentialRequirement.confidence.toFixed(2)}) vs labelled ${result.label.credentialRequirement}\n`,
     )
+}
 
 const gated = results.filter((result) => result.label.ssrGated)
 const capable = results.filter((result) => !result.label.ssrGated)
@@ -60,15 +61,18 @@ process.stdout.write(
 
 const safePaths = new Map<string, number>()
 
-for (const result of gated)
+for (const result of gated) {
   safePaths.set(
     result.judgment.ssrSafePath.choice,
     (safePaths.get(result.judgment.ssrSafePath.choice) ?? 0) + 1,
   )
+}
 
 process.stdout.write(`\nssr_safe_path on labelled-gated (${gated.length}):\n`)
 
-for (const [choice, count] of safePaths) process.stdout.write(`  ${choice}: ${count}\n`)
+for (const [choice, count] of safePaths) {
+  process.stdout.write(`  ${choice}: ${count}\n`)
+}
 
 process.stdout.write(
   `  gate confidence: ${describe(gated.map((result) => result.judgment.ssrSafePath.confidence))}\n`,
@@ -79,18 +83,22 @@ process.stdout.write(
 
 const verdicts = new Map<string, number>()
 
-for (const result of results)
+for (const result of results) {
   verdicts.set(result.verdict.verdict, (verdicts.get(result.verdict.verdict) ?? 0) + 1)
+}
 
 process.stdout.write(`\nend-to-end verdicts (every labelled row is a non-violation):\n`)
 
-for (const [verdict, count] of verdicts) process.stdout.write(`  ${verdict}: ${count}\n`)
+for (const [verdict, count] of verdicts) {
+  process.stdout.write(`  ${verdict}: ${count}\n`)
+}
 
-for (const result of results)
+for (const result of results) {
   if (result.verdict.verdict !== 'pass')
     process.stdout.write(
       `  ${result.verdict.verdict.toUpperCase()} ${result.label.name}: safe_path ${result.judgment.ssrSafePath.choice} (${result.judgment.ssrSafePath.confidence.toFixed(2)}), ssr ${result.judgment.ssrCapable.toFixed(2)}\n`,
     )
+}
 
 async function toSiteState(site: RequestSite): Promise<SiteState> {
   const resolved = site.requestPath ? resolveMount(site.requestPath, table) : null
@@ -105,9 +113,9 @@ async function toSiteState(site: RequestSite): Promise<SiteState> {
       : null
 
   return {
-    site,
     rootMiddleware: applicableRouteMiddleware(resolved?.middleware ?? [], route),
     route,
+    site,
   }
 }
 
@@ -128,7 +136,9 @@ async function frontendFiles(directory: string): Promise<string[]> {
 }
 
 function describe(values: readonly number[]) {
-  if (values.length === 0) return 'none'
+  if (values.length === 0) {
+    return 'none'
+  }
 
   const sorted = [...values].toSorted((left, right) => left - right)
   const mean = values.reduce((total, value) => total + value, 0) / values.length

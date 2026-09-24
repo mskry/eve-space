@@ -48,15 +48,15 @@ export interface ProjectedAsset extends AssetSnapshot, AssetTypeProjection {
 
 export function projectAssetSnapshot(asset: AssetSourceRecord): AssetSnapshot {
   return {
-    itemId: asset.item_id,
-    typeId: asset.type_id,
-    quantity: asset.quantity,
-    isSingleton: asset.is_singleton,
     isBlueprintCopy: asset.is_blueprint_copy ?? null,
+    isSingleton: asset.is_singleton,
+    itemId: asset.item_id,
+    locationFlag: asset.location_flag,
     locationId: asset.location_id,
     locationType: asset.location_type,
-    locationFlag: asset.location_flag,
     parentItemId: asset.location_type === 'item' ? asset.location_id : null,
+    quantity: asset.quantity,
+    typeId: asset.type_id,
   }
 }
 
@@ -70,27 +70,29 @@ export function projectAsset(
   return {
     ...asset,
     ...projectedType,
-    totalVolume: assetTotalVolume(projectedType.unitVolume, asset.quantity),
     customName: customName ?? null,
     locationName: location?.name ?? null,
     solarSystemId: location?.solarSystemId ?? null,
     solarSystemSecurityStatus: location?.solarSystemSecurityStatus ?? null,
+    totalVolume: assetTotalVolume(projectedType.unitVolume, asset.quantity),
   }
 }
 
 export function unknownAssetType(typeId: number): AssetTypeProjection {
   return {
-    typeName: `Unknown type ${typeId}`,
-    groupId: null,
-    groupName: null,
     categoryId: null,
     categoryName: null,
+    groupId: null,
+    groupName: null,
+    typeName: `Unknown type ${typeId}`,
     unitVolume: null,
   }
 }
 
 function assetTotalVolume(unitVolume: number | null, quantity: number) {
-  if (unitVolume === null || !Number.isFinite(quantity) || quantity <= 0) return null
+  if (unitVolume === null || !Number.isFinite(quantity) || quantity <= 0) {
+    return null
+  }
   const total = unitVolume * quantity
   return Number.isFinite(total) ? total : null
 }

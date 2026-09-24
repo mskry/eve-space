@@ -10,31 +10,31 @@ const { currentRoute, platformNavigation } = vi.hoisted(() => ({
     navigation: {
       value: [
         {
-          ownerId: 'core',
-          navigationId: 'core-overview',
-          label: 'Overview',
-          description: 'System and identity summary',
-          to: '/',
-          icon: 'overview',
           audience: 'public',
+          description: 'System and identity summary',
+          icon: 'overview',
+          label: 'Overview',
+          navigationId: 'core-overview',
+          ownerId: 'core',
+          to: '/',
         },
         {
-          ownerId: 'core',
-          navigationId: 'core-characters',
-          label: 'Characters',
+          audience: 'authenticated',
           description: 'Authorized capsuleer record',
-          to: '/characters',
           icon: 'character',
-          audience: 'authenticated',
+          label: 'Characters',
+          navigationId: 'core-characters',
+          ownerId: 'core',
+          to: '/characters',
         },
         {
-          ownerId: 'core',
-          navigationId: 'core-mail',
-          label: 'Mail',
-          description: 'Main character mailbox',
-          to: '/characters/:characterId/mail',
-          icon: 'mail',
           audience: 'authenticated',
+          description: 'Main character mailbox',
+          icon: 'mail',
+          label: 'Mail',
+          navigationId: 'core-mail',
+          ownerId: 'core',
+          to: '/characters/:characterId/mail',
         },
       ],
     },
@@ -47,7 +47,9 @@ mockNuxtImport('usePlatformNavigation', () => () => platformNavigation)
 const mountedWrappers: { unmount: () => void }[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
 })
 
 async function mountSidebar(props: Record<string, unknown> = {}) {
@@ -55,24 +57,24 @@ async function mountSidebar(props: Record<string, unknown> = {}) {
     global: {
       stubs: {
         NuxtLink: RouterLinkStub,
-        UiTooltip: {
-          setup:
-            (_, { slots }) =>
-            () =>
-              h('div', slots.default?.()),
-        },
         UiActionMenubar: {
           setup:
             (_, { slots }) =>
             () =>
               h('div', slots.trigger?.()),
         },
+        UiTooltip: {
+          setup:
+            (_, { slots }) =>
+            () =>
+              h('div', slots.default?.()),
+        },
       },
     },
     props: {
-      authenticated: true,
       adminAuthenticated: false,
       authLoading: false,
+      authenticated: true,
       characterId: 7,
       characterName: 'Bandera Primary',
       ...props,
@@ -114,8 +116,8 @@ describe('AppSidebar mail entry', () => {
 
   it('presents an unavailable identity without offering sign-in as an anonymous verdict', async () => {
     const wrapper = await mountSidebar({
-      authenticated: false,
       authUnavailable: true,
+      authenticated: false,
       characterId: undefined,
     })
 

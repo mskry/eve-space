@@ -24,31 +24,33 @@ const cacheConnectionErrorCounts = new Map<string, number>()
 const dependencyFailures = { cache: 0, coordination: 0 }
 let coordinationOperationFailures = 0
 const cacheEnvelopeRejections: Record<EsiCacheEnvelopeRejectionReason, number> = {
+  incoherentFreshnessWindow: 0,
+  invalidPayload: 0,
+  invalidShape: 0,
   malformedJson: 0,
   versionMismatch: 0,
-  invalidShape: 0,
-  invalidPayload: 0,
-  incoherentFreshnessWindow: 0,
 }
 const foundEnvelopeVersionCounts = new Map<string, number>()
 let foundEnvelopeVersionOverflow = 0
 
 export function recordEsiCacheSource(operation: EsiOperation, source: CacheSource, stale: boolean) {
   const counts = cacheSourceCounts.get(operation) ?? {
-    esi: 0,
     cache: 0,
+    esi: 0,
     'not-modified': 0,
     stale: 0,
   }
   counts[source] += 1
-  if (stale) counts.stale += 1
+  if (stale) {
+    counts.stale += 1
+  }
   cacheSourceCounts.set(operation, counts)
 }
 
 export function getEsiCacheSourceCounts(operation: EsiOperation) {
   return {
-    esi: cacheSourceCounts.get(operation)?.esi ?? 0,
     cache: cacheSourceCounts.get(operation)?.cache ?? 0,
+    esi: cacheSourceCounts.get(operation)?.esi ?? 0,
     'not-modified': cacheSourceCounts.get(operation)?.['not-modified'] ?? 0,
     stale: cacheSourceCounts.get(operation)?.stale ?? 0,
   }
@@ -74,14 +76,19 @@ export function recordEsiCacheEnvelopeRejection(
   rejection: Extract<EsiCacheEnvelopeParseResult<unknown>, { success: false }>,
 ) {
   cacheEnvelopeRejections[rejection.reason] += 1
-  if (rejection.reason !== 'versionMismatch') return
+  if (rejection.reason !== 'versionMismatch') {
+    return
+  }
 
   const found = envelopeVersionBucket(rejection.found)
   const count = foundEnvelopeVersionCounts.get(found)
-  if (count !== undefined) foundEnvelopeVersionCounts.set(found, count + 1)
-  else if (foundEnvelopeVersionCounts.size < maximumTrackedEnvelopeVersions)
+  if (count !== undefined) {
+    foundEnvelopeVersionCounts.set(found, count + 1)
+  } else if (foundEnvelopeVersionCounts.size < maximumTrackedEnvelopeVersions) {
     foundEnvelopeVersionCounts.set(found, 1)
-  else foundEnvelopeVersionOverflow += 1
+  } else {
+    foundEnvelopeVersionOverflow += 1
+  }
 }
 
 export function getEsiCacheEnvelopeCounterSnapshot() {
@@ -99,9 +106,14 @@ export function recordEsiDependencyProbe(
   dependency: keyof typeof dependencyFailures,
   available: boolean,
 ): DependencyState {
-  if (available) dependencyFailures[dependency] = 0
-  else dependencyFailures[dependency] += 1
-  if (available) return 'operational'
+  if (available) {
+    dependencyFailures[dependency] = 0
+  } else {
+    dependencyFailures[dependency] += 1
+  }
+  if (available) {
+    return 'operational'
+  }
   return dependencyFailures[dependency] >= unavailableAfterConsecutiveFailures
     ? 'unavailable'
     : 'degraded'
@@ -120,9 +132,12 @@ export async function recordEsiUpstreamOutcome(
     .multi()
     .hincrby(key, outcome, 1)
     .hset(key, 'checkedAt', new Date().toISOString())
-  if (observedRateGroup) transaction.hset(key, 'observedRateGroup', observedRateGroup)
-  if (declaredRateGroup && observedRateGroup && declaredRateGroup !== observedRateGroup)
+  if (observedRateGroup) {
+    transaction.hset(key, 'observedRateGroup', observedRateGroup)
+  }
+  if (declaredRateGroup && observedRateGroup && declaredRateGroup !== observedRateGroup) {
     transaction.hincrby(key, 'rateGroupMismatches', 1)
+  }
   await transaction.pexpire(key, upstreamTelemetryTtlMs).exec()
 }
 
@@ -131,6 +146,8 @@ export function getEsiUpstreamTelemetryKey(operation: EsiOperation) {
 }
 
 function envelopeVersionBucket(found: unknown) {
-  if (found === undefined) return 'missing'
+  if (found === undefined) {
+    return 'missing'
+  }
   return typeof found === 'number' && Number.isSafeInteger(found) ? String(found) : 'invalid'
 }

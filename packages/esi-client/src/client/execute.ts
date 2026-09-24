@@ -147,11 +147,11 @@ export async function executeOperation<TArguments extends OperationRequestArgume
     );
     const metadata = extractEsiResponseMetadata(response.status, new Headers(response.headers));
     const responseTransport: EsiOperationResponseContext = {
+      metadata,
       operationId: descriptor.operationId,
       phase: 'response',
-      status: response.status,
-      metadata,
       redaction,
+      status: response.status,
     };
 
     await rejectUnsuccessfulResponse(response, exchange, responseTransport);
@@ -190,7 +190,9 @@ async function authorizeOperationRequest(
   signal: AbortSignal | undefined,
   headers: Headers,
 ): Promise<string[]> {
-  if (authentication === null) return [];
+  if (authentication === null) {
+    return [];
+  }
   const token = await raceCallerCancellation(
     resolveAccessToken(configuration, operationId, authentication),
     signal,
@@ -211,15 +213,15 @@ async function fetchOperationResponse(
   const fetchImplementation = configuration.fetch;
   const fetchPromise = Promise.resolve().then(() =>
     fetchImplementation(`${configuration.baseUrl}${request.path}`, {
-      method: request.method,
       headers,
+      method: request.method,
       signal: exchange.signal,
       ...requestBodyInit(request.body),
     }),
   );
   void fetchPromise.then(
     (lateResponse) => cancelLateResponse(lateResponse, exchange),
-    () => undefined,
+    () => {},
   );
   try {
     return await exchange.race(fetchPromise, { operationId, phase: 'request', redaction });
@@ -233,8 +235,10 @@ function requestBodyInit(body: string | undefined): { readonly body?: string } {
 }
 
 function cancelLateResponse(response: Response, exchange: EsiExchangeDeadline): void {
-  if (!exchange.cancelled) return;
-  void response.body?.cancel().catch(() => undefined);
+  if (!exchange.cancelled) {
+    return;
+  }
+  void response.body?.cancel().catch(() => {});
 }
 
 async function rejectUnsuccessfulResponse(
@@ -246,7 +250,9 @@ async function rejectUnsuccessfulResponse(
     await cancelResponseBody(response, exchange, context);
     throw new EsiNotModifiedError(context);
   }
-  if (response.ok) return;
+  if (response.ok) {
+    return;
+  }
   const responseBodyText = await readResponseBody(
     response,
     exchange,
@@ -283,9 +289,9 @@ function validateResponseData<TResponse>(
       ...context,
       issues: [
         {
-          path: [],
           code: 'unsupported_status',
           message: `No response schema is declared for successful HTTP status ${context.status}`,
+          path: [],
         },
       ],
     });
@@ -313,9 +319,9 @@ function validateExecutionDescriptor<TResponse>(
   const transport = descriptor.transport;
   validateTransport(operationId, transport);
   return {
+    allowsCompatibilityDateOverride: transport?.compatibilityDateOverride === true,
     authentication,
     successResponses: descriptor.successResponses,
-    allowsCompatibilityDateOverride: transport?.compatibilityDateOverride === true,
   };
 }
 
@@ -323,7 +329,9 @@ function validateAuthentication(
   operationId: string,
   authentication: OperationAuthentication | null,
 ): void {
-  if (authentication === null) return;
+  if (authentication === null) {
+    return;
+  }
   if (!isRecord(authentication) || !Array.isArray(authentication.scopes)) {
     throw new TypeError(`Operation descriptor ${operationId} authentication must provide scopes`);
   }
@@ -458,8 +466,8 @@ export function validateOperationRequestArguments<TArguments extends OperationRe
   const parsed = descriptor.requestSchema.safeParse(arguments_);
   if (!parsed.success) {
     throw new EsiRequestValidationError({
-      operationId: descriptor.operationId,
       issues: parsed.error.issues,
+      operationId: descriptor.operationId,
     });
   }
   return parsed.data;
@@ -502,8 +510,11 @@ function createRequestHeaders(
   headers.set('accept-language', language);
   headers.set('x-compatibility-date', compatibilityDate);
   headers.delete('authorization');
-  if (body === undefined) headers.delete('content-type');
-  else headers.set('content-type', 'application/json');
+  if (body === undefined) {
+    headers.delete('content-type');
+  } else {
+    headers.set('content-type', 'application/json');
+  }
   return headers;
 }
 
@@ -518,9 +529,9 @@ async function resolveAccessToken(
       token = await configuration.tokenProvider();
     } catch (cause) {
       throw new EsiAuthenticationRequiredError({
+        cause,
         operationId,
         scopes: authentication.scopes,
-        cause,
       });
     }
   }
@@ -535,10 +546,14 @@ async function resolveAccessToken(
 }
 
 function isSafeToken(value: unknown): value is string {
-  if (typeof value !== 'string' || value.length === 0) return false;
+  if (typeof value !== 'string' || value.length === 0) {
+    return false;
+  }
   for (const character of value) {
     const codePoint = character.codePointAt(0) ?? 0;
-    if (codePoint <= 0x20 || codePoint === 0x7f) return false;
+    if (codePoint <= 0x20 || codePoint === 0x7f) {
+      return false;
+    }
   }
   return true;
 }
@@ -548,7 +563,9 @@ async function raceCallerCancellation<Value>(
   signal: AbortSignal | undefined,
   operationId: string,
 ): Promise<Value> {
-  if (signal === undefined) return await promise;
+  if (signal === undefined) {
+    return await promise;
+  }
   let rejectCancellation: ((reason: EsiTransportError) => void) | undefined;
   const cancellationPromise = new Promise<never>((_resolve, reject) => {
     rejectCancellation = reject;
@@ -556,14 +573,16 @@ async function raceCallerCancellation<Value>(
   const cancel = () =>
     rejectCancellation?.(
       new EsiTransportError({
-        operationId,
-        reason: 'network',
-        phase: 'request',
         cause: signal.reason,
+        operationId,
+        phase: 'request',
+        reason: 'network',
       }),
     );
   signal.addEventListener('abort', cancel, { once: true });
-  if (signal.aborted) cancel();
+  if (signal.aborted) {
+    cancel();
+  }
   try {
     return await Promise.race([promise, cancellationPromise]);
   } finally {
@@ -613,28 +632,37 @@ function createExchangeDeadline(
     rejectCancellation = reject;
   });
   const cancel = (reason: 'timeout' | 'network') => {
-    if (cancellation.reason !== undefined) return;
+    if (cancellation.reason !== undefined) {
+      return;
+    }
     cancellation.reason = reason;
     rejectCancellation?.(cancellation);
   };
   const onCallerAbort = () => cancel('network');
   callerSignal?.addEventListener('abort', onCallerAbort, { once: true });
-  if (callerSignal?.aborted) onCallerAbort();
+  if (callerSignal?.aborted) {
+    onCallerAbort();
+  }
   const timer = setTimeout(() => {
     cancel('timeout');
     timeoutController.abort(new Error('ESI request timeout'));
   }, timeoutMs);
 
   return {
-    signal,
     get cancelled() {
       return cancellation.reason !== undefined;
+    },
+    close() {
+      clearTimeout(timer);
+      callerSignal?.removeEventListener('abort', onCallerAbort);
     },
     async race<Value>(promise: PromiseLike<Value>, context: EsiResponseTransportContext) {
       try {
         return await Promise.race([promise, cancellationPromise]);
       } catch (cause) {
-        if (cause !== cancellation) throw cause;
+        if (cause !== cancellation) {
+          throw cause;
+        }
         throw new EsiTransportError({
           ...context,
           reason: cancellation.reason ?? 'network',
@@ -642,10 +670,7 @@ function createExchangeDeadline(
         });
       }
     },
-    close() {
-      clearTimeout(timer);
-      callerSignal?.removeEventListener('abort', onCallerAbort);
-    },
+    signal,
   };
 }
 
@@ -654,7 +679,9 @@ async function cancelResponseBody(
   exchange: EsiExchangeDeadline,
   context: EsiResponseTransportContext,
 ): Promise<void> {
-  if (response.body === null) return;
+  if (response.body === null) {
+    return;
+  }
   try {
     await exchange.race(response.body.cancel(), context);
   } catch (cause) {
@@ -668,16 +695,20 @@ async function readResponseBody(
   context: EsiResponseTransportContext,
   maximumBytes = Infinity,
 ): Promise<string | undefined> {
-  if (response.body === null) return undefined;
+  if (response.body === null) {
+    return undefined;
+  }
   const reader = response.body.getReader();
-  const body = { chunks: [] as Uint8Array[], byteLength: 0 };
+  const body = { byteLength: 0, chunks: [] as Uint8Array[] };
   let cancellationStarted = false;
   const cancel = () => {
     cancellationStarted = true;
     cancelResponseReader(reader, exchange.signal.reason);
   };
   exchange.signal.addEventListener('abort', cancel, { once: true });
-  if (exchange.signal.aborted) cancel();
+  if (exchange.signal.aborted) {
+    cancel();
+  }
   try {
     await readResponseChunks(reader, exchange, context, maximumBytes, body);
   } catch (cause) {
@@ -698,11 +729,15 @@ async function readResponseChunks(
 ): Promise<void> {
   while (body.byteLength < maximumBytes) {
     const result = await exchange.race(reader.read(), context);
-    if (result.done) break;
+    if (result.done) {
+      break;
+    }
     const remaining = maximumBytes - body.byteLength;
     body.chunks.push(boundedResponseChunk(result.value, remaining));
     body.byteLength += Math.min(result.value.byteLength, remaining);
-    if (result.value.byteLength > remaining) break;
+    if (result.value.byteLength > remaining) {
+      break;
+    }
   }
 }
 
@@ -717,7 +752,7 @@ function cancelResponseReader(
   void reader
     .cancel(reason)
     .finally(() => releaseResponseReader(reader))
-    .catch(() => undefined);
+    .catch(() => {});
 }
 
 async function finishResponseRead(
@@ -725,8 +760,12 @@ async function finishResponseRead(
   cancellationStarted: boolean,
   reachedMaximumBytes: boolean,
 ): Promise<void> {
-  if (cancellationStarted) return;
-  if (reachedMaximumBytes) await reader.cancel().catch(() => undefined);
+  if (cancellationStarted) {
+    return;
+  }
+  if (reachedMaximumBytes) {
+    await reader.cancel().catch(() => {});
+  }
   releaseResponseReader(reader);
 }
 
@@ -734,7 +773,7 @@ function releaseResponseReader(reader: ReadableStreamDefaultReader<Uint8Array>):
   try {
     reader.releaseLock();
   } catch {
-    void reader.closed.finally(() => reader.releaseLock()).catch(() => undefined);
+    void reader.closed.finally(() => reader.releaseLock()).catch(() => {});
   }
 }
 
@@ -752,8 +791,10 @@ function networkTransportError(
   cause: unknown,
   context: EsiResponseTransportContext,
 ): EsiTransportError {
-  if (cause instanceof EsiTransportError) return cause;
-  return new EsiTransportError({ ...context, reason: 'network', cause });
+  if (cause instanceof EsiTransportError) {
+    return cause;
+  }
+  return new EsiTransportError({ ...context, cause, reason: 'network' });
 }
 
 function requestValidationError(
@@ -762,5 +803,5 @@ function requestValidationError(
   message: string,
   code: string,
 ): EsiRequestValidationError {
-  return new EsiRequestValidationError({ operationId, issues: [{ path, message, code }] });
+  return new EsiRequestValidationError({ issues: [{ path, message, code }], operationId });
 }

@@ -23,13 +23,16 @@ async function findOwningPackageRoot(entrypoint: string, packageName: string) {
 }
 
 async function findPackageRoot(directory: string, packageName: string): Promise<string> {
-  if (directory === parse(directory).root)
+  if (directory === parse(directory).root) {
     throw new Error(`Nuxt package ${packageName} could not be resolved`)
+  }
   try {
     const packageJson: unknown = JSON.parse(
       await readFile(resolve(directory, 'package.json'), 'utf8'),
     )
-    if (isRecord(packageJson) && packageJson.name === packageName) return realpath(directory)
+    if (isRecord(packageJson) && packageJson.name === packageName) {
+      return realpath(directory)
+    }
   } catch {
     // Continue to the owning package boundary.
   }
@@ -48,14 +51,15 @@ export async function resolveContributionPages(
     contributions.flatMap((contribution) =>
       contribution.pages.map(async (page) => {
         const packageRoot = packageRoots.get(contribution.moduleId)
-        if (!packageRoot)
+        if (!packageRoot) {
           throw new Error(`Nuxt package ${contribution.moduleId} could not be resolved`)
+        }
         const file = await resolveFeaturePage(
           packageRoot,
           page.file,
           `${contribution.moduleId}/${page.id}`,
         )
-        return { moduleId: contribution.moduleId, page, file }
+        return { file, moduleId: contribution.moduleId, page }
       }),
     ),
   )

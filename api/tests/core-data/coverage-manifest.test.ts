@@ -75,7 +75,9 @@ function cloneManifest(): Record<string, unknown>[] {
   const manifest: Record<string, unknown>[] = []
   for (const entry of coreDataCoverageManifest) {
     const clonedEntry: Record<string, unknown> = { ...entry }
-    if (entry.esiOperationIds) clonedEntry.esiOperationIds = [...entry.esiOperationIds]
+    if (entry.esiOperationIds) {
+      clonedEntry.esiOperationIds = [...entry.esiOperationIds]
+    }
     manifest.push(clonedEntry)
   }
   return manifest
@@ -84,7 +86,9 @@ function cloneManifest(): Record<string, unknown>[] {
 function replacePublishedProduct(overrides: Record<string, unknown>) {
   const manifest = cloneManifest()
   const entry = manifest.find(({ productId }) => productId === 'published-type-groups')
-  if (entry) Object.assign(entry, overrides)
+  if (entry) {
+    Object.assign(entry, overrides)
+  }
   return manifest
 }
 

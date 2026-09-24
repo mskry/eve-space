@@ -17,15 +17,15 @@ describe('ESI shared cooldowns', () => {
       ])
     await recordEsiResponse({
       connection: redis as never,
+      metadata: { errorLimit: { remaining: 0, reset: 20 }, headers: {}, status: 500 },
       operation: 'status',
-      metadata: { status: 500, headers: {}, errorLimit: { remaining: 0, reset: 20 } },
     })
 
     await expect(
       acquireEsiRequestPermit({
+        concurrency: 2,
         connection: redis as never,
         operation: 'bulk-affiliation',
-        concurrency: 2,
         queueTimeoutMs,
       }),
     ).rejects.toBeInstanceOf(EsiQuotaError)
@@ -38,25 +38,25 @@ describe('ESI shared cooldowns', () => {
       import('../../src/esi-gateway/internal/permits.js'),
     ])
     const first = await acquireEsiRequestPermit({
+      concurrency: 1,
       connection: redis as never,
       operation: 'status',
-      concurrency: 1,
       queueTimeoutMs,
     })
     await expect(
       acquireEsiRequestPermit({
+        concurrency: 1,
         connection: redis as never,
         operation: 'status',
-        concurrency: 1,
         queueTimeoutMs: 1,
       }),
     ).rejects.toBeInstanceOf(EsiQuotaError)
     await first.release()
     await expect(
       acquireEsiRequestPermit({
+        concurrency: 1,
         connection: redis as never,
         operation: 'status',
-        concurrency: 1,
         queueTimeoutMs,
       }),
     ).resolves.toMatchObject({ coordinationAvailable: true })
@@ -71,22 +71,22 @@ describe('ESI shared cooldowns', () => {
       import('../../src/esi-gateway/internal/permits.js'),
     ])
     const first = await acquireEsiRequestPermit({
+      concurrency: 4,
       connection: unavailable as never,
       operation: 'status',
-      concurrency: 4,
       queueTimeoutMs,
     })
     const second = await acquireEsiRequestPermit({
+      concurrency: 4,
       connection: unavailable as never,
       operation: 'status',
-      concurrency: 4,
       queueTimeoutMs,
     })
     await expect(
       acquireEsiRequestPermit({
+        concurrency: 4,
         connection: unavailable as never,
         operation: 'status',
-        concurrency: 4,
         queueTimeoutMs: 1,
       }),
     ).rejects.toBeInstanceOf(EsiQuotaError)
@@ -94,24 +94,24 @@ describe('ESI shared cooldowns', () => {
   })
 
   test('honors locally recorded cooldowns while coordination Redis is unavailable', async () => {
-    const unavailable = { get: vi.fn().mockRejectedValue(new Error('unavailable')), eval: vi.fn() }
+    const unavailable = { eval: vi.fn(), get: vi.fn().mockRejectedValue(new Error('unavailable')) }
     const [{ recordEsiResponse }, { acquireEsiRequestPermit }] = await Promise.all([
       import('../../src/esi-gateway/internal/cooldowns.js'),
       import('../../src/esi-gateway/internal/permits.js'),
     ])
     await recordEsiResponse({
       connection: unavailable as never,
+      metadata: { headers: {}, retryAfterSeconds: 12, status: 429 },
       operation: 'wallet-balance',
       principal: 'character-90000001',
-      metadata: { status: 429, headers: {}, retryAfterSeconds: 12 },
     })
 
     await expect(
       acquireEsiRequestPermit({
+        concurrency: 2,
         connection: unavailable as never,
         operation: 'wallet-balance',
         principal: 'character-90000001',
-        concurrency: 2,
         queueTimeoutMs,
       }),
     ).rejects.toMatchObject({ name: 'EsiQuotaError', retryAfterSeconds: 12 })
@@ -132,20 +132,20 @@ describe('ESI shared cooldowns', () => {
         await import('../../src/esi-gateway/internal/cooldowns.js')
       await recordEsiResponse({
         connection: redis as never,
-        operation: 'status',
         metadata: {
-          status: 429,
           headers: {},
+          status: 429,
           ...(retryAfterSeconds === undefined ? {} : { retryAfterSeconds }),
         },
+        operation: 'status',
       })
 
       await expect(
-        getEsiRequestCooldown({ connection: redis, operation: 'status', now }),
-      ).resolves.toEqual({
+        getEsiRequestCooldown({ connection: redis, now, operation: 'status' }),
+      ).resolves.toStrictEqual({
         active: expected !== null,
-        retryAfterSeconds: expected,
         coordinationAvailable: true,
+        retryAfterSeconds: expected,
       })
     },
   )
@@ -155,12 +155,12 @@ describe('ESI shared cooldowns', () => {
     const { recordEsiResponse } = await import('../../src/esi-gateway/internal/cooldowns.js')
     await recordEsiResponse({
       connection: redis as never,
+      metadata: { headers: {}, retryAfterSeconds: 12, status: 429 },
       operation: 'wallet-balance',
       principal: 'character-90000001',
-      metadata: { status: 429, headers: {}, retryAfterSeconds: 12 },
     })
 
-    expect([...redis.values.keys()]).toEqual([
+    expect([...redis.values.keys()]).toStrictEqual([
       expect.stringMatching(
         /^eve-space:v1:esi-resilience:cooldown:group:char-wallet:character-90000001$/,
       ),
@@ -168,9 +168,9 @@ describe('ESI shared cooldowns', () => {
     await expect(
       recordEsiResponse({
         connection: redis as never,
+        metadata: { headers: {}, status: 429 },
         operation: 'wallet-balance',
         principal: 'access.token',
-        metadata: { status: 429, headers: {} },
       }),
     ).rejects.toThrow('Invalid ESI principal identity')
   })
@@ -181,9 +181,9 @@ describe('ESI shared cooldowns', () => {
       await import('../../src/esi-gateway/internal/cooldowns.js')
     await recordEsiResponse({
       connection: redis as never,
+      metadata: { headers: {}, retryAfterSeconds: 12, status: 429 },
       operation: 'wallet-balance',
       principal: 'character-90000001',
-      metadata: { status: 429, headers: {}, retryAfterSeconds: 12 },
     })
 
     await expect(
@@ -194,8 +194,8 @@ describe('ESI shared cooldowns', () => {
       }),
     ).resolves.toMatchObject({
       active: true,
-      retryAfterSeconds: 12,
       coordinationAvailable: true,
+      retryAfterSeconds: 12,
     })
     await expect(
       getEsiRequestCooldown({
@@ -203,10 +203,10 @@ describe('ESI shared cooldowns', () => {
         operation: 'wallet-transactions',
         principal: 'character-90000002',
       }),
-    ).resolves.toEqual({
+    ).resolves.toStrictEqual({
       active: false,
-      retryAfterSeconds: null,
       coordinationAvailable: true,
+      retryAfterSeconds: null,
     })
     expect(redis.sortedSets.size).toBe(0)
   })
@@ -218,9 +218,9 @@ describe('ESI shared cooldowns', () => {
       await import('../../src/esi-gateway/internal/cooldowns.js')
     await recordEsiResponse({
       connection: redis as never,
+      metadata: { headers: {}, retryAfterSeconds: 12, status: 429 },
       operation: 'wallet-balance',
       principal: 'character-90000001',
-      metadata: { status: 429, headers: {}, retryAfterSeconds: 12 },
     })
 
     await expect(
@@ -234,10 +234,10 @@ describe('ESI shared cooldowns', () => {
           { operation: 'status' },
         ],
       }),
-    ).resolves.toEqual([
-      { active: false, retryAfterSeconds: null, coordinationAvailable: true },
-      { active: true, retryAfterSeconds: 12, coordinationAvailable: true },
-      { active: false, retryAfterSeconds: null, coordinationAvailable: true },
+    ).resolves.toStrictEqual([
+      { active: false, coordinationAvailable: true, retryAfterSeconds: null },
+      { active: true, coordinationAvailable: true, retryAfterSeconds: 12 },
+      { active: false, coordinationAvailable: true, retryAfterSeconds: null },
     ])
     expect(mget).toHaveBeenCalledOnce()
     expect(mget.mock.calls[0]?.[0]).toBe('eve-space:v1:esi-resilience:cooldown:global')
@@ -252,9 +252,9 @@ describe('ESI shared cooldowns', () => {
       await import('../../src/esi-gateway/internal/cooldowns.js')
     await recordEsiResponse({
       connection: unavailable as never,
+      metadata: { headers: {}, retryAfterSeconds: 12, status: 429 },
       operation: 'wallet-balance',
       principal: 'character-90000001',
-      metadata: { status: 429, headers: {}, retryAfterSeconds: 12 },
     })
 
     await expect(
@@ -264,7 +264,7 @@ describe('ESI shared cooldowns', () => {
         requests: [{ operation: 'wallet-transactions', principal: 'character-90000001' }],
       }),
     ).resolves.toMatchObject([
-      { active: true, retryAfterSeconds: 12, coordinationAvailable: false },
+      { active: true, coordinationAvailable: false, retryAfterSeconds: 12 },
     ])
   })
 
@@ -282,14 +282,14 @@ describe('ESI shared cooldowns', () => {
   })
 
   test('falls back to process-local cooldowns when read coordination is unavailable', async () => {
-    const unavailable = { get: vi.fn().mockRejectedValue(new Error('unavailable')), eval: vi.fn() }
+    const unavailable = { eval: vi.fn(), get: vi.fn().mockRejectedValue(new Error('unavailable')) }
     const { getEsiRequestCooldown, recordEsiResponse } =
       await import('../../src/esi-gateway/internal/cooldowns.js')
     await recordEsiResponse({
       connection: unavailable as never,
+      metadata: { headers: {}, retryAfterSeconds: 12, status: 429 },
       operation: 'wallet-balance',
       principal: 'character-90000001',
-      metadata: { status: 429, headers: {}, retryAfterSeconds: 12 },
     })
 
     await expect(
@@ -300,8 +300,8 @@ describe('ESI shared cooldowns', () => {
       }),
     ).resolves.toMatchObject({
       active: true,
-      retryAfterSeconds: 12,
       coordinationAvailable: false,
+      retryAfterSeconds: 12,
     })
   })
 })
@@ -310,26 +310,6 @@ function memoryRedis() {
   const values = new Map<string, string>()
   const sortedSets = new Map<string, Map<string, number>>()
   return {
-    values,
-    sortedSets,
-    async get(key: string) {
-      return values.get(key) ?? null
-    },
-    async mget(...keys: string[]) {
-      return keys.map((key) => values.get(key) ?? null)
-    },
-    async incr(key: string) {
-      const next = Number(values.get(key) ?? 0) + 1
-      values.set(key, String(next))
-      return next
-    },
-    async pexpire() {
-      return 1
-    },
-    async set(key: string, value: string) {
-      values.set(key, value)
-      return 'OK'
-    },
     async eval(
       script: string,
       keyCount: number,
@@ -342,9 +322,13 @@ function memoryRedis() {
         const ttl = Number(arguments_[2])
         const members = sortedSets.get(key) ?? new Map<string, number>()
         for (const [member, expiresAt] of members) {
-          if (expiresAt <= now) members.delete(member)
+          if (expiresAt <= now) {
+            members.delete(member)
+          }
         }
-        if (members.size >= limit) return 0
+        if (members.size >= limit) {
+          return 0
+        }
         members.set(String(arguments_[3]), now + ttl)
         sortedSets.set(key, members)
         return 1
@@ -353,7 +337,9 @@ function memoryRedis() {
         const [now, owner, ttl] = arguments_
         const members = sortedSets.get(key)
         const expiresAt = members?.get(String(owner))
-        if (!expiresAt || expiresAt <= Number(now)) return 0
+        if (!expiresAt || expiresAt <= Number(now)) {
+          return 0
+        }
         members?.set(String(owner), Number(now) + Number(ttl))
         return 1
       }
@@ -363,16 +349,41 @@ function memoryRedis() {
       }
       if (script.includes("redis.call('decr'")) {
         const current = Number(values.get(key) ?? 0)
-        if (current <= 1) values.delete(key)
-        else values.set(key, String(current - 1))
+        if (current <= 1) {
+          values.delete(key)
+        } else {
+          values.set(key, String(current - 1))
+        }
         return 1
       }
       if (script.includes('candidate <= current')) {
         const candidate = String(arguments_[0])
-        if (Number(candidate) > Number(values.get(key) ?? 0)) values.set(key, candidate)
+        if (Number(candidate) > Number(values.get(key) ?? 0)) {
+          values.set(key, candidate)
+        }
         return 1
       }
       return keyCount
     },
+    async get(key: string) {
+      return values.get(key) ?? null
+    },
+    async incr(key: string) {
+      const next = Number(values.get(key) ?? 0) + 1
+      values.set(key, String(next))
+      return next
+    },
+    async mget(...keys: string[]) {
+      return keys.map((key) => values.get(key) ?? null)
+    },
+    async pexpire() {
+      return 1
+    },
+    async set(key: string, value: string) {
+      values.set(key, value)
+      return 'OK'
+    },
+    sortedSets,
+    values,
   }
 }

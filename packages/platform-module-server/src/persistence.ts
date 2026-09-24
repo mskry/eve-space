@@ -89,20 +89,25 @@ export function definePlatformPersistenceOperation<
   InputSchema,
   OutputSchema
 > {
-  if (!isPlatformPersistenceOperationId(definition.id))
+  if (!isPlatformPersistenceOperationId(definition.id)) {
     throw new Error(`Invalid persistence operation identity: ${definition.id}`)
-  if (!isPlatformExportName(definition.method))
+  }
+  if (!isPlatformExportName(definition.method)) {
     throw new Error(`Invalid persistence operation method: ${definition.method}`)
-  if (!Number.isSafeInteger(definition.revision) || definition.revision < 1)
+  }
+  if (!Number.isSafeInteger(definition.revision) || definition.revision < 1) {
     throw new Error(`Invalid persistence operation revision: ${definition.id}`)
-  if (!(platformPersistenceOperationModes as readonly string[]).includes(definition.mode))
+  }
+  if (!(platformPersistenceOperationModes as readonly string[]).includes(definition.mode)) {
     throw new Error(`Invalid persistence operation mode: ${definition.id}`)
+  }
   assertPayloadBound(definition.maximumInputBytes, definition.id, 'input')
   assertPayloadBound(definition.maximumOutputBytes, definition.id, 'output')
   return definition
 }
 
 function assertPayloadBound(value: number, operationId: string, direction: 'input' | 'output') {
-  if (!Number.isSafeInteger(value) || value < 1 || value > platformPersistencePayloadMaximumBytes)
+  if (!Number.isSafeInteger(value) || value < 1 || value > platformPersistencePayloadMaximumBytes) {
     throw new Error(`Invalid persistence operation ${direction} bound: ${operationId}`)
+  }
 }

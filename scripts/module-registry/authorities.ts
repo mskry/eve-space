@@ -7,17 +7,17 @@ import { memberAuditModulePolicy } from './member-audit-policy.js'
 
 export const coreNavigationDefaults = platformCoreNavigation.map(
   ({ ownerId, navigationId, placement, order }) => ({
-    ownerId,
     navigationId,
-    placement,
     order,
+    ownerId,
+    placement,
   }),
 )
 
 export const coreModuleValidationAuthorities = {
-  reservedModuleIds: platformReservedModuleIds,
-  navigationIds: coreNavigationDefaults.map(({ navigationId }) => navigationId),
-  esiOperationIds: platformCoreEsiOperationCatalog.operationIds,
   coreDataProductContracts: CORE_DATA_PRODUCT_CONTRACTS,
+  esiOperationIds: platformCoreEsiOperationCatalog.operationIds,
+  navigationIds: coreNavigationDefaults.map(({ navigationId }) => navigationId),
   policies: [memberAuditModulePolicy],
+  reservedModuleIds: platformReservedModuleIds,
 } as const satisfies PlatformModuleCompilationAuthorities

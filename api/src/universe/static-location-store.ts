@@ -105,8 +105,9 @@ async function selectLatestRevision(database: StaticLocationQuery, signal: Abort
     `,
     signal,
   )
-  if (!row)
+  if (!row) {
     throw new StaticLocationProjectionUnavailableError('Static location revision is missing')
+  }
   return {
     buildNumber: positiveSafeInteger(row.build_number, 'build number'),
     ingestVersion: positiveSafeInteger(row.ingest_version, 'ingest version'),
@@ -119,18 +120,20 @@ function buildSnapshot(
   systemRows: readonly StaticSolarSystemRow[],
   stationRows: readonly StaticNpcStationRow[],
 ): StaticLocationSnapshot {
-  if (systemRows.length === 0 || stationRows.length === 0)
+  if (systemRows.length === 0 || stationRows.length === 0) {
     throw new StaticLocationProjectionUnavailableError('Static location projection is incomplete')
+  }
 
   const systems = new Map<number, StaticSolarSystem>()
   for (const row of systemRows) {
     const id = positiveSafeInteger(row.solar_system_id, 'solar system ID')
     const name = nonemptyString(row.name, 'solar system name')
     const securityStatus = finiteSecurity(row.security_status)
-    if (systems.has(id))
+    if (systems.has(id)) {
       throw new StaticLocationProjectionUnavailableError(
         'Static location projection has duplicates',
       )
+    }
     systems.set(id, Object.freeze({ id, name, securityStatus }))
   }
 
@@ -138,37 +141,45 @@ function buildSnapshot(
   for (const row of stationRows) {
     const stationId = positiveSafeInteger(row.station_id, 'station ID')
     const systemId = positiveSafeInteger(row.solar_system_id, 'station solar system ID')
-    if (!systems.has(systemId))
+    if (!systems.has(systemId)) {
       throw new StaticLocationProjectionUnavailableError(
         'Static location projection contains an unknown station system',
       )
-    if (stationSystemIds.has(stationId))
+    }
+    if (stationSystemIds.has(stationId)) {
       throw new StaticLocationProjectionUnavailableError(
         'Static location projection has duplicates',
       )
+    }
     stationSystemIds.set(stationId, systemId)
   }
 
-  return Object.freeze({ revision: Object.freeze(revision), systems, stationSystemIds })
+  return Object.freeze({ revision: Object.freeze(revision), stationSystemIds, systems })
 }
 
 function positiveSafeInteger(value: unknown, label: string) {
   let parsed = Number.NaN
-  if (typeof value === 'number') parsed = value
-  else if (typeof value === 'string' && /^[1-9]\d*$/.test(value)) parsed = Number(value)
-  if (!Number.isSafeInteger(parsed) || parsed <= 0)
+  if (typeof value === 'number') {
+    parsed = value
+  } else if (typeof value === 'string' && /^[1-9]\d*$/.test(value)) {
+    parsed = Number(value)
+  }
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
     throw new StaticLocationProjectionUnavailableError(`Static location ${label} is invalid`)
+  }
   return parsed
 }
 
 function nonemptyString(value: unknown, label: string) {
-  if (typeof value !== 'string' || value.trim().length === 0)
+  if (typeof value !== 'string' || value.trim().length === 0) {
     throw new StaticLocationProjectionUnavailableError(`Static location ${label} is invalid`)
+  }
   return value
 }
 
 function finiteSecurity(value: unknown) {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < -1 || value > 1)
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < -1 || value > 1) {
     throw new StaticLocationProjectionUnavailableError('Static location security is invalid')
+  }
   return value
 }

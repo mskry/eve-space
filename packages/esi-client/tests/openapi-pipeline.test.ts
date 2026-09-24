@@ -9,8 +9,8 @@ import { resolveCompatibilityDate, stageOpenApiSnapshot } from '../scripts/gener
 
 const temporaryDirectories: string[] = [];
 const validDocument = {
+  info: { title: 'Test ESI', version: '1.0.0' },
   openapi: '3.1.0',
-  info: { version: '1.0.0', title: 'Test ESI' },
   paths: {},
 };
 
@@ -28,16 +28,16 @@ describe('compatibility date resolution', () => {
 
     await expect(
       resolveCompatibilityDate({
-        requestedDate: '2026-08-18',
         environment: { ESI_COMPATIBILITY_DATE: '2026-02-02' },
         pinnedDatePath,
+        requestedDate: '2026-08-18',
       }),
     ).resolves.toBe('2026-08-18');
   });
 
   it('rejects impossible calendar dates', async () => {
     await expect(
-      resolveCompatibilityDate({ requestedDate: '2026-02-30', environment: {} }),
+      resolveCompatibilityDate({ environment: {}, requestedDate: '2026-02-30' }),
     ).rejects.toThrow('Invalid ESI compatibility date: 2026-02-30');
   });
 });
@@ -47,18 +47,18 @@ describe('OpenAPI snapshot staging', () => {
     const temporaryRoot = await makeTemporaryDirectory();
     let request;
     const staged = await stageOpenApiSnapshot({
-      requestedDate: '2026-08-18',
-      temporaryRoot,
-      specificationUrl: 'https://example.test/openapi.json',
       fetchImplementation: async (input, init) => {
         request = { input, init };
         return new Response(JSON.stringify(validDocument));
       },
+      requestedDate: '2026-08-18',
+      specificationUrl: 'https://example.test/openapi.json',
+      temporaryRoot,
     });
 
     expect(request).toMatchObject({
-      input: 'https://example.test/openapi.json',
       init: { headers: { accept: 'application/json', 'x-compatibility-date': '2026-08-18' } },
+      input: 'https://example.test/openapi.json',
     });
     const snapshot = await readFile(staged.snapshotPath, 'utf8');
     expect(snapshot.indexOf('"info"')).toBeLessThan(snapshot.indexOf('"openapi"'));
@@ -66,7 +66,7 @@ describe('OpenAPI snapshot staging', () => {
     await expect(readFile(staged.provenancePath, 'utf8')).resolves.toContain(staged.sha256);
 
     await staged.cleanup();
-    await expect(readdir(temporaryRoot)).resolves.toEqual([]);
+    await expect(readdir(temporaryRoot)).resolves.toStrictEqual([]);
   });
 
   it('removes temporary output when retrieval fails', async () => {
@@ -74,12 +74,12 @@ describe('OpenAPI snapshot staging', () => {
 
     await expect(
       stageOpenApiSnapshot({
+        fetchImplementation: async () => new Response('unavailable', { status: 503 }),
         requestedDate: '2026-08-18',
         temporaryRoot,
-        fetchImplementation: async () => new Response('unavailable', { status: 503 }),
       }),
     ).rejects.toThrow('HTTP 503');
-    await expect(readdir(temporaryRoot)).resolves.toEqual([]);
+    await expect(readdir(temporaryRoot)).resolves.toStrictEqual([]);
   });
 });
 

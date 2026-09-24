@@ -16,28 +16,30 @@ const now = new Date('2026-08-26T12:00:00.000Z')
 const identity = {
   moduleId: 'member-audit',
   resourceId: 'trained-skills',
+  subjectId: '1404328063',
   subjectKind: 'character',
   subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
-  subjectId: '1404328063',
 } as const
 const resource = {
-  moduleId: identity.moduleId,
-  resourceId: identity.resourceId,
-  operationId: 'skills',
-  subjectKind: 'character',
-  materializationIntervalSeconds: 900,
   eligibility: { kind: 'current-owned-character' },
   implementation: {
-    operation: 'skills',
-    request: vi.fn(),
     map: vi.fn(),
     materialize: vi.fn(),
+    operation: 'skills',
+    request: vi.fn(),
   },
+  materializationIntervalSeconds: 900,
+  moduleId: identity.moduleId,
+  operationId: 'skills',
+  resourceId: identity.resourceId,
+  subjectKind: 'character',
 } as const satisfies PlatformInstalledResourceDescriptor
 
 describe('platform resource failure transitions', () => {
   test('uses the exact typed cooldown deadline', () => {
-    expect(classifyPlatformResourceFailure(new EsiQuotaError(45, now.getTime()), now)).toEqual({
+    expect(
+      classifyPlatformResourceFailure(new EsiQuotaError(45, now.getTime()), now),
+    ).toStrictEqual({
       failureClass: 'esi-cooldown',
       nextEligibleAt: new Date('2026-08-26T12:00:45.000Z'),
     })
@@ -47,14 +49,14 @@ describe('platform resource failure transitions', () => {
     expect(
       classifyPlatformResourceFailure(
         new EsiTransportError({
-          operationId: 'GetStatus',
-          reason: 'network',
-          phase: 'request',
           cause: new Error('network'),
+          operationId: 'GetStatus',
+          phase: 'request',
+          reason: 'network',
         }),
         now,
       ),
-    ).toEqual({
+    ).toStrictEqual({
       failureClass: 'esi-unavailable',
       nextEligibleAt: new Date('2026-08-26T12:05:00.000Z'),
     })
@@ -63,11 +65,11 @@ describe('platform resource failure transitions', () => {
         new EsiHttpError({ operationId: 'GetStatus', status: 503 }),
         now,
       ),
-    ).toEqual({
+    ).toStrictEqual({
       failureClass: 'esi-unavailable',
       nextEligibleAt: new Date('2026-08-26T12:05:00.000Z'),
     })
-    expect(classifyPlatformResourceFailure(new TokenRefreshUnavailableError(), now)).toEqual({
+    expect(classifyPlatformResourceFailure(new TokenRefreshUnavailableError(), now)).toStrictEqual({
       failureClass: 'esi-unavailable',
       nextEligibleAt: new Date('2026-08-26T12:05:00.000Z'),
     })
@@ -81,8 +83,10 @@ describe('platform resource failure transitions', () => {
         ),
         now,
       ),
-    ).toEqual({ failureClass: 'authorization-required', nextEligibleAt: null })
-    expect(classifyPlatformResourceFailure(new EveSsoTokenRefreshError(400, true), now)).toEqual({
+    ).toStrictEqual({ failureClass: 'authorization-required', nextEligibleAt: null })
+    expect(
+      classifyPlatformResourceFailure(new EveSsoTokenRefreshError(400, true), now),
+    ).toStrictEqual({
       failureClass: 'authorization-required',
       nextEligibleAt: null,
     })
@@ -94,7 +98,7 @@ describe('platform resource failure transitions', () => {
     [new PlatformResourcePersistenceError(new Error('database')), 'persistence-failed'],
     [new Error('other'), 'unknown'],
   ] as const)('suppresses permanent %s failures as %s', (error, failureClass) => {
-    expect(classifyPlatformResourceFailure(error, now)).toEqual({
+    expect(classifyPlatformResourceFailure(error, now)).toStrictEqual({
       failureClass,
       nextEligibleAt: null,
     })
@@ -107,7 +111,6 @@ describe('platform resource failure transitions', () => {
       identity,
       new PlatformResourceMappingError(new Error('secret response body')),
       {
-        resources: [resource],
         now,
         resolveEligibility: vi.fn().mockResolvedValue({
           status: 'eligible',
@@ -120,42 +123,36 @@ describe('platform resource failure transitions', () => {
           validatedAt: new Date('2026-08-25T12:00:00.000Z'),
           lastFailureClass: null,
         }),
+        resources: [resource],
         upsertState,
       },
     )
 
     expect(upsertState).toHaveBeenCalledWith({
       ...identity,
-      nextEligibleAt: null,
       authorizationGeneration: 7,
-      validatedAt: new Date('2026-08-25T12:00:00.000Z'),
       lastFailureClass: 'mapping-failed',
+      nextEligibleAt: null,
+      validatedAt: new Date('2026-08-25T12:00:00.000Z'),
     })
   })
 
   test('does not attach an old attempt failure to a replacement managed lifecycle', async () => {
     const upsertState = vi.fn()
     const expectedManagedAuthority = {
+      disclosureVersion: 1,
+      managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
       organizationDeploymentId: 1 as const,
       organizationVersion: 7,
-      targetUserId: '00000000-0000-4000-8000-000000000002',
-      managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
-      sectionId: 'skills',
-      disclosureVersion: 1,
       sectionActivationVersion: 1,
+      sectionId: 'skills',
+      targetUserId: '00000000-0000-4000-8000-000000000002',
     }
 
     await recordInstalledResourceCollectionFailure(identity, new Error('old attempt'), {
-      resources: [
-        {
-          ...resource,
-          sectionId: 'skills',
-          eligibility: { kind: 'current-managed-member-character' },
-        },
-      ],
-      now,
       expectedAuthorizationGeneration: 7,
       expectedManagedAuthority,
+      now,
       resolveEligibility: vi.fn().mockResolvedValue({
         status: 'eligible',
         due: true,
@@ -170,6 +167,13 @@ describe('platform resource failure transitions', () => {
           managedMemberLifecycleId: '00000000-0000-4000-8000-000000000021',
         },
       }),
+      resources: [
+        {
+          ...resource,
+          sectionId: 'skills',
+          eligibility: { kind: 'current-managed-member-character' },
+        },
+      ],
       upsertState,
     })
 
@@ -180,10 +184,9 @@ describe('platform resource failure transitions', () => {
     const upsertState = vi.fn()
 
     await recordInstalledResourceCollectionFailure(identity, new Error('late failure'), {
-      resources: [resource],
-      now,
       expectedAuthorizationGeneration: 7,
       expectedManagedAuthority: null,
+      now,
       resolveEligibility: vi.fn().mockResolvedValue({
         status: 'eligible',
         due: false,
@@ -195,6 +198,7 @@ describe('platform resource failure transitions', () => {
         lastFailureClass: null,
         managedAuthority: null,
       }),
+      resources: [resource],
       upsertState,
     })
 

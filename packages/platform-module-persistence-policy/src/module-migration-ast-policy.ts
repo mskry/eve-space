@@ -291,7 +291,9 @@ export function assertModuleMigrationAstPolicy(
     validateStatementNames(statement.kind, statement.node, schemaName)
     visitValue(statement.node, schemaName, collectLocalQualifiers(statement.node))
   }
-  if (unmatchedRoutines.size > 0) throw policyError('unsupported-statement')
+  if (unmatchedRoutines.size > 0) {
+    throw policyError('unsupported-statement')
+  }
 }
 
 export class ModuleMigrationPolicyError extends Error {
@@ -302,8 +304,12 @@ export class ModuleMigrationPolicyError extends Error {
 }
 
 function assertRootStatement(kind: string, node: PostgresAstObject) {
-  if (prohibitedStatements.has(kind)) throw policyError('prohibited-operation')
-  if (!allowedRootStatements.has(kind)) throw policyError('unsupported-statement')
+  if (prohibitedStatements.has(kind)) {
+    throw policyError('prohibited-operation')
+  }
+  if (!allowedRootStatements.has(kind)) {
+    throw policyError('unsupported-statement')
+  }
 
   assertRootStatementOptions(kind, node)
 }
@@ -313,35 +319,54 @@ function assertRootStatementOptions(kind: string, node: PostgresAstObject) {
     kind === 'CreateTableAsStmt' &&
     node.objtype !== 'OBJECT_MATVIEW' &&
     node.objtype !== 'OBJECT_TABLE'
-  )
+  ) {
     throw policyError('unsupported-statement')
-  if (kind === 'DefineStmt' && node.kind !== 'OBJECT_TYPE')
+  }
+  if (kind === 'DefineStmt' && node.kind !== 'OBJECT_TYPE') {
     throw policyError('unsupported-statement')
-  if (kind === 'AlterTableStmt' && !allowedAlterObjectTypes.has(stringValue(node.objtype)))
+  }
+  if (kind === 'AlterTableStmt' && !allowedAlterObjectTypes.has(stringValue(node.objtype))) {
     throw policyError('unsupported-statement')
-  if (kind === 'RenameStmt' && !allowedRenameObjectTypes.has(stringValue(node.renameType)))
+  }
+  if (kind === 'RenameStmt' && !allowedRenameObjectTypes.has(stringValue(node.renameType))) {
     throw policyError('unsupported-statement')
-  if (kind === 'DropStmt' && !allowedDropObjectTypes.has(stringValue(node.removeType)))
+  }
+  if (kind === 'DropStmt' && !allowedDropObjectTypes.has(stringValue(node.removeType))) {
     throw policyError('unsupported-statement')
-  if (kind === 'CommentStmt' && !allowedCommentObjectTypes.has(stringValue(node.objtype)))
+  }
+  if (kind === 'CommentStmt' && !allowedCommentObjectTypes.has(stringValue(node.objtype))) {
     throw policyError('unsupported-statement')
-  if ((kind === 'IndexStmt' || kind === 'DropStmt') && node.concurrent === true)
+  }
+  if ((kind === 'IndexStmt' || kind === 'DropStmt') && node.concurrent === true) {
     throw policyError('prohibited-operation')
+  }
 }
 
 function validateStatementNames(kind: string, node: PostgresAstObject, schemaName: string) {
-  if (kind === 'CreateTrigStmt') validateQualifiedName(node.funcname, schemaName)
-  if (kind === 'DefineStmt') validateQualifiedName(node.defnames, schemaName)
-  if (kind === 'CreateEnumStmt' || kind === 'CreateRangeStmt')
+  if (kind === 'CreateTrigStmt') {
+    validateQualifiedName(node.funcname, schemaName)
+  }
+  if (kind === 'DefineStmt') {
+    validateQualifiedName(node.defnames, schemaName)
+  }
+  if (kind === 'CreateEnumStmt' || kind === 'CreateRangeStmt') {
     validateQualifiedName(node.typeName, schemaName)
-  if (kind === 'CreateDomainStmt') validateQualifiedName(node.domainname, schemaName)
-  if (kind === 'AlterDomainStmt' || kind === 'AlterEnumStmt' || kind === 'AlterTypeStmt')
+  }
+  if (kind === 'CreateDomainStmt') {
+    validateQualifiedName(node.domainname, schemaName)
+  }
+  if (kind === 'AlterDomainStmt' || kind === 'AlterEnumStmt' || kind === 'AlterTypeStmt') {
     validateQualifiedName(node.typeName, schemaName)
-  if (kind === 'DropStmt')
+  }
+  if (kind === 'DropStmt') {
     validateObjectList(node.objects, schemaName, stringValue(node.removeType))
-  if (kind === 'CommentStmt') validateObjectName(node.object, schemaName, stringValue(node.objtype))
-  if (kind === 'RenameStmt')
+  }
+  if (kind === 'CommentStmt') {
+    validateObjectName(node.object, schemaName, stringValue(node.objtype))
+  }
+  if (kind === 'RenameStmt') {
     validateObjectName(node.object, schemaName, stringValue(node.renameType))
+  }
 }
 
 function visitValue(
@@ -352,14 +377,21 @@ function visitValue(
   allowRoutineReturn = false,
 ) {
   if (Array.isArray(value)) {
-    for (const item of value)
+    for (const item of value) {
       visitValue(item, schemaName, localQualifiers, allowExcluded, allowRoutineReturn)
+    }
     return
   }
-  if (!isAstObject(value)) return
+  if (!isAstObject(value)) {
+    return
+  }
 
-  if (isRangeVarPayload(value)) validateRangeVar(value, schemaName)
-  if (isTypeNamePayload(value)) validateQualifiedName(value.names, schemaName, true)
+  if (isRangeVarPayload(value)) {
+    validateRangeVar(value, schemaName)
+  }
+  if (isTypeNamePayload(value)) {
+    validateQualifiedName(value.names, schemaName, true)
+  }
 
   for (const [kind, node] of Object.entries(value)) {
     validateAstNode(kind, node, schemaName, localQualifiers, allowExcluded, allowRoutineReturn)
@@ -374,7 +406,9 @@ function visitValue(
   }
 
   for (const [field, child] of Object.entries(value)) {
-    if (/tablespace/i.test(field) && child) throw policyError('prohibited-operation')
+    if (/tablespace/i.test(field) && child) {
+      throw policyError('prohibited-operation')
+    }
   }
 }
 
@@ -393,7 +427,9 @@ function validateAstNode(
   allowExcluded: boolean,
   allowRoutineReturn: boolean,
 ) {
-  if (node === undefined) return
+  if (node === undefined) {
+    return
+  }
   assertSupportedAstNodeKind(kind, node, allowRoutineReturn)
   validateRangeVarField(kind, node, schemaName)
   validateAstNodePayload(kind, node, schemaName, localQualifiers, allowExcluded)
@@ -405,11 +441,14 @@ function assertSupportedAstNodeKind(
   allowRoutineReturn: boolean,
 ) {
   if (/^[A-Z]/.test(kind) && !allowedAstNodeKinds.has(kind)) {
-    if (isNestedStatementPayload(kind, node)) assertNestedStatement(kind, node, allowRoutineReturn)
+    if (isNestedStatementPayload(kind, node)) {
+      assertNestedStatement(kind, node, allowRoutineReturn)
+    }
     throw policyError('unsupported-statement')
   }
-  if (isNestedStatementPayload(kind, node) && kind !== 'ReplicaIdentityStmt')
+  if (isNestedStatementPayload(kind, node) && kind !== 'ReplicaIdentityStmt') {
     assertNestedStatement(kind, node, allowRoutineReturn)
+  }
 }
 
 function isNestedStatementPayload(kind: string, node: PostgresAstValue): node is PostgresAstObject {
@@ -417,8 +456,12 @@ function isNestedStatementPayload(kind: string, node: PostgresAstValue): node is
 }
 
 function validateRangeVarField(kind: string, node: PostgresAstValue, schemaName: string) {
-  if (!rangeVarFields.has(kind)) return
-  if (!isAstObject(node)) throw policyError('unsupported-statement')
+  if (!rangeVarFields.has(kind)) {
+    return
+  }
+  if (!isAstObject(node)) {
+    throw policyError('unsupported-statement')
+  }
   validateRangeVar(node, schemaName)
 }
 
@@ -430,7 +473,9 @@ function validateAstNodePayload(
   allowExcluded: boolean,
 ) {
   const validator = getAstNodeValidator(kind)
-  if (validator) validateAstObject(node, schemaName, localQualifiers, allowExcluded, validator)
+  if (validator) {
+    validateAstObject(node, schemaName, localQualifiers, allowExcluded, validator)
+  }
 }
 
 function getAstNodeValidator(kind: string): AstNodeValidator | undefined {
@@ -474,7 +519,9 @@ function validateAstObject(
   allowExcluded: boolean,
   validator: AstNodeValidator,
 ) {
-  if (isAstObject(value)) validator(value, schemaName, localQualifiers, allowExcluded)
+  if (isAstObject(value)) {
+    validator(value, schemaName, localQualifiers, allowExcluded)
+  }
 }
 
 function validateTypeName(node: PostgresAstObject, schemaName: string) {
@@ -499,7 +546,9 @@ function validateIndexOrPartitionElement(node: PostgresAstObject, schemaName: st
 }
 
 function validateConstraint(node: PostgresAstObject, schemaName: string) {
-  if (node.contype === 'CONSTR_EXCLUSION') validateExclusionOperators(node.exclusions, schemaName)
+  if (node.contype === 'CONSTR_EXCLUSION') {
+    validateExclusionOperators(node.exclusions, schemaName)
+  }
 }
 
 function validateObjectWithArguments(node: PostgresAstObject, schemaName: string) {
@@ -511,8 +560,12 @@ function validateCollation(node: PostgresAstObject, schemaName: string) {
 }
 
 function validateDefinitionElement(node: PostgresAstObject, schemaName: string) {
-  if (node.defname === 'tablespace') throw policyError('prohibited-operation')
-  if (node.defname === 'owned_by') validateObjectName(node.arg, schemaName, 'OBJECT_COLUMN')
+  if (node.defname === 'tablespace') {
+    throw policyError('prohibited-operation')
+  }
+  if (node.defname === 'owned_by') {
+    validateObjectName(node.arg, schemaName, 'OBJECT_COLUMN')
+  }
 }
 
 function collectLocalQualifiers(value: PostgresAstValue | undefined) {
@@ -523,30 +576,49 @@ function collectLocalQualifiers(value: PostgresAstValue | undefined) {
 
 function collect(value: PostgresAstValue | undefined, qualifiers: Set<string>) {
   if (Array.isArray(value)) {
-    for (const item of value) collect(item, qualifiers)
+    for (const item of value) {
+      collect(item, qualifiers)
+    }
     return
   }
-  if (!isAstObject(value)) return
+  if (!isAstObject(value)) {
+    return
+  }
 
   const alias = aliasName(value.alias)
-  if (alias) qualifiers.add(normalizeIdentifier(alias))
-  if (typeof value.relname === 'string' && !alias)
+  if (alias) {
+    qualifiers.add(normalizeIdentifier(alias))
+  }
+  if (typeof value.relname === 'string' && !alias) {
     qualifiers.add(normalizeIdentifier(value.relname))
-  if (typeof value.ctename === 'string') qualifiers.add(normalizeIdentifier(value.ctename))
+  }
+  if (typeof value.ctename === 'string') {
+    qualifiers.add(normalizeIdentifier(value.ctename))
+  }
 
-  for (const child of Object.values(value)) collect(child, qualifiers)
+  for (const child of Object.values(value)) {
+    collect(child, qualifiers)
+  }
 }
 
 function assertNestedStatement(kind: string, node: PostgresAstObject, allowRoutineReturn: boolean) {
   if (kind === 'ReturnStmt') {
-    if (!allowRoutineReturn) throw policyError('unsupported-statement')
+    if (!allowRoutineReturn) {
+      throw policyError('unsupported-statement')
+    }
     return
   }
-  if (prohibitedStatements.has(kind)) throw policyError('prohibited-operation')
-  if (!allowedNestedStatements.has(kind)) throw policyError('unsupported-statement')
+  if (prohibitedStatements.has(kind)) {
+    throw policyError('prohibited-operation')
+  }
+  if (!allowedNestedStatements.has(kind)) {
+    throw policyError('unsupported-statement')
+  }
   if (kind === 'SelectStmt' && isAstObject(node.intoClause)) {
     const relation = node.intoClause.rel
-    if (!isWrappedNode(relation, 'RangeVar')) throw policyError('unsupported-statement')
+    if (!isWrappedNode(relation, 'RangeVar')) {
+      throw policyError('unsupported-statement')
+    }
   }
 }
 
@@ -555,7 +627,9 @@ function declaredPersistenceRoutines(
 ) {
   const routines = new Map<string, ModuleMigrationPersistenceRoutineDeclaration>()
   for (const declaration of declarations) {
-    if (routines.has(declaration.routineName)) throw policyError('unsupported-statement')
+    if (routines.has(declaration.routineName)) {
+      throw policyError('unsupported-statement')
+    }
     routines.set(declaration.routineName, declaration)
   }
   return routines
@@ -567,61 +641,84 @@ function validatePersistenceRoutine(
   declarations: ReadonlyMap<string, ModuleMigrationPersistenceRoutineDeclaration>,
 ) {
   const allowedFields = new Set(['funcname', 'options', 'parameters', 'returnType', 'sql_body'])
-  if (Object.keys(node).some((field) => !allowedFields.has(field)))
+  if (Object.keys(node).some((field) => !allowedFields.has(field))) {
     throw policyError('unsupported-statement')
+  }
 
   const names = stringList(node.funcname)
-  if (!names) throw policyError('unsupported-statement')
+  if (!names) {
+    throw policyError('unsupported-statement')
+  }
   validateNameParts(names, schemaName)
-  if (names.length !== 2 || names[0] !== schemaName) throw policyError('unsupported-statement')
+  if (names.length !== 2 || names[0] !== schemaName) {
+    throw policyError('unsupported-statement')
+  }
   const routineName = names[1]!
   const declaration = declarations.get(routineName)
-  if (!declaration) throw policyError('prohibited-operation')
+  if (!declaration) {
+    throw policyError('prohibited-operation')
+  }
 
   validatePersistenceRoutineParameters(node.parameters)
   validateJsonbType(node.returnType)
   validatePersistenceRoutineOptions(node.options, declaration.mode)
-  if (!isAstObject(node.sql_body)) throw policyError('unsupported-statement')
-  if (!isWrappedNode(node.sql_body, 'List') && !isWrappedNode(node.sql_body, 'ReturnStmt'))
+  if (!isAstObject(node.sql_body)) {
     throw policyError('unsupported-statement')
+  }
+  if (!isWrappedNode(node.sql_body, 'List') && !isWrappedNode(node.sql_body, 'ReturnStmt')) {
+    throw policyError('unsupported-statement')
+  }
   return declaration
 }
 
 function validatePersistenceRoutineParameters(value: PostgresAstValue | undefined) {
-  if (!Array.isArray(value) || value.length !== 1) throw policyError('unsupported-statement')
-  const parameter = value[0]
-  if (!isWrappedNode(parameter, 'FunctionParameter')) throw policyError('unsupported-statement')
-  const fields = Object.keys(parameter.FunctionParameter)
-  if (fields.some((field) => !['argType', 'mode', 'name'].includes(field)))
+  if (!Array.isArray(value) || value.length !== 1) {
     throw policyError('unsupported-statement')
+  }
+  const parameter = value[0]
+  if (!isWrappedNode(parameter, 'FunctionParameter')) {
+    throw policyError('unsupported-statement')
+  }
+  const fields = Object.keys(parameter.FunctionParameter)
+  if (fields.some((field) => !['argType', 'mode', 'name'].includes(field))) {
+    throw policyError('unsupported-statement')
+  }
   if (
     typeof parameter.FunctionParameter.name !== 'string' ||
     (parameter.FunctionParameter.mode !== 'FUNC_PARAM_DEFAULT' &&
       parameter.FunctionParameter.mode !== 'FUNC_PARAM_IN')
-  )
+  ) {
     throw policyError('unsupported-statement')
+  }
   validateJsonbType(parameter.FunctionParameter.argType)
 }
 
 function validateJsonbType(value: PostgresAstValue | undefined) {
-  if (!isAstObject(value)) throw policyError('unsupported-statement')
+  if (!isAstObject(value)) {
+    throw policyError('unsupported-statement')
+  }
   const fields = Object.keys(value).filter((field) => field !== 'location')
   if (
     fields.some((field) => !['names', 'typemod'].includes(field)) ||
     value.typemod !== -1 ||
     stringList(value.names)?.join('.') !== 'jsonb'
-  )
+  ) {
     throw policyError('unsupported-statement')
+  }
 }
 
 function validatePersistenceRoutineOptions(
   value: PostgresAstValue | undefined,
   mode: ModuleMigrationPersistenceRoutineDeclaration['mode'],
 ) {
-  if (!Array.isArray(value)) throw policyError('unsupported-statement')
+  if (!Array.isArray(value)) {
+    throw policyError('unsupported-statement')
+  }
   const options = new Map<string, string>()
   for (const option of value) {
-    if (!isWrappedNode(option, 'DefElem')) throw policyError('unsupported-statement')
+    if (!isWrappedNode(option, 'DefElem')) {
+      throw policyError('unsupported-statement')
+    }
     const definition = option.DefElem
     if (
       Object.keys(definition).some(
@@ -632,8 +729,9 @@ function validatePersistenceRoutineOptions(
       !isWrappedNode(definition.arg, 'String') ||
       typeof definition.arg.String.sval !== 'string' ||
       options.has(definition.defname)
-    )
+    ) {
       throw policyError('unsupported-statement')
+    }
     options.set(definition.defname, definition.arg.String.sval)
   }
   const expectedVolatility = mode === 'read' ? 'stable' : 'volatile'
@@ -642,8 +740,9 @@ function validatePersistenceRoutineOptions(
     options.get('language') !== 'sql' ||
     options.get('volatility') !== expectedVolatility ||
     options.get('parallel') !== 'unsafe'
-  )
+  ) {
     throw policyError('unsupported-statement')
+  }
 }
 
 function validateRangeVar(node: PostgresAstObject, schemaName: string) {
@@ -652,17 +751,25 @@ function validateRangeVar(node: PostgresAstObject, schemaName: string) {
     (node.relpersistence !== 'p' && node.relpersistence !== 'u' && node.relpersistence !== 't') ||
     (node.catalogname !== undefined && typeof node.catalogname !== 'string') ||
     (node.schemaname !== undefined && typeof node.schemaname !== 'string')
-  )
+  ) {
     throw policyError('unsupported-statement')
-  if (node.catalogname !== undefined) throw policyError('cross-schema')
-  if (typeof node.schemaname === 'string' && normalizeIdentifier(node.schemaname) !== schemaName)
+  }
+  if (node.catalogname !== undefined) {
     throw policyError('cross-schema')
-  if (node.relpersistence === 't') throw policyError('prohibited-operation')
+  }
+  if (typeof node.schemaname === 'string' && normalizeIdentifier(node.schemaname) !== schemaName) {
+    throw policyError('cross-schema')
+  }
+  if (node.relpersistence === 't') {
+    throw policyError('prohibited-operation')
+  }
 }
 
 function validateFunction(node: PostgresAstObject, schemaName: string) {
   const names = stringList(node.funcname)
-  if (!names) throw policyError('unsupported-statement')
+  if (!names) {
+    throw policyError('unsupported-statement')
+  }
   validateNameParts(names, schemaName)
   const functionName = normalizeIdentifier(names.at(-1)!)
   if (
@@ -670,8 +777,9 @@ function validateFunction(node: PostgresAstObject, schemaName: string) {
     functionName.startsWith('lo_') ||
     functionName.startsWith('pg_advisory_') ||
     functionName.startsWith('pg_try_advisory_')
-  )
+  ) {
     throw policyError('prohibited-operation')
+  }
 }
 
 function validateColumnReference(
@@ -681,30 +789,46 @@ function validateColumnReference(
   allowExcluded: boolean,
 ) {
   const names = columnReferenceParts(node.fields)
-  if (!names) throw policyError('unsupported-statement')
-  if (names.length <= 1) return
+  if (!names) {
+    throw policyError('unsupported-statement')
+  }
+  if (names.length <= 1) {
+    return
+  }
   if (names.length >= 3) {
-    if (normalizeIdentifier(names[0]!) !== schemaName) throw policyError('cross-schema')
+    if (normalizeIdentifier(names[0]!) !== schemaName) {
+      throw policyError('cross-schema')
+    }
     return
   }
 
   const qualifier = names[0]!
-  if (qualifier === 'excluded' && allowExcluded) return
-  if (!localQualifiers.has(normalizeIdentifier(qualifier))) throw policyError('cross-schema')
+  if (qualifier === 'excluded' && allowExcluded) {
+    return
+  }
+  if (!localQualifiers.has(normalizeIdentifier(qualifier))) {
+    throw policyError('cross-schema')
+  }
 }
 
 function validateAlterTableCommand(node: PostgresAstObject) {
-  if (prohibitedAlterTableCommands.has(stringValue(node.subtype)))
+  if (prohibitedAlterTableCommands.has(stringValue(node.subtype))) {
     throw policyError('prohibited-operation')
+  }
 }
 
 function validateExclusionOperators(value: PostgresAstValue | undefined, schemaName: string) {
-  if (!Array.isArray(value)) throw policyError('unsupported-statement')
+  if (!Array.isArray(value)) {
+    throw policyError('unsupported-statement')
+  }
   for (const exclusion of value) {
-    if (!isWrappedNode(exclusion, 'List') || !Array.isArray(exclusion.List.items))
+    if (!isWrappedNode(exclusion, 'List') || !Array.isArray(exclusion.List.items)) {
       throw policyError('unsupported-statement')
+    }
     const operator = exclusion.List.items[1]
-    if (!isWrappedNode(operator, 'List')) throw policyError('unsupported-statement')
+    if (!isWrappedNode(operator, 'List')) {
+      throw policyError('unsupported-statement')
+    }
     validateQualifiedName(operator.List.items, schemaName)
   }
 }
@@ -714,8 +838,12 @@ function validateObjectList(
   schemaName: string,
   objectType: string,
 ) {
-  if (!Array.isArray(value)) throw policyError('unsupported-statement')
-  for (const object of value) validateObjectName(object, schemaName, objectType)
+  if (!Array.isArray(value)) {
+    throw policyError('unsupported-statement')
+  }
+  for (const object of value) {
+    validateObjectName(object, schemaName, objectType)
+  }
 }
 
 function validateObjectName(
@@ -742,20 +870,29 @@ function validateObjectName(
       list.length !== 2 ||
       !isWrappedNode(domain, 'TypeName') ||
       !isWrappedNode(constraint, 'String')
-    )
+    ) {
       throw policyError('unsupported-statement')
+    }
     validateQualifiedName(domain.TypeName.names, schemaName)
     return
   }
   const names = stringList(list)
   if (!names) {
-    if (value === undefined) return
+    if (value === undefined) {
+      return
+    }
     throw policyError('unsupported-statement')
   }
   const unqualifiedLength = relationMemberObjectTypes.has(objectType) ? 2 : 1
-  if (names.length <= unqualifiedLength) return
-  if (names.length !== unqualifiedLength + 1) throw policyError('cross-schema')
-  if (normalizeIdentifier(names[0]!) !== schemaName) throw policyError('cross-schema')
+  if (names.length <= unqualifiedLength) {
+    return
+  }
+  if (names.length !== unqualifiedLength + 1) {
+    throw policyError('cross-schema')
+  }
+  if (normalizeIdentifier(names[0]!) !== schemaName) {
+    throw policyError('cross-schema')
+  }
 }
 
 function validateQualifiedName(
@@ -764,12 +901,16 @@ function validateQualifiedName(
   allowParserCatalog = false,
 ) {
   const names = stringList(value)
-  if (!names) throw policyError('unsupported-statement')
+  if (!names) {
+    throw policyError('unsupported-statement')
+  }
   validateNameParts(names, schemaName, allowParserCatalog)
 }
 
 function validateQualifiedNameIfPresent(value: PostgresAstValue | undefined, schemaName: string) {
-  if (value !== undefined) validateQualifiedName(value, schemaName)
+  if (value !== undefined) {
+    validateQualifiedName(value, schemaName)
+  }
 }
 
 function validateNameParts(
@@ -777,25 +918,36 @@ function validateNameParts(
   schemaName: string,
   allowParserCatalog = false,
 ) {
-  if (names.length <= 1) return
-  if (names.length !== 2) throw policyError('cross-schema')
-  const qualifier = normalizeIdentifier(names[0]!)
-  if (qualifier !== schemaName && !(allowParserCatalog && qualifier === 'pg_catalog'))
+  if (names.length <= 1) {
+    return
+  }
+  if (names.length !== 2) {
     throw policyError('cross-schema')
+  }
+  const qualifier = normalizeIdentifier(names[0]!)
+  if (qualifier !== schemaName && !(allowParserCatalog && qualifier === 'pg_catalog')) {
+    throw policyError('cross-schema')
+  }
 }
 
 function stringList(value: PostgresAstValue | undefined) {
-  if (!Array.isArray(value)) return undefined
+  if (!Array.isArray(value)) {
+    return
+  }
   const strings: string[] = []
   for (const item of value) {
-    if (!isWrappedNode(item, 'String') || typeof item.String.sval !== 'string') return undefined
+    if (!isWrappedNode(item, 'String') || typeof item.String.sval !== 'string') {
+      return
+    }
     strings.push(item.String.sval)
   }
   return strings
 }
 
 function columnReferenceParts(value: PostgresAstValue | undefined) {
-  if (!Array.isArray(value)) return undefined
+  if (!Array.isArray(value)) {
+    return
+  }
   const parts: string[] = []
   for (const item of value) {
     if (isWrappedNode(item, 'String') && typeof item.String.sval === 'string') {
@@ -806,13 +958,15 @@ function columnReferenceParts(value: PostgresAstValue | undefined) {
       parts.push('*')
       continue
     }
-    return undefined
+    return
   }
   return parts
 }
 
 function aliasName(value: PostgresAstValue | undefined) {
-  if (!isAstObject(value)) return undefined
+  if (!isAstObject(value)) {
+    return
+  }
   const alias = isWrappedNode(value, 'Alias') ? value.Alias : value
   return typeof alias.aliasname === 'string' ? alias.aliasname : undefined
 }

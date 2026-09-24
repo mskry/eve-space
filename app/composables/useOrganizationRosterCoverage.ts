@@ -33,17 +33,22 @@ export function useOrganizationRosterCoverage(apiClient: ApiClient) {
       coverageQuery.asyncStatus.value === 'loading',
   )
   const errorMessage = computed(() => {
-    if (authUnavailable.value) return 'Session verification is unavailable.'
+    if (authUnavailable.value) {
+      return 'Session verification is unavailable.'
+    }
     const error = contextQuery.error.value ?? coverageQuery.error.value
     return error instanceof Error ? error.message : ''
   })
 
   async function initialize() {
     const [authenticated, setup] = await Promise.all([initializeAuth(), setupQuery.refresh()])
-    if (!authenticated || setup.data?.required !== false) return
+    if (!authenticated || setup.data?.required !== false) {
+      return
+    }
     const context = await contextQuery.refresh()
-    if (context.data?.memberAccess && context.data.capabilities.viewRosterCoverage)
+    if (context.data?.memberAccess && context.data.capabilities.viewRosterCoverage) {
       await coverageQuery.refresh()
+    }
   }
 
   return { coverage, errorMessage, initialize, loading }

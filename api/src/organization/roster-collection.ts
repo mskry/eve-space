@@ -29,26 +29,26 @@ export async function isCorporationSourceExecutionCurrent(
 ) {
   const [source] = await database
     .select({
-      sourceId: organizationCorporationSources.sourceId,
+      authorizationGeneration: organizationCorporationSources.authorizationGeneration,
       characterId: organizationCorporationSources.characterId,
       corporationId: organizationCorporationSources.corporationId,
-      sourceUserId: organizationCorporationSources.sourceUserId,
-      sourceSubjectLifecycleId: organizationCorporationSources.sourceSubjectLifecycleId,
-      authorizationGeneration: organizationCorporationSources.authorizationGeneration,
-      observedCorporationId: organizationCorporationSources.observedCorporationId,
-      observedAllianceId: organizationCorporationSources.observedAllianceId,
-      requiredScope: organizationCorporationSources.requiredScope,
+      currentAllianceId: characters.allianceId,
+      currentAuthorizationGeneration: eveTokens.tokenVersion,
+      currentCharacterLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+      currentCorporationId: characters.corporationId,
+      currentUserId: characters.userId,
       directorRolePresent: organizationCorporationSources.directorRolePresent,
-      status: organizationCorporationSources.status,
       freshUntil: organizationCorporationSources.freshUntil,
       graceUntil: organizationCorporationSources.graceUntil,
       invalidatedAt: organizationCorporationSources.invalidatedAt,
-      currentUserId: characters.userId,
-      currentCorporationId: characters.corporationId,
-      currentAllianceId: characters.allianceId,
-      currentCharacterLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
-      currentAuthorizationGeneration: eveTokens.tokenVersion,
+      observedAllianceId: organizationCorporationSources.observedAllianceId,
+      observedCorporationId: organizationCorporationSources.observedCorporationId,
+      requiredScope: organizationCorporationSources.requiredScope,
       scopes: eveTokens.scopes,
+      sourceId: organizationCorporationSources.sourceId,
+      sourceSubjectLifecycleId: organizationCorporationSources.sourceSubjectLifecycleId,
+      sourceUserId: organizationCorporationSources.sourceUserId,
+      status: organizationCorporationSources.status,
     })
     .from(organizationCorporationSources)
     .innerJoin(
@@ -108,13 +108,16 @@ export async function isCorporationSourceExecutionCurrent(
     source.currentAuthorizationGeneration !== input.authorizationGeneration ||
     !source.scopes.includes(source.requiredScope) ||
     source.directorRolePresent !== true
-  )
+  ) {
     return false
+  }
   const [corporationLifecycle] = await database
     .select({ sourceId: platformSubjectLifecycles.corporationSourceId })
     .from(platformSubjectLifecycles)
     .where(eq(platformSubjectLifecycles.subjectLifecycleId, input.corporationSubjectLifecycleId))
-  if (corporationLifecycle?.sourceId !== source.sourceId) return false
+  if (corporationLifecycle?.sourceId !== source.sourceId) {
+    return false
+  }
   return resolveAuthorityEvidenceState(source, input.now ?? new Date()) === 'fresh'
 }
 
@@ -184,21 +187,21 @@ export async function materializeCorporationRoster(
 ) {
   const [source] = await transaction
     .select({
-      sourceId: organizationCorporationSources.sourceId,
+      affiliationCheckedAt: characters.affiliationCheckedAt,
+      affiliationResolutionState: characters.affiliationResolutionState,
       characterId: organizationCorporationSources.characterId,
       corporationId: characters.corporationId,
-      affiliationResolutionState: characters.affiliationResolutionState,
-      affiliationCheckedAt: characters.affiliationCheckedAt,
+      currentSubjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
       nextAffiliationCheck: characters.nextAffiliationCheck,
-      tokenVersion: eveTokens.tokenVersion,
       scopes: eveTokens.scopes,
-      sourceSubjectLifecycleId: organizationCorporationSources.sourceSubjectLifecycleId,
       sourceAuthorizationGeneration: organizationCorporationSources.authorizationGeneration,
-      sourceStatus: organizationCorporationSources.status,
       sourceFreshUntil: organizationCorporationSources.freshUntil,
       sourceGraceUntil: organizationCorporationSources.graceUntil,
+      sourceId: organizationCorporationSources.sourceId,
       sourceInvalidatedAt: organizationCorporationSources.invalidatedAt,
-      currentSubjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+      sourceStatus: organizationCorporationSources.status,
+      sourceSubjectLifecycleId: organizationCorporationSources.sourceSubjectLifecycleId,
+      tokenVersion: eveTokens.tokenVersion,
     })
     .from(organizationCorporationSources)
     .innerJoin(characters, eq(characters.characterId, organizationCorporationSources.characterId))
@@ -242,16 +245,17 @@ export async function materializeCorporationRoster(
     source.sourceSubjectLifecycleId !== source.currentSubjectLifecycleId ||
     resolveAuthorityEvidenceState(
       {
-        status: source.sourceStatus,
         freshUntil: source.sourceFreshUntil,
         graceUntil: source.sourceGraceUntil,
         invalidatedAt: source.sourceInvalidatedAt,
+        status: source.sourceStatus,
       },
       new Date(),
     ) !== 'fresh' ||
     !source.scopes.includes(corporationMembershipScope)
-  )
+  ) {
     return { outcome: 'obsolete' as const }
+  }
 
   await transaction
     .delete(organizationCorporationRosterObservations)
@@ -265,17 +269,18 @@ export async function materializeCorporationRoster(
         eq(organizationCorporationRosterObservations.corporationId, input.corporationId),
       ),
     )
-  if (input.characterIds.length > 0)
+  if (input.characterIds.length > 0) {
     await transaction.insert(organizationCorporationRosterObservations).values(
       input.characterIds.map((characterId) => ({
-        deploymentId: 1,
-        organizationVersion: input.organizationVersion,
-        corporationId: input.corporationId,
-        characterId,
-        sourceId: input.sourceId,
         authorizationGeneration: input.tokenVersion,
+        characterId,
+        corporationId: input.corporationId,
+        deploymentId: 1,
         observedAt: input.validatedAt,
+        organizationVersion: input.organizationVersion,
+        sourceId: input.sourceId,
       })),
     )
-  return { outcome: 'refreshed' as const, characterIds: input.characterIds }
+  }
+  return { characterIds: input.characterIds, outcome: 'refreshed' as const }
 }

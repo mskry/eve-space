@@ -7,19 +7,19 @@ import { queryServer } from '../support/query-server'
 
 const mountedWrappers: { unmount: () => void }[] = []
 const implant = {
-  typeId: 10208,
-  name: 'Memory Augmentation - Basic',
-  description: 'A neural implant that improves memory.',
-  group: { id: 300, name: 'Cyberimplant' },
   category: { id: 20, name: 'Implant' },
+  description: 'A neural implant that improves memory.',
   detail: {
-    kind: 'implant' as const,
-    slot: 1,
     bonuses: [
       { attribute: 'memory' as const, value: 3 },
       { attribute: 'perception' as const, value: -1 },
     ],
+    kind: 'implant' as const,
+    slot: 1,
   },
+  group: { id: 300, name: 'Cyberimplant' },
+  name: 'Memory Augmentation - Basic',
+  typeId: 10_208,
 }
 
 async function settle() {
@@ -33,7 +33,9 @@ afterAll(() => queryServer.close())
 
 afterEach(async () => {
   queryServer.resetHandlers()
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   await settle()
   document.body.replaceChildren()
 })

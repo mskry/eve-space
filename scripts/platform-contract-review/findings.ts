@@ -26,15 +26,18 @@ export function classifyPlatformContract(
     (item) => item.severe && item.confidence >= AUTO_REPORT_CONFIDENCE,
   )
   let verdict: JevReviewVerdict = 'pass'
-  if (reportable) verdict = 'report'
-  else if (concerns.length > 0) verdict = 'review'
+  if (reportable) {
+    verdict = 'report'
+  } else if (concerns.length > 0) {
+    verdict = 'review'
+  }
   return {
-    verdict,
-    location: `${evidence.manifestFile}:${evidence.manifestLine} (${evidence.id})`,
     details: implementationDetails(evidence),
+    location: `${evidence.manifestFile}:${evidence.manifestLine} (${evidence.id})`,
     reason: reasonFor(verdict, concerns),
     routeId: evidence.route.id,
     signals: judgment,
+    verdict,
   }
 }
 
@@ -54,26 +57,30 @@ function concern(
   severeChoices: readonly string[],
   reviewChoices: readonly string[] = [],
 ) {
-  if (severeChoices.includes(judgment.choice))
+  if (severeChoices.includes(judgment.choice)) {
     return { label, ...judgment, severe: true } satisfies Concern
+  }
   if (
     reviewChoices.includes(judgment.choice) ||
     judgment.choice === 'unclear' ||
     judgment.confidence < MINIMUM_PASS_CONFIDENCE
-  )
+  ) {
     return { label, ...judgment, severe: false } satisfies Concern
+  }
   return null
 }
 
 function implementationDetails(evidence: PlatformContractEvidence) {
-  if (!evidence.implementation.file || !evidence.implementation.line)
+  if (!evidence.implementation.file || !evidence.implementation.line) {
     return ['implementation: not found']
+  }
   return [`implementation: ${evidence.implementation.file}:${evidence.implementation.line}`]
 }
 
 function reasonFor(verdict: JevReviewVerdict, concerns: readonly Concern[]) {
-  if (verdict === 'pass')
+  if (verdict === 'pass') {
     return 'Purpose, audience, permission, target, and sensitivity are semantically aligned.'
+  }
   return concerns
     .map(({ label, choice, confidence }) => `${label}=${choice} (${confidence.toFixed(2)})`)
     .join('; ')

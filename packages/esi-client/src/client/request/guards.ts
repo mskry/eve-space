@@ -32,8 +32,8 @@ export function requestError(
   code: string,
 ): EsiRequestValidationError {
   return new EsiRequestValidationError({
-    operationId,
     issues: [{ path, message, code }],
+    operationId,
   });
 }
 
@@ -65,26 +65,36 @@ export function isRecord(value: unknown): value is Readonly<Record<string, unkno
 }
 
 export function isPlainRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  if (!isRecord(value)) return false;
+  if (!isRecord(value)) {
+    return false;
+  }
   const prototype = Object.getPrototypeOf(value) as unknown;
   return prototype === Object.prototype || prototype === null;
 }
 
 export function validatedArray(value: unknown): readonly unknown[] {
-  if (!Array.isArray(value)) throw new TypeError('Expected a previously validated parameter array');
+  if (!Array.isArray(value)) {
+    throw new TypeError('Expected a previously validated parameter array');
+  }
   return value;
 }
 
 export function describeValue(value: unknown): string {
-  if (typeof value === 'string') return value;
-  if (value === null) return 'null';
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (value === null) {
+    return 'null';
+  }
   return typeof value;
 }
 
 export function hasControlCharacter(value: string): boolean {
   for (const character of value) {
     const codePoint = character.codePointAt(0) ?? 0;
-    if (codePoint < 0x20 || codePoint === 0x7f) return true;
+    if (codePoint < 0x20 || codePoint === 0x7f) {
+      return true;
+    }
   }
   return false;
 }
@@ -92,7 +102,9 @@ export function hasControlCharacter(value: string): boolean {
 export function hasUnpairedSurrogate(value: string): boolean {
   for (const character of value) {
     const codePoint = character.codePointAt(0) ?? 0;
-    if (codePoint >= 0xd800 && codePoint <= 0xdfff) return true;
+    if (codePoint >= 0xd8_00 && codePoint <= 0xdf_ff) {
+      return true;
+    }
   }
   return false;
 }

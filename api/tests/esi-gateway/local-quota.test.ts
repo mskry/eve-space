@@ -10,80 +10,80 @@ describe('process-local ESI quota fallback', () => {
   test('records the strongest global, operation, and declared-group cooldowns', () => {
     const state = localQuotaState()
     recordLocalEsiCooldowns({
+      globalRetryAt: 2000,
+      now: 1000,
       operation: 'wallet-balance',
+      operationRetryAt: 3000,
       principal: 'character-90000001',
-      globalRetryAt: 2_000,
-      operationRetryAt: 3_000,
       state,
-      now: 1_000,
     })
     recordLocalEsiCooldowns({
+      globalRetryAt: 1500,
+      now: 1000,
       operation: 'wallet-balance',
+      operationRetryAt: 2500,
       principal: 'character-90000001',
-      globalRetryAt: 1_500,
-      operationRetryAt: 2_500,
       state,
-      now: 1_000,
     })
 
-    expect(getLocalEsiCooldownUntil('wallet-balance', 'character-90000001', 1_000, state)).toBe(
-      3_000,
+    expect(getLocalEsiCooldownUntil('wallet-balance', 'character-90000001', 1000, state)).toBe(3000)
+    expect(getLocalEsiCooldownUntil('wallet-transactions', 'character-90000001', 1000, state)).toBe(
+      3000,
     )
-    expect(
-      getLocalEsiCooldownUntil('wallet-transactions', 'character-90000001', 1_000, state),
-    ).toBe(3_000)
-    expect(getLocalEsiCooldownUntil('status', 'public', 1_000, state)).toBe(2_000)
-    expect(getLocalEsiCooldownUntil('wallet-balance', 'character-90000001', 3_000, state)).toBe(0)
+    expect(getLocalEsiCooldownUntil('status', 'public', 1000, state)).toBe(2000)
+    expect(getLocalEsiCooldownUntil('wallet-balance', 'character-90000001', 3000, state)).toBe(0)
     expect(state.operationCooldowns.size).toBe(0)
     expect(state.groupCooldowns.size).toBe(0)
   })
 
   test('bounds retained operation and group cooldown identities', () => {
     const state = localQuotaState()
-    for (let index = 0; index <= 1_000; index += 1) {
+    for (let index = 0; index <= 1000; index += 1) {
       recordLocalEsiCooldowns({
+        now: 1000,
         operation: 'wallet-balance',
+        operationRetryAt: 2000,
         principal: `character-${index}`,
-        operationRetryAt: 2_000,
         state,
-        now: 1_000,
       })
     }
 
-    expect(state.operationCooldowns.size).toBe(1_000)
-    expect(state.groupCooldowns.size).toBe(1_000)
+    expect(state.operationCooldowns.size).toBe(1000)
+    expect(state.groupCooldowns.size).toBe(1000)
     expect(state.operationCooldowns.has('wallet-balance:character-0')).toBe(false)
     expect(state.groupCooldowns.has('char-wallet:character-0')).toBe(false)
   })
 
   test('limits concurrency, polls to the deadline, and releases permits', async () => {
     const state = localQuotaState()
-    let now = 1_000
+    let now = 1000
     const wait = vi.fn(async (milliseconds: number) => {
       now += milliseconds
     })
     const options = {
+      deadline: 1051,
       operation: 'status' as const,
       principal: 'public',
       sharedConcurrency: 4,
-      deadline: 1_051,
       state,
       timing: { now: () => now, wait },
     }
 
     const first = await acquireLocalEsiRequestPermit(options)
     const second = await acquireLocalEsiRequestPermit(options)
-    await expect(acquireLocalEsiRequestPermit(options)).resolves.toEqual({
+    await expect(acquireLocalEsiRequestPermit(options)).resolves.toStrictEqual({
       kind: 'timeout',
       retryAfterSeconds: 1,
     })
-    expect(wait.mock.calls).toEqual([
+    expect(wait.mock.calls).toStrictEqual([
       [50, undefined],
       [1, undefined],
     ])
     expect(first.kind).toBe('acquired')
     expect(second.kind).toBe('acquired')
-    if (first.kind !== 'acquired' || second.kind !== 'acquired') return
+    if (first.kind !== 'acquired' || second.kind !== 'acquired') {
+      return
+    }
 
     await expect(first.permit.renew()).resolves.toBe(true)
     await first.permit.release()
@@ -94,27 +94,27 @@ describe('process-local ESI quota fallback', () => {
 
   test('reports active cooldowns and rejects an already-aborted request', async () => {
     const state = localQuotaState()
-    state.operationCooldowns.set('status:public', 2_001)
+    state.operationCooldowns.set('status:public', 2001)
 
     await expect(
       acquireLocalEsiRequestPermit({
+        deadline: 3000,
         operation: 'status',
         principal: 'public',
         sharedConcurrency: 0,
-        deadline: 3_000,
         state,
-        timing: { now: () => 1_000, wait: vi.fn() },
+        timing: { now: () => 1000, wait: vi.fn() },
       }),
-    ).resolves.toEqual({ kind: 'cooldown', retryAfterSeconds: 2 })
+    ).resolves.toStrictEqual({ kind: 'cooldown', retryAfterSeconds: 2 })
 
     const controller = new AbortController()
     controller.abort()
     await expect(
       acquireLocalEsiRequestPermit({
+        deadline: 3000,
         operation: 'status',
         principal: 'public',
         sharedConcurrency: 1,
-        deadline: 3_000,
         signal: controller.signal,
         state,
       }),
@@ -124,9 +124,9 @@ describe('process-local ESI quota fallback', () => {
 
 function localQuotaState(): RuntimeLocalQuotaStatePort {
   return {
-    operationCooldowns: new Map(),
+    globalCooldownUntil: 0,
     groupCooldowns: new Map(),
     inFlight: new Map(),
-    globalCooldownUntil: 0,
+    operationCooldowns: new Map(),
   }
 }

@@ -8,7 +8,7 @@ import {
 
 describe('authentication module boundaries', () => {
   test('declares every focused authentication module', () => {
-    expect(declaredAuthModules).toEqual([
+    expect(declaredAuthModules).toStrictEqual([
       'character-disclosure-store',
       'character-lifecycle',
       'character-lock',
@@ -93,17 +93,17 @@ describe('authentication module boundaries', () => {
     expect(
       authImportViolations(
         authSources({
-          security:
-            "import { randomBytes } from 'node:crypto'\nimport { getSsoConfig } from '../env.js'",
-          'character-lock':
-            "import { sql } from 'drizzle-orm'\nimport type { DatabaseTransaction } from '../db/client.js'",
-          sso: "import { jwtVerify } from 'jose'\nimport { z } from 'zod'\nimport { env } from '../env.js'\nimport './sso-errors.js'",
           'character-lifecycle':
             "import './security.js'\nimport './session-store.js'\nimport './sso.js'\nimport '../domain-events/store.js'\nimport '../organization/compliance.js'",
+          'character-lock':
+            "import { sql } from 'drizzle-orm'\nimport type { DatabaseTransaction } from '../db/client.js'",
           routes: "import { Hono } from 'hono'\nimport './character-lifecycle.js'",
+          security:
+            "import { randomBytes } from 'node:crypto'\nimport { getSsoConfig } from '../env.js'",
+          sso: "import { jwtVerify } from 'jose'\nimport { z } from 'zod'\nimport { env } from '../env.js'\nimport './sso-errors.js'",
         }),
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   test('reports nested modules even when their basename duplicates a declaration', () => {
@@ -122,7 +122,7 @@ describe('authentication module boundaries', () => {
         { path: 'api/src/auth/security.ts', source: '' },
         { path: 'api/src/auth/security.ts', source: '' },
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'Auth module security has duplicate source ownership: api/src/auth/security.ts, api/src/auth/security.ts',
     ])
   })

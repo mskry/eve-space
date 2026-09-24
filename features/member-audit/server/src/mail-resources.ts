@@ -36,9 +36,9 @@ const recipientSchema = z.object({
 const mailHeaderSchema = z.object({
   from: z.number().int().positive().optional(),
   is_read: z.boolean().optional(),
-  labels: z.array(z.number().int()).max(1_000).optional(),
+  labels: z.array(z.number().int()).max(1000).optional(),
   mail_id: z.number().int().positive(),
-  recipients: z.array(recipientSchema).max(1_000).optional(),
+  recipients: z.array(recipientSchema).max(1000).optional(),
   subject: z.string().max(100_000).optional(),
   timestamp: z.iso.datetime({ offset: true }),
 })
@@ -46,9 +46,9 @@ const mailHeadersSchema = z.array(mailHeaderSchema).max(mailPageSize)
 const mailDetailSchema = z.object({
   body: z.string().optional(),
   from: z.number().int().positive().optional(),
-  labels: z.array(z.number().int()).max(1_000).optional(),
+  labels: z.array(z.number().int()).max(1000).optional(),
   read: z.boolean().optional(),
-  recipients: z.array(recipientSchema).max(1_000).optional(),
+  recipients: z.array(recipientSchema).max(1000).optional(),
   subject: z.string().max(100_000).optional(),
   timestamp: z.iso.datetime({ offset: true }).optional(),
 })
@@ -90,8 +90,6 @@ type MailResource<
 >
 
 export const mailHeadersResource: MailResource<MailHeaderProtocol, MailHeaderObservation> = {
-  mode: 'bounded-collection',
-  operation: 'mail-headers',
   async collect(context) {
     const collection = await startEvidenceCollection(
       { sectionId: 'mail', resourceId: 'mail-headers' },
@@ -108,8 +106,9 @@ export const mailHeadersResource: MailResource<MailHeaderProtocol, MailHeaderObs
     if (
       headers.length === mailPageSize &&
       (nextLastMailId === null || nextLastMailId === checkpoint.lastMailId)
-    )
+    ) {
       throw new Error('Mail header continuation did not advance')
+    }
     const complete = headers.length < mailPageSize
     return {
       complete,
@@ -126,17 +125,17 @@ export const mailHeadersResource: MailResource<MailHeaderProtocol, MailHeaderObs
       },
     }
   },
-  materialize(context) {
-    return materializeEvidenceObservation(context)
-  },
   maintain(context) {
     return maintainEvidence('mail-headers', context, false)
   },
+  materialize(context) {
+    return materializeEvidenceObservation(context)
+  },
+  mode: 'bounded-collection',
+  operation: 'mail-headers',
 }
 
 export const mailDetailsResource: MailResource<MailDetailProtocol, MailDetailObservation> = {
-  mode: 'bounded-collection',
-  operation: 'mail-headers',
   async collect(context) {
     const collection = await startEvidenceCollection(
       { sectionId: 'mail', resourceId: 'mail-details' },
@@ -149,8 +148,9 @@ export const mailDetailsResource: MailResource<MailDetailProtocol, MailDetailObs
     })
     const headers = mailHeadersSchema.parse(headerResult.data)
     const detailLimit = Math.max(0, context.requestBudget - 3)
-    if (detailLimit === 0 && headers.length > 0)
+    if (detailLimit === 0 && headers.length > 0) {
       throw new Error('Mail detail request budget cannot advance collection')
+    }
     const selected = headers.slice(0, detailLimit)
     const details = await Promise.all(
       selected.map(async (header) => {
@@ -171,8 +171,9 @@ export const mailDetailsResource: MailResource<MailDetailProtocol, MailDetailObs
     const consumedPage = selected.length >= headers.length
     const complete = consumedPage && headers.length < mailPageSize
     const nextLastMailId = selected.at(-1)?.mail_id ?? null
-    if (!complete && (nextLastMailId === null || nextLastMailId === checkpoint.lastMailId))
+    if (!complete && (nextLastMailId === null || nextLastMailId === checkpoint.lastMailId)) {
       throw new Error('Mail detail continuation did not advance')
+    }
     return {
       complete,
       data: {
@@ -189,12 +190,14 @@ export const mailDetailsResource: MailResource<MailDetailProtocol, MailDetailObs
       },
     }
   },
-  materialize(context) {
-    return materializeEvidenceObservation(context)
-  },
   maintain(context) {
     return maintainEvidence('mail-contents', context, false)
   },
+  materialize(context) {
+    return materializeEvidenceObservation(context)
+  },
+  mode: 'bounded-collection',
+  operation: 'mail-headers',
 }
 
 function headerRecord(
@@ -203,10 +206,10 @@ function headerRecord(
   validatedAt: string,
 ): StagedEvidenceRecord<'mail-header'> {
   return {
+    evidence: mailEvidence(header.mail_id, header, parties, header.is_read ?? null, null),
     recordKind: 'mail-header',
     sourceId: String(header.mail_id),
     sourceTimestamp: header.timestamp,
-    evidence: mailEvidence(header.mail_id, header, parties, header.is_read ?? null, null),
     validatedAt,
   }
 }
@@ -218,9 +221,6 @@ function detailRecord(
   validatedAt: string,
 ): StagedEvidenceRecord<'mail-content'> {
   return {
-    recordKind: 'mail-content',
-    sourceId: String(mailId),
-    sourceTimestamp: detail.timestamp ?? null,
     evidence: mailEvidence(
       mailId,
       detail,
@@ -228,6 +228,9 @@ function detailRecord(
       detail.read ?? null,
       sanitizeMailBody(detail.body)?.slice(0, 100_000) ?? null,
     ),
+    recordKind: 'mail-content',
+    sourceId: String(mailId),
+    sourceTimestamp: detail.timestamp ?? null,
     validatedAt,
   }
 }
@@ -248,18 +251,18 @@ function mailEvidence(
   const sender = projectMailSender(mail.from, parties)
   const recipients = projectMailRecipients(mail.recipients, parties)
   return {
-    mailId,
-    senderId: sender?.id ?? null,
-    senderType: sender?.type ?? null,
-    senderName: sender?.name ?? null,
-    recipientIds: recipients.map((recipient) => recipient.id),
-    recipientTypes: recipients.map((recipient) => recipient.type),
-    recipientNames: recipients.map((recipient) => recipient.name),
-    subject: mail.subject ?? null,
-    sentAt: mail.timestamp ?? null,
-    labelIds: [...(mail.labels ?? [])],
-    isRead,
     body,
+    isRead,
+    labelIds: [...(mail.labels ?? [])],
+    mailId,
+    recipientIds: recipients.map((recipient) => recipient.id),
+    recipientNames: recipients.map((recipient) => recipient.name),
+    recipientTypes: recipients.map((recipient) => recipient.type),
+    senderId: sender?.id ?? null,
+    senderName: sender?.name ?? null,
+    senderType: sender?.type ?? null,
+    sentAt: mail.timestamp ?? null,
+    subject: mail.subject ?? null,
   }
 }
 
@@ -273,10 +276,15 @@ async function resolveParties(
   const universeIds = new Set<number>()
   let needsMailingLists = false
   for (const record of records) {
-    if (record.from !== undefined) universeIds.add(record.from)
+    if (record.from !== undefined) {
+      universeIds.add(record.from)
+    }
     for (const recipient of record.recipients ?? []) {
-      if (recipient.recipient_type === 'mailing_list') needsMailingLists = true
-      else universeIds.add(recipient.recipient_id)
+      if (recipient.recipient_type === 'mailing_list') {
+        needsMailingLists = true
+      } else {
+        universeIds.add(recipient.recipient_id)
+      }
     }
   }
   const [universeNames, listsResult] = await Promise.all([
@@ -288,9 +296,9 @@ async function resolveParties(
         }),
   ])
   return {
-    universeNames,
     mailingListNames: new Map(
       mailingListsSchema.parse(listsResult.data).map((list) => [list.mailing_list_id, list.name]),
     ),
+    universeNames,
   }
 }

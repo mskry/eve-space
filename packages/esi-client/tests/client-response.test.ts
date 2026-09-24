@@ -31,8 +31,15 @@ describe('ESI response metadata', () => {
 
     const metadata = extractEsiResponseMetadata(200, headers);
 
-    expect(metadata).toEqual({
-      status: 200,
+    expect(metadata).toStrictEqual({
+      cache: {
+        cacheControl: 'public, max-age=300',
+        etag: '"revision-3"',
+        expires: 'Wed, 19 Aug 2026 12:00:00 GMT',
+        lastModified: 'Tue, 18 Aug 2026 10:00:00 GMT',
+        maxAgeSeconds: 300,
+      },
+      errorLimit: { remaining: 98.5, reset: 12 },
       headers: {
         'cache-control': 'public, max-age=300',
         etag: '"revision-3"',
@@ -52,48 +59,41 @@ describe('ESI response metadata', () => {
         'x-ratelimit-remaining': '148',
         'x-ratelimit-used': '2',
       },
-      requestId: 'request-42',
       pagination: {
-        pages: 7,
         cursor: 'current-cursor',
         nextCursor: 'next-cursor',
+        pages: 7,
         previousCursor: 'previous-cursor',
       },
-      cache: {
-        etag: '"revision-3"',
-        expires: 'Wed, 19 Aug 2026 12:00:00 GMT',
-        lastModified: 'Tue, 18 Aug 2026 10:00:00 GMT',
-        cacheControl: 'public, max-age=300',
-        maxAgeSeconds: 300,
-      },
-      errorLimit: { remaining: 98.5, reset: 12 },
+      requestId: 'request-42',
       retryAfterSeconds: 4,
       routeRateLimit: {
         group: 'char-wallet',
         limit: 150,
-        used: 2,
         remaining: 148,
+        used: 2,
       },
+      status: 200,
     });
   });
 
   it('keeps malformed numeric headers raw without exposing normalized numbers', () => {
     const headers = new Headers({
-      'X-Pages': '2.5',
+      'Retry-After': '-1',
       'X-Esi-Error-Limit-Remain': 'many',
       'X-Esi-Error-Limit-Reset': '1e999',
-      'Retry-After': '-1',
+      'X-Pages': '2.5',
       'X-Ratelimit-Limit': '1e999',
-      'X-Ratelimit-Used': '2.5',
       'X-Ratelimit-Remaining': '999999999999999999999999',
+      'X-Ratelimit-Used': '2.5',
     });
 
     const metadata = extractEsiResponseMetadata(429, headers);
 
-    expect(metadata.headers).toEqual({
+    expect(metadata.headers).toStrictEqual({
+      'retry-after': '-1',
       'x-esi-error-limit-remain': 'many',
       'x-esi-error-limit-reset': '1e999',
-      'retry-after': '-1',
       'x-pages': '2.5',
       'x-ratelimit-limit': '1e999',
       'x-ratelimit-remaining': '999999999999999999999999',
@@ -117,17 +117,17 @@ describe('ESI response metadata', () => {
       new Headers({ 'Cache-Control': cacheControl }),
     );
 
-    expect(metadata.cache).toEqual({ cacheControl });
+    expect(metadata.cache).toStrictEqual({ cacheControl });
   });
 
   it('creates a deeply immutable serializable envelope without freezing data', () => {
     const data = { mutable: true };
     const metadata = {
-      status: 200,
+      cache: { etag: '"revision"' },
       headers: { etag: '"revision"', 'x-pages': '3' },
       pagination: { pages: 3 },
-      cache: { etag: '"revision"' },
       routeRateLimit: { group: 'status', limit: 600 },
+      status: 200,
     };
     const response = createEsiResponse(data, metadata);
 
@@ -146,14 +146,14 @@ describe('ESI response metadata', () => {
     expect(() => {
       (response.meta.headers as Record<string, string>)['x-pages'] = '99';
     }).toThrow(TypeError);
-    expect(JSON.parse(JSON.stringify(response))).toEqual({
+    expect(JSON.parse(JSON.stringify(response))).toStrictEqual({
       data: { mutable: true },
       meta: {
-        status: 200,
+        cache: { etag: '"revision"' },
         headers: { etag: '"revision"', 'x-pages': '3' },
         pagination: { pages: 3 },
-        cache: { etag: '"revision"' },
         routeRateLimit: { group: 'status', limit: 600 },
+        status: 200,
       },
     });
 
@@ -163,33 +163,33 @@ describe('ESI response metadata', () => {
 
   it('returns a no-content envelope with undefined data and makes no pagination requests', async () => {
     const fetch = vi.fn<typeof globalThis.fetch>(
-      async () => new Response(null, { status: 204, headers: { 'X-Pages': '5' } }),
+      async () => new Response(null, { headers: { 'X-Pages': '5' }, status: 204 }),
     );
 
     const response = await executeOperation(
       new EsiClientConfiguration({ fetch }),
-      operation({ successResponses: [{ status: 204, body: 'none' }] }),
+      operation({ successResponses: [{ body: 'none', status: 204 }] }),
       {},
     );
 
-    expect(response).toEqual({
+    expect(response).toStrictEqual({
       data: undefined,
-      meta: { status: 204, headers: { 'x-pages': '5' }, pagination: { pages: 5 } },
+      meta: { headers: { 'x-pages': '5' }, pagination: { pages: 5 }, status: 204 },
     });
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it('uses the same extracted metadata for HTTP errors', async () => {
     const headers = new Headers({
-      'X-Esi-Request-Id': 'failed-request',
-      'X-Pages': '4',
       ETag: '"failed-revision"',
       'X-Esi-Error-Limit-Remain': '17',
       'X-Esi-Error-Limit-Reset': '8',
+      'X-Esi-Request-Id': 'failed-request',
+      'X-Pages': '4',
     });
     const expected = extractEsiResponseMetadata(429, headers);
     const fetch = vi.fn<typeof globalThis.fetch>(async () =>
-      Response.json({ error: 'limited' }, { status: 429, headers }),
+      Response.json({ error: 'limited' }, { headers, status: 429 }),
     );
 
     let thrown: unknown;
@@ -206,26 +206,26 @@ describe('ESI response metadata', () => {
 });
 
 const passthroughSchema: OperationSchema = {
-  safeParse: (value: unknown) => ({ success: true, data: value }),
+  safeParse: (value: unknown) => ({ data: value, success: true }),
 };
 
 function operation(
   overrides: Partial<OperationExecutionDescriptor> = {},
 ): OperationExecutionDescriptor {
   return {
-    operationId: 'get_items',
-    method: 'GET',
-    path: '/items',
-    parameters: [],
-    requestBody: null,
     authentication: null,
+    method: 'GET',
+    operationId: 'get_items',
+    parameters: [],
+    path: '/items',
     protocol: {
-      cache: { responseHeaders: [], extensions: {} },
+      cache: { extensions: {}, responseHeaders: [] },
       conditionalRequestValidators: [],
+      maximumBatchSize: null,
       rateLimit: { kind: 'legacy-only' },
       requestArrayLimits: [],
-      maximumBatchSize: null,
     },
+    requestBody: null,
     successResponses: [{ status: 200, body: 'json', schema: passthroughSchema }],
     ...overrides,
   };

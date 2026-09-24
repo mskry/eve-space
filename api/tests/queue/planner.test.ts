@@ -4,11 +4,11 @@ const mocks = vi.hoisted(() => ({
   affiliation: vi.fn(),
   corporationSource: vi.fn(),
   derivedAuthority: vi.fn(),
+  maintenance: vi.fn(),
   ownerEvidence: vi.fn(),
   repairCollection: vi.fn(),
-  maintenance: vi.fn(),
-  resources: vi.fn(),
   repairCompliance: vi.fn(),
+  resources: vi.fn(),
 }))
 
 vi.mock('../../src/queue/affiliation-planner.js', () => ({
@@ -40,7 +40,7 @@ test('runs installed resource maintenance from the production planner', async ()
   const signal = new AbortController().signal
   const producer = { enqueue: vi.fn().mockResolvedValue({ status: 'accepted' }) }
 
-  await runQueuePlanner({ producer, outcomes: {} as never, signal } as never)
+  await runQueuePlanner({ outcomes: {} as never, producer, signal } as never)
 
   expect(mocks.derivedAuthority).toHaveBeenCalledWith(expect.objectContaining({ signal }))
   expect(mocks.corporationSource).toHaveBeenCalledWith(expect.objectContaining({ signal }))

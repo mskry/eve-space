@@ -23,7 +23,7 @@ describe.each(['enabled', 'disabled'] as const)('%s module composition probe', (
     ).default
     const capabilities = {
       coreData: {},
-      logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+      logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
       persistence: {},
     }
     const readConformanceSnapshot = vi.fn()
@@ -37,8 +37,8 @@ describe.each(['enabled', 'disabled'] as const)('%s module composition probe', (
       persistence: { readConformanceSnapshot },
     })
     server.conformanceStatusResource.request({
-      kind: 'character',
       characterId: 7,
+      kind: 'character',
       lifecycleId: 'lifecycle-7',
     })
     expect(nuxtModule).toBeDefined()

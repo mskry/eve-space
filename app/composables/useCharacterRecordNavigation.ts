@@ -41,30 +41,6 @@ export function useCharacterRecordNavigation({
   const breadcrumbLabel = computed(() => activeEntry.value?.label ?? '')
 
   const prefetchers: Readonly<Record<string, () => void>> = {
-    'core-character-skills': () => {
-      const id = characterId.value ?? 0
-      const access = protectedQueryAccess()
-      void Promise.all([
-        prefetchProtectedQuery(
-          queryCache,
-          characterSkillsQuery({ apiClient, characterId: id }),
-          access,
-          characterId.value,
-        ),
-        prefetchProtectedQuery(
-          queryCache,
-          characterAttributesQuery({ apiClient, characterId: id }),
-          access,
-          characterId.value,
-        ),
-        prefetchProtectedQuery(
-          queryCache,
-          characterSkillQueueQuery({ apiClient, characterId: id }),
-          access,
-          characterId.value,
-        ),
-      ])
-    },
     'core-character-clones': () => {
       const id = characterId.value ?? 0
       const access = protectedQueryAccess()
@@ -139,19 +115,45 @@ export function useCharacterRecordNavigation({
         ),
       ])
     },
+    'core-character-skills': () => {
+      const id = characterId.value ?? 0
+      const access = protectedQueryAccess()
+      void Promise.all([
+        prefetchProtectedQuery(
+          queryCache,
+          characterSkillsQuery({ apiClient, characterId: id }),
+          access,
+          characterId.value,
+        ),
+        prefetchProtectedQuery(
+          queryCache,
+          characterAttributesQuery({ apiClient, characterId: id }),
+          access,
+          characterId.value,
+        ),
+        prefetchProtectedQuery(
+          queryCache,
+          characterSkillQueueQuery({ apiClient, characterId: id }),
+          access,
+          characterId.value,
+        ),
+      ])
+    },
   }
 
   function protectedQueryAccess() {
     return {
-      isClient: import.meta.client,
       authenticated: authenticated.value,
       authenticationReady: authenticationReady.value,
+      isClient: import.meta.client,
       ownsCharacter: ownsCharacter.value,
     }
   }
 
   function prefetchNavigation(entry: RecordSectionNavigationEntry) {
-    if (!ownsCharacter.value) return
+    if (!ownsCharacter.value) {
+      return
+    }
     prefetchers[entry.id]?.()
   }
 

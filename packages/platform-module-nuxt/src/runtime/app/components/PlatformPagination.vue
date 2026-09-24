@@ -20,7 +20,9 @@ const emit = defineEmits<{
 }>()
 
 function changePage(page: number) {
-  if (props.disabled || page < 1 || page > props.totalPages) return
+  if (props.disabled || page < 1 || page > props.totalPages) {
+    return
+  }
   emit('change-page', page)
 }
 </script>

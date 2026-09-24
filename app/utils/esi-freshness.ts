@@ -18,10 +18,14 @@ export function getStaleEsiResult(value: unknown): StaleEsiResult | undefined {
 }
 
 export function getStaleEsiMetadata(value: unknown): StaleEsiMetadata | undefined {
-  if (!value || typeof value !== 'object') return undefined
+  if (!value || typeof value !== 'object') {
+    return undefined
+  }
 
   const record = value as Record<string, unknown>
-  if (record.stale !== true) return undefined
+  if (record.stale !== true) {
+    return undefined
+  }
 
   const validatedAt = normalizedTimestamp(record.validatedAt)
   const retryAt = normalizedTimestamp(record.retryAt)
@@ -36,7 +40,9 @@ export function getStaleEsiMetadata(value: unknown): StaleEsiMetadata | undefine
 }
 
 export function hasUnavailableOverviewSection(value: unknown): boolean {
-  if (!value || typeof value !== 'object') return false
+  if (!value || typeof value !== 'object') {
+    return false
+  }
 
   const record = value as Record<string, unknown>
   return ['location', 'ship', 'skills'].some((key) => {
@@ -51,7 +57,9 @@ export function hasUnavailableOverviewSection(value: unknown): boolean {
 }
 
 function normalizedTimestamp(value: unknown) {
-  if (typeof value !== 'string') return undefined
+  if (typeof value !== 'string') {
+    return
+  }
   const timestamp = Date.parse(value)
   return Number.isFinite(timestamp) ? value : undefined
 }

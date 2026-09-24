@@ -7,19 +7,19 @@ import {
 const identity = {
   moduleId: 'test-feature',
   resourceId: 'wallet-balance',
+  subjectId: '1404328063',
   subjectKind: 'character',
   subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
-  subjectId: '1404328063',
 } as const
 
 const resource = {
-  moduleId: identity.moduleId,
-  resourceId: identity.resourceId,
-  subjectKind: 'character',
-  operationId: 'wallet-balance',
-  materializationIntervalSeconds: 900,
   eligibility: { kind: 'current-owned-character' },
   implementation: () => Promise.resolve({}),
+  materializationIntervalSeconds: 900,
+  moduleId: identity.moduleId,
+  operationId: 'wallet-balance',
+  resourceId: identity.resourceId,
+  subjectKind: 'character',
 } as const
 
 describe('platform collection status', () => {
@@ -30,14 +30,14 @@ describe('platform collection status', () => {
     const validatedAt = new Date('2026-08-26T10:00:00.000Z')
     await expect(
       getInstalledResourceCollectionStatus(identity, {
-        resources: [resource],
         resolveEligibility: vi.fn().mockResolvedValue(eligible(due, { validatedAt })),
+        resources: [resource],
       }),
-    ).resolves.toEqual({
-      status,
+    ).resolves.toStrictEqual({
       authorizationGeneration: 4,
-      validatedAt: validatedAt.toISOString(),
       lastFailureClass: null,
+      status,
+      validatedAt: validatedAt.toISOString(),
     })
   })
 
@@ -45,27 +45,27 @@ describe('platform collection status', () => {
     const resolveEligibility = vi.fn().mockResolvedValue(eligible())
     await expect(
       getInstalledResourceCollectionStatus(identity, {
-        resources: [resource],
         resolveEligibility,
+        resources: [resource],
       }),
-    ).resolves.toEqual({
-      status: 'never-collected',
+    ).resolves.toStrictEqual({
       authorizationGeneration: 4,
-      validatedAt: null,
       lastFailureClass: null,
+      status: 'never-collected',
+      validatedAt: null,
     })
     await expect(
       getInstalledResourceCollectionStatus(identity, {
-        resources: [resource],
         resolveEligibility: vi
           .fn()
           .mockResolvedValue(eligible(true, { lastFailureClass: 'esi-unavailable' })),
+        resources: [resource],
       }),
-    ).resolves.toEqual({
-      status: 'unavailable',
+    ).resolves.toStrictEqual({
       authorizationGeneration: 4,
-      validatedAt: null,
       lastFailureClass: 'esi-unavailable',
+      status: 'unavailable',
+      validatedAt: null,
     })
   })
 
@@ -73,23 +73,22 @@ describe('platform collection status', () => {
     const validatedAt = new Date('2026-08-26T10:00:00.000Z')
     await expect(
       getInstalledResourceCollectionStatus(identity, {
-        resources: [resource],
         resolveEligibility: vi
           .fn()
           .mockResolvedValue(eligible(false, { validatedAt, lastFailureClass: 'esi-unavailable' })),
+        resources: [resource],
       }),
-    ).resolves.toEqual({
-      status: 'stale',
+    ).resolves.toStrictEqual({
       authorizationGeneration: 4,
-      validatedAt: validatedAt.toISOString(),
       lastFailureClass: 'esi-unavailable',
+      status: 'stale',
+      validatedAt: validatedAt.toISOString(),
     })
   })
 
   test('reports a safe character-bound reauthorization path', async () => {
     await expect(
       getInstalledResourceCollectionStatus(identity, {
-        resources: [resource],
         resolveEligibility: vi.fn().mockResolvedValue({
           status: 'authorization-required',
           authorizationGeneration: 4,
@@ -100,14 +99,15 @@ describe('platform collection status', () => {
           validatedAt: null,
           lastFailureClass: null,
         }),
+        resources: [resource],
       }),
-    ).resolves.toEqual({
-      status: 'authorization-required',
+    ).resolves.toStrictEqual({
       authorizationGeneration: 4,
-      validatedAt: null,
       lastFailureClass: 'authorization-required',
-      requiredScope: 'esi-wallet.read_character_wallet.v1',
       reauthorizationPath: '/auth/eve/reauthorize/1404328063',
+      requiredScope: 'esi-wallet.read_character_wallet.v1',
+      status: 'authorization-required',
+      validatedAt: null,
     })
   })
 
@@ -115,7 +115,6 @@ describe('platform collection status', () => {
     const validatedAt = new Date('2026-08-26T10:00:00.000Z')
     await expect(
       getInstalledResourceCollectionStatus(identity, {
-        resources: [resource],
         resolveEligibility: vi.fn().mockResolvedValue({
           status: 'disabled',
           authorizationGeneration: 4,
@@ -125,12 +124,13 @@ describe('platform collection status', () => {
           validatedAt,
           lastFailureClass: null,
         }),
+        resources: [resource],
       }),
-    ).resolves.toEqual({
-      status: 'unavailable',
+    ).resolves.toStrictEqual({
       authorizationGeneration: 4,
-      validatedAt: validatedAt.toISOString(),
       lastFailureClass: null,
+      status: 'unavailable',
+      validatedAt: validatedAt.toISOString(),
     })
   })
 
@@ -149,8 +149,8 @@ describe('platform collection status', () => {
 
     expect(upsertState).toHaveBeenCalledTimes(2)
     for (const [write] of upsertState.mock.calls) {
-      expect(write.validatedAt).toEqual(new Date(validatedAt))
-      expect(write.nextEligibleAt).toEqual(new Date('2026-08-26T10:15:00.000Z'))
+      expect(write.validatedAt).toStrictEqual(new Date(validatedAt))
+      expect(write.nextEligibleAt).toStrictEqual(new Date('2026-08-26T10:15:00.000Z'))
       expect(write.lastFailureClass).toBeNull()
     }
   })
@@ -164,14 +164,14 @@ function eligible(
   }> = {},
 ) {
   return {
-    status: 'eligible' as const,
+    authorizationGeneration: 4,
     due,
     dueReason: (due ? 'elapsed' : 'future') as 'elapsed' | 'future',
-    schedulingKey: new Date('2026-08-26T10:15:00.000Z'),
-    authorizationGeneration: 4,
-    nextEligibleAt: null,
-    validatedAt: null,
     lastFailureClass: null,
+    nextEligibleAt: null,
+    schedulingKey: new Date('2026-08-26T10:15:00.000Z'),
+    status: 'eligible' as const,
+    validatedAt: null,
     ...values,
   }
 }

@@ -49,8 +49,9 @@ const uniqueLabelIds = z
   .array(positiveSafeInteger)
   .max(25)
   .superRefine((labels, context) => {
-    if (new Set(labels).size !== labels.length)
+    if (new Set(labels).size !== labels.length) {
       context.addIssue({ code: 'custom', message: 'Label IDs must be unique.' })
+    }
   })
 
 const mailIdParams = characterIdParams.extend({ mailId: positiveIntegerString('Mail ID') })
@@ -62,8 +63,9 @@ const labelsQuery = z
   ])
   .transform((labels) => (Array.isArray(labels) ? labels : [labels]))
   .superRefine((labels, context) => {
-    if (new Set(labels).size !== labels.length)
+    if (new Set(labels).size !== labels.length) {
       context.addIssue({ code: 'custom', message: 'Label IDs must be unique.' })
+    }
   })
   .transform((labels) => labels.toSorted((left, right) => left - right))
 const mailQuery = z
@@ -74,6 +76,8 @@ const mailQuery = z
   .strict()
 const sendMailBody = z
   .object({
+    approvedCost: z.number().int().nonnegative().default(0),
+    body: z.string().max(10_000),
     recipients: z
       .array(
         z
@@ -85,21 +89,19 @@ const sendMailBody = z
       )
       .min(1)
       .max(50),
-    subject: z.string().max(1_000),
-    body: z.string().max(10_000),
-    approvedCost: z.number().int().nonnegative().default(0),
+    subject: z.string().max(1000),
   })
   .strict()
 const createLabelBody = z
   .object({
-    name: z.string().min(1).max(40),
     color: z.enum(mailLabelColors).optional(),
+    name: z.string().min(1).max(40),
   })
   .strict()
 const updateMailBody = z
   .object({
-    read: z.boolean().optional(),
     labels: uniqueLabelIds.optional(),
+    read: z.boolean().optional(),
   })
   .strict()
   .refine((value) => value.read !== undefined || value.labels !== undefined, {
@@ -117,8 +119,9 @@ const cspaChargeBody = z
       .min(1)
       .max(maximumCspaRecipients)
       .superRefine((characterIds, context) => {
-        if (new Set(characterIds).size !== characterIds.length)
+        if (new Set(characterIds).size !== characterIds.length) {
           context.addIssue({ code: 'custom', message: 'Character IDs must be unique.' })
+        }
       }),
   })
   .strict()
@@ -363,10 +366,10 @@ function mailError(
   if (requiredScope && error instanceof ScopeRequiredError) {
     return context.json(
       {
+        authorizeUrl: reauthorizationUrl(characterId),
         code: 'EVE_SCOPE_REQUIRED',
         message: scopeMessage(requiredScope),
         requiredScope,
-        authorizeUrl: reauthorizationUrl(characterId),
       },
       403,
     )
@@ -374,10 +377,10 @@ function mailError(
   if (requiredScope && error instanceof MailAuthorizationError) {
     return context.json(
       {
+        authorizeUrl: reauthorizationUrl(characterId),
         code: 'EVE_REAUTH_REQUIRED',
         message: 'EVE authorization is no longer valid.',
         requiredScope,
-        authorizeUrl: reauthorizationUrl(characterId),
       },
       403,
     )
@@ -436,10 +439,18 @@ function mailError(
 }
 
 function scopeMessage(scope: string) {
-  if (scope === mailSendScope) return 'Authorize sending mail for this character.'
-  if (scope === mailOrganizeScope) return 'Authorize mail organization for this character.'
-  if (scope === mailSearchScope) return 'Authorize recipient search for this character.'
-  if (scope === mailCspaScope) return 'Authorize mail charge checks for this character.'
+  if (scope === mailSendScope) {
+    return 'Authorize sending mail for this character.'
+  }
+  if (scope === mailOrganizeScope) {
+    return 'Authorize mail organization for this character.'
+  }
+  if (scope === mailSearchScope) {
+    return 'Authorize recipient search for this character.'
+  }
+  if (scope === mailCspaScope) {
+    return 'Authorize mail charge checks for this character.'
+  }
   return 'Authorize mail access for this character.'
 }
 

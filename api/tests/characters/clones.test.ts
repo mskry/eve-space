@@ -13,28 +13,28 @@ const memoryAttributeId = 177
 const perceptionAttributeId = 178
 
 const mocks = vi.hoisted(() => ({
-  createEsiClient: vi.fn(),
+  acquire: vi.fn(),
+  cacheDel: vi.fn(),
+  cacheGet: vi.fn(),
+  cacheSet: vi.fn(),
   callOperation: vi.fn(),
+  commit: vi.fn(),
+  createEsiClient: vi.fn(),
+  from: vi.fn(),
   getCharacterAuthorization: vi.fn(),
   getCharacterCacheAuthorization: vi.fn(),
-  acquire: vi.fn(),
-  commit: vi.fn(),
   getCommitted: vi.fn(),
   getLeaseTtl: vi.fn(),
   getRevision: vi.fn(),
-  incrementRevision: vi.fn(),
-  initialize: vi.fn(),
-  release: vi.fn(),
-  renew: vi.fn(),
-  cacheGet: vi.fn(),
-  cacheSet: vi.fn(),
-  cacheDel: vi.fn(),
-  from: vi.fn(),
   getState: vi.fn(),
   getStaticLocations: vi.fn(),
+  incrementRevision: vi.fn(),
+  initialize: vi.fn(),
   leftJoin: vi.fn(),
   limit: vi.fn(),
   listActiveImplants: vi.fn(),
+  release: vi.fn(),
+  renew: vi.fn(),
   resolveUniverseNames: vi.fn(),
   select: vi.fn(),
   staticRows: [] as StaticRow[],
@@ -48,10 +48,10 @@ vi.mock('../../src/auth/tokens.js', () => ({
 }))
 vi.mock('../../src/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => ({
-    get: mocks.cacheGet,
-    set: mocks.cacheSet,
     del: mocks.cacheDel,
+    get: mocks.cacheGet,
     ping: vi.fn().mockResolvedValue('PONG'),
+    set: mocks.cacheSet,
   }),
   observeCacheRedisConnectionErrors: vi.fn(),
 }))
@@ -69,23 +69,25 @@ vi.mock('../../src/universe/static-locations.js', () => ({
   getStaticLocations: mocks.getStaticLocations,
 }))
 
-const characterId = 1404328063
+const characterId = 1_404_328_063
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const clonesScope = 'esi-clones.read_clones.v1'
 const implantsScope = 'esi-clones.read_implants.v1'
 const now = Date.parse('2026-09-03T11:00:00.000Z')
-const lease = { key: 'lease', ownerToken: 'owner', fence: 7, ttlMs: 15_000 }
+const lease = { fence: 7, key: 'lease', ownerToken: 'owner', ttlMs: 15_000 }
 const publicMetadata = {
   cachedUntil: '2026-09-03T11:02:00.000Z',
-  validatedAt: '2026-09-03T11:00:00.000Z',
   stale: false,
+  validatedAt: '2026-09-03T11:00:00.000Z',
 }
 
 beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(now)
   vi.resetModules()
-  for (const mock of Object.values(mocks)) if (typeof mock === 'function') mock.mockReset()
+  for (const mock of Object.values(mocks)) {
+    if (typeof mock === 'function') mock.mockReset()
+  }
   mocks.staticRows.splice(0)
 
   mocks.getCharacterAuthorization.mockResolvedValue({
@@ -124,6 +126,7 @@ describe('character clone state', () => {
     mocks.getState.mockResolvedValue(
       response({
         home_location: { location_id: 60_000_001, location_type: 'station' },
+        ignored: 'raw',
         jump_clones: [
           {
             jump_clone_id: 11,
@@ -141,24 +144,23 @@ describe('character clone state', () => {
         ],
         last_clone_jump_date: '2026-09-02T12:00:00Z',
         last_station_change_date: '2026-08-30T12:00:00Z',
-        ignored: 'raw',
       }),
     )
     mocks.staticRows.push(
-      { typeId: 2, name: 'Alpha Implant', attributeId: slotAttributeId, attributeValue: 5 },
-      { typeId: 2, name: 'Alpha Implant', attributeId: memoryAttributeId, attributeValue: 4 },
-      { typeId: 4, name: 'Beta Implant', attributeId: slotAttributeId, attributeValue: 3 },
+      { attributeId: slotAttributeId, attributeValue: 5, name: 'Alpha Implant', typeId: 2 },
+      { attributeId: memoryAttributeId, attributeValue: 4, name: 'Alpha Implant', typeId: 2 },
+      { attributeId: slotAttributeId, attributeValue: 3, name: 'Beta Implant', typeId: 4 },
     )
     mocks.resolveUniverseNames.mockResolvedValue(
-      new Map([[60_000_001, { id: 60_000_001, name: 'Jita IV - Moon 4', category: 'station' }]]),
+      new Map([[60_000_001, { category: 'station', id: 60_000_001, name: 'Jita IV - Moon 4' }]]),
     )
     mocks.getStaticLocations.mockResolvedValue([
       {
         id: 60_000_001,
-        type: 'station',
         name: null,
         solarSystemId: 30_000_142,
         solarSystemSecurityStatus: 0.9,
+        type: 'station',
       },
     ])
     const { characterClonesScope, getCharacterClones } =
@@ -166,7 +168,7 @@ describe('character clone state', () => {
 
     const result = await getCharacterClones(characterId, subjectLifecycleId)
 
-    expect(result).toEqual({
+    expect(result).toStrictEqual({
       homeLocation: {
         locationId: 60_000_001,
         locationType: 'station',
@@ -175,13 +177,6 @@ describe('character clone state', () => {
       },
       jumpClones: [
         {
-          jumpCloneId: 11,
-          name: 'Industry',
-          location: {
-            locationId: 60_000_001,
-            locationType: 'station',
-            name: 'Jita IV - Moon 4',
-          },
           implants: [
             { typeId: 4, name: 'Beta Implant', slot: 3, bonuses: [] },
             {
@@ -191,16 +186,23 @@ describe('character clone state', () => {
               bonuses: [{ attribute: 'memory', value: 4 }],
             },
           ],
+          jumpCloneId: 11,
+          location: {
+            locationId: 60_000_001,
+            locationType: 'station',
+            name: 'Jita IV - Moon 4',
+          },
+          name: 'Industry',
         },
         {
+          implants: [],
           jumpCloneId: 12,
-          name: null,
           location: {
             locationId: 1_035_466_617_946,
             locationType: 'structure',
             name: null,
           },
-          implants: [],
+          name: null,
         },
       ],
       lastCloneJumpAt: '2026-09-02T12:00:00Z',
@@ -224,10 +226,10 @@ describe('character clone state', () => {
         home_location: { location_type: 'station' },
         jump_clones: [
           {
+            implants: [99, 99],
             jump_clone_id: 13,
             location_id: 60_000_002,
             location_type: 'station',
-            implants: [99, 99],
           },
         ],
       }),
@@ -236,7 +238,7 @@ describe('character clone state', () => {
     mocks.resolveUniverseNames.mockRejectedValue(new Error('name resolution unavailable'))
     const { getCharacterClones } = await import('../../src/characters/clones.js')
 
-    await expect(getCharacterClones(characterId, subjectLifecycleId)).resolves.toEqual({
+    await expect(getCharacterClones(characterId, subjectLifecycleId)).resolves.toStrictEqual({
       homeLocation: {
         locationId: null,
         locationType: 'station',
@@ -245,10 +247,10 @@ describe('character clone state', () => {
       },
       jumpClones: [
         {
-          jumpCloneId: 13,
-          name: null,
-          location: { locationId: 60_000_002, locationType: 'station', name: null },
           implants: [{ typeId: 99, name: 'Unknown implant 99', slot: null, bonuses: [] }],
+          jumpCloneId: 13,
+          location: { locationId: 60_000_002, locationType: 'station', name: null },
+          name: null,
         },
       ],
       lastCloneJumpAt: null,
@@ -286,16 +288,16 @@ describe('character clone state', () => {
       response({
         jump_clones: [
           {
+            implants: [],
             jump_clone_id: 14,
             location_id: 60_000_003,
             location_type: 'station',
-            implants: [],
           },
         ],
       }),
     )
     mocks.resolveUniverseNames.mockResolvedValue(
-      new Map([[60_000_003, { id: 60_000_003, name: 'Wrong category', category: 'solar_system' }]]),
+      new Map([[60_000_003, { category: 'solar_system', id: 60_000_003, name: 'Wrong category' }]]),
     )
     const { getCharacterClones } = await import('../../src/characters/clones.js')
 
@@ -313,10 +315,10 @@ describe('character clone state', () => {
           home_location: null,
           jump_clones: [
             {
+              implants: [4],
               jump_clone_id: 15,
               location_id: 1_035_466_617_946,
               location_type: 'structure',
-              implants: [4],
             },
           ],
         }),
@@ -327,10 +329,10 @@ describe('character clone state', () => {
             home_location: null,
             jump_clones: [
               {
+                implants: [4],
                 jump_clone_id: 15,
                 location_id: 1_035_466_617_946,
                 location_type: 'structure',
-                implants: [4],
               },
             ],
           },
@@ -338,17 +340,17 @@ describe('character clone state', () => {
         ),
       )
     mocks.staticRows.push({
-      typeId: 4,
-      name: 'Recovered Name',
       attributeId: null,
       attributeValue: null,
+      name: 'Recovered Name',
+      typeId: 4,
     })
     const { getCharacterClones } = await import('../../src/characters/clones.js')
 
     const first = await getCharacterClones(characterId, subjectLifecycleId)
     const second = await getCharacterClones(characterId, subjectLifecycleId)
 
-    expect(second).toEqual(first)
+    expect(second).toStrictEqual(first)
     expect(mocks.getState).toHaveBeenCalledTimes(2)
   })
 })
@@ -357,23 +359,23 @@ describe('active character implants', () => {
   test('loads, deduplicates, enriches, and sorts active implants independently', async () => {
     mocks.listActiveImplants.mockResolvedValue(response([4, 2, 4, 99]))
     mocks.staticRows.push(
-      { typeId: 4, name: 'Beta Implant', attributeId: slotAttributeId, attributeValue: 1 },
-      { typeId: 2, name: 'Alpha Implant', attributeId: slotAttributeId, attributeValue: 2 },
-      { typeId: 2, name: 'Alpha Implant', attributeId: perceptionAttributeId, attributeValue: 3 },
+      { attributeId: slotAttributeId, attributeValue: 1, name: 'Beta Implant', typeId: 4 },
+      { attributeId: slotAttributeId, attributeValue: 2, name: 'Alpha Implant', typeId: 2 },
+      { attributeId: perceptionAttributeId, attributeValue: 3, name: 'Alpha Implant', typeId: 2 },
     )
     const { characterImplantsScope, getCharacterImplants } =
       await import('../../src/characters/clones.js')
 
-    await expect(getCharacterImplants(characterId, subjectLifecycleId)).resolves.toEqual({
+    await expect(getCharacterImplants(characterId, subjectLifecycleId)).resolves.toStrictEqual({
       implants: [
-        { typeId: 4, name: 'Beta Implant', slot: 1, bonuses: [] },
+        { bonuses: [], name: 'Beta Implant', slot: 1, typeId: 4 },
         {
-          typeId: 2,
+          bonuses: [{ attribute: 'perception', value: 3 }],
           name: 'Alpha Implant',
           slot: 2,
-          bonuses: [{ attribute: 'perception', value: 3 }],
+          typeId: 2,
         },
-        { typeId: 99, name: 'Unknown implant 99', slot: null, bonuses: [] },
+        { bonuses: [], name: 'Unknown implant 99', slot: null, typeId: 99 },
       ],
       ...publicMetadata,
     })
@@ -385,26 +387,26 @@ describe('active character implants', () => {
   test('drops unusable slot and zero bonus dogma values while ordering bonuses stably', async () => {
     mocks.listActiveImplants.mockResolvedValue(response([7, 8]))
     mocks.staticRows.push(
-      { typeId: 7, name: 'Broken Slot', attributeId: slotAttributeId, attributeValue: 0 },
-      { typeId: 7, name: 'Broken Slot', attributeId: memoryAttributeId, attributeValue: 0 },
-      { typeId: 8, name: 'Dual Bonus', attributeId: slotAttributeId, attributeValue: 2 },
-      { typeId: 8, name: 'Dual Bonus', attributeId: perceptionAttributeId, attributeValue: 3 },
-      { typeId: 8, name: 'Dual Bonus', attributeId: memoryAttributeId, attributeValue: 5 },
+      { attributeId: slotAttributeId, attributeValue: 0, name: 'Broken Slot', typeId: 7 },
+      { attributeId: memoryAttributeId, attributeValue: 0, name: 'Broken Slot', typeId: 7 },
+      { attributeId: slotAttributeId, attributeValue: 2, name: 'Dual Bonus', typeId: 8 },
+      { attributeId: perceptionAttributeId, attributeValue: 3, name: 'Dual Bonus', typeId: 8 },
+      { attributeId: memoryAttributeId, attributeValue: 5, name: 'Dual Bonus', typeId: 8 },
     )
     const { getCharacterImplants } = await import('../../src/characters/clones.js')
 
     await expect(getCharacterImplants(characterId, subjectLifecycleId)).resolves.toMatchObject({
       implants: [
         {
-          typeId: 8,
-          name: 'Dual Bonus',
-          slot: 2,
           bonuses: [
             { attribute: 'memory', value: 5 },
             { attribute: 'perception', value: 3 },
           ],
+          name: 'Dual Bonus',
+          slot: 2,
+          typeId: 8,
         },
-        { typeId: 7, name: 'Broken Slot', slot: null, bonuses: [] },
+        { bonuses: [], name: 'Broken Slot', slot: null, typeId: 7 },
       ],
     })
   })
@@ -413,7 +415,7 @@ describe('active character implants', () => {
     mocks.listActiveImplants.mockResolvedValue(response([]))
     const { getCharacterImplants } = await import('../../src/characters/clones.js')
 
-    await expect(getCharacterImplants(characterId, subjectLifecycleId)).resolves.toEqual({
+    await expect(getCharacterImplants(characterId, subjectLifecycleId)).resolves.toStrictEqual({
       implants: [],
       ...publicMetadata,
     })
@@ -423,14 +425,14 @@ describe('active character implants', () => {
 
 function response<Data>(data: Data, source: 'cache' | 'esi' = 'esi') {
   return {
+    cachedUntil: publicMetadata.cachedUntil,
     data: Array.isArray(data)
       ? { implantTypeIds: [...new Set(data)] }
       : cloneSnapshot(data as Record<string, unknown>),
-    cachedUntil: publicMetadata.cachedUntil,
-    validatedAt: publicMetadata.validatedAt,
     quota: {},
     source,
     stale: false,
+    validatedAt: publicMetadata.validatedAt,
   }
 }
 
@@ -452,10 +454,10 @@ function cloneSnapshot(data: Record<string, unknown>) {
       ? { locationId: home.location_id ?? null, locationType: home.location_type ?? null }
       : null,
     jumpClones: clones.map((clone) => ({
-      jumpCloneId: clone.jump_clone_id,
-      name: clone.name ?? null,
-      location: { locationId: clone.location_id, locationType: clone.location_type },
       implantTypeIds: [...new Set(clone.implants ?? [])],
+      jumpCloneId: clone.jump_clone_id,
+      location: { locationId: clone.location_id, locationType: clone.location_type },
+      name: clone.name ?? null,
     })),
     lastCloneJumpAt: (data.last_clone_jump_date as string | undefined) ?? null,
     lastStationChangeAt: (data.last_station_change_date as string | undefined) ?? null,

@@ -26,9 +26,15 @@ async function runWorkerHealthcheck() {
 }
 
 function healthState(reason: string) {
-  if (reason === 'Database unavailable') return 'database-unavailable'
-  if (reason === 'Queue Redis unavailable') return 'queue-unavailable'
-  if (reason === 'Worker heartbeat stale') return 'heartbeat-stale'
+  if (reason === 'Database unavailable') {
+    return 'database-unavailable'
+  }
+  if (reason === 'Queue Redis unavailable') {
+    return 'queue-unavailable'
+  }
+  if (reason === 'Worker heartbeat stale') {
+    return 'heartbeat-stale'
+  }
   return 'schema-not-ready'
 }
 

@@ -16,12 +16,12 @@ const PUBLIC_QUERY_KEY = ['public', 'e2e', 'query-persistence'] as const
 const PRIVATE_QUERY_KEY = ['private', 'characters', 7, 'overview-v2'] as const
 const PUBLIC_FIXTURE_PATH = '/__e2e/query-persistence'
 const CHARACTER_CHILD_REQUESTS = [
-  { section: 'skills', resources: ['skills', 'attributes', 'skill-queue'] },
-  { section: 'history', resources: ['history'] },
-  { section: 'clones', resources: ['clones', 'implants', 'skills'] },
-  { section: 'mail', resources: ['mail', 'mail/labels', 'mail/lists'] },
-  { section: 'assets', resources: ['assets'] },
-  { section: 'finance', resources: ['wallet', 'wallet/journal'] },
+  { resources: ['skills', 'attributes', 'skill-queue'], section: 'skills' },
+  { resources: ['history'], section: 'history' },
+  { resources: ['clones', 'implants', 'skills'], section: 'clones' },
+  { resources: ['mail', 'mail/labels', 'mail/lists'], section: 'mail' },
+  { resources: ['assets'], section: 'assets' },
+  { resources: ['wallet', 'wallet/journal'], section: 'finance' },
 ] as const
 
 let apiAvailable = false
@@ -65,8 +65,9 @@ afterEach(async () => {
 
 describe('Nuxt anonymous SSR boundary', async () => {
   await setup({
-    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
+    browser: true,
     build: false,
+    captureServerLogs: false,
     nuxtConfig: {
       nitro: {
         output: {
@@ -74,9 +75,8 @@ describe('Nuxt anonymous SSR boundary', async () => {
         },
       },
     },
-    browser: true,
+    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
     server: true,
-    captureServerLogs: false,
     setupTimeout: 120_000,
   })
 
@@ -152,14 +152,17 @@ describe('Nuxt anonymous SSR boundary', async () => {
   })
 
   describe.each([
-    { rosterState: 'pending', expectedStatus: undefined },
-    { rosterState: 'failed', expectedStatus: 503 },
+    { expectedStatus: undefined, rosterState: 'pending' },
+    { expectedStatus: 503, rosterState: 'failed' },
   ])('character admission with a $rosterState roster', ({ rosterState, expectedStatus }) => {
     beforeEach(() => {
       configureAuthenticatedApi()
       bootstrapAdmissionEnabled = true
-      if (rosterState === 'pending') rosterGate = deferred()
-      else rosterDataAvailable = false
+      if (rosterState === 'pending') {
+        rosterGate = deferred()
+      } else {
+        rosterDataAvailable = false
+      }
     })
 
     it.each(CHARACTER_CHILD_REQUESTS)(
@@ -168,15 +171,15 @@ describe('Nuxt anonymous SSR boundary', async () => {
         const route = `/characters/7/${section}`
 
         await $fetch(route)
-        expect(childRequestPaths).toEqual([])
+        expect(childRequestPaths).toStrictEqual([])
         trackPage(await createPage(route))
 
         await expect
-          .poll(() => childRequestPaths, { timeout: 5_000 })
+          .poll(() => childRequestPaths, { timeout: 5000 })
           .toEqual(
             expect.arrayContaining(resources.map((resource) => `/api/me/characters/7/${resource}`)),
           )
-        await expect.poll(() => rosterResponseStatuses[0], { timeout: 5_000 }).toBe(expectedStatus)
+        await expect.poll(() => rosterResponseStatuses[0], { timeout: 5000 }).toBe(expectedStatus)
       },
     )
 
@@ -185,7 +188,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
       await page
         .getByText('Admission Corporation', { exact: true })
         .first()
-        .waitFor({ timeout: 5_000 })
+        .waitFor({ timeout: 5000 })
       expect(await page.getByRole('heading', { name: 'No employment history' }).count()).toBe(0)
     })
   })
@@ -194,8 +197,8 @@ describe('Nuxt anonymous SSR boundary', async () => {
     configureAuthenticatedApi()
     const persistedAt = Date.now() - 60_000
     const envelope = persistenceEnvelope({
-      publicText: 'Obsolete persisted public data.',
       persistedAt,
+      publicText: 'Obsolete persisted public data.',
     })
     const page = await createPersistencePage(envelope)
     await observePersistenceReadsOnNextDocument(page)
@@ -214,10 +217,10 @@ describe('Nuxt anonymous SSR boundary', async () => {
     expect(observedTexts).not.toContain('Obsolete persisted public data.')
     expect(publicRequestCount).toBe(1)
     expect(publicBrowserRequestCount).toBe(0)
-    expect(browserRequests).toEqual([])
+    expect(browserRequests).toStrictEqual([])
     expect(await readPersistenceReadCount(page)).toBeGreaterThan(0)
     await expect
-      .poll(async () => readPublicTupleText(page), { timeout: 5_000 })
+      .poll(async () => readPublicTupleText(page), { timeout: 5000 })
       .toBe('Current public ESI data.')
   })
 
@@ -225,7 +228,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     configureAuthenticatedApi()
     const persistedText = 'Obsolete fallback staged for a client fetch.'
     const page = await createPersistencePage(
-      persistenceEnvelope({ publicText: persistedText, persistedAt: Date.now() - 60_000 }),
+      persistenceEnvelope({ persistedAt: Date.now() - 60_000, publicText: persistedText }),
     )
     await observePersistenceReadsOnNextDocument(page)
 
@@ -239,7 +242,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     expect(publicBrowserRequestCount).toBe(1)
     expect(await readPersistenceReadCount(page)).toBeGreaterThan(0)
     await expect
-      .poll(async () => readPublicTupleText(page), { timeout: 5_000 })
+      .poll(async () => readPublicTupleText(page), { timeout: 5000 })
       .toBe('Current public ESI data.')
   })
 
@@ -257,20 +260,20 @@ describe('Nuxt anonymous SSR boundary', async () => {
     expect(publicBrowserRequestCount).toBe(0)
 
     const page = await createPersistencePage(
-      persistenceEnvelope({ publicText: persistedText, persistedAt }),
+      persistenceEnvelope({ persistedAt, publicText: persistedText }),
     )
     await navigateAndWaitForHydration(page, PUBLIC_FIXTURE_PATH)
 
     await expectPage(page.getByTestId('public-value')).toHaveText(persistedText)
-    expect(await readPublicHistory(page)).toEqual([{ hydrating: false, text: persistedText }])
+    expect(await readPublicHistory(page)).toStrictEqual([{ hydrating: false, text: persistedText }])
   })
 
   it('settles a delayed restore before mount and keeps current SSR over staged fallback', async () => {
     configureAuthenticatedApi()
     const page = await createPersistencePage(
       persistenceEnvelope({
-        publicText: 'Delayed obsolete public fallback.',
         persistedAt: Date.now() - 60_000,
+        publicText: 'Delayed obsolete public fallback.',
       }),
     )
     await delayIndexedDbEventsOnNextDocument(page)
@@ -294,7 +297,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     expect(observedTexts).toContain('Current public ESI data.')
     expect(observedTexts).not.toContain('Delayed obsolete public fallback.')
     await expect
-      .poll(async () => readPublicTupleText(page), { timeout: 5_000 })
+      .poll(async () => readPublicTupleText(page), { timeout: 5000 })
       .toBe('Current public ESI data.')
   })
 
@@ -304,7 +307,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     admissionGate = deferred()
     const privateText = 'Quarantined private capsuleer record.'
     const page = await createPersistencePage(
-      persistenceEnvelope({ privateText, persistedAt: Date.now() - 60_000 }),
+      persistenceEnvelope({ persistedAt: Date.now() - 60_000, privateText }),
     )
     await observeTextOnNextDocument(page, privateText)
 
@@ -327,7 +330,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     await navigateAndWaitForHydration(page, '/characters/7')
     await page.getByText('Cached capsuleer record.', { exact: true }).waitFor()
     await expect
-      .poll(async () => readPrivateTupleTimestamp(page), { timeout: 5_000 })
+      .poll(async () => readPrivateTupleTimestamp(page), { timeout: 5000 })
       .toSatisfy((timestamp) => typeof timestamp === 'number')
 
     const originalTimestamp = Date.now() - 60_000
@@ -341,7 +344,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
       await page.getByText('Cached capsuleer record.', { exact: true }).waitFor()
       await expect.poll(() => overviewRequestCount).toBeGreaterThan(requestsBeforeReload)
       await expect
-        .poll(async () => readPrivateTupleTimestamp(page), { timeout: 5_000 })
+        .poll(async () => readPrivateTupleTimestamp(page), { timeout: 5000 })
         .toBe(originalTimestamp)
       expect(await page.getByRole('heading', { name: 'Record unavailable' }).count()).toBe(0)
     }
@@ -353,7 +356,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     const publicText = 'Independent public tuple.'
     const privateText = 'Logout-race private data.'
     const obsoleteResponseText = 'Obsolete logout-race HTTP response.'
-    const envelope = persistenceEnvelope({ privateText, publicText, persistedAt: publicTimestamp })
+    const envelope = persistenceEnvelope({ persistedAt: publicTimestamp, privateText, publicText })
     overviewText = obsoleteResponseText
     overviewGate = deferred()
     overviewDeferredUserId = 'test-user'
@@ -381,7 +384,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     await expectPage(firstPage.getByText(privateText, { exact: true })).toHaveCount(0)
     overviewGate.resolve()
     await expect
-      .poll(() => readPersistenceWriteCount(firstPage), { timeout: 5_000 })
+      .poll(() => readPersistenceWriteCount(firstPage), { timeout: 5000 })
       .toBeGreaterThan(writesBeforeLogout)
 
     await expectPage(firstPage.getByText(privateText, { exact: true })).toHaveCount(0)
@@ -402,9 +405,9 @@ describe('Nuxt anonymous SSR boundary', async () => {
     const privateText = 'Prior-owner private data.'
     const obsoleteResponseText = 'Obsolete prior-owner HTTP response.'
     const envelope = persistenceEnvelope({
+      persistedAt: Date.now() - 60_000,
       privateText,
       publicText,
-      persistedAt: Date.now() - 60_000,
     })
     overviewGate = deferred()
     overviewDeferredUserId = 'test-user'
@@ -434,7 +437,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     await expectPage(firstPage.getByText(privateText, { exact: true })).toHaveCount(0)
     overviewGate.resolve()
     await expect
-      .poll(() => readPersistenceWriteCount(firstPage), { timeout: 5_000 })
+      .poll(() => readPersistenceWriteCount(firstPage), { timeout: 5000 })
       .toBeGreaterThan(writesBeforeSwitch)
 
     await expectPage(firstPage.getByText(privateText, { exact: true })).toHaveCount(0)
@@ -455,9 +458,9 @@ describe('Nuxt anonymous SSR boundary', async () => {
     overviewDeferredUserId = 'test-user'
     const privateText = 'Missed-notification private data.'
     const envelope = persistenceEnvelope({
+      persistedAt: Date.now() - 60_000,
       privateText,
       publicText: 'Lifecycle-independent public tuple.',
-      persistedAt: Date.now() - 60_000,
     })
     for (const lifecycleEvent of ['pageshow', 'focus', 'visibilitychange']) {
       const page = await createPersistencePage(envelope)
@@ -495,9 +498,9 @@ describe('Nuxt anonymous SSR boundary', async () => {
     publicFixtureText = 'Live public data with private persistence disabled.'
     const page = await createPersistencePage(
       persistenceEnvelope({
+        persistedAt: Date.now() - 60_000,
         privateText: obsoletePrivateText,
         publicText: 'Prior public data.',
-        persistedAt: Date.now() - 60_000,
       }),
       { invalidControl: true },
     )
@@ -506,18 +509,18 @@ describe('Nuxt anonymous SSR boundary', async () => {
 
     await navigateAndWaitForHydration(page, '/characters/7')
     await page.getByText(overviewText, { exact: true }).waitFor()
-    await expect.poll(() => readPersistenceWriteCount(page), { timeout: 5_000 }).toBeGreaterThan(0)
+    await expect.poll(() => readPersistenceWriteCount(page), { timeout: 5000 }).toBeGreaterThan(0)
 
     const publicPage = trackPage(await page.context().newPage())
     await navigateAndWaitForHydration(publicPage, PUBLIC_FIXTURE_PATH)
     await expectPage(publicPage.getByTestId('public-value')).toHaveText(publicFixtureText)
     await expect
-      .poll(async () => readPublicTupleText(publicPage), { timeout: 5_000 })
+      .poll(async () => readPublicTupleText(publicPage), { timeout: 5000 })
       .toBe(publicFixtureText)
 
     const records = await readPersistenceRecords(publicPage)
-    expect(records.control).toEqual({ version: 1, invalidationGeneration: null })
-    expect(records.envelope?.characters).toEqual({})
+    expect(records.control).toStrictEqual({ invalidationGeneration: null, version: 1 })
+    expect(records.envelope?.characters).toStrictEqual({})
     expect(await textWasObserved(page)).toBe(false)
     expect(JSON.stringify(records.envelope)).not.toContain(obsoletePrivateText)
     expect(JSON.stringify(records.envelope)).not.toContain(overviewText)
@@ -527,7 +530,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     apiAvailable = true
     apiServer.setAllowedOrigin(applicationOrigin())
     const page = await createPage('/')
-    await page.setViewportSize({ width: 390, height: 844 })
+    await page.setViewportSize({ height: 844, width: 390 })
     await waitForNuxtHydration(page)
 
     const persistentSidebar = page.locator('.dashboard-sidebar--persistent')
@@ -554,7 +557,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     apiAvailable = true
     apiServer.setAllowedOrigin(applicationOrigin())
     const page = await createPage('/')
-    await page.setViewportSize({ width: 390, height: 844 })
+    await page.setViewportSize({ height: 844, width: 390 })
     await waitForNuxtHydration(page)
     const trigger = page.getByRole('button', { name: 'Open navigation' })
 
@@ -581,7 +584,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     apiAvailable = true
     apiServer.setAllowedOrigin(applicationOrigin())
     const page = await createPage('/')
-    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.setViewportSize({ height: 800, width: 1280 })
 
     expect(await page.content()).toContain('dashboard-shell')
     expect(await page.locator('.auth-shell').count()).toBe(0)
@@ -667,7 +670,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
         const style = getComputedStyle(element)
         return { outlineStyle: style.outlineStyle, outlineWidth: style.outlineWidth }
       }),
-    ).toEqual({ outlineStyle: 'solid', outlineWidth: '2px' })
+    ).toStrictEqual({ outlineStyle: 'solid', outlineWidth: '2px' })
 
     for (const theme of ['gallente', 'high-sec', 'amarr', 'minmatar', 'caldari']) {
       const outlineColor = await main.evaluate((element, selectedTheme) => {
@@ -707,12 +710,12 @@ describe('Nuxt anonymous SSR boundary', async () => {
     expect(await dashboardLink.evaluate((element) => document.activeElement === element)).toBe(true)
 
     await dashboardLink.click()
-    await expect.poll(() => page.title(), { timeout: 5_000 }).toBe('Overview // EVE Space')
+    await expect.poll(() => page.title(), { timeout: 5000 }).toBe('Overview // EVE Space')
     await expect
       .poll(
         () =>
           page.locator('#main-content').evaluate((element) => document.activeElement === element),
-        { timeout: 5_000 },
+        { timeout: 5000 },
       )
       .toBe(true)
     await expect
@@ -759,59 +762,66 @@ interface Deferred {
 async function handleApiRequest(request: IncomingMessage) {
   if (!apiAvailable) {
     return {
-      status: 403,
       body: { code: 'TEST_FAILURE', message: 'API unavailable for SSR test.' },
+      status: 403,
     }
   }
 
   const path = request.url?.split('?', 1)[0]
   if (path === '/api/e2e/public-esi') {
-    publicRequestCount += 1
-    if (request.headers.origin) publicBrowserRequestCount += 1
-    return publicDataAvailable
-      ? {
-          body: { marker: 'PUBLIC_ESI_FIXTURE', text: publicFixtureText },
-        }
-      : esiUnavailable()
+    return publicEsiApiResponse(request)
   }
   if (path === '/auth/session') {
-    sessionRequestCount += 1
-    return currentUserId
-      ? {
-          body: {
-            authenticated: true,
-            account: {
-              userId: currentUserId,
-              mainCharacter: { characterId: 7, name: 'Persistent Pilot' },
-            },
-            ...(bootstrapAdmissionEnabled &&
-            new URL(request.url!, apiServer.origin).searchParams.get('includeAdmission') === 'true'
-              ? { cacheAdmission: bootstrapCacheAdmission(currentUserId) }
-              : {}),
-          },
-        }
-      : { body: { authenticated: false } }
+    return sessionApiResponse(request)
   }
   if (path === '/auth/logout' && request.method === 'POST') {
     currentUserId = null
     return { body: null }
   }
   if (path === '/auth/config') {
-    return { body: { configured: false, loginUrl: '', attachUrl: '' } }
+    return { body: { attachUrl: '', configured: false, loginUrl: '' } }
   }
-  if (path === '/api/admin/session') return { body: { authenticated: false } }
+  if (path === '/api/admin/session') {
+    return { body: { authenticated: false } }
+  }
   if (path === '/api/me/cache-admission') {
-    admissionRequestCount += 1
-    const admittedUserId = currentUserId
-    if (!admittedUserId) {
-      return { status: 401, body: { code: 'AUTH_REQUIRED', message: 'Authentication required.' } }
-    }
-    const gate = admissionGate
-    if (gate) await gate.promise
-    return { body: cacheAdmission(admittedUserId) }
+    return cacheAdmissionApiResponse()
   }
+  if (path?.startsWith('/api/me/characters')) {
+    const response = await characterApiResponse(path)
+    if (response) {
+      return response
+    }
+  }
+  if (path === '/api/status') {
+    return { body: systemStatusResponse() }
+  }
+  if (path === '/api/modules') {
+    return {
+      body: {
+        enabledModuleIds: [],
+        shellNavigationOrder: { character: [], dashboard: [] },
+      },
+    }
+  }
+  return { body: { code: 'NOT_FOUND', message: 'Not found.' }, status: 404 }
+}
+
+function publicEsiApiResponse(request: IncomingMessage) {
+  publicRequestCount += 1
+  if (request.headers.origin) {
+    publicBrowserRequestCount += 1
+  }
+  return publicDataAvailable
+    ? { body: { marker: 'PUBLIC_ESI_FIXTURE', text: publicFixtureText } }
+    : esiUnavailable()
+}
+
+async function characterApiResponse(path: string) {
   if (path === '/api/me/characters') {
-    if (rosterGate) await rosterGate.promise
+    if (rosterGate) {
+      await rosterGate.promise
+    }
     rosterResponseStatuses.push(rosterDataAvailable ? 200 : 503)
     return rosterDataAvailable ? { body: { characters: rosterCharacters } } : esiUnavailable()
   }
@@ -819,23 +829,48 @@ async function handleApiRequest(request: IncomingMessage) {
     overviewRequestCount += 1
     const requestingUserId = currentUserId
     const responseText = overviewText
-    if (overviewGate && requestingUserId === overviewDeferredUserId) await overviewGate.promise
+    if (overviewGate && requestingUserId === overviewDeferredUserId) {
+      await overviewGate.promise
+    }
     return characterDataAvailable ? { body: overviewResponse(responseText) } : esiUnavailable()
   }
-  if (path?.startsWith('/api/me/characters/7/')) {
+  if (path.startsWith('/api/me/characters/7/')) {
     childRequestPaths.push(path)
     return path === '/api/me/characters/7/history' ? { body: historyResponse() } : esiUnavailable()
   }
-  if (path === '/api/status') return { body: systemStatusResponse() }
-  if (path === '/api/modules') {
-    return {
-      body: {
-        enabledModuleIds: [],
-        shellNavigationOrder: { dashboard: [], character: [] },
-      },
-    }
+  return undefined
+}
+
+function sessionApiResponse(request: IncomingMessage) {
+  sessionRequestCount += 1
+  return currentUserId
+    ? {
+        body: {
+          account: {
+            mainCharacter: { characterId: 7, name: 'Persistent Pilot' },
+            userId: currentUserId,
+          },
+          authenticated: true,
+          ...(bootstrapAdmissionEnabled &&
+          new URL(request.url!, apiServer.origin).searchParams.get('includeAdmission') === 'true'
+            ? { cacheAdmission: bootstrapCacheAdmission(currentUserId) }
+            : {}),
+        },
+      }
+    : { body: { authenticated: false } }
+}
+
+async function cacheAdmissionApiResponse() {
+  admissionRequestCount += 1
+  const admittedUserId = currentUserId
+  if (!admittedUserId) {
+    return { body: { code: 'AUTH_REQUIRED', message: 'Authentication required.' }, status: 401 }
   }
-  return { status: 404, body: { code: 'NOT_FOUND', message: 'Not found.' } }
+  const gate = admissionGate
+  if (gate) {
+    await gate.promise
+  }
+  return { body: cacheAdmission(admittedUserId) }
 }
 
 function bootstrapCacheAdmission(userId: string) {
@@ -847,10 +882,10 @@ function historyResponse() {
     characterId: 7,
     history: [
       {
+        corporation: { id: 98_000_001, isNpc: false, name: 'Admission Corporation' },
+        isDeleted: false,
         recordId: 1,
         startDate: '2020-01-01T00:00:00.000Z',
-        isDeleted: false,
-        corporation: { id: 98_000_001, name: 'Admission Corporation', isNpc: false },
       },
     ],
   }
@@ -892,7 +927,6 @@ function configureAuthenticatedApi() {
 
 function cacheAdmission(userId: string) {
   return {
-    userId,
     characters: [
       {
         characterId: 7,
@@ -901,44 +935,45 @@ function cacheAdmission(userId: string) {
       },
     ],
     organization: null,
+    userId,
   }
 }
 
 function esiUnavailable() {
   return {
-    status: 503,
     body: { code: 'ESI_UNAVAILABLE', message: 'EVE Online ESI is unavailable.' },
+    status: 503,
   }
 }
 
 function systemStatusResponse() {
   return {
-    status: 'operational',
-    checkedAt: '2026-09-03T11:00:00.000Z',
     cachedUntil: '2026-09-03T11:00:15.000Z',
+    checkedAt: '2026-09-03T11:00:00.000Z',
     services: {
       api: { status: 'operational', uptimeSeconds: 100 },
-      database: { status: 'operational', latencyMs: 1 },
-      sde: {
-        status: 'operational',
-        latencyMs: 1,
-        checkedAt: '2026-09-03T11:00:00.000Z',
-        buildNumber: 3_503_375,
-        ingestVersion: 4,
-        ingestedAt: '2026-09-03T10:00:00.000Z',
-      },
+      database: { latencyMs: 1, status: 'operational' },
       esi: {
-        status: 'operational',
-        latencyMs: 2,
         checkedAt: '2026-09-03T11:00:00.000Z',
+        errorBudgetRemaining: 100,
+        errorBudgetResetSeconds: 10,
+        latencyMs: 2,
         players: 20_000,
         serverVersion: 'test',
         startedAt: null,
+        status: 'operational',
         vip: false,
-        errorBudgetRemaining: 100,
-        errorBudgetResetSeconds: 10,
+      },
+      sde: {
+        buildNumber: 3_503_375,
+        checkedAt: '2026-09-03T11:00:00.000Z',
+        ingestVersion: 4,
+        ingestedAt: '2026-09-03T10:00:00.000Z',
+        latencyMs: 1,
+        status: 'operational',
       },
     },
+    status: 'operational',
   }
 }
 
@@ -959,11 +994,11 @@ function persistenceEnvelope(
 ): QueryPersistenceEnvelope {
   const persistedAt = options.persistedAt ?? Date.now()
   const envelope: QueryPersistenceEnvelope = {
-    version: 1,
-    invalidationGeneration: 0,
-    public: {},
     characters: {},
+    invalidationGeneration: 0,
     organizations: {},
+    public: {},
+    version: 1,
   }
   if (options.publicText) {
     envelope.public[JSON.stringify(PUBLIC_QUERY_KEY)] = persistedTuple(
@@ -974,7 +1009,6 @@ function persistenceEnvelope(
   }
   if (options.privateText) {
     envelope.characters['7'] = {
-      ownerUserId: 'test-user',
       admissionRevision: 'character-revision-1',
       cache: {
         [JSON.stringify(PRIVATE_QUERY_KEY)]: persistedTuple(
@@ -983,6 +1017,7 @@ function persistenceEnvelope(
           { kind: 'character-esi', characterId: 7 },
         ),
       },
+      ownerUserId: 'test-user',
     }
   }
   return envelope
@@ -1001,7 +1036,9 @@ async function createPersistencePage(
   options: { readonly invalidControl?: boolean } = {},
 ) {
   const browser = useTestContext().browser
-  if (!browser) throw new Error('The Nuxt browser is unavailable.')
+  if (!browser) {
+    throw new Error('The Nuxt browser is unavailable.')
+  }
   const context = await browser.newContext()
   managedContexts.add(context)
   const page = trackPage(await context.newPage())
@@ -1011,7 +1048,7 @@ async function createPersistencePage(
     envelope,
     options.invalidControl
       ? { invalid: true }
-      : { version: 1, invalidationGeneration: envelope.invalidationGeneration },
+      : { invalidationGeneration: envelope.invalidationGeneration, version: 1 },
   )
   return page
 }
@@ -1027,7 +1064,9 @@ function applicationUrl(path: string) {
 
 function applicationOrigin() {
   const origin = useTestContext().url
-  if (!origin) throw new Error('The Nuxt test server URL is unavailable.')
+  if (!origin) {
+    throw new Error('The Nuxt test server URL is unavailable.')
+  }
   return origin
 }
 
@@ -1127,11 +1166,11 @@ async function readPersistenceRecords(page: Page) {
       const [storedEnvelope, control] = await Promise.all([read(cacheKey), read(controlKey)])
       database.close()
       return {
+        control,
         envelope:
           typeof storedEnvelope === 'string'
             ? (JSON.parse(storedEnvelope) as QueryPersistenceEnvelope)
             : null,
-        control,
       }
     },
     {
@@ -1148,7 +1187,9 @@ async function replacePrivateTupleTimestamp(page: Page, timestamp: number) {
   const records = await readPersistenceRecords(page)
   const envelope = records.envelope
   const tuple = envelope?.characters['7']?.cache[JSON.stringify(PRIVATE_QUERY_KEY)]
-  if (!envelope || !tuple) throw new Error('The persisted private tuple is missing.')
+  if (!envelope || !tuple) {
+    throw new Error('The persisted private tuple is missing.')
+  }
   tuple[2] = timestamp
   await writePersistenceRecords(page, envelope, records.control)
 }
@@ -1181,7 +1222,7 @@ async function readPublicHistory(page: Page) {
 async function expectPrivatePersistenceToExclude(page: Page, obsoleteText: string) {
   await expect
     .poll(async () => JSON.stringify((await readPersistenceRecords(page)).envelope), {
-      timeout: 5_000,
+      timeout: 5000,
     })
     .not.toContain(obsoleteText)
 }
@@ -1191,7 +1232,7 @@ async function expectPublicTupleToEqual(page: Page, expected: PersistedQueryTupl
     .poll(
       async () =>
         (await readPersistenceRecords(page)).envelope?.public[JSON.stringify(PUBLIC_QUERY_KEY)],
-      { timeout: 5_000 },
+      { timeout: 5000 },
     )
     .toEqual(expected)
 }
@@ -1208,11 +1249,17 @@ async function delayIndexedDbEventsOnNextDocument(page: Page) {
       if (this instanceof IDBRequest && (type === 'success' || type === 'error') && listener) {
         const delayedListener: EventListener = (event) => {
           const dispatch = () => {
-            if (typeof listener === 'function') listener(event)
-            else listener.handleEvent(event)
+            if (typeof listener === 'function') {
+              listener(event)
+            } else {
+              listener.handleEvent(event)
+            }
           }
-          if (released) dispatch()
-          else pendingEvents.push(dispatch)
+          if (released) {
+            dispatch()
+          } else {
+            pendingEvents.push(dispatch)
+          }
         }
         addEventListener.call(this, type, delayedListener, options)
         return
@@ -1221,7 +1268,9 @@ async function delayIndexedDbEventsOnNextDocument(page: Page) {
     }
     browserState.e2eReleaseIndexedDbEvents = () => {
       released = true
-      for (const dispatch of pendingEvents.splice(0)) dispatch()
+      for (const dispatch of pendingEvents.splice(0)) {
+        dispatch()
+      }
     }
   })
 }
@@ -1230,7 +1279,9 @@ async function releaseIndexedDbEvents(page: Page) {
   await page.evaluate(() => {
     const release = (globalThis as typeof globalThis & { e2eReleaseIndexedDbEvents?: () => void })
       .e2eReleaseIndexedDbEvents
-    if (!release) throw new Error('The IndexedDB release control is unavailable.')
+    if (!release) {
+      throw new Error('The IndexedDB release control is unavailable.')
+    }
     release()
   })
 }
@@ -1248,7 +1299,9 @@ async function installPersistenceWriteObserver(page: Page) {
       IDBObjectStore.prototype.put = function (value, key) {
         if (key === cacheKey) {
           browserState.e2ePersistenceWriteCount! += 1
-          if (typeof value === 'string') browserState.e2ePersistenceWrites!.push(value)
+          if (typeof value === 'string') {
+            browserState.e2ePersistenceWrites!.push(value)
+          }
         }
         return key === undefined ? put.call(this, value) : put.call(this, value, key)
       }
@@ -1266,7 +1319,9 @@ async function observePersistenceReadsOnNextDocument(page: Page) {
       browserState.e2ePersistenceReadCount = 0
       const get = IDBObjectStore.prototype.get
       IDBObjectStore.prototype.get = function (key) {
-        if (key === cacheKey) browserState.e2ePersistenceReadCount! += 1
+        if (key === cacheKey) {
+          browserState.e2ePersistenceReadCount! += 1
+        }
         return get.call(this, key)
       }
     },
@@ -1279,7 +1334,9 @@ async function observeTextOnNextDocument(page: Page, text: string) {
     const browserState = globalThis as typeof globalThis & { e2eObservedText?: boolean }
     browserState.e2eObservedText = false
     const record = () => {
-      if (document.body?.innerText.includes(observedText)) browserState.e2eObservedText = true
+      if (document.body?.innerText.includes(observedText)) {
+        browserState.e2eObservedText = true
+      }
     }
     new MutationObserver(record).observe(document, {
       characterData: true,
@@ -1336,7 +1393,9 @@ async function expectPersistenceWritesAfterToExclude(
   )
   expect(writes.length).toBeGreaterThan(0)
   for (const write of writes) {
-    for (const obsoleteText of obsoleteTexts) expect(write).not.toContain(obsoleteText)
+    for (const obsoleteText of obsoleteTexts) {
+      expect(write).not.toContain(obsoleteText)
+    }
   }
 }
 
@@ -1405,9 +1464,14 @@ async function delayLifecycleChecksOnNextDocument(page: Page) {
         return
       }
       const wrappedListener: EventListener = (event) => {
-        if (!browserState.e2eQueryPersistenceLifecycleEnabled) return
-        if (typeof listener === 'function') listener(event)
-        else listener.handleEvent(event)
+        if (!browserState.e2eQueryPersistenceLifecycleEnabled) {
+          return
+        }
+        if (typeof listener === 'function') {
+          listener(event)
+        } else {
+          listener.handleEvent(event)
+        }
       }
       addEventListener.call(this, type, wrappedListener, options)
     }
@@ -1416,15 +1480,19 @@ async function delayLifecycleChecksOnNextDocument(page: Page) {
 
 async function advanceDurableInvalidationGeneration(page: Page) {
   const records = await readPersistenceRecords(page)
-  if (!records.envelope) throw new Error('The persisted envelope is missing.')
+  if (!records.envelope) {
+    throw new Error('The persisted envelope is missing.')
+  }
   const control = records.control as { invalidationGeneration?: unknown }
   const currentGeneration = control.invalidationGeneration
-  if (typeof currentGeneration !== 'number') throw new Error('The durable generation is invalid.')
+  if (typeof currentGeneration !== 'number') {
+    throw new Error('The durable generation is invalid.')
+  }
   records.envelope.invalidationGeneration = currentGeneration + 1
   records.envelope.characters = {}
   await writePersistenceRecords(page, records.envelope, {
-    version: 1,
     invalidationGeneration: currentGeneration + 1,
+    version: 1,
   })
 }
 
@@ -1482,8 +1550,12 @@ function parseColor(value: string): Color {
     ]
   }
   const channels = value.match(/[\d.]+/g)?.map(Number)
-  if (channels?.length === 3) return [...channels, 1] as Color
-  if (channels?.length === 4) return channels as Color
+  if (channels?.length === 3) {
+    return [...channels, 1] as Color
+  }
+  if (channels?.length === 4) {
+    return channels as Color
+  }
   throw new Error(`Unsupported color: ${value}`)
 }
 
@@ -1506,24 +1578,24 @@ function relativeLuminance(color: [number, number, number]) {
 
 function ownedCharacter() {
   return {
-    characterId: 7,
-    name: 'Persistent Pilot',
-    corporationId: 98_000_001,
+    alliance: null,
     allianceId: null,
-    isMain: true,
     birthday: '2020-01-01T00:00:00.000Z',
-    gender: 'Female',
-    race: 'Caldari',
     bloodline: 'Deteis',
-    securityStatus: 1,
+    characterId: 7,
     corporation: {
       id: 98_000_001,
+      memberCount: 1,
       name: 'Persistence Corporation',
       ticker: 'CACHE',
-      memberCount: 1,
     },
-    alliance: null,
+    corporationId: 98_000_001,
+    gender: 'Female',
+    isMain: true,
     location: null,
+    name: 'Persistent Pilot',
+    race: 'Caldari',
+    securityStatus: 1,
     ship: null,
     skills: null,
   }
@@ -1531,28 +1603,28 @@ function ownedCharacter() {
 
 function overviewResponse(bio = 'Cached capsuleer record.') {
   return {
+    location: { message: 'Unavailable', status: 'unavailable' },
     profile: {
-      id: 7,
-      name: 'Persistent Pilot',
-      birthday: '2020-01-01T00:00:00.000Z',
-      gender: 'Female',
-      race: 'Caldari',
-      raceFactionId: null,
-      bloodline: 'Deteis',
-      securityStatus: 1,
       achievementScore: 0,
-      factionId: null,
+      alliance: null,
       bio: { plainText: bio, runs: [{ start: 0, text: bio }] },
+      birthday: '2020-01-01T00:00:00.000Z',
+      bloodline: 'Deteis',
       corporation: {
         id: 98_000_001,
+        memberCount: 1,
         name: 'Persistence Corporation',
         ticker: 'CACHE',
-        memberCount: 1,
       },
-      alliance: null,
+      factionId: null,
+      gender: 'Female',
+      id: 7,
+      name: 'Persistent Pilot',
+      race: 'Caldari',
+      raceFactionId: null,
+      securityStatus: 1,
     },
-    location: { status: 'unavailable', message: 'Unavailable' },
-    ship: { status: 'unavailable', message: 'Unavailable' },
-    skills: { status: 'unavailable', message: 'Unavailable' },
+    ship: { message: 'Unavailable', status: 'unavailable' },
+    skills: { message: 'Unavailable', status: 'unavailable' },
   }
 }

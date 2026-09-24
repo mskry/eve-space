@@ -53,31 +53,31 @@ interface AllianceHistoryEntry {
 }
 
 const publicCorporationResultCacheSchema = z.object({
-  name: z.string(),
-  ticker: z.string(),
-  memberCount: z.number(),
+  allianceId: z.number().nullable(),
+  allianceName: z.string().nullable(),
   ceoId: z.number().nullable(),
   ceoName: z.string().nullable(),
   creatorId: z.number().nullable(),
   creatorName: z.string().nullable(),
-  taxRate: z.number(),
-  loyaltyPointTaxRate: z.number(),
   dateFounded: z.string().nullable(),
   description: z.string().nullable(),
-  url: z.string().nullable(),
   factionId: z.number().nullable(),
+  friendlyFire: z.enum(['legal', 'illegal']),
   homeStationId: z.number().nullable(),
   homeStationName: z.string().nullable(),
+  loyaltyPointTaxRate: z.number(),
+  memberCount: z.number(),
+  name: z.string(),
   shares: z.number().nullable(),
-  allianceId: z.number().nullable(),
-  allianceName: z.string().nullable(),
-  type: z.enum(['player_owned', 'npc_owned']),
   state: z.enum(['active', 'closed']),
-  friendlyFire: z.enum(['legal', 'illegal']),
+  taxRate: z.number(),
+  ticker: z.string(),
+  type: z.enum(['player_owned', 'npc_owned']),
+  url: z.string().nullable(),
   warEligible: z.boolean(),
 })
 const corporationLookupCacheSchema = z.discriminatedUnion('found', [
-  z.object({ found: z.literal(true), corporation: publicCorporationResultCacheSchema }),
+  z.object({ corporation: publicCorporationResultCacheSchema, found: z.literal(true) }),
   z.object({ found: z.literal(false) }),
 ])
 const corporationAllianceHistoryCacheSchema = z.array(
@@ -91,10 +91,8 @@ const corporationAllianceHistoryCacheSchema = z.array(
 )
 
 const publicCorporationRead = createPublicEsiRead({
-  operation: 'public-corporation',
-  name: 'public-corporation-core',
-  descriptor: operationRegistry.GetCorporationsCorporationId.transport,
   cacheSchema: corporationLookupCacheSchema,
+  descriptor: operationRegistry.GetCorporationsCorporationId.transport,
   encodeRequest: (input: { corporationId: number }) => ({
     path: { corporation_id: input.corporationId },
   }),
@@ -102,6 +100,8 @@ const publicCorporationRead = createPublicEsiRead({
     found: true,
     corporation: await mapPublicCorporation(response.data),
   }),
+  name: 'public-corporation-core',
+  operation: 'public-corporation',
   recover: (error) =>
     errorStatus(error) === 404
       ? { data: { found: false as const }, meta: errorMetadata(error) }
@@ -109,23 +109,23 @@ const publicCorporationRead = createPublicEsiRead({
 })
 
 const corporationAllianceHistoryRead = createPublicEsiRead({
-  operation: 'corporation-alliance-history',
-  name: 'corporation-alliance-history-core',
-  descriptor: operationRegistry.GetCorporationsCorporationIdAlliancehistory.transport,
   cacheSchema: corporationAllianceHistoryCacheSchema,
+  descriptor: operationRegistry.GetCorporationsCorporationIdAlliancehistory.transport,
   encodeRequest: (input: { corporationId: number }) => ({
     path: { corporation_id: input.corporationId },
   }),
   map: (response) => mapCorporationAllianceHistory(response.data),
+  name: 'corporation-alliance-history-core',
+  operation: 'corporation-alliance-history',
 })
 
 const corporationNpcListRead = createPublicEsiRead({
-  operation: 'corporation-npc-list',
-  name: 'corporation-npc-list-core',
-  descriptor: operationRegistry.GetCorporationsNpccorps.transport,
   cacheSchema: operationRegistry.GetCorporationsNpccorps.responseSchema,
+  descriptor: operationRegistry.GetCorporationsNpccorps.transport,
   encodeRequest: () => ({}),
   map: (response): number[] => response.data,
+  name: 'corporation-npc-list-core',
+  operation: 'corporation-npc-list',
 })
 
 export async function getCorporationPublic(corporationId: number): Promise<CorporationPublic> {
@@ -136,7 +136,9 @@ export async function getCorporationPublicResult(
   corporationId: number,
 ): Promise<EsiReadResult<CorporationPublic>> {
   const result = await publicCorporationRead.execute({ corporationId })
-  if (!result.data.found) throw Object.assign(new Error('Corporation not found'), { status: 404 })
+  if (!result.data.found) {
+    throw Object.assign(new Error('Corporation not found'), { status: 404 })
+  }
   return { ...result, data: { corporationId, warHistory: [], ...result.data.corporation } }
 }
 
@@ -170,29 +172,36 @@ async function mapPublicCorporation(
   ]
   const names = idsToResolve.length ? await resolveUniverseNames(idsToResolve) : new Map()
   return {
-    name: corporation.name,
-    ticker: corporation.ticker,
-    memberCount: corporation.member_count,
+    allianceId,
+    allianceName: resolvedCorporationName(allianceId, names),
     ceoId,
-    ceoName: ceoId ? (names.get(ceoId)?.name ?? null) : null,
+    ceoName: resolvedCorporationName(ceoId, names),
     creatorId,
-    creatorName: creatorId ? (names.get(creatorId)?.name ?? null) : null,
-    taxRate: corporation.tax_rates.isk,
-    loyaltyPointTaxRate: corporation.tax_rates.loyalty_point,
+    creatorName: resolvedCorporationName(creatorId, names),
     dateFounded: corporation.date_founded ?? null,
     description: eveFormattedTextToPlainText(corporation.description) ?? null,
-    url: corporation.url ?? null,
     factionId: corporation.enlisted_faction_id ?? null,
-    homeStationId,
-    homeStationName: homeStationId ? (names.get(homeStationId)?.name ?? null) : null,
-    shares: corporation.shares ?? null,
-    allianceId,
-    allianceName: allianceId ? (names.get(allianceId)?.name ?? null) : null,
-    type: corporation.type,
-    state: corporation.state,
     friendlyFire: corporation.friendly_fire,
+    homeStationId,
+    homeStationName: resolvedCorporationName(homeStationId, names),
+    loyaltyPointTaxRate: corporation.tax_rates.loyalty_point,
+    memberCount: corporation.member_count,
+    name: corporation.name,
+    shares: corporation.shares ?? null,
+    state: corporation.state,
+    taxRate: corporation.tax_rates.isk,
+    ticker: corporation.ticker,
+    type: corporation.type,
+    url: corporation.url ?? null,
     warEligible: corporation.war_eligible,
   }
+}
+
+function resolvedCorporationName(
+  id: number | null,
+  names: Awaited<ReturnType<typeof resolveUniverseNames>>,
+) {
+  return id ? (names.get(id)?.name ?? null) : null
 }
 
 async function mapCorporationAllianceHistory(
@@ -216,9 +225,10 @@ async function mapCorporationAllianceHistory(
 }
 
 function errorMetadata(error: unknown): EsiResponseMetadata {
-  if (typeof error === 'object' && error !== null && 'metadata' in error)
+  if (typeof error === 'object' && error !== null && 'metadata' in error) {
     return error.metadata as EsiResponseMetadata
-  return { status: 404, headers: {} }
+  }
+  return { headers: {}, status: 404 }
 }
 
 function errorStatus(error: unknown): number | undefined {

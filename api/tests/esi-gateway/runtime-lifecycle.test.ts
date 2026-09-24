@@ -17,12 +17,12 @@ const mocks = vi.hoisted(() => ({
 
 const runtimeStatusRepresentation = registerCallableEsiRepresentation(
   definePublicEsiRepresentation({
-    operation: 'status',
-    name: 'runtime-isolation-status',
-    descriptor: operationRegistry.GetStatus.transport,
     cacheSchema: z.number(),
+    descriptor: operationRegistry.GetStatus.transport,
     encodeRequest: (_input: Record<string, never>) => ({}),
     map: ({ data }) => data.players,
+    name: 'runtime-isolation-status',
+    operation: 'status',
   }),
 )
 
@@ -91,8 +91,8 @@ describe('isolated ESI execution runtime', () => {
   test('keeps runtime-local caches isolated', async () => {
     const firstFetch = vi.fn()
     const secondFetch = vi.fn()
-    const firstPorts = createRuntimeTestPorts({ response: statusResponse(1), fetch: firstFetch })
-    const secondPorts = createRuntimeTestPorts({ response: statusResponse(2), fetch: secondFetch })
+    const firstPorts = createRuntimeTestPorts({ fetch: firstFetch, response: statusResponse(1) })
+    const secondPorts = createRuntimeTestPorts({ fetch: secondFetch, response: statusResponse(2) })
     const first = createEsiExecutionRuntime(firstPorts, runtimeTestConfig)
     const second = createEsiExecutionRuntime(secondPorts, runtimeTestConfig)
     const representation = statusRepresentation()
@@ -114,7 +114,7 @@ describe('isolated ESI execution runtime', () => {
   })
 
   test('closes idempotently, clears local state, and rejects later work', async () => {
-    const ports = createRuntimeTestPorts({ response: statusResponse(1), fetch: vi.fn() })
+    const ports = createRuntimeTestPorts({ fetch: vi.fn(), response: statusResponse(1) })
     const runtime = createEsiExecutionRuntime(ports, runtimeTestConfig)
 
     const firstClose = runtime.close()
@@ -129,7 +129,7 @@ describe('isolated ESI execution runtime', () => {
   test('stops admission and drains active work before clearing state', async () => {
     let finishRequest!: (response: Response) => void
     const fetchStarted = vi.fn()
-    const ports = createRuntimeTestPorts({ response: statusResponse(1), fetch: vi.fn() })
+    const ports = createRuntimeTestPorts({ fetch: vi.fn(), response: statusResponse(1) })
     ports.transport.create =
       ({ onResponseBodySettled }) =>
       async () => {
@@ -156,8 +156,8 @@ describe('isolated ESI execution runtime', () => {
 
     finishRequest(
       new Response(JSON.stringify(statusResponse(1)), {
-        status: 200,
         headers: { 'Content-Type': 'application/json' },
+        status: 200,
       }),
     )
     await execution
@@ -178,9 +178,9 @@ describe('isolated ESI execution runtime', () => {
     const fetch = vi.fn()
     const runtime = createEsiExecutionRuntime(
       createRuntimeTestPorts({
-        response: statusResponse(1),
         fetch,
         overrides: { coordination: { acquireRequestPermit } },
+        response: statusResponse(1),
       }),
       runtimeTestConfig,
     )
@@ -215,7 +215,7 @@ describe('isolated ESI execution runtime', () => {
         }),
     )
     const release = vi.fn()
-    const ports = createRuntimeTestPorts({ response: statusResponse(1), fetch: vi.fn() })
+    const ports = createRuntimeTestPorts({ fetch: vi.fn(), response: statusResponse(1) })
     ports.coordination.acquireRequestPermit = async () => requestPermit(release, renew)
     ports.transport.create =
       ({ onResponseBodySettled }) =>
@@ -227,7 +227,7 @@ describe('isolated ESI execution runtime', () => {
               bodyController = controller
             },
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
+          { headers: { 'Content-Type': 'application/json' }, status: 200 },
         )
       }
     const runtime = createEsiExecutionRuntime(ports, runtimeTestConfig)
@@ -261,7 +261,7 @@ describe('ESI execution runtime owner', () => {
     const second = lifecycle.get()
 
     expect(second).toBe(first)
-    await expect(Promise.all([first, second])).resolves.toEqual([runtime, runtime])
+    await expect(Promise.all([first, second])).resolves.toStrictEqual([runtime, runtime])
     expect(create).toHaveBeenCalledOnce()
   })
 
@@ -345,20 +345,20 @@ function statusResponse(players: number) {
 
 function runtimeStub(): EsiExecutionRuntime {
   return {
-    executeRepresentation: vi.fn(),
+    close: vi.fn().mockResolvedValue(undefined),
     executeMutationRepresentation: vi.fn(),
     executePlatformOperation: vi.fn(),
+    executeRepresentation: vi.fn(),
     getQuotaStatuses: vi.fn(),
     isOperationQuotaLimited: vi.fn(),
-    close: vi.fn().mockResolvedValue(undefined),
   } as EsiExecutionRuntime
 }
 
 function requestPermit(release = vi.fn(), renew = vi.fn(async () => true)) {
   return {
     coordinationAvailable: false,
-    ttlMs: 30_000,
-    renew,
     release,
+    renew,
+    ttlMs: 30_000,
   }
 }

@@ -71,31 +71,31 @@ describe('affiliation persistence', () => {
       observedAt,
     ) =>
       managedMemberLifecycle.convergeCurrentManagedMemberLifecyclesInTransaction(transaction, {
-        userIds,
         now: observedAt,
+        userIds,
       })
 
     await processBatch(
       [1],
-      [{ characterId: 1, corporationId: 98_000_001, allianceId: null }],
+      [{ allianceId: null, characterId: 1, corporationId: 98_000_001 }],
       new Date('2026-09-16T12:00:00.000Z'),
       converge,
     )
     await processBatch(
       [1],
-      [{ characterId: 1, corporationId: 98_000_002, allianceId: null }],
+      [{ allianceId: null, characterId: 1, corporationId: 98_000_002 }],
       new Date('2026-09-16T12:01:00.000Z'),
       converge,
     )
     await processBatch(
       [1],
-      [{ characterId: 1, corporationId: 98_000_001, allianceId: null }],
+      [{ allianceId: null, characterId: 1, corporationId: 98_000_001 }],
       new Date('2026-09-16T12:02:00.000Z'),
       converge,
     )
     await processBatch(
       [1],
-      [{ characterId: 1, corporationId: 98_000_001, allianceId: null }],
+      [{ allianceId: null, characterId: 1, corporationId: 98_000_001 }],
       new Date('2026-09-17T12:03:00.000Z'),
       converge,
     )
@@ -110,21 +110,21 @@ describe('affiliation persistence', () => {
     `
     expect(lifecycles).toHaveLength(3)
     expect(lifecycles[0]).toMatchObject({
-      managed_member_lifecycle_id: expect.any(String),
       ended_at: new Date('2026-09-16T12:01:00.000Z'),
+      managed_member_lifecycle_id: expect.any(String),
     })
     expect(lifecycles[1]).toMatchObject({
+      ended_at: new Date('2026-09-17T12:03:00.000Z'),
       managed_member_lifecycle_id: expect.any(String),
       started_at: new Date('2026-09-16T12:02:00.000Z'),
-      ended_at: new Date('2026-09-17T12:03:00.000Z'),
     })
     expect(lifecycles[1]!.managed_member_lifecycle_id).not.toBe(
       lifecycles[0]!.managed_member_lifecycle_id,
     )
     expect(lifecycles[2]).toMatchObject({
+      ended_at: null,
       managed_member_lifecycle_id: expect.any(String),
       started_at: new Date('2026-09-17T12:03:00.000Z'),
-      ended_at: null,
     })
     expect(lifecycles[2]!.managed_member_lifecycle_id).not.toBe(
       lifecycles[1]!.managed_member_lifecycle_id,
@@ -139,34 +139,34 @@ describe('affiliation persistence', () => {
     try {
       vi.setSystemTime(firstObservedAt)
       await characterLifecycle.saveLogin({
+        accessToken: 'first-access-token',
+        affiliationCheckedAt: firstObservedAt,
+        allianceId: null,
         characterId: 1,
         characterName: 'Login Pilot',
-        ownerHash: 'login-owner',
         corporationId: 98_000_001,
-        allianceId: null,
-        affiliationCheckedAt: firstObservedAt,
-        accessToken: 'first-access-token',
+        expiresIn: 1200,
+        ownerHash: 'login-owner',
         refreshToken: 'first-refresh-token',
-        expiresIn: 1_200,
         scopes: [],
-        sessionToken: 'first-session-token',
         sessionExpiresAt: new Date('2026-09-19T10:00:00.000Z'),
+        sessionToken: 'first-session-token',
       })
 
       vi.setSystemTime(secondObservedAt)
       await characterLifecycle.saveLogin({
+        accessToken: 'second-access-token',
+        affiliationCheckedAt: secondObservedAt,
+        allianceId: null,
         characterId: 1,
         characterName: 'Login Pilot',
-        ownerHash: 'login-owner',
         corporationId: 98_000_001,
-        allianceId: null,
-        affiliationCheckedAt: secondObservedAt,
-        accessToken: 'second-access-token',
+        expiresIn: 1200,
+        ownerHash: 'login-owner',
         refreshToken: 'second-refresh-token',
-        expiresIn: 1_200,
         scopes: [],
-        sessionToken: 'second-session-token',
         sessionExpiresAt: new Date('2026-09-19T12:00:00.000Z'),
+        sessionToken: 'second-session-token',
       })
     } finally {
       vi.useRealTimers()
@@ -180,16 +180,16 @@ describe('affiliation persistence', () => {
       where user_id = (select user_id from characters where character_id = 1)
       order by started_at
     `
-    expect(lifecycles).toEqual([
+    expect([...lifecycles]).toStrictEqual([
       {
+        ended_at: secondObservedAt,
         managed_member_lifecycle_id: expect.any(String),
         started_at: firstObservedAt,
-        ended_at: secondObservedAt,
       },
       {
+        ended_at: null,
         managed_member_lifecycle_id: expect.any(String),
         started_at: secondObservedAt,
-        ended_at: null,
       },
     ])
     expect(lifecycles[1]!.managed_member_lifecycle_id).not.toBe(
@@ -209,8 +209,8 @@ describe('affiliation persistence', () => {
     await processBatch(
       [1, 2],
       [
-        { characterId: 1, corporationId: 101, allianceId: null },
-        { characterId: 2, corporationId: 102, allianceId: null },
+        { allianceId: null, characterId: 1, corporationId: 101 },
+        { allianceId: null, characterId: 2, corporationId: 102 },
       ],
       observedAt,
     )
@@ -218,8 +218,8 @@ describe('affiliation persistence', () => {
       select character_id, extract(epoch from next_affiliation_check - ${observedAt})::integer as seconds
       from characters order by character_id
     `
-    expect(rows).toEqual([
-      { character_id: '1', seconds: 3_600 },
+    expect([...rows]).toStrictEqual([
+      { character_id: '1', seconds: 3600 },
       { character_id: '2', seconds: 86_400 },
     ])
   })
@@ -227,17 +227,17 @@ describe('affiliation persistence', () => {
   test('SSO observations schedule an active refresh and older batches cannot overwrite them', async () => {
     const expiresAt = new Date(Date.now() + 60_000)
     await characterLifecycle.saveLogin({
+      accessToken: 'access-token',
+      allianceId: 200,
       characterId: 1,
       characterName: 'Login Pilot',
-      ownerHash: 'login-owner',
       corporationId: 100,
-      allianceId: 200,
-      accessToken: 'access-token',
+      expiresIn: 1200,
+      ownerHash: 'login-owner',
       refreshToken: 'refresh-token',
-      expiresIn: 1_200,
       scopes: [],
-      sessionToken: 'session-token',
       sessionExpiresAt: expiresAt,
+      sessionToken: 'session-token',
     })
     const [fresh] = await connection<
       { affiliation_checked_at: Date; next_affiliation_check: Date }[]
@@ -250,17 +250,17 @@ describe('affiliation persistence', () => {
 
     await processBatch(
       [1],
-      [{ characterId: 1, corporationId: 999, allianceId: 998 }],
+      [{ allianceId: 998, characterId: 1, corporationId: 999 }],
       new Date(fresh!.affiliation_checked_at.getTime() - 1),
     )
     const [record] = await connection<{ corporation_id: string; alliance_id: string | null }[]>`
       select corporation_id, alliance_id from characters where character_id = 1
     `
-    expect(record).toEqual({ corporation_id: '100', alliance_id: '200' })
+    expect(record).toStrictEqual({ alliance_id: '200', corporation_id: '100' })
   })
 
   test('keeps successful omissions pending for a later recoverable lookup without changing observations', async () => {
-    await insertCharacter(1, 10, { corporationId: 100, allianceId: 200 })
+    await insertCharacter(1, 10, { allianceId: 200, corporationId: 100 })
     const observedAt = new Date('2026-08-24T12:00:00.000Z')
 
     await processBatch([1], [], observedAt)
@@ -275,28 +275,28 @@ describe('affiliation persistence', () => {
       select corporation_id, alliance_id, affiliation_resolution_state, next_affiliation_check
       from characters where character_id = 1
     `
-    expect(record).toEqual({
-      corporation_id: '100',
-      alliance_id: '200',
+    expect(record).toStrictEqual({
       affiliation_resolution_state: 'pending',
+      alliance_id: '200',
+      corporation_id: '100',
       next_affiliation_check: expect.any(Date),
     })
   })
 
   test('selects due work deterministically and reconstructs it after queue loss', async () => {
     const now = new Date('2026-08-24T12:00:00.000Z')
-    await insertCharacter(3, 30, { nextCheck: new Date(now.getTime() - 2_000) })
-    await insertCharacter(1, 10, { nextCheck: new Date(now.getTime() - 1_000) })
-    await insertCharacter(2, 20, { nextCheck: new Date(now.getTime() - 1_000) })
+    await insertCharacter(3, 30, { nextCheck: new Date(now.getTime() - 2000) })
+    await insertCharacter(1, 10, { nextCheck: new Date(now.getTime() - 1000) })
+    await insertCharacter(2, 20, { nextCheck: new Date(now.getTime() - 1000) })
     await connection`
       update characters
       set affiliation_resolution_state = 'unresolvable', next_affiliation_check = null
       where character_id = 3
     `
 
-    await expect(affiliation.selectDueAffiliationBatches(now)).resolves.toEqual([[1, 2]])
+    await expect(affiliation.selectDueAffiliationBatches(now)).resolves.toStrictEqual([[1, 2]])
     // Queue state is deliberately not consulted: another planner pass reconstructs the same due work.
-    await expect(affiliation.selectDueAffiliationBatches(now)).resolves.toEqual([[1, 2]])
+    await expect(affiliation.selectDueAffiliationBatches(now)).resolves.toStrictEqual([[1, 2]])
   })
 
   test('selects due membership before numerically ordering one operation-bounded batch', async () => {
@@ -324,23 +324,23 @@ describe('affiliation persistence', () => {
       from generate_series(1, 1001) as value
     `
 
-    const expected = [...Array.from({ length: 999 }, (_, index) => index + 1), 1_001]
-    await expect(affiliation.selectDueAffiliationBatches(now)).resolves.toEqual([expected])
+    const expected = [...Array.from({ length: 999 }, (_, index) => index + 1), 1001]
+    await expect(affiliation.selectDueAffiliationBatches(now)).resolves.toStrictEqual([expected])
   })
 
   test('persists one fresh existing-character observation at the ESI validation time', async () => {
     await insertCharacter(1, 10)
     const validatedAt = new Date('2026-08-24T11:59:00.000Z')
     esiMocks.executeRepresentation.mockResolvedValueOnce(
-      affiliationResult([{ characterId: 1, corporationId: 101, allianceId: 201 }], validatedAt),
+      affiliationResult([{ allianceId: 201, characterId: 1, corporationId: 101 }], validatedAt),
     )
 
-    await expect(affiliation.observeAndPersistCharacterAffiliation(1)).resolves.toEqual({
+    await expect(affiliation.observeAndPersistCharacterAffiliation(1)).resolves.toStrictEqual({
+      affiliationCheckedAt: validatedAt,
+      affiliationFreshUntil: new Date(validatedAt.getTime() + 60 * 60 * 1000),
+      allianceId: 201,
       characterId: 1,
       corporationId: 101,
-      allianceId: 201,
-      affiliationCheckedAt: validatedAt,
-      affiliationFreshUntil: new Date(validatedAt.getTime() + 60 * 60 * 1_000),
       stale: false,
     })
     const [record] = await connection<
@@ -349,19 +349,19 @@ describe('affiliation persistence', () => {
       select corporation_id, alliance_id, affiliation_checked_at
       from characters where character_id = 1
     `
-    expect(record).toEqual({
-      corporation_id: '101',
-      alliance_id: '201',
+    expect(record).toStrictEqual({
       affiliation_checked_at: validatedAt,
+      alliance_id: '201',
+      corporation_id: '101',
     })
   })
 
   test('returns stale existing-character observations without persisting them', async () => {
-    await insertCharacter(1, 10, { corporationId: 100, allianceId: 200 })
+    await insertCharacter(1, 10, { allianceId: 200, corporationId: 100 })
     const validatedAt = new Date('2026-08-24T11:59:00.000Z')
     esiMocks.executeRepresentation.mockResolvedValueOnce(
       affiliationResult(
-        [{ characterId: 1, corporationId: 101, allianceId: 201 }],
+        [{ allianceId: 201, characterId: 1, corporationId: 101 }],
         validatedAt,
         true,
       ),
@@ -377,10 +377,10 @@ describe('affiliation persistence', () => {
       select corporation_id, alliance_id, affiliation_checked_at
       from characters where character_id = 1
     `
-    expect(record).toEqual({
-      corporation_id: '100',
-      alliance_id: '200',
+    expect(record).toStrictEqual({
       affiliation_checked_at: null,
+      alliance_id: '200',
+      corporation_id: '100',
     })
   })
 
@@ -394,7 +394,7 @@ describe('affiliation persistence', () => {
           completeLookup = () =>
             resolve(
               affiliationResult(
-                [{ characterId: 1, corporationId: 101, allianceId: null }],
+                [{ allianceId: null, characterId: 1, corporationId: 101 }],
                 new Date('2026-08-24T11:55:00.000Z'),
               ),
             )
@@ -414,11 +414,11 @@ describe('affiliation persistence', () => {
     const [record] = await connection<{ affiliation_checked_at: Date }[]>`
       select affiliation_checked_at from characters where character_id = 1
     `
-    expect(record?.affiliation_checked_at).toEqual(requestStartedAt)
+    expect(record?.affiliation_checked_at).toStrictEqual(requestStartedAt)
   })
 
   test('rolls back affiliation changes when an ordered domain event cannot be appended', async () => {
-    await insertCharacter(1, 10, { corporationId: 100, allianceId: 200 })
+    await insertCharacter(1, 10, { allianceId: 200, corporationId: 100 })
     await connection.unsafe(
       "alter table domain_events add constraint reject_affiliation_event check (event_type <> 'character.affiliation-observed')",
     )
@@ -426,7 +426,7 @@ describe('affiliation persistence', () => {
       await expect(
         processBatch(
           [1],
-          [{ characterId: 1, corporationId: 101, allianceId: 201 }],
+          [{ allianceId: 201, characterId: 1, corporationId: 101 }],
           new Date('2026-08-24T12:00:00.000Z'),
         ),
       ).rejects.toMatchObject({
@@ -445,7 +445,7 @@ describe('affiliation persistence', () => {
         (select count(*)::integer from domain_events) as event_count
       from characters where character_id = 1
     `
-    expect(record).toEqual({ corporation_id: '100', alliance_id: '200', event_count: 0 })
+    expect(record).toStrictEqual({ alliance_id: '200', corporation_id: '100', event_count: 0 })
   })
 
   test('emits affiliation events in stable user and character order', async () => {
@@ -457,9 +457,9 @@ describe('affiliation persistence', () => {
     await processBatch(
       [1, 3, 2],
       [
-        { characterId: 1, corporationId: 101, allianceId: null },
-        { characterId: 2, corporationId: 102, allianceId: null },
-        { characterId: 3, corporationId: 103, allianceId: null },
+        { allianceId: null, characterId: 1, corporationId: 101 },
+        { allianceId: null, characterId: 2, corporationId: 102 },
+        { allianceId: null, characterId: 3, corporationId: 103 },
       ],
       observedAt,
     )
@@ -468,7 +468,7 @@ describe('affiliation persistence', () => {
       select payload->>'characterId' as character_id, occurred_at
       from domain_events order by event_sequence
     `
-    expect(events).toEqual([
+    expect([...events]).toStrictEqual([
       { character_id: '2', occurred_at: observedAt },
       { character_id: '3', occurred_at: observedAt },
       { character_id: '1', occurred_at: observedAt },
@@ -478,7 +478,7 @@ describe('affiliation persistence', () => {
   test('is idempotent, discards faction data, and leaves rows unchanged on failed ESI work', async () => {
     await insertCharacter(1, 10)
     const observedAt = new Date('2026-08-24T12:00:00.000Z')
-    const observation = { characterId: 1, corporationId: 101, allianceId: 201, factionId: 500001 }
+    const observation = { allianceId: 201, characterId: 1, corporationId: 101, factionId: 500_001 }
     await processBatch([1], [observation], observedAt)
     await processBatch([1], [observation], observedAt)
     const beforeFailure = await connection<
@@ -494,7 +494,7 @@ describe('affiliation persistence', () => {
     const afterFailure = await connection<
       { corporation_id: string; alliance_id: string | null; affiliation_resolution_state: string }[]
     >`select corporation_id, alliance_id, affiliation_resolution_state from characters where character_id = 1`
-    expect(afterFailure).toEqual(beforeFailure)
+    expect(afterFailure).toStrictEqual(beforeFailure)
     expect(JSON.stringify(afterFailure)).not.toContain('500001')
   })
 })
@@ -572,12 +572,12 @@ function affiliationResult(
   stale = false,
 ) {
   return {
+    cachedUntil: new Date(validatedAt.getTime() + 60 * 60 * 1000).toISOString(),
     data: observations,
-    cachedUntil: new Date(validatedAt.getTime() + 60 * 60 * 1_000).toISOString(),
-    validatedAt: validatedAt.toISOString(),
+    quota: {},
     source: 'esi' as const,
     stale,
-    quota: {},
+    validatedAt: validatedAt.toISOString(),
   }
 }
 

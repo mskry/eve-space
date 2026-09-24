@@ -10,10 +10,10 @@ import { queryServer } from '../support/query-server'
 
 const staleMetadata = {
   cachedUntil: '2026-09-01T10:59:00.000Z',
-  validatedAt: '2026-09-01T10:58:00.000Z',
-  stale: true,
-  retryAt: '2026-09-01T11:07:00.000Z',
   refreshFailureClass: 'esi-unavailable',
+  retryAt: '2026-09-01T11:07:00.000Z',
+  stale: true,
+  validatedAt: '2026-09-01T10:58:00.000Z',
 }
 
 describe('corporation queries', () => {

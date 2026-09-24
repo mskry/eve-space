@@ -20,6 +20,8 @@ if (entryPath !== undefined && import.meta.url === pathToFileURL(resolve(entryPa
 function requiredArgument(name: string): string {
   const index = process.argv.indexOf(name);
   const value = process.argv[index + 1];
-  if (index < 0 || value === undefined) throw new Error(`${name} requires a value`);
+  if (index < 0 || value === undefined) {
+    throw new Error(`${name} requires a value`);
+  }
   return value;
 }

@@ -21,7 +21,7 @@ describe('generic operation execution', () => {
     const response: EsiResponse<GetStatusResponse> = await client.callOperation('GetStatus', {});
 
     expect(response.data.players).toBe(42);
-    expect(JSON.parse(JSON.stringify(response))).toEqual(response);
+    expect(JSON.parse(JSON.stringify(response))).toStrictEqual(response);
     expect(fetch).toHaveBeenCalledOnce();
     expect(fetch.mock.calls[0]?.[0]).toBe('https://esi.example.test/status');
   });
@@ -41,11 +41,11 @@ describe('generic operation execution', () => {
 
     expect(fetch).toHaveBeenCalledOnce();
     expect(response.meta).toMatchObject({
-      status: 200,
-      requestId: 'request-generic-1',
-      pagination: { pages: 17 },
       cache: { cacheControl: 'public, max-age=30', etag: 'status-etag' },
       errorLimit: { remaining: 99, reset: 12 },
+      pagination: { pages: 17 },
+      requestId: 'request-generic-1',
+      status: 200,
     });
     expect(response.meta.headers['x-pages']).toBe('17');
   });
@@ -163,7 +163,7 @@ describe('generic operation execution', () => {
       { confirmMutation: true },
     );
 
-    expect(response.data).toEqual([2_112_625_429]);
+    expect(response.data).toStrictEqual([2_112_625_429]);
     expect(fetch).toHaveBeenCalledOnce();
     const request = fetch.mock.calls[0]?.[1];
     expect(request?.method).toBe('POST');
@@ -202,7 +202,9 @@ describe('generic operation execution', () => {
       body: [characterId],
     });
 
-    expect(response.data).toEqual([{ character_id: characterId, corporation_id: 98_000_001 }]);
+    expect(response.data).toStrictEqual([
+      { character_id: characterId, corporation_id: 98_000_001 },
+    ]);
     expect(fetch).toHaveBeenCalledOnce();
     expect(fetch.mock.calls[0]?.[1]?.method).toBe('POST');
     expect(tokenProvider).not.toHaveBeenCalled();
@@ -217,7 +219,7 @@ describe('generic operation execution', () => {
         body: [2_112_625_429],
         standing: 5,
       }),
-    ).resolves.toEqual([2_112_625_429]);
+    ).resolves.toStrictEqual([2_112_625_429]);
     expect(fetch).toHaveBeenCalledOnce();
     expect(fetch.mock.calls[0]?.[1]?.method).toBe('POST');
   });
@@ -225,9 +227,9 @@ describe('generic operation execution', () => {
 
 function contactMutationArguments(): CallOperationArguments<'PostCharactersCharacterIdContacts'> {
   return {
+    body: [2_112_625_429],
     path: { character_id: 2_112_625_428 },
     query: { standing: 5 },
-    body: [2_112_625_429],
   };
 }
 

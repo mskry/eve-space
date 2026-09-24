@@ -4,7 +4,6 @@ import { findDependencyCycles } from '../dependency-cycles.js'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
-  declaration: ['coverage-manifest'],
   adapter: [
     'published-skill-catalogue-adapter',
     'published-type-details-adapter',
@@ -12,10 +11,11 @@ const modulesByTier = {
     'static-location-labels-adapter',
   ],
   'adapter-support': ['sde-product-adapter'],
-  catalog: ['product-catalog'],
-  validation: ['coverage-validation'],
-  reporting: ['coverage-report'],
   capability: ['capabilities'],
+  catalog: ['product-catalog'],
+  declaration: ['coverage-manifest'],
+  reporting: ['coverage-report'],
+  validation: ['coverage-validation'],
 } as const
 
 type CoreDataTier = keyof typeof modulesByTier
@@ -27,27 +27,27 @@ const tierByModule = new Map<string, CoreDataTier>(
 )
 
 const allowedImportTiers: Record<CoreDataTier, readonly CoreDataTier[]> = {
-  declaration: [],
   adapter: ['adapter-support'],
   'adapter-support': [],
-  catalog: ['adapter'],
-  validation: ['declaration', 'catalog'],
-  reporting: ['declaration'],
   capability: ['catalog'],
+  catalog: ['adapter'],
+  declaration: [],
+  reporting: ['declaration'],
+  validation: ['declaration', 'catalog'],
 }
 
 const allowedPackages: Record<CoreDataTier, ReadonlySet<string>> = {
-  declaration: new Set(['@eve-space/core-data-contract']),
   adapter: new Set([
     '@eve-space/core-data-contract',
     '@eve-space/core-eve-projections/skill-training',
     'postgres',
   ]),
   'adapter-support': new Set(['@eve-space/core-data-contract', 'postgres']),
-  catalog: new Set(['@eve-space/core-data-contract']),
-  validation: new Set(['@eve-space/core-data-contract']),
-  reporting: new Set(),
   capability: new Set(['@eve-space/core-data-contract']),
+  catalog: new Set(['@eve-space/core-data-contract']),
+  declaration: new Set(['@eve-space/core-data-contract']),
+  reporting: new Set(),
+  validation: new Set(['@eve-space/core-data-contract']),
 }
 
 const allowedAdapterSources = new Set(['api/src/db/client', 'api/src/universe/database-read'])
@@ -82,10 +82,12 @@ export function coreDataBoundaryViolations(sources: readonly CoreDataBoundarySou
 
 function violationsForSource(source: CoreDataBoundarySource) {
   const dynamicImportViolations = nonLiteralDynamicImportViolations(source)
-  if (isContractSource(source.path))
+  if (isContractSource(source.path)) {
     return [...dynamicImportViolations, ...contractViolations(source)]
-  if (isCoreDataImplementation(source.path))
+  }
+  if (isCoreDataImplementation(source.path)) {
     return [...dynamicImportViolations, ...implementationViolations(source)]
+  }
   return [...dynamicImportViolations, ...consumerViolations(source)]
 }
 
@@ -97,8 +99,9 @@ function nonLiteralDynamicImportViolations(source: CoreDataBoundarySource) {
       ts.isCallExpression(node) &&
       node.expression.kind === ts.SyntaxKind.ImportKeyword &&
       (node.arguments.length !== 1 || !isLiteralModuleSpecifier(node.arguments[0]))
-    )
+    ) {
       violations.push(`${source.path}: core-data dynamic imports must use string literals`)
+    }
   })
   return violations
 }
@@ -113,18 +116,23 @@ function contractViolations(source: CoreDataBoundarySource) {
 function implementationViolations(source: CoreDataBoundarySource) {
   const module = moduleName(source.path)
   const sourceTier = tierByModule.get(module)
-  if (!sourceTier) return [`${source.path}: core-data module ${module} has no declared tier`]
+  if (!sourceTier) {
+    return [`${source.path}: core-data module ${module} has no declared tier`]
+  }
 
   const violations = typescriptModuleSpecifiers(source.path, source.source).flatMap((specifier) => {
     const importedPath = relativeImportPath(source.path, specifier)
     if (importedPath?.startsWith('api/src/core-data/')) {
       const importedModule = moduleName(importedPath)
       const importedTier = tierByModule.get(importedModule)
-      if (!importedTier)
+      if (!importedTier) {
         return [
           `${source.path}: ${sourceTier} module ${module} imports undeclared core-data module ${importedModule}`,
         ]
-      if (allowedImportTiers[sourceTier].includes(importedTier)) return []
+      }
+      if (allowedImportTiers[sourceTier].includes(importedTier)) {
+        return []
+      }
       return [
         `${source.path}: ${sourceTier} module ${module} cannot import ${importedTier} module ${importedModule}`,
       ]
@@ -133,13 +141,16 @@ function implementationViolations(source: CoreDataBoundarySource) {
       if (
         (sourceTier === 'adapter' || sourceTier === 'adapter-support') &&
         allowedAdapterSources.has(stripExtension(importedPath))
-      )
+      ) {
         return []
+      }
       return [
         `${source.path}: ${sourceTier} module ${module} cannot import source implementation ${specifier}`,
       ]
     }
-    if (allowedPackages[sourceTier].has(specifier)) return []
+    if (allowedPackages[sourceTier].has(specifier)) {
+      return []
+    }
     return [`${source.path}: ${sourceTier} module ${module} cannot import package ${specifier}`]
   })
   return [...violations, ...genericDispatcherViolations(source)]
@@ -148,10 +159,14 @@ function implementationViolations(source: CoreDataBoundarySource) {
 function consumerViolations(source: CoreDataBoundarySource) {
   return typescriptModuleSpecifiers(source.path, source.source).flatMap((specifier) => {
     const importedPath = relativeImportPath(source.path, specifier)
-    if (!importedPath?.startsWith('api/src/core-data/')) return []
+    if (!importedPath?.startsWith('api/src/core-data/')) {
+      return []
+    }
     const consumer = stripExtension(source.path.replaceAll('\\', '/'))
     const importedModule = moduleName(importedPath)
-    if (allowedConsumers.get(consumer)?.has(importedModule)) return []
+    if (allowedConsumers.get(consumer)?.has(importedModule)) {
+      return []
+    }
     return [
       `${source.path}: only approved startup and platform capability integration may import core-data module ${importedModule}`,
     ]
@@ -163,15 +178,17 @@ function genericDispatcherViolations(source: CoreDataBoundarySource) {
   const violations: string[] = []
   visit(sourceFile, (node) => {
     const name = declarationName(node)
-    if (name && genericDispatcherNames.has(name))
+    if (name && genericDispatcherNames.has(name)) {
       violations.push(`${source.path}: core-data must not expose generic dispatcher ${name}`)
+    }
     if (
       ts.isIndexSignatureDeclaration(node) &&
       node.parent &&
       ts.isInterfaceDeclaration(node.parent) &&
       node.parent.name.text === 'CoreDataMethods'
-    )
+    ) {
       violations.push(`${source.path}: CoreDataMethods must declare exact product methods`)
+    }
   })
   return violations
 }
@@ -196,10 +213,12 @@ function declarationName(node: ts.Node) {
     ts.isPropertyDeclaration(node) ||
     ts.isPropertySignature(node) ||
     ts.isMethodSignature(node)
-  )
+  ) {
     return node.name && ts.isIdentifier(node.name) ? node.name.text : undefined
-  if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) return node.name.text
-  return undefined
+  }
+  if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+    return node.name.text
+  }
 }
 
 function isContractSource(path: string) {
@@ -215,7 +234,9 @@ function moduleName(path: string) {
 }
 
 function relativeImportPath(sourcePath: string, specifier: string) {
-  if (!specifier.startsWith('.')) return undefined
+  if (!specifier.startsWith('.')) {
+    return
+  }
   return posix.normalize(posix.join(posix.dirname(sourcePath.replaceAll('\\', '/')), specifier))
 }
 

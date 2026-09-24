@@ -6,7 +6,9 @@ import EsiResourceBoundary from '../../app/components/esi/ResourceBoundary.vue'
 const mountedWrappers: { unmount: () => void }[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   document.body.replaceChildren()
 })
 
@@ -14,7 +16,7 @@ describe('EsiResourceBoundary', () => {
   it('renders loading and retryable error defaults', async () => {
     const wrapper = await mountSuspended(EsiResourceBoundary, {
       props: {
-        state: { status: 'loading', title: 'Loading resource', message: 'Connecting...' },
+        state: { message: 'Connecting...', status: 'loading', title: 'Loading resource' },
       },
     })
     mountedWrappers.push(wrapper)
@@ -23,11 +25,11 @@ describe('EsiResourceBoundary', () => {
 
     await wrapper.setProps({
       state: {
-        status: 'error',
         code: 'ERR / TEST',
-        title: 'Resource unavailable',
         message: 'The request failed.',
         retryLabel: 'TRY AGAIN',
+        status: 'error',
+        title: 'Resource unavailable',
       },
     })
     await wrapper.get('button').trigger('click')
@@ -39,11 +41,11 @@ describe('EsiResourceBoundary', () => {
     const wrapper = await mountSuspended(EsiResourceBoundary, {
       props: {
         state: {
-          status: 'authorization-required',
-          code: 'ESI 403 / TEST',
-          title: 'Authorization required',
-          message: 'Grant the required scope.',
           action: { href: '/reauthorize', label: 'AUTHORIZE' },
+          code: 'ESI 403 / TEST',
+          message: 'Grant the required scope.',
+          status: 'authorization-required',
+          title: 'Authorization required',
         },
       },
     })
@@ -58,9 +60,9 @@ describe('EsiResourceBoundary', () => {
     const wrapper = await mountSuspended(EsiResourceBoundary, {
       props: {
         state: {
+          retryLabel: 'RETRY',
           status: 'authorization-required',
           title: 'Authorization unavailable',
-          retryLabel: 'RETRY',
         },
       },
     })
@@ -75,9 +77,9 @@ describe('EsiResourceBoundary', () => {
       props: {
         hasData: true,
         state: {
+          action: { href: '/reauthorize', label: 'AUTHORIZE' },
           status: 'authorization-required',
           title: 'Refresh authorization required',
-          action: { href: '/reauthorize', label: 'AUTHORIZE' },
         },
       },
       slots: { default: '<p data-retained>Retained resource</p>' },
@@ -109,7 +111,7 @@ describe('EsiResourceBoundary', () => {
   it('allows feature-owned loading and error presentation', async () => {
     const wrapper = await mountSuspended(EsiResourceBoundary, {
       props: {
-        state: { status: 'loading', title: '', message: null },
+        state: { message: null, status: 'loading', title: '' },
       },
       slots: {
         error: '<p data-error>Feature error</p>',
@@ -121,7 +123,7 @@ describe('EsiResourceBoundary', () => {
     expect(wrapper.get('[data-loading]').text()).toBe('Feature skeleton')
 
     await wrapper.setProps({
-      state: { status: 'error', title: 'Unavailable', message: 'Failed.' },
+      state: { message: 'Failed.', status: 'error', title: 'Unavailable' },
     })
     expect(wrapper.get('[data-error]').text()).toBe('Feature error')
   })
@@ -130,18 +132,22 @@ describe('EsiResourceBoundary', () => {
 function persistencePresentation(
   kind: EsiQueryPersistencePresentation['kind'],
 ): EsiQueryPersistencePresentation {
-  if (kind === 'restored-refresh-failed')
+  if (kind === 'restored-refresh-failed') {
     return {
       kind,
       originalSuccessAt: '2026-09-15T01:00:00.000Z',
       refreshFailureCode: 'ESI_UNAVAILABLE',
     }
-  if (kind === 'server-stale')
+  }
+  if (kind === 'server-stale') {
     return {
       kind,
-      validatedAt: '2026-09-15T00:45:00.000Z',
       refreshFailureClass: 'esi-cooldown',
+      validatedAt: '2026-09-15T00:45:00.000Z',
     }
-  if (kind === 'restored') return { kind, originalSuccessAt: '2026-09-15T01:00:00.000Z' }
+  }
+  if (kind === 'restored') {
+    return { kind, originalSuccessAt: '2026-09-15T01:00:00.000Z' }
+  }
   return { kind }
 }

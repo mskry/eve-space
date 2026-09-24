@@ -1,4 +1,4 @@
-const maximumDomainEventRedriveLimit = 1_000
+const maximumDomainEventRedriveLimit = 1000
 const domainEventRedriveFlags = new Set(['--dry-run', '--confirm-queue-discard'])
 const domainEventRedriveValueArguments = new Set(['--from', '--to', '--time-field', '--limit'])
 
@@ -41,25 +41,31 @@ export function parseDomainEventRedriveArgs(
 
   const from = parseTimestamp(requiredValue(values, '--from'), '--from')
   const to = parseTimestamp(requiredValue(values, '--to'), '--to')
-  if (from >= to) throw new Error('--from must be before --to')
+  if (from >= to) {
+    throw new Error('--from must be before --to')
+  }
 
   const selector = requiredValue(values, '--time-field')
-  if (selector !== 'occurrence' && selector !== 'publication')
+  if (selector !== 'occurrence' && selector !== 'publication') {
     throw new Error('--time-field must be occurrence or publication')
+  }
 
   const limitValue = requiredValue(values, '--limit')
-  if (!/^\d+$/.test(limitValue)) throw new Error('--limit must be an integer')
+  if (!/^\d+$/.test(limitValue)) {
+    throw new Error('--limit must be an integer')
+  }
   const limit = Number(limitValue)
-  if (limit < 1 || limit > maximumDomainEventRedriveLimit)
+  if (limit < 1 || limit > maximumDomainEventRedriveLimit) {
     throw new Error(`--limit must be between 1 and ${maximumDomainEventRedriveLimit}`)
+  }
 
   return {
-    from,
-    to,
-    limit,
-    timeField: selector === 'occurrence' ? 'occurredAt' : 'publishedAt',
     dryRun: flags.has('--dry-run'),
+    from,
+    limit,
     queueDiscardConfirmed: flags.has('--confirm-queue-discard'),
+    timeField: selector === 'occurrence' ? 'occurredAt' : 'publishedAt',
+    to,
   }
 }
 
@@ -69,29 +75,35 @@ export async function runDomainEventRedriveCommand(
 ) {
   const storeOptions: DomainEventRedriveOptions = {
     from: options.from,
-    to: options.to,
     limit: options.limit,
     timeField: options.timeField,
+    to: options.to,
   }
   if (options.dryRun) {
     return { dryRun: true as const, matched: await dependencies.count(storeOptions) }
   }
-  if (!options.queueDiscardConfirmed) throw new Error('Mutation requires --confirm-queue-discard')
+  if (!options.queueDiscardConfirmed) {
+    throw new Error('Mutation requires --confirm-queue-discard')
+  }
 
   const selectedIds = await dependencies.select(storeOptions)
   await dependencies.assertQueueJobsAbsent(selectedIds)
   const eventIds = await dependencies.redrive(selectedIds)
-  return { dryRun: false as const, redriven: eventIds.length, eventIds }
+  return { dryRun: false as const, eventIds, redriven: eventIds.length }
 }
 
 function requiredValue(values: ReadonlyMap<string, string>, argument: string) {
   const value = values.get(argument)
-  if (!value) throw new Error(`Missing required argument: ${argument}`)
+  if (!value) {
+    throw new Error(`Missing required argument: ${argument}`)
+  }
   return value
 }
 
 function addUniqueFlag(flags: Set<string>, argument: string) {
-  if (flags.has(argument)) throw new Error(`Duplicate argument: ${argument}`)
+  if (flags.has(argument)) {
+    throw new Error(`Duplicate argument: ${argument}`)
+  }
   flags.add(argument)
 }
 
@@ -100,11 +112,16 @@ function collectValueArgument(
   value: string | undefined,
   values: Map<string, string>,
 ) {
-  if (!domainEventRedriveValueArguments.has(argument))
+  if (!domainEventRedriveValueArguments.has(argument)) {
     throw new Error(`Unknown argument: ${argument}`)
-  if (values.has(argument)) throw new Error(`Duplicate argument: ${argument}`)
+  }
+  if (values.has(argument)) {
+    throw new Error(`Duplicate argument: ${argument}`)
+  }
 
-  if (!value || value.startsWith('--')) throw new Error(`Missing value for ${argument}`)
+  if (!value || value.startsWith('--')) {
+    throw new Error(`Missing value for ${argument}`)
+  }
   values.set(argument, value)
 }
 
@@ -113,9 +130,13 @@ function parseTimestamp(value: string, argument: string) {
     /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?(Z|([+-])(\d{2}):(\d{2}))$/.exec(
       value,
     )
-  if (!match) throw new Error(`${argument} must be an ISO-8601 timestamp with a timezone`)
+  if (!match) {
+    throw new Error(`${argument} must be an ISO-8601 timestamp with a timezone`)
+  }
   const timestamp = new Date(value)
-  if (Number.isNaN(timestamp.getTime())) throw new Error(`${argument} must be a valid timestamp`)
+  if (Number.isNaN(timestamp.getTime())) {
+    throw new TypeError(`${argument} must be a valid timestamp`)
+  }
   let offsetMinutes = 0
   if (match[8] !== 'Z') {
     const direction = match[9] === '+' ? 1 : -1
@@ -140,7 +161,8 @@ function parseTimestamp(value: string, argument: string) {
     localTimestamp.getUTCSeconds(),
     localTimestamp.getUTCMilliseconds(),
   ]
-  if (expected.some((component, index) => component !== actual[index]))
+  if (expected.some((component, index) => component !== actual[index])) {
     throw new Error(`${argument} must be a valid timestamp`)
+  }
   return timestamp
 }

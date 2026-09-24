@@ -43,7 +43,9 @@ const systemStatus = computed(() => statusQuery.data.value?.telemetry)
 const apiLatencyMs = computed(() => statusQuery.data.value?.latencyMs)
 const activeCharacterOverviewUnavailable = computed(() => {
   const characterId = parseRouteId(route.params.characterId)
-  if (characterId === undefined) return false
+  if (characterId === undefined) {
+    return false
+  }
 
   return queryCache
     .getEntries({ exact: true, key: PRIVATE_QUERY_KEYS.characterOverview(characterId) })
@@ -53,8 +55,12 @@ const activeCharacterOverviewUnavailable = computed(() => {
 })
 const upstreamStatus = computed(() => {
   const status = systemStatus.value?.services.esi.status
-  if (status === 'unavailable') return status
-  if (activeCharacterOverviewUnavailable.value) return 'partial'
+  if (status === 'unavailable') {
+    return status
+  }
+  if (activeCharacterOverviewUnavailable.value) {
+    return 'partial'
+  }
   return status
 })
 const upstreamCheckedAt = computed(() =>
@@ -76,7 +82,9 @@ const characterRosterQueryResult = useQuery(() => ({
 const pageTitle = computed(() => String(route.meta.title ?? 'Overview'))
 const systemStatusState = computed(() => systemStatus.value?.status ?? 'pending')
 const authorizedCharacter = computed(() => {
-  if (!authSession.value.authenticated) return undefined
+  if (!authSession.value.authenticated) {
+    return
+  }
   const mainCharacter = authSession.value.account.mainCharacter
   return characterRosterQueryResult.data.value?.characters.some(
     (character) => character.characterId === mainCharacter.characterId,
@@ -108,17 +116,23 @@ onMounted(() => void initializeAuth())
 watch(
   () => ({ fullPath: route.fullPath, path: route.path }),
   (currentRoute, previousRoute) => {
-    if (!mobileNavigationOpen.value) return
+    if (!mobileNavigationOpen.value) {
+      return
+    }
 
     mobileNavigationRestoreFocus.value = currentRoute.path === previousRoute.path
     mobileNavigationOpen.value = false
   },
 )
 watch(mobileNavigationOpen, (open) => {
-  if (open) mobileNavigationRestoreFocus.value = true
+  if (open) {
+    mobileNavigationRestoreFocus.value = true
+  }
 })
 watch(statusPopoverOpen, (open) => {
-  if (open) void statusQuery.refresh()
+  if (open) {
+    void statusQuery.refresh()
+  }
 })
 
 function prefetchSystemStatus() {

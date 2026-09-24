@@ -10,17 +10,10 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'node',
-    include: ['test/**/*.test.ts'],
-    pool: 'forks',
-    maxWorkers: 1,
-    fileParallelism: false,
-    hookTimeout: 120_000,
-    testTimeout: 60_000,
     coverage: {
-      provider: 'v8',
-      include: ['src/**/*.ts'],
       exclude: ['test/**'],
+      include: ['src/**/*.ts'],
+      provider: 'v8',
       reporter: [
         'text',
         'json-summary',
@@ -29,5 +22,12 @@ export default defineConfig({
       ],
       reportsDirectory: 'coverage',
     },
+    environment: 'node',
+    fileParallelism: false,
+    hookTimeout: 120_000,
+    include: ['test/**/*.test.ts'],
+    maxWorkers: 1,
+    pool: 'forks',
+    testTimeout: 60_000,
   },
 })

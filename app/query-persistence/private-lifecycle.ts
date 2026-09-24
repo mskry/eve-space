@@ -14,7 +14,7 @@ import type { QueryPersistenceNotifications } from './notifications'
 import type { QueryPersistenceStorage, QueryPersistenceStorageWrite } from './storage'
 
 const PRIVATE_ADMISSION_MAX_AGE_MS = 30_000
-const PRIVATE_ADMISSION_RENEWAL_LEAD_MS = 5_000
+const PRIVATE_ADMISSION_RENEWAL_LEAD_MS = 5000
 const MAX_TIMEOUT_MS = 2_147_483_647
 
 export interface QueryPersistenceTimers {
@@ -129,26 +129,10 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   const cleanup = new Set<() => void>()
 
   const lifecycle = {
-    applyVerifiedIdentity(
-      session: AuthSession,
-      loadAdmission?: AdmissionLoader,
-      signal?: AbortSignal,
-      admission?: CacheAdmissionBootstrap,
-    ): Promise<boolean> {
-      if (identityCommitDepth > 0) {
-        return Promise.resolve(hasRetainedPrivateAccess(undefined, now()))
-      }
-      const attempt = ++identityAttempt
-      if (host.isRestorationSettled()) {
-        return applyRestoredVerifiedIdentity(session, loadAdmission, signal, attempt, admission)
-      }
-      return host.waitForRestoration().then(() => {
-        if (!identityAttemptIsCurrent(attempt)) return false
-        return applyRestoredVerifiedIdentity(session, loadAdmission, signal, attempt, admission)
-      })
-    },
     applyRestoredEnvelope(envelope: EsiQueryCacheEnvelope) {
-      if (disposed) return
+      if (disposed) {
+        return
+      }
       const privateRestoreAllowed =
         durableGenerationVerified &&
         privatePersistenceEnabled &&
@@ -164,14 +148,38 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
             },
       )
     },
+    applyVerifiedIdentity(
+      session: AuthSession,
+      loadAdmission?: AdmissionLoader,
+      signal?: AbortSignal,
+      admission?: CacheAdmissionBootstrap,
+    ): Promise<boolean> {
+      if (identityCommitDepth > 0) {
+        return Promise.resolve(hasRetainedPrivateAccess(undefined, now()))
+      }
+      const attempt = ++identityAttempt
+      if (host.isRestorationSettled()) {
+        return applyRestoredVerifiedIdentity(session, loadAdmission, signal, attempt, admission)
+      }
+      return host.waitForRestoration().then(() => {
+        if (!identityAttemptIsCurrent(attempt)) {
+          return false
+        }
+        return applyRestoredVerifiedIdentity(session, loadAdmission, signal, attempt, admission)
+      })
+    },
     async clearCorruptCache() {
-      if (disposed) return false
+      if (disposed) {
+        return false
+      }
       const epoch = closeAndPurgePrivateCache({ kind: 'all' }, false)
       host.clearCorruptCache(emptyEnvelope(invalidationGeneration))
       try {
         await storage.removeEnvelope()
       } catch {
-        if (!disposed && epoch === privateLifecycleEpoch) disablePrivatePersistence()
+        if (!disposed && epoch === privateLifecycleEpoch) {
+          disablePrivatePersistence()
+        }
         return false
       }
       return !disposed && epoch === privateLifecycleEpoch
@@ -180,7 +188,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       disablePrivatePersistence()
     },
     dispose() {
-      if (disposed) return
+      if (disposed) {
+        return
+      }
       disposed = true
       identityAttempt += 1
       privateLifecycleEpoch += 1
@@ -190,7 +200,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       retainedPrivateAccessOpen = false
       clearAdmissionTimers()
       host.touch()
-      for (const dispose of cleanup) dispose()
+      for (const dispose of cleanup) {
+        dispose()
+      }
       cleanup.clear()
       notifications.dispose()
     },
@@ -203,16 +215,10 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       host.reconcileRetainedData()
       return hasRetainedPrivateAccess(persistence, currentTime)
     },
-    ownsCharacter(characterId: number | undefined) {
-      return (
-        !disposed &&
-        admissionIsCurrent(now()) &&
-        activeAdmission?.userId === verifiedUserId &&
-        activeAdmission.characters.some((character) => character.characterId === characterId)
-      )
-    },
     installListeners() {
-      if (listenersInstalled || disposed) return
+      if (listenersInstalled || disposed) {
+        return
+      }
       listenersInstalled = true
       initializeLifecycleListeners()
     },
@@ -222,6 +228,34 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       preserveFreshSuccesses = false,
     ) {
       return invalidatePrivateCache(scope, preserveErrors, false, undefined, preserveFreshSuccesses)
+    },
+    ownsCharacter(characterId: number | undefined) {
+      return (
+        !disposed &&
+        admissionIsCurrent(now()) &&
+        activeAdmission?.userId === verifiedUserId &&
+        activeAdmission.characters.some((character) => character.characterId === characterId)
+      )
+    },
+    async readStoredEnvelope() {
+      const guard = lifecycleGuard()
+      try {
+        const result = await storage.read()
+        if (disposed) {
+          return null
+        }
+        if (!guardIsCurrent(guard)) {
+          return result.value
+        }
+        applyStorageGeneration(result.generation)
+        return result.value
+      } catch (error) {
+        if (!guardIsCurrent(guard)) {
+          return null
+        }
+        disablePrivatePersistence()
+        throw error
+      }
     },
     async refreshAdmission(scope: PrivateQueryInvalidationScope) {
       const expectedIdentityAttempt = identityAttempt
@@ -234,26 +268,16 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     refreshAdmissionTimers() {
       scheduleAdmissionExpiry()
     },
-    runIfActive(effect: () => void) {
-      if (!disposed) effect()
-    },
-    async readStoredEnvelope() {
-      const guard = lifecycleGuard()
-      try {
-        const result = await storage.read()
-        if (disposed) return null
-        if (!guardIsCurrent(guard)) return result.value
-        applyStorageGeneration(result.generation)
-        return result.value
-      } catch (error) {
-        if (!guardIsCurrent(guard)) return null
-        disablePrivatePersistence()
-        throw error
-      }
-    },
     removeStoredEnvelope() {
-      if (disposed) return Promise.resolve()
+      if (disposed) {
+        return Promise.resolve()
+      }
       return storage.removeEnvelope()
+    },
+    runIfActive(effect: () => void) {
+      if (!disposed) {
+        effect()
+      }
     },
     serialize(cache: PersistedColadaCache) {
       const currentTime = now()
@@ -279,20 +303,28 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       return result.serialized
     },
     suspendAdmission() {
-      if (!disposed) suspendPrivateAdmission()
+      if (!disposed) {
+        suspendPrivateAdmission()
+      }
     },
     async writeStoredEnvelope(value: string) {
-      if (!storage.available || disposed) return
+      if (!storage.available || disposed) {
+        return
+      }
       const guard = lifecycleGuard()
       const privateWriteRequested = durableGenerationVerified && privatePersistenceEnabled
       let result: QueryPersistenceStorageWrite
       try {
         result = await storage.write(value, privateWriteRequested)
       } catch (error) {
-        if (guardIsCurrent(guard) && privateWriteRequested) disablePrivatePersistence()
+        if (guardIsCurrent(guard) && privateWriteRequested) {
+          disablePrivatePersistence()
+        }
         throw error
       }
-      if (!guardIsCurrent(guard)) return
+      if (!guardIsCurrent(guard)) {
+        return
+      }
       applyStorageWrite(result, privateWriteRequested)
     },
   }
@@ -315,7 +347,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
         return false
       }
     }
-    if (!identityAttemptIsCurrent(attempt) || nextUserId === null) return false
+    if (!identityAttemptIsCurrent(attempt) || nextUserId === null) {
+      return false
+    }
     if (!loadAdmission) {
       await rejectAdmission()
       return false
@@ -337,15 +371,21 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       (persistedOwner ?? cachedOwner ?? (host.hasCharacterData() ? null : nextOwner)) === nextOwner
 
     verifiedUserId = nextOwner
-    if (!ownerMatches) lastAcceptedAdmission = null
+    if (!ownerMatches) {
+      lastAcceptedAdmission = null
+    }
     identityCommitDepth += 1
     try {
-      if (!ownerMatches) closeAndPurgePrivateCache({ kind: 'all' }, false)
+      if (!ownerMatches) {
+        closeAndPurgePrivateCache({ kind: 'all' }, false)
+      }
       host.applyVerifiedSession(session, ownerMatches)
     } finally {
       identityCommitDepth -= 1
     }
-    if (nextOwner === null) admissionLoader = undefined
+    if (nextOwner === null) {
+      admissionLoader = undefined
+    }
     host.touch()
     return !ownerMatches
   }
@@ -365,7 +405,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     ) {
       return pendingAdmissionRequest.promise
     }
-    if (disposed || verifiedUserId === null) return Promise.resolve(false)
+    if (disposed || verifiedUserId === null) {
+      return Promise.resolve(false)
+    }
 
     const attempt: AdmissionAttempt = {
       alreadyInvalidatedScope,
@@ -383,16 +425,23 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
         const value = await Promise.resolve().then(() =>
           bootstrap ? bootstrap.context : loadAdmission(),
         )
-        if (!admissionAttemptIsCurrent(attempt)) return false
+        if (!admissionAttemptIsCurrent(attempt)) {
+          return false
+        }
         if (value === null) {
           suspendPrivateAdmission()
           return false
         }
         return await admitPrivateCache(value, attempt)
       } catch (error) {
-        if (!admissionAttemptIsCurrent(attempt)) return false
-        if (host.isAuthenticationDenial(error)) await rejectAdmission()
-        else suspendPrivateAdmission()
+        if (!admissionAttemptIsCurrent(attempt)) {
+          return false
+        }
+        if (host.isAuthenticationDenial(error)) {
+          await rejectAdmission()
+        } else {
+          suspendPrivateAdmission()
+        }
         return false
       } finally {
         if (!disposed && pendingAdmissionRequest?.attempt.id === attempt.id) {
@@ -408,15 +457,19 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     value: CacheAdmissionContext,
     attempt: AdmissionAttempt,
   ): Promise<boolean> {
-    if (!admissionAttemptIsCurrent(attempt)) return false
+    if (!admissionAttemptIsCurrent(attempt)) {
+      return false
+    }
     const admission = parseCacheAdmissionContext(value)
-    if (admission?.userId !== attempt.ownerUserId || admission?.userId !== verifiedUserId) {
+    if (!admissionOwnerMatches(admission, attempt.ownerUserId)) {
       await rejectAdmission()
       return false
     }
     const deadline = cacheAdmissionDeadline(admission, attempt.startedAt)
     if (!admissionAttemptIsCurrent(attempt) || now() >= deadline) {
-      if (admissionAttemptIsCurrent(attempt)) await rejectAdmission()
+      if (admissionAttemptIsCurrent(attempt)) {
+        await rejectAdmission()
+      }
       return false
     }
 
@@ -429,7 +482,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     const durableGeneration = await verifyDurableGeneration(() =>
       admissionAttemptIsCurrent(attempt),
     )
-    if (durableGeneration.kind === 'superseded' || now() >= deadline) return false
+    if (durableGeneration.kind === 'superseded' || now() >= deadline) {
+      return false
+    }
     if (durableGeneration.kind === 'unusable') {
       // Durable persistence is unusable rather than the admission invalid: it still authorizes live
       // requests, while retained data stays closed and no cache is committed until a later probe
@@ -438,11 +493,15 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       applyAdmissionWithoutPersistence(admission, deadline)
       return false
     }
-    if (!admissionAttemptIsCurrent(attempt)) return false
+    if (!admissionAttemptIsCurrent(attempt)) {
+      return false
+    }
 
     const currentTime = now()
     host.reconcileRetainedData()
-    if (!admissionAttemptIsCurrent(attempt) || currentTime >= deadline) return false
+    if (!admissionAttemptIsCurrent(attempt) || currentTime >= deadline) {
+      return false
+    }
     const invalidationScope = host.resolveAdmissionInvalidationScope(
       admission,
       attempt.previousAdmission,
@@ -452,7 +511,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     if (invalidationScope) {
       attempt.epoch = closeAndPurgePrivateCache(invalidationScope, false)
       const invalidated = await advanceInvalidationGeneration(invalidationScope, attempt.epoch)
-      if (!admissionAttemptIsCurrent(attempt) || !invalidated || now() >= deadline) return false
+      if (!admissionAttemptIsCurrent(attempt) || !invalidated || now() >= deadline) {
+        return false
+      }
     }
 
     activeAdmission = admission
@@ -462,13 +523,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     const admittedCache = host.collectAdmittedCache(admission, now())
 
     await host.waitForHydration()
-    if (
-      !admissionAttemptIsCurrent(attempt) ||
-      activeAdmission !== admission ||
-      now() >= deadline ||
-      !durableGenerationVerified ||
-      !privatePersistenceEnabled
-    ) {
+    if (!canCommitPrivateAdmission(attempt, admission, deadline)) {
       return false
     }
     host.commitAdmittedCache(admittedCache, now())
@@ -479,9 +534,32 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     return true
   }
 
+  function admissionOwnerMatches(
+    admission: ReturnType<typeof parseCacheAdmissionContext>,
+    expectedOwner: string,
+  ): admission is CacheAdmissionContext {
+    return admission?.userId === expectedOwner && admission.userId === verifiedUserId
+  }
+
+  function canCommitPrivateAdmission(
+    attempt: AdmissionAttempt,
+    admission: CacheAdmissionContext,
+    deadline: number,
+  ) {
+    return (
+      admissionAttemptIsCurrent(attempt) &&
+      activeAdmission === admission &&
+      now() < deadline &&
+      durableGenerationVerified &&
+      privatePersistenceEnabled
+    )
+  }
+
   function applyAdmissionWithoutPersistence(admission: CacheAdmissionContext, deadline: number) {
     const scope = host.resolveAdmissionInvalidationScope(admission, lastAcceptedAdmission, now())
-    if (scope) closeAndPurgePrivateCache(scope, false)
+    if (scope) {
+      closeAndPurgePrivateCache(scope, false)
+    }
     verifiedUserId = admission.userId
     activeAdmission = admission
     lastAcceptedAdmission = admission
@@ -547,12 +625,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     try {
       invalidation = await storage.invalidate(scope, deleteEnvelope)
     } catch {
-      if (
-        !disposed &&
-        expectedEpoch === privateLifecycleEpoch &&
-        generationAtStart === invalidationGeneration &&
-        durableInvalidationEpoch === expectedEpoch
-      ) {
+      if (invalidationStillCurrent(expectedEpoch, generationAtStart)) {
         durableInvalidationEpoch = null
         notifications.publish({ generation: null, scope: { kind: 'all' } })
       }
@@ -566,12 +639,7 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     if (nextGeneration !== undefined && nextGeneration > invalidationGeneration) {
       notifications.publish({ generation: nextGeneration, scope: effectiveScope })
     }
-    if (
-      disposed ||
-      expectedEpoch !== privateLifecycleEpoch ||
-      generationAtStart !== invalidationGeneration ||
-      durableInvalidationEpoch !== expectedEpoch
-    ) {
+    if (!invalidationStillCurrent(expectedEpoch, generationAtStart)) {
       return false
     }
     durableInvalidationEpoch = null
@@ -579,7 +647,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       notifications.publish({ generation: null, scope: { kind: 'all' } })
       return false
     }
-    if (invalidation.generation <= generationAtStart) return false
+    if (invalidation.generation <= generationAtStart) {
+      return false
+    }
 
     if (effectiveScope.kind === 'all' && scope.kind !== 'all') {
       closeAndPurgePrivateCache(effectiveScope, false)
@@ -595,22 +665,37 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
     return true
   }
 
+  function invalidationStillCurrent(expectedEpoch: number, generationAtStart: number) {
+    return (
+      !disposed &&
+      expectedEpoch === privateLifecycleEpoch &&
+      generationAtStart === invalidationGeneration &&
+      durableInvalidationEpoch === expectedEpoch
+    )
+  }
+
   async function verifyDurableGeneration(
     stillCurrent: () => boolean,
   ): Promise<DurableGenerationProbe> {
-    if (durableInvalidationEpoch !== null) return { kind: 'superseded' }
+    if (durableInvalidationEpoch !== null) {
+      return { kind: 'superseded' }
+    }
     const guard = lifecycleGuard()
     try {
       const generation = await storage.readGeneration()
-      if (!stillCurrent() || !guardIsCurrent(guard)) return { kind: 'superseded' }
+      if (!stillCurrent() || !guardIsCurrent(guard)) {
+        return { kind: 'superseded' }
+      }
       if (generation === null) {
         disablePrivatePersistence()
         return { kind: 'unusable' }
       }
       applyVerifiedGeneration(generation)
-      return { kind: 'verified', generation }
+      return { generation, kind: 'verified' }
     } catch {
-      if (!stillCurrent() || !guardIsCurrent(guard)) return { kind: 'superseded' }
+      if (!stillCurrent() || !guardIsCurrent(guard)) {
+        return { kind: 'superseded' }
+      }
       disablePrivatePersistence()
       return { kind: 'unusable' }
     }
@@ -634,7 +719,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       return
     }
     if (!result.privateAccepted) {
-      if (privateWriteRequested) disablePrivatePersistence()
+      if (privateWriteRequested) {
+        disablePrivatePersistence()
+      }
       return
     }
     applyVerifiedGeneration(result.generation)
@@ -688,11 +775,15 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
 
   function initializeLifecycleListeners() {
     const check = () => {
-      if (disposed) return
+      if (disposed) {
+        return
+      }
       void requestLifecycleCheck()
     }
     const stopNotifications = notifications.subscribe((notification) => {
-      if (disposed) return
+      if (disposed) {
+        return
+      }
       if (notification.generation === null) {
         disablePrivatePersistence()
         return
@@ -712,9 +803,13 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
 
     const browserWindow = options.window
     const browserDocument = options.document
-    if (!browserWindow || !browserDocument) return
+    if (!browserWindow || !browserDocument) {
+      return
+    }
     const checkVisible = () => {
-      if (browserDocument.visibilityState === 'visible') check()
+      if (browserDocument.visibilityState === 'visible') {
+        check()
+      }
     }
     browserWindow.addEventListener('focus', check)
     browserWindow.addEventListener('pageshow', check)
@@ -748,19 +843,27 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   }
 
   async function recheckWhileRequested(checked: boolean): Promise<boolean> {
-    if (disposed || !lifecycleRecheckRequested) return checked
+    if (disposed || !lifecycleRecheckRequested) {
+      return checked
+    }
     lifecycleRecheckRequested = false
     return recheckWhileRequested(await checkLifecycle())
   }
 
   function flushParkedQueryRefetch() {
-    if (!parkedRefetchPending) return
+    if (!parkedRefetchPending) {
+      return
+    }
     parkedRefetchPending = false
-    if (!disposed) host.refetchParkedPrivateQueries()
+    if (!disposed) {
+      host.refetchParkedPrivateQueries()
+    }
   }
 
   async function checkLifecycle() {
-    if (disposed) return false
+    if (disposed) {
+      return false
+    }
     suspendRetainedPrivateAccess()
     host.reconcileRetainedData()
     let persistenceUsable = true
@@ -770,18 +873,26 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       const durableGeneration = await verifyDurableGeneration(
         () => !disposed && epoch === privateLifecycleEpoch,
       )
-      if (disposed || durableGeneration.kind === 'superseded') return false
+      if (disposed || durableGeneration.kind === 'superseded') {
+        return false
+      }
       // An unreadable generation degrades to live-only access instead of ending the resume, so
       // server-authorized queries recover while the persisted cache stays closed. Disabling
       // persistence advances the epoch itself, so that bump must not abort the resume.
-      if (durableGeneration.kind === 'unusable') persistenceUsable = false
-      else if (durableGeneration.generation !== previousGeneration || !durableGenerationVerified) {
+      if (durableGeneration.kind === 'unusable') {
+        persistenceUsable = false
+      } else if (
+        durableGeneration.generation !== previousGeneration ||
+        !durableGenerationVerified
+      ) {
         return false
       }
     }
     if (persistenceUsable && admissionIsCurrent(now())) {
       const admission = activeAdmission
-      if (!admission) return false
+      if (!admission) {
+        return false
+      }
       retainedPrivateAccessOpen = true
       host.commitAdmittedCache(host.collectAdmittedCache(admission, now()), now())
       scheduleAdmissionExpiry()
@@ -789,8 +900,12 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       scheduleParkedQueryRefetch()
       return true
     }
-    if (activeAdmission) suspendPrivateAdmission()
-    if (!admissionLoader) return false
+    if (activeAdmission) {
+      suspendPrivateAdmission()
+    }
+    if (!admissionLoader) {
+      return false
+    }
     return requestAdmission(admissionLoader)
   }
 
@@ -806,14 +921,17 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
 
   function scheduleAdmissionExpiry() {
     clearAdmissionTimers()
-    if (disposed || !activeAdmission) return
+    if (disposed || !activeAdmission) {
+      return
+    }
     const deadline = activeAdmissionDeadline
     const epoch = privateLifecycleEpoch
     const expiryDelay = Math.min(Math.max(0, deadline - now()), MAX_TIMEOUT_MS)
     admissionExpiryTimer = timers.setTimeout(() => {
       admissionExpiryTimer = undefined
-      if (disposed || epoch !== privateLifecycleEpoch || activeAdmissionDeadline !== deadline)
+      if (disposed || epoch !== privateLifecycleEpoch || activeAdmissionDeadline !== deadline) {
         return
+      }
       if (deadline > now()) {
         scheduleAdmissionExpiry()
         return
@@ -826,7 +944,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       suspendPrivateAdmission()
     }, expiryDelay)
 
-    if (!activeAdmissionMayRenew || !admissionLoader || !host.hasRetainedPrivateData(true)) return
+    if (!activeAdmissionMayRenew || !admissionLoader || !host.hasRetainedPrivateData(true)) {
+      return
+    }
     const renewalDelay = Math.min(
       Math.max(0, deadline - now() - PRIVATE_ADMISSION_RENEWAL_LEAD_MS),
       MAX_TIMEOUT_MS,
@@ -846,8 +966,12 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
   }
 
   function clearAdmissionTimers() {
-    if (admissionExpiryTimer !== undefined) timers.clearTimeout(admissionExpiryTimer)
-    if (admissionRenewalTimer !== undefined) timers.clearTimeout(admissionRenewalTimer)
+    if (admissionExpiryTimer !== undefined) {
+      timers.clearTimeout(admissionExpiryTimer)
+    }
+    if (admissionRenewalTimer !== undefined) {
+      timers.clearTimeout(admissionRenewalTimer)
+    }
     admissionExpiryTimer = undefined
     admissionRenewalTimer = undefined
   }
@@ -862,7 +986,9 @@ export function createPrivateQueryLifecycle(options: PrivateQueryLifecycleOption
       privatePersistenceEnabled &&
       admission !== null &&
       admissionIsCurrent(currentTime)
-    if (!accessOpen || !persistence) return accessOpen
+    if (!accessOpen || !persistence) {
+      return accessOpen
+    }
     if (persistence.kind === 'character-esi') {
       return admission.characters.some(
         (character) =>

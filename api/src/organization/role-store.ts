@@ -58,7 +58,9 @@ export async function loadCurrentOrganizationAuthorityForUser(
     .select({ organizationVersion: deploymentSettings.organizationVersion })
     .from(deploymentSettings)
     .where(eq(deploymentSettings.id, 1))
-  if (!organization) return null
+  if (!organization) {
+    return null
+  }
   return loadEffectiveOrganizationAuthority(
     db,
     organization.organizationVersion,
@@ -79,7 +81,9 @@ export async function hasCurrentOrganizationOwnerAuthorityInTransaction(
     .select({ organizationVersion: deploymentSettings.organizationVersion })
     .from(deploymentSettings)
     .where(eq(deploymentSettings.id, 1))
-  if (!organization) return false
+  if (!organization) {
+    return false
+  }
   const authority = await loadEffectiveOrganizationAuthority(
     database,
     organization.organizationVersion,
@@ -134,45 +138,19 @@ export async function getOrganizationAccessContext(userId: string) {
   const now = new Date()
   const [organization] = await db
     .select({
-      organizationType: deploymentSettings.organizationType,
       organizationId: deploymentSettings.organizationId,
       organizationName: deploymentSettings.organizationName,
       organizationTicker: deploymentSettings.organizationTicker,
+      organizationType: deploymentSettings.organizationType,
       organizationVersion: deploymentSettings.organizationVersion,
     })
     .from(deploymentSettings)
     .where(eq(deploymentSettings.id, 1))
-  if (!organization) throw new Error('Deployment organization is not configured')
+  if (!organization) {
+    throw new Error('Deployment organization is not configured')
+  }
 
-  const [owner] = await db
-    .select({
-      userId: organizationRoleGrants.userId,
-      status: organizationAuthorityEvidence.status,
-      freshUntil: organizationAuthorityEvidence.freshUntil,
-      graceUntil: organizationAuthorityEvidence.graceUntil,
-      invalidatedAt: organizationAuthorityEvidence.invalidatedAt,
-      failureClass: organizationAuthorityEvidence.failureClass,
-      characterId: organizationAuthorityEvidence.characterId,
-      characterName: characters.name,
-      authorityCorporationId: organizationAuthorityEvidence.authorityCorporationId,
-      observedAt: organizationAuthorityEvidence.observedAt,
-      lastCheckedAt: organizationAuthorityEvidence.lastCheckedAt,
-    })
-    .from(organizationRoleGrants)
-    .leftJoin(
-      organizationAuthorityEvidence,
-      eq(organizationAuthorityEvidence.grantId, organizationRoleGrants.grantId),
-    )
-    .leftJoin(characters, eq(characters.characterId, organizationAuthorityEvidence.characterId))
-    .where(
-      and(
-        eq(organizationRoleGrants.deploymentId, 1),
-        eq(organizationRoleGrants.organizationVersion, organization.organizationVersion),
-        eq(organizationRoleGrants.role, 'organization_owner'),
-        isNull(organizationRoleGrants.revokedAt),
-      ),
-    )
-    .limit(1)
+  const owner = await loadOwnerAccessRecord(organization.organizationVersion)
   const authority = await loadEffectiveOrganizationAuthority(
     db,
     organization.organizationVersion,
@@ -199,49 +177,100 @@ export async function getOrganizationAccessContext(userId: string) {
     .limit(1)
   const isBlocked = Boolean(memberBlock)
   const claimAvailable = !isBlocked && isOrganizationOwnerClaimAvailable(owner, now)
-  const ownerStatus =
-    owner?.status && owner.freshUntil
-      ? effectiveSourceStatus(
-          {
-            status: owner.status,
-            freshUntil: owner.freshUntil,
-            graceUntil: owner.graceUntil,
-            invalidatedAt: owner.invalidatedAt,
-          },
-          now,
-        )
-      : null
-
   return {
-    organization,
-    isOrganizationOwner,
-    isBlocked,
     capabilities: {
       reviewRegistration: canViewRosterCoverage,
       viewRosterCoverage: canViewRosterCoverage,
     },
     claimAvailable,
-    ownerStatus,
+    isBlocked,
+    isOrganizationOwner,
+    organization,
+    ...ownerAccessDetails(owner, userId, now),
+  }
+}
+
+async function loadOwnerAccessRecord(organizationVersion: number) {
+  const [owner] = await db
+    .select({
+      authorityCorporationId: organizationAuthorityEvidence.authorityCorporationId,
+      characterId: organizationAuthorityEvidence.characterId,
+      characterName: characters.name,
+      failureClass: organizationAuthorityEvidence.failureClass,
+      freshUntil: organizationAuthorityEvidence.freshUntil,
+      graceUntil: organizationAuthorityEvidence.graceUntil,
+      invalidatedAt: organizationAuthorityEvidence.invalidatedAt,
+      lastCheckedAt: organizationAuthorityEvidence.lastCheckedAt,
+      observedAt: organizationAuthorityEvidence.observedAt,
+      status: organizationAuthorityEvidence.status,
+      userId: organizationRoleGrants.userId,
+    })
+    .from(organizationRoleGrants)
+    .leftJoin(
+      organizationAuthorityEvidence,
+      eq(organizationAuthorityEvidence.grantId, organizationRoleGrants.grantId),
+    )
+    .leftJoin(characters, eq(characters.characterId, organizationAuthorityEvidence.characterId))
+    .where(
+      and(
+        eq(organizationRoleGrants.deploymentId, 1),
+        eq(organizationRoleGrants.organizationVersion, organizationVersion),
+        eq(organizationRoleGrants.role, 'organization_owner'),
+        isNull(organizationRoleGrants.revokedAt),
+      ),
+    )
+    .limit(1)
+  return owner
+}
+
+function ownerAccessDetails(
+  owner: Awaited<ReturnType<typeof loadOwnerAccessRecord>>,
+  userId: string,
+  now: Date,
+) {
+  const ownerStatus = ownerSourceStatus(owner, now)
+  return {
+    authorityCharacter: ownerCharacterDetails(owner, userId),
+    freshUntil: owner?.freshUntil?.toISOString() ?? null,
+    graceUntil: owner?.graceUntil?.toISOString() ?? null,
     ownerFailureClass:
       ownerStatus === 'invalid'
         ? (owner?.failureClass ?? 'strict:expired')
         : (owner?.failureClass ?? null),
-    freshUntil: owner?.freshUntil?.toISOString() ?? null,
-    graceUntil: owner?.graceUntil?.toISOString() ?? null,
-    authorityCharacter:
-      owner?.userId === userId && owner.characterId && owner.characterName
-        ? {
-            characterId: owner.characterId,
-            name: owner.characterName,
-            sourceType: 'designated-owner' as const,
-            corporationId: owner.authorityCorporationId,
-            observedAt: owner.observedAt?.toISOString() ?? null,
-            freshUntil: owner.freshUntil?.toISOString() ?? null,
-            graceUntil: owner.graceUntil?.toISOString() ?? null,
-            lastCheckedAt: owner.lastCheckedAt?.toISOString() ?? null,
-          }
-        : null,
+    ownerStatus,
   }
+}
+
+function ownerSourceStatus(owner: Awaited<ReturnType<typeof loadOwnerAccessRecord>>, now: Date) {
+  return owner?.status && owner.freshUntil
+    ? effectiveSourceStatus(
+        {
+          freshUntil: owner.freshUntil,
+          graceUntil: owner.graceUntil,
+          invalidatedAt: owner.invalidatedAt,
+          status: owner.status,
+        },
+        now,
+      )
+    : null
+}
+
+function ownerCharacterDetails(
+  owner: Awaited<ReturnType<typeof loadOwnerAccessRecord>>,
+  userId: string,
+) {
+  return owner?.userId === userId && owner.characterId && owner.characterName
+    ? {
+        characterId: owner.characterId,
+        corporationId: owner.authorityCorporationId,
+        freshUntil: owner.freshUntil?.toISOString() ?? null,
+        graceUntil: owner.graceUntil?.toISOString() ?? null,
+        lastCheckedAt: owner.lastCheckedAt?.toISOString() ?? null,
+        name: owner.characterName,
+        observedAt: owner.observedAt?.toISOString() ?? null,
+        sourceType: 'designated-owner' as const,
+      }
+    : null
 }
 
 export async function listCurrentOrganizationRoles() {
@@ -250,18 +279,20 @@ export async function listCurrentOrganizationRoles() {
     .select({ organizationVersion: deploymentSettings.organizationVersion })
     .from(deploymentSettings)
     .where(eq(deploymentSettings.id, 1))
-  if (!organization) throw new Error('Deployment organization is not configured')
+  if (!organization) {
+    throw new Error('Deployment organization is not configured')
+  }
 
   const grants = await db
     .select({
       grantId: organizationRoleGrants.grantId,
-      userId: organizationRoleGrants.userId,
-      role: organizationRoleGrants.role,
-      reason: organizationRoleGrants.reason,
-      grantedByUserId: organizationRoleGrants.grantedByUserId,
       grantedAt: organizationRoleGrants.grantedAt,
+      grantedByUserId: organizationRoleGrants.grantedByUserId,
       mainCharacterId: characters.characterId,
       mainCharacterName: characters.name,
+      reason: organizationRoleGrants.reason,
+      role: organizationRoleGrants.role,
+      userId: organizationRoleGrants.userId,
     })
     .from(organizationRoleGrants)
     .leftJoin(
@@ -283,24 +314,24 @@ export async function listCurrentOrganizationRoles() {
 
   const derivedSources = await db
     .select({
-      sourceId: organizationDerivedAuthoritySources.sourceId,
-      userId: organizationDerivedAuthoritySources.userId,
+      authorityCorporationId: organizationDerivedAuthoritySources.authorityCorporationId,
+      authorizationGeneration: organizationDerivedAuthoritySources.authorizationGeneration,
       characterId: organizationDerivedAuthoritySources.characterId,
       characterName: characters.name,
-      sourceSubjectLifecycleId: organizationDerivedAuthoritySources.sourceSubjectLifecycleId,
-      authorizationGeneration: organizationDerivedAuthoritySources.authorizationGeneration,
-      authorityCorporationId: organizationDerivedAuthoritySources.authorityCorporationId,
-      observedCorporationId: organizationDerivedAuthoritySources.observedCorporationId,
-      observedAllianceId: organizationDerivedAuthoritySources.observedAllianceId,
-      requiredScope: organizationDerivedAuthoritySources.requiredScope,
-      roleEvidenceRevision: organizationDerivedAuthoritySources.roleEvidenceRevision,
-      status: organizationDerivedAuthoritySources.status,
-      observedAt: organizationDerivedAuthoritySources.observedAt,
+      failureClass: organizationDerivedAuthoritySources.failureClass,
       freshUntil: organizationDerivedAuthoritySources.freshUntil,
       graceUntil: organizationDerivedAuthoritySources.graceUntil,
-      failureClass: organizationDerivedAuthoritySources.failureClass,
       invalidatedAt: organizationDerivedAuthoritySources.invalidatedAt,
       invalidationOutcome: organizationDerivedAuthoritySources.invalidationOutcome,
+      observedAllianceId: organizationDerivedAuthoritySources.observedAllianceId,
+      observedAt: organizationDerivedAuthoritySources.observedAt,
+      observedCorporationId: organizationDerivedAuthoritySources.observedCorporationId,
+      requiredScope: organizationDerivedAuthoritySources.requiredScope,
+      roleEvidenceRevision: organizationDerivedAuthoritySources.roleEvidenceRevision,
+      sourceId: organizationDerivedAuthoritySources.sourceId,
+      sourceSubjectLifecycleId: organizationDerivedAuthoritySources.sourceSubjectLifecycleId,
+      status: organizationDerivedAuthoritySources.status,
+      userId: organizationDerivedAuthoritySources.userId,
     })
     .from(organizationDerivedAuthoritySources)
     .leftJoin(
@@ -324,26 +355,26 @@ export async function listCurrentOrganizationRoles() {
 
   const ownerSources = await db
     .select({
-      sourceId: organizationAuthorityEvidence.evidenceId,
-      grantId: organizationAuthorityEvidence.grantId,
-      userId: organizationAuthorityEvidence.userId,
+      authorityCorporationId: organizationAuthorityEvidence.authorityCorporationId,
+      authorizationGeneration: organizationAuthorityEvidence.authorizationGeneration,
       characterId: organizationAuthorityEvidence.characterId,
       characterName: characters.name,
-      sourceSubjectLifecycleId: organizationAuthorityEvidence.sourceSubjectLifecycleId,
-      authorizationGeneration: organizationAuthorityEvidence.authorizationGeneration,
-      authorityCorporationId: organizationAuthorityEvidence.authorityCorporationId,
-      observedCorporationId: organizationAuthorityEvidence.observedCorporationId,
-      observedAllianceId: organizationAuthorityEvidence.observedAllianceId,
-      requiredScope: organizationAuthorityEvidence.requiredScope,
-      roleEvidenceRevision: organizationAuthorityEvidence.roleEvidenceRevision,
-      status: organizationAuthorityEvidence.status,
-      observedAt: organizationAuthorityEvidence.observedAt,
+      failureClass: organizationAuthorityEvidence.failureClass,
       freshUntil: organizationAuthorityEvidence.freshUntil,
       graceUntil: organizationAuthorityEvidence.graceUntil,
-      failureClass: organizationAuthorityEvidence.failureClass,
+      grantId: organizationAuthorityEvidence.grantId,
+      grantRevokedAt: organizationRoleGrants.revokedAt,
       invalidatedAt: organizationAuthorityEvidence.invalidatedAt,
       invalidationOutcome: organizationAuthorityEvidence.invalidationOutcome,
-      grantRevokedAt: organizationRoleGrants.revokedAt,
+      observedAllianceId: organizationAuthorityEvidence.observedAllianceId,
+      observedAt: organizationAuthorityEvidence.observedAt,
+      observedCorporationId: organizationAuthorityEvidence.observedCorporationId,
+      requiredScope: organizationAuthorityEvidence.requiredScope,
+      roleEvidenceRevision: organizationAuthorityEvidence.roleEvidenceRevision,
+      sourceId: organizationAuthorityEvidence.evidenceId,
+      sourceSubjectLifecycleId: organizationAuthorityEvidence.sourceSubjectLifecycleId,
+      status: organizationAuthorityEvidence.status,
+      userId: organizationAuthorityEvidence.userId,
     })
     .from(organizationAuthorityEvidence)
     .innerJoin(
@@ -364,26 +395,26 @@ export async function listCurrentOrganizationRoles() {
 
   const corporationSources = await db
     .select({
-      sourceId: organizationCorporationSources.sourceId,
-      corporationId: organizationCorporationSources.corporationId,
-      userId: organizationCorporationSources.sourceUserId,
+      authorizationGeneration: organizationCorporationSources.authorizationGeneration,
       characterId: organizationCorporationSources.evidenceCharacterId,
       characterName: characters.name,
-      sourceSubjectLifecycleId: organizationCorporationSources.sourceSubjectLifecycleId,
-      authorizationGeneration: organizationCorporationSources.authorizationGeneration,
-      observedCorporationId: organizationCorporationSources.observedCorporationId,
-      observedAllianceId: organizationCorporationSources.observedAllianceId,
-      requiredScope: organizationCorporationSources.requiredScope,
-      roleEvidenceRevision: organizationCorporationSources.roleEvidenceRevision,
-      status: organizationCorporationSources.status,
-      observedAt: organizationCorporationSources.observedAt,
+      corporationId: organizationCorporationSources.corporationId,
+      failureClass: organizationCorporationSources.failureClass,
       freshUntil: organizationCorporationSources.freshUntil,
       graceUntil: organizationCorporationSources.graceUntil,
-      failureClass: organizationCorporationSources.failureClass,
       invalidatedAt: organizationCorporationSources.invalidatedAt,
       invalidationOutcome: organizationCorporationSources.invalidationOutcome,
+      observedAllianceId: organizationCorporationSources.observedAllianceId,
+      observedAt: organizationCorporationSources.observedAt,
+      observedCorporationId: organizationCorporationSources.observedCorporationId,
       registeredAt: organizationCorporationSources.registeredAt,
+      requiredScope: organizationCorporationSources.requiredScope,
       revokedAt: organizationCorporationSources.revokedAt,
+      roleEvidenceRevision: organizationCorporationSources.roleEvidenceRevision,
+      sourceId: organizationCorporationSources.sourceId,
+      sourceSubjectLifecycleId: organizationCorporationSources.sourceSubjectLifecycleId,
+      status: organizationCorporationSources.status,
+      userId: organizationCorporationSources.sourceUserId,
     })
     .from(organizationCorporationSources)
     .leftJoin(
@@ -402,17 +433,36 @@ export async function listCurrentOrganizationRoles() {
     )
 
   return {
-    grants: grants.map((grant) => ({
-      grantId: grant.grantId,
-      origin: 'explicit' as const,
-      userId: grant.userId,
-      role: grant.role as DelegatedOrganizationRole,
-      reason: grant.reason,
-      grantedByUserId: grant.grantedByUserId,
-      grantedAt: grant.grantedAt.toISOString(),
-      mainCharacterId: grant.mainCharacterId,
-      mainCharacterName: grant.mainCharacterName,
-    })),
+    corporationSources: corporationSources.map((source) => {
+      const status = effectiveSourceStatus(
+        { ...source, invalidatedAt: source.invalidatedAt ?? source.revokedAt },
+        now,
+      )
+      return {
+        sourceId: source.sourceId,
+        corporationId: source.corporationId,
+        userId: source.userId,
+        origin: 'designated-corporation' as const,
+        characterId: source.characterId,
+        characterName: source.characterName,
+        sourceSubjectLifecycleId: source.sourceSubjectLifecycleId,
+        authorizationGeneration: source.authorizationGeneration,
+        observedCorporationId: source.observedCorporationId,
+        observedAllianceId: source.observedAllianceId,
+        requiredScope: source.requiredScope,
+        roleEvidenceRevision: source.roleEvidenceRevision,
+        status,
+        observedAt: source.observedAt.toISOString(),
+        freshUntil: source.freshUntil.toISOString(),
+        graceUntil: source.graceUntil?.toISOString() ?? null,
+        failureClass: effectiveFailureClass(status, source.failureClass),
+        invalidatedAt: source.invalidatedAt?.toISOString() ?? null,
+        invalidationOutcome: source.invalidationOutcome,
+        registeredAt: source.registeredAt.toISOString(),
+        revokedAt: source.revokedAt?.toISOString() ?? null,
+        remediationAction: status === 'fresh' ? null : ('replace-corporation-source' as const),
+      }
+    }),
     derivedSources: derivedSources.map((source) => {
       const status = effectiveSourceStatus(source, now)
       return {
@@ -439,6 +489,17 @@ export async function listCurrentOrganizationRoles() {
         remediationAction: status === 'fresh' ? null : ('reauthorize-character' as const),
       }
     }),
+    grants: grants.map((grant) => ({
+      grantId: grant.grantId,
+      origin: 'explicit' as const,
+      userId: grant.userId,
+      role: grant.role as DelegatedOrganizationRole,
+      reason: grant.reason,
+      grantedByUserId: grant.grantedByUserId,
+      grantedAt: grant.grantedAt.toISOString(),
+      mainCharacterId: grant.mainCharacterId,
+      mainCharacterName: grant.mainCharacterName,
+    })),
     ownerSources: ownerSources.map((source) => {
       const status = effectiveSourceStatus(
         { ...source, invalidatedAt: source.invalidatedAt ?? source.grantRevokedAt },
@@ -471,36 +532,6 @@ export async function listCurrentOrganizationRoles() {
           status === 'fresh' ? null : ('replace-or-reauthorize-owner-source' as const),
       }
     }),
-    corporationSources: corporationSources.map((source) => {
-      const status = effectiveSourceStatus(
-        { ...source, invalidatedAt: source.invalidatedAt ?? source.revokedAt },
-        now,
-      )
-      return {
-        sourceId: source.sourceId,
-        corporationId: source.corporationId,
-        userId: source.userId,
-        origin: 'designated-corporation' as const,
-        characterId: source.characterId,
-        characterName: source.characterName,
-        sourceSubjectLifecycleId: source.sourceSubjectLifecycleId,
-        authorizationGeneration: source.authorizationGeneration,
-        observedCorporationId: source.observedCorporationId,
-        observedAllianceId: source.observedAllianceId,
-        requiredScope: source.requiredScope,
-        roleEvidenceRevision: source.roleEvidenceRevision,
-        status,
-        observedAt: source.observedAt.toISOString(),
-        freshUntil: source.freshUntil.toISOString(),
-        graceUntil: source.graceUntil?.toISOString() ?? null,
-        failureClass: effectiveFailureClass(status, source.failureClass),
-        invalidatedAt: source.invalidatedAt?.toISOString() ?? null,
-        invalidationOutcome: source.invalidationOutcome,
-        registeredAt: source.registeredAt.toISOString(),
-        revokedAt: source.revokedAt?.toISOString() ?? null,
-        remediationAction: status === 'fresh' ? null : ('replace-corporation-source' as const),
-      }
-    }),
   }
 }
 
@@ -518,7 +549,9 @@ export async function grantOrganizationRole(input: {
       .select({ userId: users.id })
       .from(users)
       .where(eq(users.id, input.targetUserId))
-    if (!target) throw new OrganizationRoleMutationError('target-not-found')
+    if (!target) {
+      throw new OrganizationRoleMutationError('target-not-found')
+    }
 
     const [existing] = await transaction
       .select({ grantId: organizationRoleGrants.grantId })
@@ -532,34 +565,38 @@ export async function grantOrganizationRole(input: {
           isNull(organizationRoleGrants.revokedAt),
         ),
       )
-    if (existing) throw new OrganizationRoleMutationError('role-already-granted')
+    if (existing) {
+      throw new OrganizationRoleMutationError('role-already-granted')
+    }
 
     const now = new Date()
     const [grant] = await transaction
       .insert(organizationRoleGrants)
       .values({
         deploymentId: 1,
-        organizationVersion: organization.organizationVersion,
-        userId: input.targetUserId,
-        role: input.role,
-        grantedByUserId: input.actorUserId,
-        reason: input.reason,
         grantedAt: now,
+        grantedByUserId: input.actorUserId,
+        organizationVersion: organization.organizationVersion,
+        reason: input.reason,
+        role: input.role,
+        userId: input.targetUserId,
       })
       .returning()
-    if (!grant) throw new Error('Failed to create organization role grant')
+    if (!grant) {
+      throw new Error('Failed to create organization role grant')
+    }
     await appendOrganizationAuditEvent(transaction, {
-      deploymentId: 1,
-      organizationVersion: organization.organizationVersion,
-      policyVersion: organization.policyVersion,
-      eventType: 'role.granted',
-      actorType: 'user',
       actorId: input.actorUserId,
-      subjectType: 'role_grant',
-      subjectId: grant.grantId,
-      reason: input.reason,
-      outcome: 'granted',
+      actorType: 'user',
+      deploymentId: 1,
+      eventType: 'role.granted',
       occurredAt: now,
+      organizationVersion: organization.organizationVersion,
+      outcome: 'granted',
+      policyVersion: organization.policyVersion,
+      reason: input.reason,
+      subjectId: grant.grantId,
+      subjectType: 'role_grant',
     })
     return toRoleGrant(grant)
   })
@@ -589,32 +626,36 @@ export async function revokeOrganizationRole(input: {
         ),
       )
       .for('update')
-    if (!grant) throw new OrganizationRoleMutationError('grant-not-found')
+    if (!grant) {
+      throw new OrganizationRoleMutationError('grant-not-found')
+    }
 
     const now = new Date()
     const [revoked] = await transaction
       .update(organizationRoleGrants)
       .set({
+        revocationReason: input.reason,
         revokedAt: now,
         revokedByUserId: input.actorUserId,
-        revocationReason: input.reason,
         updatedAt: now,
       })
       .where(eq(organizationRoleGrants.grantId, grant.grantId))
       .returning()
-    if (!revoked) throw new Error('Failed to revoke organization role grant')
+    if (!revoked) {
+      throw new Error('Failed to revoke organization role grant')
+    }
     await appendOrganizationAuditEvent(transaction, {
-      deploymentId: 1,
-      organizationVersion: organization.organizationVersion,
-      policyVersion: organization.policyVersion,
-      eventType: 'role.revoked',
-      actorType: 'user',
       actorId: input.actorUserId,
-      subjectType: 'role_grant',
-      subjectId: grant.grantId,
-      reason: input.reason,
-      outcome: 'revoked',
+      actorType: 'user',
+      deploymentId: 1,
+      eventType: 'role.revoked',
       occurredAt: now,
+      organizationVersion: organization.organizationVersion,
+      outcome: 'revoked',
+      policyVersion: organization.policyVersion,
+      reason: input.reason,
+      subjectId: grant.grantId,
+      subjectType: 'role_grant',
     })
     return toRoleGrant(revoked)
   })
@@ -631,22 +672,23 @@ async function requireOwnerAuthority(
     userId,
     'mutate',
   )
-  if (!authority.organizationOwner)
+  if (!authority.organizationOwner) {
     throw new OrganizationRoleMutationError('owner-authority-required')
+  }
 }
 
 function toRoleGrant(grant: typeof organizationRoleGrants.$inferSelect) {
   return {
     grantId: grant.grantId,
-    organizationVersion: grant.organizationVersion,
-    userId: grant.userId,
-    role: grant.role,
-    reason: grant.reason,
-    grantedByUserId: grant.grantedByUserId,
     grantedAt: grant.grantedAt.toISOString(),
+    grantedByUserId: grant.grantedByUserId,
+    organizationVersion: grant.organizationVersion,
+    reason: grant.reason,
+    revocationReason: grant.revocationReason,
     revokedAt: grant.revokedAt?.toISOString() ?? null,
     revokedByUserId: grant.revokedByUserId,
-    revocationReason: grant.revocationReason,
+    role: grant.role,
+    userId: grant.userId,
   }
 }
 
@@ -663,6 +705,8 @@ function effectiveSourceStatus(
 }
 
 function effectiveFailureClass(status: AuthorityEvidenceState, failureClass: string | null) {
-  if (status !== 'invalid') return failureClass
+  if (status !== 'invalid') {
+    return failureClass
+  }
   return failureClass ?? 'strict:expired'
 }

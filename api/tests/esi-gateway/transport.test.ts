@@ -55,9 +55,9 @@ beforeEach(() => {
   mocks.cache.set.mockResolvedValue('OK')
   mocks.acquirePermit.mockImplementation(async () => ({
     coordinationAvailable: false,
-    ttlMs: 30_000,
     release: mocks.release,
     renew: mocks.renew,
+    ttlMs: 30_000,
   }))
   mocks.renew.mockResolvedValue(true)
 })
@@ -74,8 +74,8 @@ describe('ESI request transport through registered execution', () => {
     vi.stubGlobal('fetch', fetch)
     const { createRawEsiTransport } = await import('../../src/esi-gateway/internal/transport.js')
     const transport = createRawEsiTransport({
-      userAgent: 'EveSpace/Test',
       compatibilityDate: '2026-09-01',
+      userAgent: 'EveSpace/Test',
     })
 
     await transport('https://esi.evetech.net/latest/status')
@@ -90,7 +90,7 @@ describe('ESI request transport through registered execution', () => {
     const onResponseBodySettled = vi.fn()
     const { createRawEsiTransport } = await import('../../src/esi-gateway/internal/transport.js')
     const transport = createRawEsiTransport(
-      { userAgent: 'EveSpace/Test', compatibilityDate: '2026-09-01' },
+      { compatibilityDate: '2026-09-01', userAgent: 'EveSpace/Test' },
       { onResponseBodySettled },
     )
 
@@ -107,7 +107,7 @@ describe('ESI request transport through registered execution', () => {
     const onResponseBodySettled = vi.fn()
     const { createRawEsiTransport } = await import('../../src/esi-gateway/internal/transport.js')
     const transport = createRawEsiTransport(
-      { userAgent: 'EveSpace/Test', compatibilityDate: '2026-09-01' },
+      { compatibilityDate: '2026-09-01', userAgent: 'EveSpace/Test' },
       { onResponseBodySettled },
     )
 
@@ -156,8 +156,8 @@ describe('ESI request transport through registered execution', () => {
     expect(mocks.recordResponse).toHaveBeenCalledWith(
       expect.objectContaining({
         connection: mocks.coordination,
-        operation: 'status',
         metadata: expect.objectContaining({ status: 200 }),
+        operation: 'status',
       }),
     )
   })
@@ -178,7 +178,6 @@ describe('ESI request transport through registered execution', () => {
       'fetch',
       vi.fn().mockResolvedValue(
         new Response(JSON.stringify({ error: 'rate limited' }), {
-          status: 429,
           headers: {
             'content-type': 'application/json',
             'retry-after': '12',
@@ -189,6 +188,7 @@ describe('ESI request transport through registered execution', () => {
             'x-ratelimit-remaining': '97',
             'x-ratelimit-used': '3',
           },
+          status: 429,
         }),
       ),
     )
@@ -207,14 +207,14 @@ describe('ESI request transport through registered execution', () => {
     expect(mocks.recordResponse).toHaveBeenCalledWith(
       expect.objectContaining({
         connection: mocks.coordination,
-        operation: 'status',
-        principal: undefined,
         metadata: expect.objectContaining({
           status: 429,
           retryAfterSeconds: 12,
           errorLimit: { remaining: 98, reset: 44 },
           routeRateLimit: { group: 'status', limit: 100, remaining: 97, used: 3 },
         }),
+        operation: 'status',
+        principal: undefined,
       }),
     )
     expect(mocks.recordUpstream).toHaveBeenCalledWith(mocks.cache, 'status', 429, 'status')
@@ -229,8 +229,8 @@ describe('ESI request transport through registered execution', () => {
     const caught = executeStatus().catch((error: unknown) => error)
 
     await expect(caught).resolves.toMatchObject({
-      code: 'ESI_TRANSPORT_ERROR',
       cause: failure,
+      code: 'ESI_TRANSPORT_ERROR',
     })
     expect(fetch).toHaveBeenCalledTimes(3)
     expect(mocks.acquirePermit).toHaveBeenCalledTimes(3)
@@ -256,8 +256,8 @@ describe('ESI request transport through registered execution', () => {
     const caught = executeStatus().catch((error: unknown) => error)
 
     await expect(caught).resolves.toMatchObject({
-      code: 'ESI_TRANSPORT_ERROR',
       cause: failure,
+      code: 'ESI_TRANSPORT_ERROR',
       phase: 'response',
       status: 200,
     })
@@ -270,8 +270,8 @@ describe('ESI request transport through registered execution', () => {
       'fetch',
       vi.fn().mockResolvedValue(
         new Response(null, {
-          status: 200,
           headers: { 'content-type': 'application/json' },
+          status: 200,
         }),
       ),
     )
@@ -290,8 +290,12 @@ describe('ESI request transport through registered execution', () => {
       (_input: RequestInfo | URL, init?: RequestInit) =>
         new Promise<Response>((_resolve, reject) => {
           const signal = init?.signal
-          if (!signal) throw new Error('Expected the ESI request timeout signal')
-          if (signal.aborted) return reject(signal.reason)
+          if (!signal) {
+            throw new Error('Expected the ESI request timeout signal')
+          }
+          if (signal.aborted) {
+            return reject(signal.reason)
+          }
           signal.addEventListener('abort', () => reject(signal.reason), { once: true })
         }),
     )
@@ -304,8 +308,8 @@ describe('ESI request transport through registered execution', () => {
     await expect(caught).resolves.toMatchObject({
       code: 'ESI_TRANSPORT_ERROR',
       operationId: 'GetStatus',
-      reason: 'timeout',
       phase: 'request',
+      reason: 'timeout',
     })
     expect(fetch).toHaveBeenCalledTimes(3)
     expect(mocks.release).toHaveBeenCalledTimes(3)
@@ -338,7 +342,9 @@ describe('ESI request transport through registered execution', () => {
     let transportSignal: AbortSignal | undefined
     const fetch = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
       transportSignal = init?.signal ?? undefined
-      if (transportSignal?.aborted) return Promise.reject(transportSignal.reason)
+      if (transportSignal?.aborted) {
+        return Promise.reject(transportSignal.reason)
+      }
       const body = new ReadableStream<Uint8Array>({
         start(controller) {
           transportSignal?.addEventListener(
@@ -402,7 +408,9 @@ describe('ESI request transport through registered execution', () => {
       (_input: RequestInfo | URL, init?: RequestInit) =>
         new Promise<Response>((_resolve, reject) => {
           transportSignal = init?.signal ?? undefined
-          if (transportSignal?.aborted) return reject(transportSignal.reason)
+          if (transportSignal?.aborted) {
+            return reject(transportSignal.reason)
+          }
           transportSignal?.addEventListener('abort', () => reject(transportSignal?.reason), {
             once: true,
           })
@@ -426,8 +434,12 @@ describe('ESI request transport through registered execution', () => {
     vi.useFakeTimers()
     const fetch = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
       const signal = init?.signal
-      if (!signal) throw new Error('Expected the ESI request timeout signal')
-      if (signal.aborted) return Promise.reject(signal.reason)
+      if (!signal) {
+        throw new Error('Expected the ESI request timeout signal')
+      }
+      if (signal.aborted) {
+        return Promise.reject(signal.reason)
+      }
       const body = new ReadableStream<Uint8Array>({
         start(controller) {
           signal.addEventListener('abort', () => controller.error(signal.reason), { once: true })
@@ -445,8 +457,8 @@ describe('ESI request transport through registered execution', () => {
     await expect(caught).resolves.toMatchObject({
       code: 'ESI_TRANSPORT_ERROR',
       operationId: 'GetStatus',
-      reason: 'timeout',
       phase: 'response',
+      reason: 'timeout',
       status: 200,
     })
     expect(classifyEsiRefreshFailure(await caught)).toBe('esi-unavailable')
@@ -457,19 +469,19 @@ describe('ESI request transport through registered execution', () => {
 async function executeStatus(signal?: AbortSignal) {
   const { createPublicEsiRead } = await import('../../src/esi-gateway/feature-execution.js')
   return createPublicEsiRead({
-    operation: 'status',
-    name: `status-transport-fixture-${representationSequence++}`,
-    descriptor: operationRegistry.GetStatus.transport,
     cacheSchema: operationRegistry.GetStatus.responseSchema,
+    descriptor: operationRegistry.GetStatus.transport,
     encodeRequest: () => ({}),
     map: ({ data }) => data,
+    name: `status-transport-fixture-${representationSequence++}`,
+    operation: 'status',
   }).execute(signal ? { signal } : undefined)
 }
 
 function statusResponse(body?: ReadableStream<Uint8Array>, headers: HeadersInit = {}) {
   return new Response(body ?? JSON.stringify(statusData()), {
-    status: 200,
     headers: { 'content-type': 'application/json', 'x-ratelimit-group': 'status', ...headers },
+    status: 200,
   })
 }
 

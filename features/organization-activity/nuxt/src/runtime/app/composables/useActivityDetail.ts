@@ -30,16 +30,13 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
     () => enabledModuleIds.value.has('organization-activity') && validActivity.value,
   )
   const detail = usePlatformProtectedQuery(() => ({
-    esiPersistence: { kind: 'organization-esi' },
-    moduleId: 'organization-activity',
-    routeId: 'activity-details',
-    resource: ['detail', toValue(kind), activityId.value, corporationId.value],
-    subject: { kind: 'organization', organizationVersion: identity.organizationVersion.value },
     access: {
       authenticated: identity.authenticated.value,
-      moduleEnabled: moduleEnabled.value,
       authorized: identity.organizationAuthorized.value,
+      moduleEnabled: moduleEnabled.value,
     },
+    esiPersistence: { kind: 'organization-esi' },
+    moduleId: 'organization-activity',
     query: async ({ signal }) =>
       readPlatformApiResponse(
         await api.api.modules['organization-activity'].details[':kind'][':activityId'].$get(
@@ -51,23 +48,18 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
         ),
         'Activity detail is unavailable.',
       ),
+    resource: ['detail', toValue(kind), activityId.value, corporationId.value],
+    routeId: 'activity-details',
+    subject: { kind: 'organization', organizationVersion: identity.organizationVersion.value },
   }))
   const participation = usePlatformProtectedQuery(() => ({
-    esiPersistence: { kind: 'none' },
-    moduleId: 'organization-activity',
-    routeId: 'activity-participation',
-    resource: [
-      'participation',
-      identity.organizationVersion.value,
-      toValue(kind),
-      activityId.value,
-    ],
-    subject: { kind: 'character', characterId: characterId.value },
     access: {
       authenticated: identity.authenticated.value,
       moduleEnabled: moduleEnabled.value && identity.organizationAuthorized.value,
       ownsCharacter: Boolean(selectedCharacter.value),
     },
+    esiPersistence: { kind: 'none' },
+    moduleId: 'organization-activity',
     query: async ({ signal }) =>
       readPlatformApiResponse(
         await api.api.modules['organization-activity'].characters[':characterId'][':kind'][
@@ -84,6 +76,14 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
         ),
         'Character participation is unavailable.',
       ),
+    resource: [
+      'participation',
+      identity.organizationVersion.value,
+      toValue(kind),
+      activityId.value,
+    ],
+    routeId: 'activity-participation',
+    subject: { characterId: characterId.value, kind: 'character' },
   }))
   const activity = computed(
     () => detail.data.value?.activity ?? participation.data.value?.activity ?? null,
@@ -112,44 +112,52 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
       : null,
   )
   const state = computed<PlatformResourceState>(() => {
-    if (!validActivity.value)
+    if (!validActivity.value) {
       return {
+        message: 'Open an activity from your organization overview.',
         status: 'unavailable',
         title: 'Select an activity',
-        message: 'Open an activity from your organization overview.',
       }
-    if (!identity.authenticated.value || !identity.organizationAuthorized.value)
+    }
+    if (!identity.authenticated.value || !identity.organizationAuthorized.value) {
       return { status: 'authorization-required', title: 'Sign in to view organization activity' }
+    }
     const error = detail.error.value
-    if (error instanceof ApiQueryError && (error.status === 401 || error.status === 403))
+    if (error instanceof ApiQueryError && (error.status === 401 || error.status === 403)) {
       return {
+        message: error.message,
         status: 'authorization-required',
         title: 'Organization access required',
-        message: error.message,
       }
-    if (error)
+    }
+    if (error) {
       return {
-        status: 'unavailable',
-        title: 'Activity unavailable',
         message: error.message,
         retryLabel: 'Retry',
+        status: 'unavailable',
+        title: 'Activity unavailable',
       }
-    if (detail.status.value === 'pending') return { status: 'loading', title: 'Loading activity' }
+    }
+    if (detail.status.value === 'pending') {
+      return { status: 'loading', title: 'Loading activity' }
+    }
     const resource = activityResource.value
-    if (resource?.status === 'stale')
+    if (resource?.status === 'stale') {
       return {
-        status: 'stale',
-        title: 'Activity is stale',
         message:
           'Showing the last successful collection. Eligibility and completion are unconfirmed.',
+        status: 'stale',
+        title: 'Activity is stale',
       }
-    if (!activity.value)
+    }
+    if (!activity.value) {
       return {
-        status: 'unavailable',
-        title: 'Activity not currently available',
         message:
           'Collection may be incomplete, unavailable, or missing an authorized corporation source.',
+        status: 'unavailable',
+        title: 'Activity not currently available',
       }
+    }
     return { status: 'ready' }
   })
   const participationState = computed<PlatformResourceState>(() => {
@@ -165,56 +173,66 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
       resource?.status === 'authorization-required' ||
       (error instanceof ApiQueryError && (error.status === 401 || error.status === 403))
     ) {
-      return {
-        status: 'authorization-required',
-        title: selectedCharacter.value
-          ? `Authorize ${selectedCharacter.value.name}`
-          : 'Character authorization required',
-        message:
-          resourceMessage ??
-          (error instanceof Error
-            ? error.message
-            : 'This character needs additional authorization to show participation.'),
-        action: authorizationUrl.value
-          ? { href: authorizationUrl.value, label: 'Authorize character' }
-          : null,
-      }
+      return participationAuthorizationState(error, resourceMessage)
     }
-    if (error)
+    if (error) {
       return {
-        status: 'unavailable',
-        title: 'Participation unavailable',
         message: error.message,
         retryLabel: 'Retry',
-      }
-    if (participation.status.value === 'pending' && !participation.data.value)
-      return { status: 'loading', title: 'Loading participation' }
-    if (resource?.status === 'stale')
-      return {
-        status: 'stale',
-        title: 'Participation is stale',
-        message: 'Showing the last successful participation collection.',
-        retryLabel: 'Retry',
-      }
-    if (!participation.data.value)
-      return {
         status: 'unavailable',
         title: 'Participation unavailable',
-        message: 'No current participation collection is available.',
       }
+    }
+    if (participation.status.value === 'pending' && !participation.data.value) {
+      return { status: 'loading', title: 'Loading participation' }
+    }
+    if (resource?.status === 'stale') {
+      return {
+        message: 'Showing the last successful participation collection.',
+        retryLabel: 'Retry',
+        status: 'stale',
+        title: 'Participation is stale',
+      }
+    }
+    if (!participation.data.value) {
+      return {
+        message: 'No current participation collection is available.',
+        status: 'unavailable',
+        title: 'Participation unavailable',
+      }
+    }
     return { status: 'ready' }
   })
+  function participationAuthorizationState(
+    error: unknown,
+    resourceMessage?: string,
+  ): PlatformResourceState {
+    return {
+      action: authorizationUrl.value
+        ? { href: authorizationUrl.value, label: 'Authorize character' }
+        : null,
+      message:
+        resourceMessage ??
+        (error instanceof Error
+          ? error.message
+          : 'This character needs additional authorization to show participation.'),
+      status: 'authorization-required',
+      title: selectedCharacter.value
+        ? `Authorize ${selectedCharacter.value.name}`
+        : 'Character authorization required',
+    }
+  }
   return {
-    identity,
-    detail,
-    participation,
-    selectedCharacter,
-    characterId,
     activity,
     activityPresentation,
     activityResource,
-    participationState,
-    state,
     authorizationUrl,
+    characterId,
+    detail,
+    identity,
+    participation,
+    participationState,
+    selectedCharacter,
+    state,
   }
 }

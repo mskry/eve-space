@@ -51,10 +51,11 @@ function canonicalizePersistenceRoutineAst(input: {
       statement.kind === 'CreateFunctionStmt' &&
       hasRoutineIdentity(statement.node, schemaName, routineName),
   )
-  if (routines.length !== 1)
+  if (routines.length !== 1) {
     throw new Error(
       `Persistence routine definition mismatch: ${input.moduleId}/${input.operationId}`,
     )
+  }
   const routine = routines[0]!.node
   const parameterNames = routineParameterNames(routine.parameters)
   const identity = {
@@ -65,6 +66,7 @@ function canonicalizePersistenceRoutineAst(input: {
     schemaName,
     routineName,
   } as const
+  // Canonical key order is part of the persisted routine fingerprint.
   const canonicalDefinition = JSON.stringify({
     identity,
     signature: {
@@ -79,9 +81,9 @@ function canonicalizePersistenceRoutineAst(input: {
     body: normalizeRoutineBody(routine.sql_body ?? null, schemaName, routineName, parameterNames),
   })
   return {
-    identity,
     canonicalDefinition,
     definitionFingerprint: createHash('sha256').update(canonicalDefinition).digest('hex'),
+    identity,
   }
 }
 
@@ -91,9 +93,13 @@ function hasRoutineIdentity(node: PostgresAstObject, schemaName: string, routine
 }
 
 function normalizeRoutineParameters(value: PostgresAstValue | undefined) {
-  if (!Array.isArray(value)) return normalizeAst(value ?? [])
+  if (!Array.isArray(value)) {
+    return normalizeAst(value ?? [])
+  }
   return value.map((entry) => {
-    if (!isAstObject(entry) || !isAstObject(entry.FunctionParameter)) return normalizeAst(entry)
+    if (!isAstObject(entry) || !isAstObject(entry.FunctionParameter)) {
+      return normalizeAst(entry)
+    }
     const parameter = entry.FunctionParameter
     return {
       name: parameter.name ?? null,
@@ -108,30 +114,46 @@ function normalizeRoutineParameters(value: PostgresAstValue | undefined) {
 }
 
 function routineOption(node: PostgresAstObject, name: string) {
-  if (!Array.isArray(node.options)) return null
+  if (!Array.isArray(node.options)) {
+    return null
+  }
   for (const option of node.options) {
-    if (!isAstObject(option) || !isAstObject(option.DefElem)) continue
-    if (option.DefElem.defname !== name) continue
+    if (!isAstObject(option) || !isAstObject(option.DefElem)) {
+      continue
+    }
+    if (option.DefElem.defname !== name) {
+      continue
+    }
     const argument = option.DefElem.arg
-    if (!isAstObject(argument) || !isAstObject(argument.String)) return null
+    if (!isAstObject(argument) || !isAstObject(argument.String)) {
+      return null
+    }
     return typeof argument.String.sval === 'string' ? argument.String.sval : null
   }
   return null
 }
 
 function astStringList(value: PostgresAstValue | undefined) {
-  if (!Array.isArray(value)) return []
+  if (!Array.isArray(value)) {
+    return []
+  }
   return value.flatMap((entry) => {
-    if (!isAstObject(entry) || !isAstObject(entry.String)) return []
+    if (!isAstObject(entry) || !isAstObject(entry.String)) {
+      return []
+    }
     return typeof entry.String.sval === 'string' ? [entry.String.sval] : []
   })
 }
 
 function routineParameterNames(value: PostgresAstValue | undefined) {
-  if (!Array.isArray(value)) return new Set<string>()
+  if (!Array.isArray(value)) {
+    return new Set<string>()
+  }
   return new Set(
     value.flatMap((entry) => {
-      if (!isAstObject(entry) || !isAstObject(entry.FunctionParameter)) return []
+      if (!isAstObject(entry) || !isAstObject(entry.FunctionParameter)) {
+        return []
+      }
       const name = entry.FunctionParameter.name
       return typeof name === 'string' ? [name] : []
     }),
@@ -163,7 +185,7 @@ function normalizeRoutineAst(
   defaultRelationName?: string,
   implicitRelationAliases: ReadonlyMap<string, string> = new Map(),
 ): unknown {
-  if (Array.isArray(value))
+  if (Array.isArray(value)) {
     return value.map((entry) =>
       normalizeRoutineAst(
         entry,
@@ -174,7 +196,10 @@ function normalizeRoutineAst(
         implicitRelationAliases,
       ),
     )
-  if (!isAstObject(value)) return value
+  }
+  if (!isAstObject(value)) {
+    return value
+  }
   const relationScope = statementRelationScope(
     value,
     parentKind,
@@ -185,7 +210,7 @@ function normalizeRoutineAst(
   const scopedRelationName = relationScope.defaultRelationName
   const scopedRelationAliases = relationScope.implicitAliases
 
-  if (parentKind === 'TypeCast' && parentField === 'typeName')
+  if (parentKind === 'TypeCast' && parentField === 'typeName') {
     return normalizeRoutineAst(
       normalizeRoutineTypeName(value),
       routine,
@@ -194,7 +219,8 @@ function normalizeRoutineAst(
       scopedRelationName,
       scopedRelationAliases,
     )
-  if (isAstObject(value.ColumnRef))
+  }
+  if (isAstObject(value.ColumnRef)) {
     return {
       ColumnRef: normalizeRoutineAst(
         normalizeRoutineColumnReference(
@@ -210,12 +236,13 @@ function normalizeRoutineAst(
         scopedRelationAliases,
       ),
     }
+  }
   if (
     ((parentKind === 'SelectStmt' && parentField === 'targetList') ||
       ((parentKind === 'InsertStmt' || parentKind === 'DeleteStmt') &&
         parentField === 'returningList')) &&
     isAstObject(value.ResTarget)
-  )
+  ) {
     return {
       ResTarget: normalizeRoutineAst(
         removeImplicitSelectTargetName(value.ResTarget),
@@ -226,6 +253,7 @@ function normalizeRoutineAst(
         scopedRelationAliases,
       ),
     }
+  }
 
   const relationNormalizedValue = removeImplicitRelationAlias(value, scopedRelationAliases)
   const normalizedValue =
@@ -263,29 +291,38 @@ function statementRelationScope(
   inherited: string | undefined,
   inheritedAliases: ReadonlyMap<string, string>,
 ) {
-  if (field !== undefined)
+  if (field !== undefined) {
     return { defaultRelationName: inherited, implicitAliases: inheritedAliases }
-  if (kind === 'SelectStmt' && Array.isArray(node.fromClause) && node.fromClause.length > 0)
+  }
+  if (kind === 'SelectStmt' && Array.isArray(node.fromClause) && node.fromClause.length > 0) {
     return {
       defaultRelationName: soleRelationName(node.fromClause),
       implicitAliases: statementImplicitAliases(node.fromClause),
     }
-  if (kind === 'DeleteStmt' || kind === 'UpdateStmt')
+  }
+  if (kind === 'DeleteStmt' || kind === 'UpdateStmt') {
     return {
       defaultRelationName: relationName(node.relation),
       implicitAliases: statementImplicitAliases(node.relation),
     }
+  }
   return { defaultRelationName: inherited, implicitAliases: inheritedAliases }
 }
 
 function soleRelationName(value: PostgresAstValue | undefined) {
-  if (!Array.isArray(value) || value.length !== 1) return undefined
+  if (!Array.isArray(value) || value.length !== 1) {
+    return
+  }
   return relationName(value[0])
 }
 
 function relationName(value: PostgresAstValue | undefined): string | undefined {
-  if (!isAstObject(value)) return undefined
-  if (typeof value.relname === 'string') return rangeVariableName(value)
+  if (!isAstObject(value)) {
+    return undefined
+  }
+  if (typeof value.relname === 'string') {
+    return rangeVariableName(value)
+  }
   if (isAstObject(value.RangeVar)) {
     return rangeVariableName(value.RangeVar)
   }
@@ -301,9 +338,12 @@ function relationName(value: PostgresAstValue | undefined): string | undefined {
 }
 
 function rangeVariableName(relation: PostgresAstObject) {
-  if (typeof relation.relname !== 'string') return undefined
-  if (!isAstObject(relation.alias) || typeof relation.alias.aliasname !== 'string')
+  if (typeof relation.relname !== 'string') {
+    return
+  }
+  if (!isAstObject(relation.alias) || typeof relation.alias.aliasname !== 'string') {
     return relation.relname
+  }
   return relation.alias.aliasname === `${relation.relname}_1`
     ? relation.relname
     : relation.alias.aliasname
@@ -316,10 +356,14 @@ function statementImplicitAliases(value: PostgresAstValue | undefined) {
 
   function visit(candidate: PostgresAstValue | undefined) {
     if (Array.isArray(candidate)) {
-      for (const entry of candidate) visit(entry)
+      for (const entry of candidate) {
+        visit(entry)
+      }
       return
     }
-    if (!isAstObject(candidate)) return
+    if (!isAstObject(candidate)) {
+      return
+    }
     if (isAstObject(candidate.RangeVar)) {
       record(candidate.RangeVar)
       return
@@ -339,8 +383,9 @@ function statementImplicitAliases(value: PostgresAstValue | undefined) {
       typeof relation.relname !== 'string' ||
       !isAstObject(relation.alias) ||
       relation.alias.aliasname !== `${relation.relname}_1`
-    )
+    ) {
       return
+    }
     implicitAliases.set(String(relation.alias.aliasname), relation.relname)
   }
 }
@@ -360,14 +405,19 @@ function normalizeRoutineColumnReference(
     fields.length === 1 &&
     defaultRelationName !== undefined &&
     !routine.parameterNames.has(fields[0]!)
-  )
+  ) {
     return {
       ...parameterNormalized,
       fields: [{ String: { sval: defaultRelationName } }, { String: { sval: fields[0]! } }],
     }
-  if (fields.length !== 2) return parameterNormalized
+  }
+  if (fields.length !== 2) {
+    return parameterNormalized
+  }
   const canonicalRelationName = implicitRelationAliases.get(fields[0]!)
-  if (!canonicalRelationName) return parameterNormalized
+  if (!canonicalRelationName) {
+    return parameterNormalized
+  }
   return {
     ...parameterNormalized,
     fields: [{ String: { sval: canonicalRelationName } }, { String: { sval: fields[1]! } }],
@@ -382,21 +432,26 @@ function removeImplicitRelationAlias(
     !isAstObject(node.alias) ||
     typeof node.alias.aliasname !== 'string' ||
     !implicitAliases.has(node.alias.aliasname)
-  )
+  ) {
     return node
+  }
   const { alias: _alias, ...withoutAlias } = node
   return withoutAlias
 }
 
 function removeOwningSchemaQualification(node: PostgresAstObject, schemaName: string) {
-  if (node.schemaname !== schemaName) return node
+  if (node.schemaname !== schemaName) {
+    return node
+  }
   const { schemaname: _schemaname, ...unqualified } = node
   return unqualified
 }
 
 function normalizeRoutineTypeName(node: PostgresAstObject) {
   const names = astStringList(node.names)
-  if (names.length !== 1 || names[0] !== 'timestamptz') return node
+  if (names.length !== 1 || names[0] !== 'timestamptz') {
+    return node
+  }
   return {
     ...node,
     names: [{ String: { sval: 'pg_catalog' } }, { String: { sval: 'timestamptz' } }],
@@ -412,8 +467,9 @@ function normalizeRoutineParameterReference(
     fields.length !== 2 ||
     fields[0] !== routine.routineName ||
     !routine.parameterNames.has(fields[1]!)
-  )
+  ) {
     return node
+  }
   return { ...node, fields: [{ String: { sval: fields[1]! } }] }
 }
 
@@ -422,29 +478,46 @@ function removeImplicitSelectTargetName(node: PostgresAstObject) {
   if (
     typeof name !== 'string' ||
     (name !== '?column?' && name !== inferredSelectTargetName(node.val))
-  )
+  ) {
     return node
+  }
   const { name: _, ...withoutName } = node
   return withoutName
 }
 
 function inferredSelectTargetName(value: PostgresAstValue | undefined): string | undefined {
-  if (!isAstObject(value)) return undefined
-  if (isAstObject(value.CoalesceExpr)) return 'coalesce'
-  if (isAstObject(value.FuncCall)) return astStringList(value.FuncCall.funcname).at(-1)
-  if (isAstObject(value.ColumnRef)) return astStringList(value.ColumnRef.fields).at(-1)
+  if (!isAstObject(value)) {
+    return undefined
+  }
+  if (isAstObject(value.CoalesceExpr)) {
+    return 'coalesce'
+  }
+  if (isAstObject(value.FuncCall)) {
+    return astStringList(value.FuncCall.funcname).at(-1)
+  }
+  if (isAstObject(value.ColumnRef)) {
+    return astStringList(value.ColumnRef.fields).at(-1)
+  }
   if (isAstObject(value.TypeCast)) {
     const argumentName = inferredSelectTargetName(value.TypeCast.arg)
-    if (argumentName) return argumentName
+    if (argumentName) {
+      return argumentName
+    }
     const typeName = value.TypeCast.typeName
-    if (isAstObject(typeName)) return astStringList(typeName.names).at(-1)
+    if (isAstObject(typeName)) {
+      return astStringList(typeName.names).at(-1)
+    }
   }
   return undefined
 }
 
 function normalizeAst(value: PostgresAstValue): unknown {
-  if (Array.isArray(value)) return value.map(normalizeAst)
-  if (!isAstObject(value)) return value
+  if (Array.isArray(value)) {
+    return value.map(normalizeAst)
+  }
+  if (!isAstObject(value)) {
+    return value
+  }
   return Object.fromEntries(
     Object.entries(value)
       .filter(

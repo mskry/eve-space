@@ -26,12 +26,12 @@ const props = withDefaults(
     totalPages: number
   }>(),
   {
-    disabled: false,
     buttonClass: undefined,
+    disabled: false,
     nextLabel: 'Next page',
     previousLabel: 'Previous page',
-    showStatus: true,
     showPages: false,
+    showStatus: true,
   },
 )
 
@@ -60,7 +60,9 @@ function paginationItemIndex(item: PaginationItem, items: readonly PaginationIte
 }
 
 function paginationItemKey(item: PaginationItem, items: readonly PaginationItem[]) {
-  if (item.type === 'page') return `page-${item.value}`
+  if (item.type === 'page') {
+    return `page-${item.value}`
+  }
 
   const position = paginationItemIndex(item, items)
   const previousPage = items

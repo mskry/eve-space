@@ -50,13 +50,13 @@ test('projects bounded skill, type-detail, and location products from one commit
     {},
     database([
       {
-        type_id: '3300',
-        type_name: 'Gunnery',
         group_id: '255',
         group_name: 'Gunnery',
-        rank: 1,
         primary_attribute: 167,
+        rank: 1,
         secondary_attribute: 168,
+        type_id: '3300',
+        type_name: 'Gunnery',
       },
     ]) as never,
   )
@@ -64,13 +64,13 @@ test('projects bounded skill, type-detail, and location products from one commit
     { typeIds: [34, 34] },
     database([
       {
-        type_id: '34',
-        type_name: 'Tritanium',
-        group_id: '18',
-        group_name: 'Mineral',
         category_id: '4',
         category_name: 'Material',
+        group_id: '18',
+        group_name: 'Mineral',
         packaged_volume: 0.01,
+        type_id: '34',
+        type_name: 'Tritanium',
       },
     ]) as never,
   )
@@ -78,10 +78,10 @@ test('projects bounded skill, type-detail, and location products from one commit
     { typeIds: [34, 34] },
     database([
       {
-        type_id: '34',
-        type_name: 'Tritanium',
         group_id: '18',
         group_name: 'Mineral',
+        type_id: '34',
+        type_name: 'Tritanium',
       },
     ]) as never,
   )
@@ -89,8 +89,8 @@ test('projects bounded skill, type-detail, and location products from one commit
     { locationIds: [30_000_142] },
     database([
       {
-        location_id: '30000142',
         kind: 'solar_system',
+        location_id: '30000142',
         name: 'Jita',
         solar_system_id: '30000142',
       },
@@ -101,28 +101,28 @@ test('projects bounded skill, type-detail, and location products from one commit
     complete: true,
     rows: [
       {
-        typeId: 3300,
-        rank: 1,
         primaryAttribute: 'perception',
+        rank: 1,
         secondaryAttribute: 'willpower',
+        typeId: 3300,
       },
     ],
   })
   expect(typeResult).toMatchObject({
     complete: true,
-    rows: [{ typeId: 34, categoryId: 4, packagedVolume: 0.01 }],
+    rows: [{ categoryId: 4, packagedVolume: 0.01, typeId: 34 }],
   })
   expect(typeGroupResult).toMatchObject({
     complete: true,
-    rows: [{ typeId: 34, typeName: 'Tritanium', groupId: 18, groupName: 'Mineral' }],
+    rows: [{ groupId: 18, groupName: 'Mineral', typeId: 34, typeName: 'Tritanium' }],
   })
   expect(locationResult).toMatchObject({
     complete: true,
-    rows: [{ locationId: 30_000_142, kind: 'solar_system', name: 'Jita' }],
+    rows: [{ kind: 'solar_system', locationId: 30_000_142, name: 'Jita' }],
   })
-  expect(skillResult.revision).toEqual(typeResult.revision)
-  expect(typeResult.revision).toEqual(typeGroupResult.revision)
-  expect(typeResult.revision).toEqual(locationResult.revision)
+  expect(skillResult.revision).toStrictEqual(typeResult.revision)
+  expect(typeResult.revision).toStrictEqual(typeGroupResult.revision)
+  expect(typeResult.revision).toStrictEqual(locationResult.revision)
 })
 
 test('returns complete empty bounded products without issuing their data query', async () => {
@@ -164,7 +164,7 @@ test('rejects oversized catalogues and invalid source rows', async () => {
     loadStaticLocationLabelsProduct(
       { locationIds: [1] },
       database([
-        { location_id: '1', kind: 'region', name: 'Invalid', solar_system_id: '1' },
+        { kind: 'region', location_id: '1', name: 'Invalid', solar_system_id: '1' },
       ]) as never,
     ),
   ).rejects.toThrow('location kind is invalid')
@@ -173,13 +173,13 @@ test('rejects oversized catalogues and invalid source rows', async () => {
       { typeIds: [34] },
       database([
         {
-          type_id: '34',
-          type_name: 'Tritanium',
-          group_id: '18',
-          group_name: 'Mineral',
           category_id: '4',
           category_name: 'Material',
+          group_id: '18',
+          group_name: 'Mineral',
           packaged_volume: -1,
+          type_id: '34',
+          type_name: 'Tritanium',
         },
       ]) as never,
     ),
@@ -228,18 +228,20 @@ function transaction(
   return Object.assign(
     vi.fn((strings: TemplateStringsArray) => {
       const statement = strings.join(' ')
-      if (statement.includes('from sde_projection_state'))
+      if (statement.includes('from sde_projection_state')) {
         return cancellable(revision === null ? [] : [revision])
+      }
       if (
         statement.includes('from sde_types as types') ||
         statement.includes('from sde_solar_systems as systems')
-      )
+      ) {
         return cancellable([...rows])
+      }
       return cancellable([])
     }),
     {
-      unsafe: vi.fn(() => cancellable([])),
       array: vi.fn((values: readonly number[]) => [...values]),
+      unsafe: vi.fn(() => cancellable([])),
     },
   )
 }

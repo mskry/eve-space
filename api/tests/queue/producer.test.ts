@@ -9,32 +9,35 @@ const diagnostic = {
 
 describe('in-memory queue producer', () => {
   test('returns exhaustive source-specific capacity outcomes', async () => {
-    const producer = createInMemoryQueueProducer({ highWaterMark: 1, depth: 1 })
+    const producer = createInMemoryQueueProducer({ depth: 1, highWaterMark: 1 })
 
     await expect(producer.inspectCapacity({ source: 'planner' })).resolves.toMatchObject({
-      status: 'rejected',
       reason: 'planner-paused',
+      status: 'rejected',
     })
     await expect(producer.inspectCapacity({ source: 'outbox' })).resolves.toMatchObject({
-      status: 'rejected',
       reason: 'outbox-paused',
+      status: 'rejected',
     })
     await expect(producer.inspectCapacity({ source: 'on-demand' })).resolves.toMatchObject({
-      status: 'rejected',
       reason: 'on-demand-rejected',
+      status: 'rejected',
     })
   })
 
   test('records accepted semantic commands and coalesces active planner work', async () => {
     const producer = createInMemoryQueueProducer()
 
-    await expect(producer.enqueue(diagnostic)).resolves.toEqual({ status: 'accepted', depth: 0 })
-    await expect(producer.enqueue(diagnostic)).resolves.toEqual({
-      status: 'rejected',
+    await expect(producer.enqueue(diagnostic)).resolves.toStrictEqual({
+      depth: 0,
+      status: 'accepted',
+    })
+    await expect(producer.enqueue(diagnostic)).resolves.toStrictEqual({
       depth: 1,
       reason: 'coalesced',
+      status: 'rejected',
     })
-    expect(producer.commands).toEqual([diagnostic])
+    expect(producer.commands).toStrictEqual([diagnostic])
   })
 
   test('models planner pause transitions without affecting on-demand work', async () => {
@@ -47,34 +50,34 @@ describe('in-memory queue producer', () => {
     const onDemand = { ...diagnostic, source: 'on-demand' as const }
     await producer.enqueue(onDemand)
     await producer.enqueue(onDemand)
-    expect(producer.commands).toEqual([onDemand, onDemand])
+    expect(producer.commands).toStrictEqual([onDemand, onDemand])
   })
 
   test('coalesces immutable authority work by the production contract identity', async () => {
     const producer = createInMemoryQueueProducer()
     const payload = {
+      authorizationGeneration: 7,
       grantId: '35acd527-9539-44ad-aacf-9f8e45232267',
       organizationVersion: 3,
-      sourceSubjectLifecycleId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
-      authorizationGeneration: 7,
       roleEvidenceRevision: 'revision-1',
+      sourceSubjectLifecycleId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
     }
 
     await expect(
-      producer.enqueue({ name: 'organization-owner-evidence', source: 'planner', payload }),
-    ).resolves.toEqual({ status: 'accepted', depth: 0 })
+      producer.enqueue({ name: 'organization-owner-evidence', payload, source: 'planner' }),
+    ).resolves.toStrictEqual({ depth: 0, status: 'accepted' })
     await expect(
       producer.enqueue({
         name: 'organization-owner-evidence',
-        source: 'planner',
         payload: {
-          roleEvidenceRevision: payload.roleEvidenceRevision,
           authorizationGeneration: payload.authorizationGeneration,
-          sourceSubjectLifecycleId: payload.sourceSubjectLifecycleId,
-          organizationVersion: payload.organizationVersion,
           grantId: payload.grantId,
+          organizationVersion: payload.organizationVersion,
+          roleEvidenceRevision: payload.roleEvidenceRevision,
+          sourceSubjectLifecycleId: payload.sourceSubjectLifecycleId,
         },
+        source: 'planner',
       }),
-    ).resolves.toEqual({ status: 'rejected', depth: 1, reason: 'coalesced' })
+    ).resolves.toStrictEqual({ depth: 1, reason: 'coalesced', status: 'rejected' })
   })
 })

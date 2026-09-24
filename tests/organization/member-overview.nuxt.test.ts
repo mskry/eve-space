@@ -18,7 +18,9 @@ afterAll(() => queryServer.close())
 beforeEach(clearQueryCache)
 
 afterEach(async () => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   clearQueryCache()
   queryServer.resetHandlers()
   vi.restoreAllMocks()
@@ -30,27 +32,27 @@ describe('authenticated member overview', () => {
     queryServer.use(
       http.get('*/auth/config', () =>
         HttpResponse.json({
+          attachUrl: '/auth/eve/attach',
           configured: true,
           loginUrl: '/auth/eve/login',
-          attachUrl: '/auth/eve/attach',
         }),
       ),
       http.get('*/auth/session', () =>
         HttpResponse.json({
-          authenticated: true,
           account: {
-            userId: 'member-user',
             mainCharacter: { characterId: 1_404_328_063, name: 'Main Pilot' },
+            userId: 'member-user',
           },
+          authenticated: true,
         }),
       ),
       http.get('*/api/me/cache-admission', () => HttpResponse.json(memberCacheAdmission)),
       http.get('*/api/admin/session', () => HttpResponse.json({ authenticated: false })),
-      http.get('*/api/admin/setup', () => HttpResponse.json({ required: false, available: true })),
+      http.get('*/api/admin/setup', () => HttpResponse.json({ available: true, required: false })),
       http.get('*/api/modules', () =>
         HttpResponse.json({
           enabledModuleIds: ['organization-activity'],
-          shellNavigationOrder: { dashboard: [], character: [] },
+          shellNavigationOrder: { character: [], dashboard: [] },
         }),
       ),
       http.get('*/api/organization/compliance', () => HttpResponse.json(complianceResponse)),
@@ -80,7 +82,7 @@ describe('authenticated member overview', () => {
     expect(wrapper.text()).toContain('STALE')
     expect(wrapper.text()).toContain('AUTHORIZATION REQUIRED')
     expect(wrapper.text()).not.toContain('Organization-wide')
-    expect(wrapper.findAll('.activity-card').map((card) => card.get('h3').text())).toEqual([
+    expect(wrapper.findAll('.activity-card').map((card) => card.get('h3').text())).toStrictEqual([
       'Build the fleet reserve',
       'Monitor the campaign',
     ])
@@ -93,12 +95,12 @@ describe('authenticated member overview', () => {
     const activityLink = wrapper
       .findAllComponents(RouterLinkStub)
       .find((link) => link.classes().includes('activity-card__link'))
-    expect(activityLink?.props('to')).toEqual({
+    expect(activityLink?.props('to')).toStrictEqual({
       name: 'eve-organization-activity-projects',
       query: {
         activityId: '98fa598d-8133-48e2-8329-aaaf0085b843',
-        corporationId: '98000001',
         characterId: '1404328063',
+        corporationId: '98000001',
       },
     })
   })
@@ -154,27 +156,27 @@ describe('authenticated member overview', () => {
     queryServer.use(
       http.get('*/auth/config', () =>
         HttpResponse.json({
+          attachUrl: '/auth/eve/attach',
           configured: true,
           loginUrl: '/auth/eve/login',
-          attachUrl: '/auth/eve/attach',
         }),
       ),
       http.get('*/auth/session', () =>
         HttpResponse.json({
-          authenticated: true,
           account: {
-            userId: 'member-user',
             mainCharacter: { characterId: 1_404_328_063, name: 'Main Pilot' },
+            userId: 'member-user',
           },
+          authenticated: true,
         }),
       ),
       http.get('*/api/me/cache-admission', () => HttpResponse.json(memberCacheAdmission)),
       http.get('*/api/admin/session', () => HttpResponse.json({ authenticated: false })),
-      http.get('*/api/admin/setup', () => HttpResponse.json({ required: true, available: true })),
+      http.get('*/api/admin/setup', () => HttpResponse.json({ available: true, required: true })),
       http.get('*/api/modules', () =>
         HttpResponse.json({
           enabledModuleIds: [],
-          shellNavigationOrder: { dashboard: [], character: [] },
+          shellNavigationOrder: { character: [], dashboard: [] },
         }),
       ),
       http.get('*/api/organization/compliance', () => {
@@ -185,7 +187,7 @@ describe('authenticated member overview', () => {
 
     const SetupRequiredHost = defineComponent({
       setup() {
-        useQueryCache().setQueryData(ADMIN_QUERY_KEYS.setup, { required: true, available: true })
+        useQueryCache().setQueryData(ADMIN_QUERY_KEYS.setup, { available: true, required: true })
         return () => h(MemberOverviewPage)
       },
     })
@@ -209,8 +211,6 @@ function useOverviewHandlers(
 ) {
   const compliance = {
     ...complianceResponse,
-    state,
-    reviewDeadline: state === 'review_required' ? complianceResponse.reviewDeadline : null,
     accessValidUntil: state === 'review_required' ? complianceResponse.accessValidUntil : null,
     characters:
       state === 'compliant'
@@ -220,31 +220,33 @@ function useOverviewHandlers(
             remediationActions: [],
           }))
         : complianceResponse.characters,
+    reviewDeadline: state === 'review_required' ? complianceResponse.reviewDeadline : null,
+    state,
   }
   queryServer.use(
     http.get('*/auth/config', () =>
       HttpResponse.json({
+        attachUrl: '/auth/eve/attach',
         configured: true,
         loginUrl: '/auth/eve/login',
-        attachUrl: '/auth/eve/attach',
       }),
     ),
     http.get('*/auth/session', () =>
       HttpResponse.json({
-        authenticated: true,
         account: {
-          userId: 'member-user',
           mainCharacter: { characterId: 1_404_328_063, name: 'Main Pilot' },
+          userId: 'member-user',
         },
+        authenticated: true,
       }),
     ),
     http.get('*/api/me/cache-admission', () => HttpResponse.json(memberCacheAdmission)),
     http.get('*/api/admin/session', () => HttpResponse.json({ authenticated: false })),
-    http.get('*/api/admin/setup', () => HttpResponse.json({ required: false, available: true })),
+    http.get('*/api/admin/setup', () => HttpResponse.json({ available: true, required: false })),
     http.get('*/api/modules', () =>
       HttpResponse.json({
         enabledModuleIds,
-        shellNavigationOrder: { dashboard: [], character: [] },
+        shellNavigationOrder: { character: [], dashboard: [] },
       }),
     ),
     http.get('*/api/organization/compliance', () => HttpResponse.json(compliance)),
@@ -256,15 +258,8 @@ function useOverviewHandlers(
 }
 
 const complianceResponse = {
-  organizationVersion: 1,
-  state: 'review_required',
-  evidenceFreshness: 'fresh',
-  evidenceAt: '2026-09-08T10:00:00.000Z',
-  reviewDeadline: '2026-09-09T18:00:00.000Z',
   accessValidUntil: '2026-09-09T18:00:00.000Z',
-  evaluatedAt: '2026-09-08T10:00:00.000Z',
   accountReasons: [],
-  remediationActions: [],
   characters: [
     {
       characterId: 1_404_328_063,
@@ -292,27 +287,30 @@ const complianceResponse = {
   ],
   disclosureNotice:
     'EVE SSO authorizes one selected character at a time. Registration completeness depends on member disclosure and organization policy.',
+  evaluatedAt: '2026-09-08T10:00:00.000Z',
+  evidenceAt: '2026-09-08T10:00:00.000Z',
+  evidenceFreshness: 'fresh',
+  organizationVersion: 1,
+  remediationActions: [],
+  reviewDeadline: '2026-09-09T18:00:00.000Z',
+  state: 'review_required',
 } satisfies OrganizationCompliance
 
 const memberCacheAdmission = {
-  userId: 'member-user',
   characters: [
     { characterId: 1_404_328_063, admissionRevision: 'main-character-revision' },
     { characterId: 90_000_002, admissionRevision: 'industry-character-revision' },
   ],
   organization: {
-    organizationVersion: 1,
     admissionRevision: 'organization-revision-1',
-    validUntil: null,
     admissionScopes: [coreOrganizationAdmissionScopes.activities],
+    organizationVersion: 1,
+    validUntil: null,
   },
+  userId: 'member-user',
 }
 
 const activityResponse = {
-  organizationVersion: 1,
-  generatedAt: '2026-09-08T10:00:00.000Z',
-  stale: true,
-  validatedAt: '2026-09-08T08:55:00.000Z',
   activities: [
     {
       id: 'organization-activity:project:17',
@@ -366,6 +364,8 @@ const activityResponse = {
       freshness: { state: 'stale', collectedAt: '2026-09-08T08:55:00.000Z' },
     },
   ],
+  generatedAt: '2026-09-08T10:00:00.000Z',
+  organizationVersion: 1,
   sources: [
     {
       sourceId: 'secondary:secondary-provider',
@@ -380,6 +380,8 @@ const activityResponse = {
       freshness: { state: 'current', collectedAt: '2026-09-08T09:55:00.000Z' },
     },
   ],
+  stale: true,
+  validatedAt: '2026-09-08T08:55:00.000Z',
 } satisfies OrganizationActivities
 
 function currentActivityResponse(): OrganizationActivities {

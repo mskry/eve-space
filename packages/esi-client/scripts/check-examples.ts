@@ -68,7 +68,9 @@ export function validateDocumentedPackageImports(
 
   for (const file of files) {
     for (const specifier of findRuntimeImports(file.source)) {
-      if (specifier !== packageName && !specifier.startsWith(`${packageName}/`)) continue;
+      if (specifier !== packageName && !specifier.startsWith(`${packageName}/`)) {
+        continue;
+      }
       const subpath = specifier === packageName ? '.' : `.${specifier.slice(packageName.length)}`;
       if (!Object.hasOwn(packageExports, subpath)) {
         throw new Error(`${file.path} imports package subpath ${specifier}, which is not exported`);

@@ -14,7 +14,7 @@ describe('ESI representation identity', () => {
     const first = identity('universe-resolve-names', { ids: [30, 10, 20, 10] })
     const second = identity('universe-resolve-names', { ids: [20, 30, 10] })
 
-    expect(first).toEqual(second)
+    expect(first).toStrictEqual(second)
     expect(first.digest).toMatch(/^[a-f\d]{64}$/)
     expect(first.value).toBe(`universe-resolve-names:${first.digest}`)
   })
@@ -23,7 +23,7 @@ describe('ESI representation identity', () => {
     const first = identity('universe-resolve-names', { ids: ['Åke', 'Ake', 'a', 'A'] })
     const second = identity('universe-resolve-names', { ids: ['A', 'a', 'Ake', 'Åke'] })
 
-    expect(first).toEqual(second)
+    expect(first).toStrictEqual(second)
   })
 
   test('preserves exact order and spelling in ordered scalar inputs', () => {
@@ -40,32 +40,32 @@ describe('ESI representation identity', () => {
     const path = identity('wallet-balance', { path: { character_id: 42 } })
     const batch = identity('universe-resolve-names', { body: [20, 10] })
 
-    expect(path).toEqual(flat)
-    expect(batch).toEqual(identity('universe-resolve-names', { ids: [10, 20] }))
+    expect(path).toStrictEqual(flat)
+    expect(batch).toStrictEqual(identity('universe-resolve-names', { ids: [10, 20] }))
   })
 
   test('projects all registered array bodies from their post-migration SDK envelopes', () => {
-    expect(identity('universe-resolve-names', { body: [30, 10, 20, 10] })).toEqual(
+    expect(identity('universe-resolve-names', { body: [30, 10, 20, 10] })).toStrictEqual(
       identity('universe-resolve-names', { ids: [20, 30, 10] }),
     )
-    expect(identity('universe-resolve-ids', { body: ['Jita', 'Amarr', 'Jita'] })).toEqual(
+    expect(identity('universe-resolve-ids', { body: ['Jita', 'Amarr', 'Jita'] })).toStrictEqual(
       identity('universe-resolve-ids', { names: ['Amarr', 'Jita'] }),
     )
     expect(
       identity('character-asset-names', {
-        path: { character_id: 7 },
         body: [30, 10, 20, 10],
+        path: { character_id: 7 },
       }),
-    ).toEqual(identity('character-asset-names', { characterId: 7, itemIds: [20, 30, 10] }))
-    expect(identity('bulk-affiliation', { body: [30, 10, 20, 10] })).toEqual(
+    ).toStrictEqual(identity('character-asset-names', { characterId: 7, itemIds: [20, 30, 10] }))
+    expect(identity('bulk-affiliation', { body: [30, 10, 20, 10] })).toStrictEqual(
       identity('bulk-affiliation', { characterIds: [20, 30, 10] }),
     )
     expect(
       identity('character-cspa-charge', {
-        path: { character_id: 7 },
         body: [30, 10, 20],
+        path: { character_id: 7 },
       }),
-    ).toEqual(identity('character-cspa-charge', { characterId: 7 }))
+    ).toStrictEqual(identity('character-cspa-charge', { characterId: 7 }))
   })
 
   test('does not recursively recover array-body identity fields from decoy objects', () => {
@@ -75,14 +75,15 @@ describe('ESI representation identity', () => {
       [
         'character-asset-names',
         {
-          path: { nested: { character_id: 7 } },
           body: { nested: { item_ids: [10, 20] } },
+          path: { nested: { character_id: 7 } },
         },
       ],
       ['bulk-affiliation', { body: { characterIds: [10, 20] } }],
-      ['character-cspa-charge', { path: { nested: { character_id: 7 } }, body: [10, 20] }],
-    ] as const)
+      ['character-cspa-charge', { body: [10, 20], path: { nested: { character_id: 7 } } }],
+    ] as const) {
       expect(() => identity(operation, inputs)).toThrow(/ESI identity/)
+    }
   })
 
   test('fails closed on empty and oversized post-migration array bodies', () => {
@@ -121,29 +122,29 @@ describe('ESI representation identity', () => {
       identity('universe-resolve-ids', { body: ['Jita'] }).digest,
     )
     expect(
-      identity('character-asset-names', { path: { character_id: 7 }, body: [10] }).digest,
-    ).not.toBe(identity('character-asset-names', { path: { character_id: 7 }, body: [20] }).digest)
+      identity('character-asset-names', { body: [10], path: { character_id: 7 } }).digest,
+    ).not.toBe(identity('character-asset-names', { body: [20], path: { character_id: 7 } }).digest)
     expect(identity('bulk-affiliation', { body: [10] }).digest).not.toBe(
       identity('bulk-affiliation', { body: [20] }).digest,
     )
-    expect(identity('character-cspa-charge', { path: { character_id: 7 }, body: [10] })).toEqual(
-      identity('character-cspa-charge', { path: { character_id: 7 }, body: [20] }),
-    )
+    expect(
+      identity('character-cspa-charge', { body: [10], path: { character_id: 7 } }),
+    ).toStrictEqual(identity('character-cspa-charge', { body: [20], path: { character_id: 7 } }))
   })
 
   test('separates operations, compatibility dates, and representation versions', () => {
     const races = identity('universe-races', {})
     const bloodlines = identity('universe-bloodlines', {})
     const compatibilityChange = createEsiRepresentationIdentity({
-      operation: 'universe-races',
-      inputs: {},
       compatibilityDate: '2026-08-24',
+      inputs: {},
+      operation: 'universe-races',
       representationVersion,
     })
     const representationChange = createEsiRepresentationIdentity({
-      operation: 'universe-races',
-      inputs: {},
       compatibilityDate,
+      inputs: {},
+      operation: 'universe-races',
       representationVersion: 'character-profile-v2',
     })
 
@@ -183,10 +184,10 @@ describe('ESI representation identity', () => {
       lastMailId: undefined,
     })
 
-    expect(first).toEqual(reordered)
+    expect(first).toStrictEqual(reordered)
     expect(first.digest).not.toBe(unfiltered.digest)
-    expect(omitted).toEqual(unfiltered)
-    expect(empty).toEqual(unfiltered)
+    expect(omitted).toStrictEqual(unfiltered)
+    expect(empty).toStrictEqual(unfiltered)
     expect(() =>
       identity('mail-headers', {
         characterId: 1,
@@ -208,7 +209,7 @@ describe('ESI representation identity', () => {
     const older = identity('wallet-transactions', { characterId: 1, fromId: 42 })
     const otherRange = identity('wallet-transactions', { characterId: 1, fromId: 41 })
 
-    expect(newest).toEqual(explicitNewest)
+    expect(newest).toStrictEqual(explicitNewest)
     expect(newest.digest).not.toBe(older.digest)
     expect(older.digest).not.toBe(otherRange.digest)
     expect(identity('wallet-journal', { characterId: 1, page: 1 }).digest).not.toBe(
@@ -236,15 +237,15 @@ describe('ESI representation identity', () => {
     })
 
     expect(firstPage.digest).not.toBe(secondPage.digest)
-    expect(firstNames).toEqual(reorderedNames)
+    expect(firstNames).toStrictEqual(reorderedNames)
     expect(firstNames.digest).not.toBe(otherCharacter.digest)
   })
 
   test('separates mailbox identities by resource revision', () => {
     const base = {
-      operation: 'mail-message' as const,
-      inputs: { characterId: 1, mailId: 2 },
       compatibilityDate,
+      inputs: { characterId: 1, mailId: 2 },
+      operation: 'mail-message' as const,
       representationVersion,
     }
 
@@ -259,7 +260,7 @@ describe('ESI representation identity', () => {
 
     expect(first.digest).not.toBe(second.digest)
     expect(first.coordinationDigest).toBe(second.coordinationDigest)
-    expect(first.resourceRevision).toEqual({ namespace: 'mailbox', value: 1 })
+    expect(first.resourceRevision).toStrictEqual({ namespace: 'mailbox', value: 1 })
   })
 
   test('rejects oversized batches and scalar values before hashing', () => {
@@ -287,7 +288,7 @@ describe('ESI representation identity', () => {
             )
           : []
 
-      expect(identityLimits).toEqual(generatedLimits.map(({ maximumItems }) => maximumItems))
+      expect(identityLimits).toStrictEqual(generatedLimits.map(({ maximumItems }) => maximumItems))
     }
   })
 
@@ -297,8 +298,8 @@ describe('ESI representation identity', () => {
     ).not.toThrow()
     expect(() =>
       identity('public-character', {
-        characterId: 90_000_001,
         accessToken: 'must-not-enter-an-identity',
+        characterId: 90_000_001,
       }),
     ).toThrow('Unexpected ESI identity inputs: accessToken')
   })
@@ -309,9 +310,9 @@ function identity(
   inputs: Readonly<Record<string, unknown>>,
 ) {
   return createEsiRepresentationIdentity({
-    operation,
-    inputs,
     compatibilityDate,
+    inputs,
+    operation,
     representationVersion,
   })
 }

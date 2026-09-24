@@ -7,7 +7,9 @@ import {
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const moduleId = to.meta.platformModuleId
-  if (typeof moduleId !== 'string') return
+  if (typeof moduleId !== 'string') {
+    return
+  }
   const sectionId = to.meta.platformModuleSectionId
 
   if (globalThis.window === undefined) {
@@ -24,10 +26,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
         createError({ statusCode: 503, statusMessage: 'Module state unavailable' }),
       )
     }
-    if (!enabledModuleIds.includes(moduleId))
+    if (!enabledModuleIds.includes(moduleId)) {
       return abortNavigation(createError({ statusCode: 404, statusMessage: 'Page not found' }))
-    if (typeof sectionId === 'string' && !enabledSectionKeys.has(`${moduleId}/${sectionId}`))
+    }
+    if (typeof sectionId === 'string' && !enabledSectionKeys.has(`${moduleId}/${sectionId}`)) {
       return abortNavigation(createError({ statusCode: 404, statusMessage: 'Page not found' }))
+    }
     return
   }
 
@@ -42,10 +46,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
         createError({ statusCode: 503, statusMessage: 'Module state unavailable' }),
       )
     }
-    if (!enabledModuleIds.value.has(moduleId))
+    if (!enabledModuleIds.value.has(moduleId)) {
       return abortNavigation(createError({ statusCode: 404, statusMessage: 'Page not found' }))
-    if (typeof sectionId === 'string' && !enabledSectionKeys.value.has(`${moduleId}/${sectionId}`))
+    }
+    if (
+      typeof sectionId === 'string' &&
+      !enabledSectionKeys.value.has(`${moduleId}/${sectionId}`)
+    ) {
       return abortNavigation(createError({ statusCode: 404, statusMessage: 'Page not found' }))
+    }
   } finally {
     scope.stop()
   }

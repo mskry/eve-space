@@ -46,16 +46,16 @@ import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/token-errors.js'
 
 const character = {
-  characterId: 1404328063,
-  name: 'Bandera Primary',
-  corporationId: 1000166,
   allianceId: null,
+  characterId: 1_404_328_063,
+  corporationId: 1_000_166,
   isMain: true,
+  name: 'Bandera Primary',
   subjectLifecycleId: 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011',
 }
 const session = {
-  userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
   mainCharacter: character,
+  userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
 }
 const queue = { entries: [] }
 
@@ -70,7 +70,7 @@ describe('character skill queue route', () => {
     const response = await authorizedRequest(`/${character.characterId}/skill-queue`)
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual(queue)
+    expect(await response.json()).toStrictEqual(queue)
     expect(mocks.getCharacterSkillQueue).toHaveBeenCalledWith(
       character.characterId,
       character.subjectLifecycleId,
@@ -96,11 +96,11 @@ describe('character skill queue route', () => {
     const response = await authorizedRequest(`/${character.characterId}/skill-queue`)
 
     expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
+      authorizeUrl: `http://localhost:8788/auth/eve/reauthorize/${character.characterId}`,
       code: 'EVE_SCOPE_REQUIRED',
       message: 'Authorize skill queue access for this character.',
       requiredScope: 'esi-skills.read_skillqueue.v1',
-      authorizeUrl: `http://localhost:8788/auth/eve/reauthorize/${character.characterId}`,
     })
   })
 

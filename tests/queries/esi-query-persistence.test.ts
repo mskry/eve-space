@@ -16,89 +16,89 @@ import {
 } from '../../scripts/verify-esi-query-persistence'
 
 const authorizedScope = {
-  moduleId: 'example-module',
-  routeId: 'example-route',
-  authorization: 'authenticated-session',
-  audience: 'member',
-  requiredPermission: 'example.view',
   admissionScope: platformOrganizationAdmissionScope('example-module', {
     audience: 'member',
     requiredPermission: 'example.view',
   }),
+  audience: 'member',
+  authorization: 'authenticated-session',
+  moduleId: 'example-module',
+  requiredPermission: 'example.view',
+  routeId: 'example-route',
 } as const satisfies PlatformQueryAdmissionScopeDescriptor & { readonly moduleId: string }
 const ownedCharacterScope = {
   ...authorizedScope,
-  routeId: 'owned-character-route',
   authorization: 'owned-character',
+  routeId: 'owned-character-route',
 } as const satisfies PlatformQueryAdmissionScopeDescriptor & { readonly moduleId: string }
 
 describe('ESI query persistence declarations', () => {
   it('applies 24-hour garbage collection only to persistence-eligible classifications', () => {
     const characterOptions = defineEsiQueryOptions((characterId: number) => ({
+      esiPersistence: characterEsiPersistence(characterId),
       key: ['private', 'characters', characterId, 'skills'],
       query: async () => ({ characterId }),
       staleTime: 30_000,
-      esiPersistence: characterEsiPersistence(characterId),
     }))(90_000_001)
     const publicOptions = defineEsiQueryOptions((root: 'public') => ({
+      esiPersistence: { kind: 'public-esi' as const },
       key: [root, 'characters', 90_000_001],
       query: async () => ({ characterId: 90_000_001 }),
-      esiPersistence: { kind: 'public-esi' as const },
     }))('public')
     const organizationOptions = defineEsiQueryOptions((admissionScope: string) => ({
+      esiPersistence: organizationEsiPersistence(admissionScope),
       key: ['private', 'organization', 'activities'],
       query: async () => [],
-      esiPersistence: organizationEsiPersistence(admissionScope),
     }))('organization:v1:core:member:organization.activities')
     const excludedOptions = defineEsiQueryOptions((root: 'auth') => ({
+      esiPersistence: { kind: 'none' as const },
+      gcTime: 12_345,
       key: [root, 'session'],
       query: async () => ({ authenticated: false }),
-      gcTime: 12_345,
-      esiPersistence: { kind: 'none' as const },
     }))('auth')
 
     expect(characterOptions.gcTime).toBe(ESI_QUERY_RETENTION_MS)
     expect(publicOptions.gcTime).toBe(ESI_QUERY_RETENTION_MS)
     expect(organizationOptions.gcTime).toBe(ESI_QUERY_RETENTION_MS)
     expect(excludedOptions.gcTime).toBe(12_345)
-    expect(characterOptions.meta?.esiPersistence).toEqual({
-      kind: 'character-esi',
+    expect(characterOptions.meta?.esiPersistence).toStrictEqual({
       characterId: 90_000_001,
+      kind: 'character-esi',
     })
   })
 
   it('rejects persistence declarations that disagree with their query identity', () => {
     expect(
       isEsiPersistenceCoherent(['public', 'characters', 90_000_001], {
-        kind: 'character-esi',
         characterId: 90_000_001,
+        kind: 'character-esi',
       }),
     ).toBe(false)
     expect(
       isEsiPersistenceCoherent(['private', 'characters', 90_000_002, 'skills'], {
-        kind: 'character-esi',
         characterId: 90_000_001,
+        kind: 'character-esi',
       }),
     ).toBe(false)
     expect(
       isEsiPersistenceCoherent(['private', 'organization', 'activities'], {
-        kind: 'organization-esi',
         admissionScope: 'organization:v1:core:member:organization.activities',
+        kind: 'organization-esi',
       }),
     ).toBe(true)
     expect(
       isEsiPersistenceCoherent(
         ['private', 'organization', 3, 'modules', 'example-module', 'summary'],
         {
-          kind: 'organization-esi',
           admissionScope: 'organization:v1:another-module:member:example.view',
+          kind: 'organization-esi',
         },
       ),
     ).toBe(false)
     expect(
       isEsiPersistenceCoherent(['private', 'characters', 90_000_001, 'modules', 'example'], {
-        kind: 'organization-esi',
         admissionScope: 'organization:v1:example:member:example.view',
+        kind: 'organization-esi',
       }),
     ).toBe(false)
   })
@@ -111,7 +111,7 @@ describe('ESI query persistence declarations', () => {
         'example-route',
         'authenticated-session',
       ),
-    ).toEqual({ kind: 'organization-esi', admissionScope: authorizedScope.admissionScope })
+    ).toStrictEqual({ admissionScope: authorizedScope.admissionScope, kind: 'organization-esi' })
     expect(
       resolvePlatformEsiPersistence(
         [authorizedScope],
@@ -119,7 +119,7 @@ describe('ESI query persistence declarations', () => {
         'unknown-route',
         'authenticated-session',
       ),
-    ).toEqual({ kind: 'none' })
+    ).toStrictEqual({ kind: 'none' })
     expect(
       resolvePlatformEsiPersistence(
         [authorizedScope, ownedCharacterScope],
@@ -127,7 +127,7 @@ describe('ESI query persistence declarations', () => {
         'owned-character-route',
         'owned-character',
       ),
-    ).toEqual({ kind: 'none' })
+    ).toStrictEqual({ kind: 'none' })
   })
 })
 
@@ -148,7 +148,7 @@ describe('ESI query persistence verifier', () => {
       },
     ]
 
-    expect(esiQueryPersistenceViolations(sources, [authorizedScope])).toEqual([
+    expect(esiQueryPersistenceViolations(sources, [authorizedScope])).toStrictEqual([
       'app/queries/missing.ts must use defineEsiQueryOptions for query definitions',
       'app/queries/missing.ts has a query without an ESI persistence declaration',
       'features/example/nuxt/src/useExample.ts uses unauthorized query admission route example-module/other-route',
@@ -158,7 +158,7 @@ describe('ESI query persistence verifier', () => {
   it('reports generated scopes that disagree with authorization metadata', () => {
     expect(
       esiQueryPersistenceViolations([], [{ ...authorizedScope, admissionScope: 'wrong-scope' }]),
-    ).toEqual(['Generated query admission scope example-module/example-route is incoherent'])
+    ).toStrictEqual(['Generated query admission scope example-module/example-route is incoherent'])
   })
 
   it('accepts owned-character query routes without treating them as persistable', () => {
@@ -171,7 +171,7 @@ describe('ESI query persistence verifier', () => {
       },
     ]
 
-    expect(esiQueryPersistenceViolations(sources, [ownedCharacterScope])).toEqual([])
+    expect(esiQueryPersistenceViolations(sources, [ownedCharacterScope])).toStrictEqual([])
     expect(
       resolvePlatformEsiPersistence(
         [ownedCharacterScope],
@@ -179,7 +179,7 @@ describe('ESI query persistence verifier', () => {
         'owned-character-route',
         'owned-character',
       ),
-    ).toEqual({ kind: 'none' })
+    ).toStrictEqual({ kind: 'none' })
   })
 
   it('requires explicit module intent and rejects persistence outside the platform seam', () => {
@@ -204,7 +204,9 @@ describe('ESI query persistence verifier', () => {
       },
     ]
 
-    expect(esiQueryPersistenceViolations(sources, [authorizedScope, ownedCharacterScope])).toEqual([
+    expect(
+      esiQueryPersistenceViolations(sources, [authorizedScope, ownedCharacterScope]),
+    ).toStrictEqual([
       'features/example/nuxt/src/useMissing.ts has a module query without an ESI persistence declaration',
       'features/example/nuxt/src/useDirect.ts must not define module persistence outside the platform seam',
       'features/example/nuxt/src/useOwned.ts cannot persist example-module/owned-character-route without organization authorization',
@@ -225,7 +227,7 @@ describe('ESI query persistence verifier', () => {
       },
     ]
 
-    expect(queryAutoRefetchViolations(sources)).toEqual([
+    expect(queryAutoRefetchViolations(sources)).toStrictEqual([
       'app/queries/characters.ts must not enable query auto-refetch',
     ])
 
@@ -237,6 +239,6 @@ describe('ESI query persistence verifier', () => {
           source: 'const status = { autoRefetch: true }',
         },
       ]),
-    ).toEqual(['app/queries/system-status.ts must use conditional auto-refetch'])
+    ).toStrictEqual(['app/queries/system-status.ts must use conditional auto-refetch'])
   })
 })

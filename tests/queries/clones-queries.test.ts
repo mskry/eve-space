@@ -19,27 +19,29 @@ import { queryServer } from '../support/query-server'
 
 const apiClient = createApiClient('http://localhost')
 const allowed = {
-  isClient: true,
   authenticated: true,
   authenticationReady: true,
+  isClient: true,
   ownsCharacter: true,
 }
 const freshness = {
   cachedUntil: '2026-09-03T11:02:00.000Z',
-  validatedAt: '2026-09-03T11:00:00.000Z',
   stale: false,
+  validatedAt: '2026-09-03T11:00:00.000Z',
 }
 
 describe('character clone queries', () => {
   it('uses isolated hierarchical keys, two-minute freshness, and persisted retention', () => {
-    const clones = characterClonesQuery({ apiClient, characterId: 7, access: allowed })
-    const implants = characterImplantsQuery({ apiClient, characterId: 7, access: allowed })
+    const clones = characterClonesQuery({ access: allowed, apiClient, characterId: 7 })
+    const implants = characterImplantsQuery({ access: allowed, apiClient, characterId: 7 })
 
-    expect(clones.key).toEqual(['private', 'characters', 7, 'clones'])
-    expect(implants.key).toEqual(['private', 'characters', 7, 'implants'])
-    expect(clones.key).not.toEqual(implants.key)
-    expect(PRIVATE_QUERY_KEYS.characterClones(7)).not.toEqual(PRIVATE_QUERY_KEYS.characterClones(8))
-    expect(PRIVATE_QUERY_KEYS.characterImplants(7)).not.toEqual(
+    expect(clones.key).toStrictEqual(['private', 'characters', 7, 'clones'])
+    expect(implants.key).toStrictEqual(['private', 'characters', 7, 'implants'])
+    expect(clones.key).not.toStrictEqual(implants.key)
+    expect(PRIVATE_QUERY_KEYS.characterClones(7)).not.toStrictEqual(
+      PRIVATE_QUERY_KEYS.characterClones(8),
+    )
+    expect(PRIVATE_QUERY_KEYS.characterImplants(7)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.characterImplants(8),
     )
     expect(QUERY_POLICY.characterClones.staleTime).toBe(120_000)
@@ -59,8 +61,8 @@ describe('character clone queries', () => {
     [allowed, Number.MAX_SAFE_INTEGER + 1],
   ])('keeps both resources disabled for access %j and character ID %s', (access, characterId) => {
     expect(canRunProtectedCharacterQuery(access, characterId)).toBe(false)
-    expect(characterClonesQuery({ apiClient, characterId, access }).enabled).toBe(false)
-    expect(characterImplantsQuery({ apiClient, characterId, access }).enabled).toBe(false)
+    expect(characterClonesQuery({ access, apiClient, characterId }).enabled).toBe(false)
+    expect(characterImplantsQuery({ access, apiClient, characterId }).enabled).toBe(false)
   })
 
   it('loads both inferred DTOs independently and preserves stale metadata', async () => {
@@ -72,11 +74,11 @@ describe('character clone queries', () => {
     )
 
     await expect(
-      runQuery(characterClonesQuery({ apiClient, characterId: 7, access: allowed })),
-    ).resolves.toEqual(clones)
+      runQuery(characterClonesQuery({ access: allowed, apiClient, characterId: 7 })),
+    ).resolves.toStrictEqual(clones)
     await expect(
-      runQuery(characterImplantsQuery({ apiClient, characterId: 7, access: allowed })),
-    ).resolves.toEqual(implants)
+      runQuery(characterImplantsQuery({ access: allowed, apiClient, characterId: 7 })),
+    ).resolves.toStrictEqual(implants)
   })
 
   it('maps one resource error without preventing the other resource', async () => {
@@ -84,10 +86,10 @@ describe('character clone queries', () => {
       http.get('http://localhost/api/me/characters/7/clones', () =>
         HttpResponse.json(
           {
+            authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
             code: 'EVE_SCOPE_REQUIRED',
             message: 'Authorize clone access.',
             requiredScope: 'esi-clones.read_clones.v1',
-            authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
           },
           { status: 403 },
         ),
@@ -98,15 +100,15 @@ describe('character clone queries', () => {
     )
 
     const [clones, implants] = await Promise.allSettled([
-      runQuery(characterClonesQuery({ apiClient, characterId: 7, access: allowed })),
-      runQuery(characterImplantsQuery({ apiClient, characterId: 7, access: allowed })),
+      runQuery(characterClonesQuery({ access: allowed, apiClient, characterId: 7 })),
+      runQuery(characterImplantsQuery({ access: allowed, apiClient, characterId: 7 })),
     ])
 
     expect(clones.status).toBe('rejected')
     expect(clones.status === 'rejected' ? clones.reason : null).toMatchObject({
-      status: 403,
       code: 'EVE_SCOPE_REQUIRED',
       requiredScope: 'esi-clones.read_clones.v1',
+      status: 403,
     })
     expect(clones.status === 'rejected' ? clones.reason : null).toBeInstanceOf(ApiQueryError)
     expect(implants).toMatchObject({ status: 'fulfilled' })
@@ -128,10 +130,10 @@ describe('character clone queries', () => {
     const Consumer = defineComponent({
       setup() {
         const clones = useQuery(
-          characterClonesQuery({ apiClient, characterId: 7, access: allowed }),
+          characterClonesQuery({ access: allowed, apiClient, characterId: 7 }),
         )
         const implants = useQuery(
-          characterImplantsQuery({ apiClient, characterId: 7, access: allowed }),
+          characterImplantsQuery({ access: allowed, apiClient, characterId: 7 }),
         )
         return () =>
           h(
@@ -163,7 +165,7 @@ describe('character clone queries', () => {
     const Root = defineComponent({
       setup() {
         const result = useQuery(() =>
-          characterClonesQuery({ apiClient, characterId: characterId.value, access: allowed }),
+          characterClonesQuery({ access: allowed, apiClient, characterId: characterId.value }),
         )
         return () => h('span', result.data.value?.homeLocation?.name ?? 'loading')
       },
@@ -185,8 +187,8 @@ describe('character clone queries', () => {
     const Root = defineComponent({ setup: () => () => h('span') })
     const { queryCache, wrapper } = mountWithQueryPlugins(Root)
     for (const characterId of [7, 8]) {
-      const clones = characterClonesQuery({ apiClient, characterId, access: allowed })
-      const implants = characterImplantsQuery({ apiClient, characterId, access: allowed })
+      const clones = characterClonesQuery({ access: allowed, apiClient, characterId })
+      const implants = characterImplantsQuery({ access: allowed, apiClient, characterId })
       queryCache.ensure(clones)
       queryCache.ensure(implants)
       queryCache.setQueryData(clones.key, cloneResponse(String(characterId)))
@@ -215,7 +217,7 @@ describe('character clone queries', () => {
     )
     const Root = defineComponent({
       setup() {
-        useQuery(characterClonesQuery({ apiClient, characterId: 7, access: allowed }))
+        useQuery(characterClonesQuery({ access: allowed, apiClient, characterId: 7 }))
         return () => h('span')
       },
     })
@@ -237,8 +239,8 @@ describe('character clone queries', () => {
     const serverAccess = { ...allowed, isClient: false }
     const Root = defineComponent({
       setup() {
-        useQuery(characterClonesQuery({ apiClient, characterId: 7, access: serverAccess }))
-        useQuery(characterImplantsQuery({ apiClient, characterId: 7, access: serverAccess }))
+        useQuery(characterClonesQuery({ access: serverAccess, apiClient, characterId: 7 }))
+        useQuery(characterImplantsQuery({ access: serverAccess, apiClient, characterId: 7 }))
         return () => h('span', 'clones locked')
       },
     })
@@ -261,10 +263,10 @@ function cloneResponse(homeName: string, stale = false) {
     },
     jumpClones: [
       {
-        jumpCloneId: 11,
-        name: null,
-        location: { locationId: 60_000_002, locationType: 'station' as const, name: null },
         implants: [],
+        jumpCloneId: 11,
+        location: { locationId: 60_000_002, locationType: 'station' as const, name: null },
+        name: null,
       },
     ],
     lastCloneJumpAt: null,
@@ -276,7 +278,7 @@ function cloneResponse(homeName: string, stale = false) {
 }
 
 function implantResponse(name: string) {
-  return { implants: [{ typeId: 2, name }], ...freshness }
+  return { implants: [{ name, typeId: 2 }], ...freshness }
 }
 
 function runQuery<T>(options: { query: (context: never) => Promise<T> }) {

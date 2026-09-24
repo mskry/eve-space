@@ -31,14 +31,14 @@ describe('confirmation dialog lifecycle', () => {
     const title = ref('Delete')
     const onClose = vi.fn()
     const key = consumer.openConfirmDialog({
-      title,
-      description: () => 'Permanent',
-      confirmLabel: 'Delete',
       cancelLabel: 'Keep',
-      pendingLabel: 'Deleting',
-      tone: 'danger',
-      onConfirm: vi.fn(),
+      confirmLabel: 'Delete',
+      description: () => 'Permanent',
       onClose,
+      onConfirm: vi.fn(),
+      pendingLabel: 'Deleting',
+      title,
+      tone: 'danger',
     })
     title.value = 'Delete item'
     expect([
@@ -48,7 +48,7 @@ describe('confirmation dialog lifecycle', () => {
       dialog.cancelLabel.value,
       dialog.pendingLabel.value,
       dialog.tone.value,
-    ]).toEqual(['Delete item', 'Permanent', 'Delete', 'Keep', 'Deleting', 'danger'])
+    ]).toStrictEqual(['Delete item', 'Permanent', 'Delete', 'Keep', 'Deleting', 'danger'])
     consumer.closeConfirmDialog(key + 1)
     expect(dialog.dialogOpen.value).toBe(true)
     consumer.closeConfirmDialog()
@@ -64,7 +64,7 @@ describe('confirmation dialog lifecycle', () => {
     const pending = ref(true)
     const result = Promise.withResolvers<boolean>()
     const onConfirm = vi.fn(() => result.promise)
-    consumer.openConfirmDialog({ title: 'Save', description: '', pending, onConfirm })
+    consumer.openConfirmDialog({ description: '', onConfirm, pending, title: 'Save' })
     await dialog.confirmDialog()
     expect(onConfirm).not.toHaveBeenCalled()
     pending.value = false
@@ -85,7 +85,7 @@ describe('confirmation dialog lifecycle', () => {
     async (error) => {
       const { dialog, consumer } = setupDialog()
       const onConfirm = vi.fn().mockRejectedValueOnce(error).mockResolvedValueOnce(undefined)
-      consumer.openConfirmDialog({ title: 'Save', description: '', onConfirm })
+      consumer.openConfirmDialog({ description: '', onConfirm, title: 'Save' })
       await dialog.confirmDialog()
       expect(dialog.actionError.value).toBe(
         error instanceof Error ? 'Try again' : 'The action could not be completed.',
@@ -103,16 +103,19 @@ describe('confirmation dialog lifecycle', () => {
       const result = Promise.withResolvers<void>()
       const onClose = vi.fn()
       consumer.openConfirmDialog({
-        title: 'Old',
         description: '',
-        onConfirm: () => result.promise,
         onClose,
+        onConfirm: () => result.promise,
+        title: 'Old',
       })
       const confirming = dialog.confirmDialog()
-      consumer.openConfirmDialog({ title: 'New', description: '', onConfirm: vi.fn() })
+      consumer.openConfirmDialog({ description: '', onConfirm: vi.fn(), title: 'New' })
       expect(onClose).toHaveBeenCalledOnce()
-      if (outcome === 'resolve') result.resolve()
-      else result.reject(new Error('Old failure'))
+      if (outcome === 'resolve') {
+        result.resolve()
+      } else {
+        result.reject(new Error('Old failure'))
+      }
       await confirming
       expect(dialog.title.value).toBe('New')
       expect(dialog.dialogOpen.value).toBe(true)
@@ -123,7 +126,7 @@ describe('confirmation dialog lifecycle', () => {
   it('closes owned dialogs on disposal and refuses new dialogs after disposal', () => {
     const { dialog, consumer, wrapper } = setupDialog()
     const onClose = vi.fn()
-    const options = { title: 'Save', description: '', onConfirm: vi.fn(), onClose }
+    const options = { description: '', onClose, onConfirm: vi.fn(), title: 'Save' }
     consumer.openConfirmDialog(options)
     wrapper.unmount()
     expect(onClose).toHaveBeenCalledOnce()
@@ -149,5 +152,5 @@ function setupDialog() {
   })
   const wrapper = mount(root)
   wrappers.push(wrapper)
-  return { dialog, consumer, wrapper }
+  return { consumer, dialog, wrapper }
 }

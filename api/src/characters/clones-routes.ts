@@ -36,9 +36,9 @@ export const characterClonesRoutes = new Hono<OwnedCharacterEnv>()
           }),
           characterId,
           {
+            returnTo: `/characters/${characterId}/clones`,
             scopeMessage: 'Authorize clone access for this character.',
             unavailableMessage: 'Unable to retrieve character clone state.',
-            returnTo: `/characters/${characterId}/clones`,
           },
         )
       }
@@ -66,9 +66,9 @@ export const characterClonesRoutes = new Hono<OwnedCharacterEnv>()
           }),
           characterId,
           {
+            returnTo: `/characters/${characterId}/clones`,
             scopeMessage: 'Authorize implant access for this character.',
             unavailableMessage: 'Unable to retrieve active implants.',
-            returnTo: `/characters/${characterId}/clones`,
           },
         )
       }

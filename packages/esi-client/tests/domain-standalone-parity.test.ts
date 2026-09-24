@@ -28,14 +28,18 @@ describe('standalone domain parity', () => {
       xTenant: 'tranquility',
     } as const;
 
-    expect(standalone).toEqual(expect.objectContaining({ get: expect.any(Function) }));
-    await expect(standalone.get(options)).resolves.toEqual(await aggregate.status.get(options));
-    expect(requestSnapshot(standaloneRequests[0])).toEqual(requestSnapshot(aggregateRequests[0]));
+    expect(standalone).toStrictEqual(expect.objectContaining({ get: expect.any(Function) }));
+    await expect(standalone.get(options)).resolves.toStrictEqual(
+      await aggregate.status.get(options),
+    );
+    expect(requestSnapshot(standaloneRequests[0])).toStrictEqual(
+      requestSnapshot(aggregateRequests[0]),
+    );
     expect(standaloneRequests[0]?.headers.get('x-compatibility-date')).toBe('2026-08-19');
 
     const standaloneMetadata = await standalone.withMetadata().get(options);
     const aggregateMetadata = await aggregate.status.withMetadata().get(options);
-    expect(standaloneMetadata).toEqual(aggregateMetadata);
+    expect(standaloneMetadata).toStrictEqual(aggregateMetadata);
     expect(Object.isFrozen(standaloneMetadata)).toBe(true);
     expect(Object.isFrozen(standaloneMetadata.meta)).toBe(true);
     expect(Object.isFrozen(standalone.withMetadata())).toBe(true);
@@ -46,33 +50,35 @@ describe('standalone domain parity', () => {
     const standaloneRequests: Request[] = [];
     const aggregateRequests: Request[] = [];
     const standalone = createLocationClient({
-      token: secret,
       fetch: locationFetch(standaloneRequests),
+      token: secret,
     });
     const aggregate = new EsiClient({
-      token: secret,
       fetch: locationFetch(aggregateRequests),
+      token: secret,
     });
 
     const standaloneResult = await standalone.withMetadata().get(2_112_625_428);
     const aggregateResult = await aggregate.location.withMetadata().get(2_112_625_428);
 
-    expect(standaloneResult).toEqual(aggregateResult);
+    expect(standaloneResult).toStrictEqual(aggregateResult);
     expect(standaloneRequests[0]?.headers.get('authorization')).toBe(`Bearer ${secret}`);
-    expect(requestSnapshot(standaloneRequests[0])).toEqual(requestSnapshot(aggregateRequests[0]));
+    expect(requestSnapshot(standaloneRequests[0])).toStrictEqual(
+      requestSnapshot(aggregateRequests[0]),
+    );
     expect(JSON.stringify(standaloneResult)).not.toContain(secret);
   });
 
   it.each([
     {
-      name: 'response validation',
-      fetch: async () => Response.json({ players: 'invalid' }),
       error: EsiResponseValidationError,
+      fetch: async () => Response.json({ players: 'invalid' }),
+      name: 'response validation',
     },
     {
-      name: 'HTTP errors',
-      fetch: async () => new Response('unavailable', { status: 503 }),
       error: EsiHttpError,
+      fetch: async () => new Response('unavailable', { status: 503 }),
+      name: 'HTTP errors',
     },
   ])('matches $name', async ({ fetch, error }) => {
     const standalone = createStatusClient({ fetch });
@@ -99,13 +105,15 @@ describe('standalone domain parity', () => {
     });
     const options = { body: [2_112_625_429], standing: 5 };
 
-    await expect(standalone.addCharacterContacts(2_112_625_428, options)).resolves.toEqual([
+    await expect(standalone.addCharacterContacts(2_112_625_428, options)).resolves.toStrictEqual([
       2_112_625_429,
     ]);
-    await expect(aggregate.contacts.addCharacterContacts(2_112_625_428, options)).resolves.toEqual([
-      2_112_625_429,
-    ]);
-    expect(requestSnapshot(standaloneRequests[0])).toEqual(requestSnapshot(aggregateRequests[0]));
+    await expect(
+      aggregate.contacts.addCharacterContacts(2_112_625_428, options),
+    ).resolves.toStrictEqual([2_112_625_429]);
+    expect(requestSnapshot(standaloneRequests[0])).toStrictEqual(
+      requestSnapshot(aggregateRequests[0]),
+    );
     expect(standaloneRequests[0]?.method).toBe('POST');
 
     const invalid = { body: ['invalid'], standing: 5 };
@@ -152,7 +160,9 @@ function contactFetch(requests: Request[]): ReturnType<typeof vi.fn<typeof fetch
 }
 
 function requestSnapshot(request: Request | undefined): unknown {
-  if (request === undefined) throw new Error('Expected a request');
+  if (request === undefined) {
+    throw new Error('Expected a request');
+  }
   return {
     headers: Object.fromEntries(request.headers),
     method: request.method,

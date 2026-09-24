@@ -33,37 +33,37 @@ export const repositoryRoot: string = fileURLToPath(new URL('../../', import.met
  * check all derive from this list; none of them may restate a target path or kind.
  */
 export const generatedTargets: readonly GeneratedTarget[] = Object.freeze([
-  Object.freeze({ role: 'source', path: 'src/generated', kind: 'directory', category: 'source' }),
+  Object.freeze({ category: 'source', kind: 'directory', path: 'src/generated', role: 'source' }),
   Object.freeze({
-    role: 'repositoryLlms',
+    category: 'documentation',
+    kind: 'file',
     path: 'llms.txt',
-    kind: 'file',
-    category: 'documentation',
+    role: 'repositoryLlms',
   }),
   Object.freeze({
-    role: 'documentation',
+    category: 'documentation',
+    kind: 'directory',
     path: 'docs/generated',
-    kind: 'directory',
-    category: 'documentation',
+    role: 'documentation',
   }),
   Object.freeze({
-    role: 'siteLlms',
-    path: 'docs/llms.txt',
+    category: 'documentation',
     kind: 'file',
-    category: 'documentation',
+    path: 'docs/llms.txt',
+    role: 'siteLlms',
   }),
   Object.freeze({
-    role: 'examples',
-    path: 'examples/generated',
-    kind: 'directory',
     category: 'examples',
-  }),
-  Object.freeze({ role: 'tests', path: 'tests/generated', kind: 'directory', category: 'tests' }),
-  Object.freeze({
-    role: 'openapi',
-    path: 'openapi/generated',
     kind: 'directory',
+    path: 'examples/generated',
+    role: 'examples',
+  }),
+  Object.freeze({ category: 'tests', kind: 'directory', path: 'tests/generated', role: 'tests' }),
+  Object.freeze({
     category: 'openapi',
+    kind: 'directory',
+    path: 'openapi/generated',
+    role: 'openapi',
   }),
 ] as const);
 
@@ -79,11 +79,11 @@ function pathsFor(category: GeneratedPathKind): readonly string[] {
 
 export const generatedPaths: Readonly<Record<GeneratedPathKind, readonly string[]>> = Object.freeze(
   {
-    source: pathsFor('source'),
     documentation: pathsFor('documentation'),
     examples: pathsFor('examples'),
-    tests: pathsFor('tests'),
     openapi: pathsFor('openapi'),
+    source: pathsFor('source'),
+    tests: pathsFor('tests'),
   },
 );
 
@@ -102,7 +102,9 @@ const targetsByRole: ReadonlyMap<GeneratedTargetRole, GeneratedTarget> = new Map
 /** Returns the single declared target for a role. */
 export function generatedTargetFor(role: GeneratedTargetRole): GeneratedTarget {
   const target = targetsByRole.get(role);
-  if (target === undefined) throw new Error(`Unknown generated target role: ${role}`);
+  if (target === undefined) {
+    throw new Error(`Unknown generated target role: ${role}`);
+  }
   return target;
 }
 
@@ -148,7 +150,9 @@ export function normalizeGeneratedPath(path: string): string {
 export function classifyProjectPath(path: string): ProjectPathClassification {
   const absolutePath = resolve(repositoryRoot, path);
   for (const target of approvedTargets) {
-    if (absolutePath === target || absolutePath.startsWith(`${target}${sep}`)) return 'generated';
+    if (absolutePath === target || absolutePath.startsWith(`${target}${sep}`)) {
+      return 'generated';
+    }
   }
   return 'maintained';
 }

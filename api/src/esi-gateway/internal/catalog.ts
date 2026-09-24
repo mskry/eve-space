@@ -9,56 +9,21 @@ import {
 } from './contract-types.js'
 
 export const coreEsiOperationCatalog = {
-  status: defineContract('status', {
-    identity: { kind: 'ordered', fields: [] },
-    cache: sharedPublicCache(),
-    retry,
-  }),
-  'public-character': defineContract('public-character', {
-    identity: { kind: 'ordered', fields: ['characterId'] },
-    cache: sharedPublicCache(),
-    retry,
-  }),
-  'public-corporation': defineContract('public-corporation', {
-    representationVersion: 'v3',
-    identity: { kind: 'ordered', fields: ['corporationId'] },
-    cache: sharedPublicCache(),
-    retry,
-  }),
-  'public-alliance': defineContract('public-alliance', {
-    identity: { kind: 'ordered', fields: ['allianceId'] },
-    cache: sharedPublicCache(),
-    retry,
-  }),
   'alliance-corporations': defineContract('alliance-corporations', {
     identity: { kind: 'ordered', fields: ['allianceId'] },
     cache: sharedPublicCache(),
     retry,
   }),
-  'corporation-members': defineContract('corporation-members', {
-    identity: { kind: 'ordered', fields: ['corporationId'] },
+  attributes: defineContract('attributes', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
     cache: sharedPrivateCache(),
     retry,
   }),
-  'universe-races': defineContract('universe-races', {
-    identity: { kind: 'ordered', fields: [] },
-    cache: sharedPublicCache(),
-    retry,
-  }),
-  'universe-bloodlines': defineContract('universe-bloodlines', {
-    identity: { kind: 'ordered', fields: [] },
-    cache: sharedPublicCache(),
-    retry,
-    responseValidation: {
-      kind: 'disabled',
-      reason: 'Live ship_type_id values may be null despite the SDK 3.1.0 schema.',
-    },
-  }),
-  'character-assets-page': defineContract('character-assets-page', {
-    representationVersion: 'v2',
-    identity: { kind: 'ordered', fields: ['characterId', 'page'] },
-    cache: sharedPrivateCache(),
-    retry,
+  'bulk-affiliation': defineContract('bulk-affiliation', {
+    identity: { kind: 'set', field: 'characterIds' },
+    freshness: { kind: 'none' },
+    cache: { kind: 'none' },
+    retry: { kind: 'none' },
   }),
   'character-asset-names': defineContract('character-asset-names', {
     identity: {
@@ -71,46 +36,14 @@ export const coreEsiOperationCatalog = {
     cache: sharedPrivateCache(),
     retry,
   }),
-  'wallet-balance': defineContract('wallet-balance', {
-    identity: { kind: 'ordered', fields: ['characterId'] },
-    cache: sharedPrivateCache(),
-    retry,
-  }),
-  'wallet-journal': defineContract('wallet-journal', {
+  'character-assets-page': defineContract('character-assets-page', {
     representationVersion: 'v2',
     identity: { kind: 'ordered', fields: ['characterId', 'page'] },
     cache: sharedPrivateCache(),
     retry,
   }),
-  'wallet-transactions': defineContract('wallet-transactions', {
-    representationVersion: 'v3',
-    identity: {
-      kind: 'mixed',
-      fields: [
-        { kind: 'scalar', field: 'characterId' },
-        { kind: 'scalar', field: 'fromId', nullable: true },
-      ],
-    },
-    cache: sharedPrivateCache(),
-    retry,
-  }),
-  'market-orders': defineContract('market-orders', {
+  'character-clones': defineContract('character-clones', {
     identity: { kind: 'ordered', fields: ['characterId'] },
-    cache: sharedPrivateCache(),
-    retry,
-  }),
-  'market-order-history': defineContract('market-order-history', {
-    identity: { kind: 'ordered', fields: ['characterId', 'page'] },
-    cache: sharedPrivateCache(),
-    retry,
-  }),
-  'character-contracts': defineContract('character-contracts', {
-    identity: { kind: 'ordered', fields: ['characterId', 'page'] },
-    cache: sharedPrivateCache(),
-    retry,
-  }),
-  'character-contract-items': defineContract('character-contract-items', {
-    identity: { kind: 'ordered', fields: ['characterId', 'contractId'] },
     cache: sharedPrivateCache(),
     retry,
   }),
@@ -119,34 +52,58 @@ export const coreEsiOperationCatalog = {
     cache: sharedPrivateCache(),
     retry,
   }),
-  'mail-headers': defineContract('mail-headers', {
-    identity: {
-      kind: 'mixed',
-      fields: [
-        { kind: 'scalar', field: 'characterId' },
-        { kind: 'set', field: 'labels', nullable: true },
-        { kind: 'scalar', field: 'lastMailId', nullable: true },
-      ],
-    },
-    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+  'character-contract-items': defineContract('character-contract-items', {
+    identity: { kind: 'ordered', fields: ['characterId', 'contractId'] },
     cache: sharedPrivateCache(),
     retry,
   }),
-  'mail-message': defineContract('mail-message', {
-    identity: { kind: 'ordered', fields: ['characterId', 'mailId'] },
-    resourceRevision: { kind: 'character', namespace: 'mailbox' },
-    cache: sharedPrivateCache(0),
-    retry,
-  }),
-  'mail-labels': defineContract('mail-labels', {
-    identity: { kind: 'ordered', fields: ['characterId'] },
-    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+  'character-contracts': defineContract('character-contracts', {
+    identity: { kind: 'ordered', fields: ['characterId', 'page'] },
     cache: sharedPrivateCache(),
     retry,
   }),
-  'mail-lists': defineContract('mail-lists', {
+  'character-corporation-roles': defineContract('character-corporation-roles', {
     identity: { kind: 'ordered', fields: ['characterId'] },
-    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'character-cspa-charge': defineContract('character-cspa-charge', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    cache: { kind: 'none' },
+    retry,
+  }),
+  'character-implants': defineContract('character-implants', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'character-search': defineContract('character-search', {
+    identity: { kind: 'ordered', fields: ['characterId', 'search'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'corporation-alliance-history': defineContract('corporation-alliance-history', {
+    identity: { kind: 'ordered', fields: ['corporationId'] },
+    cache: sharedPublicCache(),
+    retry,
+  }),
+  'corporation-members': defineContract('corporation-members', {
+    identity: { kind: 'ordered', fields: ['corporationId'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'corporation-npc-list': defineContract('corporation-npc-list', {
+    identity: { kind: 'ordered', fields: [] },
+    cache: sharedPublicCache(),
+    retry,
+  }),
+  'employment-history': defineContract('employment-history', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    cache: sharedPublicCache(),
+    retry,
+  }),
+  location: defineContract('location', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
     cache: sharedPrivateCache(),
     retry,
   }),
@@ -185,37 +142,69 @@ export const coreEsiOperationCatalog = {
     mutation: { kind: 'character', appliedOnMissing: true },
     retry,
   }),
-  'character-search': defineContract('character-search', {
-    identity: { kind: 'ordered', fields: ['characterId', 'search'] },
+  'mail-headers': defineContract('mail-headers', {
+    identity: {
+      kind: 'mixed',
+      fields: [
+        { kind: 'scalar', field: 'characterId' },
+        { kind: 'set', field: 'labels', nullable: true },
+        { kind: 'scalar', field: 'lastMailId', nullable: true },
+      ],
+    },
+    resourceRevision: { kind: 'character', namespace: 'mailbox' },
     cache: sharedPrivateCache(),
     retry,
   }),
-  'character-cspa-charge': defineContract('character-cspa-charge', {
+  'mail-labels': defineContract('mail-labels', {
     identity: { kind: 'ordered', fields: ['characterId'] },
-    cache: { kind: 'none' },
+    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+    cache: sharedPrivateCache(),
     retry,
   }),
-  'character-corporation-roles': defineContract('character-corporation-roles', {
+  'mail-lists': defineContract('mail-lists', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'mail-message': defineContract('mail-message', {
+    identity: { kind: 'ordered', fields: ['characterId', 'mailId'] },
+    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+    cache: sharedPrivateCache(0),
+    retry,
+  }),
+  'market-order-history': defineContract('market-order-history', {
+    identity: { kind: 'ordered', fields: ['characterId', 'page'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'market-orders': defineContract('market-orders', {
     identity: { kind: 'ordered', fields: ['characterId'] },
     cache: sharedPrivateCache(),
     retry,
   }),
-  attributes: defineContract('attributes', {
+  'public-alliance': defineContract('public-alliance', {
+    identity: { kind: 'ordered', fields: ['allianceId'] },
+    cache: sharedPublicCache(),
+    retry,
+  }),
+  'public-character': defineContract('public-character', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    cache: sharedPublicCache(),
+    retry,
+  }),
+  'public-corporation': defineContract('public-corporation', {
+    representationVersion: 'v3',
+    identity: { kind: 'ordered', fields: ['corporationId'] },
+    cache: sharedPublicCache(),
+    retry,
+  }),
+  ship: defineContract('ship', {
     identity: { kind: 'ordered', fields: ['characterId'] },
     cache: sharedPrivateCache(),
     retry,
   }),
   'skill-queue': defineContract('skill-queue', {
-    identity: { kind: 'ordered', fields: ['characterId'] },
-    cache: sharedPrivateCache(),
-    retry,
-  }),
-  'character-clones': defineContract('character-clones', {
-    identity: { kind: 'ordered', fields: ['characterId'] },
-    cache: sharedPrivateCache(),
-    retry,
-  }),
-  'character-implants': defineContract('character-implants', {
     identity: { kind: 'ordered', fields: ['characterId'] },
     cache: sharedPrivateCache(),
     retry,
@@ -226,18 +215,28 @@ export const coreEsiOperationCatalog = {
     cache: sharedPrivateCache(),
     retry,
   }),
-  location: defineContract('location', {
-    identity: { kind: 'ordered', fields: ['characterId'] },
-    cache: sharedPrivateCache(),
+  status: defineContract('status', {
+    identity: { kind: 'ordered', fields: [] },
+    cache: sharedPublicCache(),
     retry,
   }),
-  ship: defineContract('ship', {
-    identity: { kind: 'ordered', fields: ['characterId'] },
-    cache: sharedPrivateCache(),
+  'universe-bloodlines': defineContract('universe-bloodlines', {
+    identity: { kind: 'ordered', fields: [] },
+    cache: sharedPublicCache(),
+    retry,
+    responseValidation: {
+      kind: 'disabled',
+      reason: 'Live ship_type_id values may be null despite the SDK 3.1.0 schema.',
+    },
+  }),
+  'universe-races': defineContract('universe-races', {
+    identity: { kind: 'ordered', fields: [] },
+    cache: sharedPublicCache(),
     retry,
   }),
-  'employment-history': defineContract('employment-history', {
-    identity: { kind: 'ordered', fields: ['characterId'] },
+  'universe-resolve-ids': defineContract('universe-resolve-ids', {
+    identity: { kind: 'set', field: 'names' },
+    freshness: { kind: 'relative', seconds: 3600 },
     cache: sharedPublicCache(),
     retry,
   }),
@@ -245,23 +244,7 @@ export const coreEsiOperationCatalog = {
     identity: { kind: 'set', field: 'ids' },
     // ESI documents no cache lifetime for this route, but resolved names are only ever embedded in
     // hour- and day-lived DTOs, so a shorter fallback would cost requests without reducing staleness.
-    freshness: { kind: 'relative', seconds: 3_600 },
-    cache: sharedPublicCache(),
-    retry,
-  }),
-  'universe-resolve-ids': defineContract('universe-resolve-ids', {
-    identity: { kind: 'set', field: 'names' },
-    freshness: { kind: 'relative', seconds: 3_600 },
-    cache: sharedPublicCache(),
-    retry,
-  }),
-  'corporation-alliance-history': defineContract('corporation-alliance-history', {
-    identity: { kind: 'ordered', fields: ['corporationId'] },
-    cache: sharedPublicCache(),
-    retry,
-  }),
-  'corporation-npc-list': defineContract('corporation-npc-list', {
-    identity: { kind: 'ordered', fields: [] },
+    freshness: { kind: 'relative', seconds: 3600 },
     cache: sharedPublicCache(),
     retry,
   }),
@@ -280,11 +263,28 @@ export const coreEsiOperationCatalog = {
     cache: sharedPublicCache(),
     retry,
   }),
-  'bulk-affiliation': defineContract('bulk-affiliation', {
-    identity: { kind: 'set', field: 'characterIds' },
-    freshness: { kind: 'none' },
-    cache: { kind: 'none' },
-    retry: { kind: 'none' },
+  'wallet-balance': defineContract('wallet-balance', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'wallet-journal': defineContract('wallet-journal', {
+    representationVersion: 'v2',
+    identity: { kind: 'ordered', fields: ['characterId', 'page'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'wallet-transactions': defineContract('wallet-transactions', {
+    representationVersion: 'v3',
+    identity: {
+      kind: 'mixed',
+      fields: [
+        { kind: 'scalar', field: 'characterId' },
+        { kind: 'scalar', field: 'fromId', nullable: true },
+      ],
+    },
+    cache: sharedPrivateCache(),
+    retry,
   }),
 } as const satisfies Record<string, EsiOperationContract>
 

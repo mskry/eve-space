@@ -13,38 +13,38 @@ describe('ESI egress verification', () => {
     const root = fileURLToPath(new URL('../../..', import.meta.url))
     await expect(
       execFileAsync('node', ['scripts/verify-esi-egress.mjs'], { cwd: root }),
-    ).resolves.toEqual(expect.objectContaining({ stderr: '' }))
+    ).resolves.toStrictEqual(expect.objectContaining({ stderr: '' }))
   }, 15_000)
 
   test('rejects production feature access to executor-owned ESI capabilities', async () => {
     const fixture = await createEgressFixture({
-      'api/src/characters/sdk.ts':
-        "import { EsiClient } from '@evespace/esi-client'\nexport const client = new EsiClient({})",
-      'api/src/characters/layer.ts':
-        "import { createEsiExecutionRuntime } from '../esi-gateway/internal/execution-runtime.js'\nvoid createEsiExecutionRuntime",
-      'api/src/characters/transport.ts':
-        "import { createRawEsiTransport } from '../esi-gateway/internal/transport.js'\nvoid createRawEsiTransport",
-      'api/src/characters/executor-reexport.ts':
-        "export { createEsiExecutionRuntime } from '../esi-gateway/internal/execution-runtime.js'",
-      'api/src/characters/sdk-reexport.ts': "export { EsiClient } from '@evespace/esi-client'",
       'api/src/characters/computed-import.ts':
         "const sdkPath = '@evespace/esi-client'\nexport const load = () => import(sdkPath)",
-      'api/src/characters/sdk-template-import.ts':
-        'export const load = () => import(`@evespace/esi-client`)',
-      'api/src/characters/executor-template-import.ts':
-        'export const load = () => import(`../esi-gateway/internal/execution-runtime.js`)',
       'api/src/characters/credentials.ts': representationSource(
         'credentials',
         "{ accessToken: 'secret', principal: 'character-1' }",
       ),
-      'api/src/characters/revalidation.ts': representationSource(
-        'revalidation',
-        "{ headers: { 'If-None-Match': 'etag' } }",
-      ),
+      'api/src/characters/executor-reexport.ts':
+        "export { createEsiExecutionRuntime } from '../esi-gateway/internal/execution-runtime.js'",
+      'api/src/characters/executor-template-import.ts':
+        'export const load = () => import(`../esi-gateway/internal/execution-runtime.js`)',
+      'api/src/characters/layer.ts':
+        "import { createEsiExecutionRuntime } from '../esi-gateway/internal/execution-runtime.js'\nvoid createEsiExecutionRuntime",
       'api/src/characters/mutation.ts':
         'export const mutation = { allowGenericMutations: true, confirmMutation: true }',
       'api/src/characters/raw.ts':
         "export const load = () => fetch('https://esi.evetech.net/latest/status')",
+      'api/src/characters/revalidation.ts': representationSource(
+        'revalidation',
+        "{ headers: { 'If-None-Match': 'etag' } }",
+      ),
+      'api/src/characters/sdk-reexport.ts': "export { EsiClient } from '@evespace/esi-client'",
+      'api/src/characters/sdk-template-import.ts':
+        'export const load = () => import(`@evespace/esi-client`)',
+      'api/src/characters/sdk.ts':
+        "import { EsiClient } from '@evespace/esi-client'\nexport const client = new EsiClient({})",
+      'api/src/characters/transport.ts':
+        "import { createRawEsiTransport } from '../esi-gateway/internal/transport.js'\nvoid createRawEsiTransport",
     })
 
     try {
@@ -58,10 +58,11 @@ describe('ESI egress verification', () => {
         'feature ESI code supplies conditional revalidation headers',
         'generic mutation approval is reserved for the registered execution owner',
         'direct ESI fetch bypasses the shared transport',
-      ])
+      ]) {
         expect(stderr).toContain(fragment)
+      }
     } finally {
-      await rm(fixture, { recursive: true, force: true })
+      await rm(fixture, { force: true, recursive: true })
     }
   })
 
@@ -85,9 +86,11 @@ describe('ESI egress verification', () => {
     })
 
     try {
-      await expect(runVerifier(fixture)).resolves.toEqual(expect.objectContaining({ stderr: '' }))
+      await expect(runVerifier(fixture)).resolves.toStrictEqual(
+        expect.objectContaining({ stderr: '' }),
+      )
     } finally {
-      await rm(fixture, { recursive: true, force: true })
+      await rm(fixture, { force: true, recursive: true })
     }
   })
 
@@ -105,7 +108,7 @@ describe('ESI egress verification', () => {
         'ESI client bypasses the resilience-owned transport',
       )
     } finally {
-      await rm(fixture, { recursive: true, force: true })
+      await rm(fixture, { force: true, recursive: true })
     }
   })
 
@@ -122,29 +125,17 @@ describe('ESI egress verification', () => {
       const stderr = await verifierFailure(fixture)
       expect(stderr).toContain('ESI representation duplicate-status duplicates its registration')
     } finally {
-      await rm(fixture, { recursive: true, force: true })
+      await rm(fixture, { force: true, recursive: true })
     }
   })
 
   test('checks every installed feature server source against shared ESI policy', async () => {
     const fixture = await createEgressFixture({
-      'features/alpha/server/src/unregistered.ts':
-        "export const resource = { operation: 'missing-operation' }",
-      'features/alpha/server/src/unregistered-shorthand.ts':
-        "const operation = 'missing-shorthand-operation'\nexport const resource = { operation }",
-      'features/alpha/server/src/sdk.ts':
-        "import { createStatusClient } from '@evespace/esi-client/domains/status'\nexport const client = createStatusClient()",
-      'features/alpha/server/src/sdk-reexport.ts':
-        "export { createStatusClient } from '@evespace/esi-client/domains/status'",
+      'features/alpha/server/src/cache.js': 'export const esiCache = new Map()',
       'features/alpha/server/src/computed-import.ts':
         "const sdkPath = '@evespace/esi-client/domains/status'\nexport const load = () => import(sdkPath)",
-      'features/alpha/server/src/sdk-template-import.ts':
-        'export const load = () => import(`@evespace/esi-client/domains/status`)',
       'features/alpha/server/src/direct.tsx':
         "export const load = () => fetch('https://esi.evetech.net/latest/status')",
-      'features/alpha/server/src/transport.mts':
-        'export function createEsiTransport() { return async () => new Response() }',
-      'features/alpha/server/src/cache.js': 'export const esiCache = new Map()',
       'features/alpha/server/src/raw-capabilities.ts': `
         import { definePlatformSingleRequestResource } from '@eve-space/platform-module-contract/resources'
         import { createEsiExecutionRuntime } from '../../../../api/src/esi-gateway/internal/execution-runtime.js'
@@ -157,6 +148,18 @@ describe('ESI egress verification', () => {
         })
         export const mutation = { confirmMutation: true }
       `,
+      'features/alpha/server/src/sdk-reexport.ts':
+        "export { createStatusClient } from '@evespace/esi-client/domains/status'",
+      'features/alpha/server/src/sdk-template-import.ts':
+        'export const load = () => import(`@evespace/esi-client/domains/status`)',
+      'features/alpha/server/src/sdk.ts':
+        "import { createStatusClient } from '@evespace/esi-client/domains/status'\nexport const client = createStatusClient()",
+      'features/alpha/server/src/transport.mts':
+        'export function createEsiTransport() { return async () => new Response() }',
+      'features/alpha/server/src/unregistered-shorthand.ts':
+        "const operation = 'missing-shorthand-operation'\nexport const resource = { operation }",
+      'features/alpha/server/src/unregistered.ts':
+        "export const resource = { operation: 'missing-operation' }",
     })
 
     try {
@@ -174,10 +177,11 @@ describe('ESI egress verification', () => {
         'feature server code supplies conditional ESI revalidation headers',
         'feature server code imports ESI resilience execution internals',
         'feature server code attempts generic ESI mutation execution',
-      ])
+      ]) {
         expect(stderr).toContain(fragment)
+      }
     } finally {
-      await rm(fixture, { recursive: true, force: true })
+      await rm(fixture, { force: true, recursive: true })
     }
   })
 
@@ -199,9 +203,11 @@ describe('ESI egress verification', () => {
     })
 
     try {
-      await expect(runVerifier(fixture)).resolves.toEqual(expect.objectContaining({ stderr: '' }))
+      await expect(runVerifier(fixture)).resolves.toStrictEqual(
+        expect.objectContaining({ stderr: '' }),
+      )
     } finally {
-      await rm(fixture, { recursive: true, force: true })
+      await rm(fixture, { force: true, recursive: true })
     }
   })
 })
@@ -219,6 +225,13 @@ function representationSource(name: string, extra = '') {
 async function createEgressFixture(files: Readonly<Record<string, string>>) {
   const root = await mkdtemp(join(tmpdir(), 'eve-space-esi-egress-'))
   const required = {
+    'api/src/characters/status.ts': representationSource('status-core'),
+    'api/src/esi-gateway/internal/catalog.ts': "defineContract('status', {})",
+    'api/src/generated/platform/installed-module-esi.ts': `
+      export const installedModuleEsiOperationCatalog = {
+        'alpha-operation': module0EsiOperation0,
+      } as const
+    `,
     'features/installed-modules.json': JSON.stringify({
       modules: [
         {
@@ -227,13 +240,6 @@ async function createEgressFixture(files: Readonly<Record<string, string>>) {
         },
       ],
     }),
-    'api/src/esi-gateway/internal/catalog.ts': "defineContract('status', {})",
-    'api/src/characters/status.ts': representationSource('status-core'),
-    'api/src/generated/platform/installed-module-esi.ts': `
-      export const installedModuleEsiOperationCatalog = {
-        'alpha-operation': module0EsiOperation0,
-      } as const
-    `,
     ...files,
   }
   await Promise.all(
@@ -263,8 +269,9 @@ async function verifierFailure(root: string) {
       error !== null &&
       'stderr' in error &&
       typeof error.stderr === 'string'
-    )
+    ) {
       return error.stderr
+    }
     throw error
   }
 }

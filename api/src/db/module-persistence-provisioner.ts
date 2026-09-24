@@ -25,7 +25,9 @@ export async function provisionModulePersistence(
 ) {
   const { migrationRoleName, schemaName, runtimeRoleName } = modulePersistenceNames(moduleId)
   const [context] = await connection<{ current_user: string }[]>`select current_user`
-  if (!context) throw new Error('Could not resolve the module migration database identity')
+  if (!context) {
+    throw new Error('Could not resolve the module migration database identity')
+  }
 
   await ensureRestrictedRole(connection, runtimeRoleName, 'runtime')
   await ensureRestrictedRole(connection, migrationRoleName, 'migration')
@@ -43,8 +45,9 @@ export async function provisionModulePersistence(
       select 1 from pg_type where typowner = to_regrole(${runtimeRoleName})
     ) as exists
   `
-  if (ownedObjects?.exists)
+  if (ownedObjects?.exists) {
     throw new Error(`Module runtime role ${runtimeRoleName} unexpectedly owns database objects`)
+  }
 
   const [migrationOwnedOutsideSchema] = await connection<{ exists: boolean }[]>`
     select exists (
@@ -74,24 +77,27 @@ export async function provisionModulePersistence(
         )
     ) as exists
   `
-  if (migrationOwnedOutsideSchema?.exists)
+  if (migrationOwnedOutsideSchema?.exists) {
     throw new Error(
       `Module migration role ${migrationRoleName} unexpectedly owns cross-schema objects`,
     )
+  }
 
   const [schema] = await connection<{ owner: string }[]>`
     select pg_get_userbyid(nspowner) as owner
     from pg_namespace
     where nspname = ${schemaName}
   `
-  if (schema && schema.owner !== context.current_user)
+  if (schema && schema.owner !== context.current_user) {
     throw new Error(
       `Existing module schema ${schemaName} is owned by unexpected role ${schema.owner}`,
     )
-  if (!schema)
+  }
+  if (!schema) {
     await connection`
       create schema ${connection(schemaName)} authorization ${connection(context.current_user)}
     `
+  }
 
   await transferModuleObjectOwnership(
     connection,
@@ -108,8 +114,9 @@ export async function provisionModulePersistence(
     where privilege.grantee = to_regrole(${runtimeRoleName})
       and defaults.defaclnamespace is distinct from to_regnamespace(${schemaName})
   `
-  if (unexpectedDefaults.length > 0)
+  if (unexpectedDefaults.length > 0) {
     throw new Error(`Module runtime role ${runtimeRoleName} has cross-schema default privileges`)
+  }
 
   const applicationSchemas = await connection<{ name: string }[]>`
     select nspname as name
@@ -133,7 +140,9 @@ export async function provisionModulePersistence(
       revoke execute on all routines in schema ${connection(name)}
       from ${connection(runtimeRoleName)}
     `
-    if (name === schemaName) continue
+    if (name === schemaName) {
+      continue
+    }
     await connection`
       revoke all privileges on schema ${connection(name)} from ${connection(migrationRoleName)}
     `
@@ -247,8 +256,9 @@ async function ensureRestrictedRole(
       role.rolreplication ||
       role.rolsuper ||
       role.rolbypassrls
-    )
+    ) {
       throw new Error(`Existing module ${kind} role ${roleName} is not restricted`)
+    }
     return
   }
 
@@ -279,8 +289,9 @@ async function ensureRestrictedMembership(
       (parent.rolname = ${moduleRoleName} and member.rolname <> ${platformRoleName})
       or member.rolname = ${moduleRoleName}
   `
-  if (memberships.length > 0)
+  if (memberships.length > 0) {
     throw new Error(`Existing module ${kind} role ${moduleRoleName} has unexpected memberships`)
+  }
 
   await connection`revoke ${connection(moduleRoleName)} from ${connection(platformRoleName)}`
   await connection`
@@ -304,8 +315,9 @@ async function ensureRestrictedMembership(
     where parent.rolname = ${moduleRoleName}
       and member.rolname = ${platformRoleName}
   `
-  if (membership?.count !== 1 || !membership.restricted)
+  if (membership?.count !== 1 || !membership.restricted) {
     throw new Error(`Module ${kind} role ${moduleRoleName} membership is not restricted`)
+  }
 }
 
 async function transferModuleObjectOwnership(
@@ -356,8 +368,11 @@ async function transferModuleObjectOwnership(
   `
   for (const routine of routines) {
     let kind = 'function'
-    if (routine.kind === 'p') kind = 'procedure'
-    else if (routine.kind === 'a') kind = 'aggregate'
+    if (routine.kind === 'p') {
+      kind = 'procedure'
+    } else if (routine.kind === 'a') {
+      kind = 'aggregate'
+    }
     await connection
       .unsafe(
         `alter ${kind} ${quoteIdentifier(schemaName)}.${quoteIdentifier(routine.name)}(${routine.arguments}) owner to ${quoteIdentifier(migrationRoleName)}`,

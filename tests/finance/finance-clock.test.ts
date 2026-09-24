@@ -47,7 +47,7 @@ describe('useFinanceClock', () => {
     let setupValue: number | undefined
     const App = defineComponent({
       setup() {
-        currentTime = useFinanceClock(1_000)
+        currentTime = useFinanceClock(1000)
         setupValue = currentTime.value
         return () => h('output', String(currentTime?.value))
       },
@@ -59,7 +59,7 @@ describe('useFinanceClock', () => {
     expect(isReadonly(currentTime)).toBe(true)
     expect(vi.getTimerCount()).toBe(1)
 
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
     expect(currentTime?.value).toBe(Date.parse('2026-09-02T12:00:01.000Z'))
     expect(vi.getTimerCount()).toBe(1)
 
@@ -72,12 +72,12 @@ describe('useFinanceClock', () => {
     const initialTime = Date.parse('2026-09-02T12:00:00.000Z')
     vi.setSystemTime(initialTime)
     const recordDate = new Date(initialTime - 7 * 86_400_000 + 500).toISOString()
-    const expiresAt = new Date(initialTime + 1_500).toISOString()
+    const expiresAt = new Date(initialTime + 1500).toISOString()
     const validatedAt = new Date(initialTime).toISOString()
 
     const App = defineComponent({
       setup() {
-        const currentTime = useFinanceClock(1_000)
+        const currentTime = useFinanceClock(1000)
         const inRange = computed(() => isWithinFinanceRange(recordDate, '7D', currentTime.value))
         const urgent = computed(() => expiresWithinFinanceUrgency(expiresAt, currentTime.value))
         const countdown = computed(() => formatFinanceCountdown(expiresAt, currentTime.value))
@@ -101,7 +101,7 @@ describe('useFinanceClock', () => {
       'data-urgent': 'true',
     })
 
-    await vi.advanceTimersByTimeAsync(2_000)
+    await vi.advanceTimersByTimeAsync(2000)
     expect(wrapper.attributes()).toMatchObject({
       'data-countdown': 'ELAPSED',
       'data-in-range': 'false',

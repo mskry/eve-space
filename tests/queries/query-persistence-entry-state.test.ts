@@ -17,36 +17,36 @@ describe('query persistence entry state', () => {
     const originalSuccessAt = NOW - 60_000
 
     state.succeeded({
-      keyHash: KEY_HASH,
       data: staleResult(originalSuccessAt, 'esi-unavailable'),
+      keyHash: KEY_HASH,
+      now: NOW,
       source: 'fetch',
       when: NOW,
-      now: NOW,
     })
     state.succeeded({
+      data: staleResult(NOW + 5000, 'esi-cooldown'),
       keyHash: KEY_HASH,
-      data: staleResult(NOW + 5_000, 'esi-cooldown'),
+      now: NOW + 10_000,
       source: 'fetch',
       when: NOW + 10_000,
-      now: NOW + 10_000,
     })
 
-    expect(state.readPresentation(KEY_HASH)).toEqual({
+    expect(state.readPresentation(KEY_HASH)).toStrictEqual({
       kind: 'server-stale',
       originalSuccessAt: new Date(originalSuccessAt).toISOString(),
-      validatedAt: new Date(NOW + 5_000).toISOString(),
       refreshFailureClass: 'esi-cooldown',
+      validatedAt: new Date(NOW + 5000).toISOString(),
     })
 
     state.succeeded({
-      keyHash: KEY_HASH,
       data: { name: 'Fresh' },
+      keyHash: KEY_HASH,
+      now: NOW + 20_000,
       source: 'fetch',
       when: NOW + 20_000,
-      now: NOW + 20_000,
     })
 
-    expect(state.readPresentation(KEY_HASH)).toEqual({
+    expect(state.readPresentation(KEY_HASH)).toStrictEqual({
       kind: 'fresh',
       originalSuccessAt: new Date(NOW + 20_000).toISOString(),
     })
@@ -62,19 +62,19 @@ describe('query persistence entry state', () => {
     state.failed(
       KEY_HASH,
       new ApiQueryError('ESI unavailable.', {
-        status: 503,
         code: 'ESI_UNAVAILABLE',
         retryAt: new Date(NOW + 10_000).toISOString(),
+        status: 503,
       }),
       true,
     )
 
-    expect(state.readPresentation(KEY_HASH)).toEqual({
+    expect(state.readPresentation(KEY_HASH)).toStrictEqual({
       kind: 'restored-refresh-failed',
       originalSuccessAt: new Date(originalSuccessAt).toISOString(),
-      retryAt: new Date(NOW + 10_000).toISOString(),
       refreshFailureCode: 'ESI_UNAVAILABLE',
       refreshFailureStatus: 503,
+      retryAt: new Date(NOW + 10_000).toISOString(),
     })
     expect(state.hasRestoredData(KEY_HASH)).toBe(true)
     expect(state.hasFailedData(KEY_HASH)).toBe(true)
@@ -85,7 +85,7 @@ describe('query persistence entry state', () => {
 
     state.localWrite({ keyHash: KEY_HASH, now: NOW })
 
-    expect(state.readPresentation(KEY_HASH)).toEqual({
+    expect(state.readPresentation(KEY_HASH)).toStrictEqual({
       kind: 'fresh',
       originalSuccessAt: undefined,
     })
@@ -98,20 +98,20 @@ describe('query persistence entry state', () => {
 
     expect(
       state.succeeded({
-        keyHash: KEY_HASH,
         data: { name: 'SSR result' },
+        keyHash: KEY_HASH,
+        now: NOW,
         source: 'ssr',
         when: NOW,
-        now: NOW,
       }),
     ).toBe(true)
     expect(
       state.succeeded({
-        keyHash: KEY_HASH,
         data: { name: 'SSR result' },
+        keyHash: KEY_HASH,
+        now: NOW,
         source: 'ssr',
         when: NOW,
-        now: NOW,
       }),
     ).toBe(false)
   })
@@ -142,9 +142,9 @@ describe('query persistence entry state', () => {
     )
     state.serializerMerged(result.acceptedSuccessfulTimes)
 
-    expect(result.envelope.public).toEqual({})
+    expect(Object.keys(result.envelope.public)).toStrictEqual([])
     expect(state.isRemovalTombstoned(KEY_HASH)).toBe(true)
-    expect(state.readPresentation(KEY_HASH)).toEqual({ kind: 'fresh' })
+    expect(state.readPresentation(KEY_HASH)).toStrictEqual({ kind: 'fresh' })
 
     state.serializerMerged(new Map([[KEY_HASH, NOW]]))
     expect(state.isRemovalTombstoned(KEY_HASH)).toBe(false)
@@ -154,19 +154,19 @@ describe('query persistence entry state', () => {
 
 function staleResult(validatedAt: number, refreshFailureClass: string) {
   return {
+    refreshFailureClass,
     stale: true,
     validatedAt: new Date(validatedAt).toISOString(),
-    refreshFailureClass,
   }
 }
 
 function emptyEnvelope(): EsiQueryCacheEnvelope {
   return {
-    version: 1,
-    invalidationGeneration: 0,
-    public: {},
     characters: {},
+    invalidationGeneration: 0,
     organizations: {},
+    public: {},
+    version: 1,
   }
 }
 

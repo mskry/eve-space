@@ -27,12 +27,12 @@ beforeEach(() => {
     api: {
       admin: {
         'character-transfer-approvals': {
-          preview: { $post: previewRequest },
           $post: approvalRequest,
           ':approvalId': {
             $get: inspectionRequest,
             revoke: { $post: revocationRequest },
           },
+          preview: { $post: previewRequest },
         },
       },
     },
@@ -40,7 +40,9 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   vi.clearAllMocks()
   vi.unstubAllGlobals()
 })
@@ -121,10 +123,10 @@ describe('administrator character transfer workflow', () => {
     previewRequest.mockResolvedValue(
       response({
         preview: {
-          eligible: false,
           blocker,
           character,
           destinationMain,
+          eligible: false,
           sourceCharacterCount: 2,
         },
       }),
@@ -146,8 +148,8 @@ describe('administrator character transfer workflow', () => {
           {
             action: 'created',
             occurredAt: '2026-09-11T12:00:00.000Z',
-            reason: 'Repair split account',
             outcome: 'created',
+            reason: 'Repair split account',
           },
         ],
       }),
@@ -156,9 +158,9 @@ describe('administrator character transfer workflow', () => {
       response({
         approval: {
           ...approval,
-          status: 'revoked',
-          revokedAt: '2026-09-11T12:04:00.000Z',
           revocationReason: 'Destination changed',
+          revokedAt: '2026-09-11T12:04:00.000Z',
+          status: 'revoked',
         },
       }),
     )
@@ -178,8 +180,8 @@ describe('administrator character transfer workflow', () => {
     await settle()
 
     expect(revocationRequest).toHaveBeenCalledWith({
-      param: { approvalId },
       json: { reason: 'Destination changed' },
+      param: { approvalId },
     })
     expect(wrapper.get('[data-status="revoked"]').text()).toBe('REVOKED')
     expect(wrapper.find('.admin-transfer-revoke').exists()).toBe(false)
@@ -223,12 +225,12 @@ function button(wrapper: Awaited<ReturnType<typeof mountWorkflow>>, label: strin
 
 function eligiblePreview() {
   return {
-    eligible: true as const,
-    previewId,
     character,
     destinationMain,
-    sourceCharacterCount: 2,
+    eligible: true as const,
     expiresAt: '2026-09-11T12:05:00.000Z',
+    previewId,
+    sourceCharacterCount: 2,
   }
 }
 
@@ -236,22 +238,22 @@ function pendingApproval(reason: string) {
   return {
     approvalId,
     character,
-    destinationMain,
-    sourceCharacterCount: 2,
-    reason,
-    status: 'pending' as const,
-    createdAt: '2026-09-11T12:00:00.000Z',
-    expiresAt,
     consumedAt: null,
-    revokedAt: null,
+    createdAt: '2026-09-11T12:00:00.000Z',
+    destinationMain,
+    expiresAt,
+    reason,
     revocationReason: null,
+    revokedAt: null,
+    sourceCharacterCount: 2,
+    status: 'pending' as const,
   }
 }
 
 function response(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
-    status,
     headers: { 'Content-Type': 'application/json' },
+    status,
   })
 }
 

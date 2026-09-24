@@ -26,10 +26,11 @@ export function createResourcePlanningCooldownRequest(
   if (
     authorization.kind === 'character' &&
     (!authorizationCharacterId || !Number.isSafeInteger(authorizationCharacterId))
-  )
+  ) {
     throw new Error(
       `Character-authorized resource ${descriptor.moduleId}/${descriptor.resourceId} has no authorization source`,
     )
+  }
   return {
     operation: operationId,
     ...(authorization.kind === 'character' ? { characterId: authorizationCharacterId! } : {}),
@@ -40,14 +41,17 @@ export function getMaximumSubjectsPerResourceJob(
   resources: readonly PlatformInstalledResourceDescriptor[],
 ) {
   return resources.reduce((maximum, resource) => {
-    if (!resource.batch) return maximum
+    if (!resource.batch) {
+      return maximum
+    }
     return Math.max(maximum, getResourceBatchMaximumItems(resource.batch.operationId))
   }, 1)
 }
 
 export function getResourceBatchMaximumItems(operationId: string) {
   assertRegisteredEsiOperation(operationId)
-  if (getEsiOperationAuthorization(operationId).kind !== 'public')
+  if (getEsiOperationAuthorization(operationId).kind !== 'public') {
     throw new Error('Resource batch operation must use a public set identity')
+  }
   return getEsiSetOperationConfiguration(operationId).maximumItems
 }

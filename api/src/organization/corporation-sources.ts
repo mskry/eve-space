@@ -30,8 +30,8 @@ import { loadManagementAuthority } from './management-authority.js'
 import { hasActiveOrganizationMemberBlock } from './member-block.js'
 import { classifyOrganizationAuthorityFailure } from './owner-evidence.js'
 
-const failedEvidenceRetryIntervalMilliseconds = 5 * 60 * 1_000
-const evidenceRefreshAheadMilliseconds = 20 * 60 * 1_000
+const failedEvidenceRetryIntervalMilliseconds = 5 * 60 * 1000
+const evidenceRefreshAheadMilliseconds = 20 * 60 * 1000
 
 export class OrganizationCorporationSourceMutationError extends Error {
   constructor(
@@ -78,9 +78,9 @@ export async function registerOrganizationCorporationSource(
   const [planned] = await db
     .select({
       organizationVersion: deploymentSettings.organizationVersion,
-      userId: characters.userId,
-      subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
       scopes: eveTokens.scopes,
+      subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+      userId: characters.userId,
     })
     .from(characters)
     .innerJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
@@ -94,8 +94,9 @@ export async function registerOrganizationCorporationSource(
     planned?.userId !== input.actorUserId ||
     !planned.scopes.includes(corporationMembershipScope) ||
     !planned.scopes.includes(characterCorporationRolesScope)
-  )
+  ) {
     throw new OrganizationCorporationSourceMutationError('source-character-ineligible')
+  }
   await requireSourceManagementAuthority(db, planned.organizationVersion, input.actorUserId)
 
   const affiliation =
@@ -105,15 +106,18 @@ export async function registerOrganizationCorporationSource(
       undefined,
       convergeObservedAffiliationInTransaction,
     ))
-  if (!affiliation || affiliation.stale)
+  if (!affiliation || affiliation.stale) {
     throw new OrganizationCorporationSourceMutationError('source-character-affiliation-stale')
-  if (affiliation.characterId !== input.characterId)
+  }
+  if (affiliation.characterId !== input.characterId) {
     throw new OrganizationCorporationSourceMutationError('source-character-ineligible')
+  }
   const roles =
     options.evidence?.roles ??
     (await getCharacterCorporationRolesEvidence(input.characterId, planned.subjectLifecycleId))
-  if (roles.stale)
+  if (roles.stale) {
     throw new OrganizationCorporationSourceMutationError('source-character-affiliation-stale')
+  }
   try {
     assertOrganizationOwnerDirectorRole(roles)
   } catch {
@@ -123,15 +127,17 @@ export async function registerOrganizationCorporationSource(
   return db.transaction(async (transaction) => {
     const [organization] = await transaction
       .select({
-        organizationVersion: deploymentSettings.organizationVersion,
-        policyVersion: deploymentSettings.registrationPolicyVersion,
         authorityEvidenceFreshDurationSeconds:
           deploymentSettings.authorityEvidenceFreshDurationSeconds,
+        organizationVersion: deploymentSettings.organizationVersion,
+        policyVersion: deploymentSettings.registrationPolicyVersion,
       })
       .from(deploymentSettings)
       .where(eq(deploymentSettings.id, 1))
       .for('update')
-    if (!organization) throw new Error('Deployment organization is not configured')
+    if (!organization) {
+      throw new Error('Deployment organization is not configured')
+    }
     const [managed] = await transaction
       .select({ corporationId: organizationManagedCorporations.corporationId })
       .from(organizationManagedCorporations)
@@ -143,7 +149,9 @@ export async function registerOrganizationCorporationSource(
           eq(organizationManagedCorporations.isCurrent, true),
         ),
       )
-    if (!managed) throw new OrganizationCorporationSourceMutationError('corporation-not-managed')
+    if (!managed) {
+      throw new OrganizationCorporationSourceMutationError('corporation-not-managed')
+    }
 
     const [existing] = await transaction
       .select()
@@ -165,15 +173,15 @@ export async function registerOrganizationCorporationSource(
 
     const [character] = await transaction
       .select({
-        userId: characters.userId,
-        corporationId: characters.corporationId,
-        allianceId: characters.allianceId,
         affiliationCheckedAt: characters.affiliationCheckedAt,
-        nextAffiliationCheck: characters.nextAffiliationCheck,
         affiliationResolutionState: characters.affiliationResolutionState,
-        scopes: eveTokens.scopes,
+        allianceId: characters.allianceId,
         authorizationGeneration: eveTokens.tokenVersion,
+        corporationId: characters.corporationId,
+        nextAffiliationCheck: characters.nextAffiliationCheck,
+        scopes: eveTokens.scopes,
         sourceSubjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+        userId: characters.userId,
       })
       .from(characters)
       .innerJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
@@ -184,102 +192,112 @@ export async function registerOrganizationCorporationSource(
       .where(eq(characters.characterId, input.characterId))
       .for('update')
     const now = new Date()
-    if (
-      character?.userId !== input.actorUserId ||
-      character.sourceSubjectLifecycleId !== planned.subjectLifecycleId ||
-      character.corporationId !== input.corporationId ||
-      character.corporationId !== affiliation.corporationId ||
-      character.allianceId !== affiliation.allianceId ||
-      character.affiliationResolutionState !== 'resolved' ||
-      !character.affiliationCheckedAt ||
-      character.affiliationCheckedAt < affiliation.affiliationCheckedAt ||
-      character.authorizationGeneration !== roles.authorizationGeneration ||
-      !character.scopes.includes(corporationMembershipScope) ||
-      !character.scopes.includes(characterCorporationRolesScope)
-    )
+    if (!character) {
       throw new OrganizationCorporationSourceMutationError('source-character-ineligible')
-    if (!character.nextAffiliationCheck || character.nextAffiliationCheck <= now)
+    }
+    const characterIsEligible = () =>
+      character.userId === input.actorUserId &&
+      character.sourceSubjectLifecycleId === planned.subjectLifecycleId &&
+      character.corporationId === input.corporationId &&
+      character.corporationId === affiliation.corporationId &&
+      character.allianceId === affiliation.allianceId &&
+      character.affiliationResolutionState === 'resolved' &&
+      character.affiliationCheckedAt !== null &&
+      character.affiliationCheckedAt >= affiliation.affiliationCheckedAt &&
+      character.authorizationGeneration === roles.authorizationGeneration &&
+      character.scopes.includes(corporationMembershipScope) &&
+      character.scopes.includes(characterCorporationRolesScope)
+    if (!characterIsEligible()) {
+      throw new OrganizationCorporationSourceMutationError('source-character-ineligible')
+    }
+    if (!character.nextAffiliationCheck || character.nextAffiliationCheck <= now) {
       throw new OrganizationCorporationSourceMutationError('source-character-affiliation-stale')
+    }
     const freshUntil = new Date(
       Math.min(
         affiliation.affiliationFreshUntil.getTime(),
         roles.freshUntil.getTime(),
-        now.getTime() + organization.authorityEvidenceFreshDurationSeconds * 1_000,
+        now.getTime() + organization.authorityEvidenceFreshDurationSeconds * 1000,
       ),
     )
-    if (freshUntil <= now)
+    if (freshUntil <= now) {
       throw new OrganizationCorporationSourceMutationError('source-character-affiliation-stale')
+    }
 
-    if (
+    const sourceUnchanged = () =>
       existing?.characterId === input.characterId &&
       existing.sourceSubjectLifecycleId === character.sourceSubjectLifecycleId &&
       existing.authorizationGeneration === character.authorizationGeneration &&
       existing.status === 'fresh' &&
       existing.freshUntil > now
-    )
-      return { source: toCorporationSource(existing), replaced: false }
+    if (existing && sourceUnchanged()) {
+      return { replaced: false, source: toCorporationSource(existing) }
+    }
 
-    if (existing)
+    if (existing) {
       await transaction
         .update(organizationCorporationSources)
         .set({
-          revokedAt: now,
-          revokedByUserId: input.actorUserId,
-          revocationReason: 'Replaced by a newly selected corporation data source.',
-          status: 'invalid',
-          graceUntil: null,
           failureClass: 'strict:source-replaced',
+          graceUntil: null,
           invalidatedAt: now,
           invalidationOutcome: 'source-replaced',
+          revocationReason: 'Replaced by a newly selected corporation data source.',
+          revokedAt: now,
+          revokedByUserId: input.actorUserId,
+          status: 'invalid',
           updatedAt: now,
         })
         .where(eq(organizationCorporationSources.sourceId, existing.sourceId))
+    }
     const [source] = await transaction
       .insert(organizationCorporationSources)
       .values({
-        deploymentId: 1,
-        organizationVersion: organization.organizationVersion,
-        corporationId: input.corporationId,
-        characterId: input.characterId,
-        evidenceCharacterId: input.characterId,
-        sourceUserId: input.actorUserId,
-        sourceSubjectLifecycleId: character.sourceSubjectLifecycleId,
         authorizationGeneration: character.authorizationGeneration,
-        roleEvidenceRevision: roles.roleEvidenceRevision,
-        observedCorporationId: character.corporationId,
-        observedAllianceId: character.allianceId,
-        requiredScope: corporationMembershipScope,
+        characterId: input.characterId,
+        corporationId: input.corporationId,
+        deploymentId: 1,
         directorRolePresent: true,
-        observedAt: now,
+        evidenceCharacterId: input.characterId,
         freshUntil,
-        status: 'fresh',
-        registeredByUserId: input.actorUserId,
+        observedAllianceId: character.allianceId,
+        observedAt: now,
+        observedCorporationId: character.corporationId,
+        organizationVersion: organization.organizationVersion,
         registeredAt: now,
+        registeredByUserId: input.actorUserId,
+        requiredScope: corporationMembershipScope,
+        roleEvidenceRevision: roles.roleEvidenceRevision,
+        sourceSubjectLifecycleId: character.sourceSubjectLifecycleId,
+        sourceUserId: input.actorUserId,
+        status: 'fresh',
       })
       .returning()
-    if (!source) throw new Error('Failed to register corporation data source')
+    if (!source) {
+      throw new Error('Failed to register corporation data source')
+    }
     await transaction.insert(platformSubjectLifecycles).values({
-      subjectKind: 'corporation',
-      subjectId: String(input.corporationId),
       corporationSourceId: source.sourceId,
       createdAt: now,
+      subjectId: String(input.corporationId),
+      subjectKind: 'corporation',
     })
     await appendOrganizationAuditEvent(transaction, {
-      deploymentId: 1,
-      organizationVersion: organization.organizationVersion,
-      policyVersion: organization.policyVersion,
-      eventType: existing ? 'corporation-source.replaced' : 'corporation-source.registered',
-      actorType: 'user',
       actorId: input.actorUserId,
-      subjectType: 'corporation_source',
-      subjectId: source.sourceId,
+      actorType: 'user',
+      deploymentId: 1,
+      eventType: existing ? 'corporation-source.replaced' : 'corporation-source.registered',
+      occurredAt: now,
+      organizationVersion: organization.organizationVersion,
+      outcome: existing ? 'transitioned' : 'granted',
+      policyVersion: organization.policyVersion,
       reason: existing
         ? 'The corporation data-source character was replaced.'
         : 'A corporation data-source character was registered.',
-      outcome: existing ? 'transitioned' : 'granted',
-      occurredAt: now,
+      subjectId: source.sourceId,
+      subjectType: 'corporation_source',
     })
-    return { source: toCorporationSource(source), replaced: Boolean(existing) }
+    return { replaced: Boolean(existing), source: toCorporationSource(source) }
   })
 }
 
@@ -291,11 +309,11 @@ export async function selectDueOrganizationCorporationSources(
   const refreshBoundary = new Date(now.getTime() + evidenceRefreshAheadMilliseconds)
   return db
     .select({
-      sourceId: organizationCorporationSources.sourceId,
-      organizationVersion: organizationCorporationSources.organizationVersion,
-      sourceSubjectLifecycleId: organizationCorporationSources.sourceSubjectLifecycleId,
       authorizationGeneration: organizationCorporationSources.authorizationGeneration,
+      organizationVersion: organizationCorporationSources.organizationVersion,
       roleEvidenceRevision: organizationCorporationSources.roleEvidenceRevision,
+      sourceId: organizationCorporationSources.sourceId,
+      sourceSubjectLifecycleId: organizationCorporationSources.sourceSubjectLifecycleId,
     })
     .from(organizationCorporationSources)
     .innerJoin(
@@ -343,32 +361,37 @@ export async function refreshOrganizationCorporationSource(
 ) {
   options.signal?.throwIfAborted()
   const snapshot = await loadCorporationSourceSnapshot(candidate)
-  if (!snapshot) return 'superseded' as const
+  if (!snapshot) {
+    return 'superseded' as const
+  }
   const checkedAt = new Date()
   if (
     snapshot.sourceUserId !== snapshot.currentUserId ||
     snapshot.sourceSubjectLifecycleId !== snapshot.currentSubjectLifecycleId
-  )
+  ) {
     return applyCorporationSourceFailure(
       snapshot,
-      { kind: 'strict', failureClass: 'lifecycle-replaced' },
+      { failureClass: 'lifecycle-replaced', kind: 'strict' },
       checkedAt,
       options.signal,
     )
-  if (!snapshot.scopes.includes(corporationMembershipScope))
+  }
+  if (!snapshot.scopes.includes(corporationMembershipScope)) {
     return applyCorporationSourceFailure(
       snapshot,
-      { kind: 'strict', failureClass: 'missing-corporation-scope' },
+      { failureClass: 'missing-corporation-scope', kind: 'strict' },
       checkedAt,
       options.signal,
     )
-  if (!snapshot.scopes.includes(characterCorporationRolesScope))
+  }
+  if (!snapshot.scopes.includes(characterCorporationRolesScope)) {
     return applyCorporationSourceFailure(
       snapshot,
-      { kind: 'strict', failureClass: 'missing-scope' },
+      { failureClass: 'missing-scope', kind: 'strict' },
       checkedAt,
       options.signal,
     )
+  }
 
   try {
     const affiliation = await observeAndPersistCharacterAffiliation(
@@ -376,72 +399,79 @@ export async function refreshOrganizationCorporationSource(
       options.signal,
       convergeObservedAffiliationInTransaction,
     )
-    if (!affiliation || affiliation.stale) throw new OrganizationAuthorityError('stale-affiliation')
-    if (affiliation.corporationId !== snapshot.corporationId)
+    if (!affiliation || affiliation.stale) {
+      throw new OrganizationAuthorityError('stale-affiliation')
+    }
+    if (affiliation.corporationId !== snapshot.corporationId) {
       throw new OrganizationAuthorityError('wrong-corporation')
+    }
     const roles = await getCharacterCorporationRolesEvidence(
       snapshot.characterId,
       snapshot.sourceSubjectLifecycleId,
       options.signal,
     )
-    if (roles.stale) throw new OrganizationAuthorityError('stale-role-evidence')
+    if (roles.stale) {
+      throw new OrganizationAuthorityError('stale-role-evidence')
+    }
     assertOrganizationOwnerDirectorRole(roles)
     return persistCorporationSourceRefresh(snapshot, {
-      observedAllianceId: affiliation.allianceId,
       affiliationObservedAt: affiliation.affiliationCheckedAt,
+      checkedAt,
+      evidenceAuthorizationGeneration: roles.authorizationGeneration,
       evidenceFreshUntil: new Date(
         Math.min(affiliation.affiliationFreshUntil.getTime(), roles.freshUntil.getTime()),
       ),
+      observedAllianceId: affiliation.allianceId,
       roleEvidenceRevision: roles.roleEvidenceRevision,
-      evidenceAuthorizationGeneration: roles.authorizationGeneration,
-      checkedAt,
       signal: options.signal,
     })
   } catch (error) {
     options.signal?.throwIfAborted()
     const failure = classifyOrganizationAuthorityFailure(error)
-    if (!failure) throw error
+    if (!failure) {
+      throw error
+    }
     return applyCorporationSourceFailure(snapshot, failure, checkedAt, options.signal)
   }
 }
 
 function toCorporationSource(source: typeof organizationCorporationSources.$inferSelect) {
   return {
-    sourceId: source.sourceId,
-    organizationVersion: source.organizationVersion,
-    corporationId: source.corporationId,
-    characterId: source.characterId,
-    evidenceCharacterId: source.evidenceCharacterId,
-    sourceUserId: source.sourceUserId,
-    sourceSubjectLifecycleId: source.sourceSubjectLifecycleId,
     authorizationGeneration: source.authorizationGeneration,
-    roleEvidenceRevision: source.roleEvidenceRevision,
-    status: source.status,
+    characterId: source.characterId,
+    corporationId: source.corporationId,
+    evidenceCharacterId: source.evidenceCharacterId,
+    failureClass: source.failureClass,
     freshUntil: source.freshUntil.toISOString(),
     graceUntil: source.graceUntil?.toISOString() ?? null,
-    failureClass: source.failureClass,
-    registeredByUserId: source.registeredByUserId,
+    organizationVersion: source.organizationVersion,
     registeredAt: source.registeredAt.toISOString(),
+    registeredByUserId: source.registeredByUserId,
+    roleEvidenceRevision: source.roleEvidenceRevision,
+    sourceId: source.sourceId,
+    sourceSubjectLifecycleId: source.sourceSubjectLifecycleId,
+    sourceUserId: source.sourceUserId,
+    status: source.status,
   }
 }
 
 async function loadCorporationSourceSnapshot(candidate: CorporationSourceEvidenceJobCandidate) {
   const [snapshot] = await db
     .select({
-      sourceId: organizationCorporationSources.sourceId,
-      organizationVersion: organizationCorporationSources.organizationVersion,
-      corporationId: organizationCorporationSources.corporationId,
-      characterId: organizationCorporationSources.evidenceCharacterId,
-      sourceUserId: organizationCorporationSources.sourceUserId,
-      sourceSubjectLifecycleId: organizationCorporationSources.sourceSubjectLifecycleId,
-      currentUserId: characters.userId,
-      currentSubjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
-      currentAuthorizationGeneration: eveTokens.tokenVersion,
-      sourceAuthorizationGeneration: organizationCorporationSources.authorizationGeneration,
-      roleEvidenceRevision: organizationCorporationSources.roleEvidenceRevision,
-      invalidatedAt: organizationCorporationSources.invalidatedAt,
       blockId: organizationMemberBlocks.blockId,
+      characterId: organizationCorporationSources.evidenceCharacterId,
+      corporationId: organizationCorporationSources.corporationId,
+      currentAuthorizationGeneration: eveTokens.tokenVersion,
+      currentSubjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+      currentUserId: characters.userId,
+      invalidatedAt: organizationCorporationSources.invalidatedAt,
+      organizationVersion: organizationCorporationSources.organizationVersion,
+      roleEvidenceRevision: organizationCorporationSources.roleEvidenceRevision,
       scopes: eveTokens.scopes,
+      sourceAuthorizationGeneration: organizationCorporationSources.authorizationGeneration,
+      sourceId: organizationCorporationSources.sourceId,
+      sourceSubjectLifecycleId: organizationCorporationSources.sourceSubjectLifecycleId,
+      sourceUserId: organizationCorporationSources.sourceUserId,
     })
     .from(organizationCorporationSources)
     .innerJoin(
@@ -514,19 +544,19 @@ async function persistCorporationSourceRefresh(
   return db.transaction(async (transaction) => {
     const [current] = await transaction
       .select({
+        affiliationCheckedAt: characters.affiliationCheckedAt,
+        allianceId: characters.allianceId,
+        authorizationGeneration: eveTokens.tokenVersion,
+        corporationId: characters.corporationId,
+        freshDurationSeconds: deploymentSettings.authorityEvidenceFreshDurationSeconds,
+        invalidatedAt: organizationCorporationSources.invalidatedAt,
         organizationVersion: deploymentSettings.organizationVersion,
         policyVersion: deploymentSettings.registrationPolicyVersion,
-        freshDurationSeconds: deploymentSettings.authorityEvidenceFreshDurationSeconds,
-        userId: characters.userId,
-        corporationId: characters.corporationId,
-        allianceId: characters.allianceId,
-        affiliationCheckedAt: characters.affiliationCheckedAt,
-        subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
-        authorizationGeneration: eveTokens.tokenVersion,
+        roleEvidenceRevision: organizationCorporationSources.roleEvidenceRevision,
         scopes: eveTokens.scopes,
         sourceAuthorizationGeneration: organizationCorporationSources.authorizationGeneration,
-        roleEvidenceRevision: organizationCorporationSources.roleEvidenceRevision,
-        invalidatedAt: organizationCorporationSources.invalidatedAt,
+        subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+        userId: characters.userId,
       })
       .from(organizationCorporationSources)
       .innerJoin(deploymentSettings, eq(deploymentSettings.id, 1))
@@ -547,56 +577,61 @@ async function persistCorporationSourceRefresh(
       )
       .for('update')
     evidence.signal?.throwIfAborted()
-    if (!current) return 'superseded' as const
+    if (!current) {
+      return 'superseded' as const
+    }
     const blocked = await hasActiveOrganizationMemberBlock(
       transaction,
       snapshot.organizationVersion,
       current.userId,
     )
     evidence.signal?.throwIfAborted()
-    if (
-      current.organizationVersion !== snapshot.organizationVersion ||
-      current.invalidatedAt !== null ||
-      blocked ||
-      current.userId !== snapshot.sourceUserId ||
-      current.subjectLifecycleId !== snapshot.sourceSubjectLifecycleId ||
-      current.corporationId !== snapshot.corporationId ||
-      current.allianceId !== evidence.observedAllianceId ||
-      !current.affiliationCheckedAt ||
-      current.affiliationCheckedAt < evidence.affiliationObservedAt ||
-      current.authorizationGeneration !== evidence.evidenceAuthorizationGeneration ||
-      current.authorizationGeneration !== snapshot.currentAuthorizationGeneration ||
-      current.sourceAuthorizationGeneration !== snapshot.sourceAuthorizationGeneration ||
-      current.roleEvidenceRevision !== snapshot.roleEvidenceRevision ||
-      !current.scopes.includes(corporationMembershipScope) ||
-      !current.scopes.includes(characterCorporationRolesScope)
-    )
+    const sourceMatchesRefresh = () =>
+      current.organizationVersion === snapshot.organizationVersion &&
+      current.invalidatedAt === null &&
+      !blocked &&
+      current.userId === snapshot.sourceUserId &&
+      current.subjectLifecycleId === snapshot.sourceSubjectLifecycleId &&
+      current.corporationId === snapshot.corporationId &&
+      current.allianceId === evidence.observedAllianceId &&
+      current.affiliationCheckedAt !== null &&
+      current.affiliationCheckedAt >= evidence.affiliationObservedAt &&
+      current.authorizationGeneration === evidence.evidenceAuthorizationGeneration &&
+      current.authorizationGeneration === snapshot.currentAuthorizationGeneration &&
+      current.sourceAuthorizationGeneration === snapshot.sourceAuthorizationGeneration &&
+      current.roleEvidenceRevision === snapshot.roleEvidenceRevision &&
+      current.scopes.includes(corporationMembershipScope) &&
+      current.scopes.includes(characterCorporationRolesScope)
+    if (!sourceMatchesRefresh()) {
       return 'superseded' as const
+    }
 
     const freshUntil = new Date(
       Math.min(
         evidence.evidenceFreshUntil.getTime(),
-        evidence.checkedAt.getTime() + current.freshDurationSeconds * 1_000,
+        evidence.checkedAt.getTime() + current.freshDurationSeconds * 1000,
       ),
     )
-    if (freshUntil <= evidence.checkedAt) return 'superseded' as const
+    if (freshUntil <= evidence.checkedAt) {
+      return 'superseded' as const
+    }
     const [updated] = await transaction
       .update(organizationCorporationSources)
       .set({
-        sourceUserId: current.userId,
-        sourceSubjectLifecycleId: current.subjectLifecycleId,
         authorizationGeneration: current.authorizationGeneration,
-        roleEvidenceRevision: evidence.roleEvidenceRevision,
-        observedCorporationId: current.corporationId,
-        observedAllianceId: current.allianceId,
         directorRolePresent: true,
-        observedAt: evidence.checkedAt,
+        failureClass: null,
         freshUntil,
         graceUntil: null,
-        status: 'fresh',
-        failureClass: null,
         invalidatedAt: null,
         invalidationOutcome: null,
+        observedAllianceId: current.allianceId,
+        observedAt: evidence.checkedAt,
+        observedCorporationId: current.corporationId,
+        roleEvidenceRevision: evidence.roleEvidenceRevision,
+        sourceSubjectLifecycleId: current.subjectLifecycleId,
+        sourceUserId: current.userId,
+        status: 'fresh',
         updatedAt: evidence.checkedAt,
       })
       .where(
@@ -613,19 +648,21 @@ async function persistCorporationSourceRefresh(
       )
       .returning({ sourceId: organizationCorporationSources.sourceId })
     evidence.signal?.throwIfAborted()
-    if (!updated) return 'superseded' as const
+    if (!updated) {
+      return 'superseded' as const
+    }
     await appendOrganizationAuditEvent(transaction, {
-      deploymentId: 1,
-      organizationVersion: snapshot.organizationVersion,
-      policyVersion: current.policyVersion,
-      eventType: 'authority-source.observed',
-      actorType: 'system',
       actorId: null,
-      subjectType: 'corporation_source',
-      subjectId: snapshot.sourceId,
-      reason: 'Fresh designated corporation-source evidence was observed.',
-      outcome: 'unchanged',
+      actorType: 'system',
+      deploymentId: 1,
+      eventType: 'authority-source.observed',
       occurredAt: evidence.checkedAt,
+      organizationVersion: snapshot.organizationVersion,
+      outcome: 'unchanged',
+      policyVersion: current.policyVersion,
+      reason: 'Fresh designated corporation-source evidence was observed.',
+      subjectId: snapshot.sourceId,
+      subjectType: 'corporation_source',
     })
     evidence.signal?.throwIfAborted()
     return 'fresh' as const
@@ -649,22 +686,23 @@ async function applyCorporationSourceFailure(
       .from(deploymentSettings)
       .where(eq(deploymentSettings.id, 1))
       .for('update')
-    if (organization?.organizationVersion !== snapshot.organizationVersion)
+    if (organization?.organizationVersion !== snapshot.organizationVersion) {
       return 'superseded' as const
+    }
     const [source] = await transaction
       .select({
-        sourceId: organizationCorporationSources.sourceId,
-        status: organizationCorporationSources.status,
+        authorizationGeneration: organizationCorporationSources.authorizationGeneration,
+        currentAuthorizationGeneration: eveTokens.tokenVersion,
+        currentSubjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+        currentUserId: characters.userId,
         freshUntil: organizationCorporationSources.freshUntil,
         graceUntil: organizationCorporationSources.graceUntil,
-        authorizationGeneration: organizationCorporationSources.authorizationGeneration,
-        roleEvidenceRevision: organizationCorporationSources.roleEvidenceRevision,
-        sourceUserId: organizationCorporationSources.sourceUserId,
-        sourceSubjectLifecycleId: organizationCorporationSources.sourceSubjectLifecycleId,
         invalidatedAt: organizationCorporationSources.invalidatedAt,
-        currentUserId: characters.userId,
-        currentSubjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
-        currentAuthorizationGeneration: eveTokens.tokenVersion,
+        roleEvidenceRevision: organizationCorporationSources.roleEvidenceRevision,
+        sourceId: organizationCorporationSources.sourceId,
+        sourceSubjectLifecycleId: organizationCorporationSources.sourceSubjectLifecycleId,
+        sourceUserId: organizationCorporationSources.sourceUserId,
+        status: organizationCorporationSources.status,
       })
       .from(organizationCorporationSources)
       .innerJoin(
@@ -692,43 +730,47 @@ async function applyCorporationSourceFailure(
         )
       : false
     signal?.throwIfAborted()
-    if (
-      !source ||
-      source.status === 'invalid' ||
-      source.invalidatedAt ||
-      blocked ||
-      source.currentUserId !== snapshot.currentUserId ||
-      source.currentSubjectLifecycleId !== snapshot.currentSubjectLifecycleId ||
-      source.currentAuthorizationGeneration !== snapshot.currentAuthorizationGeneration ||
-      source.sourceUserId !== snapshot.sourceUserId ||
-      source.sourceSubjectLifecycleId !== snapshot.sourceSubjectLifecycleId ||
-      source.authorizationGeneration !== snapshot.sourceAuthorizationGeneration ||
-      source.roleEvidenceRevision !== snapshot.roleEvidenceRevision
-    )
+    if (!source) {
       return 'superseded' as const
+    }
+    const sourceMatchesFailure = () =>
+      source.status !== 'invalid' &&
+      !source.invalidatedAt &&
+      !blocked &&
+      source.currentUserId === snapshot.currentUserId &&
+      source.currentSubjectLifecycleId === snapshot.currentSubjectLifecycleId &&
+      source.currentAuthorizationGeneration === snapshot.currentAuthorizationGeneration &&
+      source.sourceUserId === snapshot.sourceUserId &&
+      source.sourceSubjectLifecycleId === snapshot.sourceSubjectLifecycleId &&
+      source.authorizationGeneration === snapshot.sourceAuthorizationGeneration &&
+      source.roleEvidenceRevision === snapshot.roleEvidenceRevision
+    if (!sourceMatchesFailure()) {
+      return 'superseded' as const
+    }
     if (failure.kind === 'strict') {
       const outcome = corporationSourceInvalidationOutcome(failure)
-      if (isCharacterWideAuthorityFailure(failure.failureClass))
+      if (isCharacterWideAuthorityFailure(failure.failureClass)) {
         await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
           characterId: snapshot.characterId,
-          outcome,
-          now: checkedAt,
           expected: {
+            authorizationGeneration: snapshot.sourceAuthorizationGeneration,
             organizationVersion: snapshot.organizationVersion,
             sourceSubjectLifecycleId: snapshot.sourceSubjectLifecycleId,
-            authorizationGeneration: snapshot.sourceAuthorizationGeneration,
           },
+          now: checkedAt,
+          outcome,
         })
-      else if (
+      } else if (
         !(await invalidateDesignatedCorporationSource(transaction, {
-          snapshot,
+          checkedAt,
           failureClass: failure.failureClass,
           outcome,
           policyVersion: organization.policyVersion,
-          checkedAt,
+          snapshot,
         }))
-      )
+      ) {
         return 'superseded' as const
+      }
       signal?.throwIfAborted()
       return 'invalid' as const
     }
@@ -741,7 +783,7 @@ async function applyCorporationSourceFailure(
       return 'fresh' as const
     }
     const fixedGraceBoundary = new Date(
-      source.freshUntil.getTime() + organization.staleSeconds * 1_000,
+      source.freshUntil.getTime() + organization.staleSeconds * 1000,
     )
     const graceUntil = source.graceUntil
       ? new Date(Math.min(source.graceUntil.getTime(), fixedGraceBoundary.getTime()))
@@ -750,9 +792,9 @@ async function applyCorporationSourceFailure(
       await transaction
         .update(organizationCorporationSources)
         .set({
-          status: 'degraded',
-          graceUntil,
           failureClass: `transient:${failure.failureClass}`,
+          graceUntil,
+          status: 'degraded',
           updatedAt: checkedAt,
         })
         .where(eq(organizationCorporationSources.sourceId, snapshot.sourceId))
@@ -761,13 +803,13 @@ async function applyCorporationSourceFailure(
     }
     await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
       characterId: snapshot.characterId,
-      outcome: 'expired',
-      now: checkedAt,
       expected: {
+        authorizationGeneration: snapshot.sourceAuthorizationGeneration,
         organizationVersion: snapshot.organizationVersion,
         sourceSubjectLifecycleId: snapshot.sourceSubjectLifecycleId,
-        authorizationGeneration: snapshot.sourceAuthorizationGeneration,
       },
+      now: checkedAt,
+      outcome: 'expired',
     })
     signal?.throwIfAborted()
     return 'invalid' as const
@@ -787,11 +829,11 @@ async function invalidateDesignatedCorporationSource(
   const [invalidated] = await transaction
     .update(organizationCorporationSources)
     .set({
-      status: 'invalid',
-      graceUntil: null,
       failureClass: `strict:${input.failureClass}`,
+      graceUntil: null,
       invalidatedAt: input.checkedAt,
       invalidationOutcome: input.outcome,
+      status: 'invalid',
       updatedAt: input.checkedAt,
     })
     .where(
@@ -809,19 +851,21 @@ async function invalidateDesignatedCorporationSource(
       ),
     )
     .returning({ sourceId: organizationCorporationSources.sourceId })
-  if (!invalidated) return false
+  if (!invalidated) {
+    return false
+  }
   await appendOrganizationAuditEvent(transaction, {
-    deploymentId: 1,
-    organizationVersion: input.snapshot.organizationVersion,
-    policyVersion: input.policyVersion,
-    eventType: 'authority-source.invalidated',
-    actorType: 'system',
     actorId: null,
-    subjectType: 'corporation_source',
-    subjectId: invalidated.sourceId,
-    reason: `Designated corporation source invalidated: ${input.outcome}.`,
-    outcome: 'revoked',
+    actorType: 'system',
+    deploymentId: 1,
+    eventType: 'authority-source.invalidated',
     occurredAt: input.checkedAt,
+    organizationVersion: input.snapshot.organizationVersion,
+    outcome: 'revoked',
+    policyVersion: input.policyVersion,
+    reason: `Designated corporation source invalidated: ${input.outcome}.`,
+    subjectId: invalidated.sourceId,
+    subjectType: 'corporation_source',
   })
   return true
 }
@@ -867,8 +911,13 @@ async function requireSourceManagementAuthority(
   userId: string,
 ) {
   const now = new Date()
-  if (await loadManagementAuthority(database, organizationVersion, userId, now, 'mutate')) return
-  if (await loadManagementAuthority(database, organizationVersion, userId, now, 'read-continuity'))
+  if (await loadManagementAuthority(database, organizationVersion, userId, now, 'mutate')) {
+    return
+  }
+  if (
+    await loadManagementAuthority(database, organizationVersion, userId, now, 'read-continuity')
+  ) {
     throw new OrganizationCorporationSourceMutationError('manager-authority-degraded')
+  }
   throw new OrganizationCorporationSourceMutationError('manager-authority-required')
 }

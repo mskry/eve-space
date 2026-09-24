@@ -19,7 +19,7 @@ describe('organization owner evidence failures', () => {
       'authorization-rejected',
     ],
   ])('classifies conclusive authority loss', (error, kind, failureClass) => {
-    expect(classifyOrganizationAuthorityFailure(error)).toEqual({ kind, failureClass })
+    expect(classifyOrganizationAuthorityFailure(error)).toStrictEqual({ failureClass, kind })
   })
 
   test.each([
@@ -28,9 +28,9 @@ describe('organization owner evidence failures', () => {
     [new EveSsoTokenRefreshError(503, false), 'sso-unavailable'],
     [new EsiHttpError({ operationId: 'GetCharactersCharacterId', status: 503 }), 'esi-unavailable'],
   ])('classifies temporary verification failures', (error, failureClass) => {
-    expect(classifyOrganizationAuthorityFailure(error)).toEqual({
-      kind: 'transient',
+    expect(classifyOrganizationAuthorityFailure(error)).toStrictEqual({
       failureClass,
+      kind: 'transient',
     })
   })
 

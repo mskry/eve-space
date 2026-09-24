@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  current: [] as unknown[],
   actorCompliance: [] as unknown[],
-  updated: [] as unknown[],
-  authority: vi.fn(),
   appendAudit: vi.fn(),
+  authority: vi.fn(),
+  current: [] as unknown[],
   invalidateDerived: vi.fn(),
-  reconcileDeadlines: vi.fn(),
   recomputeAll: vi.fn(),
+  reconcileDeadlines: vi.fn(),
   transaction: vi.fn(),
+  updated: [] as unknown[],
 }))
 
 vi.mock('../../src/db/client.js', () => ({
@@ -55,37 +55,37 @@ describe('organization registration policy store', () => {
       settings({
         registrationPolicyVersion: 4,
         requiredRegistrationScopes: ['scope-a', 'scope-b'],
-        strictRemediationDurationSeconds: 7200,
         staleEvidenceGraceDurationSeconds: 1800,
+        strictRemediationDurationSeconds: 7200,
       }),
     ]
 
     await expect(
       updateOrganizationRegistrationPolicy({
         actorUserId,
-        requiredScopes: [' scope-b ', 'scope-a', 'scope-a'],
-        strictRemediationDurationSeconds: 7200,
-        staleEvidenceGraceDurationSeconds: 1800,
-        derivedDirectorAuthorityEnabled: true,
         authorityEvidenceFreshDurationSeconds: 3600,
+        derivedDirectorAuthorityEnabled: true,
         reason: 'Policy review',
+        requiredScopes: [' scope-b ', 'scope-a', 'scope-a'],
+        staleEvidenceGraceDurationSeconds: 1800,
+        strictRemediationDurationSeconds: 7200,
       }),
-    ).resolves.toEqual({
+    ).resolves.toStrictEqual({
+      authorityEvidenceFreshDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
       organizationVersion: 8,
       policyVersion: 4,
       requiredScopes: ['scope-a', 'scope-b'],
-      strictRemediationDurationSeconds: 7200,
       staleEvidenceGraceDurationSeconds: 1800,
-      derivedDirectorAuthorityEnabled: true,
-      authorityEvidenceFreshDurationSeconds: 3600,
+      strictRemediationDurationSeconds: 7200,
     })
     expect(mocks.appendAudit).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
+        actorId: actorUserId,
+        eventType: 'registration-policy.changed',
         organizationVersion: 8,
         policyVersion: 4,
-        eventType: 'registration-policy.changed',
-        actorId: actorUserId,
         reason: 'Policy review',
       }),
     )
@@ -99,12 +99,12 @@ describe('organization registration policy store', () => {
     await expect(
       updateOrganizationRegistrationPolicy({
         actorUserId,
-        requiredScopes: ['scope-a'],
-        strictRemediationDurationSeconds: 3600,
-        staleEvidenceGraceDurationSeconds: 900,
-        derivedDirectorAuthorityEnabled: true,
         authorityEvidenceFreshDurationSeconds: 3600,
+        derivedDirectorAuthorityEnabled: true,
         reason: 'No effective change',
+        requiredScopes: ['scope-a'],
+        staleEvidenceGraceDurationSeconds: 900,
+        strictRemediationDurationSeconds: 3600,
       }),
     ).resolves.toMatchObject({ policyVersion: 3, requiredScopes: ['scope-a'] })
     expect(mocks.appendAudit).not.toHaveBeenCalled()
@@ -119,28 +119,28 @@ describe('organization registration policy store', () => {
 
     mocks.current = [settings()]
     mocks.authority.mockResolvedValue(false)
-    await expect(updateOrganizationRegistrationPolicy(validInput())).rejects.toEqual(
+    await expect(updateOrganizationRegistrationPolicy(validInput())).rejects.toStrictEqual(
       new OrganizationRegistrationPolicyMutationError('owner-authority-required'),
     )
   })
 
   test.each([
-    { requiredScopes: [''], reason: 'invalid scope' },
-    { requiredScopes: ['x'.repeat(201)], reason: 'oversized scope' },
-    { strictRemediationDurationSeconds: 1.5, reason: 'fractional strict duration' },
-    { strictRemediationDurationSeconds: -1, reason: 'negative strict duration' },
-    { strictRemediationDurationSeconds: 30 * 24 * 60 * 60 + 1, reason: 'long strict duration' },
-    { staleEvidenceGraceDurationSeconds: 1.5, reason: 'fractional stale duration' },
-    { staleEvidenceGraceDurationSeconds: -1, reason: 'negative stale duration' },
-    { staleEvidenceGraceDurationSeconds: 24 * 60 * 60 + 1, reason: 'long stale duration' },
+    { reason: 'invalid scope', requiredScopes: [''] },
+    { reason: 'oversized scope', requiredScopes: ['x'.repeat(201)] },
+    { reason: 'fractional strict duration', strictRemediationDurationSeconds: 1.5 },
+    { reason: 'negative strict duration', strictRemediationDurationSeconds: -1 },
+    { reason: 'long strict duration', strictRemediationDurationSeconds: 30 * 24 * 60 * 60 + 1 },
+    { reason: 'fractional stale duration', staleEvidenceGraceDurationSeconds: 1.5 },
+    { reason: 'negative stale duration', staleEvidenceGraceDurationSeconds: -1 },
+    { reason: 'long stale duration', staleEvidenceGraceDurationSeconds: 24 * 60 * 60 + 1 },
     { authorityEvidenceFreshDurationSeconds: 1.5, reason: 'fractional authority duration' },
     { authorityEvidenceFreshDurationSeconds: 299, reason: 'short authority duration' },
     { authorityEvidenceFreshDurationSeconds: 86_401, reason: 'long authority duration' },
-    { reason: ' ', label: 'missing reason' },
+    { label: 'missing reason', reason: ' ' },
   ])('rejects invalid policy input: $reason', async (overrides) => {
     await expect(
       updateOrganizationRegistrationPolicy({ ...validInput(), ...overrides }),
-    ).rejects.toEqual(new OrganizationRegistrationPolicyMutationError('invalid-policy'))
+    ).rejects.toStrictEqual(new OrganizationRegistrationPolicyMutationError('invalid-policy'))
   })
 
   test('fails when the locked policy cannot be updated', async () => {
@@ -153,17 +153,17 @@ describe('organization registration policy store', () => {
   test('invalidates derived sources and reconciles shortened evidence windows', async () => {
     mocks.updated = [
       settings({
-        registrationPolicyVersion: 4,
-        derivedDirectorAuthorityEnabled: false,
         authorityEvidenceFreshDurationSeconds: 1800,
+        derivedDirectorAuthorityEnabled: false,
+        registrationPolicyVersion: 4,
         staleEvidenceGraceDurationSeconds: 600,
       }),
     ]
 
     await updateOrganizationRegistrationPolicy({
       ...validInput(),
-      derivedDirectorAuthorityEnabled: false,
       authorityEvidenceFreshDurationSeconds: 1800,
+      derivedDirectorAuthorityEnabled: false,
       staleEvidenceGraceDurationSeconds: 600,
     })
 
@@ -174,9 +174,9 @@ describe('organization registration policy store', () => {
     expect(mocks.reconcileDeadlines).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
+        freshDurationSeconds: 1800,
         organizationVersion: 8,
         policyVersion: 4,
-        freshDurationSeconds: 1800,
         staleGraceDurationSeconds: 600,
       }),
     )
@@ -186,7 +186,7 @@ describe('organization registration policy store', () => {
     mocks.updated = [settings({ registrationPolicyVersion: 4 })]
     mocks.actorCompliance = [{ state: 'suspended' }]
 
-    await expect(updateOrganizationRegistrationPolicy(validInput())).rejects.toEqual(
+    await expect(updateOrganizationRegistrationPolicy(validInput())).rejects.toStrictEqual(
       new OrganizationRegistrationPolicyMutationError('owner-policy-noncompliant'),
     )
     expect(mocks.recomputeAll).toHaveBeenCalledOnce()
@@ -195,8 +195,8 @@ describe('organization registration policy store', () => {
   test('rolls back a policy that expires the acting owner source', async () => {
     mocks.updated = [
       settings({
-        registrationPolicyVersion: 4,
         authorityEvidenceFreshDurationSeconds: 1800,
+        registrationPolicyVersion: 4,
       }),
     ]
     mocks.authority.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
@@ -206,7 +206,9 @@ describe('organization registration policy store', () => {
         ...validInput(),
         authorityEvidenceFreshDurationSeconds: 1800,
       }),
-    ).rejects.toEqual(new OrganizationRegistrationPolicyMutationError('owner-policy-noncompliant'))
+    ).rejects.toStrictEqual(
+      new OrganizationRegistrationPolicyMutationError('owner-policy-noncompliant'),
+    )
     expect(mocks.appendAudit).not.toHaveBeenCalled()
     expect(mocks.recomputeAll).not.toHaveBeenCalled()
   })
@@ -215,24 +217,24 @@ describe('organization registration policy store', () => {
 function validInput() {
   return {
     actorUserId,
-    requiredScopes: ['scope-b'],
-    strictRemediationDurationSeconds: 7200,
-    staleEvidenceGraceDurationSeconds: 1800,
-    derivedDirectorAuthorityEnabled: true,
     authorityEvidenceFreshDurationSeconds: 3600,
+    derivedDirectorAuthorityEnabled: true,
     reason: 'Policy review',
+    requiredScopes: ['scope-b'],
+    staleEvidenceGraceDurationSeconds: 1800,
+    strictRemediationDurationSeconds: 7200,
   }
 }
 
 function settings(overrides: Record<string, unknown> = {}) {
   return {
+    authorityEvidenceFreshDurationSeconds: 3600,
+    derivedDirectorAuthorityEnabled: true,
     organizationVersion: 8,
     registrationPolicyVersion: 3,
     requiredRegistrationScopes: ['scope-a'],
-    strictRemediationDurationSeconds: 3600,
     staleEvidenceGraceDurationSeconds: 900,
-    derivedDirectorAuthorityEnabled: true,
-    authorityEvidenceFreshDurationSeconds: 3600,
+    strictRemediationDurationSeconds: 3600,
     ...overrides,
   }
 }
@@ -247,7 +249,9 @@ function transaction() {
 
 function query(result: unknown[]) {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'where', 'for']) builder[method] = () => builder
+  for (const method of ['from', 'where', 'for']) {
+    builder[method] = () => builder
+  }
   // oxlint-disable-next-line unicorn/no-thenable -- Drizzle query builders are awaitable.
   builder.then = (resolve: (value: unknown[]) => unknown, reject: (error: unknown) => unknown) =>
     Promise.resolve(result).then(resolve, reject)

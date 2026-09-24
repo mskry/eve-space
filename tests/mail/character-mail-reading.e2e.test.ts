@@ -42,9 +42,9 @@ interface HeldMutation {
 const characterId = 7
 const metadata = {
   cachedUntil: '2026-08-28T12:00:30.000Z',
+  quota: {},
   source: 'esi',
   stale: false,
-  quota: {},
 }
 const hostileBody =
   '<img src=x onerror="window.__mailBodyExecuted=true">This remains text.\n\n<script>window.__mailBodyExecuted=true</script>'
@@ -54,9 +54,9 @@ const initialMessages = Array.from({ length: 18 }, (_, index) =>
 const archivedMessage = mailHeader(80, 'Archived dispatch', [2])
 const olderMessage = mailHeader(79, 'Older logistics report')
 const longRecipients = Array.from({ length: 12 }, (_, index) => ({
-  id: 1_000 + index,
-  type: 'character',
+  id: 1000 + index,
   name: `Recipient ${String(index + 1).padStart(2, '0')} With A Long Capsuleer Name`,
+  type: 'character',
 }))
 const recordedRequests: RecordedRequest[] = []
 let apiMode: ApiMode = 'mailbox'
@@ -79,39 +79,37 @@ const apiServer = await startCorsJsonApi(async (request) => {
   if (url.pathname === '/auth/config') {
     return {
       body: {
+        attachUrl: `${apiOrigin}/auth/eve/attach`,
         configured: true,
         loginUrl: `${apiOrigin}/auth/eve/login`,
-        attachUrl: `${apiOrigin}/auth/eve/attach`,
       },
     }
   }
   if (url.pathname === '/auth/session') {
-    if (apiMode === 'anonymous') return { body: { authenticated: false } }
+    if (apiMode === 'anonymous') {
+      return { body: { authenticated: false } }
+    }
     return {
       body: {
-        authenticated: true,
         account: {
-          userId: 'mail-e2e-user',
           mainCharacter: { characterId: sessionCharacterId(), name: 'Reading Pilot' },
+          userId: 'mail-e2e-user',
         },
+        authenticated: true,
       },
     }
   }
   if (url.pathname === '/api/me/cache-admission') {
     return { body: cacheAdmissionForCharacter('mail-e2e-user', sessionCharacterId()) }
   }
-  if (url.pathname === '/api/admin/session') return { body: { authenticated: false } }
+  if (url.pathname === '/api/admin/session') {
+    return { body: { authenticated: false } }
+  }
   if (url.pathname === '/api/modules') {
     return {
       body: {
         enabledModuleIds: [],
         shellNavigationOrder: {
-          dashboard: [
-            { ownerId: 'core', navigationId: 'core-overview' },
-            { ownerId: 'core', navigationId: 'core-characters' },
-            { ownerId: 'core', navigationId: 'core-settings' },
-            { ownerId: 'core', navigationId: 'core-admin' },
-          ],
           character: [
             { ownerId: 'core', navigationId: 'core-character-overview' },
             { ownerId: 'core', navigationId: 'core-character-skills' },
@@ -119,240 +117,262 @@ const apiServer = await startCorsJsonApi(async (request) => {
             { ownerId: 'core', navigationId: 'core-character-history' },
             { ownerId: 'core', navigationId: 'core-character-mail' },
           ],
+          dashboard: [
+            { ownerId: 'core', navigationId: 'core-overview' },
+            { ownerId: 'core', navigationId: 'core-characters' },
+            { ownerId: 'core', navigationId: 'core-settings' },
+            { ownerId: 'core', navigationId: 'core-admin' },
+          ],
         },
       },
     }
   }
   if (url.pathname === '/api/me/characters') {
     if (apiMode === 'roster-error') {
-      return { status: 503, body: { code: 'ROSTER_UNAVAILABLE', message: 'Roster unavailable.' } }
+      return { body: { code: 'ROSTER_UNAVAILABLE', message: 'Roster unavailable.' }, status: 503 }
     }
     return { body: { characters: [{ ...ownedCharacter(), characterId: sessionCharacterId() }] } }
   }
   if (url.pathname.startsWith(`/api/me/characters/${characterId}/mail`)) {
     if (apiMode === 'scope-required') {
       return {
-        status: 403,
         body: {
+          authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
           code: 'EVE_SCOPE_REQUIRED',
           message: 'Authorize mail access for this character.',
           requiredScope: 'esi-mail.read_mail.v1',
-          authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
         },
+        status: 403,
       }
     }
-    if (
-      url.pathname === `/api/me/characters/${characterId}/mail/recipients/resolve` &&
-      request.method === 'POST'
-    ) {
-      const names =
-        requestBody &&
-        typeof requestBody === 'object' &&
-        Array.isArray(Reflect.get(requestBody, 'names'))
-          ? (Reflect.get(requestBody, 'names') as string[])
-          : []
-      return {
-        body: {
-          recipients: names.includes('Alliance Logistics')
-            ? []
-            : names.includes('Wingmate')
-              ? [{ id: 44, type: 'character', name: 'Wingmate' }]
-              : [{ id: 91, type: 'corporation', name: 'Operations Control' }],
-        },
-      }
-    }
-    if (
-      url.pathname === `/api/me/characters/${characterId}/mail/recipients/search` &&
-      request.method === 'GET'
-    ) {
-      if (apiMode === 'search-scope-required') {
-        return {
-          status: 403,
-          body: {
-            code: 'EVE_SCOPE_REQUIRED',
-            message: 'Authorize recipient search for this character.',
-            requiredScope: 'esi-search.search_structures.v1',
-            authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
-          },
-        }
-      }
-      return {
-        body: {
-          characterId,
-          recipients: [{ id: 91, type: 'corporation', name: 'Operations Control' }],
-          ...metadata,
-        },
-      }
-    }
-    if (
-      url.pathname === `/api/me/characters/${characterId}/mail/cspa` &&
-      request.method === 'POST'
-    ) {
-      if (apiMode === 'cspa-error') {
-        return {
-          status: 502,
-          body: { code: 'ESI_UNAVAILABLE', message: 'Recipient charge unavailable.' },
-        }
-      }
-      return { body: { characterId, cost: apiMode === 'cspa-charge' ? 125 : 0 } }
-    }
-    if (url.pathname === `/api/me/characters/${characterId}/mail` && request.method === 'POST') {
-      if (apiMode === 'send-delivery-unknown') {
-        return {
-          status: 502,
-          body: {
-            code: 'MAIL_DELIVERY_UNKNOWN',
-            message:
-              'Mail delivery could not be confirmed. Inspect sent mail before sending again.',
-          },
-        }
-      }
-      if (apiMode === 'send-scope-required') {
-        return {
-          status: 403,
-          body: {
-            code: 'EVE_SCOPE_REQUIRED',
-            message: 'Authorize sending mail for this character.',
-            requiredScope: 'esi-mail.send_mail.v1',
-            authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
-          },
-        }
-      }
-      if (apiMode === 'mail-rejected') {
-        return {
-          status: 422,
-          body: {
-            code: 'MAIL_REJECTED',
-            message: 'Recipient CSPA charge was not approved.',
-          },
-        }
-      }
-      return { status: 201, body: { characterId, mailId: 9001 } }
+    const composeResponse = composeMailApiResponse(url, requestBody, request.method)
+    if (composeResponse) {
+      return composeResponse
     }
     const detailMatch = url.pathname.match(/\/mail\/(\d+)$/)
-    if (detailMatch && request.method === 'PUT') {
-      await waitForHeldMutation('PUT', Number(detailMatch[1]))
-      if (apiMode === 'organize-scope-required') {
-        return {
-          status: 403,
-          body: {
-            code: 'EVE_SCOPE_REQUIRED',
-            message: 'Authorize mail organization for this character.',
-            requiredScope: 'esi-mail.organize_mail.v1',
-            authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
-          },
-        }
-      }
-      return { status: 204, body: null }
+    const mutationResponse = await mutateMailApiResponse(url, request.method, detailMatch)
+    if (mutationResponse) {
+      return mutationResponse
     }
-    if (detailMatch && request.method === 'DELETE') {
-      await waitForHeldMutation('DELETE', Number(detailMatch[1]))
-      if (apiMode === 'organize-scope-required') {
-        return {
-          status: 403,
-          body: {
-            code: 'EVE_SCOPE_REQUIRED',
-            message: 'Authorize mail organization for this character.',
-            requiredScope: 'esi-mail.organize_mail.v1',
-            authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
-          },
-        }
-      }
-      return { status: 204, body: null }
-    }
-    const labelMatch = url.pathname.match(/\/mail\/labels\/(\d+)$/)
-    if (labelMatch && request.method === 'DELETE') {
-      if (apiMode === 'label-delete-refused') {
-        return {
-          status: 409,
-          body: { code: 'MAIL_MUTATION_REJECTED', message: 'EVE rejected the mail change.' },
-        }
-      }
-      return { status: 204, body: null }
-    }
-    if (
-      url.pathname === `/api/me/characters/${characterId}/mail/labels` &&
-      request.method === 'POST'
-    ) {
-      return { status: 201, body: { characterId, labelId: 3 } }
-    }
-    if (
-      url.pathname === `/api/me/characters/${characterId}/mail/labels` &&
-      request.method === 'GET'
-    ) {
-      return {
-        body: {
-          characterId,
-          labels: [
-            { labelId: 1, name: 'Inbox', color: '#ffffff', unreadCount: 4 },
-            { labelId: 2, name: 'Archive', color: '#999999', unreadCount: 0 },
-          ],
-          totalUnreadCount: 4,
-          ...metadata,
-        },
-      }
-    }
-    if (url.pathname === `/api/me/characters/${characterId}/mail/lists`) {
-      return {
-        body: {
-          characterId,
-          mailingLists: [{ mailingListId: 77, name: 'Alliance Logistics' }],
-          ...metadata,
-        },
-      }
-    }
-    if (detailMatch) {
-      const mailId = Number(detailMatch[1])
-      if (apiMode === 'detail-error') {
-        return {
-          status: 502,
-          body: { code: 'ESI_UNAVAILABLE', message: 'Mail detail is unavailable.' },
-        }
-      }
-      return {
-        body: {
-          characterId,
-          mailId,
-          sender:
-            apiMode === 'unknown-sender'
-              ? { id: 91, type: 'unknown', name: null }
-              : { id: 91, type: 'corporation', name: 'Operations Control' },
-          recipients:
-            apiMode === 'long-recipients'
-              ? longRecipients
-              : [{ id: characterId, type: 'character', name: 'Reading Pilot' }],
-          subject: mailId === 120 ? 'Priority operations update' : `Mail ${mailId}`,
-          sentAt: '2026-08-28T11:55:00.000Z',
-          labelIds: [1],
-          isRead: false,
-          body:
-            apiMode === 'long-recipients'
-              ? Array.from({ length: 80 }, (_, index) => `Message line ${index + 1}`).join('\n\n')
-              : hostileBody,
-          ...metadata,
-        },
-      }
-    }
-    if (url.pathname === `/api/me/characters/${characterId}/mail` && request.method === 'GET') {
-      const labels = url.searchParams.getAll('labels')
-      const lastMailId = url.searchParams.get('lastMailId')
-      return {
-        body: {
-          characterId,
-          messages: labels.includes('2')
-            ? [archivedMessage]
-            : lastMailId === '100'
-              ? [olderMessage]
-              : initialMessages,
-          nextLastMailId: labels.includes('2') || lastMailId === '100' ? null : 100,
-          ...metadata,
-        },
-      }
+    const dataResponse = mailDataApiResponse(url, request.method, detailMatch)
+    if (dataResponse) {
+      return dataResponse
     }
   }
 
-  return { status: 404, body: { code: 'NOT_FOUND', message: 'Not found.' } }
+  return { body: { code: 'NOT_FOUND', message: 'Not found.' }, status: 404 }
 })
+
+function composeMailApiResponse(url: URL, requestBody: unknown, method?: string) {
+  if (
+    url.pathname === `/api/me/characters/${characterId}/mail/recipients/resolve` &&
+    method === 'POST'
+  ) {
+    const names =
+      requestBody &&
+      typeof requestBody === 'object' &&
+      Array.isArray(Reflect.get(requestBody, 'names'))
+        ? (Reflect.get(requestBody, 'names') as string[])
+        : []
+    return { body: { recipients: resolvedRecipientMatches(names) } }
+  }
+  if (
+    url.pathname === `/api/me/characters/${characterId}/mail/recipients/search` &&
+    method === 'GET'
+  ) {
+    if (apiMode === 'search-scope-required') {
+      return {
+        body: {
+          authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
+          code: 'EVE_SCOPE_REQUIRED',
+          message: 'Authorize recipient search for this character.',
+          requiredScope: 'esi-search.search_structures.v1',
+        },
+        status: 403,
+      }
+    }
+    return {
+      body: {
+        characterId,
+        recipients: [{ id: 91, name: 'Operations Control', type: 'corporation' }],
+        ...metadata,
+      },
+    }
+  }
+  if (url.pathname === `/api/me/characters/${characterId}/mail/cspa` && method === 'POST') {
+    if (apiMode === 'cspa-error') {
+      return {
+        body: { code: 'ESI_UNAVAILABLE', message: 'Recipient charge unavailable.' },
+        status: 502,
+      }
+    }
+    return { body: { characterId, cost: apiMode === 'cspa-charge' ? 125 : 0 } }
+  }
+  if (url.pathname === `/api/me/characters/${characterId}/mail` && method === 'POST') {
+    if (apiMode === 'send-delivery-unknown') {
+      return {
+        body: {
+          code: 'MAIL_DELIVERY_UNKNOWN',
+          message: 'Mail delivery could not be confirmed. Inspect sent mail before sending again.',
+        },
+        status: 502,
+      }
+    }
+    if (apiMode === 'send-scope-required') {
+      return {
+        body: {
+          authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
+          code: 'EVE_SCOPE_REQUIRED',
+          message: 'Authorize sending mail for this character.',
+          requiredScope: 'esi-mail.send_mail.v1',
+        },
+        status: 403,
+      }
+    }
+    if (apiMode === 'mail-rejected') {
+      return {
+        body: { code: 'MAIL_REJECTED', message: 'Recipient CSPA charge was not approved.' },
+        status: 422,
+      }
+    }
+    return { body: { characterId, mailId: 9001 }, status: 201 }
+  }
+  return undefined
+}
+
+function resolvedRecipientMatches(names: string[]) {
+  if (names.includes('Alliance Logistics')) {
+    return []
+  }
+  if (names.includes('Wingmate')) {
+    return [{ id: 44, name: 'Wingmate', type: 'character' }]
+  }
+  return [{ id: 91, name: 'Operations Control', type: 'corporation' }]
+}
+
+async function mutateMailApiResponse(
+  url: URL,
+  method: string | undefined,
+  detailMatch: RegExpMatchArray | null,
+) {
+  if (detailMatch && (method === 'PUT' || method === 'DELETE')) {
+    await waitForHeldMutation(method, Number(detailMatch[1]))
+    if (apiMode === 'organize-scope-required') {
+      return {
+        body: {
+          authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
+          code: 'EVE_SCOPE_REQUIRED',
+          message: 'Authorize mail organization for this character.',
+          requiredScope: 'esi-mail.organize_mail.v1',
+        },
+        status: 403,
+      }
+    }
+    return { body: null, status: 204 }
+  }
+  const labelMatch = url.pathname.match(/\/mail\/labels\/(\d+)$/)
+  if (labelMatch && method === 'DELETE') {
+    if (apiMode === 'label-delete-refused') {
+      return {
+        body: { code: 'MAIL_MUTATION_REJECTED', message: 'EVE rejected the mail change.' },
+        status: 409,
+      }
+    }
+    return { body: null, status: 204 }
+  }
+  if (url.pathname === `/api/me/characters/${characterId}/mail/labels` && method === 'POST') {
+    return { body: { characterId, labelId: 3 }, status: 201 }
+  }
+  return undefined
+}
+
+function mailDataApiResponse(
+  url: URL,
+  method: string | undefined,
+  detailMatch: RegExpMatchArray | null,
+) {
+  if (url.pathname === `/api/me/characters/${characterId}/mail/labels` && method === 'GET') {
+    return {
+      body: {
+        characterId,
+        labels: [
+          { color: '#ffffff', labelId: 1, name: 'Inbox', unreadCount: 4 },
+          { color: '#999999', labelId: 2, name: 'Archive', unreadCount: 0 },
+        ],
+        totalUnreadCount: 4,
+        ...metadata,
+      },
+    }
+  }
+  if (url.pathname === `/api/me/characters/${characterId}/mail/lists`) {
+    return {
+      body: {
+        characterId,
+        mailingLists: [{ mailingListId: 77, name: 'Alliance Logistics' }],
+        ...metadata,
+      },
+    }
+  }
+  if (detailMatch) {
+    return mailDetailApiResponse(Number(detailMatch[1]))
+  }
+  if (url.pathname === `/api/me/characters/${characterId}/mail` && method === 'GET') {
+    return mailHeadersApiResponse(url)
+  }
+  return undefined
+}
+
+function mailDetailApiResponse(mailId: number) {
+  if (apiMode === 'detail-error') {
+    return {
+      body: { code: 'ESI_UNAVAILABLE', message: 'Mail detail is unavailable.' },
+      status: 502,
+    }
+  }
+  return {
+    body: {
+      body:
+        apiMode === 'long-recipients'
+          ? Array.from({ length: 80 }, (_, index) => `Message line ${index + 1}`).join('\n\n')
+          : hostileBody,
+      characterId,
+      isRead: false,
+      labelIds: [1],
+      mailId,
+      recipients:
+        apiMode === 'long-recipients'
+          ? longRecipients
+          : [{ id: characterId, type: 'character', name: 'Reading Pilot' }],
+      sender:
+        apiMode === 'unknown-sender'
+          ? { id: 91, type: 'unknown', name: null }
+          : { id: 91, type: 'corporation', name: 'Operations Control' },
+      sentAt: '2026-08-28T11:55:00.000Z',
+      subject: mailId === 120 ? 'Priority operations update' : `Mail ${mailId}`,
+      ...metadata,
+    },
+  }
+}
+
+function mailHeadersApiResponse(url: URL) {
+  const labels = url.searchParams.getAll('labels')
+  const lastMailId = url.searchParams.get('lastMailId')
+  let messages = initialMessages
+  if (labels.includes('2')) {
+    messages = [archivedMessage]
+  } else if (lastMailId === '100') {
+    messages = [olderMessage]
+  }
+  return {
+    body: {
+      characterId,
+      messages,
+      nextLastMailId: labels.includes('2') || lastMailId === '100' ? null : 100,
+      ...metadata,
+    },
+  }
+}
+
 apiOrigin = apiServer.origin
 process.env.NUXT_PUBLIC_API_BASE = apiOrigin
 process.env.NUXT_PUBLIC_EVE_IMAGE_BASE = apiOrigin
@@ -361,8 +381,9 @@ afterAll(apiServer.close)
 
 describe('character mail reading', async () => {
   await setup({
-    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
+    browser: true,
     build: false,
+    captureServerLogs: false,
     nuxtConfig: {
       nitro: {
         output: {
@@ -370,9 +391,8 @@ describe('character mail reading', async () => {
         },
       },
     },
-    browser: true,
+    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
     server: true,
-    captureServerLogs: false,
     setupTimeout: 120_000,
   })
 
@@ -413,7 +433,7 @@ describe('character mail reading', async () => {
       await expect
         .poll(
           () => skeleton.evaluate((element) => getComputedStyle(element, '::after').animationName),
-          { timeout: 5_000 },
+          { timeout: 5000 },
         )
         .toBe('none')
     } finally {
@@ -445,14 +465,14 @@ describe('character mail reading', async () => {
     const unownedPage = await openPage(`/characters/${characterId}/mail`)
     await unownedPage
       .getByRole('heading', { name: 'Character not found' })
-      .waitFor({ timeout: 5_000 })
+      .waitFor({ timeout: 5000 })
 
     expect(mailRequests()).toHaveLength(0)
   })
 
   it('renders and reads paginated mail in the bounded desktop workspace', async () => {
     const page = await openPage(`/characters/${characterId}/mail`)
-    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.setViewportSize({ height: 900, width: 1440 })
     const workspace = page.locator('.mail-workspace')
     await workspace.waitFor()
     await page.locator('.mail-header-row').first().waitFor()
@@ -460,9 +480,9 @@ describe('character mail reading', async () => {
     const desktopLayout = await workspace.evaluate((element) => {
       const style = getComputedStyle(element)
       return {
+        columns: style.gridTemplateColumns.split(' ').length,
         display: style.display,
         height: element.getBoundingClientRect().height,
-        columns: style.gridTemplateColumns.split(' ').length,
       }
     })
     const headerScroll = await page
@@ -472,7 +492,7 @@ describe('character mail reading', async () => {
         scrollHeight: element.scrollHeight,
       }))
 
-    expect(desktopLayout).toMatchObject({ display: 'grid', columns: 3 })
+    expect(desktopLayout).toMatchObject({ columns: 3, display: 'grid' })
     expect(desktopLayout.height).toBeLessThan(900)
     expect(headerScroll.scrollHeight).toBeGreaterThan(headerScroll.clientHeight)
     expect(await page.locator('.mail-header-row').count()).toBe(18)
@@ -521,7 +541,7 @@ describe('character mail reading', async () => {
   it('reveals truncated recipients and keeps icon actions visible while reading', async () => {
     apiMode = 'long-recipients'
     const page = await openPage(`/characters/${characterId}/mail`)
-    await page.setViewportSize({ width: 1280, height: 600 })
+    await page.setViewportSize({ height: 600, width: 1280 })
     await page.locator('.mail-header-row').first().waitFor()
     await page.getByRole('button', { name: /Priority operations update/ }).click()
     await page.getByRole('heading', { name: 'Priority operations update' }).waitFor()
@@ -529,10 +549,11 @@ describe('character mail reading', async () => {
     const recipients = page.locator('.mail-reader-recipients')
     const recipientMetrics = await recipients.evaluate((element) => ({
       clientWidth: element.clientWidth,
-      scrollWidth: element.scrollWidth,
       maximumWidth: (() => {
         const heading = element.closest<HTMLElement>('.mail-reader-heading')
-        if (!heading) throw new Error('Mail reader heading was not rendered.')
+        if (!heading) {
+          throw new Error('Mail reader heading was not rendered.')
+        }
         const style = getComputedStyle(heading)
         return (
           (heading.clientWidth -
@@ -541,6 +562,7 @@ describe('character mail reading', async () => {
           2
         )
       })(),
+      scrollWidth: element.scrollWidth,
     }))
     expect(recipientMetrics.scrollWidth).toBeGreaterThan(recipientMetrics.clientWidth)
     expect(recipientMetrics.clientWidth).toBeLessThanOrEqual(recipientMetrics.maximumWidth)
@@ -559,10 +581,12 @@ describe('character mail reading', async () => {
       const box = element.getBoundingClientRect()
       return { height: box.height, width: box.width }
     })
-    expect(actionButtonSize).toEqual({ height: 32, width: 32 })
+    expect(actionButtonSize).toStrictEqual({ height: 32, width: 32 })
     const actionBottomOffset = await page.locator('.mail-reader-heading').evaluate((element) => {
       const actionGroup = element.querySelector<HTMLElement>('.mail-reader-actions')
-      if (!actionGroup) throw new Error('Mail reader actions were not rendered.')
+      if (!actionGroup) {
+        throw new Error('Mail reader actions were not rendered.')
+      }
       const headingBox = element.getBoundingClientRect()
       const actionBox = actionGroup.getBoundingClientRect()
       const style = getComputedStyle(element)
@@ -573,7 +597,7 @@ describe('character mail reading', async () => {
       return Math.abs(contentBottom - actionBox.bottom)
     })
     expect(actionBottomOffset).toBeLessThanOrEqual(1)
-    const reply = page.getByRole('button', { name: 'REPLY', exact: true })
+    const reply = page.getByRole('button', { exact: true, name: 'REPLY' })
     expect(await reply.isEnabled()).toBe(true)
     await reply.hover()
     await expect
@@ -582,7 +606,7 @@ describe('character mail reading', async () => {
           (await page.locator('.ui-tooltip-content').allTextContents()).some((label) =>
             label.includes('REPLY'),
           ),
-        { timeout: 2_000 },
+        { timeout: 2000 },
       )
       .toBe(true)
 
@@ -740,7 +764,7 @@ describe('character mail reading', async () => {
       ({ method, url }) =>
         method === 'POST' && url.pathname === `/api/me/characters/${characterId}/mail/labels`,
     )
-    expect(createRequest?.body).toEqual({ color: '#fe0000', name: 'Priority' })
+    expect(createRequest?.body).toStrictEqual({ color: '#fe0000', name: 'Priority' })
     expect(
       mailRequests().filter(
         ({ method, url }) =>
@@ -789,7 +813,7 @@ describe('character mail reading', async () => {
     const assignment = mailMutationRequests('PUT').find(
       ({ body }) => body && typeof body === 'object' && Object.hasOwn(body, 'labels'),
     )
-    expect(assignment?.body).toEqual({ labels: [1, 2] })
+    expect(assignment?.body).toStrictEqual({ labels: [1, 2] })
     expect(assignment?.body).not.toHaveProperty('read')
     expect(await dialog.getByLabel('Archive').isChecked()).toBe(true)
     expect(await page.locator('.mail-reader').getByText('Inbox', { exact: true }).isVisible()).toBe(
@@ -805,7 +829,7 @@ describe('character mail reading', async () => {
     await page.locator('.mail-header-row').first().waitFor()
     await page.getByRole('button', { name: /Priority operations update/ }).click()
     await page.getByRole('heading', { name: 'Priority operations update' }).waitFor()
-    await page.getByRole('button', { name: 'REPLY', exact: true }).click()
+    await page.getByRole('button', { exact: true, name: 'REPLY' }).click()
 
     const dialog = page.getByRole('dialog')
     await dialog.waitFor()
@@ -824,7 +848,7 @@ describe('character mail reading', async () => {
     await page.getByRole('button', { name: /Priority operations update/ }).click()
     await page.getByRole('heading', { name: 'Priority operations update' }).waitFor()
 
-    const reply = page.getByRole('button', { name: 'REPLY', exact: true })
+    const reply = page.getByRole('button', { exact: true, name: 'REPLY' })
     expect(await reply.isDisabled()).toBe(true)
     expect(await reply.getAttribute('title')).toContain('sender type could not be resolved')
   })
@@ -835,7 +859,7 @@ describe('character mail reading', async () => {
     await page.locator('.mail-header-row').first().waitFor()
     await page.getByRole('button', { name: /Priority operations update/ }).click()
     await page.getByRole('heading', { name: 'Priority operations update' }).waitFor()
-    await page.getByRole('button', { name: 'REPLY', exact: true }).click()
+    await page.getByRole('button', { exact: true, name: 'REPLY' }).click()
     const dialog = page.getByRole('dialog')
     await dialog.waitFor()
 
@@ -859,7 +883,7 @@ describe('character mail reading', async () => {
     await page.locator('.mail-header-row').first().waitFor()
     await page.getByRole('button', { name: /Priority operations update/ }).click()
     await page.getByRole('heading', { name: 'Priority operations update' }).waitFor()
-    await page.getByRole('button', { name: 'REPLY', exact: true }).click()
+    await page.getByRole('button', { exact: true, name: 'REPLY' }).click()
     const dialog = page.getByRole('dialog')
     await dialog.getByRole('button', { name: 'SEND MAIL' }).click()
 
@@ -879,14 +903,14 @@ describe('character mail reading', async () => {
   it('confirms before discarding content but closes an empty draft immediately', async () => {
     const page = await openPage(`/characters/${characterId}/mail`)
     await page.locator('.mail-workspace').waitFor()
-    await page.getByRole('button', { name: 'COMPOSE', exact: true }).click()
+    await page.getByRole('button', { exact: true, name: 'COMPOSE' }).click()
     let dialog = page.getByRole('dialog')
     await dialog.waitFor()
     await dialog.getByRole('button', { name: 'CANCEL' }).click()
     await expect.poll(() => page.getByRole('dialog').count()).toBe(0)
     expect(await page.getByRole('alertdialog').count()).toBe(0)
 
-    await page.getByRole('button', { name: 'COMPOSE', exact: true }).click()
+    await page.getByRole('button', { exact: true, name: 'COMPOSE' }).click()
     dialog = page.getByRole('dialog')
     await dialog.getByLabel('Subject').fill('Unsaved draft')
     await dialog.getByRole('button', { name: 'CANCEL' }).click()
@@ -903,9 +927,9 @@ describe('character mail reading', async () => {
 
   it('contains the compose form and actions within the dialog on desktop and mobile', async () => {
     const page = await openPage(`/characters/${characterId}/mail`)
-    await page.setViewportSize({ width: 860, height: 740 })
+    await page.setViewportSize({ height: 740, width: 860 })
     await page.locator('.mail-workspace').waitFor()
-    const composeButton = page.getByRole('button', { name: 'COMPOSE', exact: true })
+    const composeButton = page.getByRole('button', { exact: true, name: 'COMPOSE' })
     const restingBackground = await composeButton.evaluate(
       (element) => getComputedStyle(element).backgroundColor,
     )
@@ -928,7 +952,7 @@ describe('character mail reading', async () => {
       formFitsDialog: true,
     })
 
-    await page.setViewportSize({ width: 390, height: 844 })
+    await page.setViewportSize({ height: 844, width: 390 })
     await dialog.getByRole('button', { name: 'SEND MAIL' }).scrollIntoViewIfNeeded()
     expect(await measureComposeDialog(dialog)).toMatchObject({
       bodyOverflowY: 'auto',
@@ -943,7 +967,7 @@ describe('character mail reading', async () => {
     apiMode = 'search-scope-required'
     const page = await openPage(`/characters/${characterId}/mail`)
     await page.locator('.mail-workspace').waitFor()
-    await page.getByRole('button', { name: 'COMPOSE', exact: true }).click()
+    await page.getByRole('button', { exact: true, name: 'COMPOSE' }).click()
     const dialog = page.getByRole('dialog')
     const recipientInput = dialog.getByRole('searchbox', { name: 'Recipients' })
     await recipientInput.fill('Operations')
@@ -970,7 +994,7 @@ describe('character mail reading', async () => {
     apiMode = 'cspa-charge'
     const page = await openPage(`/characters/${characterId}/mail`)
     await page.locator('.mail-workspace').waitFor()
-    await page.getByRole('button', { name: 'COMPOSE', exact: true }).click()
+    await page.getByRole('button', { exact: true, name: 'COMPOSE' }).click()
     const dialog = page.getByRole('dialog')
     await dialog.getByRole('searchbox', { name: 'Recipients' }).fill('Wingmate')
     await dialog.getByRole('button', { name: 'ADD EXACT NAME' }).click()
@@ -984,7 +1008,7 @@ describe('character mail reading', async () => {
     expect(await confirmation.textContent()).toContain('125 ISK')
     expect(mailSendRequests()).toHaveLength(0)
     const cspaRequest = mailRequests().find(({ url }) => url.pathname.endsWith('/mail/cspa'))
-    expect(cspaRequest?.body).toEqual({ characterIds: [44] })
+    expect(cspaRequest?.body).toStrictEqual({ characterIds: [44] })
     await confirmation.getByRole('button', { name: 'Approve cost and send' }).click()
     await page.getByText('Mail sent', { exact: true }).waitFor()
     expect(mailSendRequests()[0]?.body).toMatchObject({ approvedCost: 125 })
@@ -994,7 +1018,7 @@ describe('character mail reading', async () => {
     apiMode = 'cspa-error'
     const page = await openPage(`/characters/${characterId}/mail`)
     await page.locator('.mail-workspace').waitFor()
-    await page.getByRole('button', { name: 'COMPOSE', exact: true }).click()
+    await page.getByRole('button', { exact: true, name: 'COMPOSE' }).click()
     const dialog = page.getByRole('dialog')
     await dialog.getByRole('searchbox', { name: 'Recipients' }).fill('Wingmate')
     await dialog.getByRole('button', { name: 'ADD EXACT NAME' }).click()
@@ -1011,7 +1035,7 @@ describe('character mail reading', async () => {
     expect(mailSendRequests()[0]?.body).toMatchObject({ approvedCost: 0 })
 
     apiMode = 'mail-rejected'
-    await page.getByRole('button', { name: 'COMPOSE', exact: true }).click()
+    await page.getByRole('button', { exact: true, name: 'COMPOSE' }).click()
     const rejectedDialog = page.getByRole('dialog')
     await rejectedDialog.getByRole('searchbox', { name: 'Recipients' }).fill('Wingmate')
     await rejectedDialog.getByRole('button', { name: 'ADD EXACT NAME' }).click()
@@ -1097,7 +1121,7 @@ describe('character mail reading', async () => {
     expect(await recoveryLink.getAttribute('href')).toBe(
       `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
     )
-    await page.waitForFunction((deadline) => Date.now() >= deadline, Date.now() + 5_200)
+    await page.waitForFunction((deadline) => Date.now() >= deadline, Date.now() + 5200)
     expect(await recoveryLink.isVisible()).toBe(true)
   })
 
@@ -1193,8 +1217,8 @@ describe('character mail reading', async () => {
       ({ method, url }) =>
         method === 'GET' && url.pathname === `/api/me/characters/${characterId}/mail`,
     ).length
-    await page.getByRole('link', { name: 'OVERVIEW', exact: true }).click()
-    await page.getByRole('link', { name: 'MAIL', exact: true }).click()
+    await page.getByRole('link', { exact: true, name: 'OVERVIEW' }).click()
+    await page.getByRole('link', { exact: true, name: 'MAIL' }).click()
     await page.locator('.mail-workspace').waitFor()
     expect(await page.getByText('Priority operations update', { exact: true }).count()).toBe(0)
     expect(
@@ -1216,7 +1240,7 @@ describe('character mail reading', async () => {
     }))
     expect(desktopMetrics.scrollWidth).toBeLessThanOrEqual(desktopMetrics.clientWidth)
 
-    await page.setViewportSize({ width: 390, height: 844 })
+    await page.setViewportSize({ height: 844, width: 390 })
 
     const layout = await workspace.evaluate((element) => getComputedStyle(element).display)
     const sidebarBox = await page.locator('.mail-sidebar').boundingBox()
@@ -1229,7 +1253,7 @@ describe('character mail reading', async () => {
     const hasHorizontalOverflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     )
-    const mailNavigationLink = recordNavigation.getByRole('link', { name: 'MAIL', exact: true })
+    const mailNavigationLink = recordNavigation.getByRole('link', { exact: true, name: 'MAIL' })
     await mailNavigationLink.focus()
     const focusOutline = await mailNavigationLink.evaluate(
       (element) => getComputedStyle(element).outlineWidth,
@@ -1263,7 +1287,9 @@ async function measureComposeDialog(dialog: Locator) {
   return dialog.evaluate((element) => {
     const body = element.querySelector<HTMLElement>('.ui-dialog-body')
     const compose = element.querySelector<HTMLElement>('.mail-compose')
-    if (!body || !compose) throw new Error('Compose dialog layout was not rendered.')
+    if (!body || !compose) {
+      throw new Error('Compose dialog layout was not rendered.')
+    }
     const dialogRect = element.getBoundingClientRect()
     const composeRect = compose.getBoundingClientRect()
     const tolerance = 1
@@ -1319,13 +1345,13 @@ async function waitForHeldMutation(method: HeldMutation['method'], mailId: numbe
 
 function mailHeader(mailId: number, subject: string, labelIds = [1]) {
   return {
-    mailId,
-    sender: { id: 91, type: 'corporation', name: 'Operations Control' },
-    recipients: [{ id: characterId, type: 'character', name: 'Reading Pilot' }],
-    subject,
-    sentAt: '2026-08-28T11:55:00.000Z',
-    labelIds,
     isRead: mailId % 2 === 0,
+    labelIds,
+    mailId,
+    recipients: [{ id: characterId, type: 'character', name: 'Reading Pilot' }],
+    sender: { id: 91, name: 'Operations Control', type: 'corporation' },
+    sentAt: '2026-08-28T11:55:00.000Z',
+    subject,
   }
 }
 
@@ -1335,27 +1361,30 @@ function sessionCharacterId() {
 
 function ownedCharacter() {
   return {
-    characterId,
-    name: 'Reading Pilot',
-    corporationId: 98_000_001,
-    allianceId: null,
-    isMain: true,
-    birthday: '2020-01-01T00:00:00.000Z',
-    securityStatus: 1.2,
-    raceFactionId: 500_001,
-    location: { solarSystemId: 30_000_142, solarSystemName: 'Jita', locationType: 'space' },
-    ship: { typeId: 670, typeName: 'Capsule', groupId: 29, name: 'Reader One' },
-    walletBalance: 1_000_000,
-    totalSp: 5_000_000,
-    corporation: { id: 98_000_001, name: 'Reading Corporation' },
     alliance: null,
+    allianceId: null,
+    birthday: '2020-01-01T00:00:00.000Z',
+    characterId,
+    corporation: { id: 98_000_001, name: 'Reading Corporation' },
+    corporationId: 98_000_001,
+    isMain: true,
+    location: { locationType: 'space', solarSystemId: 30_000_142, solarSystemName: 'Jita' },
+    name: 'Reading Pilot',
+    raceFactionId: 500_001,
+    securityStatus: 1.2,
+    ship: { groupId: 29, name: 'Reader One', typeId: 670, typeName: 'Capsule' },
+    totalSp: 5_000_000,
+    walletBalance: 1_000_000,
   }
 }
 
 async function readJsonRequest(request: import('node:http').IncomingMessage) {
   const chunks: Buffer[] = []
-  for await (const chunk of request)
+  for await (const chunk of request) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
-  if (chunks.length === 0) return undefined
+  }
+  if (chunks.length === 0) {
+    return undefined
+  }
   return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown
 }

@@ -8,7 +8,9 @@ export async function closeRedisConnection(
   connection: ClosableRedisConnection,
   timeoutMs?: number,
 ): Promise<void> {
-  if (connection.status === 'end') return
+  if (connection.status === 'end') {
+    return
+  }
   if (connection.status === 'wait' || (timeoutMs !== undefined && timeoutMs <= 0)) {
     connection.disconnect()
     return
@@ -29,5 +31,7 @@ export async function closeRedisConnection(
           }),
         ])
   clearTimeout(timer)
-  if (!closed) connection.disconnect()
+  if (!closed) {
+    connection.disconnect()
+  }
 }

@@ -17,13 +17,13 @@ const compliant = `.get(
 
 describe('character route ownership', () => {
   it('accepts a route that validates the parameter and loads ownership after the session', () => {
-    expect(characterRouteOwnershipViolations(route(compliant))).toEqual([])
+    expect(characterRouteOwnershipViolations(route(compliant))).toStrictEqual([])
   })
 
   it('ignores routes that are not character-ID scoped', () => {
     const source = route(`.get('/', loadSession, async (context) => context.json({}))`)
 
-    expect(characterRouteOwnershipViolations(source)).toEqual([])
+    expect(characterRouteOwnershipViolations(source)).toStrictEqual([])
   })
 
   it('rejects a character route with no ownership middleware', () => {
@@ -34,7 +34,7 @@ describe('character route ownership', () => {
     async (context) => context.json({}),
   )`)
 
-    expect(characterRouteOwnershipViolations(source)).toEqual([
+    expect(characterRouteOwnershipViolations(source)).toStrictEqual([
       'api/src/characters/core-routes.ts:3 GET /:characterId/wallet: must load authorization through loadOwnedCharacter before its handler',
     ])
   })
@@ -47,7 +47,7 @@ describe('character route ownership', () => {
     async (context) => context.json({}),
   )`)
 
-    expect(characterRouteOwnershipViolations(source)).toEqual([
+    expect(characterRouteOwnershipViolations(source)).toStrictEqual([
       "api/src/characters/core-routes.ts:3 GET /:characterId/wallet: must validate the character ID with zValidator('param', ...)",
     ])
   })
@@ -61,7 +61,7 @@ describe('character route ownership', () => {
     async (context) => context.json({}),
   )`)
 
-    expect(characterRouteOwnershipViolations(source)).toEqual([
+    expect(characterRouteOwnershipViolations(source)).toStrictEqual([
       'api/src/characters/core-routes.ts:3 GET /:characterId/wallet: must apply loadSession before loadOwnedCharacter',
     ])
   })
@@ -74,7 +74,7 @@ describe('character route ownership', () => {
     async (context) => context.json({}),
   )`)
 
-    expect(characterRouteOwnershipViolations(source)).toEqual([
+    expect(characterRouteOwnershipViolations(source)).toStrictEqual([
       'api/src/characters/core-routes.ts:3 GET /:characterId/wallet: must apply loadSession before loadOwnedCharacter',
     ])
   })
@@ -88,7 +88,7 @@ describe('character route ownership', () => {
     loadOwnedCharacter,
   )`)
 
-    expect(characterRouteOwnershipViolations(source)).toEqual([
+    expect(characterRouteOwnershipViolations(source)).toStrictEqual([
       'api/src/characters/core-routes.ts:3 GET /:characterId/wallet: must load authorization through loadOwnedCharacter before its handler',
     ])
   })
@@ -105,7 +105,7 @@ describe('character route ownership', () => {
     async (context) => context.json({}),
   )`)
 
-    expect(characterRouteOwnershipViolations(source)).toEqual([])
+    expect(characterRouteOwnershipViolations(source)).toStrictEqual([])
   })
 
   it('reports every failed requirement for one route', () => {
@@ -126,7 +126,7 @@ describe('character route ownership', () => {
       'api/src/organization/routes-review.ts',
     )
 
-    expect(characterRouteOwnershipViolations(source)).toEqual([])
+    expect(characterRouteOwnershipViolations(source)).toStrictEqual([])
   })
 
   it('rejects a reviewer route that drops its declared alternative gate', () => {
@@ -139,7 +139,7 @@ describe('character route ownership', () => {
       'api/src/organization/routes-review.ts',
     )
 
-    expect(characterRouteOwnershipViolations(source)).toEqual([
+    expect(characterRouteOwnershipViolations(source)).toStrictEqual([
       'api/src/organization/routes-review.ts:3 POST /members/:userId/characters/:characterId/exception: must load authorization through requireOrganizationHr before its handler',
     ])
   })
@@ -150,7 +150,7 @@ describe('character route ownership', () => {
       'api/src/characters/public-routes.ts',
     )
 
-    expect(characterRouteOwnershipViolations(source)).toEqual([])
+    expect(characterRouteOwnershipViolations(source)).toStrictEqual([])
   })
 
   it('rejects a public route that quietly starts applying ownership', () => {
@@ -165,7 +165,7 @@ describe('character route ownership', () => {
       'api/src/characters/public-routes.ts',
     )
 
-    expect(characterRouteOwnershipViolations(source)).toEqual([
+    expect(characterRouteOwnershipViolations(source)).toStrictEqual([
       'api/src/characters/public-routes.ts:3 GET /:characterId: is declared public but applies loadOwnedCharacter',
     ])
   })
@@ -177,6 +177,8 @@ describe('character route ownership', () => {
     ]
     const violations = characterRouteOwnershipViolations(source)
 
-    expect(violations).toEqual([...violations].toSorted((left, right) => left.localeCompare(right)))
+    expect(violations).toStrictEqual(
+      [...violations].toSorted((left, right) => left.localeCompare(right)),
+    )
   })
 })

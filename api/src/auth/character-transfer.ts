@@ -56,25 +56,28 @@ export async function transferCharacter(input: {
   destinationSessionToken: string
   authorization: CharacterAuthorizationInput
 }) {
-  if (input.authorization.characterId !== input.characterId)
+  if (input.authorization.characterId !== input.characterId) {
     throw new CharacterTransferError('approval-unusable')
+  }
   const [identity] = await db
     .select({
       characterId: characterTransferApprovals.characterId,
-      sourceUserId: characterTransferApprovals.sourceUserId,
       destinationUserId: characterTransferApprovals.destinationUserId,
+      sourceUserId: characterTransferApprovals.sourceUserId,
     })
     .from(characterTransferApprovals)
     .where(eq(characterTransferApprovals.approvalId, input.approvalId))
-  if (!identity || !transferIdentityMatches(identity, input))
+  if (!identity || !transferIdentityMatches(identity, input)) {
     throw new CharacterTransferError('approval-unusable')
+  }
 
   return db.transaction(async (transaction) => {
     await setAuthTransactionLockTimeout(transaction)
     await lockCharacter(transaction, input.characterId)
     const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
-    if (!(await lockTransferUsers(transaction, [input.sourceUserId, input.destinationUserId])))
+    if (!(await lockTransferUsers(transaction, [input.sourceUserId, input.destinationUserId]))) {
       throw new CharacterTransferError('approval-unusable')
+    }
 
     const [approval] = await transaction
       .select()
@@ -82,15 +85,9 @@ export async function transferCharacter(input: {
       .where(eq(characterTransferApprovals.approvalId, input.approvalId))
       .for('update')
     const now = await loadDatabaseWallClock(transaction)
-    if (
-      !approval ||
-      !transferIdentityMatches(approval, input) ||
-      approval.sourceSubjectLifecycleId !== input.sourceSubjectLifecycleId ||
-      approval.consumedAt ||
-      approval.revokedAt ||
-      approval.expiresAt <= now
-    )
+    if (!approval || !usableTransferApproval(approval, input, now)) {
       throw new CharacterTransferError('approval-unusable')
+    }
 
     const [administrator] = await transaction
       .select({ administratorId: deploymentInstallationSettings.ownerAdminId })
@@ -102,19 +99,22 @@ export async function transferCharacter(input: {
         ),
       )
       .for('update')
-    if (!administrator) throw new CharacterTransferError('approval-unusable')
+    if (!administrator) {
+      throw new CharacterTransferError('approval-unusable')
+    }
     if (
       !(await hasActiveSession(transaction, input.destinationSessionToken, input.destinationUserId))
-    )
+    ) {
       throw new CharacterTransferError('approval-unusable')
+    }
 
     const [source] = await transaction
       .select({
-        userId: characters.userId,
         characterId: characters.characterId,
         isMain: characters.isMain,
         subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
         tokenVersion: eveTokens.tokenVersion,
+        userId: characters.userId,
       })
       .from(characters)
       .innerJoin(
@@ -131,115 +131,100 @@ export async function transferCharacter(input: {
       .select({ characterId: characters.characterId })
       .from(characters)
       .where(and(eq(characters.userId, input.destinationUserId), eq(characters.isMain, true)))
-    if (
-      source?.userId !== input.sourceUserId ||
-      source.subjectLifecycleId !== input.sourceSubjectLifecycleId ||
-      !destinationMain ||
-      !sourceRoster?.value
-    )
+    if (!source || !destinationMain || !sourceRoster?.value) {
       throw new CharacterTransferError('approval-unusable')
-    if (source.isMain && sourceRoster.value > 1) throw new CharacterTransferError('main-character')
-    const blocker = await findCharacterDetachmentBlocker(transaction, input.characterId)
-    if (blocker) throw new CharacterTransferError(blocker)
-    const affiliationObservedAt = input.authorization.affiliationCheckedAt ?? now
-    if (organizationVersion) {
-      await recomputeOrganizationAccountCompliance(
-        {
-          deploymentId: 1,
-          organizationVersion,
-          userId: input.sourceUserId,
-          now: affiliationObservedAt,
-        },
-        transaction,
-      )
-      await recomputeOrganizationAccountCompliance(
-        {
-          deploymentId: 1,
-          organizationVersion,
-          userId: input.destinationUserId,
-          now: affiliationObservedAt,
-        },
-        transaction,
-      )
     }
+    if (
+      source.userId !== input.sourceUserId ||
+      source.subjectLifecycleId !== input.sourceSubjectLifecycleId
+    ) {
+      throw new CharacterTransferError('approval-unusable')
+    }
+    if (source.isMain && sourceRoster.value > 1) {
+      throw new CharacterTransferError('main-character')
+    }
+    const blocker = await findCharacterDetachmentBlocker(transaction, input.characterId)
+    if (blocker) {
+      throw new CharacterTransferError(blocker)
+    }
+    const affiliationObservedAt = input.authorization.affiliationCheckedAt ?? now
+    await recomputeTransferCompliance(
+      transaction,
+      organizationVersion,
+      input,
+      affiliationObservedAt,
+    )
 
     const scopes = normalizeScopeSet(input.authorization.scopes)
     const sourceEvent = await appendDomainEvent(transaction, {
-      type: 'character.detached',
-      payloadVersion: 1,
       aggregateId: String(input.characterId),
-      payload: {
-        userId: source.userId,
-        characterId: source.characterId,
-      },
       occurredAt: now,
+      payload: {
+        characterId: source.characterId,
+        userId: source.userId,
+      },
+      payloadVersion: 1,
+      type: 'character.detached',
     })
     await enqueueInstalledResourceLifecyclePurges(transaction, input.sourceSubjectLifecycleId)
     await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
       characterId: input.characterId,
-      outcome: 'transferred',
       now,
+      outcome: 'transferred',
     })
     await transaction.delete(characters).where(eq(characters.characterId, input.characterId))
     await transaction.insert(characters).values({
-      characterId: input.characterId,
-      userId: input.destinationUserId,
-      ownerHash: input.authorization.ownerHash,
-      name: input.authorization.characterName,
-      corporationId: input.authorization.corporationId,
-      allianceId: input.authorization.allianceId,
       affiliationCheckedAt: affiliationObservedAt,
       affiliationResolutionState: 'resolved',
-      nextAffiliationCheck: new Date(
-        affiliationObservedAt.getTime() + env.AFFILIATION_ACTIVE_INTERVAL_SECONDS * 1_000,
-      ),
+      allianceId: input.authorization.allianceId,
+      characterId: input.characterId,
+      corporationId: input.authorization.corporationId,
       isMain: false,
+      name: input.authorization.characterName,
+      nextAffiliationCheck: new Date(
+        affiliationObservedAt.getTime() + env.AFFILIATION_ACTIVE_INTERVAL_SECONDS * 1000,
+      ),
+      ownerHash: input.authorization.ownerHash,
+      userId: input.destinationUserId,
     })
     const [lifecycle] = await transaction
       .insert(platformSubjectLifecycles)
       .values({
-        subjectKind: 'character',
-        subjectId: String(input.characterId),
         characterId: input.characterId,
+        subjectId: String(input.characterId),
+        subjectKind: 'character',
       })
       .returning({ subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId })
-    if (!lifecycle) throw new Error('Failed to create transferred character lifecycle')
+    if (!lifecycle) {
+      throw new Error('Failed to create transferred character lifecycle')
+    }
     const authorizationGeneration = await insertCharacterToken(transaction, {
+      accessTokenExpiresAt: new Date(now.getTime() + input.authorization.expiresIn * 1000),
       characterId: input.characterId,
       encryptedTokens: encryptTokens({
         accessToken: input.authorization.accessToken,
         refreshToken: input.authorization.refreshToken,
       }),
-      accessTokenExpiresAt: new Date(now.getTime() + input.authorization.expiresIn * 1_000),
       scopes,
       tokenVersion: source.tokenVersion === null ? 0 : source.tokenVersion + 1,
     })
     await replaceCharacterReviewerDisclosureAcceptances(transaction, {
-      characterId: input.characterId,
       authorizationGeneration,
+      characterId: input.characterId,
       disclosures: input.authorization.reviewerUseDisclosures ?? [],
     })
     const destinationEvent = await appendDomainEvent(transaction, {
-      type: 'character.attached',
-      payloadVersion: 1,
       aggregateId: String(input.characterId),
-      payload: {
-        userId: input.destinationUserId,
-        characterId: input.characterId,
-      },
       occurredAt: now,
+      payload: {
+        characterId: input.characterId,
+        userId: input.destinationUserId,
+      },
+      payloadVersion: 1,
+      type: 'character.attached',
     })
 
-    if (organizationVersion) {
-      await recomputeOrganizationAccountCompliance(
-        { deploymentId: 1, organizationVersion, userId: input.sourceUserId, now },
-        transaction,
-      )
-      await recomputeOrganizationAccountCompliance(
-        { deploymentId: 1, organizationVersion, userId: input.destinationUserId, now },
-        transaction,
-      )
-    }
+    await recomputeTransferCompliance(transaction, organizationVersion, input, now)
     await cleanupEmptyTransferSourceAccount(transaction, input.sourceUserId, sourceRoster.value)
 
     const [consumed] = await transaction
@@ -257,25 +242,60 @@ export async function transferCharacter(input: {
         ),
       )
       .returning({ approvalId: characterTransferApprovals.approvalId })
-    if (!consumed) throw new CharacterTransferError('approval-unusable')
+    if (!consumed) {
+      throw new CharacterTransferError('approval-unusable')
+    }
     await transaction.insert(characterTransferAudit).values({
-      approvalId: approval.approvalId,
-      action: 'consumed',
-      approvedByAdministratorId: approval.approvedByAdministratorId,
       actingDestinationUserId: input.destinationUserId,
+      action: 'consumed',
+      approvalId: approval.approvalId,
+      approvedByAdministratorId: approval.approvedByAdministratorId,
       characterId: input.characterId,
-      sourceUserId: input.sourceUserId,
-      sourceSubjectLifecycleId: input.sourceSubjectLifecycleId,
+      destinationEventId: destinationEvent.eventId,
       destinationUserId: input.destinationUserId,
       newSubjectLifecycleId: lifecycle.subjectLifecycleId,
-      sourceEventId: sourceEvent.eventId,
-      destinationEventId: destinationEvent.eventId,
-      reason: approval.reason,
-      outcome: 'consumed',
       occurredAt: now,
+      outcome: 'consumed',
+      reason: approval.reason,
+      sourceEventId: sourceEvent.eventId,
+      sourceSubjectLifecycleId: input.sourceSubjectLifecycleId,
+      sourceUserId: input.sourceUserId,
     })
     return { subjectLifecycleId: lifecycle.subjectLifecycleId }
   })
+}
+
+async function recomputeTransferCompliance(
+  transaction: DatabaseTransaction,
+  organizationVersion: number | null,
+  input: Parameters<typeof transferCharacter>[0],
+  now: Date,
+) {
+  if (!organizationVersion) {
+    return
+  }
+  await recomputeOrganizationAccountCompliance(
+    { deploymentId: 1, now, organizationVersion, userId: input.sourceUserId },
+    transaction,
+  )
+  await recomputeOrganizationAccountCompliance(
+    { deploymentId: 1, now, organizationVersion, userId: input.destinationUserId },
+    transaction,
+  )
+}
+
+function usableTransferApproval(
+  approval: typeof characterTransferApprovals.$inferSelect,
+  input: Parameters<typeof transferCharacter>[0],
+  now: Date,
+) {
+  return (
+    transferIdentityMatches(approval, input) &&
+    approval.sourceSubjectLifecycleId === input.sourceSubjectLifecycleId &&
+    !approval.consumedAt &&
+    !approval.revokedAt &&
+    approval.expiresAt > now
+  )
 }
 
 function transferIdentityMatches(
@@ -294,10 +314,14 @@ async function cleanupEmptyTransferSourceAccount(
   sourceUserId: string,
   sourceCharacterCount: number,
 ) {
-  if (sourceCharacterCount !== 1) return
+  if (sourceCharacterCount !== 1) {
+    return
+  }
 
   await deleteUserSessions(transaction, sourceUserId)
-  if (!(await deleteEmptyTransferSourceUser(transaction, sourceUserId))) return
+  if (!(await deleteEmptyTransferSourceUser(transaction, sourceUserId))) {
+    return
+  }
 
   await enqueueInstalledResourceAccountPurges(transaction, sourceUserId)
 }

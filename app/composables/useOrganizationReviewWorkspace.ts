@@ -98,17 +98,17 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   const organizationVersion = computed(() => entryQuery.data.value?.organizationVersion ?? 0)
   const urlState = computed(() => parseOrganizationReviewUrlState(route.query))
   const directoryInput = computed<OrganizationReviewDirectoryInput>(() => ({
+    auditState: auditState.value,
+    blocked: blocked.value,
+    complianceState: complianceState.value,
+    corporationId: appliedCorporationId.value,
+    cursor: cursor.value,
+    direction: direction.value,
+    groupId: groupId.value,
+    limit: limit.value,
     organizationVersion: organizationVersion.value,
     query: appliedQuery.value,
-    corporationId: appliedCorporationId.value,
-    groupId: groupId.value,
-    complianceState: complianceState.value,
-    blocked: blocked.value,
-    auditState: auditState.value,
     sort: sort.value,
-    direction: direction.value,
-    cursor: cursor.value,
-    limit: limit.value,
   }))
   const directoryQuery = useQuery(() =>
     organizationReviewDirectoryQuery({
@@ -130,10 +130,10 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     members.value.find(({ account }) => account.userId === urlState.value.targetUserId),
   )
   const targetInput = computed<OrganizationReviewTargetInput>(() => ({
-    organizationVersion: organizationVersion.value,
-    targetUserId: urlState.value.targetUserId ?? '',
-    targetCharacterId: urlState.value.targetCharacterId,
     managedMemberLifecycleId: browseSelectedMember.value?.managedMemberLifecycleId,
+    organizationVersion: organizationVersion.value,
+    targetCharacterId: urlState.value.targetCharacterId,
+    targetUserId: urlState.value.targetUserId ?? '',
   }))
   const targetLookupRequired = computed(() => urlState.value.targetUserId !== undefined)
   const targetQuery = useQuery(() =>
@@ -158,14 +158,16 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     )
   })
   const selectedTarget = computed<PlatformReviewerSelectedTarget | undefined>(() => {
-    if (!selectedMember.value || !selectedContribution.value) return undefined
+    if (!selectedMember.value || !selectedContribution.value) {
+      return
+    }
     const section = selectedContribution.value.sectionId
       ? runtimeQuery.data.value?.enabledSections.find(
           ({ moduleId, sectionId }) =>
             moduleId === selectedContribution.value!.moduleId &&
             sectionId === selectedContribution.value!.sectionId,
         )
-      : { disclosureVersion: 1, activationVersion: 1 }
+      : { activationVersion: 1, disclosureVersion: 1 }
     return selectedReviewerTarget(
       selectedMember.value,
       selectedContribution.value,
@@ -217,8 +219,9 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
         !cursor.value ||
         !(error instanceof ApiQueryError) ||
         error.code !== 'INVALID_REVIEWER_DIRECTORY_INPUT'
-      )
+      ) {
         return
+      }
       resetDirectoryCursor()
       await nextTick()
       await directoryQuery.refresh()
@@ -229,8 +232,12 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   watch(
     () => currentTargetQueryIdentity(),
     (current, previous) => {
-      if (!previous || sameTargetQueryIdentity(previous, current)) return
-      if (entryError.value && !canonicalDenial.value) return
+      if (!previous || sameTargetQueryIdentity(previous, current)) {
+        return
+      }
+      if (entryError.value && !canonicalDenial.value) {
+        return
+      }
       removePlatformReviewerContributionTargetQueries(queryCache, previous)
     },
     { flush: 'sync' },
@@ -238,16 +245,19 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   watch(
     organizationVersion,
     (current, previous) => {
-      if (previous > 0 && previous !== current)
+      if (previous > 0 && previous !== current) {
         removePlatformQueryScope(
           queryCache,
           PRIVATE_QUERY_KEYS.organizationReviewerVersion(previous),
         )
+      }
     },
     { flush: 'sync' },
   )
   watch(canonicalDenial, (denied) => {
-    if (!denied || organizationVersion.value <= 0) return
+    if (!denied || organizationVersion.value <= 0) {
+      return
+    }
     removePlatformQueryScope(
       queryCache,
       PRIVATE_QUERY_KEYS.organizationReviewerVersion(organizationVersion.value),
@@ -274,7 +284,9 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
 
   async function nextDirectoryPage() {
     const nextCursor = directoryQuery.data.value?.nextCursor
-    if (!nextCursor) return
+    if (!nextCursor) {
+      return
+    }
     cursorHistory.value = [...cursorHistory.value, cursor.value ?? '']
     cursor.value = nextCursor
     await announceDirectoryPage()
@@ -297,14 +309,18 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
         : { targetUserId: member.account.userId },
     })
     await nextTick()
-    if (contribution) panelFocusRequest.value += 1
+    if (contribution) {
+      panelFocusRequest.value += 1
+    }
   }
 
   async function selectContribution(identity: string) {
     const contribution = availableContributions.value.find(
       (candidate) => reviewerContributionIdentity(candidate) === identity,
     )
-    if (!contribution) return
+    if (!contribution) {
+      return
+    }
     await router.push({
       query: selectedMember.value
         ? canonicalQuery(selectedMember.value, contribution, urlState.value.targetCharacterId)
@@ -327,15 +343,22 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   }
 
   function canonicalizeLocation() {
-    if (!entryQuery.data.value) return
-    if (!runtimeQuery.data.value) return
-    if (directoryQuery.asyncStatus.value === 'loading') return
+    if (!entryQuery.data.value) {
+      return
+    }
+    if (!runtimeQuery.data.value) {
+      return
+    }
+    if (directoryQuery.asyncStatus.value === 'loading') {
+      return
+    }
     if (
       targetLookupRequired.value &&
       targetQuery.asyncStatus.value === 'loading' &&
       !currentTargetLookupResult(targetQuery.data.value, targetInput.value)
-    )
+    ) {
       return
+    }
     const state = urlState.value
     const contribution = selectedContribution.value
     if (!contribution) {
@@ -357,7 +380,9 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   function canonicalizeLocationWithoutContribution() {
     const state = urlState.value
     if (!state.targetUserId) {
-      if (!state.contribution && !state.targetCharacterId) return
+      if (!state.contribution && !state.targetCharacterId) {
+        return
+      }
       replaceLocationQuery({})
       return
     }
@@ -378,14 +403,23 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     const lookupDenied =
       targetQuery.error.value instanceof ApiQueryError &&
       [403, 404].includes(targetQuery.error.value.status)
-    if (!directoryQuery.data.value) return
-    if (targetLookupRequired.value && !lookupResult && !lookupDenied) return
-    if (contribution) replaceWithContribution(contribution)
-    else replaceLocationQuery({})
+    if (!directoryQuery.data.value) {
+      return
+    }
+    if (targetLookupRequired.value && !lookupResult && !lookupDenied) {
+      return
+    }
+    if (contribution) {
+      replaceWithContribution(contribution)
+    } else {
+      replaceLocationQuery({})
+    }
   }
 
   function replaceLocationQuery(query: Record<string, string>) {
-    if (sameLocationQuery(route.query, query)) return
+    if (sameLocationQuery(route.query, query)) {
+      return
+    }
     void router.replace({ query })
   }
 
@@ -397,20 +431,22 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
   function currentTargetQueryIdentity(): PlatformReviewerContributionTargetIdentity | undefined {
     const contribution = selectedContribution.value
     const target = selectedTarget.value
-    if (!contribution || !target || organizationVersion.value <= 0) return undefined
+    if (!contribution || !target || organizationVersion.value <= 0) {
+      return undefined
+    }
     return {
-      organizationVersion: organizationVersion.value,
-      moduleId: contribution.moduleId,
-      sectionId: contribution.sectionId,
       contributionId: contribution.contributionId,
+      moduleId: contribution.moduleId,
+      organizationVersion: organizationVersion.value,
+      sectionId: contribution.sectionId,
       target,
     }
   }
 
   return {
+    auditState,
     authLoading,
     authSession,
-    auditState,
     availableContributions,
     blocked,
     changeDirectorySort,
@@ -435,10 +471,10 @@ export function useOrganizationReviewWorkspace(navigation?: OrganizationReviewNa
     runtimeQuery,
     searchText,
     selectContribution,
+    selectMember,
     selectedContribution,
     selectedMember,
     selectedTarget,
-    selectMember,
     sort,
     submitSearch,
     targetQuery,
@@ -461,8 +497,9 @@ function currentTargetLookupResult(
     result?.targetUserId !== input.targetUserId ||
     result?.targetCharacterId !== input.targetCharacterId ||
     result?.managedMemberLifecycleId !== input.managedMemberLifecycleId
-  )
-    return undefined
+  ) {
+    return
+  }
   return result
 }
 
@@ -496,7 +533,9 @@ function normalizedSearch(value: string) {
 
 function positiveInteger(value: string) {
   const normalized = value.trim()
-  if (!normalized) return undefined
+  if (!normalized) {
+    return
+  }
   const number = Number(normalized)
   return Number.isSafeInteger(number) && number > 0 ? number : undefined
 }

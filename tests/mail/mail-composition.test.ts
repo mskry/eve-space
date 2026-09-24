@@ -20,54 +20,64 @@ describe('mail composition', () => {
   it('seeds reply from the addressable sender and quotes plain text', () => {
     const seed = seedMailComposition('reply', mailDetail(), 7)
 
-    expect(seed.recipients).toEqual([{ id: 91, type: 'corporation', name: 'Operations Control' }])
+    expect(seed.recipients).toStrictEqual([
+      { id: 91, name: 'Operations Control', type: 'corporation' },
+    ])
     expect(seed.subject).toBe('Re: Priority operations update')
     expect(seed.body).toContain('--- Original message from Operations Control ---')
     expect(seed.body).toContain('Plain message body')
-    expect(seed.omitted).toEqual([])
+    expect(seed.omitted).toStrictEqual([])
   })
 
   it('seeds reply-all without the open character and deduplicates typed recipients', () => {
     const detail = mailDetail({
       recipients: [
-        { id: 7, type: 'character', name: 'Reading Pilot' },
-        { id: 44, type: 'character', name: 'Wingmate' },
-        { id: 44, type: 'character', name: 'Wingmate' },
-        { id: 77, type: 'mailing_list', name: null },
+        { id: 7, name: 'Reading Pilot', type: 'character' },
+        { id: 44, name: 'Wingmate', type: 'character' },
+        { id: 44, name: 'Wingmate', type: 'character' },
+        { id: 77, name: null, type: 'mailing_list' },
       ],
     })
 
-    expect(seedMailComposition('reply-all', detail, 7).recipients).toEqual([
-      { id: 91, type: 'corporation', name: 'Operations Control' },
-      { id: 44, type: 'character', name: 'Wingmate' },
-      { id: 77, type: 'mailing_list', name: null },
+    expect(seedMailComposition('reply-all', detail, 7).recipients).toStrictEqual([
+      { id: 91, name: 'Operations Control', type: 'corporation' },
+      { id: 44, name: 'Wingmate', type: 'character' },
+      { id: 77, name: null, type: 'mailing_list' },
     ])
   })
 
   it('seeds forward without recipients', () => {
     const seed = seedMailComposition('forward', mailDetail(), 7)
 
-    expect(seed.recipients).toEqual([])
+    expect(seed.recipients).toStrictEqual([])
     expect(seed.subject).toBe('Fwd: Priority operations update')
     expect(seed.body).toContain('Plain message body')
   })
 
+  it('does not invent a reply recipient when the sender is absent', () => {
+    const seed = seedMailComposition('reply', mailDetail({ sender: null }), 7)
+
+    expect(seed.recipients).toStrictEqual([])
+    expect(seed.omitted).toStrictEqual([])
+    expect(seed.subject).toBe('Re: Priority operations update')
+  })
+
   it.each([
     ['reply', [], ['Unknown unknown #91']],
-    ['reply-all', [{ id: 44, type: 'character', name: null }], ['Unknown unknown #91']],
+    ['reply-all', [{ id: 44, name: null, type: 'character' }], ['Unknown unknown #91']],
     ['forward', [], []],
   ] as const)(
     'never seeds an unknown sender in %s mode',
     (mode, expectedRecipients, expectedOmissions) => {
       const detail = mailDetail({
-        sender: { id: 91, type: 'unknown', name: null },
         recipients: [{ id: 44, type: 'character', name: null }],
+        sender: { id: 91, name: null, type: 'unknown' },
       })
       const seed = seedMailComposition(mode, detail, 7)
 
       expect(seed.recipients).not.toContainEqual(expect.objectContaining({ id: 91 }))
-      expect(seed.recipients).toEqual(expectedRecipients)
-      expect(seed.omitted).toEqual(expectedOmissions)
+      expect(seed.recipients).toStrictEqual(expectedRecipients)
+      expect(seed.omitted).toStrictEqual(expectedOmissions)
     },
   )
 
@@ -83,7 +93,7 @@ describe('mail composition', () => {
     expect(second.composition.open.value).toBe(false)
     expect(second.composition.subject.value).toBe('')
     expect(second.composition.body.value).toBe('')
-    expect(second.composition.recipients.value).toEqual([])
+    expect(second.composition.recipients.value).toStrictEqual([])
     second.wrapper.unmount()
     vi.unstubAllGlobals()
   })
@@ -122,12 +132,12 @@ describe('mail composition', () => {
     expect(composition.open.value).toBe(false)
     expect(composition.subject.value).toBe('')
     expect(composition.body.value).toBe('')
-    expect(composition.recipients.value).toEqual([])
+    expect(composition.recipients.value).toStrictEqual([])
     wrapper.unmount()
     vi.unstubAllGlobals()
   })
 
-  it('adds an exact local mailing list without enabling a protected lookup', () => {
+  it('adds a local mailing list but does not look up unknown recipients without access', () => {
     const mailbox = compositionMailbox([{ mailingListId: 77, name: 'Alliance Logistics' }])
     let composition!: ReturnType<typeof useMailComposition>
     vi.stubGlobal('useConfirmDialog', () => ({
@@ -153,7 +163,12 @@ describe('mail composition', () => {
     composition.recipientInput.value = 'Alliance Logistics'
     composition.resolveRecipient()
 
-    expect(composition.recipients.value).toEqual([
+    expect(composition.recipients.value).toStrictEqual([
+      { id: 77, name: 'Alliance Logistics', type: 'mailing_list' },
+    ])
+    composition.recipientInput.value = 'Unknown Pilot'
+    composition.resolveRecipient()
+    expect(composition.recipients.value).toStrictEqual([
       { id: 77, name: 'Alliance Logistics', type: 'mailing_list' },
     ])
     wrapper.unmount()
@@ -184,6 +199,9 @@ describe('mail composition', () => {
     })
     const { wrapper } = mountWithQueryPlugins(Root)
 
+    expect(composition.sendDisabledReason.value).toBe('Add at least one recipient.')
+    await composition.send()
+    expect(fetchMock).not.toHaveBeenCalled()
     composition.recipients.value = [{ id: 44, name: 'Wingmate', type: 'character' }]
     composition.subject.value = 'x'.repeat(MAIL_SUBJECT_LIMIT + 1)
     composition.chargeRecoveryAvailable.value = true
@@ -218,7 +236,7 @@ describe('mail composition', () => {
 
     harness.composition.openReply()
     expect(harness.composition.mode.value).toBe('reply')
-    expect(harness.composition.recipients.value).toEqual([
+    expect(harness.composition.recipients.value).toStrictEqual([
       { id: 91, name: 'Operations Control', type: 'corporation' },
     ])
 
@@ -232,7 +250,7 @@ describe('mail composition', () => {
 
     harness.composition.openForward()
     expect(harness.composition.mode.value).toBe('forward')
-    expect(harness.composition.recipients.value).toEqual([])
+    expect(harness.composition.recipients.value).toStrictEqual([])
 
     harness.mailbox.detailQuery.data.value = mailDetail({
       sender: { id: 91, name: null, type: 'unknown' },
@@ -255,11 +273,14 @@ describe('mail composition', () => {
     const character = { id: 44, name: 'Wingmate', type: 'character' as const }
 
     harness.composition.openNew()
+    expect(harness.composition.recipientSuggestions.value).toStrictEqual([])
+    harness.composition.openReply()
+    expect(harness.composition.mode.value).toBe('new')
     harness.composition.resolveRecipient()
     expect(harness.composition.feedback.value).toBe('Enter a recipient name.')
 
     harness.composition.recipientInput.value = 'alliance'
-    expect(harness.composition.recipientSuggestions.value).toEqual([
+    expect(harness.composition.recipientSuggestions.value).toStrictEqual([
       { id: 77, name: 'Alliance Logistics', type: 'mailing_list' },
     ])
     harness.composition.recipientInput.value = 'Alliance Logistics'
@@ -314,6 +335,7 @@ describe('mail composition', () => {
 
     const send = harness.composition.send()
     await vi.waitFor(() => expect(harness.composition.sending.value).toBe(true))
+    expect(harness.composition.sendDisabledReason.value).toBe('Sending mail...')
     harness.composition.requestClose()
 
     expect(harness.composition.open.value).toBe(true)
@@ -350,7 +372,7 @@ describe('mail composition', () => {
 
     expect(harness.closeConfirmDialog).toHaveBeenCalledOnce()
     expect(harness.composition.open.value).toBe(false)
-    expect(harness.composition.recipients.value).toEqual([])
+    expect(harness.composition.recipients.value).toStrictEqual([])
     expect(harness.composition.subject.value).toBe('')
     expect(harness.composition.body.value).toBe('')
     expect(sendRequests).toBe(0)
@@ -388,6 +410,44 @@ describe('mail composition', () => {
     vi.unstubAllGlobals()
   })
 
+  it.each([
+    ['send', 200],
+    ['send', 502],
+    ['recoverCharge', 200],
+    ['recoverCharge', 502],
+  ] as const)(
+    'ignores a %s charge lookup completed after the draft resets (%s)',
+    async (action, status) => {
+      let releaseLookup!: () => void
+      const lookupCanFinish = new Promise<void>((resolve) => (releaseLookup = resolve))
+      queryServer.use(
+        http.post('http://localhost/api/me/characters/7/mail/cspa', async () => {
+          await lookupCanFinish
+          return status === 200
+            ? HttpResponse.json({ characterId: 7, cost: 125 })
+            : HttpResponse.json(
+                { code: 'ESI_UNAVAILABLE', message: 'Charge unavailable.' },
+                { status },
+              )
+        }),
+      )
+      const harness = mountCompositionHarness()
+      harness.composition.openNew()
+      harness.composition.recipients.value = [{ id: 44, name: 'Wingmate', type: 'character' }]
+
+      const pending = harness.composition[action]()
+      await vi.waitFor(() => expect(harness.composition.sending.value).toBe(true))
+      harness.composition.resetPrivateState()
+      releaseLookup()
+      await pending
+
+      expect(harness.openConfirmDialog).not.toHaveBeenCalled()
+      expect(harness.composition.feedback.value).toBe('')
+      harness.wrapper.unmount()
+      vi.unstubAllGlobals()
+    },
+  )
+
   it('sends directly or after approving a calculated recipient charge', async () => {
     const sentBodies: unknown[] = []
     queryServer.use(
@@ -410,13 +470,13 @@ describe('mail composition', () => {
     await harness.composition.send()
     const confirmation = lastConfirmation(harness.openConfirmDialog)
     expect(confirmation.description).toContain('126 ISK')
-    expect(sentBodies).toEqual([])
+    expect(sentBodies).toStrictEqual([])
     harness.composition.recipients.value = [{ id: 45, name: 'Late addition', type: 'character' }]
     harness.composition.subject.value = 'Edited after charge lookup'
     harness.composition.body.value = 'Edited body'
     await confirmation.onConfirm()
 
-    expect(sentBodies).toEqual([
+    expect(sentBodies).toStrictEqual([
       {
         approvedCost: 126,
         body: 'Message body',
@@ -477,6 +537,35 @@ describe('mail composition', () => {
     vi.unstubAllGlobals()
   })
 
+  it('does not offer an unapproved send after a charge authorization toast resets the draft', async () => {
+    queryServer.use(
+      http.post('http://localhost/api/me/characters/7/mail/cspa', () =>
+        HttpResponse.json(
+          {
+            authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
+            code: 'EVE_SCOPE_REQUIRED',
+            message: 'Authorize charge lookup.',
+          },
+          { status: 403 },
+        ),
+      ),
+    )
+    const harness = mountCompositionHarness()
+    harness.composition.openNew()
+    harness.composition.recipients.value = [{ id: 44, name: 'Wingmate', type: 'character' }]
+    harness.showToast.mockImplementationOnce(() => {
+      harness.composition.resetPrivateState()
+      return 1
+    })
+
+    await harness.composition.send()
+
+    expect(harness.composition.open.value).toBe(false)
+    expect(harness.openConfirmDialog).not.toHaveBeenCalled()
+    harness.wrapper.unmount()
+    vi.unstubAllGlobals()
+  })
+
   it('keeps the draft and offers authorization when sending needs a missing scope', async () => {
     queryServer.use(
       http.post('http://localhost/api/me/characters/7/mail', () =>
@@ -516,11 +605,11 @@ describe('mail composition', () => {
 
   it('preserves delivery uncertainty and exposes authorization and rejection outcomes', async () => {
     let response = {
-      status: 502,
       body: {
         code: 'MAIL_DELIVERY_UNKNOWN',
         message: 'Inspect sent mail before sending again.',
       },
+      status: 502,
     }
     queryServer.use(
       http.post('http://localhost/api/me/characters/7/mail/cspa', () =>
@@ -543,12 +632,12 @@ describe('mail composition', () => {
     harness.composition.openNew()
     harness.composition.recipients.value = [corporation]
     response = {
-      status: 403,
       body: {
         code: 'EVE_REAUTH_REQUIRED',
         message: 'Authorize mail sending.',
         authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
       } as typeof response.body,
+      status: 403,
     }
     await harness.composition.send()
     expect(harness.composition.sendAuthorizationMessage.value).toBe('Authorize mail sending.')
@@ -557,8 +646,8 @@ describe('mail composition', () => {
     harness.composition.openNew()
     harness.composition.recipients.value = [{ id: 44, name: 'Wingmate', type: 'character' }]
     response = {
-      status: 422,
       body: { code: 'MAIL_REJECTED', message: 'Recipient charge was refused.' },
+      status: 422,
     }
     await harness.composition.send()
     expect(harness.composition.chargeRecoveryAvailable.value).toBe(true)
@@ -567,8 +656,8 @@ describe('mail composition', () => {
     harness.composition.openNew()
     harness.composition.recipients.value = [corporation]
     response = {
-      status: 502,
       body: { code: 'ESI_UNAVAILABLE', message: 'Mail provider unavailable.' },
+      status: 502,
     }
     await harness.composition.send()
     expect(harness.composition.feedback.value).toBe('Mail provider unavailable.')
@@ -619,7 +708,7 @@ describe('mail composition', () => {
 
   it('keeps all published limits and protected lookup gates explicit', () => {
     expect(MAIL_RECIPIENT_LIMIT).toBe(50)
-    expect(MAIL_SUBJECT_LIMIT).toBe(1_000)
+    expect(MAIL_SUBJECT_LIMIT).toBe(1000)
     expect(MAIL_BODY_LIMIT).toBe(10_000)
     expect(MAIL_RECIPIENT_SEARCH_MIN_LENGTH).toBe(3)
   })
@@ -634,8 +723,8 @@ function mailDetail(overrides: Partial<MailDetail> = {}): MailDetail {
     labelIds: [1],
     mailId: 120,
     quota: {},
-    recipients: [{ id: 7, type: 'character', name: 'Reading Pilot' }],
-    sender: { id: 91, type: 'corporation', name: 'Operations Control' },
+    recipients: [{ id: 7, name: 'Reading Pilot', type: 'character' }],
+    sender: { id: 91, name: 'Operations Control', type: 'corporation' },
     sentAt: '2026-08-29T12:00:00.000Z',
     source: 'esi',
     stale: false,
@@ -682,7 +771,7 @@ function mountCompositionHarness({
       })
       subscribePrivateQueryInvalidation(
         useQueryCache(),
-        { kind: 'character', characterId: 7 },
+        { characterId: 7, kind: 'character' },
         composition.resetPrivateState,
       )
       return () => h('div')

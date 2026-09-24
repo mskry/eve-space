@@ -42,9 +42,39 @@ export function createEsiExecutionRuntimeOwner(
   let pendingClose: Promise<void> | undefined
 
   return {
+    close() {
+      if (pendingClose) {
+        return pendingClose
+      }
+      if (!runtime && !pendingCreation) {
+        return Promise.resolve()
+      }
+      pendingClose = (async () => {
+        let closingRuntime: EsiExecutionRuntime | undefined
+        try {
+          closingRuntime = runtime ?? (await pendingCreation)
+        } catch {
+          return
+        }
+        if (!closingRuntime) {
+          return
+        }
+        if (runtime === closingRuntime) {
+          runtime = undefined
+        }
+        await closingRuntime.close()
+      })().finally(() => {
+        pendingClose = undefined
+      })
+      return pendingClose
+    },
     get() {
-      if (pendingClose) return Promise.reject(new Error('ESI execution runtime is closing'))
-      if (runtime) return Promise.resolve(runtime)
+      if (pendingClose) {
+        return Promise.reject(new Error('ESI execution runtime is closing'))
+      }
+      if (runtime) {
+        return Promise.resolve(runtime)
+      }
       pendingCreation ??= Promise.resolve()
         .then(createRuntime)
         .then((created) => {
@@ -56,34 +86,16 @@ export function createEsiExecutionRuntimeOwner(
         })
       return pendingCreation
     },
-    close() {
-      if (pendingClose) return pendingClose
-      if (!runtime && !pendingCreation) return Promise.resolve()
-      pendingClose = (async () => {
-        let closingRuntime: EsiExecutionRuntime | undefined
-        try {
-          closingRuntime = runtime ?? (await pendingCreation)
-        } catch {
-          return
-        }
-        if (!closingRuntime) return
-        if (runtime === closingRuntime) runtime = undefined
-        await closingRuntime.close()
-      })().finally(() => {
-        pendingClose = undefined
-      })
-      return pendingClose
-    },
   }
 }
 
 const productionRuntimeConfig: EsiExecutionRuntimeConfig = {
   cacheL1Capacity: env.ESI_CACHE_L1_MAX_ENTRIES,
-  cacheMaximumRetentionMs: env.ESI_CACHE_MAX_RETENTION_SECONDS * 1_000,
+  cacheMaximumRetentionMs: env.ESI_CACHE_MAX_RETENTION_SECONDS * 1000,
   compatibilityDate: env.ESI_COMPATIBILITY_DATE,
   operationConcurrency: env.ESI_OPERATION_CONCURRENCY,
   operationQueueTimeoutMs: env.ESI_OPERATION_QUEUE_TIMEOUT_MS,
-  privateRetentionMs: env.ESI_PRIVATE_RETENTION_SECONDS * 1_000,
+  privateRetentionMs: env.ESI_PRIVATE_RETENTION_SECONDS * 1000,
   requestTimeoutMs: env.ESI_REQUEST_TIMEOUT_MS,
 }
 
@@ -107,30 +119,26 @@ function createProductionRuntimePorts(config: EsiExecutionRuntimeConfig): EsiExe
   const coordination = getCoordinationConnection()
   const timing: RuntimeTimingPort = {
     now: () => Date.now(),
-    wait,
     randomInteger: randomInt,
     repeat(operation, intervalMilliseconds) {
       const timer = setInterval(operation, intervalMilliseconds)
       timer.unref()
       return () => clearInterval(timer)
     },
+    wait,
   }
   return {
     authorization: {
+      getAuthorization: (...arguments_) => getCharacterAuthorizationForLifecycle(...arguments_),
       getCacheAuthorization: (...arguments_) =>
         getCharacterCacheAuthorizationForLifecycle(...arguments_),
-      getAuthorization: (...arguments_) => getCharacterAuthorizationForLifecycle(...arguments_),
       withAuthorization: (...arguments_) => withCharacterAuthorizationForLifecycle(...arguments_),
     },
     cache: {
-      get: (key) => cache.get(key),
-      set: async (key, value, ttlMs) => {
-        if (ttlMs === undefined) await cache.set(key, value)
-        else await cache.set(key, value, 'PX', ttlMs)
-      },
       delete: async (key) => {
         await cache.del(key)
       },
+      get: (key) => cache.get(key),
       async recordResponse(operation, principal, metadata) {
         await Promise.all([
           recordEsiRateMeasurement(cache, {
@@ -147,19 +155,16 @@ function createProductionRuntimePorts(config: EsiExecutionRuntimeConfig): EsiExe
           ),
         ])
       },
+      set: async (key, value, ttlMs) => {
+        if (ttlMs === undefined) {
+          await cache.set(key, value)
+        } else {
+          await cache.set(key, value, 'PX', ttlMs)
+        }
+      },
     },
     coordination: {
-      initializeCacheNamespace: () => initializeCacheNamespace(coordination),
       acquireRequestLease: (identity) => acquireEsiRequestLease(coordination, identity),
-      getRequestLeaseTtl: (identity) => getEsiRequestLeaseTtl(coordination, identity),
-      renewRequestLease: (lease) => renewEsiRequestLease(coordination, lease),
-      releaseRequestLease: (lease) => releaseEsiRequestLease(coordination, lease),
-      commitFence: (identity, lease) => commitEsiFence(coordination, identity, lease),
-      getCommittedFence: (identity) => getCommittedEsiFence(coordination, identity),
-      getResourceRevision: (namespace, principal) =>
-        getEsiResourceRevision(coordination, namespace, principal),
-      incrementResourceRevision: (namespace, principal) =>
-        incrementEsiResourceRevision(coordination, namespace, principal),
       acquireRequestPermit: (options) =>
         acquireEsiRequestPermit({
           connection: coordination,
@@ -167,6 +172,8 @@ function createProductionRuntimePorts(config: EsiExecutionRuntimeConfig): EsiExe
           queueTimeoutMs: config.operationQueueTimeoutMs,
           timing,
         }),
+      commitFence: (identity, lease) => commitEsiFence(coordination, identity, lease),
+      getCommittedFence: (identity) => getCommittedEsiFence(coordination, identity),
       getRequestCooldowns: ({ requests, localState }) =>
         getEsiRequestCooldowns({
           connection: coordination,
@@ -174,6 +181,12 @@ function createProductionRuntimePorts(config: EsiExecutionRuntimeConfig): EsiExe
           maximumRequests: env.QUEUE_RESOURCE_PLANNER_PAGE_SIZE,
           localState,
         }),
+      getRequestLeaseTtl: (identity) => getEsiRequestLeaseTtl(coordination, identity),
+      getResourceRevision: (namespace, principal) =>
+        getEsiResourceRevision(coordination, namespace, principal),
+      incrementResourceRevision: (namespace, principal) =>
+        incrementEsiResourceRevision(coordination, namespace, principal),
+      initializeCacheNamespace: () => initializeCacheNamespace(coordination),
       recordResponse: (
         operation: Parameters<EsiExecutionRuntimePorts['coordination']['recordResponse']>[0],
         principal: string | undefined,
@@ -188,7 +201,10 @@ function createProductionRuntimePorts(config: EsiExecutionRuntimeConfig): EsiExe
           localState,
           now: timing.now(),
         }),
+      releaseRequestLease: (lease) => releaseEsiRequestLease(coordination, lease),
+      renewRequestLease: (lease) => renewEsiRequestLease(coordination, lease),
     },
+    timing,
     transport: {
       create: (options) =>
         createRawEsiTransport(
@@ -196,6 +212,5 @@ function createProductionRuntimePorts(config: EsiExecutionRuntimeConfig): EsiExe
           options,
         ),
     },
-    timing,
   }
 }

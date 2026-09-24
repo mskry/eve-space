@@ -16,9 +16,9 @@ vi.mock('../../src/db/client.js', () => ({ sql: mocks.sql }))
 
 vi.mock('../../src/esi-gateway/feature-execution.js', () => ({
   createPublicEsiRead: (definition: { operation: string }) => ({
+    execute: (input: unknown) => mocks.get(definition, input, undefined),
     operation: definition.operation,
     requiredScope: null,
-    execute: (input: unknown) => mocks.get(definition, input, undefined),
   }),
 }))
 
@@ -45,12 +45,12 @@ beforeEach(() => {
   currentTime += 120_000
   vi.setSystemTime(currentTime)
   mocks.get.mockImplementation(() => ({
-    data: mappedStatus(),
     cachedUntil: new Date(currentTime + 60_000).toISOString(),
-    validatedAt: new Date(currentTime).toISOString(),
+    data: mappedStatus(),
     quota: { errorRemaining: 99, errorResetSeconds: 10 },
     source: 'esi',
     stale: false,
+    validatedAt: new Date(currentTime).toISOString(),
   }))
   mocks.sql.mockResolvedValue([{ '?column?': 1 }])
   mocks.probeQueueStatus.mockResolvedValue(queueStatus())
@@ -66,43 +66,43 @@ beforeEach(() => {
 describe('system status service', () => {
   test('composes local API and database checks with a resilient Tranquility resource', async () => {
     await expect(getSystemStatus()).resolves.toMatchObject({
-      status: 'operational',
-      checkedAt: '2026-08-20T12:00:00.000Z',
       cachedUntil: '2026-08-20T12:00:30.000Z',
+      checkedAt: '2026-08-20T12:00:00.000Z',
       services: {
-        api: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
-        database: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
-        sde: {
-          status: 'operational',
-          checkedAt: '2026-08-20T12:00:00.000Z',
-          buildNumber: 3_503_375,
-          ingestVersion: 4,
-          ingestedAt: '2026-08-20T11:30:00.000Z',
-        },
-        esi: { status: 'operational', players: 31_337 },
-        queue: { checkedAt: '2026-08-20T12:00:00.000Z' },
-        eventRelay: { checkedAt: '2026-08-20T12:00:00.000Z' },
+        api: { checkedAt: '2026-08-20T12:00:00.000Z', status: 'operational' },
+        database: { checkedAt: '2026-08-20T12:00:00.000Z', status: 'operational' },
+        esi: { players: 31_337, status: 'operational' },
         esiResilience: {
           cache: { status: 'operational' },
           coordination: { status: 'operational' },
         },
+        eventRelay: { checkedAt: '2026-08-20T12:00:00.000Z' },
+        queue: { checkedAt: '2026-08-20T12:00:00.000Z' },
+        sde: {
+          buildNumber: 3_503_375,
+          checkedAt: '2026-08-20T12:00:00.000Z',
+          ingestVersion: 4,
+          ingestedAt: '2026-08-20T11:30:00.000Z',
+          status: 'operational',
+        },
       },
+      status: 'operational',
     })
-    expect(mocks.get.mock.calls[0]?.[1]).toEqual({})
+    expect(mocks.get.mock.calls[0]?.[1]).toStrictEqual({})
     expect(mocks.get).toHaveBeenCalledOnce()
     const observationPending = mocks.probeEsiStatus.mock.calls[0]?.[0]
-    await expect(observationPending).resolves.toEqual({ status: 'operational' })
+    await expect(observationPending).resolves.toStrictEqual({ status: 'operational' })
   })
 
   test('passes stale refresh failure details to telemetry without exposing them in the service DTO', async () => {
     mocks.get.mockResolvedValue({
-      data: mappedStatus(),
       cachedUntil: '2026-08-20T12:01:00.000Z',
-      validatedAt: '2026-08-20T11:59:00.000Z',
+      data: mappedStatus(),
       quota: { errorRemaining: 99, errorResetSeconds: 10 },
+      refreshFailureClass: 'esi-unavailable',
       source: 'cache',
       stale: true,
-      refreshFailureClass: 'esi-unavailable',
+      validatedAt: '2026-08-20T11:59:00.000Z',
     })
 
     const status = await getSystemStatus()
@@ -110,51 +110,51 @@ describe('system status service', () => {
     expect(mocks.get).toHaveBeenCalledOnce()
     expect(mocks.probeEsiStatus).toHaveBeenCalledOnce()
     const observationPending = mocks.probeEsiStatus.mock.calls[0]?.[0]
-    await expect(observationPending).resolves.toEqual({
-      status: 'stale',
+    await expect(observationPending).resolves.toStrictEqual({
       refreshFailureClass: 'esi-unavailable',
+      status: 'stale',
     })
     expect(status.services.esi).not.toHaveProperty('refreshFailureClass')
   })
 
   test('degrades only at the gateway error-budget floor', async () => {
     mocks.get.mockResolvedValue({
-      data: mappedStatus(),
       cachedUntil: '2026-08-20T12:01:00.000Z',
-      validatedAt: '2026-08-20T12:00:00.000Z',
+      data: mappedStatus(),
       quota: { errorRemaining: 11, errorResetSeconds: 10 },
       source: 'esi',
       stale: false,
+      validatedAt: '2026-08-20T12:00:00.000Z',
     })
 
     await expect(getSystemStatus()).resolves.toMatchObject({
-      services: { esi: { status: 'operational', errorBudgetRemaining: 11 } },
+      services: { esi: { errorBudgetRemaining: 11, status: 'operational' } },
     })
 
     await vi.advanceTimersByTimeAsync(30_001)
     mocks.get.mockResolvedValue({
-      data: mappedStatus(),
       cachedUntil: '2026-08-20T12:01:00.000Z',
-      validatedAt: '2026-08-20T12:00:00.000Z',
+      data: mappedStatus(),
       quota: { errorRemaining: 10, errorResetSeconds: 10 },
       source: 'esi',
       stale: false,
+      validatedAt: '2026-08-20T12:00:00.000Z',
     })
 
     await expect(getSystemStatus()).resolves.toMatchObject({
-      services: { esi: { status: 'degraded', errorBudgetRemaining: 10 } },
+      services: { esi: { errorBudgetRemaining: 10, status: 'degraded' } },
     })
   })
 
   test('uses the least-fresh ESI deadline for the composed status response', async () => {
     const cachedUntil = new Date(currentTime + 10_000).toISOString()
     mocks.get.mockImplementation(() => ({
-      data: mappedStatus(),
       cachedUntil,
-      validatedAt: new Date(currentTime).toISOString(),
+      data: mappedStatus(),
       quota: {},
       source: 'cache',
       stale: false,
+      validatedAt: new Date(currentTime).toISOString(),
     }))
 
     await expect(getSystemStatus()).resolves.toMatchObject({
@@ -176,19 +176,19 @@ describe('system status service', () => {
     mocks.sql.mockRejectedValue(new Error('Database unavailable'))
     mocks.get.mockRejectedValue(
       new EsiTransportError({
-        operationId: 'GetStatus',
-        reason: 'network',
-        phase: 'request',
         cause: new Error('ESI unavailable'),
+        operationId: 'GetStatus',
+        phase: 'request',
+        reason: 'network',
       }),
     )
 
     await expect(getSystemStatus()).resolves.toMatchObject({
-      status: 'unavailable',
       services: {
         database: { status: 'unavailable' },
-        esi: { status: 'unavailable', players: null },
+        esi: { players: null, status: 'unavailable' },
       },
+      status: 'unavailable',
     })
   })
 
@@ -196,15 +196,15 @@ describe('system status service', () => {
     mocks.readStaticLocationRevision.mockRejectedValue(new Error('Revision missing'))
 
     await expect(getSystemStatus()).resolves.toMatchObject({
-      status: 'degraded',
       services: {
         sde: {
-          status: 'unavailable',
           buildNumber: null,
           ingestVersion: null,
           ingestedAt: null,
+          status: 'unavailable',
         },
       },
+      status: 'degraded',
     })
   })
 
@@ -218,9 +218,9 @@ describe('system status service', () => {
         label === 'cooldown'
           ? new EsiQuotaError(12)
           : new EsiResponseValidationError({
+              issues: [],
               operationId: 'GetStatus',
               status: 200,
-              issues: [],
             })
       mocks.get.mockRejectedValue(error)
 
@@ -228,13 +228,13 @@ describe('system status service', () => {
       const observationPending = mocks.probeEsiStatus.mock.calls[0]?.[0]
 
       expect(status).toMatchObject({
+        services: { esi: { players: null, status: 'degraded' } },
         status: 'degraded',
-        services: { esi: { status: 'degraded', players: null } },
       })
       expect(status.services.esi).not.toHaveProperty('refreshFailureClass')
-      await expect(observationPending).resolves.toEqual({
-        status: 'degraded',
+      await expect(observationPending).resolves.toStrictEqual({
         refreshFailureClass,
+        status: 'degraded',
       })
     },
   )
@@ -247,89 +247,89 @@ describe('system status service', () => {
     const observationPending = mocks.probeEsiStatus.mock.calls[0]?.[0]
 
     expect(status).toMatchObject({
-      status: 'unavailable',
       services: {
         database: { status: 'unavailable' },
-        esi: { status: 'unavailable', players: null },
+        esi: { players: null, status: 'unavailable' },
       },
-    })
-    await expect(observationPending).resolves.toEqual({
       status: 'unavailable',
+    })
+    await expect(observationPending).resolves.toStrictEqual({
       refreshFailureClass: 'unknown',
+      status: 'unavailable',
     })
   })
 
   test('degrades cache and coordination telemetry before marking repeated outages unavailable', async () => {
     mocks.probeEsiStatus.mockResolvedValue({
       ...resilienceTelemetry(),
-      cache: { status: 'degraded', checkedAt: '2026-08-20T12:00:00.000Z' },
-      coordination: { status: 'unavailable', checkedAt: '2026-08-20T12:00:00.000Z' },
+      cache: { checkedAt: '2026-08-20T12:00:00.000Z', status: 'degraded' },
       cooldown: {
-        status: 'unavailable',
+        activeOperations: [],
         checkedAt: '2026-08-20T12:00:00.000Z',
         globalRetryAt: null,
-        activeOperations: [],
+        status: 'unavailable',
       },
-      upstream: { status: 'unavailable', checkedAt: '2026-08-20T12:00:00.000Z', operations: [] },
+      coordination: { checkedAt: '2026-08-20T12:00:00.000Z', status: 'unavailable' },
+      upstream: { checkedAt: '2026-08-20T12:00:00.000Z', operations: [], status: 'unavailable' },
     })
 
     await expect(getSystemStatus()).resolves.toMatchObject({
-      status: 'degraded',
       services: {
         esiResilience: {
           cache: { status: 'degraded' },
           coordination: { status: 'unavailable' },
         },
       },
+      status: 'degraded',
     })
   })
 })
 
 function queueStatus() {
   return {
+    active: 0,
+    depth: 0,
+    failed: 0,
+    latestOutboxRelayOutcome: null,
+    latestSchedulerOutcome: 'registered' as const,
+    memoryMaxBytes: 536_870_912,
+    memoryUsedBytes: 53_687_091,
+    memoryUsedPercent: 10,
+    oldestWaitingAgeSeconds: null,
+    outboxRelayPaused: false,
+    plannerPaused: false,
+    retrying: 0,
     status: 'operational' as const,
     workerHeartbeatAt: '2026-08-20T12:00:00.000Z',
     workers: 1,
-    depth: 0,
-    oldestWaitingAgeSeconds: null,
-    active: 0,
-    retrying: 0,
-    failed: 0,
-    memoryUsedBytes: 53_687_091,
-    memoryMaxBytes: 536_870_912,
-    memoryUsedPercent: 10,
-    plannerPaused: false,
-    outboxRelayPaused: false,
-    latestOutboxRelayOutcome: null,
-    latestSchedulerOutcome: 'registered' as const,
   }
 }
 
 function eventRelayStatus() {
   return {
-    status: 'operational' as const,
-    pendingCount: 0,
-    oldestPendingAgeSeconds: null,
-    relayPaused: false,
     latestRelayOutcome: null,
+    oldestPendingAgeSeconds: null,
+    pendingCount: 0,
+    relayPaused: false,
+    status: 'operational' as const,
   }
 }
 
 function resilienceTelemetry() {
   return {
+    cache: { checkedAt: '2026-08-20T12:00:00.000Z', status: 'operational' as const },
     checkedAt: '2026-08-20T12:00:00.000Z',
-    cache: { status: 'operational' as const, checkedAt: '2026-08-20T12:00:00.000Z' },
-    coordination: { status: 'operational' as const, checkedAt: '2026-08-20T12:00:00.000Z' },
     cooldown: {
-      status: 'inactive' as const,
+      activeOperations: [],
       checkedAt: '2026-08-20T12:00:00.000Z',
       globalRetryAt: null,
-      activeOperations: [],
+      status: 'inactive' as const,
     },
+    coordination: { checkedAt: '2026-08-20T12:00:00.000Z', status: 'operational' as const },
     upstream: {
-      status: 'operational' as const,
       checkedAt: '2026-08-20T12:00:00.000Z',
       operations: [],
+      status: 'operational' as const,
     },
   }
 }

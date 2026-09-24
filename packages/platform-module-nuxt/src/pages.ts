@@ -23,20 +23,22 @@ export function composePlatformPages(
 
   for (const contribution of contributionPages) {
     const canonicalPath = canonicalizePath(contribution.page.path)
-    if (pageNames.has(contribution.page.name))
+    if (pageNames.has(contribution.page.name)) {
       throw new Error(`Nuxt page name ${contribution.page.name} is already registered`)
-    if (pagePaths.has(canonicalPath))
+    }
+    if (pagePaths.has(canonicalPath)) {
       throw new Error(`Nuxt page path ${contribution.page.path} is already registered`)
+    }
 
     const page: NuxtPage = {
-      name: contribution.page.name,
-      path: contribution.page.path,
       file: contribution.file,
       meta: {
+        platformAudience: contribution.page.audience,
         platformModuleId: contribution.moduleId,
         platformModuleSectionId: contribution.page.sectionId,
-        platformAudience: contribution.page.audience,
       },
+      name: contribution.page.name,
+      path: contribution.page.path,
     }
     if (contribution.page.extensionPoint === 'character-shell') {
       const parent = resolveCharacterShell(registeredPages)
@@ -55,7 +57,7 @@ export function composePlatformPages(
 function flattenPages(pages: readonly NuxtPage[], parentPath = ''): readonly ResolvedPage[] {
   return pages.flatMap((page) => {
     const fullPath = resolveRoutePath(parentPath, page.path)
-    return [{ page, fullPath }, ...flattenPages(page.children ?? [], fullPath)]
+    return [{ fullPath, page }, ...flattenPages(page.children ?? [], fullPath)]
   })
 }
 
@@ -63,8 +65,9 @@ function resolveCharacterShell(pages: readonly NuxtPage[]) {
   const matches = flattenPages(pages).filter(
     ({ fullPath }) => canonicalizePath(fullPath) === '/characters/:parameter',
   )
-  if (matches.length !== 1)
+  if (matches.length !== 1) {
     throw new Error(`Expected one character-shell page, found ${matches.length}`)
+  }
   return matches[0]!.page
 }
 
@@ -74,14 +77,19 @@ function relativeChildPath(parentPath: string, path: string) {
   if (
     childSegments.length <= parentSegments.length ||
     parentSegments.some((segment, index) => segment !== childSegments[index])
-  )
+  ) {
     throw new Error(`Character-shell page ${path} must extend ${parentPath}`)
+  }
   return path.split('/').filter(Boolean).slice(parentSegments.length).join('/')
 }
 
 function resolveRoutePath(parentPath: string, path: string | undefined) {
-  if (!path) return parentPath || '/'
-  if (path.startsWith('/')) return canonicalizePath(path)
+  if (!path) {
+    return parentPath || '/'
+  }
+  if (path.startsWith('/')) {
+    return canonicalizePath(path)
+  }
   return canonicalizePath(`${parentPath.replace(/\/$/, '')}/${path}`)
 }
 

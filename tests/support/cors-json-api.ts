@@ -32,10 +32,10 @@ export async function startCorsJsonApi(
   const address = server.address() as AddressInfo
 
   return {
+    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
     origin: `http://127.0.0.1:${address.port}`,
     setAllowedOrigin(origin: string) {
       allowedOrigin = new URL(origin).origin
     },
-    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
   }
 }

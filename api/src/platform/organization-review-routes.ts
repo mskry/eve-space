@@ -33,19 +33,19 @@ import { listAvailableReviewerContributions } from './reviewer-contributions.js'
 
 const reviewerDirectorySummaryPermission = 'member-audit.summary.read'
 const reviewerDirectoryQuery = z.object({
-  query: z.string().trim().refine(isPlatformReviewerAccountSearchQuery).optional(),
-  corporationId: z.coerce.number().int().positive().optional(),
-  groupId: z.uuid().optional(),
-  complianceState: z.enum(platformReviewerDirectoryComplianceStates).optional(),
+  auditState: z.enum(platformReviewerDirectoryAuditStates).optional(),
   blocked: z
     .enum(['true', 'false'])
     .transform((value) => value === 'true')
     .optional(),
-  auditState: z.enum(platformReviewerDirectoryAuditStates).optional(),
-  sort: z.enum(platformReviewerDirectorySortFields).optional(),
-  direction: z.enum(platformReviewerDirectorySortDirections).optional(),
+  complianceState: z.enum(platformReviewerDirectoryComplianceStates).optional(),
+  corporationId: z.coerce.number().int().positive().optional(),
   cursor: z.string().refine(isPlatformReviewerAccountSearchCursor).optional(),
+  direction: z.enum(platformReviewerDirectorySortDirections).optional(),
+  groupId: z.uuid().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(25),
+  query: z.string().trim().refine(isPlatformReviewerAccountSearchQuery).optional(),
+  sort: z.enum(platformReviewerDirectorySortFields).optional(),
 })
 const reviewerTargetParams = z.object({ userId: z.uuid() })
 
@@ -60,20 +60,22 @@ export const organizationReviewerPlatformRoutes = new Hono<OrganizationReviewerE
   .use('*', createOrganizationReviewerEntryGate())
   .get('/', (context) =>
     context.json({
-      organizationVersion: context.var.organization!.organizationVersion,
       contributions: context.var.availableReviewerContributions.map(projectContribution),
+      organizationVersion: context.var.organization!.organizationVersion,
     }),
   )
   .get('/members', zValidator('query', reviewerDirectoryQuery), async (context) => {
     try {
       return context.json(
         await searchManagedOrganizationDirectory({
-          organizationVersion: context.var.organization!.organizationVersion,
           filters: context.req.valid('query'),
+          organizationVersion: context.var.organization!.organizationVersion,
         }),
       )
     } catch (error) {
-      if (!(error instanceof ReviewerAccountSearchInputError)) throw error
+      if (!(error instanceof ReviewerAccountSearchInputError)) {
+        throw error
+      }
       return context.json(
         {
           code: 'INVALID_REVIEWER_DIRECTORY_INPUT',
@@ -88,36 +90,42 @@ export const organizationReviewerPlatformRoutes = new Hono<OrganizationReviewerE
       organizationVersion: context.var.organization!.organizationVersion,
       targetUserId: context.req.valid('param').userId,
     })
-    if (!target) return context.json(routeNotFoundBody, 404)
+    if (!target) {
+      return context.json(routeNotFoundBody, 404)
+    }
     const managedAffiliation = target.characters.find(
       ({ affiliation }) =>
         affiliation.membership === 'managed' && affiliation.freshness === 'fresh',
     )!
     return context.json({
-      organizationVersion: target.organizationVersion,
       member: {
-        managedMemberLifecycleId: target.managedMemberLifecycleId,
         account: target.account,
-        managedAffiliation: {
-          characterId: managedAffiliation.characterId,
-          name: managedAffiliation.name,
-          corporationId: managedAffiliation.affiliation.corporationId,
-          allianceId: managedAffiliation.affiliation.allianceId,
-          checkedAt: managedAffiliation.affiliation.checkedAt,
-        },
         characters: target.characters,
+        managedAffiliation: {
+          allianceId: managedAffiliation.affiliation.allianceId,
+          characterId: managedAffiliation.characterId,
+          checkedAt: managedAffiliation.affiliation.checkedAt,
+          corporationId: managedAffiliation.affiliation.corporationId,
+          name: managedAffiliation.name,
+        },
+        managedMemberLifecycleId: target.managedMemberLifecycleId,
       },
+      organizationVersion: target.organizationVersion,
     })
   })
 
 function createOrganizationReviewerEntryGate() {
   return createMiddleware<OrganizationReviewerEntryEnv>(async (context, next) => {
     const available = await listAvailableReviewerContributions()
-    if (available.length === 0) return context.json(routeNotFoundBody, 404)
+    if (available.length === 0) {
+      return context.json(routeNotFoundBody, 404)
+    }
 
     const session = context.var.session
     const organization = context.var.organization
-    if (!session || !organization) throw new Error('Organization reviewer session is unavailable')
+    if (!session || !organization) {
+      throw new Error('Organization reviewer session is unavailable')
+    }
     const authorizations = await Promise.all(
       available.map((contribution) =>
         authorizeOrganizationReviewerContribution(
@@ -136,7 +144,9 @@ function createOrganizationReviewerEntryGate() {
       ),
     )
     const authorized = available.filter((_, index) => authorizations[index]!.authorized)
-    if (authorized.length === 0) return reviewerEntryDenied(context, organization, authorizations)
+    if (authorized.length === 0) {
+      return reviewerEntryDenied(context, organization, authorizations)
+    }
 
     context.set('availableReviewerContributions', authorized)
     await next()
@@ -152,30 +162,32 @@ function reviewerEntryDenied(
     authorizations.some(
       (authorization) => !authorization.authorized && authorization.reason === 'blocked',
     )
-  )
+  ) {
     return context.json(
       {
         code: 'ORGANIZATION_MEMBER_BLOCKED',
         message: 'Organization access is blocked.',
-        state: organization.state,
         reviewDeadline: organization.reviewDeadline?.toISOString() ?? null,
+        state: organization.state,
       },
       403,
     )
+  }
   if (
     authorizations.some(
       (authorization) => !authorization.authorized && authorization.reason === 'compliance',
     )
-  )
+  ) {
     return context.json(
       {
         code: 'ORGANIZATION_COMPLIANCE_REQUIRED',
         message: 'Current organization compliance is required.',
-        state: organization.state,
         reviewDeadline: organization.reviewDeadline?.toISOString() ?? null,
+        state: organization.state,
       },
       403,
     )
+  }
   return context.json(
     {
       code: 'ORGANIZATION_REVIEWER_REQUIRED',
@@ -187,15 +199,15 @@ function reviewerEntryDenied(
 
 function projectContribution(contribution: PlatformInstalledReviewerContributionDescriptor) {
   return {
-    moduleId: contribution.moduleId,
     contributionId: contribution.contributionId,
+    description: contribution.description,
+    icon: contribution.icon,
+    label: contribution.label,
+    moduleId: contribution.moduleId,
+    order: contribution.order,
     routeId: contribution.routeId,
     routePath: contribution.routePath,
     sectionId: contribution.sectionId,
     target: contribution.target,
-    label: contribution.label,
-    description: contribution.description,
-    icon: contribution.icon,
-    order: contribution.order,
   }
 }

@@ -63,7 +63,6 @@ vi.mock('../../../src/auth/tokens.js', () => ({
     accessToken: 'token',
     tokenVersion: authorizationVersion,
   }),
-  getCharacterCacheAuthorization: async () => ({ tokenVersion: authorizationVersion }),
   getCharacterAuthorizationForLifecycle: async (
     _characterId: number,
     requestedSubjectLifecycleId: string,
@@ -72,6 +71,7 @@ vi.mock('../../../src/auth/tokens.js', () => ({
     assertCurrentSubjectLifecycle(requestedSubjectLifecycleId)
     return { accessToken: 'token', tokenVersion: authorizationVersion }
   },
+  getCharacterCacheAuthorization: async () => ({ tokenVersion: authorizationVersion }),
   getCharacterCacheAuthorizationForLifecycle: async (
     _characterId: number,
     requestedSubjectLifecycleId: string,
@@ -130,9 +130,9 @@ describe('ESI resilience Redis coordination', () => {
     const mget = vi.spyOn(coordination, 'mget')
     await recordEsiResponse({
       connection: coordination,
+      metadata: { headers: {}, retryAfterSeconds: 12, status: 429 },
       operation: 'wallet-balance',
       principal: 'character-90000001',
-      metadata: { status: 429, headers: {}, retryAfterSeconds: 12 },
     })
 
     await expect(
@@ -147,7 +147,7 @@ describe('ESI resilience Redis coordination', () => {
       }),
     ).resolves.toMatchObject([
       { active: false, coordinationAvailable: true },
-      { active: true, retryAfterSeconds: 12, coordinationAvailable: true },
+      { active: true, coordinationAvailable: true, retryAfterSeconds: 12 },
       { active: false, coordinationAvailable: true },
     ])
     expect(mget).toHaveBeenCalledOnce()
@@ -160,9 +160,9 @@ describe('ESI resilience Redis coordination', () => {
     }
     await recordEsiResponse({
       connection: unavailable as never,
+      metadata: { headers: {}, retryAfterSeconds: 12, status: 429 },
       operation: 'wallet-balance',
       principal: 'character-90000002',
-      metadata: { status: 429, headers: {}, retryAfterSeconds: 12 },
     })
 
     await expect(
@@ -179,7 +179,9 @@ describe('ESI resilience Redis coordination', () => {
     const resource = representationIdentity('status', {}, 'redis-status')
     const namespace = await initializeCacheNamespace(coordination)
     const owner = await acquireEsiRequestLease(coordination, resource)
-    if (!owner) throw new Error('owner was not acquired')
+    if (!owner) {
+      throw new Error('owner was not acquired')
+    }
     await expect(commitEsiFence(coordination, resource, owner)).resolves.toBe(true)
     await releaseEsiRequestLease(coordination, owner)
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(statusResponse('validated')))
@@ -209,17 +211,17 @@ describe('ESI resilience Redis coordination', () => {
     await cache.set(
       cacheEnvelopeKey(namespace, resource),
       JSON.stringify({
-        version: 3,
+        data: statusData('untrusted'),
+        fence: 1,
+        freshUntil: Date.now() + 60_000,
         representationVersion: composeEnvelopeRepresentationVersion(
           resource.representationVersion,
           resource.representationName,
         ),
-        data: statusData('untrusted'),
-        freshUntil: Date.now() + 60_000,
-        staleUntil: Date.now() + 60_000,
         retainUntil: Date.now() + 60_000,
+        staleUntil: Date.now() + 60_000,
         validatedAt: new Date().toISOString(),
-        fence: 1,
+        version: 3,
       }),
     )
     const fetch = vi.fn().mockResolvedValue(statusResponse('validated'))
@@ -236,27 +238,29 @@ describe('ESI resilience Redis coordination', () => {
     const resource = representationIdentity('status', {}, 'redis-status')
     const namespace = await initializeCacheNamespace(coordination)
     const owner = await acquireEsiRequestLease(coordination, resource)
-    if (!owner) throw new Error('owner was not acquired')
+    if (!owner) {
+      throw new Error('owner was not acquired')
+    }
     await commitEsiFence(coordination, resource, owner)
     const freshUntil = Date.now() + 250
     await cache.set(
       cacheEnvelopeKey(namespace, resource),
       JSON.stringify({
-        version: 3,
+        data: { name: 'cached' },
+        etag: '"absolute"',
+        fence: owner.fence,
+        freshUntil,
         representationVersion: composeEnvelopeRepresentationVersion(
           resource.representationVersion,
           resource.representationName,
         ),
-        data: { name: 'cached' },
-        freshUntil,
+        retainUntil: freshUntil + 3000,
         staleUntil: freshUntil,
-        retainUntil: freshUntil + 3_000,
         validatedAt: new Date().toISOString(),
-        etag: '"absolute"',
-        fence: owner.fence,
+        version: 3,
       }),
       'PX',
-      3_250,
+      3250,
     )
     await releaseEsiRequestLease(coordination, owner)
     const fetch = vi.fn().mockResolvedValue(statusResponse('validated'))
@@ -326,10 +330,10 @@ describe('ESI resilience Redis coordination', () => {
   test('serves cached platform wire data without resolving token material again', async () => {
     const operation = 'organization-activity-character-jobs'
     const authorization = {
-      kind: 'character-lifecycle' as const,
       characterId: 90_000_001,
-      lifecycleId: '11111111-1111-4111-8111-111111111111',
       generation: 1,
+      kind: 'character-lifecycle' as const,
+      lifecycleId: '11111111-1111-4111-8111-111111111111',
     }
     const inputs = { path: { character_id: authorization.characterId } }
     const fetch = vi.fn().mockResolvedValue(esiResponse({ freelance_jobs: [] }))
@@ -338,9 +342,9 @@ describe('ESI resilience Redis coordination', () => {
 
     await expect(
       platformExecutionModule.executePlatformEsiOperation({
-        operation,
-        inputs,
         authorization,
+        inputs,
+        operation,
       }),
     ).resolves.toMatchObject({ data: { freelance_jobs: [] }, source: 'esi' })
 
@@ -348,9 +352,9 @@ describe('ESI resilience Redis coordination', () => {
     platformExecutionModule = await import('../../../src/esi-gateway/platform-execution.js')
     await expect(
       platformExecutionModule.executePlatformEsiOperation({
-        operation,
-        inputs,
         authorization,
+        inputs,
+        operation,
       }),
     ).resolves.toMatchObject({ data: { freelance_jobs: [] }, source: 'cache' })
 
@@ -389,7 +393,7 @@ describe('ESI resilience Redis coordination', () => {
     expect(fetch).toHaveBeenCalledOnce()
     pendingResponses[0]?.(esiResponse({ body: 'owner' }, 30))
 
-    await expect(Promise.all([owner, follower])).resolves.toEqual([
+    await expect(Promise.all([owner, follower])).resolves.toStrictEqual([
       expect.objectContaining({ data: { body: 'owner' }, source: 'esi' }),
       expect.objectContaining({ data: { body: 'owner' }, source: 'cache' }),
     ])
@@ -452,7 +456,9 @@ describe('ESI resilience Redis coordination', () => {
         representation = await walletRepresentation()
       }
       const cacheRead = vi.spyOn(cache, 'get')
-      if (source === 'l1') cacheRead.mockRejectedValue(new Error('Cache Redis unavailable'))
+      if (source === 'l1') {
+        cacheRead.mockRejectedValue(new Error('Cache Redis unavailable'))
+      }
 
       try {
         const formerRequest = execute(
@@ -461,7 +467,9 @@ describe('ESI resilience Redis coordination', () => {
           { subjectLifecycleId },
         )
         await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
-        if (source === 'shared') cacheRead.mockRejectedValue(new Error('Cache Redis unavailable'))
+        if (source === 'shared') {
+          cacheRead.mockRejectedValue(new Error('Cache Redis unavailable'))
+        }
         currentSubjectLifecycleId = replacementSubjectLifecycleId
         rejectRefresh(new TypeError('ESI unavailable'))
 
@@ -507,8 +515,8 @@ describe('ESI resilience Redis coordination', () => {
   test('advances the mailbox revision after a registered mutation succeeds', async () => {
     const fetch = vi.fn().mockResolvedValue(
       new Response('7001', {
-        status: 201,
         headers: { 'content-type': 'application/json' },
+        status: 201,
       }),
     )
     vi.stubGlobal('fetch', fetch)
@@ -517,8 +525,8 @@ describe('ESI resilience Redis coordination', () => {
       execute(
         representation,
         {
-          characterId: 90_000_001,
           body: 'Body',
+          characterId: 90_000_001,
           subject: 'Subject',
         },
         { subjectLifecycleId },
@@ -534,7 +542,9 @@ describe('ESI resilience Redis coordination', () => {
     const resource = identity('public-character', { characterId: 90_000_001 })
     const lease = await acquireEsiRequestLease(coordination, resource)
     expect(lease).toBeDefined()
-    if (!lease) throw new Error('lease was not acquired')
+    if (!lease) {
+      throw new Error('lease was not acquired')
+    }
 
     await expect(
       releaseEsiRequestLease(coordination, { ...lease, ownerToken: 'not-the-owner' }),
@@ -545,7 +555,9 @@ describe('ESI resilience Redis coordination', () => {
   test('renews only the current lease owner and reports its remaining lifetime', async () => {
     const resource = identity('public-character', { characterId: 90_000_001 })
     const lease = await acquireEsiRequestLease(coordination, resource, 100)
-    if (!lease) throw new Error('lease was not acquired')
+    if (!lease) {
+      throw new Error('lease was not acquired')
+    }
 
     await expect(getEsiRequestLeaseTtl(coordination, resource)).resolves.toBeGreaterThan(0)
     await expect(renewEsiRequestLease(coordination, lease)).resolves.toBe(true)
@@ -576,7 +588,9 @@ describe('ESI resilience Redis coordination', () => {
       acquireEsiRequestLease(coordination, character),
       acquireEsiRequestLease(coordination, history),
     ])
-    if (!characterLease || !historyLease) throw new Error('operation leases were not acquired')
+    if (!characterLease || !historyLease) {
+      throw new Error('operation leases were not acquired')
+    }
 
     expect(characterLease.key).not.toBe(historyLease.key)
     expect(characterLease.key).toContain('eve-space:v2:esi-resilience:lease:public-character:')
@@ -591,10 +605,14 @@ describe('ESI resilience Redis coordination', () => {
       { namespace: 'mailbox', value: 0 },
     )
     const first = await acquireEsiRequestLease(coordination, resource, 40)
-    if (!first) throw new Error('first owner was not acquired')
+    if (!first) {
+      throw new Error('first owner was not acquired')
+    }
     await wait(60)
-    const second = await acquireEsiRequestLease(coordination, resource, 1_000)
-    if (!second) throw new Error('second owner was not acquired')
+    const second = await acquireEsiRequestLease(coordination, resource, 1000)
+    if (!second) {
+      throw new Error('second owner was not acquired')
+    }
 
     await expect(commitEsiFence(coordination, resource, second)).resolves.toBe(true)
     await expect(commitEsiFence(coordination, resource, first)).resolves.toBe(false)
@@ -631,10 +649,14 @@ describe('ESI resilience Redis coordination', () => {
       { namespace: 'mailbox', value: 1 },
     )
     const first = await acquireEsiRequestLease(coordination, firstIdentity)
-    if (!first) throw new Error('first owner was not acquired')
+    if (!first) {
+      throw new Error('first owner was not acquired')
+    }
     await releaseEsiRequestLease(coordination, first)
     const second = await acquireEsiRequestLease(coordination, secondIdentity)
-    if (!second) throw new Error('second owner was not acquired')
+    if (!second) {
+      throw new Error('second owner was not acquired')
+    }
 
     expect(first.key).toBe(second.key)
     expect(second.fence).toBeGreaterThan(first.fence)
@@ -685,7 +707,9 @@ describe('ESI resilience Redis coordination', () => {
       coordination,
       identity('public-character', { characterId: 90_000_001 }),
     )
-    if (!lease) throw new Error('lease was not acquired')
+    if (!lease) {
+      throw new Error('lease was not acquired')
+    }
     await cache.set('disposable-envelope', 'value')
     await cache.flushdb()
 
@@ -697,52 +721,52 @@ describe('ESI resilience Redis coordination', () => {
     const now = Date.now()
     await Promise.all([
       recordEsiRateMeasurement(cache, {
+        now,
         operation: 'wallet-balance',
         principal: 'character-90000001',
         status: 200,
-        now,
       }),
       recordEsiRateMeasurement(cache, {
+        now,
         operation: 'status',
         status: 200,
-        now,
       }),
       recordEsiRateMeasurement(cache, {
+        now,
         operation: 'wallet-transactions',
         principal: 'character-90000001',
         status: 304,
-        now,
       }),
       recordEsiRateMeasurement(cache, {
+        now,
         operation: 'wallet-balance',
         principal: 'character-90000002',
         status: 404,
-        now,
       }),
     ])
 
     const measurement = await readEsiRateMeasurement(cache, { now, windowOffset: 0 })
     expect(measurement.groups).toContainEqual({
-      group: 'char-wallet',
-      scope: 'character',
-      maximumTokens: 150,
-      window: '15m',
-      requests: 3,
-      weightedTokens: 8,
-      distinctCharacters: 2,
       averageWeightedTokensPerCharacter: 4,
       capacityUsedPercent: 2.6667,
+      distinctCharacters: 2,
+      group: 'char-wallet',
+      maximumTokens: 150,
+      requests: 3,
+      scope: 'character',
+      weightedTokens: 8,
+      window: '15m',
     })
     expect(measurement.groups).toContainEqual({
-      group: 'status',
-      scope: 'public',
-      maximumTokens: 600,
-      window: '15m',
-      requests: 1,
-      weightedTokens: 2,
-      distinctCharacters: null,
       averageWeightedTokensPerCharacter: null,
       capacityUsedPercent: 0.3333,
+      distinctCharacters: null,
+      group: 'status',
+      maximumTokens: 600,
+      requests: 1,
+      scope: 'public',
+      weightedTokens: 2,
+      window: '15m',
     })
     const values = await cache.scan(0, 'MATCH', '*', 'COUNT', 100)
     const serialized = await Promise.all(values[1].map((key) => cache.dump(key)))
@@ -757,15 +781,15 @@ describe('ESI resilience Redis coordination', () => {
     try {
       await recordEsiResponse({
         connection: reporter,
+        metadata: { errorLimit: { remaining: 0, reset: 30 }, headers: {}, status: 500 },
         operation: 'status',
-        metadata: { status: 500, headers: {}, errorLimit: { remaining: 0, reset: 30 } },
       })
       await expect(
         acquireEsiRequestPermit({
+          concurrency: 2,
           connection: follower,
           operation: 'wallet-balance',
           principal: 'character-90000001',
-          concurrency: 2,
           queueTimeoutMs: 30_000,
         }),
       ).rejects.toBeInstanceOf(EsiQuotaError)
@@ -778,32 +802,32 @@ describe('ESI resilience Redis coordination', () => {
   test('shares declared route-group cooldowns across operations and cold clients by principal', async () => {
     await recordEsiResponse({
       connection: coordination,
-      operation: 'wallet-balance',
-      principal: 'character-90000001',
       metadata: {
-        status: 429,
         headers: {},
         retryAfterSeconds: 30,
         routeRateLimit: { group: 'unexpected-wallet-group' },
+        status: 429,
       },
+      operation: 'wallet-balance',
+      principal: 'character-90000001',
     })
 
     const follower = createClient(coordinationContainer)
     try {
       await expect(
         acquireEsiRequestPermit({
+          concurrency: 2,
           connection: follower,
           operation: 'wallet-transactions',
           principal: 'character-90000001',
-          concurrency: 2,
           queueTimeoutMs: 30_000,
         }),
       ).rejects.toBeInstanceOf(EsiQuotaError)
       const isolated = await acquireEsiRequestPermit({
+        concurrency: 2,
         connection: follower,
         operation: 'wallet-transactions',
         principal: 'character-90000002',
-        concurrency: 2,
         queueTimeoutMs: 30_000,
       })
       await isolated.release()
@@ -814,25 +838,25 @@ describe('ESI resilience Redis coordination', () => {
 
   test('bounds distributed operation permits and releases them by owner token', async () => {
     const first = await acquireEsiRequestPermit({
+      concurrency: 1,
       connection: coordination,
       operation: 'status',
-      concurrency: 1,
       queueTimeoutMs: 30_000,
     })
     await expect(
       acquireEsiRequestPermit({
+        concurrency: 1,
         connection: coordination,
         operation: 'status',
-        concurrency: 1,
         queueTimeoutMs: 1,
       }),
     ).rejects.toBeInstanceOf(EsiQuotaError)
     await first.release()
     await expect(
       acquireEsiRequestPermit({
+        concurrency: 1,
         connection: coordination,
         operation: 'status',
-        concurrency: 1,
         queueTimeoutMs: 30_000,
       }),
     ).resolves.toMatchObject({ coordinationAvailable: true })
@@ -901,8 +925,8 @@ describe('ESI resilience Redis coordination', () => {
     await Effect.runPromise(clock.adjust(20_000))
 
     await expect(pending).resolves.toMatchObject({
-      name: 'AbortError',
       message: 'ESI concurrency permit ownership lost',
+      name: 'AbortError',
     })
     expect(transportSignal?.aborted).toBe(true)
     await expect(coordination.zcard(key)).resolves.toBe(0)
@@ -910,7 +934,9 @@ describe('ESI resilience Redis coordination', () => {
 })
 
 function assertCurrentSubjectLifecycle(requestedSubjectLifecycleId: string) {
-  if (requestedSubjectLifecycleId !== currentSubjectLifecycleId) throw lifecycleInvalidated
+  if (requestedSubjectLifecycleId !== currentSubjectLifecycleId) {
+    throw lifecycleInvalidated
+  }
 }
 
 function createClient(container: StartedTestContainer) {
@@ -930,7 +956,6 @@ function executeRedisLifecycleAttempt(options: {
   readonly onRenew?: () => void
 }) {
   return executeEsiRequestAttempt({
-    clock: options.clock,
     acquirePermit: async (signal) => {
       const permit = await acquireEsiRequestPermit({
         connection: coordination,
@@ -947,15 +972,16 @@ function executeRedisLifecycleAttempt(options: {
         },
       }
     },
+    attempt: async (transport) => {
+      const response = await transport('https://esi.evetech.net/latest/status')
+      return response.text()
+    },
+    clock: options.clock,
     createTransport: (lifecycle) =>
       createRawEsiTransport(
         { userAgent: 'EveSpace/Test', compatibilityDate: '2026-09-01' },
         lifecycle,
       ),
-    attempt: async (transport) => {
-      const response = await transport('https://esi.evetech.net/latest/status')
-      return response.text()
-    },
   })
 }
 
@@ -969,12 +995,12 @@ async function statusRepresentation() {
     import('../../../src/esi-gateway/feature-execution.js'),
   ])
   return createPublicEsiRead({
-    operation: 'status',
-    name: 'redis-status',
-    descriptor: operationRegistry.GetStatus.transport,
     cacheSchema: z.object({ name: z.string() }),
+    descriptor: operationRegistry.GetStatus.transport,
     encodeRequest: () => ({}),
     map: ({ data }) => ({ name: data.server_version }),
+    name: 'redis-status',
+    operation: 'status',
   })
 }
 
@@ -984,14 +1010,14 @@ async function walletRepresentation() {
     import('../../../src/esi-gateway/feature-execution.js'),
   ])
   return createCharacterEsiRead({
-    operation: 'wallet-balance',
-    name: 'redis-wallet-balance',
-    descriptor: operationRegistry.GetCharactersCharacterIdWallet.transport,
     cacheSchema: operationRegistry.GetCharactersCharacterIdWallet.responseSchema,
+    descriptor: operationRegistry.GetCharactersCharacterIdWallet.transport,
     encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
       path: { character_id: input.characterId },
     }),
     map: ({ data }) => data,
+    name: 'redis-wallet-balance',
+    operation: 'wallet-balance',
   })
 }
 
@@ -1001,10 +1027,8 @@ async function mailRepresentation() {
     import('../../../src/esi-gateway/feature-execution.js'),
   ])
   return createCharacterEsiRead({
-    operation: 'mail-message',
-    name: 'redis-mail-message',
-    descriptor: operationRegistry.GetCharactersCharacterIdMailMailId.transport,
     cacheSchema: operationRegistry.GetCharactersCharacterIdMailMailId.responseSchema,
+    descriptor: operationRegistry.GetCharactersCharacterIdMailMailId.transport,
     encodeRequest: (input: {
       characterId: number
       mailId: number
@@ -1013,6 +1037,8 @@ async function mailRepresentation() {
       path: { character_id: input.characterId, mail_id: input.mailId },
     }),
     map: ({ data }) => data,
+    name: 'redis-mail-message',
+    operation: 'mail-message',
   })
 }
 
@@ -1022,8 +1048,6 @@ async function mailSendRepresentation() {
     import('../../../src/esi-gateway/feature-execution.js'),
   ])
   return createCharacterEsiMutation({
-    operation: 'mail-send',
-    name: 'redis-mail-send',
     descriptor: operationRegistry.PostCharactersCharacterIdMail.transport,
     encodeRequest: (input: {
       characterId: number
@@ -1040,6 +1064,8 @@ async function mailSendRepresentation() {
       },
     }),
     map: ({ data }) => data,
+    name: 'redis-mail-send',
+    operation: 'mail-send',
   })
 }
 
@@ -1066,11 +1092,11 @@ function statusData(name: string) {
 
 function esiResponse(data: unknown, maximumAgeSeconds = 60) {
   return new Response(JSON.stringify(data), {
-    status: 200,
     headers: {
       'cache-control': `max-age=${maximumAgeSeconds}`,
       'content-type': 'application/json',
     },
+    status: 200,
   })
 }
 
@@ -1080,9 +1106,9 @@ function identity(
   resourceRevision?: Parameters<typeof createEsiRepresentationIdentity>[0]['resourceRevision'],
 ) {
   return createEsiRepresentationIdentity({
-    operation,
-    inputs,
     compatibilityDate: '2026-08-23',
+    inputs,
+    operation,
     representationVersion: getEsiOperationContract(operation).representationVersion,
     resourceRevision,
   })
@@ -1094,10 +1120,10 @@ function representationIdentity(
   representationName: string,
 ) {
   return createEsiRepresentationIdentity({
-    operation,
-    inputs,
     compatibilityDate: '2026-08-23',
-    representationVersion: getEsiOperationContract(operation).representationVersion,
+    inputs,
+    operation,
     representationName,
+    representationVersion: getEsiOperationContract(operation).representationVersion,
   })
 }

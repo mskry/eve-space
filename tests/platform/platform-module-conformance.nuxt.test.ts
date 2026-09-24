@@ -9,26 +9,27 @@ const apiServer = await startCorsJsonApi((request) => {
   if (request.url?.startsWith('/api/modules/conformance/characters/')) {
     featureRequests += 1
     const characterId = Number(request.url.match(/characters\/(\d+)/)?.[1])
-    if (characterId === 9)
+    if (characterId === 9) {
       return {
-        status: 403,
         body: {
           code: 'ORGANIZATION_PERMISSION_REQUIRED',
           message: 'Conformance permission is required.',
         },
+        status: 403,
       }
+    }
     return {
       body: {
         characterId,
         corporationId: 98_000_001,
         organizationVersion: 4,
-        view: 'summary',
         resource: {
-          status: characterId === 8 ? 'stale' : 'current',
           authorizationGeneration: 2,
           lastFailureClass: null,
+          status: characterId === 8 ? 'stale' : 'current',
           validatedAt: '2026-09-06T20:00:00Z',
         },
+        view: 'summary',
       },
     }
   }
@@ -37,10 +38,10 @@ const apiServer = await startCorsJsonApi((request) => {
       enabledModuleIds: moduleEnabled ? ['conformance'] : [],
       enabledSections: [],
       shellNavigationOrder: {
+        character: [],
         dashboard: moduleEnabled
           ? [{ ownerId: 'conformance', navigationId: 'conformance-activity-navigation' }]
           : [],
-        character: [],
       },
     },
   }
@@ -51,8 +52,8 @@ afterAll(apiServer.close)
 
 describe('module conformance Nuxt production fixture', async () => {
   await setup({
-    rootDir: fileURLToPath(new URL('../fixtures/platform-module-conformance', import.meta.url)),
     browser: true,
+    rootDir: fileURLToPath(new URL('../fixtures/platform-module-conformance', import.meta.url)),
     server: true,
     setupTimeout: 120_000,
   })

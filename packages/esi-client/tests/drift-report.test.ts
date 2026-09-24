@@ -25,15 +25,15 @@ describe('specification drift comparison', () => {
       ({ operationId }) => operationId === 'change_item',
     );
 
-    expect(report.changes.operations.added.map(({ operationId }) => operationId)).toEqual([
+    expect(report.changes.operations.added.map(({ operationId }) => operationId)).toStrictEqual([
       'a_added',
       'z_added',
     ]);
-    expect(report.changes.operations.removed.map(({ operationId }) => operationId)).toEqual([
+    expect(report.changes.operations.removed.map(({ operationId }) => operationId)).toStrictEqual([
       'a_removed',
       'z_removed',
     ]);
-    expect(changed?.categories).toEqual([
+    expect(changed?.categories).toStrictEqual([
       'authentication',
       'cache',
       'method',
@@ -48,20 +48,19 @@ describe('specification drift comparison', () => {
         { name: 'add_me', placement: 'header' },
         { name: 'cursor', placement: 'query' },
       ],
-      removed: [
-        { name: 'page', placement: 'query' },
-        { name: 'remove_me', placement: 'header' },
-      ],
       changed: [
         {
           name: 'item_id',
           changes: ['placement', 'required', 'schema'],
         },
       ],
+      removed: [
+        { name: 'page', placement: 'query' },
+        { name: 'remove_me', placement: 'header' },
+      ],
     });
     expect(changed?.responses).toMatchObject({
       added: [{ status: '201' }],
-      removed: [{ status: '204' }],
       changed: [
         {
           status: '200',
@@ -81,10 +80,10 @@ describe('specification drift comparison', () => {
         },
         { status: '202', categories: ['noContent', 'shape'] },
       ],
+      removed: [{ status: '204' }],
     });
     expect(report.changes.componentSchemas).toMatchObject({
       added: [{ name: 'AddedModel' }],
-      removed: [{ name: 'RemovedModel' }],
       changed: [
         {
           name: 'Item',
@@ -95,10 +94,10 @@ describe('specification drift comparison', () => {
           },
         },
       ],
+      removed: [{ name: 'RemovedModel' }],
     });
     expect(report.changes.authenticationSchemes).toMatchObject({
       added: [{ name: 'ApiKey' }],
-      removed: [{ name: 'Legacy' }],
       changed: [
         {
           name: 'OAuth',
@@ -109,26 +108,27 @@ describe('specification drift comparison', () => {
           },
         },
       ],
+      removed: [{ name: 'Legacy' }],
     });
     expect(report.summary).toMatchObject({
+      authenticationChanged: 1,
+      cacheChanged: 1,
       hasChanges: true,
       operationsAdded: 2,
-      operationsRemoved: 2,
       operationsChanged: 1,
-      parametersAdded: 2,
-      parametersRemoved: 2,
-      parametersChanged: 1,
-      responsesAdded: 1,
-      responsesRemoved: 1,
-      responsesChanged: 2,
+      operationsRemoved: 2,
       paginationChanged: 1,
-      cacheChanged: 1,
-      authenticationChanged: 1,
+      parametersAdded: 2,
+      parametersChanged: 1,
+      parametersRemoved: 2,
+      responsesAdded: 1,
+      responsesChanged: 2,
+      responsesRemoved: 1,
     });
 
     const reorderedInput = {
-      pinned: { ...input.pinned, model: reverseModelCollections(input.pinned.model) },
       latest: { ...input.latest, model: reverseModelCollections(input.latest.model) },
+      pinned: { ...input.pinned, model: reverseModelCollections(input.pinned.model) },
     };
     expect(renderSpecificationDriftReport(compareSpecificationDrift(reorderedInput))).toBe(
       renderSpecificationDriftReport(report),
@@ -141,12 +141,12 @@ describe('specification drift comparison', () => {
     const report = compareSpecificationDrift(driftInput(document, model, document, model));
 
     expect(report.summary).toMatchObject({ hasChanges: false, totalChanges: 0 });
-    expect(report.changes).toEqual({
-      authenticationSchemes: { added: [], removed: [], changed: [] },
-      componentSchemas: { added: [], removed: [], changed: [] },
-      operations: { added: [], removed: [], changed: [] },
+    expect(report.changes).toStrictEqual({
+      authenticationSchemes: { added: [], changed: [], removed: [] },
+      componentSchemas: { added: [], changed: [], removed: [] },
+      operations: { added: [], changed: [], removed: [] },
     });
-    expect(JSON.parse(renderSpecificationDriftReport(report))).toEqual(report);
+    expect(JSON.parse(renderSpecificationDriftReport(report))).toStrictEqual(report);
   });
 
   it('stages with the latest advertised date and never mutates pinned files', async () => {
@@ -165,9 +165,9 @@ describe('specification drift comparison', () => {
     const snapshot = canonicalJson(pinnedDocument);
     const snapshotHash = hash(snapshot);
     const pinnedPaths = {
-      snapshot: join(generatedDirectory, 'esi-openapi.json'),
       model: join(generatedDirectory, 'normalized-model.json'),
       provenance: join(generatedDirectory, 'provenance.json'),
+      snapshot: join(generatedDirectory, 'esi-openapi.json'),
     };
     await Promise.all([
       writeFile(pinnedPaths.snapshot, snapshot),
@@ -185,12 +185,11 @@ describe('specification drift comparison', () => {
       writeFile(join(root, 'openapi/compatibility-date.txt'), '2026-08-18\n'),
       writeFile(
         join(configDirectory, 'exclusions.json'),
-        canonicalJson({ schemaVersion: 1, exclusions: [] }),
+        canonicalJson({ exclusions: [], schemaVersion: 1 }),
       ),
       writeFile(
         join(correctionDirectory, 'manifest.json'),
         canonicalJson({
-          schemaVersion: 1,
           corrections: [
             {
               id: 'fix-version',
@@ -200,6 +199,7 @@ describe('specification drift comparison', () => {
               through: '2026-12-31',
             },
           ],
+          schemaVersion: 1,
         }),
       ),
       writeFile(
@@ -215,8 +215,6 @@ describe('specification drift comparison', () => {
     let output = '';
 
     const report = await reportSpecificationDrift({
-      repositoryRoot: root,
-      specificationUrl: 'https://example.test/openapi.json',
       fetchImplementation: async (input, init) => {
         requests.push({ input, init });
         const requestUrl =
@@ -231,16 +229,18 @@ describe('specification drift comparison', () => {
       output(serialized) {
         output = serialized;
       },
+      repositoryRoot: root,
+      specificationUrl: 'https://example.test/openapi.json',
     });
 
     expect(requests).toMatchObject([
       {
-        input: new URL('https://example.test/meta/compatibility-dates'),
         init: { headers: { accept: 'application/json' } },
+        input: new URL('https://example.test/meta/compatibility-dates'),
       },
       {
-        input: 'https://example.test/openapi.json',
         init: { headers: { 'x-compatibility-date': '2026-08-19' } },
+        input: 'https://example.test/openapi.json',
       },
     ]);
     expect(report.latest).toMatchObject({
@@ -252,8 +252,8 @@ describe('specification drift comparison', () => {
       },
     });
     expect(report.summary).toMatchObject({ hasChanges: false, totalChanges: 0 });
-    expect(JSON.parse(output)).toEqual(report);
-    expect(await readPinnedFiles(pinnedPaths)).toEqual(before);
+    expect(JSON.parse(output)).toStrictEqual(report);
+    expect(await readPinnedFiles(pinnedPaths)).toStrictEqual(before);
   });
 
   it('does not apply corrections outside their compatibility range', async () => {
@@ -264,9 +264,9 @@ describe('specification drift comparison', () => {
     const latestDocument = minimalDocument('upstream');
 
     const report = await reportSpecificationDrift({
-      repositoryRoot: root,
-      latestCompatibilityDate: '2026-08-19',
       fetchImplementation: async () => new Response(JSON.stringify(latestDocument)),
+      latestCompatibilityDate: '2026-08-19',
+      repositoryRoot: root,
     });
 
     expect(report.latest).toMatchObject({
@@ -278,8 +278,8 @@ describe('specification drift comparison', () => {
   it('rejects report output paths that could overwrite generated artifacts', async () => {
     await expect(
       reportSpecificationDrift({
-        repositoryRoot: '/workspace/project',
         outputPath: '/workspace/project/openapi/generated/drift.json',
+        repositoryRoot: '/workspace/project',
       }),
     ).rejects.toThrow('Drift report output cannot overwrite generated path: openapi/generated');
   });
@@ -289,13 +289,13 @@ function driftDocument(version: 'pinned' | 'latest') {
   const pinned = version === 'pinned';
   const itemSchema = pinned
     ? {
-        type: 'object',
+        properties: { id: { type: 'integer' }, removed: { type: 'string' } },
         required: ['id'],
-        properties: { removed: { type: 'string' }, id: { type: 'integer' } },
+        type: 'object',
       }
     : {
+        properties: { added: { type: 'boolean' }, id: { type: 'string' } },
         type: 'object',
-        properties: { id: { type: 'string' }, added: { type: 'boolean' } },
       };
   const changedOperation = {
     operationId: 'change_item',
@@ -311,7 +311,6 @@ function driftDocument(version: 'pinned' | 'latest') {
           parameter('add_me', 'header', true, { type: 'boolean' }),
         ],
     requestBody: {
-      required: pinned,
       content: {
         'application/json': {
           schema: pinned
@@ -319,22 +318,23 @@ function driftDocument(version: 'pinned' | 'latest') {
             : { type: 'object', properties: { value: { type: 'integer' } } },
         },
       },
+      required: pinned,
     },
     responses: pinned
       ? {
           '200': jsonResponse(itemSchema, {
-            'X-Pages': { schema: { type: 'integer' } },
             ETag: { schema: { type: 'string' } },
+            'X-Pages': { schema: { type: 'integer' } },
           }),
           '202': jsonResponse({ type: 'string' }),
           '204': { description: 'No content' },
         }
       : {
           '200': jsonResponse(itemSchema, {
-            'X-Next-Cursor': { schema: { type: 'string' } },
             'Last-Modified': { schema: { type: 'string' } },
+            'X-Next-Cursor': { schema: { type: 'string' } },
           }),
-          '201': jsonResponse({ type: 'object', properties: { created: { type: 'boolean' } } }),
+          '201': jsonResponse({ properties: { created: { type: 'boolean' } }, type: 'object' }),
           '202': { description: 'Accepted without content' },
         },
     security: pinned ? [{ OAuth: ['scope.read'] }] : [{ ApiKey: [], OAuth: ['scope.write'] }],
@@ -342,19 +342,6 @@ function driftDocument(version: 'pinned' | 'latest') {
   };
 
   return {
-    openapi: '3.1.0',
-    info: { title: 'Drift fixture', version },
-    paths: pinned
-      ? {
-          '/z-removed': { get: noContentOperation('z_removed') },
-          '/items/{item_id}': { get: changedOperation },
-          '/a-removed': { delete: noContentOperation('a_removed') },
-        }
-      : {
-          '/z-added': { put: noContentOperation('z_added') },
-          '/things': { post: changedOperation },
-          '/a-added': { get: noContentOperation('a_added') },
-        },
     components: {
       schemas: pinned
         ? {
@@ -375,19 +362,32 @@ function driftDocument(version: 'pinned' | 'latest') {
             ApiKey: { type: 'apiKey', in: 'header', name: 'X-Key' },
           },
     },
+    info: { title: 'Drift fixture', version },
+    openapi: '3.1.0',
+    paths: pinned
+      ? {
+          '/z-removed': { get: noContentOperation('z_removed') },
+          '/items/{item_id}': { get: changedOperation },
+          '/a-removed': { delete: noContentOperation('a_removed') },
+        }
+      : {
+          '/z-added': { put: noContentOperation('z_added') },
+          '/things': { post: changedOperation },
+          '/a-added': { get: noContentOperation('a_added') },
+        },
   };
 }
 
 function oauthScheme(scopes: Record<string, string>) {
   return {
-    type: 'oauth2',
     flows: {
       authorizationCode: {
         authorizationUrl: 'https://example.test/authorize',
-        tokenUrl: 'https://example.test/token',
         scopes,
+        tokenUrl: 'https://example.test/token',
       },
     },
+    type: 'oauth2',
   };
 }
 
@@ -397,14 +397,14 @@ function parameter(
   required: boolean,
   schema: object,
 ) {
-  return { name, in: placement, required, schema };
+  return { in: placement, name, required, schema };
 }
 
 function jsonResponse(schema: object, headers: Record<string, object> = {}) {
   return {
+    content: { 'application/json': { schema } },
     description: 'JSON response',
     headers,
-    content: { 'application/json': { schema } },
   };
 }
 
@@ -414,8 +414,8 @@ function noContentOperation(operationId: string) {
 
 function minimalDocument(version: string) {
   return {
-    openapi: '3.1.0',
     info: { title: 'Minimal drift fixture', version },
+    openapi: '3.1.0',
     paths: {},
   };
 }
@@ -427,15 +427,6 @@ function driftInput(
   latestModel: Awaited<ReturnType<typeof normalizeOpenApiDocument>>,
 ) {
   return {
-    pinned: {
-      compatibilityDate: '2026-08-18',
-      corrections: ['pinned-fix'],
-      document: pinnedDocument,
-      model: pinnedModel,
-      sha256: '1'.repeat(64),
-      sourceSha256: '2'.repeat(64),
-      specificationUrl: 'https://example.test/openapi.json',
-    },
     latest: {
       compatibilityDate: '2026-08-19',
       corrections: [],
@@ -443,6 +434,15 @@ function driftInput(
       model: latestModel,
       sha256: '3'.repeat(64),
       sourceSha256: '3'.repeat(64),
+      specificationUrl: 'https://example.test/openapi.json',
+    },
+    pinned: {
+      compatibilityDate: '2026-08-18',
+      corrections: ['pinned-fix'],
+      document: pinnedDocument,
+      model: pinnedModel,
+      sha256: '1'.repeat(64),
+      sourceSha256: '2'.repeat(64),
       specificationUrl: 'https://example.test/openapi.json',
     },
   };
@@ -491,12 +491,11 @@ async function writeMinimalRepository(options: {
     writeFile(join(root, 'openapi/compatibility-date.txt'), '2026-08-18\n'),
     writeFile(
       join(configDirectory, 'exclusions.json'),
-      canonicalJson({ schemaVersion: 1, exclusions: [] }),
+      canonicalJson({ exclusions: [], schemaVersion: 1 }),
     ),
     writeFile(
       join(correctionDirectory, 'manifest.json'),
       canonicalJson({
-        schemaVersion: 1,
         corrections: [
           {
             id: 'fix-version',
@@ -506,6 +505,7 @@ async function writeMinimalRepository(options: {
             through: options.correctionThrough,
           },
         ],
+        schemaVersion: 1,
       }),
     ),
     writeFile(
@@ -532,8 +532,12 @@ function canonicalJson(value: unknown) {
 }
 
 function sortJson(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortJson);
-  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) {
+    return value.map(sortJson);
+  }
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
   return Object.fromEntries(
     sortedObjectEntries(value).map(([key, entry]) => [key, sortJson(entry)]),
   );
@@ -547,8 +551,11 @@ function sortedObjectEntries(value: object): [string, unknown][] {
   const sorted: [string, unknown][] = [];
   for (const entry of Object.entries(value)) {
     const index = sorted.findIndex(([key]) => key.localeCompare(entry[0], 'en') > 0);
-    if (index === -1) sorted.push(entry);
-    else sorted.splice(index, 0, entry);
+    if (index === -1) {
+      sorted.push(entry);
+    } else {
+      sorted.splice(index, 0, entry);
+    }
   }
   return sorted;
 }

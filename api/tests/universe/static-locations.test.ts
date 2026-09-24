@@ -9,9 +9,9 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../../src/universe/static-location-store.js', () => ({
+  StaticLocationProjectionUnavailableError: class extends Error {},
   loadStaticLocationSnapshot: mocks.loadStaticLocationSnapshot,
   readStaticLocationRevision: mocks.readStaticLocationRevision,
-  StaticLocationProjectionUnavailableError: class extends Error {},
 }))
 
 import {
@@ -75,22 +75,22 @@ describe('static location cache', () => {
     await vi.waitFor(() => expect(mocks.loadStaticLocationSnapshot).toHaveBeenCalledTimes(1))
     loading.resolve(snapshot)
 
-    await expect(first).resolves.toEqual([
+    await expect(first).resolves.toStrictEqual([
       {
         id: 60_000_001,
-        type: 'station',
         name: null,
         solarSystemId: 30_000_001,
         solarSystemSecurityStatus: -0.06,
+        type: 'station',
       },
     ])
-    await expect(second).resolves.toEqual([
+    await expect(second).resolves.toStrictEqual([
       {
         id: 30_000_001,
-        type: 'solar_system',
         name: 'System 30000001',
         solarSystemId: 30_000_001,
         solarSystemSecurityStatus: -0.06,
+        type: 'solar_system',
       },
     ])
   })
@@ -137,20 +137,20 @@ describe('static location cache', () => {
         { id: 60_000_001, type: 'station' },
         { id: 30_000_002, type: 'solar_system' },
       ]),
-    ).resolves.toEqual([
+    ).resolves.toStrictEqual([
       {
         id: 60_000_001,
-        type: 'station',
         name: null,
         solarSystemId: null,
         solarSystemSecurityStatus: null,
+        type: 'station',
       },
       {
         id: 30_000_002,
-        type: 'solar_system',
         name: 'System 30000002',
         solarSystemId: 30_000_002,
         solarSystemSecurityStatus: 0.945913,
+        type: 'solar_system',
       },
     ])
   })
@@ -265,27 +265,27 @@ describe('static location cache', () => {
     first[2]!.name = 'Mutated'
     first[2]!.solarSystemSecurityStatus = -1
 
-    expect(await getStaticLocations(locations)).toEqual([
+    expect(await getStaticLocations(locations)).toStrictEqual([
       {
         id: 30_000_001,
-        type: 'station',
         name: null,
         solarSystemId: null,
         solarSystemSecurityStatus: null,
+        type: 'station',
       },
       {
         id: 60_000_001,
-        type: 'solar_system',
         name: null,
         solarSystemId: null,
         solarSystemSecurityStatus: null,
+        type: 'solar_system',
       },
       {
         id: 30_000_001,
-        type: 'solar_system',
         name: 'System 30000001',
         solarSystemId: 30_000_001,
         solarSystemSecurityStatus: 0.945913,
+        type: 'solar_system',
       },
     ])
   })
@@ -309,8 +309,8 @@ function staticSnapshot(
 ): StaticLocationSnapshot {
   return {
     revision: snapshotRevision,
-    systems: new Map(systems.map((value) => [value.id, value])),
     stationSystemIds: new Map(stations),
+    systems: new Map(systems.map((value) => [value.id, value])),
   }
 }
 

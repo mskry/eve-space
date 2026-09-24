@@ -9,22 +9,22 @@ import { ESI_QUERY_RETENTION_MS } from '../src/runtime/esi-query-persistence.js'
 import { readPlatformApiResponse } from '../src/runtime.js'
 
 const mocks = vi.hoisted(() => ({
-  polite: vi.fn(),
   assertive: vi.fn(),
-  getEntries: vi.fn(() => []),
   cancelQueries: vi.fn(),
+  getEntries: vi.fn(() => []),
+  polite: vi.fn(),
   remove: vi.fn(),
   useQuery: vi.fn(),
 }))
 vi.mock('#imports', () => ({
+  useAnnouncer: () => ({ polite: mocks.polite, assertive: mocks.assertive }),
   useRuntimeConfig: () => ({
     public: { apiBase: 'https://api.example.test', eveImageBase: 'https://images.example.test' },
   }),
-  useAnnouncer: () => ({ polite: mocks.polite, assertive: mocks.assertive }),
 }))
 vi.mock('@pinia/colada', () => ({
-  useQueryCache: () => mocks,
   useQuery: mocks.useQuery,
+  useQueryCache: () => mocks,
 }))
 const scopes: ReturnType<typeof effectScope>[] = []
 beforeEach(() => {
@@ -48,15 +48,17 @@ describe('runtime adapters', () => {
     )
   })
   it('reads success bodies and preserves API refusal details', async () => {
-    await expect(readPlatformApiResponse(Response.json({ value: 7 }), 'Failed')).resolves.toEqual({
+    await expect(
+      readPlatformApiResponse(Response.json({ value: 7 }), 'Failed'),
+    ).resolves.toStrictEqual({
       value: 7,
     })
     await expect(
       readPlatformApiResponse(
-        Response.json({ message: 'Authorize', code: 'scope-required' }, { status: 403 }),
+        Response.json({ code: 'scope-required', message: 'Authorize' }, { status: 403 }),
         'Failed',
       ),
-    ).rejects.toMatchObject({ message: 'Authorize', status: 403, code: 'scope-required' })
+    ).rejects.toMatchObject({ code: 'scope-required', message: 'Authorize', status: 403 })
     await expect(
       readPlatformApiResponse(new Response('invalid', { status: 503 }), 'Unavailable'),
     ).rejects.toMatchObject({ message: 'Unavailable', status: 503 })
@@ -78,33 +80,33 @@ describe('runtime adapters', () => {
 describe('protected query lifecycle', () => {
   function setup() {
     const options = ref({
-      esiPersistence: { kind: 'none' as const },
-      moduleId: 'mail',
-      routeId: 'mail-route',
-      resource: ['headers'],
-      subject: { kind: 'character' as const, characterId: 7 },
       access: {
         authenticated: true,
         moduleEnabled: true,
         ownsCharacter: true,
         sectionId: undefined as string | undefined,
       },
+      esiPersistence: { kind: 'none' as const },
       gcTime: 12_345,
+      moduleId: 'mail',
       query: vi.fn(),
+      resource: ['headers'],
+      routeId: 'mail-route',
+      subject: { characterId: 7, kind: 'character' as const },
     })
     const scope = effectScope()
     scopes.push(scope)
     const result = scope.run(() => usePlatformProtectedQuery(options))
     const current = () => toValue(mocks.useQuery.mock.calls[0]![0])
-    return { options, current, result }
+    return { current, options, result }
   }
   it('blocks SSR and removes retained private results', () => {
     vi.stubGlobal('window', undefined)
     const { current } = setup()
     expect(current().enabled).toBe(false)
     expect(mocks.getEntries).toHaveBeenCalledWith({
-      key: ['private', 'characters', 7, 'modules', 'mail', 'headers'],
       exact: true,
+      key: ['private', 'characters', 7, 'modules', 'mail', 'headers'],
     })
   })
   it('tracks ownership, authentication, and module enablement reactively', () => {
@@ -112,7 +114,7 @@ describe('protected query lifecycle', () => {
     expect(current().enabled).toBe(true)
     expect(current().query).toBe(options.value.query)
     expect(current().gcTime).toBe(12_345)
-    expect(current().meta).toEqual({ esiPersistence: { kind: 'none' } })
+    expect(current().meta).toStrictEqual({ esiPersistence: { kind: 'none' } })
     for (const gate of ['ownsCharacter', 'authenticated', 'moduleEnabled'] as const) {
       options.value.access[gate] = false
       expect(current().enabled).toBe(false)
@@ -120,26 +122,26 @@ describe('protected query lifecycle', () => {
       expect(current().enabled).toBe(true)
     }
     expect(mocks.getEntries).toHaveBeenCalledTimes(3)
-    expect(result?.persistencePresentation.value).toEqual({ kind: 'fresh' })
+    expect(result?.persistencePresentation.value).toStrictEqual({ kind: 'fresh' })
   })
   it('persists authenticated-session routes only through exact generated admission metadata', () => {
     expect(platformQueryAdmissionScopes).toContainEqual({
-      moduleId: 'mail',
-      routeId: 'mail-summary',
       admissionScope: 'organization:v1:mail:member:mail.view',
-      authorization: 'authenticated-session',
       audience: 'member',
+      authorization: 'authenticated-session',
+      moduleId: 'mail',
       requiredPermission: 'mail.view',
+      routeId: 'mail-summary',
     })
     const options = ref({
+      access: { authenticated: true, authorized: true, moduleEnabled: true },
       esiPersistence: { kind: 'organization-esi' as const },
-      moduleId: 'mail',
-      routeId: 'mail-summary',
-      resource: ['summary'],
-      subject: { kind: 'organization' as const, organizationVersion: 3 },
-      access: { authenticated: true, moduleEnabled: true, authorized: true },
       gcTime: 12_345,
+      moduleId: 'mail',
       query: vi.fn(),
+      resource: ['summary'],
+      routeId: 'mail-summary',
+      subject: { kind: 'organization' as const, organizationVersion: 3 },
     })
     const scope = effectScope()
     scopes.push(scope)
@@ -148,44 +150,44 @@ describe('protected query lifecycle', () => {
 
     expect(current().enabled).toBe(true)
     expect(current().gcTime).toBe(ESI_QUERY_RETENTION_MS)
-    expect(current().meta).toEqual({
+    expect(current().meta).toStrictEqual({
       esiPersistence: {
-        kind: 'organization-esi',
         admissionScope: 'organization:v1:mail:member:mail.view',
+        kind: 'organization-esi',
       },
     })
 
     options.value.routeId = 'unknown-route'
     expect(current().enabled).toBe(false)
     expect(current().gcTime).toBe(12_345)
-    expect(current().meta).toEqual({ esiPersistence: { kind: 'none' } })
+    expect(current().meta).toStrictEqual({ esiPersistence: { kind: 'none' } })
 
     options.value.routeId = 'mail-route'
     expect(current().enabled).toBe(false)
     expect(current().gcTime).toBe(12_345)
-    expect(current().meta).toEqual({ esiPersistence: { kind: 'none' } })
+    expect(current().meta).toStrictEqual({ esiPersistence: { kind: 'none' } })
   })
   it('removes the previous character query on subject changes', () => {
     const { options, current } = setup()
     options.value.subject.characterId = 8
-    expect(current().key).toEqual(['private', 'characters', 8, 'modules', 'mail', 'headers'])
+    expect(current().key).toStrictEqual(['private', 'characters', 8, 'modules', 'mail', 'headers'])
     expect(mocks.getEntries).toHaveBeenCalledWith({
-      key: ['private', 'characters', 7, 'modules', 'mail', 'headers'],
       exact: true,
+      key: ['private', 'characters', 7, 'modules', 'mail', 'headers'],
     })
     options.value.subject.characterId = 0
     expect(current().enabled).toBe(false)
-    expect(current().key).toEqual(['private', 'inactive-module-query', 'mail', 'headers'])
+    expect(current().key).toStrictEqual(['private', 'inactive-module-query', 'mail', 'headers'])
     options.value.moduleId = ''
     expect(current().enabled).toBe(false)
-    expect(current().key).toEqual(['private', 'inactive-module-query', '', 'headers'])
+    expect(current().key).toStrictEqual(['private', 'inactive-module-query', '', 'headers'])
   })
   it('keys sectioned queries for immediate section cleanup', () => {
     const { options, current } = setup()
 
     options.value.access.sectionId = 'mail'
 
-    expect(current().key).toEqual([
+    expect(current().key).toStrictEqual([
       'private',
       'characters',
       7,
@@ -196,8 +198,8 @@ describe('protected query lifecycle', () => {
       'headers',
     ])
     expect(mocks.getEntries).toHaveBeenCalledWith({
-      key: ['private', 'characters', 7, 'modules', 'mail', 'headers'],
       exact: true,
+      key: ['private', 'characters', 7, 'modules', 'mail', 'headers'],
     })
   })
 })

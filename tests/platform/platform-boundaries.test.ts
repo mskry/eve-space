@@ -21,7 +21,7 @@ describe('platform module boundaries', () => {
     (sourceModule, sourceTier, importedModule, importedTier) => {
       expect(
         platformImportViolations([source(sourceModule, `import './${importedModule}.js'`)]),
-      ).toEqual([
+      ).toStrictEqual([
         `api/src/platform/${sourceModule}.ts: ${sourceTier} module ${sourceModule} cannot import ${importedTier} module ${importedModule}`,
       ])
     },
@@ -40,7 +40,7 @@ describe('platform module boundaries', () => {
         source('collection-state-repair', "import './resource-eligibility.js'"),
         source('routes', "import './module-settings.js'"),
       ]),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it.each(['postgres', 'drizzle-orm', 'node:fs', '../db/client.js'])(
@@ -50,7 +50,7 @@ describe('platform module boundaries', () => {
         platformImportViolations([
           source('resource-identity', `import runtime from '${specifier}'`),
         ]),
-      ).toEqual([
+      ).toStrictEqual([
         `api/src/platform/resource-identity.ts: representation module resource-identity cannot import runtime dependency ${specifier}`,
       ])
     },
@@ -65,7 +65,7 @@ describe('platform module boundaries', () => {
           "import type { PlatformResourceSubject } from '@eve-space/platform-module-contract/resources'",
         ),
       ]),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it('rejects platform dependencies on queue delivery', () => {
@@ -73,7 +73,7 @@ describe('platform module boundaries', () => {
       platformImportViolations([
         source('resource-batch', "const registry = import('../queue/job-registry.js')"),
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'api/src/platform/resource-batch.ts: Platform module resource-batch cannot import queue module ../queue/job-registry.js',
     ])
   })
@@ -84,19 +84,19 @@ describe('platform module boundaries', () => {
         source('collection-status', "import './resource-failures.js'"),
         source('resource-failures', "import './collection-status.js'"),
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'Platform dependency cycle: collection-status -> resource-failures -> collection-status',
     ])
   })
 
   it('requires new modules to declare their tier', () => {
-    expect(platformImportViolations([source('new-module', '')])).toEqual([
+    expect(platformImportViolations([source('new-module', '')])).toStrictEqual([
       'api/src/platform/new-module.ts: Platform module new-module has no declared tier',
     ])
   })
 
   it('retains the relative path when checking nested modules', () => {
-    expect(platformImportViolations([source('nested/new-module', '')])).toEqual([
+    expect(platformImportViolations([source('nested/new-module', '')])).toStrictEqual([
       'api/src/platform/nested/new-module.ts: Platform module nested/new-module has no declared tier',
     ])
   })
@@ -108,14 +108,14 @@ describe('platform module boundaries', () => {
       await mkdir(nested, { recursive: true })
       await writeFile(join(nested, 'example.ts'), 'export const example = true\n')
 
-      await expect(loadPlatformSources(root)).resolves.toEqual([
+      await expect(loadPlatformSources(root)).resolves.toStrictEqual([
         {
           path: join('api', 'src', 'platform', 'nested', 'example.ts'),
           source: 'export const example = true\n',
         },
       ])
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 })

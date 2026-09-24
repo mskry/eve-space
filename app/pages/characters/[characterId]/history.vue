@@ -13,7 +13,7 @@ interface EmploymentSummary {
   latestEnd: string | undefined
 }
 
-definePageMeta({ title: 'Employment History', layout: 'headerless' })
+definePageMeta({ layout: 'headerless', title: 'Employment History' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
@@ -37,15 +37,21 @@ const historyMessage = computed(() =>
   historyQuery.error.value instanceof Error ? historyQuery.error.value.message : '',
 )
 const historyStatus = computed(() => {
-  if (historyQuery.data.value) return 'idle'
+  if (historyQuery.data.value) {
+    return 'idle'
+  }
   if (
     historyQuery.error.value instanceof ApiQueryError &&
     historyQuery.error.value.status === 404
   ) {
     return 'not-found'
   }
-  if (historyQuery.status.value === 'error') return 'error'
-  if (historyQuery.asyncStatus.value === 'loading') return 'loading'
+  if (historyQuery.status.value === 'error') {
+    return 'error'
+  }
+  if (historyQuery.asyncStatus.value === 'loading') {
+    return 'loading'
+  }
   return 'idle'
 })
 const timeline = computed(() => buildHistoryTimeline(history.value?.history ?? []))
@@ -54,17 +60,19 @@ const playerEmploymentSummary = computed(() => {
   const corporations = new Map<number, EmploymentSummary>()
 
   for (const entry of timeline.value) {
-    if (entry.corporation.isNpc || entry.isDeleted) continue
+    if (entry.corporation.isNpc || entry.isDeleted) {
+      continue
+    }
     const duration = Math.max(
       0,
       Date.parse(entry.endDate ?? new Date().toISOString()) - Date.parse(entry.startDate),
     )
     const current = corporations.get(entry.corporation.id)
     corporations.set(entry.corporation.id, {
-      name: entry.corporation.name,
       duration: (current?.duration ?? 0) + duration,
       earliestStart: earliestStart(current, entry.startDate),
       latestEnd: latestEnd(current, entry.endDate),
+      name: entry.corporation.name,
     })
   }
 
@@ -73,7 +81,9 @@ const playerEmploymentSummary = computed(() => {
     const hasOpen = timeline.value.some(
       (e) => e.corporation.id === id && !e.endDate && !e.corporation.isNpc,
     )
-    if (hasOpen) data.latestEnd = undefined
+    if (hasOpen) {
+      data.latestEnd = undefined
+    }
   }
 
   return [...corporations.values()].toSorted(
@@ -82,13 +92,17 @@ const playerEmploymentSummary = computed(() => {
 })
 
 function earliestStart(current: EmploymentSummary | undefined, startDate: string) {
-  if (!current || Date.parse(startDate) < Date.parse(current.earliestStart)) return startDate
+  if (!current || Date.parse(startDate) < Date.parse(current.earliestStart)) {
+    return startDate
+  }
   return current.earliestStart
 }
 
 function latestEnd(current: EmploymentSummary | undefined, endDate: string | undefined) {
   const currentEnd = current?.latestEnd
-  if (!currentEnd || !endDate) return endDate ?? currentEnd
+  if (!currentEnd || !endDate) {
+    return endDate ?? currentEnd
+  }
   return Date.parse(endDate) > Date.parse(currentEnd) ? endDate : currentEnd
 }
 
@@ -99,12 +113,18 @@ const longestNpcInterlude = computed(() => {
 
   for (let index = 0; index < timeline.value.length; index += 1) {
     const playerEntry = timeline.value[index]
-    if (!playerEntry || playerEntry.corporation.isNpc || playerEntry.isDeleted) continue
+    if (!playerEntry || playerEntry.corporation.isNpc || playerEntry.isDeleted) {
+      continue
+    }
 
     let npcIndex = index + 1
-    while (timeline.value[npcIndex]?.corporation.isNpc) npcIndex += 1
+    while (timeline.value[npcIndex]?.corporation.isNpc) {
+      npcIndex += 1
+    }
     const earliestNpcEntry = timeline.value[npcIndex - 1]
-    if (!earliestNpcEntry || npcIndex === index + 1) continue
+    if (!earliestNpcEntry || npcIndex === index + 1) {
+      continue
+    }
 
     const duration = Math.max(
       0,
@@ -114,8 +134,8 @@ const longestNpcInterlude = computed(() => {
       longest = {
         duration,
         from: earliestNpcEntry.corporation.name,
-        to: playerEntry.corporation.name,
         fromDate: earliestNpcEntry.startDate,
+        to: playerEntry.corporation.name,
         toDate: playerEntry.startDate,
       }
     }
@@ -134,12 +154,12 @@ const visibleTimeline = computed(() =>
 )
 const searchableTimeline = computed(() =>
   visibleTimeline.value.map((entry) => ({
-    recordId: entry.recordId,
-    startDate: entry.startDate,
     endDate: entry.endDate,
-    isDeleted: entry.isDeleted,
     entityId: entry.corporation.id,
     entityName: entry.corporation.name,
+    isDeleted: entry.isDeleted,
+    recordId: entry.recordId,
+    startDate: entry.startDate,
   })),
 )
 
@@ -147,8 +167,8 @@ function formatEmploymentDate(value: string) {
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: 'short',
-    year: 'numeric',
     timeZone: 'UTC',
+    year: 'numeric',
   }).format(new Date(value))
 }
 
@@ -161,7 +181,9 @@ function formatDuration(milliseconds: number) {
     const monthDuration = months > 0 ? ` ${months}M` : ''
     return `${years}Y${monthDuration}`
   }
-  if (months > 0) return `${months}M ${days % 30}D`
+  if (months > 0) {
+    return `${months}M ${days % 30}D`
+  }
   return `${days}D`
 }
 </script>

@@ -34,7 +34,9 @@ export function useMailOrganization(options: MailOrganizationOptions) {
   )
   const assignedLabelIds = computed(() => {
     const detail = options.mailbox.displayedDetail.value
-    if (detail?.mailId !== options.mailbox.selectedMailId.value) return new Set<number>()
+    if (detail?.mailId !== options.mailbox.selectedMailId.value) {
+      return new Set<number>()
+    }
     return new Set(detail.labelIds)
   })
   function resetOrganizationView() {
@@ -52,7 +54,9 @@ export function useMailOrganization(options: MailOrganizationOptions) {
     labelColor.value = undefined
     createLabelFeedback.value = ''
     assignmentFeedback.value = ''
-    if (organizationToastKey !== undefined) dismissToast(organizationToastKey)
+    if (organizationToastKey !== undefined) {
+      dismissToast(organizationToastKey)
+    }
     organizationToastKey = undefined
   }
 
@@ -97,8 +101,11 @@ export function useMailOrganization(options: MailOrganizationOptions) {
       return
     }
     let title = 'Label change reverted'
-    if (action === 'read') title = 'Read change reverted'
-    else if (action === 'delete-mail') title = 'Deletion reverted'
+    if (action === 'read') {
+      title = 'Read change reverted'
+    } else if (action === 'delete-mail') {
+      title = 'Deletion reverted'
+    }
     showOrganizationToast({
       description: error instanceof Error ? `${fallback} ${error.message}` : fallback,
       title,
@@ -106,13 +113,17 @@ export function useMailOrganization(options: MailOrganizationOptions) {
   }
 
   async function changeMailRead(header: MailHeader, read: boolean, showSuccess = true) {
-    if (!options.characterId.value || (header.isRead === true) === read) return
+    if (!options.characterId.value || (header.isRead === true) === read) {
+      return
+    }
     const outcome = await options.mutations.setMailRead({
       characterId: options.characterId.value,
       header,
       read,
     })
-    if (!scopeActive) return
+    if (!scopeActive) {
+      return
+    }
     if (outcome.success && showSuccess) {
       showOrganizationToast({
         description: read
@@ -127,7 +138,9 @@ export function useMailOrganization(options: MailOrganizationOptions) {
 
   function changeOpenMessageRead(read: boolean) {
     const header = options.mailbox.selectedHeader.value
-    if (!header) return
+    if (!header) {
+      return
+    }
     if (!read) {
       autoReadSuppressedMailId.value = header.mailId
       cancelReadDwell?.()
@@ -138,7 +151,9 @@ export function useMailOrganization(options: MailOrganizationOptions) {
 
   function requestMailDeletion() {
     const header = options.mailbox.selectedHeader.value
-    if (!header) return
+    if (!header) {
+      return
+    }
     const subject = header.subject?.trim() || `mail ${header.mailId}`
     openConfirmDialog({
       confirmLabel: 'Delete message',
@@ -165,14 +180,17 @@ export function useMailOrganization(options: MailOrganizationOptions) {
       selectedHeader?.mailId === mailId
         ? selectedHeader
         : options.mailbox.displayedHeaders.value.find((header) => header.mailId === mailId)
-    if (!candidate) return true
+    if (!candidate) {
+      return true
+    }
     if (
       !options.characterId.value ||
       options.mutations.readPendingIds.value.has(mailId) ||
       options.mutations.labelPendingIds.value.has(mailId) ||
       options.mutations.deletePendingIds.value.has(mailId)
-    )
+    ) {
       return false
+    }
     const mutationCharacterId = options.characterId.value
     const previousSelection = options.mailbox.selectedMailId.value
     const request = options.mutations.deleteMail({
@@ -181,8 +199,12 @@ export function useMailOrganization(options: MailOrganizationOptions) {
     })
     options.mailbox.selectedMailId.value = null
     const outcome = await request
-    if (!scopeActive || options.characterId.value !== mutationCharacterId) return true
-    if (outcome.invalidated) return true
+    if (!scopeActive || options.characterId.value !== mutationCharacterId) {
+      return true
+    }
+    if (outcome.invalidated) {
+      return true
+    }
     if (outcome.success) {
       options.mailbox.removeLoadedHeader(mailId)
       showOrganizationToast({
@@ -211,7 +233,9 @@ export function useMailOrganization(options: MailOrganizationOptions) {
 
   function openLabelAssignment() {
     const detail = options.mailbox.displayedDetail.value
-    if (detail?.mailId !== options.mailbox.selectedMailId.value) return
+    if (detail?.mailId !== options.mailbox.selectedMailId.value) {
+      return
+    }
     assignmentFeedback.value = ''
     labelAssignmentOpen.value = true
   }
@@ -219,14 +243,18 @@ export function useMailOrganization(options: MailOrganizationOptions) {
   async function createLabel() {
     const characterId = options.characterId.value
     const name = labelName.value.trim()
-    if (!characterId || name.length < 1 || name.length > 40) return
+    if (!characterId || name.length < 1 || name.length > 40) {
+      return
+    }
     createLabelFeedback.value = ''
     const outcome = await options.mutations.createMailLabel({
       characterId,
       name,
       ...(labelColor.value === undefined ? {} : { color: labelColor.value }),
     })
-    if (!scopeActive || options.characterId.value !== characterId) return
+    if (!scopeActive || options.characterId.value !== characterId) {
+      return
+    }
     if (outcome.success) {
       if (outcome.reusedDeletedLabelId !== undefined) {
         options.mailbox.resetMailboxView()
@@ -275,13 +303,18 @@ export function useMailOrganization(options: MailOrganizationOptions) {
       !characterId ||
       options.mutations.labelPendingIds.value.size > 0 ||
       options.mutations.deleteLabelPendingIds.value.has(labelId)
-    )
+    ) {
       return false
+    }
     const outcome = await options.mutations.deleteMailLabel({ characterId, labelId })
-    if (!scopeActive || options.characterId.value !== characterId) return true
+    if (!scopeActive || options.characterId.value !== characterId) {
+      return true
+    }
     if (outcome.success) {
       options.mailbox.removeLoadedLabel(labelId)
-      if (options.mailbox.activeLabelId.value === labelId) options.mailbox.selectLabel(null)
+      if (options.mailbox.activeLabelId.value === labelId) {
+        options.mailbox.selectLabel(null)
+      }
       showOrganizationToast({
         description: `${name} was removed from the character and its messages.`,
         title: 'Label deleted',
@@ -296,7 +329,9 @@ export function useMailOrganization(options: MailOrganizationOptions) {
       })
       return true
     }
-    if (outcome.error) showMutationFailure('delete-label', outcome.error)
+    if (outcome.error) {
+      showMutationFailure('delete-label', outcome.error)
+    }
     return true
   }
 
@@ -313,7 +348,9 @@ export function useMailOrganization(options: MailOrganizationOptions) {
       return
     }
     const containsLabel = current.includes(labelId)
-    if (containsLabel === assigned) return
+    if (containsLabel === assigned) {
+      return
+    }
     const labels = assigned
       ? [...current, labelId]
       : current.filter((candidate) => candidate !== labelId)
@@ -328,7 +365,9 @@ export function useMailOrganization(options: MailOrganizationOptions) {
       header: detail,
       labels,
     })
-    if (!scopeActive || options.characterId.value !== characterId) return
+    if (!scopeActive || options.characterId.value !== characterId) {
+      return
+    }
     if (outcome.error) {
       assignmentFeedback.value =
         outcome.error instanceof Error ? outcome.error.message : 'The label change was refused.'
@@ -345,14 +384,17 @@ export function useMailOrganization(options: MailOrganizationOptions) {
     ([mailId, detail, detailFailure], _previous, onCleanup) => {
       cancelReadDwell?.()
       cancelReadDwell = undefined
-      if (autoReadSuppressedMailId.value !== mailId) autoReadSuppressedMailId.value = null
+      if (autoReadSuppressedMailId.value !== mailId) {
+        autoReadSuppressedMailId.value = null
+      }
       if (
         mailId === null ||
         autoReadSuppressedMailId.value === mailId ||
         detailFailure ||
         detail?.mailId !== mailId
-      )
+      ) {
         return
+      }
 
       cancelReadDwell = scheduleMailReadDwell(() => {
         cancelReadDwell = undefined
@@ -382,7 +424,9 @@ export function useMailOrganization(options: MailOrganizationOptions) {
 
   onBeforeUnmount(() => {
     scopeActive = false
-    if (organizationToastKey !== undefined) dismissToast(organizationToastKey)
+    if (organizationToastKey !== undefined) {
+      dismissToast(organizationToastKey)
+    }
     resetOrganizationView()
   })
 

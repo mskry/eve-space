@@ -46,7 +46,7 @@ describe('generated operation registry and manifest', () => {
       provenance,
     );
 
-    expect(second).toEqual(first);
+    expect(second).toStrictEqual(first);
     expect(first.registrySource).toContain('// Compatibility date: 2026-08-18.');
     expect(first.manifestSource).toContain(`// Specification SHA-256: ${provenance.sha256}.`);
     expect(first.indexSource).toContain("export * from './manifest.js';");
@@ -60,8 +60,8 @@ describe('generated operation registry and manifest', () => {
     const manifestIds = operationManifest.operations.map(({ operationId }) => operationId);
 
     expect(expectedIds).toHaveLength(operationCount);
-    expect(registryIds).toEqual(expectedIds);
-    expect(manifestIds).toEqual(expectedIds);
+    expect(registryIds).toStrictEqual(expectedIds);
+    expect(manifestIds).toStrictEqual(expectedIds);
     expect(new Set(manifestIds).size).toBe(operationCount);
     expect(operationManifest.schemaVersion).toBe(3);
 
@@ -69,7 +69,9 @@ describe('generated operation registry and manifest', () => {
       const runtime = Object.entries(operationRegistry).find(
         ([operationId]) => operationId === contract.operationId,
       )?.[1];
-      if (runtime === undefined) throw new Error(`Missing registry entry: ${contract.operationId}`);
+      if (runtime === undefined) {
+        throw new Error(`Missing registry entry: ${contract.operationId}`);
+      }
 
       expect(runtime.transport.operationId).toBe(contract.operationId);
       expect(runtime.transport.method).toBe(contract.http.method);
@@ -81,11 +83,11 @@ describe('generated operation registry and manifest', () => {
           : 'mutation';
       expect(contract.classification).toBe(expectedClassification);
       expect(contract.safety.readLike).toBe(expectedClassification === 'read');
-      expect(contract.safety.generic).toEqual({
+      expect(contract.safety.generic).toStrictEqual({
         requiresClientMutationEnablement: expectedClassification === 'mutation',
         requiresConfirmation: expectedClassification === 'mutation',
       });
-      expect(contract.safety.typed).toEqual({
+      expect(contract.safety.typed).toStrictEqual({
         expressesMutationIntent: expectedClassification === 'mutation',
         genericMutationGatesApply: false,
       });
@@ -98,11 +100,11 @@ describe('generated operation registry and manifest', () => {
         reviewedReadLikePost ? 'string' : 'undefined',
       );
       expect(runtime.requestSchema).toBe(runtime.transport.requestSchema);
-      expect(contract.requestType).toEqual({
+      expect(contract.requestType).toStrictEqual({
         export: `${contract.operationId}Data`,
         module: '@evespace/esi-client/types',
       });
-      expect(contract.responseType).toEqual({
+      expect(contract.responseType).toStrictEqual({
         export: `${contract.operationId}Response`,
         module: '@evespace/esi-client/types',
       });
@@ -112,14 +114,14 @@ describe('generated operation registry and manifest', () => {
       expect(
         contract.responses.every(({ schema }) => schema.module === '@evespace/esi-client/zod'),
       ).toBe(true);
-      expect(runtime.transport.authentication?.scopes ?? []).toEqual(
+      expect(runtime.transport.authentication?.scopes ?? []).toStrictEqual(
         contract.authentication.scopes,
       );
       expect(runtime.transport.authentication !== null).toBe(contract.authentication.required);
       expect(runtime.transport.transport?.compatibilityDateOverride === true).toBe(
         contract.transport.compatibilityDateOverride,
       );
-      expect(runtime.transport.protocol).toEqual({
+      expect(runtime.transport.protocol).toStrictEqual({
         cache: contract.cache,
         conditionalRequestValidators: contract.conditionalRequestValidators,
         maximumBatchSize: contract.maximumBatchSize,
@@ -132,10 +134,10 @@ describe('generated operation registry and manifest', () => {
           placement: parameter.placement,
           required: parameter.required,
         })),
-      ).toEqual(
+      ).toStrictEqual(
         contract.parameters.map(({ name, placement, required }) => ({ name, placement, required })),
       );
-      expect(Object.keys(runtime.responseSchemasByStatus)).toEqual(
+      expect(Object.keys(runtime.responseSchemasByStatus)).toStrictEqual(
         contract.responses.map(({ status }) => status),
       );
 
@@ -160,7 +162,7 @@ describe('generated operation registry and manifest', () => {
 
     expect(registryType).toBe(operationRegistry);
     expect(serialized).not.toContain('super-secret-operation-registry-test-token');
-    expect(JSON.parse(serialized)).toEqual(operationManifest);
+    expect(JSON.parse(serialized)).toStrictEqual(operationManifest);
     assertFrozenJsonValue(operationManifest, '$', new WeakSet());
   });
 
@@ -180,14 +182,14 @@ describe('generated operation registry and manifest', () => {
     expect(unpaginatedOperations).toHaveLength(193);
     expect(cursorParameterOperations).toHaveLength(12);
     for (const operation of offsetOperations) {
-      expect(operation.pagination).toEqual({
+      expect(operation.pagination).toStrictEqual({
         kind: 'offset',
         requestParameters: ['page'],
         responseHeaders: ['x-pages'],
       });
     }
     for (const operation of cursorParameterOperations) {
-      expect(operation.pagination).toEqual({
+      expect(operation.pagination).toStrictEqual({
         kind: 'none',
         requestParameters: [],
         responseHeaders: [],
@@ -198,7 +200,7 @@ describe('generated operation registry and manifest', () => {
         operationId,
         pagination,
       })),
-    ).toEqual(
+    ).toStrictEqual(
       model.operations.map(({ operationId, pagination }) => ({
         operationId,
         pagination,
@@ -238,12 +240,12 @@ describe('generated operation registry and manifest', () => {
     for (const operation of model.operations) {
       const manifest = manifestById.get(operation.operationId);
       expect(manifest).toBeDefined();
-      expect(manifest?.conditionalRequestValidators).toEqual(
+      expect(manifest?.conditionalRequestValidators).toStrictEqual(
         operation.conditionalRequestValidators,
       );
-      expect(manifest?.cache).toEqual(operation.cache);
-      expect(manifest?.rateLimit).toEqual(operation.rateLimit);
-      expect(manifest?.requestArrayLimits).toEqual(operation.requestArrayLimits);
+      expect(manifest?.cache).toStrictEqual(operation.cache);
+      expect(manifest?.rateLimit).toStrictEqual(operation.rateLimit);
+      expect(manifest?.requestArrayLimits).toStrictEqual(operation.requestArrayLimits);
       expect(manifest?.maximumBatchSize).toBe(operation.maximumBatchSize);
       expect(
         Object.keys(operation.cache.extensions).every((name) => allowedCacheExtensions.has(name)),
@@ -251,7 +253,6 @@ describe('generated operation registry and manifest', () => {
     }
 
     expect(manifestById.get('GetStatus')).toMatchObject({
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       cache: {
         extensions: {
           'x-cache-age': 30,
@@ -261,18 +262,19 @@ describe('generated operation registry and manifest', () => {
           'x-server-cache-ttl': 30,
         },
       },
-      rateLimit: { kind: 'declared', group: 'status', maximumTokens: 600, window: '15m' },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      rateLimit: { group: 'status', kind: 'declared', maximumTokens: 600, window: '15m' },
     });
-    expect(manifestById.get('GetAlliances')?.rateLimit).toEqual({ kind: 'legacy-only' });
+    expect(manifestById.get('GetAlliances')?.rateLimit).toStrictEqual({ kind: 'legacy-only' });
     expect(manifestById.get('PostUniverseNames')).toMatchObject({
       maximumBatchSize: 1000,
-      requestArrayLimits: [{ location: 'body', path: [], maximumItems: 1000 }],
+      requestArrayLimits: [{ location: 'body', maximumItems: 1000, path: [] }],
     });
     expect(manifestById.get('PostCharactersCharacterIdContacts')).toMatchObject({
       maximumBatchSize: null,
       requestArrayLimits: [
-        { location: 'body', path: [], maximumItems: 100 },
-        { location: 'query', path: ['label_ids'], maximumItems: 63 },
+        { location: 'body', maximumItems: 100, path: [] },
+        { location: 'query', maximumItems: 63, path: ['label_ids'] },
       ],
     });
   });
@@ -308,11 +310,21 @@ async function readProvenance(): Promise<{ compatibilityDate: string; sha256: st
 }
 
 function assertFrozenJsonValue(value: unknown, path: string, ancestors: WeakSet<object>): void {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return;
-  if (typeof value === 'number' && Number.isFinite(value)) return;
-  if (typeof value !== 'object') throw new TypeError(`Non-JSON value at ${path}: ${typeof value}`);
-  if (ancestors.has(value)) throw new TypeError(`Cyclic manifest value at ${path}`);
-  if (!Object.isFrozen(value)) throw new TypeError(`Mutable manifest value at ${path}`);
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+    return;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return;
+  }
+  if (typeof value !== 'object') {
+    throw new TypeError(`Non-JSON value at ${path}: ${typeof value}`);
+  }
+  if (ancestors.has(value)) {
+    throw new TypeError(`Cyclic manifest value at ${path}`);
+  }
+  if (!Object.isFrozen(value)) {
+    throw new TypeError(`Mutable manifest value at ${path}`);
+  }
   const prototype: unknown = Object.getPrototypeOf(value);
   if (prototype !== Object.prototype && prototype !== Array.prototype) {
     throw new TypeError(`Non-plain manifest value at ${path}`);
@@ -320,21 +332,36 @@ function assertFrozenJsonValue(value: unknown, path: string, ancestors: WeakSet<
 
   ancestors.add(value);
   if (Array.isArray(value)) {
-    for (const key of Reflect.ownKeys(value)) {
-      if (key === 'length') continue;
-      if (typeof key !== 'string' || !/^(?:0|[1-9]\d*)$/u.test(key)) {
-        throw new TypeError(`Non-index manifest array key at ${path}`);
-      }
-    }
-    for (let index = 0; index < value.length; index += 1) {
-      if (!Object.hasOwn(value, index)) throw new TypeError(`Sparse manifest array at ${path}`);
-      assertFrozenJsonValue(value[index], `${path}.${index}`, ancestors);
-    }
+    assertFrozenJsonArray(value, path, ancestors);
     ancestors.delete(value);
     return;
   }
+  assertFrozenJsonRecord(value, path, ancestors);
+  ancestors.delete(value);
+}
+
+function assertFrozenJsonArray(value: unknown[], path: string, ancestors: WeakSet<object>): void {
   for (const key of Reflect.ownKeys(value)) {
-    if (typeof key !== 'string') throw new TypeError(`Symbol manifest key at ${path}`);
+    if (key === 'length') {
+      continue;
+    }
+    if (typeof key !== 'string' || !/^(?:0|[1-9]\d*)$/u.test(key)) {
+      throw new TypeError(`Non-index manifest array key at ${path}`);
+    }
+  }
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index)) {
+      throw new TypeError(`Sparse manifest array at ${path}`);
+    }
+    assertFrozenJsonValue(value[index], `${path}.${index}`, ancestors);
+  }
+}
+
+function assertFrozenJsonRecord(value: object, path: string, ancestors: WeakSet<object>): void {
+  for (const key of Reflect.ownKeys(value)) {
+    if (typeof key !== 'string') {
+      throw new TypeError(`Symbol manifest key at ${path}`);
+    }
     const normalizedKey = key.replaceAll(/[^A-Za-z]/gu, '').toLowerCase();
     if (forbiddenCredentialKeys.has(normalizedKey)) {
       throw new TypeError(`Credential-bearing manifest key at ${path}.${key}`);
@@ -345,14 +372,15 @@ function assertFrozenJsonValue(value: unknown, path: string, ancestors: WeakSet<
     }
     assertFrozenJsonValue(descriptor.value, `${path}.${key}`, ancestors);
   }
-  ancestors.delete(value);
 }
 
 function reversed<Value>(values: readonly Value[]): Value[] {
   const result: Value[] = [];
   for (let index = values.length - 1; index >= 0; index -= 1) {
     const value = values[index];
-    if (value !== undefined) result.push(value);
+    if (value !== undefined) {
+      result.push(value);
+    }
   }
   return result;
 }

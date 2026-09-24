@@ -23,13 +23,13 @@ afterEach(() => {
 })
 
 test('maps scheduled contracts to stable skip-overlap identities', () => {
-  expect(getJobScheduler('outbox-relay')).toEqual({
+  expect(getJobScheduler('outbox-relay')).toStrictEqual({
+    overlap: 'skip',
     schedulerId: outboxRelaySchedulerId,
-    overlap: 'skip',
   })
-  expect(getJobScheduler('domain-event-retention')).toEqual({
-    schedulerId: eventRetentionSchedulerId,
+  expect(getJobScheduler('domain-event-retention')).toStrictEqual({
     overlap: 'skip',
+    schedulerId: eventRetentionSchedulerId,
   })
   expect(getJobScheduler('domain-event')).toBeUndefined()
   expect(eventRetentionIntervalMs).toBeGreaterThan(0)
@@ -54,13 +54,13 @@ test('preserves fixed intervals used by outbox and retention schedulers', async 
   const now = Date.parse('2026-08-23T12:00:01.250Z')
   const strategy = createPlannerRepeatStrategy(30_000, 60_000)
 
-  await expect(strategy(now, { every: 5_000 }, 'outbox-relay')).resolves.toBe(
+  await expect(strategy(now, { every: 5000 }, 'outbox-relay')).resolves.toBe(
     Date.parse('2026-08-23T12:00:05.000Z'),
   )
-  await expect(strategy(now, { every: 5_000, immediately: true }, 'outbox-relay')).resolves.toBe(
+  await expect(strategy(now, { every: 5000, immediately: true }, 'outbox-relay')).resolves.toBe(
     Date.parse('2026-08-23T12:00:00.000Z'),
   )
-  await expect(strategy(now, { every: 5_000, pattern: '* * * * * *' }, 'invalid')).rejects.toThrow(
+  await expect(strategy(now, { every: 5000, pattern: '* * * * * *' }, 'invalid')).rejects.toThrow(
     'both pattern and every',
   )
 })
@@ -84,8 +84,8 @@ test('skips an overlapping scheduler execution under a renewable lease', async (
   const operationStarted = new Promise<void>((resolve) => (started = resolve))
   const operationBlocked = new Promise<void>((resolve) => (release = resolve))
   const connection = {
-    set: vi.fn().mockResolvedValueOnce('OK').mockResolvedValueOnce(null),
     eval: vi.fn().mockResolvedValue(1),
+    set: vi.fn().mockResolvedValueOnce('OK').mockResolvedValueOnce(null),
   }
 
   const first = runWithSchedulerOverlapPolicy(
@@ -106,7 +106,7 @@ test('skips an overlapping scheduler execution under a renewable lease', async (
       diagnosticOverlapPolicy,
       async () => undefined,
     ),
-  ).resolves.toEqual({ executed: false })
+  ).resolves.toStrictEqual({ executed: false })
   release?.()
   await expect(first).resolves.toMatchObject({ executed: true })
   expect(connection.eval).toHaveBeenCalledOnce()
@@ -116,8 +116,8 @@ test('aborts the operation when Redis reports the scheduler lease was taken', as
   vi.useFakeTimers()
   const error = vi.spyOn(console, 'error').mockImplementation(() => {})
   const connection = {
-    set: vi.fn().mockResolvedValue('OK'),
     eval: vi.fn().mockResolvedValue(0),
+    set: vi.fn().mockResolvedValue('OK'),
   }
   let aborted: string | undefined
 
@@ -140,7 +140,7 @@ test('aborts the operation when Redis reports the scheduler lease was taken', as
 
   await expect(settled).resolves.toBeInstanceOf(SchedulerLeaseLostError)
   expect(aborted).toContain(diagnosticSchedulerId)
-  expect(JSON.parse(String(error.mock.calls[0]?.[0]))).toEqual(
+  expect(JSON.parse(String(error.mock.calls[0]?.[0]))).toStrictEqual(
     expect.objectContaining({
       event: 'scheduler.overlap-lock.lost',
       schedulerId: diagnosticSchedulerId,
@@ -158,8 +158,8 @@ test('survives a single renewal failure while the lease TTL still covers it', as
   let release: (() => void) | undefined
   const blocked = new Promise<void>((resolve) => (release = resolve))
   const connection = {
-    set: vi.fn().mockResolvedValue('OK'),
     eval: vi.fn().mockRejectedValueOnce(new Error('connection reset')).mockResolvedValue(1),
+    set: vi.fn().mockResolvedValue('OK'),
   }
 
   const run = runWithSchedulerOverlapPolicy(
@@ -170,7 +170,7 @@ test('survives a single renewal failure while the lease TTL still covers it', as
   )
 
   await vi.advanceTimersByTimeAsync(10_000)
-  expect(JSON.parse(String(error.mock.calls[0]?.[0]))).toEqual(
+  expect(JSON.parse(String(error.mock.calls[0]?.[0]))).toStrictEqual(
     expect.objectContaining({
       event: 'scheduler.overlap-lock.renewal-failed',
       schedulerId: diagnosticSchedulerId,
@@ -187,8 +187,8 @@ test('gives up the lease when renewals keep failing past its TTL', async () => {
   vi.useFakeTimers()
   const error = vi.spyOn(console, 'error').mockImplementation(() => {})
   const connection = {
-    set: vi.fn().mockResolvedValue('OK'),
     eval: vi.fn().mockRejectedValue(new Error('connection reset')),
+    set: vi.fn().mockResolvedValue('OK'),
   }
 
   const run = runWithSchedulerOverlapPolicy(
@@ -226,7 +226,7 @@ test('gives up the lease when renewals hang instead of rejecting', async () => {
   await vi.advanceTimersByTimeAsync(30_000)
 
   await expect(settled).resolves.toBeInstanceOf(SchedulerLeaseLostError)
-  expect(JSON.parse(String(error.mock.calls.at(-1)?.[0]))).toEqual(
+  expect(JSON.parse(String(error.mock.calls.at(-1)?.[0]))).toStrictEqual(
     expect.objectContaining({
       event: 'scheduler.overlap-lock.expired',
       schedulerId: diagnosticSchedulerId,
@@ -241,8 +241,8 @@ test('holds a lease across a run far longer than its TTL while renewals confirm'
   let release: (() => void) | undefined
   const blocked = new Promise<void>((resolve) => (release = resolve))
   const connection = {
-    set: vi.fn().mockResolvedValue('OK'),
     eval: vi.fn().mockResolvedValue(1),
+    set: vi.fn().mockResolvedValue('OK'),
   }
 
   const run = runWithSchedulerOverlapPolicy(

@@ -15,7 +15,9 @@ export function useFinanceClock(intervalMilliseconds = FINANCE_CLOCK_INTERVAL_MI
   })
 
   onScopeDispose(() => {
-    if (timer !== undefined) clearInterval(timer)
+    if (timer !== undefined) {
+      clearInterval(timer)
+    }
   })
 
   return readonly(currentTime)

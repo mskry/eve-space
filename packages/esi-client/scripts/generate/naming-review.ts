@@ -216,11 +216,21 @@ function candidateVerb(
   if (summaryVerb === 'get' || summaryVerb === 'list') {
     return responseShape === 'collection' ? 'list' : 'get';
   }
-  if (method === 'GET') return responseShape === 'collection' ? 'list' : 'get';
-  if (summaryVerb !== undefined) return summaryVerb;
-  if (method === 'DELETE') return 'delete';
-  if (method === 'PUT' || method === 'PATCH') return 'update';
-  if (method === 'POST') return 'create';
+  if (method === 'GET') {
+    return responseShape === 'collection' ? 'list' : 'get';
+  }
+  if (summaryVerb !== undefined) {
+    return summaryVerb;
+  }
+  if (method === 'DELETE') {
+    return 'delete';
+  }
+  if (method === 'PUT' || method === 'PATCH') {
+    return 'update';
+  }
+  if (method === 'POST') {
+    return 'create';
+  }
   return method.toLowerCase();
 }
 
@@ -235,13 +245,19 @@ function routeResourceWords(
   const ignoredIndexes = new Set<number>();
   for (let index = 0; index < segments.length; index += 1) {
     const match = /^\{([^{}]+)\}$/u.exec(segments[index] ?? '');
-    if (match?.[1] === undefined || !positional.has(match[1])) continue;
+    if (match?.[1] === undefined || !positional.has(match[1])) {
+      continue;
+    }
     ignoredIndexes.add(index);
-    if (index > 0) ignoredIndexes.add(index - 1);
+    if (index > 0) {
+      ignoredIndexes.add(index - 1);
+    }
   }
   const domainPhrase = normalizedWords(domain).join(' ');
   return segments.flatMap((segment, index) => {
-    if (ignoredIndexes.has(index) || /^\{[^{}]+\}$/u.test(segment)) return [];
+    if (ignoredIndexes.has(index) || /^\{[^{}]+\}$/u.test(segment)) {
+      return [];
+    }
     const words = normalizedWords(segment);
     if (
       words.join(' ') === domainPhrase ||
@@ -283,7 +299,9 @@ function classifyResponseShape(
   const schemas = operation.successResponses.flatMap((response) =>
     response.content.map(({ schema }) => resolveSchema(schema, modelsByPointer, new Set())),
   );
-  if (schemas.length === 0) return 'none';
+  if (schemas.length === 0) {
+    return 'none';
+  }
   if (schemas.some((schema) => schema !== true && schema !== false && schema.type === 'array')) {
     return 'collection';
   }
@@ -298,10 +316,16 @@ function resolveSchema(
   if (schema === true || schema === false || schema === null || typeof schema !== 'object') {
     return schema;
   }
-  if (typeof schema.$ref !== 'string') return schema;
-  if (active.has(schema.$ref)) return schema;
+  if (typeof schema.$ref !== 'string') {
+    return schema;
+  }
+  if (active.has(schema.$ref)) {
+    return schema;
+  }
   const target = modelsByPointer.get(schema.$ref);
-  if (target === undefined) return schema;
+  if (target === undefined) {
+    return schema;
+  }
   return resolveSchema(target, modelsByPointer, new Set([...active, schema.$ref]));
 }
 

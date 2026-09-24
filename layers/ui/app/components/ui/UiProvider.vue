@@ -6,8 +6,11 @@ const confirmDialog = provideConfirmDialog()
 const confirmDialogOpen = computed({
   get: () => confirmDialog.dialogOpen.value,
   set: (open: boolean) => {
-    if (open) confirmDialog.dialogOpen.value = true
-    else confirmDialog.controller.closeConfirmDialog()
+    if (open) {
+      confirmDialog.dialogOpen.value = true
+    } else {
+      confirmDialog.controller.closeConfirmDialog()
+    }
   },
 })
 </script>

@@ -58,25 +58,25 @@ const moduleIdSchema = z
 const permissionSelectionSchema = z.discriminatedUnion('type', [
   z
     .object({
-      type: z.literal('module'),
-      publisherPackage: publisherPackageSchema,
-      moduleId: moduleIdSchema,
       key: permissionKeySchema,
+      moduleId: moduleIdSchema,
+      publisherPackage: publisherPackageSchema,
+      type: z.literal('module'),
     })
     .strict(),
   z
     .object({
-      type: z.literal('service'),
       key: permissionKeySchema,
       reviewAllowed: z.boolean().optional(),
+      type: z.literal('service'),
     })
     .strict(),
 ])
 const permissionBundleCreateSchema = z
   .object({
     name: z.string().trim().min(1).max(100),
-    reason: reasonSchema,
     permissions: z.array(permissionSelectionSchema).min(1).max(100),
+    reason: reasonSchema,
   })
   .strict()
 const retainedUnavailableEntryIdsSchema = z
@@ -88,52 +88,54 @@ const retainedUnavailableEntryIdsSchema = z
 const permissionBundleUpdateSchema = z
   .object({
     name: z.string().trim().min(1).max(100),
-    reason: reasonSchema,
     permissions: z.array(permissionSelectionSchema).max(100),
+    reason: reasonSchema,
     retainedUnavailableEntryIds: retainedUnavailableEntryIdsSchema,
   })
   .strict()
 const permissionBundleParamsSchema = z.object({ bundleId: z.uuid('Enter a valid bundle ID.') })
 const permissionProfilePreviewSchema = z
   .object({
-    publisherPackage: publisherPackageSchema,
     moduleId: moduleIdSchema,
     profileId: moduleIdSchema,
+    publisherPackage: publisherPackageSchema,
   })
   .strict()
 const groupSchema = z
   .object({
+    bundleIds: z.array(z.uuid()).min(1).max(50),
+    complianceSource: z.enum(organizationComplianceSources).nullable(),
+    managementMode: z.enum(['manual', 'compliance']),
     name: z.string().trim().min(1).max(100),
     restricted: z.boolean(),
-    managementMode: z.enum(['manual', 'compliance']),
-    complianceSource: z.enum(organizationComplianceSources).nullable(),
-    bundleIds: z.array(z.uuid()).min(1).max(50),
   })
   .strict()
   .superRefine((group, context) => {
-    if (group.managementMode === 'manual' && group.complianceSource !== null)
+    if (group.managementMode === 'manual' && group.complianceSource !== null) {
       context.addIssue({
         code: 'custom',
-        path: ['complianceSource'],
         message: 'Manual groups cannot declare a compliance source.',
+        path: ['complianceSource'],
       })
-    if (group.managementMode === 'compliance' && group.complianceSource === null)
+    }
+    if (group.managementMode === 'compliance' && group.complianceSource === null) {
       context.addIssue({
         code: 'custom',
-        path: ['complianceSource'],
         message: 'Compliance groups require a source.',
+        path: ['complianceSource'],
       })
+    }
   })
 const groupParamsSchema = z.object({ groupId: z.uuid('Enter a valid group ID.') })
 const assignmentParamsSchema = z.object({
-  groupId: z.uuid('Enter a valid group ID.'),
   assignmentId: z.uuid('Enter a valid assignment ID.'),
+  groupId: z.uuid('Enter a valid group ID.'),
 })
 const assignGroupSchema = z
   .object({
-    userId: z.uuid('Enter a valid user ID.'),
-    reason: reasonSchema,
     expiresAt: z.iso.datetime({ offset: true }).nullable(),
+    reason: reasonSchema,
+    userId: z.uuid('Enter a valid user ID.'),
   })
   .strict()
 const memberParamsSchema = z.object({ userId: z.uuid('Enter a valid user ID.') })
@@ -151,8 +153,8 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
       try {
         const result = await registerOrganizationCorporationSource({
           actorUserId: context.var.session!.userId,
-          corporationId: context.req.valid('param').corporationId,
           characterId: context.req.valid('json').characterId,
+          corporationId: context.req.valid('param').corporationId,
         })
         return context.json(result, result.replaced ? 200 : 201)
       } catch (error) {
@@ -217,7 +219,9 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
       try {
         return context.json(await previewEnabledPermissionProfile(context.req.valid('json')))
       } catch (error) {
-        if (!(error instanceof OrganizationPermissionCatalogError)) throw error
+        if (!(error instanceof OrganizationPermissionCatalogError)) {
+          throw error
+        }
         return context.json(
           { code: 'PERMISSION_PROFILE_UNAVAILABLE', message: 'Permission profile is unavailable.' },
           404,
@@ -253,10 +257,10 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
         const body = context.req.valid('json')
         const assignment = await assignOrganizationGroup({
           actorUserId: context.var.session!.userId,
-          groupId: context.req.valid('param').groupId,
-          targetUserId: body.userId,
-          reason: body.reason,
           expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+          groupId: context.req.valid('param').groupId,
+          reason: body.reason,
+          targetUserId: body.userId,
         })
         return context.json({ assignment }, 201)
       } catch (error) {
@@ -274,8 +278,8 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
       try {
         const assignment = await revokeOrganizationGroupAssignment({
           actorUserId: context.var.session!.userId,
-          groupId: context.req.valid('param').groupId,
           assignmentId: context.req.valid('param').assignmentId,
+          groupId: context.req.valid('param').groupId,
           reason: context.req.valid('json').reason,
         })
         return context.json({ assignment })
@@ -294,8 +298,8 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
       try {
         const block = await blockOrganizationMember({
           actorUserId: context.var.session!.userId,
-          targetUserId: context.req.valid('param').userId,
           reason: context.req.valid('json').reason,
+          targetUserId: context.req.valid('param').userId,
         })
         return context.json({ block }, 201)
       } catch (error) {
@@ -313,8 +317,8 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
       try {
         const block = await unblockOrganizationMember({
           actorUserId: context.var.session!.userId,
-          targetUserId: context.req.valid('param').userId,
           reason: context.req.valid('json').reason,
+          targetUserId: context.req.valid('param').userId,
         })
         return context.json({ block })
       } catch (error) {
@@ -324,7 +328,9 @@ export const organizationManagementRoutes = new Hono<OrganizationSessionEnv>()
   )
 
 function groupMutationFailure(context: Context, error: unknown) {
-  if (!(error instanceof OrganizationGroupMutationError)) throw error
+  if (!(error instanceof OrganizationGroupMutationError)) {
+    throw error
+  }
   switch (error.code) {
     case 'manager-authority-required':
       return context.json(
@@ -409,7 +415,9 @@ function groupMutationFailure(context: Context, error: unknown) {
 }
 
 function memberBlockMutationFailure(context: Context, error: unknown) {
-  if (!(error instanceof OrganizationMemberBlockMutationError)) throw error
+  if (!(error instanceof OrganizationMemberBlockMutationError)) {
+    throw error
+  }
   switch (error.code) {
     case 'manager-authority-required':
       return context.json(
@@ -445,7 +453,9 @@ function memberBlockMutationFailure(context: Context, error: unknown) {
 }
 
 function corporationSourceMutationFailure(context: Context, error: unknown) {
-  if (!(error instanceof OrganizationCorporationSourceMutationError)) throw error
+  if (!(error instanceof OrganizationCorporationSourceMutationError)) {
+    throw error
+  }
   switch (error.code) {
     case 'manager-authority-required':
       return context.json(

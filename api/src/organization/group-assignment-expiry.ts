@@ -21,10 +21,10 @@ export async function expireOrganizationGroupAssignments(
   const expiredAssignments = await transaction
     .update(organizationGroupAssignments)
     .set({
-      revokedAt: sql`${organizationGroupAssignments.expiresAt}`,
-      revokedActorType: 'system',
-      revokedByUserId: null,
       revocationReason: expiredGroupAssignmentReason,
+      revokedActorType: 'system',
+      revokedAt: sql`${organizationGroupAssignments.expiresAt}`,
+      revokedByUserId: null,
       updatedAt: sql`${organizationGroupAssignments.expiresAt}`,
     })
     .where(
@@ -40,13 +40,13 @@ export async function expireOrganizationGroupAssignments(
     transaction,
     organization,
     expiredAssignments.map((assignment) => ({
-      eventType: 'group.revoked',
-      actorType: 'system',
       actorId: null,
+      actorType: 'system',
       assignment,
-      reason: expiredGroupAssignmentReason,
-      outcome: 'revoked',
+      eventType: 'group.revoked',
       now: assignment.expiresAt!,
+      outcome: 'revoked',
+      reason: expiredGroupAssignmentReason,
     })),
   )
 }

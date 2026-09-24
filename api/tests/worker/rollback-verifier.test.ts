@@ -8,23 +8,23 @@ import {
 import { listJobContracts } from '../../src/queue/job-contracts.js'
 
 const snapshot: DomainEventRecoverySnapshot = {
+  earliestPublishedAt: '2026-08-01T00:00:00.000Z',
   eventCount: 3,
+  latestPublishedAt: '2026-08-02T00:00:00.000Z',
   publishedCount: 2,
   unpublishedCount: 1,
-  earliestPublishedAt: '2026-08-01T00:00:00.000Z',
-  latestPublishedAt: '2026-08-02T00:00:00.000Z',
 }
 
 describe('worker rollback verifier', () => {
   test('counts authoritative contracts only after contract verification', () => {
-    expect(verifyRollbackJobContracts(listJobContracts())).toEqual({ authoritativeCount: 1 })
+    expect(verifyRollbackJobContracts(listJobContracts())).toStrictEqual({ authoritativeCount: 1 })
   })
 
   test('parses a retained snapshot and rejects malformed verifier input', () => {
     expect(parseExpectedRecoverySnapshot([])).toBeUndefined()
     expect(
       parseExpectedRecoverySnapshot(['--expected-snapshot', JSON.stringify(snapshot)]),
-    ).toEqual(snapshot)
+    ).toStrictEqual(snapshot)
     expect(() => parseExpectedRecoverySnapshot(['--other', '{}'])).toThrow('Expected only')
     expect(() => parseExpectedRecoverySnapshot(['--expected-snapshot', '{'])).toThrow('valid JSON')
     expect(() =>
@@ -49,11 +49,11 @@ describe('worker rollback verifier', () => {
       verifyQueueDiscardRecovery({
         confirmation: '1',
         snapshot: {
+          earliestPublishedAt: null,
           eventCount: 0,
+          latestPublishedAt: null,
           publishedCount: 0,
           unpublishedCount: 0,
-          earliestPublishedAt: null,
-          latestPublishedAt: null,
         },
       }),
     ).toThrow('at least one retained')
@@ -61,13 +61,13 @@ describe('worker rollback verifier', () => {
 
   test('proves PostgreSQL recovery remained unchanged across queue discard', () => {
     expect(
-      verifyQueueDiscardRecovery({ confirmation: '1', snapshot, expectedSnapshot: snapshot }),
-    ).toEqual(snapshot)
+      verifyQueueDiscardRecovery({ confirmation: '1', expectedSnapshot: snapshot, snapshot }),
+    ).toStrictEqual(snapshot)
     expect(() =>
       verifyQueueDiscardRecovery({
         confirmation: '1',
-        snapshot: { ...snapshot, publishedCount: 1, unpublishedCount: 2 },
         expectedSnapshot: snapshot,
+        snapshot: { ...snapshot, publishedCount: 1, unpublishedCount: 2 },
       }),
     ).toThrow('changed during queue discard')
     expect(() =>

@@ -14,7 +14,7 @@ import type {
 } from '../../../types/finance'
 import { parseRouteId } from '../../../utils/route-id'
 
-definePageMeta({ title: 'Character Finance', layout: 'headerless' })
+definePageMeta({ layout: 'headerless', title: 'Character Finance' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
@@ -41,11 +41,11 @@ const ledger = useFinanceLedger({
 })
 const contractDetail = useCharacterFinanceContractDetail({
   apiClient,
+  changePage: services.changePage,
   characterId,
   contractPage: services.contractPage,
   contracts: ledger.contracts,
   financeAccess: services.financeAccess,
-  changePage: services.changePage,
   refreshRequestedServices: services.refreshRequestedServices,
 })
 
@@ -149,16 +149,16 @@ const contractBidsPersistencePresentation = useQueryPersistencePresentation(() =
 )
 
 const serviceBadges = computed(() => ({
-  orders: summary.value.expiringOrderCount,
   contracts: summary.value.awaitingContractCount,
+  orders: summary.value.expiringOrderCount,
 }))
 const contractFilterOptions: readonly FinanceFilterOption<FinanceContractFilter>[] = [
-  { value: 'all', label: 'All' },
-  { value: 'awaiting', label: 'Awaiting me' },
-  { value: 'active', label: 'Active' },
-  { value: 'couriers', label: 'Couriers' },
-  { value: 'auctions', label: 'Auctions' },
-  { value: 'closed', label: 'Closed' },
+  { label: 'All', value: 'all' },
+  { label: 'Awaiting me', value: 'awaiting' },
+  { label: 'Active', value: 'active' },
+  { label: 'Couriers', value: 'couriers' },
+  { label: 'Auctions', value: 'auctions' },
+  { label: 'Closed', value: 'closed' },
 ]
 const displayedOrders = computed(() =>
   orderMode.value === 'open' ? openOrders.value : orderHistory.value,

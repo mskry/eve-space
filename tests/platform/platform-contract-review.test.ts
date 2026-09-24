@@ -9,11 +9,11 @@ import { classifyPlatformContract } from '../../scripts/platform-contract-review
 import type { PlatformContractJudgment } from '../../scripts/platform-contract-review/judgments'
 
 const judgment = (overrides: Partial<PlatformContractJudgment> = {}): PlatformContractJudgment => ({
-  purposeFit: { choice: 'aligned', confidence: 0.95 },
   audienceFit: { choice: 'aligned', confidence: 0.95 },
   permissionFit: { choice: 'aligned', confidence: 0.95 },
-  targetFit: { choice: 'aligned', confidence: 0.95 },
+  purposeFit: { choice: 'aligned', confidence: 0.95 },
   sensitivityFit: { choice: 'aligned', confidence: 0.95 },
+  targetFit: { choice: 'aligned', confidence: 0.95 },
   ...overrides,
 })
 
@@ -55,46 +55,46 @@ function composeReviewerTargetModuleRoute() { return requireModuleReviewerAuthor
       expect(evidence).toHaveLength(1)
       expect(evidence[0]).toMatchObject({
         id: 'example:secret-detail',
+        implementation: { file: 'features/example/server/src/routes.ts', line: 1 },
         route: {
+          exposure: 'sensitive-evidence',
           requiredPermission: 'example.secret.read',
           target: 'managed-organization-character',
-          exposure: 'sensitive-evidence',
         },
-        implementation: { file: 'features/example/server/src/routes.ts', line: 1 },
       })
       expect(evidence[0].permission).toContain('Read secret evidence')
       expect(evidence[0].section).toContain('sensitive-evidence')
       expect(evidence[0].reviewerContribution).toContain('Review secret evidence')
       expect(evidence[0].composition).toContain('requireModuleReviewerAuthorization')
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 })
 
 describe('platform contract finding classification', () => {
   const evidence = {
+    composition: 'composer',
     id: 'example:secret-detail',
-    moduleId: 'example',
+    implementation: { code: 'route', file: 'features/example/server/src/routes.ts', line: 4 },
     manifestFile: 'features/example/module.config.ts',
     manifestLine: 10,
+    moduleId: 'example',
+    permission: '{}',
+    reviewerContribution: '{}',
     route: {
+      audience: 'hr',
+      authorization: 'authenticated-session',
+      code: '{}',
+      exportName: 'secretRoutes',
+      exposure: 'sensitive-evidence',
       id: 'secret-detail',
       namespace: '/example/:userId/:characterId',
-      exportName: 'secretRoutes',
-      authorization: 'authenticated-session',
-      audience: 'hr',
       requiredPermission: 'example.secret.read',
       sectionId: 'secret',
       target: 'managed-organization-character',
-      exposure: 'sensitive-evidence',
-      code: '{}',
     },
-    permission: '{}',
     section: '{}',
-    reviewerContribution: '{}',
-    implementation: { file: 'features/example/server/src/routes.ts', line: 4, code: 'route' },
-    composition: 'composer',
   } as const
 
   it('passes a confident aligned route', () => {

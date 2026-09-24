@@ -21,10 +21,10 @@ describe('generated example type-check project', () => {
       .filter((subpath) => subpath.startsWith('./domains/'))
       .map((subpath) => `examples/generated/domain-${subpath.slice('./domains/'.length)}.ts`);
 
-    expect(inspection.projectFiles).toEqual(inspection.generatedFiles);
+    expect(inspection.projectFiles).toStrictEqual(inspection.generatedFiles);
     expect(
       inspection.generatedFiles.map((path) => relative(root, path).replaceAll('\\', '/')),
-    ).toEqual([
+    ).toStrictEqual([
       'examples/generated/authenticated.ts',
       'examples/generated/custom-fetch.ts',
       ...domainExamples,

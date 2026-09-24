@@ -38,8 +38,12 @@ export async function loadPlatformNuxtSources(
     await Promise.all(
       entries.map(async (entry) => {
         const path = posix.join(directory, entry.name)
-        if (entry.isDirectory()) return loadPlatformNuxtSources(root, path)
-        if (!entry.isFile() || !/\.(?:ts|vue)$/.test(entry.name)) return []
+        if (entry.isDirectory()) {
+          return loadPlatformNuxtSources(root, path)
+        }
+        if (!entry.isFile() || !/\.(?:ts|vue)$/.test(entry.name)) {
+          return []
+        }
         return [{ path, source: await readFile(join(sourceRoot, path), 'utf8') }]
       }),
     )
@@ -50,13 +54,16 @@ function platformNuxtSourceBoundaryViolations({ path, source }: PlatformNuxtSour
   const runtime = path === 'runtime.ts' || path.startsWith('runtime/')
   const tier = buildModules.get(path)
   const violations: string[] = []
-  if (!runtime && !tier) violations.push(`${path}: build module has no declared tier`)
+  if (!runtime && !tier) {
+    violations.push(`${path}: build module has no declared tier`)
+  }
 
   const specifiers = typescriptSourceScripts(path, source).flatMap((script) =>
     typescriptModuleSpecifiers(path, script),
   )
-  for (const specifier of specifiers)
+  for (const specifier of specifiers) {
     violations.push(...platformNuxtImportBoundaryViolations(path, runtime, tier, specifier))
+  }
   return violations
 }
 
@@ -76,8 +83,9 @@ function platformNuxtImportBoundaryViolations(
       specifier === '@nuxt/kit' ||
       specifier.startsWith('@nuxt/kit/') ||
       (specifier.startsWith('.') && !target.startsWith('runtime/')))
-  )
+  ) {
     violations.push(`${path}: runtime must not import build dependency ${specifier}`)
+  }
   if (
     tier === 'pure' &&
     (specifier === '@nuxt/kit' ||
@@ -85,9 +93,11 @@ function platformNuxtImportBoundaryViolations(
       (specifier.startsWith('node:') && specifier !== 'node:path') ||
       buildModules.get(target) === 'adapter' ||
       (target.startsWith('runtime/') && target !== 'runtime/navigation.ts'))
-  )
+  ) {
     violations.push(`${path}: pure module must not import registration dependency ${specifier}`)
-  if (tier && tier !== 'entry' && buildModules.get(target) === 'entry')
+  }
+  if (tier && tier !== 'entry' && buildModules.get(target) === 'entry') {
     violations.push(`${path}: module must not import the orchestration entry ${specifier}`)
+  }
   return violations
 }

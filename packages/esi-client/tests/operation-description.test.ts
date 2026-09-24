@@ -29,9 +29,12 @@ describe('operation descriptions', () => {
     expect(manifestEntry).toBeDefined();
     expect(description).toBe(manifestEntry);
     expect(description).toMatchObject({
-      operationId: 'GetStatus',
+      authentication: { required: false, scopes: [] },
+      classification: 'read',
       facade: { domain: 'status', method: 'get' },
       http: { method: 'GET', path: '/status' },
+      operationId: 'GetStatus',
+      pagination: { kind: 'none' },
       requestSchemas: [
         {
           group: 'headers',
@@ -49,12 +52,9 @@ describe('operation descriptions', () => {
         export: 'GetStatusResponse',
         module: '@evespace/esi-client/types',
       },
-      authentication: { required: false, scopes: [] },
-      pagination: { kind: 'none' },
-      classification: 'read',
     });
     expect(description.parameters.length).toBeGreaterThan(0);
-    expect(description.responses).toEqual([
+    expect(description.responses).toStrictEqual([
       {
         body: 'json',
         content: [
@@ -76,7 +76,7 @@ describe('operation descriptions', () => {
   it('round-trips descriptions through JSON', () => {
     const description = describeOperation('DeleteCharactersCharacterIdContacts');
 
-    expect(JSON.parse(JSON.stringify(description))).toEqual(description);
+    expect(JSON.parse(JSON.stringify(description))).toStrictEqual(description);
   });
 
   it('returns deeply immutable contracts that cannot mutate the global manifest', () => {
@@ -98,10 +98,10 @@ describe('operation descriptions', () => {
   it('describes every generated operation without executable fallback', () => {
     const manifestIds = operationManifest.operations.map(({ operationId }) => operationId);
 
-    expect(manifestIds).toEqual(Object.keys(operationRegistry));
-    expect(manifestIds.map((operationId) => describeOperation(operationId).operationId)).toEqual(
-      manifestIds,
-    );
+    expect(manifestIds).toStrictEqual(Object.keys(operationRegistry));
+    expect(
+      manifestIds.map((operationId) => describeOperation(operationId).operationId),
+    ).toStrictEqual(manifestIds);
   });
 
   it.each([
@@ -128,14 +128,16 @@ describe('operation descriptions', () => {
     const error = thrown;
     expect(error.code).toBe('ESI_UNKNOWN_OPERATION');
     expect(error.operationId).toBe(errorId);
-    expect(error.toJSON()).toEqual({
-      name: 'EsiUnknownOperationError',
+    expect(error.toJSON()).toStrictEqual({
       code: 'ESI_UNKNOWN_OPERATION',
       message: `Unknown ESI operation: ${errorId}`,
+      name: 'EsiUnknownOperationError',
       operationId: errorId,
     });
-    expect(Object.keys(error.toJSON())).toEqual(['name', 'code', 'message', 'operationId']);
-    expect(JSON.parse(JSON.stringify(error))).toEqual(error.toJSON());
+    expect(
+      Object.keys(error.toJSON()).toSorted((left, right) => left.localeCompare(right)),
+    ).toStrictEqual(['code', 'message', 'name', 'operationId']);
+    expect(JSON.parse(JSON.stringify(error))).toStrictEqual(error.toJSON());
     expect(Object.hasOwn(error, 'suggestion')).toBe(false);
     expect(Object.hasOwn(error, 'operation')).toBe(false);
   });
@@ -149,11 +151,21 @@ describe('operation descriptions', () => {
 });
 
 function assertFrozenJsonValue(value: unknown, path: string, ancestors: WeakSet<object>): void {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return;
-  if (typeof value === 'number' && Number.isFinite(value)) return;
-  if (typeof value !== 'object') throw new TypeError(`Non-JSON value at ${path}: ${typeof value}`);
-  if (ancestors.has(value)) throw new TypeError(`Cyclic value at ${path}`);
-  if (!Object.isFrozen(value)) throw new TypeError(`Mutable value at ${path}`);
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+    return;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return;
+  }
+  if (typeof value !== 'object') {
+    throw new TypeError(`Non-JSON value at ${path}: ${typeof value}`);
+  }
+  if (ancestors.has(value)) {
+    throw new TypeError(`Cyclic value at ${path}`);
+  }
+  if (!Object.isFrozen(value)) {
+    throw new TypeError(`Mutable value at ${path}`);
+  }
 
   const prototype: unknown = Object.getPrototypeOf(value);
   if (prototype !== Object.prototype && prototype !== Array.prototype) {
@@ -162,8 +174,12 @@ function assertFrozenJsonValue(value: unknown, path: string, ancestors: WeakSet<
 
   ancestors.add(value);
   for (const key of Reflect.ownKeys(value)) {
-    if (Array.isArray(value) && key === 'length') continue;
-    if (typeof key !== 'string') throw new TypeError(`Symbol key at ${path}`);
+    if (Array.isArray(value) && key === 'length') {
+      continue;
+    }
+    if (typeof key !== 'string') {
+      throw new TypeError(`Symbol key at ${path}`);
+    }
     if (!Array.isArray(value)) {
       const normalizedKey = key.replaceAll(/[^A-Za-z]/gu, '').toLowerCase();
       if (forbiddenCredentialKeys.has(normalizedKey)) {

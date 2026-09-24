@@ -64,22 +64,21 @@ export function projectTrainedSkills(
         trainedSp += progress?.skillpoints ?? 0
         return {
           ...catalogueSkill,
-          injected: progress !== undefined,
           activeLevel: progress?.activeLevel ?? 0,
-          trainedLevel: progress?.trainedLevel ?? 0,
+          injected: progress !== undefined,
           skillpoints: progress?.skillpoints ?? 0,
+          trainedLevel: progress?.trainedLevel ?? 0,
         }
       })
       .toSorted((left, right) => compareNameAndId(left.name, left.typeId, right.name, right.typeId))
-    return { groupId: catalogueGroup.groupId, name: catalogueGroup.name, trainedSp, skills }
+    return { groupId: catalogueGroup.groupId, name: catalogueGroup.name, skills, trainedSp }
   })
 
   const unmatchedSkills = snapshot.skills.filter((skill) => !catalogueTypeIds.has(skill.typeId))
-  if (unmatchedSkills.length > 0)
+  if (unmatchedSkills.length > 0) {
     groups.push({
       groupId: null,
       name: 'Unknown',
-      trainedSp: unmatchedSkills.reduce((total, skill) => total + skill.skillpoints, 0),
       skills: unmatchedSkills
         .map((skill) => ({
           typeId: skill.typeId,
@@ -95,21 +94,27 @@ export function projectTrainedSkills(
         .toSorted((left, right) =>
           compareNameAndId(left.name, left.typeId, right.name, right.typeId),
         ),
+      trainedSp: unmatchedSkills.reduce((total, skill) => total + skill.skillpoints, 0),
     })
+  }
 
   groups.sort((left, right) =>
     compareNameAndId(left.name, left.groupId ?? -1, right.name, right.groupId ?? -1),
   )
   return {
+    groups,
+    injectedSkillCount: snapshot.skills.length,
     totalSp: snapshot.totalSp,
     unallocatedSp: snapshot.unallocatedSp,
-    injectedSkillCount: snapshot.skills.length,
-    groups,
   }
 }
 
 function compareNameAndId(leftName: string, leftId: number, rightName: string, rightId: number) {
-  if (leftName < rightName) return -1
-  if (leftName > rightName) return 1
+  if (leftName < rightName) {
+    return -1
+  }
+  if (leftName > rightName) {
+    return 1
+  }
   return leftId - rightId
 }

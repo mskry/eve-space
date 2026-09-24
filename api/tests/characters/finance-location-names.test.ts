@@ -15,8 +15,8 @@ describe('finance location names', () => {
   test('resolves station identifiers once each and maps them to their names', async () => {
     mocks.resolveUniverseNames.mockResolvedValue(
       new Map([
-        [60_000_001, { id: 60_000_001, name: 'Jita IV - Moon 4', category: 'station' }],
-        [60_000_002, { id: 60_000_002, name: 'Amarr VIII', category: 'station' }],
+        [60_000_001, { category: 'station', id: 60_000_001, name: 'Jita IV - Moon 4' }],
+        [60_000_002, { category: 'station', id: 60_000_002, name: 'Amarr VIII' }],
       ]),
     )
     const { financeLocationName, loadFinanceLocationNames } =

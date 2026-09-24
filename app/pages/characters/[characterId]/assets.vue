@@ -4,7 +4,7 @@ import { PRIVATE_QUERY_KEYS } from '../../../queries/query-keys'
 import type { AssetResourceAction } from '../../../types/assets'
 import { parseRouteId } from '../../../utils/route-id'
 
-definePageMeta({ title: 'Character Assets', layout: 'headerless' })
+definePageMeta({ layout: 'headerless', title: 'Character Assets' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()

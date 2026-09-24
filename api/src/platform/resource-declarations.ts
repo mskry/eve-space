@@ -19,8 +19,8 @@ import { isRecord } from '../type-guards.js'
 import { platformResources } from './resources.js'
 
 const resourceModeMethods = {
-  'single-request': { required: ['request', 'map'], forbidden: ['collect'] },
-  'bounded-collection': { required: ['collect'], forbidden: ['request', 'map'] },
+  'bounded-collection': { forbidden: ['request', 'map'], required: ['collect'] },
+  'single-request': { forbidden: ['collect'], required: ['request', 'map'] },
 } as const satisfies Record<
   PlatformResourceExecutionMode,
   { readonly required: readonly string[]; readonly forbidden: readonly string[] }
@@ -30,26 +30,31 @@ export function assertInstalledResourceDeclarations(
   resources: readonly PlatformInstalledResourceDescriptor[] = platformResources,
   definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,
 ) {
-  if (!definitions) assertEsiPlatformExecutionConfiguration()
+  if (!definitions) {
+    assertEsiPlatformExecutionConfiguration()
+  }
   for (const resource of resources) {
     assertCoreDataProductDeclarations(resource.coreDataProducts ?? [], 'resource-projection')
     assertRegisteredEsiOperation(resource.operationId)
     assertResourceDefinition(resource, resource.operationId, definitions)
     const primary = getEsiOperationAuthorization(resource.operationId)
-    if (resource.subjectKind === 'deployment' && primary.kind !== 'public')
+    if (resource.subjectKind === 'deployment' && primary.kind !== 'public') {
       throw new Error('Deployment resources require public operations')
+    }
     for (const operationId of resource.dependentOperationIds ?? []) {
       assertResourceDefinition(resource, operationId, definitions)
       assertRegisteredEsiOperation(operationId)
       const dependent = getEsiOperationAuthorization(operationId)
-      if (dependent.kind === 'character' && primary.kind !== 'character')
+      if (dependent.kind === 'character' && primary.kind !== 'character') {
         throw new Error('Dependent operations must retain the resource authorization contract')
+      }
       if (
         dependent.kind === 'character' &&
         primary.kind === 'character' &&
         dependent.requiredScope !== primary.requiredScope
-      )
+      ) {
         throw new Error('Dependent operations must retain the resource authorization contract')
+      }
     }
     assertResourceImplementation(resource, resource.implementation)
     assertResourceBatchImplementation(resource, resource.implementation, definitions)
@@ -60,9 +65,13 @@ function getInstalledResourceEsiOperationDefinition(
   operationId: string,
   definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,
 ) {
-  if (!definitions) return getPlatformEsiOperationDefinition(operationId)
+  if (!definitions) {
+    return getPlatformEsiOperationDefinition(operationId)
+  }
   const definition = definitions[operationId]
-  if (!definition) throw new Error(`ESI operation ${operationId} has no executable definition`)
+  if (!definition) {
+    throw new Error(`ESI operation ${operationId} has no executable definition`)
+  }
   return definition
 }
 
@@ -71,28 +80,33 @@ function assertResourceImplementation(
   implementation: unknown,
 ): asserts implementation is PlatformResourceImplementation {
   const label = `Installed resource ${resource.moduleId}/${resource.resourceId}`
-  if (!isRecord(implementation) || !isResourceExecutionMode(implementation.mode))
+  if (!isRecord(implementation) || !isResourceExecutionMode(implementation.mode)) {
     throw new Error(`${label} must declare a single-request or bounded-collection execution mode`)
+  }
   const methods = resourceModeMethods[implementation.mode]
   if (
     typeof implementation.operation !== 'string' ||
     typeof implementation.materialize !== 'function' ||
     methods.required.some((method) => typeof implementation[method] !== 'function')
-  )
+  ) {
     throw new Error(
       `${label} must provide operation, materialize, and ${methods.required.join(' and ')} for ${implementation.mode} execution`,
     )
+  }
   const forbidden = methods.forbidden.filter((method) => implementation[method] !== undefined)
-  if (forbidden.length > 0)
+  if (forbidden.length > 0) {
     throw new Error(
       `${label} ${implementation.mode} execution cannot provide ${forbidden.join(' or ')}`,
     )
-  if (implementation.mode === 'single-request' && resource.dependentOperationIds?.length)
+  }
+  if (implementation.mode === 'single-request' && resource.dependentOperationIds?.length) {
     throw new Error(`${label} single-request execution cannot declare dependent operations`)
-  if (implementation.operation !== resource.operationId)
+  }
+  if (implementation.operation !== resource.operationId) {
     throw new Error(
       `${label} implements ${implementation.operation} instead of ${resource.operationId}`,
     )
+  }
 }
 
 function assertResourceBatchImplementation(
@@ -102,18 +116,22 @@ function assertResourceBatchImplementation(
 ) {
   const descriptor = resource.batch
   const batch = implementation.batch
-  if (!descriptor && !batch) return
-  if (!descriptor || !batch)
+  if (!descriptor && !batch) {
+    return
+  }
+  if (!descriptor || !batch) {
     throw new Error(
       `Installed resource ${resource.moduleId}/${resource.resourceId} must declare matching batch descriptor and implementation`,
     )
+  }
 
   assertRegisteredEsiOperation(descriptor.operationId)
   assertResourceDefinition(resource, descriptor.operationId, definitions)
-  if (getEsiOperationAuthorization(descriptor.operationId).kind !== 'public')
+  if (getEsiOperationAuthorization(descriptor.operationId).kind !== 'public') {
     throw new Error(
       `Installed resource ${resource.moduleId}/${resource.resourceId} batch operation ${descriptor.operationId} must use public authorization`,
     )
+  }
   try {
     getEsiSetOperationConfiguration(descriptor.operationId)
   } catch {
@@ -122,14 +140,16 @@ function assertResourceBatchImplementation(
     )
   }
   assertBatchFunctions(resource, batch)
-  if (batch.mode !== descriptor.mode)
+  if (batch.mode !== descriptor.mode) {
     throw new Error(
       `Installed resource ${resource.moduleId}/${resource.resourceId} implements batch mode ${batch.mode} instead of ${descriptor.mode}`,
     )
-  if (batch.operation !== descriptor.operationId)
+  }
+  if (batch.operation !== descriptor.operationId) {
     throw new Error(
       `Installed resource ${resource.moduleId}/${resource.resourceId} implements batch operation ${batch.operation} instead of ${descriptor.operationId}`,
     )
+  }
 }
 
 function assertResourceDefinition(
@@ -152,10 +172,11 @@ function assertBatchFunctions(
   resource: PlatformInstalledResourceDescriptor,
   batch: PlatformResourceBatchOperationImplementation,
 ) {
-  if (typeof batch.request !== 'function' || typeof batch.classify !== 'function')
-    throw new Error(
+  if (typeof batch.request !== 'function' || typeof batch.classify !== 'function') {
+    throw new TypeError(
       `Installed resource ${resource.moduleId}/${resource.resourceId} batch implementation must provide request and classify functions`,
     )
+  }
 }
 
 function isResourceExecutionMode(mode: unknown): mode is PlatformResourceExecutionMode {

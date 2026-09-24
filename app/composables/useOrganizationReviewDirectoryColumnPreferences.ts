@@ -43,30 +43,44 @@ export function useOrganizationReviewDirectoryColumnPreferences(
     fieldId: OrganizationReviewDirectoryFieldId,
     direction: OrganizationReviewDirectoryColumnMove,
   ) {
-    if (!mounted) return
+    if (!mounted) {
+      return
+    }
     const currentIndex = visibleFieldIds.value.indexOf(fieldId)
     const nextIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
-    if (currentIndex <= 0 || currentIndex >= visibleFieldIds.value.length - 1) return
-    if (nextIndex <= 0 || nextIndex >= visibleFieldIds.value.length - 1) return
+    if (currentIndex <= 0 || currentIndex >= visibleFieldIds.value.length - 1) {
+      return
+    }
+    if (nextIndex <= 0 || nextIndex >= visibleFieldIds.value.length - 1) {
+      return
+    }
 
     const reordered = [...visibleFieldIds.value]
     const displacedField = reordered[nextIndex]
-    if (displacedField === undefined) return
+    if (displacedField === undefined) {
+      return
+    }
     reordered[currentIndex] = displacedField
     reordered[nextIndex] = fieldId
     updateFieldIds(reordered)
   }
 
   function resetFields() {
-    if (!mounted) return
+    if (!mounted) {
+      return
+    }
     visibleFieldIds.value = defaultFieldIds()
     writeFieldIds(getStorage, visibleFieldIds.value)
   }
 
   function updateFieldIds(values: readonly unknown[]) {
-    if (!mounted) return
+    if (!mounted) {
+      return
+    }
     const normalized = [...normalizeOrganizationReviewDirectoryFieldIds(values)]
-    if (sameFieldIds(visibleFieldIds.value, normalized)) return
+    if (sameFieldIds(visibleFieldIds.value, normalized)) {
+      return
+    }
     visibleFieldIds.value = normalized
     writeFieldIds(getStorage, normalized)
   }
@@ -87,7 +101,9 @@ function readFieldIds(
     const storedPreference = getStorage()?.getItem(
       ORGANIZATION_REVIEW_DIRECTORY_COLUMN_PREFERENCE_STORAGE_KEY,
     )
-    if (storedPreference === undefined || storedPreference === null) return defaultFieldIds()
+    if (storedPreference === undefined || storedPreference === null) {
+      return defaultFieldIds()
+    }
     return [...normalizeOrganizationReviewDirectoryPreference(JSON.parse(storedPreference))]
   } catch {
     return defaultFieldIds()
@@ -99,8 +115,8 @@ function writeFieldIds(
   fieldIds: readonly OrganizationReviewDirectoryFieldId[],
 ) {
   const preference = {
-    version: organizationReviewDirectoryPreferenceVersion,
     fieldIds,
+    version: organizationReviewDirectoryPreferenceVersion,
   } satisfies OrganizationReviewDirectoryPreference
   try {
     getStorage()?.setItem(

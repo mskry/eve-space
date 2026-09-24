@@ -46,8 +46,12 @@ export function providePlatformConfirmDialog() {
   const tone = computed(() => current.value?.tone ?? 'default')
 
   function closeConfirmDialog(key?: number) {
-    if (key !== undefined && dialogKey.value !== key) return
-    if (!dialogOpen.value && !current.value) return
+    if (key !== undefined && dialogKey.value !== key) {
+      return
+    }
+    if (!dialogOpen.value && !current.value) {
+      return
+    }
     dialogOpen.value = false
     current.value?.onClose?.()
     current.value = undefined
@@ -56,7 +60,9 @@ export function providePlatformConfirmDialog() {
   }
 
   function openConfirmDialog(options: PlatformConfirmDialogOptions) {
-    if (current.value) closeConfirmDialog()
+    if (current.value) {
+      closeConfirmDialog()
+    }
     dialogKey.value += 1
     current.value = options
     actionError.value = ''
@@ -68,18 +74,25 @@ export function providePlatformConfirmDialog() {
   async function confirmDialog() {
     const options = current.value
     const key = dialogKey.value
-    if (!options || pending.value) return
+    if (!options || pending.value) {
+      return
+    }
     actionPending.value = true
     actionError.value = ''
     try {
       const shouldClose = await options.onConfirm()
-      if (shouldClose !== false) closeConfirmDialog(key)
+      if (shouldClose !== false) {
+        closeConfirmDialog(key)
+      }
     } catch (error) {
-      if (dialogKey.value === key)
+      if (dialogKey.value === key) {
         actionError.value =
           error instanceof Error ? error.message : 'The action could not be completed.'
+      }
     } finally {
-      if (dialogKey.value === key) actionPending.value = false
+      if (dialogKey.value === key) {
+        actionPending.value = false
+      }
     }
   }
 
@@ -103,26 +116,33 @@ export function providePlatformConfirmDialog() {
 
 export function usePlatformConfirmDialog() {
   const controller = inject(confirmDialogKey)
-  if (!controller)
+  if (!controller) {
     throw new Error('usePlatformConfirmDialog must be used under a platform dialog provider.')
+  }
   const ownedDialogs = new Set<number>()
   let scopeActive = true
 
   onScopeDispose(() => {
     scopeActive = false
-    for (const key of ownedDialogs) controller.closeConfirmDialog(key)
+    for (const key of ownedDialogs) {
+      controller.closeConfirmDialog(key)
+    }
     ownedDialogs.clear()
   })
 
   return {
     closeConfirmDialog(key?: number) {
       const ownedKey = key ?? [...ownedDialogs].at(-1)
-      if (ownedKey === undefined || !ownedDialogs.has(ownedKey)) return
+      if (ownedKey === undefined || !ownedDialogs.has(ownedKey)) {
+        return
+      }
       controller.closeConfirmDialog(ownedKey)
       ownedDialogs.delete(ownedKey)
     },
     openConfirmDialog(options: PlatformConfirmDialogOptions) {
-      if (!scopeActive) return 0
+      if (!scopeActive) {
+        return 0
+      }
       let key = 0
       key = controller.openConfirmDialog({
         ...options,

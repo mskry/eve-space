@@ -10,19 +10,28 @@ describe('normalized OpenAPI model', () => {
   it('resolves local operation references and captures emitter inputs', async () => {
     const result = await normalizeOpenApiDocument(referencedDocument());
 
-    expect(result.operations.map(({ operationId }) => operationId)).toEqual([
+    expect(result.operations.map(({ operationId }) => operationId)).toStrictEqual([
       'get_item',
       'remove_item',
     ]);
-    expect(result.models.map(({ name }) => name)).toEqual(['Alpha', 'Zeta']);
+    expect(result.models.map(({ name }) => name)).toStrictEqual(['Alpha', 'Zeta']);
     expect(result.operations[0]).toMatchObject({
-      operationId: 'get_item',
-      method: 'GET',
-      path: '/items/{item_id}',
-      domainSource: 'Zeta',
-      tags: ['Alpha', 'Zeta'],
-      summary: 'Get an item',
+      cache: {
+        extensions: { 'x-cache-age': 60 },
+        responseHeaders: ['etag'],
+      },
+      conditionalRequestValidators: [],
       description: 'Returns one item.',
+      domainSource: 'Zeta',
+      extensions: { 'x-cache-age': 60, 'x-owner': 'items' },
+      maximumBatchSize: null,
+      method: 'GET',
+      operationId: 'get_item',
+      pagination: {
+        kind: 'offset',
+        requestParameters: ['page'],
+        responseHeaders: ['x-pages'],
+      },
       parameters: [
         {
           name: 'item_id',
@@ -37,15 +46,19 @@ describe('normalized OpenAPI model', () => {
           schema: { minimum: 1, type: 'integer' },
         },
       ],
+      path: '/items/{item_id}',
+      rateLimit: { kind: 'legacy-only' },
+      requestArrayLimits: [],
       requestBody: {
-        required: true,
         content: [
           {
             mediaType: 'application/json',
             schema: { $ref: '#/components/schemas/Zeta' },
           },
         ],
+        required: true,
       },
+      security: [{ schemes: [{ name: 'esiOAuth', scopes: ['esi-items.read'] }] }],
       successResponses: [
         {
           status: '200',
@@ -62,49 +75,41 @@ describe('normalized OpenAPI model', () => {
           ],
         },
       ],
-      security: [{ schemes: [{ name: 'esiOAuth', scopes: ['esi-items.read'] }] }],
-      pagination: {
-        kind: 'offset',
-        requestParameters: ['page'],
-        responseHeaders: ['x-pages'],
-      },
-      cache: {
-        responseHeaders: ['etag'],
-        extensions: { 'x-cache-age': 60 },
-      },
-      conditionalRequestValidators: [],
-      rateLimit: { kind: 'legacy-only' },
-      requestArrayLimits: [],
-      maximumBatchSize: null,
-      extensions: { 'x-cache-age': 60, 'x-owner': 'items' },
+      summary: 'Get an item',
+      tags: ['Alpha', 'Zeta'],
     });
-    expect(result.operations[1]?.successResponses).toEqual([
+    expect(result.operations[1]?.successResponses).toStrictEqual([
       {
-        status: '204',
-        description: 'Removed',
-        noContent: true,
         content: [],
-        headers: [],
+        description: 'Removed',
         extensions: {},
+        headers: [],
+        noContent: true,
+        status: '204',
       },
     ]);
-    expect(result.accounting).toEqual({
-      sourceOperationIds: ['get_item', 'remove_item'],
-      normalizedOperationIds: ['get_item', 'remove_item'],
+    expect(result.accounting).toStrictEqual({
       excludedOperationIds: [],
+      normalizedOperationIds: ['get_item', 'remove_item'],
+      sourceOperationIds: ['get_item', 'remove_item'],
     });
   });
 
   it('sorts operation, model, parameter, response, header, media, and inventory collections', async () => {
     const document = referencedDocument();
     const reordered = reverseObjectEntries(document);
-    if (!isRecord(reordered)) throw new TypeError('Reordered fixture must remain an object');
+    if (!isRecord(reordered)) {
+      throw new TypeError('Reordered fixture must remain an object');
+    }
 
     const first = await normalizeOpenApiDocument(document);
     const second = await normalizeOpenApiDocument(reordered);
 
-    expect(second).toEqual(first);
-    expect(first.operations[0]?.parameters.map(({ name }) => name)).toEqual(['item_id', 'page']);
+    expect(second).toStrictEqual(first);
+    expect(first.operations[0]?.parameters.map(({ name }) => name)).toStrictEqual([
+      'item_id',
+      'page',
+    ]);
     expect(isSorted(first.inventory.openapi.map(({ construct }) => construct))).toBe(true);
     expect(isSorted(first.inventory.schemas.map(({ construct }) => construct))).toBe(true);
   });
@@ -112,7 +117,7 @@ describe('normalized OpenAPI model', () => {
   it('inventories OpenAPI and schema constructs with deterministic counts', async () => {
     const { inventory } = await normalizeOpenApiDocument(referencedDocument());
 
-    expect(inventory.openapi).toEqual(
+    expect(inventory.openapi).toStrictEqual(
       expect.arrayContaining([
         { construct: 'extension:x-cache-age', count: 1 },
         { construct: 'media-type:application/json', count: 2 },
@@ -123,7 +128,7 @@ describe('normalized OpenAPI model', () => {
         { construct: 'version:3.1.0', count: 1 },
       ]),
     );
-    expect(inventory.schemas).toEqual(
+    expect(inventory.schemas).toStrictEqual(
       expect.arrayContaining([
         { construct: 'keyword:$ref', count: 2 },
         { construct: 'keyword:properties', count: 2 },
@@ -138,54 +143,26 @@ describe('normalized OpenAPI model', () => {
     const exclusionsPath = await writeExclusions([
       {
         operationId: 'remove_item',
-        reviewed: true,
         reason: { code: 'unsupported-callback', detail: 'Requires callback emitter support.' },
+        reviewed: true,
       },
     ]);
 
     const result = await normalizeOpenApiDocument(referencedDocument(), { exclusionsPath });
 
-    expect(result.operations.map(({ operationId }) => operationId)).toEqual(['get_item']);
-    expect(result.exclusions).toEqual([
+    expect(result.operations.map(({ operationId }) => operationId)).toStrictEqual(['get_item']);
+    expect(result.exclusions).toStrictEqual([
       {
         operationId: 'remove_item',
-        reviewed: true,
         reason: { code: 'unsupported-callback', detail: 'Requires callback emitter support.' },
+        reviewed: true,
       },
     ]);
-    expect(result.accounting.excludedOperationIds).toEqual(['remove_item']);
+    expect(result.accounting.excludedOperationIds).toStrictEqual(['remove_item']);
   });
 
   it('normalizes protocol declarations and only derives an unambiguous maximum batch size', async () => {
     const document = minimalDocument({
-      '/batch': {
-        post: {
-          ...jsonOperation('batch_items'),
-          parameters: [
-            parameter('If-None-Match', 'header', false, { type: 'string' }),
-            parameter('If-Modified-Since', 'header', false, { type: 'string' }),
-          ],
-          requestBody: {
-            required: true,
-            content: {
-              'application/json': {
-                schema: { type: 'array', maxItems: 100, items: { type: 'integer' } },
-              },
-            },
-          },
-          'x-cache-age': 60,
-          'x-cache-mode': 'ttl-based',
-          'x-client-cache-ttl': 60,
-          'x-server-cache-mode': 'event-based',
-          'x-server-cache-ttl': 300,
-          'x-tombstone-ttl': 604800,
-          'x-rate-limit': {
-            group: 'batch-items',
-            'max-tokens': 600,
-            'window-size': '15m',
-          },
-        },
-      },
       '/ambiguous': {
         post: {
           ...jsonOperation('ambiguous_arrays'),
@@ -200,18 +177,46 @@ describe('normalized OpenAPI model', () => {
             content: {
               'application/json': {
                 schema: {
-                  type: 'object',
                   properties: {
                     recipients: {
-                      type: 'array',
-                      maxItems: 50,
                       items: { type: 'integer' },
+                      maxItems: 50,
+                      type: 'array',
                     },
                   },
+                  type: 'object',
                 },
               },
             },
           },
+        },
+      },
+      '/batch': {
+        post: {
+          ...jsonOperation('batch_items'),
+          parameters: [
+            parameter('If-None-Match', 'header', false, { type: 'string' }),
+            parameter('If-Modified-Since', 'header', false, { type: 'string' }),
+          ],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: { items: { type: 'integer' }, maxItems: 100, type: 'array' },
+              },
+            },
+            required: true,
+          },
+          'x-cache-age': 60,
+          'x-cache-mode': 'ttl-based',
+          'x-client-cache-ttl': 60,
+          'x-rate-limit': {
+            group: 'batch-items',
+            'max-tokens': 600,
+            'window-size': '15m',
+          },
+          'x-server-cache-mode': 'event-based',
+          'x-server-cache-ttl': 300,
+          'x-tombstone-ttl': 604_800,
         },
       },
     });
@@ -230,27 +235,27 @@ describe('normalized OpenAPI model', () => {
           'x-client-cache-ttl': 60,
           'x-server-cache-mode': 'event-based',
           'x-server-cache-ttl': 300,
-          'x-tombstone-ttl': 604800,
+          'x-tombstone-ttl': 604_800,
         },
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 100,
       rateLimit: {
-        kind: 'declared',
         group: 'batch-items',
+        kind: 'declared',
         maximumTokens: 600,
         window: '15m',
       },
       requestArrayLimits: [{ location: 'body', path: [], maximumItems: 100 }],
-      maximumBatchSize: 100,
     });
     expect(ambiguous).toMatchObject({
       conditionalRequestValidators: [],
+      maximumBatchSize: null,
       rateLimit: { kind: 'legacy-only' },
       requestArrayLimits: [
         { location: 'body', path: ['recipients'], maximumItems: 50 },
         { location: 'query', path: ['ids'], maximumItems: 20 },
       ],
-      maximumBatchSize: null,
     });
   });
 
@@ -264,10 +269,10 @@ describe('normalized OpenAPI model', () => {
       'unknown rate field',
       {
         'x-rate-limit': {
+          burst: 1,
           group: 'items',
           'max-tokens': 10,
           'window-size': '15m',
-          burst: 1,
         },
       },
       'Unknown x-rate-limit extension',
@@ -354,10 +359,12 @@ describe('normalized OpenAPI model', () => {
         },
       },
     };
-    expect(resolveLocalReference(document, '#/components/schemas/A~1B~0%20C')).toEqual({
+    expect(resolveLocalReference(document, '#/components/schemas/A~1B~0%20C')).toStrictEqual({
       oneOf: [{ type: 'string' }, { type: 'number' }],
     });
-    expect(resolveLocalReference(document, '#/components/schemas/A~1B~0%20C/oneOf/1')).toEqual({
+    expect(
+      resolveLocalReference(document, '#/components/schemas/A~1B~0%20C/oneOf/1'),
+    ).toStrictEqual({
       type: 'number',
     });
   });
@@ -365,86 +372,86 @@ describe('normalized OpenAPI model', () => {
 
 function referencedDocument() {
   return {
-    openapi: '3.1.0',
-    info: { title: 'Normalization fixture', version: '1.0.0' },
-    paths: {
-      '/removed': {
-        delete: operation('remove_item'),
-      },
-      '/items/{item_id}': { $ref: '#/components/pathItems/Item' },
-    },
     components: {
-      schemas: {
-        Zeta: {
-          type: 'object',
-          required: ['name', 'id'],
-          properties: {
-            name: { type: 'string' },
-            id: { type: 'integer' },
-          },
-        },
-        Alpha: {
-          type: 'object',
-          properties: { created_at: { format: 'date-time', type: 'string' } },
+      headers: {
+        Pages: {
+          schema: { minimum: 1, type: 'integer' },
         },
       },
       parameters: {
-        Page: {
-          name: 'page',
-          in: 'query',
-          schema: { type: 'integer', minimum: 1 },
-        },
         ItemId: {
-          name: 'item_id',
           in: 'path',
+          name: 'item_id',
           required: true,
           schema: { type: 'integer' },
         },
-      },
-      headers: {
-        Pages: {
-          schema: { type: 'integer', minimum: 1 },
+        Page: {
+          in: 'query',
+          name: 'page',
+          schema: { minimum: 1, type: 'integer' },
         },
-      },
-      requestBodies: {
-        ItemBody: {
-          required: true,
-          content: {
-            'application/json': { schema: { $ref: '#/components/schemas/Zeta' } },
-          },
-        },
-      },
-      responses: {
-        Item: {
-          description: 'An item',
-          headers: {
-            'X-Pages': { $ref: '#/components/headers/Pages' },
-            ETag: { schema: { type: 'string' } },
-          },
-          content: {
-            'application/json': { schema: { $ref: '#/components/schemas/Zeta' } },
-          },
-        },
-      },
-      securitySchemes: {
-        esiOAuth: { type: 'oauth2', flows: {} },
       },
       pathItems: {
         Item: {
-          parameters: [{ $ref: '#/components/parameters/ItemId' }],
           get: {
-            operationId: 'get_item',
-            tags: ['Zeta', 'Alpha'],
-            summary: 'Get an item',
             description: 'Returns one item.',
+            operationId: 'get_item',
             parameters: [{ $ref: '#/components/parameters/Page' }],
             requestBody: { $ref: '#/components/requestBodies/ItemBody' },
             responses: { '200': { $ref: '#/components/responses/Item' } },
             security: [{ esiOAuth: ['esi-items.read'] }],
-            'x-owner': 'items',
+            summary: 'Get an item',
+            tags: ['Zeta', 'Alpha'],
             'x-cache-age': 60,
+            'x-owner': 'items',
+          },
+          parameters: [{ $ref: '#/components/parameters/ItemId' }],
+        },
+      },
+      requestBodies: {
+        ItemBody: {
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/Zeta' } },
+          },
+          required: true,
+        },
+      },
+      responses: {
+        Item: {
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/Zeta' } },
+          },
+          description: 'An item',
+          headers: {
+            ETag: { schema: { type: 'string' } },
+            'X-Pages': { $ref: '#/components/headers/Pages' },
           },
         },
+      },
+      schemas: {
+        Alpha: {
+          properties: { created_at: { format: 'date-time', type: 'string' } },
+          type: 'object',
+        },
+        Zeta: {
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' },
+          },
+          required: ['name', 'id'],
+          type: 'object',
+        },
+      },
+      securitySchemes: {
+        esiOAuth: { flows: {}, type: 'oauth2' },
+      },
+    },
+    info: { title: 'Normalization fixture', version: '1.0.0' },
+    openapi: '3.1.0',
+    paths: {
+      '/items/{item_id}': { $ref: '#/components/pathItems/Item' },
+      '/removed': {
+        delete: operation('remove_item'),
       },
     },
   };
@@ -452,8 +459,8 @@ function referencedDocument() {
 
 function minimalDocument(paths: Record<string, object>) {
   return {
-    openapi: '3.1.0',
     info: { title: 'Minimal fixture', version: '1.0.0' },
+    openapi: '3.1.0',
     paths,
   };
 }
@@ -467,8 +474,8 @@ function operation(operationId?: string, response: object = { description: 'Remo
 
 function jsonResponse() {
   return {
-    description: 'OK',
     content: { 'application/json': { schema: { type: 'object' } } },
+    description: 'OK',
   };
 }
 
@@ -477,32 +484,38 @@ function jsonOperation(operationId: string) {
 }
 
 function parameter(name: string, placement: string, required: boolean, schema: object) {
-  return { name, in: placement, required, schema };
+  return { in: placement, name, required, schema };
 }
 
 function reviewedExclusion(operationId: string) {
   return {
     operationId,
-    reviewed: true,
     reason: { code: 'unsupported-test', detail: 'Excluded by a test fixture.' },
+    reviewed: true,
   };
 }
 
 async function writeExclusions(exclusions: readonly object[]): Promise<string> {
   const directory = await makeTemporaryDirectory('esi-client-exclusions-');
   const path = join(directory, 'exclusions.json');
-  await writeFile(path, `${JSON.stringify({ schemaVersion: 1, exclusions })}\n`);
+  await writeFile(path, `${JSON.stringify({ exclusions, schemaVersion: 1 })}\n`);
   return path;
 }
 
 function reverseObjectEntries(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(reverseObjectEntries);
-  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) {
+    return value.map(reverseObjectEntries);
+  }
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
   const entries = Object.entries(value);
   const reversed: Record<string, unknown> = {};
   for (let index = entries.length - 1; index >= 0; index -= 1) {
     const entry = entries[index];
-    if (entry) reversed[entry[0]] = reverseObjectEntries(entry[1]);
+    if (entry) {
+      reversed[entry[0]] = reverseObjectEntries(entry[1]);
+    }
   }
   return reversed;
 }

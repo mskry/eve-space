@@ -20,7 +20,7 @@ function skill(
   skillpoints = activeLevel === 0 && trainedLevel === 0 ? 0 : typeId * 10,
   injected = activeLevel > 0 || trainedLevel > 0 || skillpoints > 0,
 ) {
-  return { typeId, name, injected, activeLevel, trainedLevel, skillpoints }
+  return { activeLevel, injected, name, skillpoints, trainedLevel, typeId }
 }
 
 const groups: CatalogueGroup[] = [
@@ -42,14 +42,14 @@ const indexed = indexSkills(groups)
 describe('indexSkills', () => {
   it('flattens groups and carries group identity onto every skill', () => {
     expect(indexed).toHaveLength(5)
-    expect(indexed[0]).toMatchObject({ typeId: 1, groupKey: '255', groupName: 'Gunnery' })
+    expect(indexed[0]).toMatchObject({ groupKey: '255', groupName: 'Gunnery', typeId: 1 })
     expect(indexed[4]).toMatchObject({
-      typeId: 4,
-      injected: true,
       groupKey: 'unknown',
       groupName: 'Unknown',
+      injected: true,
+      typeId: 4,
     })
-    expect(indexed[2]).toMatchObject({ typeId: 5, injected: false })
+    expect(indexed[2]).toMatchObject({ injected: false, typeId: 5 })
   })
 
   it('keys a group without static data deterministically', () => {
@@ -64,33 +64,39 @@ describe('selectVisibleSkills', () => {
   })
 
   it('restricts to untrained skills', () => {
-    expect(selectVisibleSkills(indexed, 'untrained', null).map((s) => s.typeId)).toEqual([5])
+    expect(selectVisibleSkills(indexed, 'untrained', null).map((s) => s.typeId)).toStrictEqual([5])
   })
 
   it('restricts to skills in progress from levels I through IV', () => {
-    expect(selectVisibleSkills(indexed, 'progress', null).map((s) => s.typeId)).toEqual([2, 4])
+    expect(selectVisibleSkills(indexed, 'progress', null).map((s) => s.typeId)).toStrictEqual([
+      2, 4,
+    ])
   })
 
   it('restricts to skills at level V', () => {
-    expect(selectVisibleSkills(indexed, 'v', null).map((s) => s.typeId)).toEqual([1, 3])
+    expect(selectVisibleSkills(indexed, 'v', null).map((s) => s.typeId)).toStrictEqual([1, 3])
   })
 
   it('composes the filter with search matches', () => {
-    const matches = { skillIds: new Set([1, 2]), groupKeys: new Set<string>() }
+    const matches = { groupKeys: new Set<string>(), skillIds: new Set([1, 2]) }
 
-    expect(selectVisibleSkills(indexed, 'progress', matches).map((s) => s.typeId)).toEqual([2])
+    expect(selectVisibleSkills(indexed, 'progress', matches).map((s) => s.typeId)).toStrictEqual([
+      2,
+    ])
   })
 
   it('includes level-0 catalogue skills in the untrained view', () => {
     expect(selectVisibleSkills(indexed, 'untrained', null)).toContainEqual(
-      expect.objectContaining({ typeId: 5, trainedLevel: 0, skillpoints: 0 }),
+      expect.objectContaining({ skillpoints: 0, trainedLevel: 0, typeId: 5 }),
     )
   })
 
   it('includes every skill of a group whose name matched', () => {
-    const matches = { skillIds: new Set<number>(), groupKeys: new Set(['255']) }
+    const matches = { groupKeys: new Set(['255']), skillIds: new Set<number>() }
 
-    expect(selectVisibleSkills(indexed, 'all', matches).map((s) => s.typeId)).toEqual([1, 2, 5])
+    expect(selectVisibleSkills(indexed, 'all', matches).map((s) => s.typeId)).toStrictEqual([
+      1, 2, 5,
+    ])
   })
 })
 
@@ -98,39 +104,41 @@ describe('summariseGroups', () => {
   it('counts only visible skills and keeps empty groups listed', () => {
     const visible = selectVisibleSkills(indexed, 'v', null)
 
-    expect(summariseGroups(groups, visible)).toEqual([
+    expect(summariseGroups(groups, visible)).toStrictEqual([
       {
-        key: '255',
-        name: 'Gunnery',
+        count: 1,
         groupId: 255,
         icon: 'gunnery',
-        count: 1,
+        key: '255',
+        name: 'Gunnery',
         progressPercent: 53,
       },
       {
-        key: '1210',
-        name: 'Armor',
+        count: 1,
         groupId: 1210,
         icon: 'armor',
-        count: 1,
+        key: '1210',
+        name: 'Armor',
         progressPercent: 100,
       },
       {
-        key: 'unknown',
-        name: 'Unknown',
+        count: 0,
         groupId: null,
         icon: 'unknown',
-        count: 0,
+        key: 'unknown',
+        name: 'Unknown',
         progressPercent: 20,
       },
     ])
   })
 
   it('counts level-0 catalogue skills in the all view', () => {
-    expect(summariseGroups(groups, indexed).map(({ key, count }) => ({ key, count }))).toEqual([
-      { key: '255', count: 3 },
-      { key: '1210', count: 1 },
-      { key: 'unknown', count: 1 },
+    expect(
+      summariseGroups(groups, indexed).map(({ key, count }) => ({ count, key })),
+    ).toStrictEqual([
+      { count: 3, key: '255' },
+      { count: 1, key: '1210' },
+      { count: 1, key: 'unknown' },
     ])
   })
 
@@ -138,7 +146,7 @@ describe('summariseGroups', () => {
     const all = summariseGroups(groups, indexed)
     const atFive = summariseGroups(groups, selectVisibleSkills(indexed, 'v', null))
 
-    expect(atFive.map(({ progressPercent }) => progressPercent)).toEqual(
+    expect(atFive.map(({ progressPercent }) => progressPercent)).toStrictEqual(
       all.map(({ progressPercent }) => progressPercent),
     )
   })
@@ -212,8 +220,8 @@ describe('levelCells', () => {
     ])[0]!
     const cells = levelCells(partial, 0)
 
-    expect(cells.map((cell) => cell.active)).toEqual([true, true, false, false, false])
-    expect(cells.map((cell) => cell.trained)).toEqual([false, false, true, true, false])
+    expect(cells.map((cell) => cell.active)).toStrictEqual([true, true, false, false, false])
+    expect(cells.map((cell) => cell.trained)).toStrictEqual([false, false, true, true, false])
   })
 
   it('marks levels between trained and the queued target as queued', () => {
@@ -222,7 +230,7 @@ describe('levelCells', () => {
     ])[0]!
     const cells = levelCells(partial, 5)
 
-    expect(cells.map((cell) => cell.queued)).toEqual([false, false, false, true, true])
+    expect(cells.map((cell) => cell.queued)).toStrictEqual([false, false, false, true, true])
   })
 
   it('marks nothing queued when the queue is unavailable', () => {

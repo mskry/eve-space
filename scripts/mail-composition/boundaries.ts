@@ -38,11 +38,18 @@ export function mailCompositionImportViolations(sources: readonly MailCompositio
     )
     for (const specifier of specifiers) {
       const importedPath = resolveImport(sourcePath, specifier)
-      if (!importedPath || !Object.values(compositionModules).includes(importedPath as never))
+      if (!importedPath || !Object.values(compositionModules).includes(importedPath as never)) {
         continue
-      if (allowedCompositionImports[sourcePath]?.has(importedPath)) continue
-      if (!(sourcePath in allowedCompositionImports) && importedPath === compositionModules.facade)
+      }
+      if (allowedCompositionImports[sourcePath]?.has(importedPath)) {
         continue
+      }
+      if (
+        !(sourcePath in allowedCompositionImports) &&
+        importedPath === compositionModules.facade
+      ) {
+        continue
+      }
       violations.push(`${sourcePath}: cannot import mail composition module ${importedPath}`)
     }
   }
@@ -51,7 +58,9 @@ export function mailCompositionImportViolations(sources: readonly MailCompositio
 }
 
 function resolveImport(sourcePath: string, specifier: string) {
-  if (!specifier.startsWith('.')) return
+  if (!specifier.startsWith('.')) {
+    return
+  }
   const resolved = posix.normalize(posix.join(posix.dirname(sourcePath), specifier))
   return posix.extname(resolved) ? resolved : `${resolved}.ts`
 }

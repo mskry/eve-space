@@ -40,19 +40,24 @@ export function resolveShellNavigationOrder(
       .toSorted((left, right) => {
         const leftPosition = positions.get(navigationKey(left.ownerId, left.navigationId))
         const rightPosition = positions.get(navigationKey(right.ownerId, right.navigationId))
-        if (leftPosition !== undefined && rightPosition !== undefined)
+        if (leftPosition !== undefined && rightPosition !== undefined) {
           return (
             leftPosition - rightPosition ||
             defaultRank(left, defaultRanks) - defaultRank(right, defaultRanks)
           )
-        if (leftPosition !== undefined) return -1
-        if (rightPosition !== undefined) return 1
+        }
+        if (leftPosition !== undefined) {
+          return -1
+        }
+        if (rightPosition !== undefined) {
+          return 1
+        }
         return defaultRank(left, defaultRanks) - defaultRank(right, defaultRanks)
       })
-      .map(({ ownerId, navigationId }) => ({ ownerId, navigationId }))
+      .map(({ ownerId, navigationId }) => ({ navigationId, ownerId }))
   return {
-    dashboard: resolvePlacement('dashboard'),
     character: resolvePlacement('character'),
+    dashboard: resolvePlacement('dashboard'),
   }
 }
 
@@ -70,7 +75,9 @@ export function isCompleteShellNavigationOrder(
   for (const placement of platformNavigationPlacements) {
     for (const { ownerId, navigationId } of order[placement]) {
       const key = navigationKey(ownerId, navigationId)
-      if (submitted.has(key) || expected.get(key) !== placement) return false
+      if (submitted.has(key) || expected.get(key) !== placement) {
+        return false
+      }
       submitted.add(key)
     }
   }

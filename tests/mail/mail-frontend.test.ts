@@ -23,20 +23,20 @@ describe('mail frontend behavior', () => {
   it('filters only loaded headers by subject, sender, known-unread state, and list recipients', () => {
     const recipientMatch = mailHeader(1, {
       isRead: false,
-      recipients: [{ id: 77, type: 'mailing_list', name: 'Alliance Logistics' }],
-      sender: { id: 10, type: 'character', name: 'Alice' },
+      recipients: [{ id: 77, name: 'Alliance Logistics', type: 'mailing_list' }],
+      sender: { id: 10, name: 'Alice', type: 'character' },
       subject: 'Fuel request',
     })
     const senderOnlyMatch = mailHeader(2, {
       isRead: false,
-      recipients: [{ id: 11, type: 'character', name: 'Bob' }],
-      sender: { id: 77, type: 'unknown', name: 'Alliance Logistics' },
+      recipients: [{ id: 11, name: 'Bob', type: 'character' }],
+      sender: { id: 77, name: 'Alliance Logistics', type: 'unknown' },
       subject: 'Unrelated post',
     })
     const unknownReadState = mailHeader(3, {
       isRead: null,
-      recipients: [{ id: 77, type: 'mailing_list', name: null }],
-      sender: { id: 12, type: 'character', name: 'Carol' },
+      recipients: [{ id: 77, name: null, type: 'mailing_list' }],
+      sender: { id: 12, name: 'Carol', type: 'character' },
       subject: 'Fuel follow-up',
     })
 
@@ -46,14 +46,14 @@ describe('mail frontend behavior', () => {
         search: 'fuel',
         unreadOnly: true,
       }).map((header) => header.mailId),
-    ).toEqual([1, 3])
+    ).toStrictEqual([1, 3])
     expect(
       filterLoadedMailHeaders([recipientMatch, senderOnlyMatch], {
         mailingListId: 77,
         search: '',
         unreadOnly: false,
       }).map((header) => header.mailId),
-    ).toEqual([1])
+    ).toStrictEqual([1])
   })
 
   it('treats an absent ESI read flag as unread', () => {
@@ -75,7 +75,7 @@ describe('mail frontend behavior', () => {
     const duplicate = mailHeader(2, { subject: 'Older duplicate' })
     const result = appendUniqueMailHeaders([mailHeader(1), retained], [duplicate, mailHeader(3)])
 
-    expect(result.map((header) => header.mailId)).toEqual([1, 2, 3])
+    expect(result.map((header) => header.mailId)).toStrictEqual([1, 2, 3])
     expect(result[1]).toBe(retained)
   })
 
@@ -87,7 +87,7 @@ describe('mail frontend behavior', () => {
 
     const result = mergePaginatedMailHeaders([oldLatest, older], [newest, refreshed])
 
-    expect(result.map((header) => header.mailId)).toEqual([3, 2, 1])
+    expect(result.map((header) => header.mailId)).toStrictEqual([3, 2, 1])
     expect(result[1]).toBe(refreshed)
   })
 
@@ -124,7 +124,7 @@ describe('mail frontend behavior', () => {
       applyMailOverlays(staleHeaders, new Map(), new Set([1]), new Map()).map(
         ({ mailId }) => mailId,
       ),
-    ).toEqual([2])
+    ).toStrictEqual([2])
   })
 
   it('removes deleted labels from stale mail without replacing unchanged records', () => {
@@ -132,7 +132,7 @@ describe('mail frontend behavior', () => {
     const unchangedHeader = mailHeader(2, { labelIds: [1] })
     const deletedLabelIds = new Set([2])
 
-    expect(removeMailLabelIds(staleHeader, deletedLabelIds).labelIds).toEqual([1])
+    expect(removeMailLabelIds(staleHeader, deletedLabelIds).labelIds).toStrictEqual([1])
     expect(removeMailLabelIds(unchangedHeader, deletedLabelIds)).toBe(unchangedHeader)
   })
 
@@ -142,24 +142,24 @@ describe('mail frontend behavior', () => {
     const readCounts = deriveDisplayedMailCounts({
       deletedMailIds: new Set(),
       headers: [unreadHeader],
-      labels,
       labelOverrides: new Map(),
+      labels,
       readStateOverrides: new Map([[1, true]]),
       totalUnreadCount: 6,
     })
 
-    expect(readCounts.labels.map(({ unreadCount }) => unreadCount)).toEqual([3, 2, 2])
+    expect(readCounts.labels.map(({ unreadCount }) => unreadCount)).toStrictEqual([3, 2, 2])
     expect(readCounts.totalUnreadCount).toBe(5)
 
     const unreadCounts = deriveDisplayedMailCounts({
       deletedMailIds: new Set(),
       headers: [mailHeader(1, { isRead: true, labelIds: [1, 2] })],
-      labels,
       labelOverrides: new Map(),
+      labels,
       readStateOverrides: new Map([[1, false]]),
       totalUnreadCount: 6,
     })
-    expect(unreadCounts.labels.map(({ unreadCount }) => unreadCount)).toEqual([5, 4, 2])
+    expect(unreadCounts.labels.map(({ unreadCount }) => unreadCount)).toStrictEqual([5, 4, 2])
     expect(unreadCounts.totalUnreadCount).toBe(7)
   })
 
@@ -167,13 +167,13 @@ describe('mail frontend behavior', () => {
     const counts = deriveDisplayedMailCounts({
       deletedMailIds: new Set([1]),
       headers: [mailHeader(1, { isRead: false, labelIds: [1, 2] })],
-      labels: [mailLabel(1, 1), mailLabel(2, 1)],
       labelOverrides: new Map(),
+      labels: [mailLabel(1, 1), mailLabel(2, 1)],
       readStateOverrides: new Map(),
       totalUnreadCount: 1,
     })
 
-    expect(counts.labels.map(({ unreadCount }) => unreadCount)).toEqual([0, 0])
+    expect(counts.labels.map(({ unreadCount }) => unreadCount)).toStrictEqual([0, 0])
     expect(counts.totalUnreadCount).toBe(0)
   })
 
@@ -181,9 +181,9 @@ describe('mail frontend behavior', () => {
     const staleHeader = mailHeader(1, { labelIds: [1] })
     const overrides = new Map<number, readonly number[]>([[1, [1, 2]]])
 
-    expect(applyMailOverlays([staleHeader], new Map(), new Set(), overrides)[0]?.labelIds).toEqual([
-      1, 2,
-    ])
+    expect(
+      applyMailOverlays([staleHeader], new Map(), new Set(), overrides)[0]?.labelIds,
+    ).toStrictEqual([1, 2])
     expect(reconcileMailLabelOverrides([staleHeader], overrides)).toBe(overrides)
 
     const reconciled = reconcileMailLabelOverrides([mailHeader(1, { labelIds: [2, 1] })], overrides)
@@ -194,13 +194,13 @@ describe('mail frontend behavior', () => {
     const counts = deriveDisplayedMailCounts({
       deletedMailIds: new Set(),
       headers: [mailHeader(1, { isRead: false, labelIds: [1] })],
-      labels: [mailLabel(1, 1), mailLabel(2, 0)],
       labelOverrides: new Map([[1, [2]]]),
+      labels: [mailLabel(1, 1), mailLabel(2, 0)],
       readStateOverrides: new Map(),
       totalUnreadCount: 1,
     })
 
-    expect(counts.labels.map(({ unreadCount }) => unreadCount)).toEqual([0, 1])
+    expect(counts.labels.map(({ unreadCount }) => unreadCount)).toStrictEqual([0, 1])
     expect(counts.totalUnreadCount).toBe(1)
   })
 
@@ -208,13 +208,13 @@ describe('mail frontend behavior', () => {
     const counts = deriveDisplayedMailCounts({
       deletedMailIds: new Set(),
       headers: [mailHeader(1, { isRead: true, labelIds: [1] })],
-      labels: [mailLabel(1, 3), mailLabel(2, 4)],
       labelOverrides: new Map([[1, [2]]]),
+      labels: [mailLabel(1, 3), mailLabel(2, 4)],
       readStateOverrides: new Map(),
       totalUnreadCount: 5,
     })
 
-    expect(counts.labels.map(({ unreadCount }) => unreadCount)).toEqual([3, 4])
+    expect(counts.labels.map(({ unreadCount }) => unreadCount)).toStrictEqual([3, 4])
     expect(counts.totalUnreadCount).toBe(5)
   })
 
@@ -222,13 +222,13 @@ describe('mail frontend behavior', () => {
     const counts = deriveDisplayedMailCounts({
       deletedMailIds: new Set(),
       headers: [mailHeader(1, { isRead: false, labelIds: [1] })],
-      labels: [mailLabel(1, 1), mailLabel(2, 0)],
       labelOverrides: new Map([[1, [2]]]),
+      labels: [mailLabel(1, 1), mailLabel(2, 0)],
       readStateOverrides: new Map([[1, true]]),
       totalUnreadCount: 1,
     })
 
-    expect(counts.labels.map(({ unreadCount }) => unreadCount)).toEqual([0, 0])
+    expect(counts.labels.map(({ unreadCount }) => unreadCount)).toStrictEqual([0, 0])
     expect(counts.totalUnreadCount).toBe(0)
   })
 
@@ -239,11 +239,13 @@ describe('mail frontend behavior', () => {
     ]
     const filters = { mailingListId: null, search: '', unreadOnly: true }
 
-    expect(filterDisplayedMailHeaders(headers, filters, 1).map(({ mailId }) => mailId)).toEqual([
-      1, 2,
-    ])
-    expect(filterDisplayedMailHeaders(headers, filters, 2).map(({ mailId }) => mailId)).toEqual([2])
-    expect(filterLoadedMailHeaders(headers, filters).map(({ mailId }) => mailId)).toEqual([2])
+    expect(
+      filterDisplayedMailHeaders(headers, filters, 1).map(({ mailId }) => mailId),
+    ).toStrictEqual([1, 2])
+    expect(
+      filterDisplayedMailHeaders(headers, filters, 2).map(({ mailId }) => mailId),
+    ).toStrictEqual([2])
+    expect(filterLoadedMailHeaders(headers, filters).map(({ mailId }) => mailId)).toStrictEqual([2])
   })
 
   it('cancels read writes while traversing faster than the dwell interval', async () => {
@@ -267,11 +269,11 @@ describe('mail frontend behavior', () => {
   it('keeps hostile body text inert while splitting only on blank lines', () => {
     const hostile = '<img src=x onerror=alert(1)>\nline two\n\n<a href="javascript:x">link</a>'
 
-    expect(splitMailBodyParagraphs(hostile)).toEqual([
+    expect(splitMailBodyParagraphs(hostile)).toStrictEqual([
       '<img src=x onerror=alert(1)>\nline two',
       '<a href="javascript:x">link</a>',
     ])
-    expect(splitMailBodyParagraphs(null)).toEqual([])
+    expect(splitMailBodyParagraphs(null)).toStrictEqual([])
   })
 
   it('derives loading, authorization, cooldown, temporary failure, and retained-data states', () => {
@@ -280,14 +282,14 @@ describe('mail frontend behavior', () => {
     )
     expect(
       deriveMailboxStatus({
-        errors: [new ApiQueryError('Authorize mail.', { status: 403, code: 'EVE_SCOPE_REQUIRED' })],
+        errors: [new ApiQueryError('Authorize mail.', { code: 'EVE_SCOPE_REQUIRED', status: 403 })],
         hasInitialData: false,
         loading: false,
       }),
     ).toBe('scope-required')
     expect(
       deriveMailboxStatus({
-        errors: [new ApiQueryError('Wait.', { status: 429, code: 'ESI_COOLDOWN' })],
+        errors: [new ApiQueryError('Wait.', { code: 'ESI_COOLDOWN', status: 429 })],
         hasInitialData: false,
         loading: false,
       }),
@@ -310,7 +312,7 @@ describe('mail frontend behavior', () => {
 
   it('renders deterministic unresolved-party labels', () => {
     expect(mailPartyName(null, 'sender')).toBe('Unknown sender')
-    expect(mailPartyName({ id: 77, type: 'mailing_list', name: null })).toBe(
+    expect(mailPartyName({ id: 77, name: null, type: 'mailing_list' })).toBe(
       'Unknown mailing list #77',
     )
   })

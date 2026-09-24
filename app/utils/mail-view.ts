@@ -19,8 +19,12 @@ export function isMailUnread(isRead: MailHeader['isRead']) {
 
 export function mailPartyName(party: MailParty | null, role = 'party') {
   const name = party?.name?.trim()
-  if (name) return name
-  if (!party) return `Unknown ${role}`
+  if (name) {
+    return name
+  }
+  if (!party) {
+    return `Unknown ${role}`
+  }
   return `Unknown ${party.type.replace('_', ' ')} #${party.id}`
 }
 
@@ -42,7 +46,9 @@ export function filterLoadedMailHeaders(headers: readonly MailHeader[], filters:
   const search = filters.search.trim().toLocaleLowerCase()
 
   return headers.filter((header) => {
-    if (filters.unreadOnly && !isMailUnread(header.isRead)) return false
+    if (filters.unreadOnly && !isMailUnread(header.isRead)) {
+      return false
+    }
     if (
       filters.mailingListId !== null &&
       !header.recipients.some(
@@ -51,7 +57,9 @@ export function filterLoadedMailHeaders(headers: readonly MailHeader[], filters:
     ) {
       return false
     }
-    if (!search) return true
+    if (!search) {
+      return true
+    }
 
     return [header.subject ?? '', mailPartyName(header.sender, 'sender')].some((value) =>
       value.toLocaleLowerCase().includes(search),
@@ -75,7 +83,9 @@ export function filterDisplayedMailHeaders(
     ...filters,
     unreadOnly: false,
   }).some((header) => header.mailId === openMailId)
-  if (openMessageMatchesOtherFilters) visibleIds.add(openMailId)
+  if (openMessageMatchesOtherFilters) {
+    visibleIds.add(openMailId)
+  }
   return headers.filter((header) => visibleIds.has(header.mailId))
 }
 
@@ -86,7 +96,9 @@ export function applyMailOverlays(
   labelOverrides: ReadonlyMap<number, readonly number[]>,
 ) {
   return headers.flatMap((header) => {
-    if (deletedMailIds.has(header.mailId)) return []
+    if (deletedMailIds.has(header.mailId)) {
+      return []
+    }
     const readState = readStateOverrides.get(header.mailId)
     const labelIds = labelOverrides.get(header.mailId)
     return readState === undefined && labelIds === undefined
@@ -110,7 +122,9 @@ export function removeMailLabelIds<T extends Pick<MailHeader, 'labelIds'>>(
 }
 
 export function sameMailLabelIds(left: readonly number[], right: readonly number[]) {
-  if (left.length !== right.length) return false
+  if (left.length !== right.length) {
+    return false
+  }
   const rightIds = new Set(right)
   return rightIds.size === right.length && left.every((labelId) => rightIds.has(labelId))
 }
@@ -122,7 +136,9 @@ export function reconcileMailReadOverrides(
   let reconciled: Map<number, boolean> | undefined
   for (const header of headers) {
     const override = readStateOverrides.get(header.mailId)
-    if (override === undefined || (header.isRead === true) !== override) continue
+    if (override === undefined || (header.isRead === true) !== override) {
+      continue
+    }
     reconciled ??= new Map(readStateOverrides)
     reconciled.delete(header.mailId)
   }
@@ -136,7 +152,9 @@ export function reconcileMailLabelOverrides(
   let reconciled: Map<number, readonly number[]> | undefined
   for (const header of headers) {
     const override = labelOverrides.get(header.mailId)
-    if (!override || !sameMailLabelIds(header.labelIds, override)) continue
+    if (!override || !sameMailLabelIds(header.labelIds, override)) {
+      continue
+    }
     reconciled ??= new Map(labelOverrides)
     reconciled.delete(header.mailId)
   }
@@ -156,8 +174,11 @@ function accumulateMailCountDeltas(
   const readOverride = options.readStateOverrides.get(header.mailId)
   const deleted = options.deletedMailIds.has(header.mailId)
   let isUnread = wasUnread
-  if (deleted) isUnread = false
-  else if (readOverride !== undefined) isUnread = !readOverride
+  if (deleted) {
+    isUnread = false
+  } else if (readOverride !== undefined) {
+    isUnread = !readOverride
+  }
   const previousLabels = new Set(header.labelIds)
   const displayedLabels = new Set(
     deleted ? [] : (options.labelOverrides.get(header.mailId) ?? header.labelIds),
@@ -166,7 +187,9 @@ function accumulateMailCountDeltas(
     const previousContribution = Number(wasUnread && previousLabels.has(labelId))
     const displayedContribution = Number(isUnread && displayedLabels.has(labelId))
     const delta = displayedContribution - previousContribution
-    if (delta !== 0) labelDeltas.set(labelId, (labelDeltas.get(labelId) ?? 0) + delta)
+    if (delta !== 0) {
+      labelDeltas.set(labelId, (labelDeltas.get(labelId) ?? 0) + delta)
+    }
   }
   return Number(isUnread) - Number(wasUnread)
 }
@@ -184,14 +207,18 @@ export function deriveDisplayedMailCounts(options: {
   const visited = new Set<number>()
 
   for (const header of options.headers) {
-    if (visited.has(header.mailId)) continue
+    if (visited.has(header.mailId)) {
+      continue
+    }
     visited.add(header.mailId)
     totalDelta += accumulateMailCountDeltas(labelDeltas, header, options)
   }
 
   return {
     labels: options.labels.map((label) => {
-      if (label.labelId === null || label.unreadCount === null) return label
+      if (label.labelId === null || label.unreadCount === null) {
+        return label
+      }
       const delta = labelDeltas.get(label.labelId) ?? 0
       return delta === 0 ? label : { ...label, unreadCount: Math.max(0, label.unreadCount + delta) }
     }),
@@ -225,7 +252,9 @@ export function replaceLatestMailHeaders(latest: readonly MailHeader[]) {
 }
 
 export function splitMailBodyParagraphs(body: string | null) {
-  if (!body) return []
+  if (!body) {
+    return []
+  }
   return body
     .replaceAll('\r\n', '\n')
     .split(/\n[\t ]*\n+/)
@@ -245,7 +274,9 @@ export function deriveMailboxStatus(options: {
   hasInitialData: boolean
   loading: boolean
 }): MailboxStatus {
-  if (options.hasInitialData) return 'idle'
+  if (options.hasInitialData) {
+    return 'idle'
+  }
   const errors = options.errors.filter((error): error is Error => error instanceof Error)
   if (
     errors.some(
@@ -264,7 +295,11 @@ export function deriveMailboxStatus(options: {
   ) {
     return 'cooldown'
   }
-  if (errors.length > 0) return 'error'
-  if (options.loading) return 'loading'
+  if (errors.length > 0) {
+    return 'error'
+  }
+  if (options.loading) {
+    return 'loading'
+  }
   return 'idle'
 }

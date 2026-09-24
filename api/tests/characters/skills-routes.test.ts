@@ -47,21 +47,18 @@ import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/token-errors.js'
 
 const character = {
-  characterId: 1404328063,
-  name: 'Bandera Primary',
-  corporationId: 1000166,
   allianceId: null,
+  characterId: 1_404_328_063,
+  corporationId: 1_000_166,
   isMain: true,
+  name: 'Bandera Primary',
   subjectLifecycleId: 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011',
 }
 const session = {
-  userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
   mainCharacter: character,
+  userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
 }
 const skills = {
-  totalSp: 1000,
-  unallocatedSp: 0,
-  injectedSkillCount: 1,
   groups: [
     {
       groupId: 10,
@@ -79,6 +76,9 @@ const skills = {
       ],
     },
   ],
+  injectedSkillCount: 1,
+  totalSp: 1000,
+  unallocatedSp: 0,
 }
 
 beforeEach(() => {
@@ -92,7 +92,7 @@ describe('character skills route', () => {
     const response = await authorizedRequest(`/${character.characterId}/skills`)
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual(skills)
+    expect(await response.json()).toStrictEqual(skills)
     expect(mocks.getCharacterSkills).toHaveBeenCalledWith(
       character.characterId,
       character.subjectLifecycleId,
@@ -105,7 +105,7 @@ describe('character skills route', () => {
     const response = await characterRoutes.request(`/${character.characterId}/skills`)
 
     expect(response.status).toBe(401)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'AUTH_REQUIRED',
       message: 'Log in with EVE Online first.',
     })
@@ -131,7 +131,7 @@ describe('character skills route', () => {
     const response = await authorizedRequest('/90000001/skills')
 
     expect(response.status).toBe(404)
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toStrictEqual({
       code: 'CHARACTER_NOT_FOUND',
       message: 'Character not found.',
     })
@@ -146,11 +146,11 @@ describe('character skills route', () => {
     const body = await response.json()
 
     expect(response.status).toBe(403)
-    expect(body).toEqual({
+    expect(body).toStrictEqual({
+      authorizeUrl: `http://localhost:8788/auth/eve/reauthorize/${character.characterId}`,
       code: 'EVE_SCOPE_REQUIRED',
       message: 'Authorize skills access for this character.',
       requiredScope: 'esi-skills.read_skills.v1',
-      authorizeUrl: `http://localhost:8788/auth/eve/reauthorize/${character.characterId}`,
     })
     expect(JSON.stringify(body)).not.toMatch(/access.token|refresh.token|encrypted/i)
     expect(response.headers.get('cache-control')).toBe('private, no-store')
@@ -165,11 +165,11 @@ describe('character skills route', () => {
     const response = await authorizedRequest(`/${character.characterId}/skills`)
 
     expect(response.status).toBe(403)
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toStrictEqual({
+      authorizeUrl: `http://localhost:8788/auth/eve/reauthorize/${character.characterId}`,
       code: 'EVE_REAUTH_REQUIRED',
       message: 'EVE authorization is no longer valid.',
       requiredScope: 'esi-skills.read_skills.v1',
-      authorizeUrl: `http://localhost:8788/auth/eve/reauthorize/${character.characterId}`,
     })
     expectPrivateHeaders(response)
   })
@@ -180,7 +180,7 @@ describe('character skills route', () => {
     const response = await authorizedRequest(`/${character.characterId}/skills`)
 
     expect(response.status).toBe(502)
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toStrictEqual({
       code: 'ESI_UNAVAILABLE',
       message: 'EVE Online ESI is temporarily unavailable.',
     })
@@ -194,7 +194,7 @@ describe('character skills route', () => {
 
     expect(response.status).toBe(429)
     expect(response.headers.get('retry-after')).toBe('12')
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'ESI_COOLDOWN',
       message: 'EVE Online ESI is temporarily rate limited.',
       retryAfterSeconds: 12,
@@ -208,7 +208,7 @@ describe('character skills route', () => {
     const response = await authorizedRequest(`/${character.characterId}/skills`)
 
     expect(response.status).toBe(503)
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toStrictEqual({
       code: 'EVE_TOKEN_REFRESH_UNAVAILABLE',
       message: 'EVE token refresh is temporarily unavailable. Try again shortly.',
     })

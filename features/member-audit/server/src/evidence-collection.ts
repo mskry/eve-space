@@ -87,22 +87,22 @@ export async function startEvidenceCollection<
   const authority = requireCollectionAuthority(definition.sectionId, context)
   const identity = {
     ...definition,
-    operationContractRevision,
-    resourceRevision,
-    organizationVersion: authority.organizationVersion,
-    targetUserId: authority.targetUserId,
-    managedMemberLifecycleId: authority.managedMemberLifecycleId,
+    authorizationGeneration: context.authorizationGeneration!,
     characterId: context.subject.characterId,
     characterLifecycleId: context.subject.lifecycleId,
-    authorizationGeneration: context.authorizationGeneration!,
     disclosureVersion: authority.disclosureVersion,
+    managedMemberLifecycleId: authority.managedMemberLifecycleId,
+    operationContractRevision,
+    organizationVersion: authority.organizationVersion,
+    resourceRevision,
     sectionActivationVersion: authority.sectionActivationVersion,
+    targetUserId: authority.targetUserId,
   }
   const stored = await context.capabilities.persistence.readActiveEvidenceContinuation(identity)
   return {
-    observationId: stored?.observationId ?? globalThis.crypto.randomUUID(),
-    expectedRevision: stored?.revision ?? 0,
     checkpoint: stored?.checkpoint ?? {},
+    expectedRevision: stored?.revision ?? 0,
+    observationId: stored?.observationId ?? globalThis.crypto.randomUUID(),
   }
 }
 
@@ -119,25 +119,30 @@ export async function materializeEvidenceObservation(
     context.organizationVersion !== authority?.organizationVersion ||
     context.authorizationGeneration === null ||
     authority.sectionId !== data.sectionId
-  )
+  ) {
     return { outcome: 'obsolete' }
+  }
 
   const identity = {
-    operationContractRevision,
-    resourceRevision,
-    organizationVersion: authority.organizationVersion,
-    targetUserId: authority.targetUserId,
-    managedMemberLifecycleId: authority.managedMemberLifecycleId,
+    authorizationGeneration: context.authorizationGeneration,
     characterId: context.subject.characterId,
     characterLifecycleId: context.subject.lifecycleId,
-    authorizationGeneration: context.authorizationGeneration,
     disclosureVersion: authority.disclosureVersion,
-    sectionActivationVersion: authority.sectionActivationVersion,
+    managedMemberLifecycleId: authority.managedMemberLifecycleId,
     observationId: data.observationId,
+    operationContractRevision,
+    organizationVersion: authority.organizationVersion,
+    resourceRevision,
+    sectionActivationVersion: authority.sectionActivationVersion,
+    targetUserId: authority.targetUserId,
   }
   const writeResult = await writeObservation(context, identity)
-  if (writeResult.outcome === 'obsolete') return { outcome: 'obsolete' }
-  if (data.checkpoint.complete !== true) return
+  if (writeResult.outcome === 'obsolete') {
+    return { outcome: 'obsolete' }
+  }
+  if (data.checkpoint.complete !== true) {
+    return
+  }
   const promoted = await promoteObservation(context, identity, writeResult.revision)
   return promoted.outcome === 'obsolete' ? { outcome: 'obsolete' } : undefined
 }
@@ -151,8 +156,9 @@ function requireCollectionAuthority<
     context.organizationVersion !== authority?.organizationVersion ||
     context.authorizationGeneration === null ||
     authority.sectionId !== sectionId
-  )
+  ) {
     throw new Error('Member Audit collection authority is unavailable')
+  }
   return authority
 }
 
@@ -179,45 +185,45 @@ function writeObservation(
   const data = context.data
   const common = {
     ...identity,
-    expectedRevision: data.expectedRevision,
     checkpoint: { ...data.checkpoint },
+    expectedRevision: data.expectedRevision,
     updatedAt: context.validatedAt,
   }
   switch (data.resourceId) {
     case 'assets':
       return context.capabilities.persistence.writeEvidenceContinuation({
         ...common,
-        sectionId: 'assets',
-        resourceId: 'assets',
         records: data.records.map(copyRecord),
+        resourceId: 'assets',
+        sectionId: 'assets',
       })
     case 'wallet-journal':
       return context.capabilities.persistence.writeEvidenceContinuation({
         ...common,
-        sectionId: 'wallet',
-        resourceId: 'wallet-journal',
         records: data.records.map(copyRecord),
+        resourceId: 'wallet-journal',
+        sectionId: 'wallet',
       })
     case 'wallet-transactions':
       return context.capabilities.persistence.writeEvidenceContinuation({
         ...common,
-        sectionId: 'wallet',
-        resourceId: 'wallet-transactions',
         records: data.records.map(copyRecord),
+        resourceId: 'wallet-transactions',
+        sectionId: 'wallet',
       })
     case 'mail-headers':
       return context.capabilities.persistence.writeEvidenceContinuation({
         ...common,
-        sectionId: 'mail',
-        resourceId: 'mail-headers',
         records: data.records.map(copyRecord),
+        resourceId: 'mail-headers',
+        sectionId: 'mail',
       })
     case 'mail-details':
       return context.capabilities.persistence.writeEvidenceContinuation({
         ...common,
-        sectionId: 'mail',
-        resourceId: 'mail-details',
         records: data.records.map(copyRecord),
+        resourceId: 'mail-details',
+        sectionId: 'mail',
       })
   }
 }
@@ -245,40 +251,40 @@ function promoteObservation(
 ) {
   const common = {
     ...identity,
-    expectedRevision,
     dtoRevision: 1,
+    expectedRevision,
     validatedAt: context.validatedAt,
   }
   switch (context.data.resourceId) {
     case 'assets':
       return context.capabilities.persistence.promoteEvidenceObservation({
         ...common,
-        sectionId: 'assets',
         resourceId: 'assets',
+        sectionId: 'assets',
       })
     case 'wallet-journal':
       return context.capabilities.persistence.promoteEvidenceObservation({
         ...common,
-        sectionId: 'wallet',
         resourceId: 'wallet-journal',
+        sectionId: 'wallet',
       })
     case 'wallet-transactions':
       return context.capabilities.persistence.promoteEvidenceObservation({
         ...common,
-        sectionId: 'wallet',
         resourceId: 'wallet-transactions',
+        sectionId: 'wallet',
       })
     case 'mail-headers':
       return context.capabilities.persistence.promoteEvidenceObservation({
         ...common,
-        sectionId: 'mail',
         resourceId: 'mail-headers',
+        sectionId: 'mail',
       })
     case 'mail-details':
       return context.capabilities.persistence.promoteEvidenceObservation({
         ...common,
-        sectionId: 'mail',
         resourceId: 'mail-details',
+        sectionId: 'mail',
       })
   }
 }

@@ -276,7 +276,9 @@ export async function normalizeOpenApiDocument(
 
   const operations: NormalizedOperation[] = [];
   for (const source of sourceOperations) {
-    if (exclusionsById.has(source.operationId)) continue;
+    if (exclusionsById.has(source.operationId)) {
+      continue;
+    }
     operations.push(normalizeOperation(document, source));
   }
   const normalizedOperations = operations.toSorted((left, right) =>
@@ -292,15 +294,15 @@ export async function normalizeOpenApiDocument(
   }
 
   return deepFreeze({
-    operations: normalizedOperations,
-    models,
+    accounting: {
+      excludedOperationIds: excludedIds,
+      normalizedOperationIds: normalizedIds,
+      sourceOperationIds: sourceIds,
+    },
     exclusions,
     inventory,
-    accounting: {
-      sourceOperationIds: sourceIds,
-      normalizedOperationIds: normalizedIds,
-      excludedOperationIds: excludedIds,
-    },
+    models,
+    operations: normalizedOperations,
   });
 }
 
@@ -340,7 +342,9 @@ function resolveLocalReferenceSegment(
     throw new Error(`Invalid local OpenAPI reference: ${reference}`);
   }
   const segment = encodedSegment.replaceAll('~1', '/').replaceAll('~0', '~');
-  if (Array.isArray(value)) return resolveArrayReferenceSegment(value, segment, reference);
+  if (Array.isArray(value)) {
+    return resolveArrayReferenceSegment(value, segment, reference);
+  }
   if (!isObject(value) || !Object.hasOwn(value, segment)) {
     throw new Error(`Unresolved local OpenAPI reference: ${reference}`);
   }
@@ -378,8 +382,12 @@ function collectSourceOperations(document: Record<string, unknown>): SourceOpera
   const operationLocations = new Map<string, string>();
 
   for (const path of Object.keys(document.paths).toSorted(compareText)) {
-    if (path.startsWith('x-')) continue;
-    if (!path.startsWith('/')) throw new Error(`Invalid OpenAPI path key: ${path}`);
+    if (path.startsWith('x-')) {
+      continue;
+    }
+    if (!path.startsWith('/')) {
+      throw new Error(`Invalid OpenAPI path key: ${path}`);
+    }
     const pathItem = resolveReferenceObject(document, document.paths[path], `path item ${path}`);
     collectPathOperations(path, pathItem, operationLocations, operations);
   }
@@ -393,7 +401,9 @@ function collectPathOperations(
   operations: SourceOperation[],
 ): void {
   for (const method of httpMethods) {
-    if (!Object.hasOwn(pathItem, method)) continue;
+    if (!Object.hasOwn(pathItem, method)) {
+      continue;
+    }
     const operation = pathItem[method];
     assertRecord(operation, `${method.toUpperCase()} ${path}`);
     const operationId = requiredOperationId(operation, method, path);
@@ -523,8 +533,8 @@ function normalizeOperation(
       responseHeaders: paginationHeaders,
     },
     cache: {
-      responseHeaders: cacheHeaders,
       extensions: cacheExtensions,
+      responseHeaders: cacheHeaders,
     },
     conditionalRequestValidators,
     rateLimit: normalizeRouteRateLimit(extensions, operationId),
@@ -556,7 +566,9 @@ function normalizeCacheExtensions(
 ): NormalizedCacheExtensions {
   const normalized: MutableNormalizedCacheExtensions = {};
   for (const name of cacheExtensionNames) {
-    if (!Object.hasOwn(extensions, name)) continue;
+    if (!Object.hasOwn(extensions, name)) {
+      continue;
+    }
     normalizeCacheExtension(normalized, name, extensions[name], operationId);
   }
   return normalized;
@@ -621,7 +633,9 @@ function normalizeRouteRateLimit(
   extensions: JsonObject,
   operationId: string,
 ): NormalizedRouteRateLimit {
-  if (!Object.hasOwn(extensions, 'x-rate-limit')) return { kind: 'legacy-only' };
+  if (!Object.hasOwn(extensions, 'x-rate-limit')) {
+    return { kind: 'legacy-only' };
+  }
   const extension = extensions['x-rate-limit'];
   assertRecord(extension, `x-rate-limit extension for ${operationId}`);
   rejectUnknownKeys(
@@ -649,7 +663,7 @@ function normalizeRouteRateLimit(
       `Invalid x-rate-limit window-size for ${operationId}: ${describeValue(window)}`,
     );
   }
-  return { kind: 'declared', group, maximumTokens, window };
+  return { group, kind: 'declared', maximumTokens, window };
 }
 
 function normalizeRequestArrayLimits(
@@ -698,10 +712,14 @@ function collectRequestArrayLimits(
   limits: Map<string, NormalizedRequestArrayLimit>,
   activeReferences: ReadonlySet<string>,
 ): void {
-  if (typeof value === 'boolean') return;
+  if (typeof value === 'boolean') {
+    return;
+  }
   assertRecord(value, `${context} schema`);
   const reference = resolveRequestArrayReference(document, value, activeReferences);
-  if (reference.kind === 'cycle') return;
+  if (reference.kind === 'cycle') {
+    return;
+  }
   if (reference.kind === 'resolved') {
     collectRequestArrayLimits(
       document,
@@ -734,11 +752,15 @@ function resolveRequestArrayReference(
   activeReferences: ReadonlySet<string>,
 ): RequestArrayReference {
   const reference = value.$ref;
-  if (typeof reference !== 'string') return { kind: 'absent' };
-  if (activeReferences.has(reference)) return { kind: 'cycle' };
+  if (typeof reference !== 'string') {
+    return { kind: 'absent' };
+  }
+  if (activeReferences.has(reference)) {
+    return { kind: 'cycle' };
+  }
   return {
-    kind: 'resolved',
     activeReferences: new Set(activeReferences).add(reference),
+    kind: 'resolved',
     value: resolveLocalReference(document, reference),
   };
 }
@@ -750,7 +772,9 @@ function recordDeclaredRequestArrayLimit(
   context: string,
   limits: Map<string, NormalizedRequestArrayLimit>,
 ): void {
-  if (!Object.hasOwn(value, 'maxItems')) return;
+  if (!Object.hasOwn(value, 'maxItems')) {
+    return;
+  }
   if (value.type !== 'array') {
     throw new Error(`${context} maxItems requires an array schema`);
   }
@@ -781,7 +805,9 @@ function* propertyRequestSchemas(
   value: unknown,
   path: readonly string[],
 ): Generator<NestedRequestSchema> {
-  if (!isObject(value)) return;
+  if (!isObject(value)) {
+    return;
+  }
   for (const name of Object.keys(value).toSorted(compareText)) {
     yield { path: [...path, name], value: value[name] };
   }
@@ -791,7 +817,9 @@ function* arrayRequestSchemas(
   value: unknown,
   path: readonly string[],
 ): Generator<NestedRequestSchema> {
-  if (!Array.isArray(value)) return;
+  if (!Array.isArray(value)) {
+    return;
+  }
   for (const schema of value) {
     yield { path, value: schema };
   }
@@ -809,7 +837,7 @@ function recordRequestArrayLimit(
   if (previous !== undefined && previous.maximumItems !== maximumItems) {
     throw new Error(`${context} has ambiguous maxItems declarations at ${key}`);
   }
-  limits.set(key, { location, path, maximumItems });
+  limits.set(key, { location, maximumItems, path });
 }
 
 function normalizeParameterList(
@@ -817,8 +845,12 @@ function normalizeParameterList(
   value: unknown,
   context: string,
 ): NormalizedParameter[] {
-  if (value === undefined) return [];
-  if (!Array.isArray(value)) throw new Error(`${context} must be an array`);
+  if (value === undefined) {
+    return [];
+  }
+  if (!Array.isArray(value)) {
+    throw new Error(`${context} must be an array`);
+  }
   const parameters = value.map((entry, index) => {
     const parameter = resolveReferenceObject(document, entry, `${context}[${index}]`);
     const name = requiredString(parameter.name, `${context}[${index}].name`);
@@ -832,7 +864,9 @@ function normalizeParameterList(
     if (parameter.content !== undefined) {
       throw new Error(`Parameter content is not supported for ${name}; a schema is required`);
     }
-    if (parameter.schema === undefined) throw new Error(`Missing schema for parameter ${name}`);
+    if (parameter.schema === undefined) {
+      throw new Error(`Missing schema for parameter ${name}`);
+    }
     const required = parameter.required === true;
     if (placement === 'path' && !required) {
       throw new Error(`Path parameter ${name} must be required`);
@@ -855,8 +889,9 @@ function normalizeParameterList(
   const seen = new Set<string>();
   for (const parameter of parameters) {
     const identity = parameterIdentity(parameter);
-    if (seen.has(identity))
+    if (seen.has(identity)) {
       throw new Error(`Duplicate parameter ${parameter.placement}:${parameter.name}`);
+    }
     seen.add(identity);
   }
   return parameters;
@@ -867,13 +902,15 @@ function normalizeRequestBody(
   value: unknown,
   operationId: string,
 ): NormalizedRequestBody | null {
-  if (value === undefined) return null;
+  if (value === undefined) {
+    return null;
+  }
   const requestBody = resolveReferenceObject(document, value, `${operationId} request body`);
   return {
-    required: requestBody.required === true,
-    description: optionalString(requestBody.description, `${operationId} request body description`),
     content: normalizeContent(requestBody.content, `${operationId} request body`),
+    description: optionalString(requestBody.description, `${operationId} request body description`),
     extensions: extractExtensions(requestBody),
+    required: requestBody.required === true,
   };
 }
 
@@ -884,7 +921,9 @@ function normalizeResponses(
 ): NormalizedSuccessResponse[] {
   assertRecord(value, `${operationId} responses`);
   const statuses = Object.keys(value).filter((status) => /^2(?:\d{2}|XX)$/iu.test(status));
-  if (statuses.length === 0) throw new Error(`Operation ${operationId} has no success response`);
+  if (statuses.length === 0) {
+    throw new Error(`Operation ${operationId} has no success response`);
+  }
 
   return statuses.toSorted(compareStatusCodes).map((status) => {
     const response = resolveReferenceObject(
@@ -900,19 +939,19 @@ function normalizeResponses(
       throw new Error(`No-content response ${operationId} ${status} declares content`);
     }
     return {
-      status,
+      content,
       description: requiredString(
         response.description,
         `${operationId} response ${status} description`,
       ),
-      noContent: content.length === 0,
-      content,
+      extensions: extractExtensions(response),
       headers: normalizeResponseHeaders(
         document,
         response.headers,
         `${operationId} response ${status}`,
       ),
-      extensions: extractExtensions(response),
+      noContent: content.length === 0,
+      status,
     };
   });
 }
@@ -922,7 +961,9 @@ function normalizeResponseHeaders(
   value: unknown,
   context: string,
 ): NormalizedResponseHeader[] {
-  if (value === undefined) return [];
+  if (value === undefined) {
+    return [];
+  }
   assertRecord(value, `${context} headers`);
   return Object.keys(value)
     .toSorted(compareText)
@@ -933,13 +974,14 @@ function normalizeResponseHeaders(
           `Response header content is not supported for ${name}; a schema is required`,
         );
       }
-      if (header.schema === undefined)
+      if (header.schema === undefined) {
         throw new Error(`Missing schema for response header ${name}`);
+      }
       return {
-        name,
         description: optionalString(header.description, `${context} header ${name} description`),
-        schema: normalizeSchema(header.schema, `${context} header ${name} schema`),
         extensions: extractExtensions(header),
+        name,
+        schema: normalizeSchema(header.schema, `${context} header ${name} schema`),
       };
     });
 }
@@ -947,16 +989,19 @@ function normalizeResponseHeaders(
 function normalizeContent(value: unknown, context: string): NormalizedMediaType[] {
   assertRecord(value, `${context} content`);
   const mediaTypes = Object.keys(value).toSorted(compareText);
-  if (mediaTypes.length === 0) throw new Error(`${context} content must not be empty`);
+  if (mediaTypes.length === 0) {
+    throw new Error(`${context} content must not be empty`);
+  }
   return mediaTypes.map((mediaType) => {
     const media = value[mediaType];
     assertRecord(media, `${context} content ${mediaType}`);
-    if (media.schema === undefined)
+    if (media.schema === undefined) {
       throw new Error(`Missing schema for ${context} content ${mediaType}`);
+    }
     return {
+      extensions: extractExtensions(media),
       mediaType,
       schema: normalizeSchema(media.schema, `${context} content ${mediaType} schema`),
-      extensions: extractExtensions(media),
     };
   });
 }
@@ -966,7 +1011,9 @@ function normalizeSecurity(
   value: unknown,
   operationId: string,
 ): NormalizedSecurityRequirement[] {
-  if (!Array.isArray(value)) throw new Error(`${operationId} security must be an array`);
+  if (!Array.isArray(value)) {
+    throw new Error(`${operationId} security must be an array`);
+  }
   const securitySchemes =
     isObject(document.components) && isObject(document.components.securitySchemes)
       ? document.components.securitySchemes
@@ -1043,13 +1090,21 @@ function validateDocumentReferences(document: Record<string, unknown>): void {
 
 function validateDocumentReferenceValue(document: Record<string, unknown>, value: unknown): void {
   if (Array.isArray(value)) {
-    for (const entry of value) validateDocumentReferenceValue(document, entry);
+    for (const entry of value) {
+      validateDocumentReferenceValue(document, entry);
+    }
     return;
   }
-  if (!isObject(value)) return;
-  if (Object.hasOwn(value, '$ref')) resolveLocalReference(document, value.$ref);
+  if (!isObject(value)) {
+    return;
+  }
+  if (Object.hasOwn(value, '$ref')) {
+    resolveLocalReference(document, value.$ref);
+  }
   for (const [key, entry] of Object.entries(value)) {
-    if (key === '$ref' || key.startsWith('x-') || arbitraryValueKeys.has(key)) continue;
+    if (key === '$ref' || key.startsWith('x-') || arbitraryValueKeys.has(key)) {
+      continue;
+    }
     validateDocumentReferenceValue(document, entry);
   }
 }
@@ -1065,9 +1120,12 @@ function resolveReferenceObject(
   const seen = new Set<string>();
   while (Object.hasOwn(current, '$ref')) {
     const reference = current.$ref;
-    if (typeof reference !== 'string') throw new Error(`Invalid reference in ${context}`);
-    if (seen.has(reference))
+    if (typeof reference !== 'string') {
+      throw new Error(`Invalid reference in ${context}`);
+    }
+    if (seen.has(reference)) {
       throw new Error(`Circular Reference Object in ${context}: ${reference}`);
+    }
     seen.add(reference);
     const siblings = { ...current };
     delete siblings.$ref;
@@ -1127,8 +1185,9 @@ async function readExclusions(path: string): Promise<OperationExclusion[]> {
           `Invalid machine-readable exclusion reason code for ${operationId}: ${code}`,
         );
       }
-      if (entry.reviewed !== true)
+      if (entry.reviewed !== true) {
         throw new Error(`Operation exclusion is not reviewed: ${operationId}`);
+      }
       return { operationId, reason: { code, detail }, reviewed: true as const };
     })
     .toSorted((left: OperationExclusion, right: OperationExclusion) =>
@@ -1158,10 +1217,14 @@ function walkOpenApi(
   schemas: Map<string, number>,
 ): void {
   if (Array.isArray(value)) {
-    for (const entry of value) walkOpenApi(entry, openapi, schemas);
+    for (const entry of value) {
+      walkOpenApi(entry, openapi, schemas);
+    }
     return;
   }
-  if (!isObject(value)) return;
+  if (!isObject(value)) {
+    return;
+  }
 
   collectOpenApiConstructs(value, openapi);
 
@@ -1174,7 +1237,9 @@ function collectOpenApiConstructs(
   value: Record<string, unknown>,
   openapi: Map<string, number>,
 ): void {
-  if (typeof value.openapi === 'string') increment(openapi, `version:${value.openapi}`);
+  if (typeof value.openapi === 'string') {
+    increment(openapi, `version:${value.openapi}`);
+  }
   if (
     typeof value.in === 'string' &&
     (parameterPlacements as readonly string[]).includes(value.in) &&
@@ -1183,11 +1248,14 @@ function collectOpenApiConstructs(
     increment(openapi, `parameter:${value.in}`);
   }
   if (isObject(value.responses)) {
-    for (const status of Object.keys(value.responses)) increment(openapi, `response:${status}`);
+    for (const status of Object.keys(value.responses)) {
+      increment(openapi, `response:${status}`);
+    }
   }
   if (isObject(value.content)) {
-    for (const mediaType of Object.keys(value.content))
+    for (const mediaType of Object.keys(value.content)) {
       increment(openapi, `media-type:${mediaType}`);
+    }
   }
 }
 
@@ -1204,16 +1272,22 @@ function walkOpenApiEntry(
     increment(openapi, `extension:${key}`);
     return;
   }
-  if (openApiKeywords.has(key)) increment(openapi, `keyword:${key}`);
+  if (openApiKeywords.has(key)) {
+    increment(openapi, `keyword:${key}`);
+  }
   if (key === 'schema') {
     walkSchema(entry, schemas);
     return;
   }
   if (key === 'schemas' && isObject(entry)) {
-    for (const schema of Object.values(entry)) walkSchema(schema, schemas);
+    for (const schema of Object.values(entry)) {
+      walkSchema(schema, schemas);
+    }
     return;
   }
-  if (arbitraryValueKeys.has(key)) return;
+  if (arbitraryValueKeys.has(key)) {
+    return;
+  }
   walkOpenApi(entry, openapi, schemas);
 }
 
@@ -1222,7 +1296,9 @@ function walkSchema(schema: unknown, inventory: Map<string, number>): void {
     increment(inventory, `boolean:${schema}`);
     return;
   }
-  if (!isObject(schema)) return;
+  if (!isObject(schema)) {
+    return;
+  }
   for (const [key, value] of Object.entries(schema)) {
     increment(inventory, `keyword:${key}`);
     collectSchemaType(key, value, inventory);
@@ -1232,27 +1308,39 @@ function walkSchema(schema: unknown, inventory: Map<string, number>): void {
 }
 
 function collectSchemaType(key: string, value: unknown, inventory: Map<string, number>): void {
-  if (key !== 'type') return;
+  if (key !== 'type') {
+    return;
+  }
   const types = Array.isArray(value) ? value : [value];
   for (const type of types) {
-    if (typeof type === 'string') increment(inventory, `type:${type}`);
+    if (typeof type === 'string') {
+      increment(inventory, `type:${type}`);
+    }
   }
 }
 
 function collectSchemaFormat(key: string, value: unknown, inventory: Map<string, number>): void {
-  if (key === 'format' && typeof value === 'string') increment(inventory, `format:${value}`);
+  if (key === 'format' && typeof value === 'string') {
+    increment(inventory, `format:${value}`);
+  }
 }
 
 function walkNestedSchemas(key: string, value: unknown, inventory: Map<string, number>): void {
   if (schemaMapKeywords.has(key) && isObject(value)) {
-    for (const nestedSchema of Object.values(value)) walkSchema(nestedSchema, inventory);
+    for (const nestedSchema of Object.values(value)) {
+      walkSchema(nestedSchema, inventory);
+    }
     return;
   }
   if (schemaArrayKeywords.has(key) && Array.isArray(value)) {
-    for (const nestedSchema of value) walkSchema(nestedSchema, inventory);
+    for (const nestedSchema of value) {
+      walkSchema(nestedSchema, inventory);
+    }
     return;
   }
-  if (schemaSingleKeywords.has(key)) walkSchema(value, inventory);
+  if (schemaSingleKeywords.has(key)) {
+    walkSchema(value, inventory);
+  }
 }
 
 function sortedConstructs(inventory: Map<string, number>): ConstructInventoryEntry[] {
@@ -1282,7 +1370,9 @@ function normalizeStringArray(value: unknown, context: string): string[] {
     throw new Error(`${context} must be an array of strings`);
   }
   const strings = [...value];
-  if (new Set(strings).size !== strings.length) throw new Error(`${context} contains duplicates`);
+  if (new Set(strings).size !== strings.length) {
+    throw new Error(`${context} contains duplicates`);
+  }
   return strings;
 }
 
@@ -1307,27 +1397,42 @@ function paginationKind(
   hasOffsetPagination: boolean,
   hasCursorPagination: boolean,
 ): PaginationKind {
-  if (hasOffsetPagination && hasCursorPagination) return 'offset-and-cursor';
-  if (hasOffsetPagination) return 'offset';
-  if (hasCursorPagination) return 'cursor';
+  if (hasOffsetPagination && hasCursorPagination) {
+    return 'offset-and-cursor';
+  }
+  if (hasOffsetPagination) {
+    return 'offset';
+  }
+  if (hasCursorPagination) {
+    return 'cursor';
+  }
   return 'none';
 }
 
 function requiredString(value: unknown, context: string): string {
-  if (typeof value !== 'string' || value.length === 0)
+  if (typeof value !== 'string' || value.length === 0) {
     throw new Error(`${context} must be a non-empty string`);
+  }
   return value;
 }
 
 function optionalString(value: unknown, context: string): string | null {
-  if (value === undefined) return null;
-  if (typeof value !== 'string') throw new Error(`${context} must be a string`);
+  if (value === undefined) {
+    return null;
+  }
+  if (typeof value !== 'string') {
+    throw new Error(`${context} must be a string`);
+  }
   return value;
 }
 
 function optionalBoolean(value: unknown, context: string): boolean | null {
-  if (value === undefined) return null;
-  if (typeof value !== 'boolean') throw new Error(`${context} must be a boolean`);
+  if (value === undefined) {
+    return null;
+  }
+  if (typeof value !== 'boolean') {
+    throw new Error(`${context} must be a boolean`);
+  }
   return value;
 }
 

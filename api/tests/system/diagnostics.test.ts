@@ -17,17 +17,17 @@ describe('runtime diagnostics', () => {
     apiLogger.enableLogging()
 
     recordDiagnostic('worker.job.failed', {
-      correlationId,
       context: {
         jobName: 'resource-refresh',
         secretContext: 'context-private-sentinel',
       } as never,
+      correlationId,
       error,
       failureCategory: 'unsupported-private-category' as never,
     })
 
     const serialized = String(consoleError.mock.calls[0]?.[0])
-    expect(JSON.parse(serialized)).toEqual(
+    expect(JSON.parse(serialized)).toStrictEqual(
       expect.objectContaining({
         correlationId,
         event: 'worker.job.failed',
@@ -52,7 +52,7 @@ describe('runtime diagnostics', () => {
 
       expect(consoleError).toHaveBeenCalledOnce()
       const serialized = String(consoleError.mock.calls[0]?.[0])
-      expect(JSON.parse(serialized)).toEqual(
+      expect(JSON.parse(serialized)).toStrictEqual(
         expect.objectContaining({ event, thrownType: 'object' }),
       )
       expect(serialized).not.toContain('private-sentinel')
@@ -74,7 +74,7 @@ describe('runtime diagnostics', () => {
     })
 
     const serialized = String(consoleError.mock.calls[0]?.[0])
-    expect(JSON.parse(serialized)).toEqual(
+    expect(JSON.parse(serialized)).toStrictEqual(
       expect.objectContaining({
         event: 'platform.persistence.failed',
         failureCategory: 'persistence-failure',

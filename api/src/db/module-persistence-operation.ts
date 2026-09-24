@@ -44,9 +44,12 @@ export function createModulePersistenceOperationInvoker(
     operation: PlatformInstalledPersistenceOperationDescriptor,
     input: unknown,
   ) => {
-    if (!installedBindings.has(operation)) throw operationError(operation, 'binding')
-    if (options.expectedMode && operation.mode !== options.expectedMode)
+    if (!installedBindings.has(operation)) {
+      throw operationError(operation, 'binding')
+    }
+    if (options.expectedMode && operation.mode !== options.expectedMode) {
       throw operationError(operation, 'mode')
+    }
     assertOperationActive(operation, options)
     const parsedInput = parsePayload(
       operation,
@@ -77,8 +80,12 @@ export function createModulePersistenceOperationInvoker(
         ).value
       })
     } catch (error) {
-      if (error instanceof ModulePersistenceOperationError) throw error
-      if (options.signal?.aborted) throw operationError(operation, 'cancelled')
+      if (error instanceof ModulePersistenceOperationError) {
+        throw error
+      }
+      if (options.signal?.aborted) {
+        throw operationError(operation, 'cancelled')
+      }
       throw operationError(operation, 'execution')
     }
     return output
@@ -130,8 +137,9 @@ async function executeRoutine(
     transaction.unsafe<{ result: unknown }[]>(statement, [inputJson]),
     signal,
   )
-  if (rows.length !== 1 || !Object.hasOwn(rows[0]!, 'result'))
+  if (rows.length !== 1 || !Object.hasOwn(rows[0]!, 'result')) {
     throw operationError(operation, 'output')
+  }
   return rows[0]!.result
 }
 
@@ -144,15 +152,21 @@ function parsePayload(
   sizeCategory: 'input-size' | 'output-size',
 ) {
   const parsed = schema.safeParse(value)
-  if (!parsed.success) throw operationError(operation, invalidCategory)
+  if (!parsed.success) {
+    throw operationError(operation, invalidCategory)
+  }
   let json: string | undefined
   try {
     json = JSON.stringify(parsed.data)
   } catch {
     throw operationError(operation, invalidCategory)
   }
-  if (json === undefined) throw operationError(operation, invalidCategory)
-  if (Buffer.byteLength(json, 'utf8') > maximumBytes) throw operationError(operation, sizeCategory)
+  if (json === undefined) {
+    throw operationError(operation, invalidCategory)
+  }
+  if (Buffer.byteLength(json, 'utf8') > maximumBytes) {
+    throw operationError(operation, sizeCategory)
+  }
   return { json, value: parsed.data }
 }
 

@@ -19,7 +19,9 @@ export async function loadCurrentGroupForUpdate(
       ),
     )
     .for('update')
-  if (!group) throw new OrganizationGroupMutationError('group-not-found')
+  if (!group) {
+    throw new OrganizationGroupMutationError('group-not-found')
+  }
   return group
 }
 
@@ -80,15 +82,17 @@ export async function revokeGroupAssignmentRecord(
   const [revoked] = await transaction
     .update(organizationGroupAssignments)
     .set({
-      revokedAt: input.now,
-      revokedActorType: input.actorType,
-      revokedByUserId: input.actorUserId,
       revocationReason: input.reason,
+      revokedActorType: input.actorType,
+      revokedAt: input.now,
+      revokedByUserId: input.actorUserId,
       updatedAt: input.now,
     })
     .where(eq(organizationGroupAssignments.assignmentId, assignmentId))
     .returning()
-  if (!revoked) throw new Error('Failed to revoke organization group assignment')
+  if (!revoked) {
+    throw new Error('Failed to revoke organization group assignment')
+  }
   return revoked
 }
 
@@ -96,20 +100,20 @@ export function toOrganizationGroupAssignment(
   assignment: typeof organizationGroupAssignments.$inferSelect,
 ) {
   return {
+    assignedActorType: assignment.assignedActorType,
+    assignedAt: assignment.assignedAt.toISOString(),
+    assignedByUserId: assignment.assignedByUserId,
     assignmentId: assignment.assignmentId,
-    groupId: assignment.groupId,
-    organizationVersion: assignment.organizationVersion,
-    userId: assignment.userId,
     assignmentSource: assignment.assignmentSource,
     complianceSource: assignment.complianceSource,
-    assignedActorType: assignment.assignedActorType,
-    assignedByUserId: assignment.assignedByUserId,
-    reason: assignment.reason,
-    assignedAt: assignment.assignedAt.toISOString(),
     expiresAt: assignment.expiresAt?.toISOString() ?? null,
-    revokedAt: assignment.revokedAt?.toISOString() ?? null,
-    revokedActorType: assignment.revokedActorType,
-    revokedByUserId: assignment.revokedByUserId,
+    groupId: assignment.groupId,
+    organizationVersion: assignment.organizationVersion,
+    reason: assignment.reason,
     revocationReason: assignment.revocationReason,
+    revokedActorType: assignment.revokedActorType,
+    revokedAt: assignment.revokedAt?.toISOString() ?? null,
+    revokedByUserId: assignment.revokedByUserId,
+    userId: assignment.userId,
   }
 }

@@ -9,13 +9,16 @@ export function validateResolvedExposures(
 ) {
   for (const contribution of contributions) {
     const packageRoot = packageRoots.get(contribution.moduleId)
-    if (!packageRoot) throw new Error(`Nuxt package ${contribution.moduleId} could not be resolved`)
+    if (!packageRoot) {
+      throw new Error(`Nuxt package ${contribution.moduleId} could not be resolved`)
+    }
     for (const name of contribution.exposed?.[category] ?? []) {
       const matches = registrations.filter((registration) => registration.name === name)
-      if (matches.length !== 1 || !isPathInside(packageRoot, matches[0]!.from))
+      if (matches.length !== 1 || !isPathInside(packageRoot, matches[0]!.from)) {
         throw new Error(
           `Nuxt ${category.slice(0, -1)} ${name} from ${contribution.moduleId} must resolve exactly once`,
         )
+      }
     }
   }
 }

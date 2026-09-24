@@ -48,35 +48,45 @@ watch(
 )
 
 async function assignGroup() {
-  if (!canAssign.value) return
+  if (!canAssign.value) {
+    return
+  }
   actionPending.value = true
   actionMessage.value = ''
   const revision = actionRevision
   try {
     await readPlatformApiResponse(
       await api.api.modules['member-audit'].accounts[':userId'].groups[':groupId'].$post({
-        param: { userId: props.target.userId, groupId: groupId.value.trim() },
         json: {
-          reason: reason.value.trim(),
           expiresAt: expiresAt.value ? new Date(expiresAt.value).toISOString() : null,
+          reason: reason.value.trim(),
         },
+        param: { groupId: groupId.value.trim(), userId: props.target.userId },
       }),
       'The ordinary group could not be assigned.',
     )
-    if (revision !== actionRevision) return
+    if (revision !== actionRevision) {
+      return
+    }
     actionMessage.value = 'Ordinary group assigned. Entitlements will be reevaluated by core.'
     clearAction()
     await groups.refetch()
   } catch (error) {
-    if (revision !== actionRevision) return
+    if (revision !== actionRevision) {
+      return
+    }
     actionMessage.value = error instanceof Error ? error.message : 'The group action failed.'
   } finally {
-    if (revision === actionRevision) actionPending.value = false
+    if (revision === actionRevision) {
+      actionPending.value = false
+    }
   }
 }
 
 async function revokeGroup(group: NonNullable<typeof groups.data.value>['groups'][number]) {
-  if (!confirmed.value || !reason.value.trim() || group.readOnly || actionPending.value) return
+  if (!confirmed.value || !reason.value.trim() || group.readOnly || actionPending.value) {
+    return
+  }
   actionPending.value = true
   actionMessage.value = ''
   const revision = actionRevision
@@ -85,24 +95,30 @@ async function revokeGroup(group: NonNullable<typeof groups.data.value>['groups'
       await api.api.modules['member-audit'].accounts[':userId'].groups[':groupId'].assignments[
         ':assignmentId'
       ].$delete({
-        param: {
-          userId: props.target.userId,
-          groupId: group.groupId,
-          assignmentId: group.assignmentId,
-        },
         json: { reason: reason.value.trim() },
+        param: {
+          assignmentId: group.assignmentId,
+          groupId: group.groupId,
+          userId: props.target.userId,
+        },
       }),
       'The ordinary group assignment could not be revoked.',
     )
-    if (revision !== actionRevision) return
+    if (revision !== actionRevision) {
+      return
+    }
     actionMessage.value = `${group.name} revoked. Entitlements will be reevaluated by core.`
     clearAction()
     await groups.refetch()
   } catch (error) {
-    if (revision !== actionRevision) return
+    if (revision !== actionRevision) {
+      return
+    }
     actionMessage.value = error instanceof Error ? error.message : 'The group action failed.'
   } finally {
-    if (revision === actionRevision) actionPending.value = false
+    if (revision === actionRevision) {
+      actionPending.value = false
+    }
   }
 }
 

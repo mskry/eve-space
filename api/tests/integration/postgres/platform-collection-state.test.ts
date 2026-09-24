@@ -101,9 +101,11 @@ describe('platform collection state PostgreSQL persistence', () => {
 
       await runMigrations(connection, migrations.slice(3, -1))
 
-      await expect(connection<{ user_id: string; ended_at: Date | null }[]>`
+      await expect(
+        connection<{ user_id: string; ended_at: Date | null }[]>`
         select user_id, ended_at from organization_managed_member_lifecycles
-      `).resolves.toEqual([{ user_id: userId, ended_at: null }])
+      `.then((rows) => [...rows]),
+      ).resolves.toStrictEqual([{ ended_at: null, user_id: userId }])
     } finally {
       await connection.end()
     }
@@ -155,7 +157,9 @@ describe('platform collection state PostgreSQL persistence', () => {
         ) values (1, 1, ${userId}, 'organization_owner', ${userId}, 'Legacy owner grant')
         returning grant_id
       `
-      if (!grant) throw new Error('Legacy owner grant fixture is missing')
+      if (!grant) {
+        throw new Error('Legacy owner grant fixture is missing')
+      }
       await connection`
         insert into organization_authority_evidence (
           grant_id, deployment_id, organization_version, user_id, character_id,
@@ -210,15 +214,15 @@ describe('platform collection state PostgreSQL persistence', () => {
         where source_id = ${sourceId}
       `
 
-      expect(character).toEqual({ unresolved: true })
-      expect(evidence).toEqual({
+      expect(character).toStrictEqual({ unresolved: true })
+      expect(evidence).toStrictEqual({
         authorization_generation: 4,
         failure_class: 'strict:authorization-missing',
         invalidation_outcome: 'authorization-missing',
         source_subject_lifecycle_id: lifecycleId,
         status: 'invalid',
       })
-      expect(source).toEqual({
+      expect(source).toStrictEqual({
         authorization_generation: 4,
         failure_class: 'strict:authorization-missing',
         invalidation_outcome: 'authorization-missing',
@@ -236,17 +240,17 @@ describe('platform collection state PostgreSQL persistence', () => {
     const moduleId = 'section-policy-test'
     const definitions = [
       {
-        moduleId,
+        defaultEnabled: false as const,
         id: 'overview',
         kind: 'workspace' as const,
-        defaultEnabled: false as const,
+        moduleId,
       },
       {
-        moduleId,
-        id: 'skills',
-        kind: 'sensitive-evidence' as const,
         defaultEnabled: false as const,
         disclosureRevision: 1,
+        id: 'skills',
+        kind: 'sensitive-evidence' as const,
+        moduleId,
       },
     ] as const satisfies readonly PlatformInstalledModuleSectionDefinition[]
     try {
@@ -261,19 +265,19 @@ describe('platform collection state PostgreSQL persistence', () => {
             activation_version as "activationVersion"
           from deployment_module_sections
           order by section_id
-        `,
-      ).resolves.toEqual([
-        { sectionId: 'overview', enabled: false, disclosureVersion: 0, activationVersion: 0 },
-        { sectionId: 'skills', enabled: false, disclosureVersion: 0, activationVersion: 0 },
+        `.then((rows) => [...rows]),
+      ).resolves.toStrictEqual([
+        { activationVersion: 0, disclosureVersion: 0, enabled: false, sectionId: 'overview' },
+        { activationVersion: 0, disclosureVersion: 0, enabled: false, sectionId: 'skills' },
       ])
 
       await expect(
         setInstalledModuleSectionEnabled(moduleId, 'skills', true, connection, definitions),
-      ).resolves.toMatchObject({ disclosureVersion: 1, activationVersion: 1 })
+      ).resolves.toMatchObject({ activationVersion: 1, disclosureVersion: 1 })
       await setInstalledModuleSectionEnabled(moduleId, 'skills', false, connection, definitions)
       await expect(
         setInstalledModuleSectionEnabled(moduleId, 'skills', true, connection, definitions),
-      ).resolves.toMatchObject({ disclosureVersion: 1, activationVersion: 2 })
+      ).resolves.toMatchObject({ activationVersion: 2, disclosureVersion: 1 })
 
       const revisedDefinitions = [definitions[0]!, { ...definitions[1]!, disclosureRevision: 2 }]
       await reconcileInstalledModuleSections(connection, revisedDefinitions)
@@ -284,26 +288,28 @@ describe('platform collection state PostgreSQL persistence', () => {
             activation_version as "activationVersion"
           from deployment_module_sections
           where module_id = ${moduleId} and section_id = 'skills'
-        `,
-      ).resolves.toEqual([{ enabled: true, disclosureVersion: 2, activationVersion: 2 }])
+        `.then((rows) => [...rows]),
+      ).resolves.toStrictEqual([{ activationVersion: 2, disclosureVersion: 2, enabled: true }])
 
       await expect(
         setInstalledModuleSectionEnabled(moduleId, 'overview', true, connection, definitions),
-      ).resolves.toMatchObject({ disclosureVersion: 0, activationVersion: 1 })
+      ).resolves.toMatchObject({ activationVersion: 1, disclosureVersion: 0 })
       await setInstalledModuleEnabled(moduleId, false, connection, [
-        { moduleId, defaultEnabled: false },
+        { defaultEnabled: false, moduleId },
       ])
       await setInstalledModuleEnabled(moduleId, true, connection, [
-        { moduleId, defaultEnabled: false },
+        { defaultEnabled: false, moduleId },
       ])
-      await expect(connection<{ section_id: string; activation_version: number }[]>`
+      await expect(
+        connection<{ section_id: string; activation_version: number }[]>`
         select section_id, activation_version
         from deployment_module_sections
         where module_id = ${moduleId}
         order by section_id
-      `).resolves.toEqual([
-        { section_id: 'overview', activation_version: 2 },
-        { section_id: 'skills', activation_version: 3 },
+      `.then((rows) => [...rows]),
+      ).resolves.toStrictEqual([
+        { activation_version: 2, section_id: 'overview' },
+        { activation_version: 3, section_id: 'skills' },
       ])
     } finally {
       await connection.end()
@@ -319,7 +325,7 @@ describe('platform collection state PostgreSQL persistence', () => {
         where conrelid = 'platform_collection_state'::regclass
         order by conname
       `
-      expect(constraints.map(({ conname }) => conname)).toEqual(
+      expect(constraints.map(({ conname }) => conname)).toStrictEqual(
         expect.arrayContaining([
           'platform_collection_state_pkey',
           'platform_collection_state_module_id_fkey',
@@ -336,7 +342,7 @@ describe('platform collection state PostgreSQL persistence', () => {
         where schemaname = current_schema()
           and tablename = 'platform_collection_state'
       `
-      expect(indexes.map(({ indexname }) => indexname)).toEqual(
+      expect(indexes.map(({ indexname }) => indexname)).toStrictEqual(
         expect.arrayContaining([
           'platform_collection_state_due_idx',
           'platform_collection_state_subject_lifecycle_idx',
@@ -386,29 +392,29 @@ describe('platform collection state PostgreSQL persistence', () => {
       const identity = {
         moduleId: 'member-audit',
         resourceId: 'character-skills',
+        subjectId: String(characterId),
         subjectKind: 'character' as const,
         subjectLifecycleId: lifecycleId,
-        subjectId: String(characterId),
       }
       const first = await upsertPlatformCollectionState(
         {
           ...identity,
-          nextEligibleAt: new Date('2026-08-26T12:00:00Z'),
           authorizationGeneration: 2,
-          validatedAt,
           lastFailureClass: null,
+          nextEligibleAt: new Date('2026-08-26T12:00:00Z'),
+          validatedAt,
         },
         database,
       )
-      expect(first.validatedAt).toEqual(validatedAt)
+      expect(first.validatedAt).toStrictEqual(validatedAt)
 
       const updated = await upsertPlatformCollectionState(
         {
           ...identity,
-          nextEligibleAt: null,
           authorizationGeneration: 3,
-          validatedAt,
           lastFailureClass: 'authorization-required',
+          nextEligibleAt: null,
+          validatedAt,
         },
         database,
       )
@@ -419,19 +425,19 @@ describe('platform collection state PostgreSQL persistence', () => {
         validatedAt,
       })
       expect(updated.failureStartedAt).toBeInstanceOf(Date)
-      expect(updated.createdAt).toEqual(first.createdAt)
+      expect(updated.createdAt).toStrictEqual(first.createdAt)
 
       const repeatedFailure = await upsertPlatformCollectionState(
         {
           ...identity,
-          nextEligibleAt: new Date('2026-08-26T12:05:00Z'),
           authorizationGeneration: 3,
-          validatedAt,
           lastFailureClass: 'esi-unavailable',
+          nextEligibleAt: new Date('2026-08-26T12:05:00Z'),
+          validatedAt,
         },
         database,
       )
-      expect(repeatedFailure.failureStartedAt).toEqual(updated.failureStartedAt)
+      expect(repeatedFailure.failureStartedAt).toStrictEqual(updated.failureStartedAt)
 
       await connection`create schema member_audit`
       await connection`
@@ -462,7 +468,11 @@ describe('platform collection state PostgreSQL persistence', () => {
           (select count(*)::integer from platform_subject_lifecycles) as lifecycles,
           (select count(*)::integer from member_audit.character_snapshots) as module_records
       `
-      expect(detachedCounts).toEqual({ collection_states: 0, lifecycles: 0, module_records: 0 })
+      expect(detachedCounts).toStrictEqual({
+        collection_states: 0,
+        lifecycles: 0,
+        module_records: 0,
+      })
 
       const replacementLifecycleId = await createCharacterLifecycle(connection, characterId)
       expect(replacementLifecycleId).not.toBe(lifecycleId)
@@ -470,10 +480,10 @@ describe('platform collection state PostgreSQL persistence', () => {
         upsertPlatformCollectionState(
           {
             ...identity,
-            nextEligibleAt: null,
             authorizationGeneration: 3,
-            validatedAt,
             lastFailureClass: null,
+            nextEligibleAt: null,
+            validatedAt,
           },
           database,
         ),
@@ -488,11 +498,11 @@ describe('platform collection state PostgreSQL persistence', () => {
         upsertPlatformCollectionState(
           {
             ...identity,
-            subjectLifecycleId: replacementLifecycleId,
-            nextEligibleAt: null,
             authorizationGeneration: 0,
-            validatedAt: null,
             lastFailureClass: null,
+            nextEligibleAt: null,
+            subjectLifecycleId: replacementLifecycleId,
+            validatedAt: null,
           },
           database,
         ),
@@ -508,13 +518,13 @@ describe('platform collection state PostgreSQL persistence', () => {
     const characterId = 1_404_328_063
     const requiredScope = 'esi-skills.read_skills.v1'
     const resource = {
-      moduleId: 'member-audit',
-      resourceId: 'character-skills',
-      subjectKind: 'character',
-      operationId: 'skills',
-      materializationIntervalSeconds: 900,
       eligibility: { kind: 'current-owned-character' },
       implementation: {},
+      materializationIntervalSeconds: 900,
+      moduleId: 'member-audit',
+      operationId: 'skills',
+      resourceId: 'character-skills',
+      subjectKind: 'character',
     } as const
     try {
       await connection`
@@ -532,15 +542,15 @@ describe('platform collection state PostgreSQL persistence', () => {
       const identity = {
         moduleId: resource.moduleId,
         resourceId: resource.resourceId,
+        subjectId: String(characterId),
         subjectKind: 'character' as const,
         subjectLifecycleId: lifecycleId,
-        subjectId: String(characterId),
       }
       const eligibilityOptions = { connection, resources: [resource] }
 
       await expect(
         resolveInstalledResourceEligibility(identity, eligibilityOptions),
-      ).resolves.toMatchObject({ status: 'eligible', due: true, authorizationGeneration: 1 })
+      ).resolves.toMatchObject({ authorizationGeneration: 1, due: true, status: 'eligible' })
 
       await connection`
         update eve_tokens set scopes = '[]'::jsonb, token_version = 2
@@ -549,16 +559,16 @@ describe('platform collection state PostgreSQL persistence', () => {
       await expect(
         resolveInstalledResourceEligibility(identity, eligibilityOptions),
       ).resolves.toMatchObject({
-        status: 'authorization-required',
         authorizationGeneration: 2,
         requiredScope,
+        status: 'authorization-required',
       })
-      await repairPlatformCollectionState({ connection, resources: [resource], characterId })
+      await repairPlatformCollectionState({ characterId, connection, resources: [resource] })
       await expect(loadPlatformCollectionState(identity, database)).resolves.toMatchObject({
         authorizationGeneration: 2,
+        lastFailureClass: 'authorization-required',
         nextEligibleAt: null,
         validatedAt: null,
-        lastFailureClass: 'authorization-required',
       })
 
       await connection`
@@ -568,15 +578,15 @@ describe('platform collection state PostgreSQL persistence', () => {
       `
       await expect(
         resolveInstalledResourceEligibility(identity, eligibilityOptions),
-      ).resolves.toMatchObject({ status: 'eligible', due: true, authorizationGeneration: 3 })
-      await repairPlatformCollectionState({ connection, resources: [resource], characterId })
+      ).resolves.toMatchObject({ authorizationGeneration: 3, due: true, status: 'eligible' })
+      await repairPlatformCollectionState({ characterId, connection, resources: [resource] })
       await expect(loadPlatformCollectionState(identity, database)).resolves.toMatchObject({
         authorizationGeneration: 3,
         lastFailureClass: null,
       })
       const convergedRepairState = await loadPlatformCollectionState(identity, database)
-      await repairPlatformCollectionState({ connection, resources: [resource], characterId })
-      await expect(loadPlatformCollectionState(identity, database)).resolves.toEqual(
+      await repairPlatformCollectionState({ characterId, connection, resources: [resource] })
+      await expect(loadPlatformCollectionState(identity, database)).resolves.toStrictEqual(
         convergedRepairState,
       )
 
@@ -592,8 +602,8 @@ describe('platform collection state PostgreSQL persistence', () => {
         upsertState,
       })
       await expect(loadPlatformCollectionState(identity, database)).resolves.toMatchObject({
-        validatedAt: new Date(validatedAt),
         nextEligibleAt: new Date('2026-08-26T10:15:00.000Z'),
+        validatedAt: new Date(validatedAt),
       })
 
       await connection`
@@ -606,17 +616,17 @@ describe('platform collection state PostgreSQL persistence', () => {
       await connection`delete from characters where character_id = ${characterId}`
       await expect(
         resolveInstalledResourceEligibility(identity, eligibilityOptions),
-      ).resolves.toEqual({ status: 'obsolete' })
+      ).resolves.toStrictEqual({ status: 'obsolete' })
       await expect(loadPlatformCollectionState(identity, database)).resolves.toBeNull()
       const loadCharacterAuthorization = vi.fn()
       await expect(
         guardInstalledResourceExecution(identity, {
-          resources: [resource],
+          loadCharacterCacheAuthorization: loadCharacterAuthorization,
           resolveEligibility: (candidate) =>
             resolveInstalledResourceEligibility(candidate, eligibilityOptions),
-          loadCharacterCacheAuthorization: loadCharacterAuthorization,
+          resources: [resource],
         }),
-      ).resolves.toEqual({ outcome: 'noop', reason: 'obsolete' })
+      ).resolves.toStrictEqual({ outcome: 'noop', reason: 'obsolete' })
       expect(loadCharacterAuthorization).not.toHaveBeenCalled()
 
       await connection`
@@ -637,13 +647,13 @@ describe('platform collection state PostgreSQL persistence', () => {
       ).resolves.toBeNull()
       await expect(
         findCharacterTokenForLifecycle(characterId, replacementLifecycleId, database),
-      ).resolves.toMatchObject({ tokenVersion: 0, scopes: [requiredScope] })
+      ).resolves.toMatchObject({ scopes: [requiredScope], tokenVersion: 0 })
       await expect(
         resolveInstalledResourceEligibility(
           { ...identity, subjectLifecycleId: replacementLifecycleId },
           eligibilityOptions,
         ),
-      ).resolves.toMatchObject({ status: 'eligible', due: true, authorizationGeneration: 0 })
+      ).resolves.toMatchObject({ authorizationGeneration: 0, due: true, status: 'eligible' })
     } finally {
       await connection.end()
     }
@@ -654,21 +664,21 @@ describe('platform collection state PostgreSQL persistence', () => {
     const characterId = 1_404_328_060
     const lifecycle = '00000000-0000-4000-8000-000000000010'
     const resource = {
-      moduleId: 'member-audit',
-      sectionId: 'skills',
-      resourceId: 'character-skills',
-      subjectKind: 'character',
-      operationId: 'skills',
-      materializationIntervalSeconds: 900,
       eligibility: { kind: 'current-owned-character' },
       implementation: {},
+      materializationIntervalSeconds: 900,
+      moduleId: 'member-audit',
+      operationId: 'skills',
+      resourceId: 'character-skills',
+      sectionId: 'skills',
+      subjectKind: 'character',
     } as const
     const identity = {
       moduleId: resource.moduleId,
       resourceId: resource.resourceId,
+      subjectId: String(characterId),
       subjectKind: resource.subjectKind,
       subjectLifecycleId: lifecycle,
-      subjectId: String(characterId),
     }
     try {
       await connection`
@@ -697,21 +707,21 @@ describe('platform collection state PostgreSQL persistence', () => {
       await expect(resolveEligibility()).resolves.toMatchObject({ status: 'disabled' })
       await expect(
         selectDueInstalledResources({ ...eligibilityOptions, limit: 10 }),
-      ).resolves.toEqual([])
+      ).resolves.toStrictEqual([])
       await expect(
         getInstalledResourceCollectionStatus(identity, {
-          resources: [resource],
           resolveEligibility,
+          resources: [resource],
         }),
       ).resolves.toMatchObject({ status: 'unavailable' })
       const loadAuthorization = vi.fn()
       await expect(
         guardInstalledResourceExecution(identity, {
-          resources: [resource],
-          resolveEligibility,
           loadCharacterCacheAuthorization: loadAuthorization,
+          resolveEligibility,
+          resources: [resource],
         }),
-      ).resolves.toEqual({ outcome: 'noop', reason: 'disabled' })
+      ).resolves.toStrictEqual({ outcome: 'noop', reason: 'disabled' })
       expect(loadAuthorization).not.toHaveBeenCalled()
 
       await connection`
@@ -719,8 +729,8 @@ describe('platform collection state PostgreSQL persistence', () => {
         where module_id = ${resource.moduleId} and section_id = ${resource.sectionId}
       `
       await expect(resolveEligibility()).resolves.toMatchObject({
-        status: 'eligible',
         due: true,
+        status: 'eligible',
       })
 
       await connection`
@@ -736,20 +746,20 @@ describe('platform collection state PostgreSQL persistence', () => {
     const connection = postgres(databaseUrl)
     const requiredScope = 'esi-skills.read_skills.v1'
     const resource = {
-      moduleId: 'member-audit',
-      resourceId: 'character-skills',
-      subjectKind: 'character',
-      operationId: 'skills',
-      materializationIntervalSeconds: 900,
       eligibility: { kind: 'current-owned-character' },
       implementation: {},
+      materializationIntervalSeconds: 900,
+      moduleId: 'member-audit',
+      operationId: 'skills',
+      resourceId: 'character-skills',
+      subjectKind: 'character',
     } as const
     const disabledResource = { ...resource, moduleId: 'disabled-audit' }
     const characters = {
-      never: { id: 1_404_328_061, lifecycle: '00000000-0000-4000-8000-000000000001' },
-      generation: { id: 1_404_328_062, lifecycle: '00000000-0000-4000-8000-000000000002' },
-      timed: { id: 1_404_328_063, lifecycle: '00000000-0000-4000-8000-000000000003' },
       future: { id: 1_404_328_064, lifecycle: '00000000-0000-4000-8000-000000000004' },
+      generation: { id: 1_404_328_062, lifecycle: '00000000-0000-4000-8000-000000000002' },
+      never: { id: 1_404_328_061, lifecycle: '00000000-0000-4000-8000-000000000001' },
+      timed: { id: 1_404_328_063, lifecycle: '00000000-0000-4000-8000-000000000003' },
       unscoped: { id: 1_404_328_065, lifecycle: '00000000-0000-4000-8000-000000000005' },
     } as const
     try {
@@ -814,27 +824,27 @@ describe('platform collection state PostgreSQL persistence', () => {
           {
             moduleId: resource.moduleId,
             resourceId: resource.resourceId,
+            subjectId: String(character.id),
             subjectKind: 'character',
             subjectLifecycleId: character.lifecycle,
-            subjectId: String(character.id),
           },
           options,
         )
         expect(classification).toMatchObject({
-          status,
           dueReason,
+          status,
           ...(due === null ? {} : { due }),
         })
       }
 
-      await expect(selectDueInstalledResources({ ...options, limit: 10 })).resolves.toEqual(
+      await expect(selectDueInstalledResources({ ...options, limit: 10 })).resolves.toStrictEqual(
         [characters.never, characters.generation, characters.timed].map((character) => ({
           identity: {
             moduleId: resource.moduleId,
             resourceId: resource.resourceId,
+            subjectId: String(character.id),
             subjectKind: 'character',
             subjectLifecycleId: character.lifecycle,
-            subjectId: String(character.id),
           },
           operationId: 'skills',
         })),
@@ -848,11 +858,11 @@ describe('platform collection state PostgreSQL persistence', () => {
           {
             moduleId: resource.moduleId,
             resourceId: resource.resourceId,
+            subjectId: String(characters.never.id),
             subjectKind: 'character',
             subjectLifecycleId: characters.never.lifecycle,
-            subjectId: String(characters.never.id),
           },
-          { resources: [resource], resolveEligibility },
+          { resolveEligibility, resources: [resource] },
         ),
       ).resolves.toMatchObject({ status: 'never-collected', validatedAt: null })
       await expect(
@@ -860,11 +870,11 @@ describe('platform collection state PostgreSQL persistence', () => {
           {
             moduleId: resource.moduleId,
             resourceId: resource.resourceId,
+            subjectId: String(characters.timed.id),
             subjectKind: 'character',
             subjectLifecycleId: characters.timed.lifecycle,
-            subjectId: String(characters.timed.id),
           },
-          { resources: [resource], resolveEligibility },
+          { resolveEligibility, resources: [resource] },
         ),
       ).resolves.toMatchObject({ status: 'stale', validatedAt: '2026-08-24T00:00:00.000Z' })
       await expect(
@@ -872,11 +882,11 @@ describe('platform collection state PostgreSQL persistence', () => {
           {
             moduleId: resource.moduleId,
             resourceId: resource.resourceId,
+            subjectId: String(characters.future.id),
             subjectKind: 'character',
             subjectLifecycleId: characters.future.lifecycle,
-            subjectId: String(characters.future.id),
           },
-          { resources: [resource], resolveEligibility },
+          { resolveEligibility, resources: [resource] },
         ),
       ).resolves.toMatchObject({ status: 'current', validatedAt: '2026-08-26T00:00:00.000Z' })
 
@@ -888,26 +898,26 @@ describe('platform collection state PostgreSQL persistence', () => {
           {
             moduleId: resource.moduleId,
             resourceId: resource.resourceId,
+            subjectId: String(characters.future.id),
             subjectKind: 'character',
             subjectLifecycleId: characters.future.lifecycle,
-            subjectId: String(characters.future.id),
           },
           {
-            resources: [resource],
-            resolveEligibility,
             loadCharacterCacheAuthorization: loadAuthorization,
+            resolveEligibility,
+            resources: [resource],
           },
         ),
-      ).resolves.toEqual({ outcome: 'noop', reason: 'already-current' })
+      ).resolves.toStrictEqual({ outcome: 'noop', reason: 'already-current' })
       expect(loadAuthorization).not.toHaveBeenCalled()
-      await expect(selectDueInstalledResources({ ...options, limit: 2 })).resolves.toEqual([
+      await expect(selectDueInstalledResources({ ...options, limit: 2 })).resolves.toStrictEqual([
         {
           identity: {
             moduleId: resource.moduleId,
             resourceId: resource.resourceId,
+            subjectId: String(characters.never.id),
             subjectKind: 'character',
             subjectLifecycleId: characters.never.lifecycle,
-            subjectId: String(characters.never.id),
           },
           operationId: 'skills',
         },
@@ -915,9 +925,9 @@ describe('platform collection state PostgreSQL persistence', () => {
           identity: {
             moduleId: resource.moduleId,
             resourceId: resource.resourceId,
+            subjectId: String(characters.generation.id),
             subjectKind: 'character',
             subjectLifecycleId: characters.generation.lifecycle,
-            subjectId: String(characters.generation.id),
           },
           operationId: 'skills',
         },
@@ -939,14 +949,14 @@ describe('platform collection state PostgreSQL persistence', () => {
         where subject_lifecycle_id = ${characters.generation.lifecycle}
       `
 
-      await expect(selectDueInstalledResources({ ...options, limit: 2 })).resolves.toEqual([
+      await expect(selectDueInstalledResources({ ...options, limit: 2 })).resolves.toStrictEqual([
         {
           identity: {
             moduleId: resource.moduleId,
             resourceId: resource.resourceId,
+            subjectId: String(characters.timed.id),
             subjectKind: 'character',
             subjectLifecycleId: characters.timed.lifecycle,
-            subjectId: String(characters.timed.id),
           },
           operationId: 'skills',
         },
@@ -959,13 +969,13 @@ describe('platform collection state PostgreSQL persistence', () => {
   test('selects public character resources without a token', async () => {
     const connection = postgres(databaseUrl)
     const resource = {
-      moduleId: 'public-audit',
-      resourceId: 'character-status',
-      subjectKind: 'character',
-      operationId: 'status',
-      materializationIntervalSeconds: 900,
       eligibility: { kind: 'current-owned-character' },
       implementation: {},
+      materializationIntervalSeconds: 900,
+      moduleId: 'public-audit',
+      operationId: 'status',
+      resourceId: 'character-status',
+      subjectKind: 'character',
     } as const
     try {
       await connection`
@@ -977,14 +987,14 @@ describe('platform collection state PostgreSQL persistence', () => {
 
       await expect(
         selectDueInstalledResources({ connection, limit: 1, resources: [resource] }),
-      ).resolves.toEqual([
+      ).resolves.toStrictEqual([
         {
           identity: {
             moduleId: resource.moduleId,
             resourceId: resource.resourceId,
+            subjectId: String(characterId),
             subjectKind: 'character',
             subjectLifecycleId: lifecycle,
-            subjectId: String(characterId),
           },
           operationId: 'status',
         },
@@ -992,14 +1002,14 @@ describe('platform collection state PostgreSQL persistence', () => {
       // Derived queue state is disposable: without a state transition, another pass reconstructs it.
       await expect(
         selectDueInstalledResources({ connection, limit: 1, resources: [resource] }),
-      ).resolves.toEqual([
+      ).resolves.toStrictEqual([
         {
           identity: {
             moduleId: resource.moduleId,
             resourceId: resource.resourceId,
+            subjectId: String(characterId),
             subjectKind: 'character',
             subjectLifecycleId: lifecycle,
-            subjectId: String(characterId),
           },
           operationId: 'status',
         },
@@ -1016,21 +1026,21 @@ describe('platform collection state PostgreSQL persistence', () => {
     const characterLifecycleId = randomUUID()
     const characterId = 1_404_328_068
     const resource = {
-      moduleId: 'member-audit',
-      sectionId: 'skills',
-      resourceId: 'trained-skills',
-      subjectKind: 'character',
-      operationId: 'skills',
-      materializationIntervalSeconds: 900,
       eligibility: { kind: 'current-managed-member-character' },
       implementation: {},
+      materializationIntervalSeconds: 900,
+      moduleId: 'member-audit',
+      operationId: 'skills',
+      resourceId: 'trained-skills',
+      sectionId: 'skills',
+      subjectKind: 'character',
     } as PlatformInstalledResourceDescriptor
     const identity = {
       moduleId: resource.moduleId,
       resourceId: resource.resourceId,
+      subjectId: String(characterId),
       subjectKind: 'character' as const,
       subjectLifecycleId: characterLifecycleId,
-      subjectId: String(characterId),
     }
     try {
       await connection`
@@ -1139,19 +1149,19 @@ describe('platform collection state PostgreSQL persistence', () => {
         resources: [resource],
       })
       expect(eligible).toMatchObject({
-        status: 'eligible',
+        authorizationGeneration: 3,
         due: true,
         dueReason: 'never-collected',
-        authorizationGeneration: 3,
         managedAuthority: {
+          disclosureVersion: 1,
+          managedMemberLifecycleId: memberLifecycleId,
           organizationDeploymentId: 1,
           organizationVersion: 1,
-          targetUserId: userId,
-          managedMemberLifecycleId: memberLifecycleId,
-          sectionId: 'skills',
-          disclosureVersion: 1,
           sectionActivationVersion: 1,
+          sectionId: 'skills',
+          targetUserId: userId,
         },
+        status: 'eligible',
       })
       const due = await selectDueInstalledResources({
         connection,
@@ -1160,14 +1170,14 @@ describe('platform collection state PostgreSQL persistence', () => {
         resources: [resource],
       })
       expect(due).toHaveLength(2)
-      expect(due).toEqual(
+      expect(due).toStrictEqual(
         expect.arrayContaining([
           { identity, operationId: 'skills' },
           {
             identity: {
               ...identity,
-              subjectLifecycleId: externalLifecycleId,
               subjectId: String(externalCharacterId),
+              subjectLifecycleId: externalLifecycleId,
             },
             operationId: 'skills',
           },
@@ -1177,31 +1187,32 @@ describe('platform collection state PostgreSQL persistence', () => {
         resolveInstalledResourceEligibility(
           {
             ...identity,
-            subjectLifecycleId: externalLifecycleId,
             subjectId: String(externalCharacterId),
+            subjectLifecycleId: externalLifecycleId,
           },
           { connection, now, resources: [resource] },
         ),
       ).resolves.toMatchObject({
-        status: 'eligible',
         managedAuthority: { managedMemberLifecycleId: memberLifecycleId, targetUserId: userId },
+        status: 'eligible',
       })
-      if (eligible.status !== 'eligible' || !eligible.managedAuthority)
+      if (eligible.status !== 'eligible' || !eligible.managedAuthority) {
         throw new Error('Managed resource did not resolve its authority')
+      }
       await upsertPlatformCollectionState(
         {
           ...identity,
           ...eligible.managedAuthority,
           authorizationGeneration: eligible.authorizationGeneration,
+          lastFailureClass: null,
           nextEligibleAt: new Date('2026-09-01T12:15:00Z'),
           validatedAt: now,
-          lastFailureClass: null,
         },
         drizzle(connection, { schema }),
       )
       await expect(
         resolveInstalledResourceEligibility(identity, { connection, now, resources: [resource] }),
-      ).resolves.toMatchObject({ status: 'eligible', due: false, dueReason: 'future' })
+      ).resolves.toMatchObject({ due: false, dueReason: 'future', status: 'eligible' })
 
       await connection`
         update eve_tokens set token_version = 4 where character_id = ${characterId}
@@ -1216,10 +1227,10 @@ describe('platform collection state PostgreSQL persistence', () => {
       await expect(
         resolveInstalledResourceEligibility(identity, { connection, now, resources: [resource] }),
       ).resolves.toMatchObject({
-        status: 'eligible',
+        authorizationGeneration: 4,
         due: true,
         dueReason: 'never-collected',
-        authorizationGeneration: 4,
+        status: 'eligible',
         validatedAt: null,
       })
 
@@ -1230,7 +1241,7 @@ describe('platform collection state PostgreSQL persistence', () => {
       `
       await expect(
         resolveInstalledResourceEligibility(identity, { connection, now, resources: [resource] }),
-      ).resolves.toEqual({ status: 'obsolete' })
+      ).resolves.toStrictEqual({ status: 'obsolete' })
 
       const replacementLifecycleId = randomUUID()
       await connection`
@@ -1242,10 +1253,10 @@ describe('platform collection state PostgreSQL persistence', () => {
       await expect(
         resolveInstalledResourceEligibility(identity, { connection, now, resources: [resource] }),
       ).resolves.toMatchObject({
-        status: 'eligible',
         due: true,
         dueReason: 'never-collected',
         managedAuthority: { managedMemberLifecycleId: replacementLifecycleId },
+        status: 'eligible',
       })
 
       await connection`
@@ -1264,22 +1275,22 @@ describe('platform collection state PostgreSQL persistence', () => {
   test('suppresses permanent failures and reactivates generation-bound state changes', async () => {
     const connection = postgres(databaseUrl)
     const resource = {
-      moduleId: 'failure-audit',
-      resourceId: 'character-skills',
-      subjectKind: 'character',
-      operationId: 'skills',
-      materializationIntervalSeconds: 900,
       eligibility: { kind: 'current-owned-character' },
       implementation: {},
+      materializationIntervalSeconds: 900,
+      moduleId: 'failure-audit',
+      operationId: 'skills',
+      resourceId: 'character-skills',
+      subjectKind: 'character',
     } as const
     const characterId = 1_404_328_067
     const lifecycle = '00000000-0000-4000-8000-000000000007'
     const identity = {
       moduleId: resource.moduleId,
       resourceId: resource.resourceId,
+      subjectId: String(characterId),
       subjectKind: 'character' as const,
       subjectLifecycleId: lifecycle,
-      subjectId: String(characterId),
     }
     try {
       await connection`
@@ -1309,12 +1320,12 @@ describe('platform collection state PostgreSQL persistence', () => {
       await expect(
         resolveInstalledResourceEligibility(identity, { connection, resources: [resource] }),
       ).resolves.toMatchObject({
-        status: 'suppressed',
         lastFailureClass: 'mapping-failed',
+        status: 'suppressed',
       })
       await expect(
         selectDueInstalledResources({ connection, limit: 1, resources: [resource] }),
-      ).resolves.toEqual([])
+      ).resolves.toStrictEqual([])
 
       await connection`
         update eve_tokens set token_version = 2 where character_id = ${characterId}
@@ -1322,9 +1333,9 @@ describe('platform collection state PostgreSQL persistence', () => {
       await expect(
         resolveInstalledResourceEligibility(identity, { connection, resources: [resource] }),
       ).resolves.toMatchObject({
-        status: 'eligible',
         due: true,
         dueReason: 'authorization-changed',
+        status: 'eligible',
       })
     } finally {
       await connection.end()
@@ -1337,10 +1348,10 @@ describe('platform collection state PostgreSQL persistence', () => {
     const resources = JSON.stringify([
       {
         module_id: moduleId,
-        resource_id: 'character-skills',
-        subject_kind: 'character',
         operation_id: 'skills',
         required_scope: 'esi-skills.read_skills.v1',
+        resource_id: 'character-skills',
+        subject_kind: 'character',
       },
     ])
     try {
@@ -1411,13 +1422,13 @@ describe('platform collection state PostgreSQL persistence', () => {
           now: new Date('2026-08-26T12:00:00Z'),
           resources: [
             {
-              moduleId,
-              resourceId: 'character-skills',
-              subjectKind: 'character',
-              operationId: 'skills',
-              materializationIntervalSeconds: 900,
               eligibility: { kind: 'current-owned-character' },
               implementation: {},
+              materializationIntervalSeconds: 900,
+              moduleId,
+              operationId: 'skills',
+              resourceId: 'character-skills',
+              subjectKind: 'character',
             },
           ],
         }),
@@ -1430,8 +1441,8 @@ describe('platform collection state PostgreSQL persistence', () => {
   test('versions public deployment resources independently of alliance coverage', async () => {
     const resource = {
       ...coreResources[0],
-      subjectKind: 'deployment',
       eligibility: { kind: 'current-deployment' },
+      subjectKind: 'deployment',
     } as const
     const connection = postgres(databaseUrl)
     const adminId = randomUUID()
@@ -1463,14 +1474,14 @@ describe('platform collection state PostgreSQL persistence', () => {
       const firstIdentity = {
         moduleId: 'core',
         resourceId: 'managed-corporations',
+        subjectId: '1',
         subjectKind: 'deployment' as const,
         subjectLifecycleId: firstLifecycleId,
-        subjectId: '1',
       }
 
       await expect(
         selectDueInstalledResources({ connection, limit: 10, resources: [resource] }),
-      ).resolves.toEqual([{ identity: firstIdentity, operationId: 'alliance-corporations' }])
+      ).resolves.toStrictEqual([{ identity: firstIdentity, operationId: 'alliance-corporations' }])
 
       await connection.begin(async (transaction) => {
         await transaction`
@@ -1500,10 +1511,10 @@ describe('platform collection state PostgreSQL persistence', () => {
           connection,
           resources: [resource],
         }),
-      ).resolves.toEqual({ status: 'obsolete' })
+      ).resolves.toStrictEqual({ status: 'obsolete' })
       await expect(
         selectDueInstalledResources({ connection, limit: 10, resources: [resource] }),
-      ).resolves.toEqual([
+      ).resolves.toStrictEqual([
         {
           identity: { ...firstIdentity, subjectLifecycleId: secondLifecycleId },
           operationId: 'alliance-corporations',
@@ -1545,14 +1556,14 @@ describe('platform collection state PostgreSQL persistence', () => {
       const firstIdentity = {
         moduleId: 'core',
         resourceId: 'managed-corporations',
+        subjectId: '99000001',
         subjectKind: 'alliance' as const,
         subjectLifecycleId: firstLifecycleId,
-        subjectId: '99000001',
       }
 
       await expect(
         selectDueInstalledResources({ connection, limit: 10, resources: [coreResources[0]] }),
-      ).resolves.toEqual([{ identity: firstIdentity, operationId: 'alliance-corporations' }])
+      ).resolves.toStrictEqual([{ identity: firstIdentity, operationId: 'alliance-corporations' }])
 
       await connection.begin(async (transaction) => {
         await transaction`
@@ -1582,10 +1593,10 @@ describe('platform collection state PostgreSQL persistence', () => {
           connection,
           resources: [coreResources[0]],
         }),
-      ).resolves.toEqual({ status: 'obsolete' })
+      ).resolves.toStrictEqual({ status: 'obsolete' })
       await expect(
         selectDueInstalledResources({ connection, limit: 10, resources: [coreResources[0]] }),
-      ).resolves.toEqual([
+      ).resolves.toStrictEqual([
         {
           identity: { ...firstIdentity, subjectLifecycleId: secondLifecycleId },
           operationId: 'alliance-corporations',
@@ -1673,15 +1684,15 @@ describe('platform collection state PostgreSQL persistence', () => {
       const identity = {
         moduleId: 'core',
         resourceId: 'corporation-roster',
+        subjectId: '98000001',
         subjectKind: 'corporation' as const,
         subjectLifecycleId: sourceLifecycleId,
-        subjectId: '98000001',
       }
 
       await expect(
         selectDueInstalledResources({ connection, limit: 10, resources: [coreResources[1]] }),
-      ).resolves.toEqual([
-        { identity, operationId: 'corporation-members', authorizationCharacterId: characterId },
+      ).resolves.toStrictEqual([
+        { authorizationCharacterId: characterId, identity, operationId: 'corporation-members' },
       ])
       await expect(
         resolveInstalledResourceEligibility(identity, {
@@ -1689,33 +1700,43 @@ describe('platform collection state PostgreSQL persistence', () => {
           resources: [coreResources[1]],
         }),
       ).resolves.toMatchObject({
-        status: 'eligible',
-        authorizationGeneration: 7,
         authorizationCharacterId: characterId,
         authorizationCharacterLifecycleId: characterLifecycleId,
+        authorizationGeneration: 7,
+        status: 'eligible',
       })
 
       await database.transaction((transaction) =>
         materializeCoreResourceObservation(transaction, {
-          resourceId: 'corporation-roster',
-          subject: { kind: 'corporation', corporationId: 98000001, lifecycleId: sourceLifecycleId },
-          data: [90_000_001, 90_000_002],
-          validatedAt: new Date('2026-09-01T10:00:00Z'),
           authorizationGeneration: 7,
+          data: [90_000_001, 90_000_002],
+          resourceId: 'corporation-roster',
+          subject: {
+            corporationId: 98_000_001,
+            kind: 'corporation',
+            lifecycleId: sourceLifecycleId,
+          },
+          validatedAt: new Date('2026-09-01T10:00:00Z'),
         }),
       )
       await database.transaction((transaction) =>
         materializeCoreResourceObservation(transaction, {
-          resourceId: 'corporation-roster',
-          subject: { kind: 'corporation', corporationId: 98000001, lifecycleId: sourceLifecycleId },
-          data: [90_000_002],
-          validatedAt: new Date('2026-09-01T11:00:00Z'),
           authorizationGeneration: 7,
+          data: [90_000_002],
+          resourceId: 'corporation-roster',
+          subject: {
+            corporationId: 98_000_001,
+            kind: 'corporation',
+            lifecycleId: sourceLifecycleId,
+          },
+          validatedAt: new Date('2026-09-01T11:00:00Z'),
         }),
       )
-      await expect(connection<{ character_id: string }[]>`
+      await expect(
+        connection<{ character_id: string }[]>`
         select character_id from organization_corporation_roster_observations order by character_id
-      `).resolves.toEqual([{ character_id: '90000002' }])
+      `.then((rows) => [...rows]),
+      ).resolves.toStrictEqual([{ character_id: '90000002' }])
 
       await connection`
         update eve_tokens set scopes = '[]'::jsonb where character_id = ${characterId}
@@ -1755,7 +1776,7 @@ describe('platform collection state PostgreSQL persistence', () => {
       ).resolves.toMatchObject({ status: 'authorization-required' })
       await expect(
         selectDueInstalledResources({ connection, limit: 10, resources: [coreResources[1]] }),
-      ).resolves.toEqual([])
+      ).resolves.toStrictEqual([])
       await connection`
         update characters set next_affiliation_check = now() + interval '1 hour'
         where character_id = ${characterId}
@@ -1790,14 +1811,14 @@ describe('platform collection state PostgreSQL persistence', () => {
           connection,
           resources: [coreResources[1]],
         }),
-      ).resolves.toEqual({ status: 'obsolete' })
+      ).resolves.toStrictEqual({ status: 'obsolete' })
       await expect(
         selectDueInstalledResources({ connection, limit: 10, resources: [coreResources[1]] }),
-      ).resolves.toEqual([
+      ).resolves.toStrictEqual([
         {
+          authorizationCharacterId: characterId,
           identity: { ...identity, subjectLifecycleId: replacementLifecycleId },
           operationId: 'corporation-members',
-          authorizationCharacterId: characterId,
         },
       ])
     } finally {
@@ -1836,47 +1857,51 @@ describe('platform collection state PostgreSQL persistence', () => {
 
       await database.transaction((transaction) =>
         materializeCoreResourceObservation(transaction, {
-          resourceId: 'managed-corporations',
-          subject: { kind: 'alliance', allianceId: 99000001, lifecycleId },
-          data: [98000001, 98000002],
-          validatedAt: new Date('2026-09-01T10:00:00Z'),
           authorizationGeneration: null,
+          data: [98_000_001, 98_000_002],
+          resourceId: 'managed-corporations',
+          subject: { allianceId: 99_000_001, kind: 'alliance', lifecycleId },
+          validatedAt: new Date('2026-09-01T10:00:00Z'),
         }),
       )
       await database.transaction((transaction) =>
         materializeCoreResourceObservation(transaction, {
-          resourceId: 'managed-corporations',
-          subject: { kind: 'alliance', allianceId: 99000001, lifecycleId },
-          data: [98000002],
-          validatedAt: new Date('2026-09-01T11:00:00Z'),
           authorizationGeneration: null,
+          data: [98_000_002],
+          resourceId: 'managed-corporations',
+          subject: { allianceId: 99_000_001, kind: 'alliance', lifecycleId },
+          validatedAt: new Date('2026-09-01T11:00:00Z'),
         }),
       )
 
-      await expect(connection<{ corporation_id: string; is_current: boolean }[]>`
+      await expect(
+        connection<{ corporation_id: string; is_current: boolean }[]>`
         select corporation_id, is_current
         from organization_managed_corporations
         order by corporation_id
-      `).resolves.toEqual([
+      `.then((rows) => [...rows]),
+      ).resolves.toStrictEqual([
         { corporation_id: '98000001', is_current: false },
         { corporation_id: '98000002', is_current: true },
       ])
-      await expect(connection<{ event_type: string; payload: unknown }[]>`
+      await expect(
+        connection<{ event_type: string; payload: unknown }[]>`
         select event_type, payload
         from domain_events
         order by event_sequence
-      `).resolves.toEqual([
+      `.then((rows) => [...rows]),
+      ).resolves.toStrictEqual([
         {
           event_type: 'organization.managed-corporation-added',
-          payload: { deploymentId: 1, organizationVersion: 1, corporationId: 98000001 },
+          payload: { corporationId: 98_000_001, deploymentId: 1, organizationVersion: 1 },
         },
         {
           event_type: 'organization.managed-corporation-added',
-          payload: { deploymentId: 1, organizationVersion: 1, corporationId: 98000002 },
+          payload: { corporationId: 98_000_002, deploymentId: 1, organizationVersion: 1 },
         },
         {
           event_type: 'organization.managed-corporation-removed',
-          payload: { deploymentId: 1, organizationVersion: 1, corporationId: 98000001 },
+          payload: { corporationId: 98_000_001, deploymentId: 1, organizationVersion: 1 },
         },
       ])
     } finally {
@@ -1908,7 +1933,9 @@ async function createCharacterLifecycle(
         values ('character', ${String(characterId)}, ${characterId})
         returning subject_lifecycle_id
       `
-  if (!lifecycle) throw new Error('Failed to create test character lifecycle')
+  if (!lifecycle) {
+    throw new Error('Failed to create test character lifecycle')
+  }
   return lifecycle.subject_lifecycle_id
 }
 

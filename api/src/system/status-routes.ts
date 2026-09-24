@@ -13,8 +13,8 @@ export const statusRoutes = new Hono().get('/', async (context) => {
         esiResilience: {
           ...esiResilience,
           upstream: {
-            status: esiResilience.upstream.status,
             checkedAt: esiResilience.upstream.checkedAt,
+            status: esiResilience.upstream.status,
           },
         },
       },

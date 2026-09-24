@@ -16,16 +16,20 @@ export async function convergeCurrentManagedMemberLifecyclesInTransaction(
   input: { readonly userIds: readonly string[]; readonly now: Date },
 ) {
   const userIds = [...new Set(input.userIds)].toSorted((left, right) => left.localeCompare(right))
-  if (userIds.length === 0) return
+  if (userIds.length === 0) {
+    return
+  }
   const [organization] = await transaction
     .select({
-      organizationVersion: deploymentSettings.organizationVersion,
       organizationType: deploymentSettings.organizationType,
+      organizationVersion: deploymentSettings.organizationVersion,
     })
     .from(deploymentSettings)
     .where(eq(deploymentSettings.id, 1))
     .for('key share')
-  if (!organization) return
+  if (!organization) {
+    return
+  }
   await transaction
     .select({ userId: users.id })
     .from(users)
@@ -49,21 +53,21 @@ export async function convergeCurrentManagedMemberLifecyclesInTransaction(
       .where(eq(organizationManagedCorporations.isCurrent, true)),
     transaction
       .select({
-        userId: characters.userId,
-        corporationId: characters.corporationId,
         affiliationCheckedAt: characters.affiliationCheckedAt,
-        nextAffiliationCheck: characters.nextAffiliationCheck,
         affiliationResolutionState: characters.affiliationResolutionState,
+        corporationId: characters.corporationId,
+        nextAffiliationCheck: characters.nextAffiliationCheck,
+        userId: characters.userId,
       })
       .from(characters)
       .where(inArray(characters.userId, userIds))
       .orderBy(asc(characters.userId), asc(characters.characterId)),
     transaction
       .select({
-        validatedAt: platformCollectionState.validatedAt,
-        nextEligibleAt: platformCollectionState.nextEligibleAt,
-        lastFailureClass: platformCollectionState.lastFailureClass,
         failureStartedAt: platformCollectionState.failureStartedAt,
+        lastFailureClass: platformCollectionState.lastFailureClass,
+        nextEligibleAt: platformCollectionState.nextEligibleAt,
+        validatedAt: platformCollectionState.validatedAt,
       })
       .from(platformSubjectLifecycles)
       .innerJoin(
@@ -109,10 +113,10 @@ export async function convergeCurrentManagedMemberLifecyclesInTransaction(
     // oxlint-disable-next-line no-await-in-loop -- Stable user order serializes lifecycle transitions.
     await convergeManagedMemberLifecycleInTransaction(transaction, {
       deploymentId: 1,
-      organizationVersion: organization.organizationVersion,
-      userId,
       eligible,
       now: input.now,
+      organizationVersion: organization.organizationVersion,
+      userId,
     })
   }
 }
@@ -142,22 +146,26 @@ export async function convergeManagedMemberLifecycleInTransaction(
     )
     .for('update')
   if (input.eligible) {
-    if (active) return active.managedMemberLifecycleId
+    if (active) {
+      return active.managedMemberLifecycleId
+    }
     const [created] = await transaction
       .insert(organizationManagedMemberLifecycles)
       .values({
         deploymentId: input.deploymentId,
         organizationVersion: input.organizationVersion,
-        userId: input.userId,
         startedAt: input.now,
         updatedAt: input.now,
+        userId: input.userId,
       })
       .returning({
         managedMemberLifecycleId: organizationManagedMemberLifecycles.managedMemberLifecycleId,
       })
     return created!.managedMemberLifecycleId
   }
-  if (!active) return null
+  if (!active) {
+    return null
+  }
   await transaction
     .update(organizationManagedMemberLifecycles)
     .set({

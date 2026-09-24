@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  lock: vi.fn(),
   results: [] as unknown[][],
   select: vi.fn(() => query(mocks.results.shift() ?? [])),
-  lock: vi.fn(),
   transaction: vi.fn(
     (callback: (transaction: { select: typeof mocks.select }) => Promise<unknown>) =>
       callback({ select: mocks.select }),
@@ -31,15 +31,13 @@ describe('organization reviewer target', () => {
     mocks.results = completeResults()
 
     await expect(
-      resolveOrganizationReviewerTarget({ organizationVersion: 7, targetUserId, now }),
-    ).resolves.toEqual({
-      organizationVersion: 7,
-      managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
-      selection: { kind: 'account' },
+      resolveOrganizationReviewerTarget({ now, organizationVersion: 7, targetUserId }),
+    ).resolves.toStrictEqual({
       account: {
-        userId: targetUserId,
         mainCharacter: { characterId: 90_000_001, name: 'Main Pilot' },
+        userId: targetUserId,
       },
+      block: { blocked: true, blockedAt: '2026-09-15T12:00:00.000Z' },
       characters: [
         {
           characterId: 90_000_001,
@@ -71,12 +69,12 @@ describe('organization reviewer target', () => {
         },
       ],
       compliance: {
-        state: 'suspended',
-        evidenceFreshness: 'stale',
-        evidenceAt: '2026-09-16T10:30:00.000Z',
-        reviewDeadline: null,
         accessValidUntil: null,
         evaluatedAt: '2026-09-16T11:30:00.000Z',
+        evidenceAt: '2026-09-16T10:30:00.000Z',
+        evidenceFreshness: 'stale',
+        reviewDeadline: null,
+        state: 'suspended',
       },
       groups: [
         {
@@ -90,7 +88,9 @@ describe('organization reviewer target', () => {
           expiresAt: null,
         },
       ],
-      block: { blocked: true, blockedAt: '2026-09-15T12:00:00.000Z' },
+      managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+      organizationVersion: 7,
+      selection: { kind: 'account' },
     })
     expect(mocks.select).toHaveBeenCalledTimes(6)
     expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), {
@@ -103,15 +103,15 @@ describe('organization reviewer target', () => {
     mocks.results = completeResults()
 
     const context = await resolveOrganizationReviewerTarget({
-      organizationVersion: 7,
-      targetUserId,
       characterId: 90_000_002,
       now,
+      organizationVersion: 7,
+      targetUserId,
     })
 
-    expect(context?.selection).toEqual({
-      kind: 'character',
+    expect(context?.selection).toStrictEqual({
       characterId: 90_000_002,
+      kind: 'character',
       subjectLifecycleId: externalLifecycleId,
     })
   })
@@ -121,14 +121,14 @@ describe('organization reviewer target', () => {
       [reviewerOrganization()],
       [
         reviewerCharacter({
-          managedCorporationId: null,
           exceptionId: '00000000-0000-4000-8000-000000000006',
+          managedCorporationId: null,
         }),
       ],
     ]
 
     await expect(
-      resolveOrganizationReviewerTarget({ organizationVersion: 7, targetUserId, now }),
+      resolveOrganizationReviewerTarget({ now, organizationVersion: 7, targetUserId }),
     ).resolves.toBeNull()
     expect(mocks.select).toHaveBeenCalledTimes(2)
   })
@@ -143,7 +143,7 @@ describe('organization reviewer target', () => {
     ]
 
     await expect(
-      resolveOrganizationReviewerTarget({ organizationVersion: 7, targetUserId, now }),
+      resolveOrganizationReviewerTarget({ now, organizationVersion: 7, targetUserId }),
     ).resolves.toBeNull()
     expect(mocks.select).toHaveBeenCalledTimes(1)
   })
@@ -152,9 +152,9 @@ describe('organization reviewer target', () => {
     mocks.results = [
       [
         reviewerOrganization({
-          organizationType: 'corporation',
-          managedCorporationsValidatedAt: null,
           managedCorporationsNextEligibleAt: null,
+          managedCorporationsValidatedAt: null,
+          organizationType: 'corporation',
         }),
       ],
       [reviewerCharacter()],
@@ -165,7 +165,7 @@ describe('organization reviewer target', () => {
     ]
 
     await expect(
-      resolveOrganizationReviewerTarget({ organizationVersion: 7, targetUserId, now }),
+      resolveOrganizationReviewerTarget({ now, organizationVersion: 7, targetUserId }),
     ).resolves.not.toBeNull()
   })
 
@@ -176,21 +176,21 @@ describe('organization reviewer target', () => {
         reviewerCharacter(),
         reviewerCharacter({
           characterId: 90_000_009,
-          subjectLifecycleId: '00000000-0000-4000-8000-000000000009',
-          name: 'Hidden Pilot',
+          exceptionId: null,
           isMain: false,
           managedCorporationId: null,
-          exceptionId: null,
+          name: 'Hidden Pilot',
+          subjectLifecycleId: '00000000-0000-4000-8000-000000000009',
         }),
       ],
     ]
 
     await expect(
       resolveOrganizationReviewerTarget({
-        organizationVersion: 7,
-        targetUserId,
         characterId: 90_000_009,
         now,
+        organizationVersion: 7,
+        targetUserId,
       }),
     ).resolves.toBeNull()
     expect(mocks.select).toHaveBeenCalledTimes(2)
@@ -202,22 +202,22 @@ describe('organization reviewer target', () => {
       [
         reviewerCharacter(),
         reviewerCharacter({
-          characterId: 90_000_009,
-          subjectLifecycleId: '00000000-0000-4000-8000-000000000009',
-          name: 'Stale Pilot',
-          isMain: false,
           affiliationCheckedAt: new Date('2026-09-16T10:00:00.000Z'),
+          characterId: 90_000_009,
+          isMain: false,
+          name: 'Stale Pilot',
           nextAffiliationCheck: new Date('2026-09-16T11:00:00.000Z'),
+          subjectLifecycleId: '00000000-0000-4000-8000-000000000009',
         }),
       ],
     ]
 
     await expect(
       resolveOrganizationReviewerTarget({
-        organizationVersion: 7,
-        targetUserId,
         characterId: 90_000_009,
         now,
+        organizationVersion: 7,
+        targetUserId,
       }),
     ).resolves.toBeNull()
     expect(mocks.select).toHaveBeenCalledTimes(2)
@@ -234,28 +234,28 @@ describe('organization reviewer target', () => {
     ]
 
     const context = await resolveOrganizationReviewerTarget({
+      now,
       organizationVersion: 7,
       targetUserId,
-      now,
     })
 
-    expect(context?.compliance).toEqual({
-      state: 'pending',
-      evidenceFreshness: 'unavailable',
-      evidenceAt: null,
-      reviewDeadline: null,
+    expect(context?.compliance).toStrictEqual({
       accessValidUntil: null,
       evaluatedAt: null,
+      evidenceAt: null,
+      evidenceFreshness: 'unavailable',
+      reviewDeadline: null,
+      state: 'pending',
     })
-    expect(context?.groups).toEqual([])
-    expect(context?.block).toEqual({ blocked: false })
+    expect(context?.groups).toStrictEqual([])
+    expect(context?.block).toStrictEqual({ blocked: false })
   })
 
   test('fails closed when the active organization version changes during resolution', async () => {
     mocks.results = [...completeResults().slice(0, 5), []]
 
     await expect(
-      resolveOrganizationReviewerTarget({ organizationVersion: 7, targetUserId, now }),
+      resolveOrganizationReviewerTarget({ now, organizationVersion: 7, targetUserId }),
     ).resolves.toBeNull()
   })
 })
@@ -265,63 +265,63 @@ function completeResults() {
     [reviewerOrganization()],
     [
       reviewerCharacter({
+        authorizationGeneration: 9,
         encryptedToken: 'secret',
         scopes: ['private.scope'],
-        authorizationGeneration: 9,
       }),
       reviewerCharacter({
-        characterId: 90_000_002,
-        subjectLifecycleId: externalLifecycleId,
-        name: 'External Pilot',
-        corporationId: 98_000_002,
-        allianceId: null,
-        isMain: false,
         affiliationCheckedAt: new Date('2026-09-16T10:00:00.000Z'),
-        nextAffiliationCheck: new Date('2026-09-16T11:00:00.000Z'),
-        managedCorporationId: null,
-        exceptionId: '00000000-0000-4000-8000-000000000006',
+        allianceId: null,
         authorizationGeneration: 4,
+        characterId: 90_000_002,
+        corporationId: 98_000_002,
+        exceptionId: '00000000-0000-4000-8000-000000000006',
+        isMain: false,
+        managedCorporationId: null,
+        name: 'External Pilot',
+        nextAffiliationCheck: new Date('2026-09-16T11:00:00.000Z'),
+        subjectLifecycleId: externalLifecycleId,
       }),
       reviewerCharacter({
         characterId: 90_000_009,
-        subjectLifecycleId: '00000000-0000-4000-8000-000000000009',
-        name: 'Undisclosed Pilot',
+        exceptionId: null,
         isMain: false,
         managedCorporationId: null,
-        exceptionId: null,
+        name: 'Undisclosed Pilot',
+        subjectLifecycleId: '00000000-0000-4000-8000-000000000009',
       }),
     ],
     [
       {
-        state: 'suspended',
-        evidenceFreshness: 'stale',
-        evidenceAt: new Date('2026-09-16T10:30:00.000Z'),
-        reviewDeadline: null,
         accessValidUntil: null,
         evaluatedAt: new Date('2026-09-16T11:30:00.000Z'),
+        evidenceAt: new Date('2026-09-16T10:30:00.000Z'),
+        evidenceFreshness: 'stale',
         issueCode: 'private-reason',
+        reviewDeadline: null,
+        state: 'suspended',
       },
     ],
     [
       {
-        groupId: '00000000-0000-4000-8000-000000000010',
-        assignmentId: '00000000-0000-4000-8000-000000000011',
-        name: 'Registration complete',
-        restricted: false,
-        managementMode: 'manual',
-        hasReviewerPermission: true,
         assignedAt: new Date('2026-09-01T12:00:00.000Z'),
-        expiresAt: null,
-        reason: 'private assignment reason',
         assignedByUserId: '00000000-0000-4000-8000-000000000012',
+        assignmentId: '00000000-0000-4000-8000-000000000011',
+        expiresAt: null,
+        groupId: '00000000-0000-4000-8000-000000000010',
+        hasReviewerPermission: true,
+        managementMode: 'manual',
+        name: 'Registration complete',
         permissionKey: 'private.permission',
+        reason: 'private assignment reason',
+        restricted: false,
       },
     ],
     [
       {
         blockedAt: new Date('2026-09-15T12:00:00.000Z'),
-        reason: 'private block reason',
         blockedByUserId: '00000000-0000-4000-8000-000000000013',
+        reason: 'private block reason',
       },
     ],
     [{ organizationVersion: 7 }],
@@ -330,38 +330,39 @@ function completeResults() {
 
 function reviewerCharacter(overrides: Record<string, unknown> = {}) {
   return {
-    characterId: 90_000_001,
-    subjectLifecycleId: mainLifecycleId,
+    affiliationCheckedAt: new Date('2026-09-16T11:00:00.000Z'),
+    affiliationResolutionState: 'resolved',
+    allianceId: 99_000_001,
     authorizationGeneration: 9,
+    characterId: 90_000_001,
+    corporationId: 98_000_001,
+    exceptionId: null,
+    isMain: true,
+    managedCorporationId: 98_000_001,
     managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
     name: 'Main Pilot',
-    corporationId: 98_000_001,
-    allianceId: 99_000_001,
-    isMain: true,
-    affiliationResolutionState: 'resolved',
-    affiliationCheckedAt: new Date('2026-09-16T11:00:00.000Z'),
     nextAffiliationCheck: new Date('2026-09-16T13:00:00.000Z'),
-    managedCorporationId: 98_000_001,
-    exceptionId: null,
+    subjectLifecycleId: mainLifecycleId,
     ...overrides,
   }
 }
 
 function reviewerOrganization(overrides: Record<string, unknown> = {}) {
   return {
-    organizationType: 'alliance',
-    managedCorporationsValidatedAt: new Date('2026-09-16T11:00:00.000Z'),
-    managedCorporationsNextEligibleAt: new Date('2026-09-16T13:00:00.000Z'),
-    managedCorporationsLastFailureClass: null,
     managedCorporationsFailureStartedAt: null,
+    managedCorporationsLastFailureClass: null,
+    managedCorporationsNextEligibleAt: new Date('2026-09-16T13:00:00.000Z'),
+    managedCorporationsValidatedAt: new Date('2026-09-16T11:00:00.000Z'),
+    organizationType: 'alliance',
     ...overrides,
   }
 }
 
 function query(result: unknown[]) {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'innerJoin', 'leftJoin', 'where', 'orderBy'])
+  for (const method of ['from', 'innerJoin', 'leftJoin', 'where', 'orderBy']) {
     builder[method] = () => builder
+  }
   builder.for = (...arguments_: unknown[]) => {
     mocks.lock(...arguments_)
     return builder

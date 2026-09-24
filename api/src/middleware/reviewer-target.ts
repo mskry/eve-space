@@ -36,11 +36,12 @@ export function loadOrganizationReviewerTarget(targetKind: 'account' | 'characte
         ? { characterId: Number(context.req.param('characterId')) }
         : {}),
     })
-    if (!binding)
+    if (!binding) {
       return context.json(
         { code: 'REVIEW_TARGET_NOT_FOUND', message: 'Review target not found.' },
         404,
       )
+    }
 
     context.set('organizationReviewerTarget', binding)
     await next()

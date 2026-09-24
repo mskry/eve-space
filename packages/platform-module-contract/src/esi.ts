@@ -110,7 +110,6 @@ export interface PlatformEsiLoadResult<Data> {
 }
 
 export const platformCoreEsiOperationCatalog = {
-  version: 1,
   operationIds: [
     'alliance-corporations',
     'character-asset-names',
@@ -126,6 +125,7 @@ export const platformCoreEsiOperationCatalog = {
     'wallet-journal',
     'wallet-transactions',
   ],
+  version: 1,
 } as const
 
 export type PlatformCoreEsiOperationId =

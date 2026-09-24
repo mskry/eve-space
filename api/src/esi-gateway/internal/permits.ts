@@ -39,13 +39,13 @@ export async function acquireEsiRequestPermit(options: {
       // oxlint-disable-next-line no-await-in-loop
       const cooldown = await getEsiRequestCooldown({
         connection: options.connection,
+        localState: options.localState,
+        now,
         operation: options.operation,
         principal,
-        now,
-        localState: options.localState,
       })
       options.signal?.throwIfAborted()
-      if (!cooldown.coordinationAvailable)
+      if (!cooldown.coordinationAvailable) {
         return acquireLocalPermit(
           options.operation,
           principal,
@@ -55,7 +55,10 @@ export async function acquireEsiRequestPermit(options: {
           options.localState,
           timing,
         )
-      if (cooldown.active) throw new EsiQuotaError(cooldown.retryAfterSeconds!, now)
+      }
+      if (cooldown.active) {
+        throw new EsiQuotaError(cooldown.retryAfterSeconds!, now)
+      }
 
       // oxlint-disable-next-line no-await-in-loop
       const permit = await tryAcquireDistributedPermit(
@@ -81,7 +84,9 @@ export async function acquireEsiRequestPermit(options: {
     throw new EsiQuotaError(1)
   } catch (error) {
     options.signal?.throwIfAborted()
-    if (error instanceof EsiQuotaError) throw error
+    if (error instanceof EsiQuotaError) {
+      throw error
+    }
     return acquireLocalPermit(
       options.operation,
       principal,
@@ -104,10 +109,10 @@ async function acquireLocalPermit(
   timing?: Pick<RuntimeTimingPort, 'now' | 'wait'>,
 ) {
   const result = await acquireLocalEsiRequestPermit({
+    deadline,
     operation,
     principal,
     sharedConcurrency,
-    deadline,
     signal,
     state: localState,
     timing,
@@ -143,10 +148,19 @@ async function tryAcquireDistributedPermit(
         ownerToken,
       ),
     ) === 1
-  if (!acquired) return undefined
+  if (!acquired) {
+    return undefined
+  }
   return {
     coordinationAvailable: true,
-    ttlMs: concurrencyLeaseTtlMs,
+    release: async () => {
+      await connection.eval(
+        "redis.call('zrem', KEYS[1], ARGV[1]); if redis.call('zcard', KEYS[1]) == 0 then redis.call('del', KEYS[1]) end return 1",
+        1,
+        key,
+        ownerToken,
+      )
+    },
     renew: async () =>
       Number(
         await connection.eval(
@@ -158,13 +172,6 @@ async function tryAcquireDistributedPermit(
           concurrencyLeaseTtlMs,
         ),
       ) === 1,
-    release: async () => {
-      await connection.eval(
-        "redis.call('zrem', KEYS[1], ARGV[1]); if redis.call('zcard', KEYS[1]) == 0 then redis.call('del', KEYS[1]) end return 1",
-        1,
-        key,
-        ownerToken,
-      )
-    },
+    ttlMs: concurrencyLeaseTtlMs,
   }
 }

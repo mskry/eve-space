@@ -35,9 +35,9 @@ import {
 const reasonSchema = z.string().trim().min(1, 'A reason is required.').max(2000)
 const grantRoleSchema = z
   .object({
-    userId: z.uuid('Enter a valid user ID.'),
-    role: z.enum(['hr_auditor', 'director']),
     reason: reasonSchema,
+    role: z.enum(['hr_auditor', 'director']),
+    userId: z.uuid('Enter a valid user ID.'),
   })
   .strict()
 const grantParamsSchema = z.object({ grantId: z.uuid('Enter a valid role grant ID.') })
@@ -47,24 +47,24 @@ const replaceOwnerSourceSchema = z
   .strict()
 const registrationPolicySchema = z
   .object({
-    requiredScopes: z.array(z.string().trim().min(1).max(200)).max(100),
-    strictRemediationDurationSeconds: z
-      .number()
-      .int()
-      .min(0)
-      .max(maximumStrictRemediationDurationSeconds),
-    staleEvidenceGraceDurationSeconds: z
-      .number()
-      .int()
-      .min(0)
-      .max(maximumStaleEvidenceGraceDurationSeconds),
-    derivedDirectorAuthorityEnabled: z.boolean(),
     authorityEvidenceFreshDurationSeconds: z
       .number()
       .int()
       .min(minimumAuthorityEvidenceFreshDurationSeconds)
       .max(maximumAuthorityEvidenceFreshDurationSeconds),
+    derivedDirectorAuthorityEnabled: z.boolean(),
     reason: reasonSchema,
+    requiredScopes: z.array(z.string().trim().min(1).max(200)).max(100),
+    staleEvidenceGraceDurationSeconds: z
+      .number()
+      .int()
+      .min(0)
+      .max(maximumStaleEvidenceGraceDurationSeconds),
+    strictRemediationDurationSeconds: z
+      .number()
+      .int()
+      .min(0)
+      .max(maximumStrictRemediationDurationSeconds),
   })
   .strict()
 
@@ -82,9 +82,9 @@ export const organizationGovernanceRoutes = new Hono<OrganizationSessionEnv>()
         const body = context.req.valid('json')
         const grant = await grantOrganizationRole({
           actorUserId: context.var.session!.userId,
-          targetUserId: body.userId,
-          role: body.role,
           reason: body.reason,
+          role: body.role,
+          targetUserId: body.userId,
         })
         return context.json({ grant }, 201)
       } catch (error) {
@@ -147,7 +147,9 @@ export const organizationGovernanceRoutes = new Hono<OrganizationSessionEnv>()
   )
 
 function roleMutationFailure(context: Context, error: unknown) {
-  if (!(error instanceof OrganizationRoleMutationError)) throw error
+  if (!(error instanceof OrganizationRoleMutationError)) {
+    throw error
+  }
   switch (error.code) {
     case 'owner-authority-required':
       return context.json(
@@ -170,13 +172,16 @@ function roleMutationFailure(context: Context, error: unknown) {
 }
 
 function registrationPolicyMutationFailure(context: Context, error: unknown) {
-  if (!(error instanceof OrganizationRegistrationPolicyMutationError)) throw error
-  if (error.code === 'owner-authority-required')
+  if (!(error instanceof OrganizationRegistrationPolicyMutationError)) {
+    throw error
+  }
+  if (error.code === 'owner-authority-required') {
     return context.json(
       { code: 'ORGANIZATION_OWNER_REQUIRED', message: 'Organization-owner authority is required.' },
       403,
     )
-  if (error.code === 'owner-policy-noncompliant')
+  }
+  if (error.code === 'owner-policy-noncompliant') {
     return context.json(
       {
         code: 'REGISTRATION_POLICY_OWNER_NONCOMPLIANT',
@@ -184,12 +189,15 @@ function registrationPolicyMutationFailure(context: Context, error: unknown) {
       },
       409,
     )
+  }
   return context.json({ code: 'INVALID_REGISTRATION_POLICY', message: 'Policy is invalid.' }, 400)
 }
 
 function ownerSourceReplacementFailure(context: Context, error: unknown) {
-  if (!(error instanceof OrganizationOwnerSourceReplacementError)) throw error
-  if (error.code === 'owner-authority-required')
+  if (!(error instanceof OrganizationOwnerSourceReplacementError)) {
+    throw error
+  }
+  if (error.code === 'owner-authority-required') {
     return context.json(
       {
         code: 'ORGANIZATION_OWNER_REPLACEMENT_REQUIRED',
@@ -197,8 +205,10 @@ function ownerSourceReplacementFailure(context: Context, error: unknown) {
       },
       409,
     )
-  if (error.code === 'replacement-not-owned')
+  }
+  if (error.code === 'replacement-not-owned') {
     return context.json({ code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' }, 404)
+  }
   return context.json(
     {
       code:

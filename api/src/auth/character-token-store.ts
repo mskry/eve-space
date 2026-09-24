@@ -46,12 +46,12 @@ export async function findCharacterToken(
 ): Promise<StoredCharacterToken | null> {
   const [record] = await connection
     .select({
-      userId: characters.userId,
-      ownerHash: characters.ownerHash,
-      encryptedTokens: eveTokens.encryptedTokens,
       accessTokenExpiresAt: eveTokens.accessTokenExpiresAt,
+      encryptedTokens: eveTokens.encryptedTokens,
+      ownerHash: characters.ownerHash,
       scopes: eveTokens.scopes,
       tokenVersion: eveTokens.tokenVersion,
+      userId: characters.userId,
     })
     .from(eveTokens)
     .innerJoin(characters, eq(characters.characterId, eveTokens.characterId))
@@ -78,12 +78,12 @@ export async function findCharacterTokenForLifecycle(
 ): Promise<StoredCharacterToken | null> {
   const [record] = await connection
     .select({
-      userId: characters.userId,
-      ownerHash: characters.ownerHash,
-      encryptedTokens: eveTokens.encryptedTokens,
       accessTokenExpiresAt: eveTokens.accessTokenExpiresAt,
+      encryptedTokens: eveTokens.encryptedTokens,
+      ownerHash: characters.ownerHash,
       scopes: eveTokens.scopes,
       tokenVersion: eveTokens.tokenVersion,
+      userId: characters.userId,
     })
     .from(eveTokens)
     .innerJoin(characters, eq(characters.characterId, eveTokens.characterId))
@@ -135,8 +135,8 @@ export async function updateCharacterToken(
   const [updated] = await connection
     .update(eveTokens)
     .set({
-      encryptedTokens: input.encryptedTokens,
       accessTokenExpiresAt: input.expiresAt,
+      encryptedTokens: input.encryptedTokens,
       scopes: normalizeScopeSet(input.scopes),
       tokenVersion: incrementTokenVersion,
       updatedAt: new Date(),
@@ -148,12 +148,13 @@ export async function updateCharacterToken(
       ),
     )
     .returning({ tokenVersion: eveTokens.tokenVersion })
-  if (updated)
+  if (updated) {
     await advanceCharacterReviewerDisclosureAcceptances(
       connection,
       input.characterId,
       input.tokenVersion,
     )
+  }
   return Boolean(updated)
 }
 
@@ -205,17 +206,19 @@ export async function saveCharacterToken(
     .insert(eveTokens)
     .values(input)
     .onConflictDoUpdate({
-      target: eveTokens.characterId,
       set: {
-        scopes: input.scopes,
-        encryptedTokens: input.encryptedTokens,
         accessTokenExpiresAt: input.accessTokenExpiresAt,
+        encryptedTokens: input.encryptedTokens,
+        scopes: input.scopes,
         tokenVersion: incrementTokenVersion,
         updatedAt: new Date(),
       },
+      target: eveTokens.characterId,
     })
     .returning({ tokenVersion: eveTokens.tokenVersion })
-  if (!saved) throw new Error('Failed to save character token')
+  if (!saved) {
+    throw new Error('Failed to save character token')
+  }
   return saved.tokenVersion
 }
 
@@ -236,7 +239,9 @@ export async function insertCharacterToken(
       scopes: normalizeScopeSet(input.scopes),
     })
     .returning({ tokenVersion: eveTokens.tokenVersion })
-  if (!inserted) throw new Error('Failed to insert character token')
+  if (!inserted) {
+    throw new Error('Failed to insert character token')
+  }
   return inserted.tokenVersion
 }
 
@@ -250,11 +255,15 @@ async function withCharacterTokenLock<T>(
       await setAuthTransactionLockTimeout(transaction)
       await lockCharacter(transaction, characterId)
       const token = await findToken(transaction)
-      if (!token) throw new CharacterTokenNotFoundError()
+      if (!token) {
+        throw new CharacterTokenNotFoundError()
+      }
       return operation(token, transaction)
     })
   } catch (error) {
-    if (hasPostgresErrorCode(error, '55P03')) throw new TokenRefreshLockUnavailableError()
+    if (hasPostgresErrorCode(error, '55P03')) {
+      throw new TokenRefreshLockUnavailableError()
+    }
     throw error
   }
 }

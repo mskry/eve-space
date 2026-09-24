@@ -84,22 +84,23 @@ export function loadPublishedSkillCatalogueProduct(
         `,
         signal,
       )
-      if (sourceRows.length > maximumPublishedSkills)
+      if (sourceRows.length > maximumPublishedSkills) {
         throw new CoreDataProductUnavailableError('Published skill catalogue exceeds its bound')
+      }
       const rows = sourceRows.map(mapPublishedSkill)
-      return { rows, revision, complete: true }
+      return { complete: true, revision, rows }
     },
   )
 }
 
 function mapPublishedSkill(row: PublishedSkillRow): PublishedSkillCatalogueRecord {
   return {
-    typeId: positiveSafeInteger(row.type_id, 'skill type ID'),
-    typeName: nonemptyString(row.type_name, 'skill type name'),
     groupId: positiveSafeInteger(row.group_id, 'skill group ID'),
     groupName: nonemptyString(row.group_name, 'skill group name'),
-    rank: skillRankFromDogmaValue(row.rank),
     primaryAttribute: skillAttributeFromDogmaValue(row.primary_attribute),
+    rank: skillRankFromDogmaValue(row.rank),
     secondaryAttribute: skillAttributeFromDogmaValue(row.secondary_attribute),
+    typeId: positiveSafeInteger(row.type_id, 'skill type ID'),
+    typeName: nonemptyString(row.type_name, 'skill type name'),
   }
 }

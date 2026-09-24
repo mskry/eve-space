@@ -1,28 +1,28 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  definitions: [{ moduleId: 'alpha', defaultEnabled: true }] as const,
+  blockedModuleRead: undefined as Promise<void> | undefined,
   defaults: [
     { ownerId: 'core', navigationId: 'core-overview', placement: 'dashboard', order: 10 },
     { ownerId: 'alpha', navigationId: 'alpha-audit', placement: 'dashboard', order: 20 },
   ] as const,
+  definitions: [{ moduleId: 'alpha', defaultEnabled: true }] as const,
+  failNextModuleRead: false,
+  moduleReads: 0,
   moduleRows: [] as Array<{ module_id: string; enabled: boolean; updated_at: Date }>,
+  navigationReads: 0,
   navigationRows: [] as Array<{ owner_id: string; navigation_id: string; position: number }>,
   pendingNavigationRows: [] as Array<{
     owner_id: string
     navigation_id: string
     position: number
   }>,
-  blockedModuleRead: undefined as Promise<void> | undefined,
-  failNextModuleRead: false,
-  moduleReads: 0,
-  navigationReads: 0,
   sql: Object.assign(vi.fn(), { begin: vi.fn() }),
   transaction: vi.fn(),
 }))
 
 vi.mock('../../src/db/client.js', () => ({ sql: mocks.sql }))
-vi.mock('../../src/env.js', () => ({ env: { MODULE_RUNTIME_CACHE_TTL_MS: 5_000 } }))
+vi.mock('../../src/env.js', () => ({ env: { MODULE_RUNTIME_CACHE_TTL_MS: 5000 } }))
 vi.mock('../../src/generated/platform/installed-module-runtime.js', () => ({
   installedModuleDefinitions: mocks.definitions,
   installedModuleSectionDefinitions: [],
@@ -35,7 +35,7 @@ beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-08-26T12:00:00.000Z'))
   mocks.moduleRows = [
-    { module_id: 'alpha', enabled: true, updated_at: new Date('2026-08-26T11:00:00.000Z') },
+    { enabled: true, module_id: 'alpha', updated_at: new Date('2026-08-26T11:00:00.000Z') },
   ]
   mocks.navigationRows = []
   mocks.pendingNavigationRows = []
@@ -49,7 +49,9 @@ beforeEach(() => {
     if (query.includes('update deployment_modules')) {
       const [enabled, moduleId] = values as [boolean, string]
       const row = mocks.moduleRows.find((candidate) => candidate.module_id === moduleId)
-      if (!row) return Promise.resolve([])
+      if (!row) {
+        return Promise.resolve([])
+      }
       row.enabled = enabled
       row.updated_at = new Date()
       return Promise.resolve([{ ...row }])
@@ -98,7 +100,7 @@ describe('module runtime state cache', () => {
     expect(mocks.moduleReads).toBe(1)
     expect(mocks.navigationReads).toBe(1)
 
-    await vi.advanceTimersByTimeAsync(5_000)
+    await vi.advanceTimersByTimeAsync(5000)
     await loadModuleRuntimeState()
     expect(mocks.moduleReads).toBe(2)
     expect(mocks.navigationReads).toBe(2)
@@ -123,8 +125,8 @@ describe('module runtime state cache', () => {
       enabledModuleIds: ['alpha'],
       shellNavigationOrder: {
         dashboard: [
-          { ownerId: 'core', navigationId: 'core-overview' },
-          { ownerId: 'alpha', navigationId: 'alpha-audit' },
+          { navigationId: 'core-overview', ownerId: 'core' },
+          { navigationId: 'alpha-audit', ownerId: 'alpha' },
         ],
       },
     })
@@ -132,7 +134,7 @@ describe('module runtime state cache', () => {
     await expect(loadModuleRuntimeState()).resolves.toMatchObject({
       enabledModuleIds: [],
       shellNavigationOrder: {
-        dashboard: [{ ownerId: 'core', navigationId: 'core-overview' }],
+        dashboard: [{ navigationId: 'core-overview', ownerId: 'core' }],
       },
     })
     expect(mocks.moduleReads).toBe(2)
@@ -145,10 +147,10 @@ describe('module runtime state cache', () => {
     await loadModuleRuntimeState()
 
     const dashboard = [
-      { ownerId: 'alpha', navigationId: 'alpha-audit' },
-      { ownerId: 'core', navigationId: 'core-overview' },
+      { navigationId: 'alpha-audit', ownerId: 'alpha' },
+      { navigationId: 'core-overview', ownerId: 'core' },
     ]
-    await saveInstalledShellNavigationOrder({ dashboard, character: [] })
+    await saveInstalledShellNavigationOrder({ character: [], dashboard })
 
     await expect(loadModuleRuntimeState()).resolves.toMatchObject({
       shellNavigationOrder: { dashboard },
@@ -188,7 +190,7 @@ describe('module runtime state cache', () => {
       enabledModuleIds: ['alpha'],
     })
 
-    await vi.advanceTimersByTimeAsync(5_000)
+    await vi.advanceTimersByTimeAsync(5000)
     await expect(replicaA.loadModuleRuntimeState()).resolves.toMatchObject({ enabledModuleIds: [] })
   })
 

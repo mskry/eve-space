@@ -15,25 +15,8 @@ import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 import { executeTypeScript } from './helpers/typescript.js';
 
 const semanticDocument = {
-  openapi: '3.1.0',
-  info: { title: 'Hey API semantic fixture', version: '1.0.0' },
   components: {
     schemas: {
-      Dictionary: {
-        type: 'object',
-        additionalProperties: { type: 'integer' },
-      },
-      ExclusiveNumber: {
-        oneOf: [{ type: 'number' }, { type: 'integer' }],
-      },
-      RecursiveNode: {
-        type: 'object',
-        required: ['value'],
-        properties: {
-          value: { type: 'string' },
-          next: { $ref: '#/components/schemas/RecursiveNode' },
-        },
-      },
       ComposedEntity: {
         allOf: [
           {
@@ -48,38 +31,55 @@ const semanticDocument = {
           },
         ],
       },
-      SemanticEntity: {
+      Dictionary: {
+        additionalProperties: { type: 'integer' },
         type: 'object',
-        required: ['createdAt', 'id', 'members', 'name', 'scores'],
+      },
+      ExclusiveNumber: {
+        oneOf: [{ type: 'number' }, { type: 'integer' }],
+      },
+      RecursiveNode: {
         properties: {
-          id: { type: 'integer', format: 'int64', minimum: 1, maximum: 100 },
-          sequence: { type: 'integer', format: 'int64', default: 9 },
-          name: { type: 'string', minLength: 2, maxLength: 8, pattern: '^[a-z]+$' },
-          createdAt: { type: 'string', format: 'date-time' },
-          birthday: { type: ['string', 'null'], format: 'date' },
-          scores: {
-            type: 'array',
-            minItems: 1,
-            maxItems: 2,
-            uniqueItems: true,
-            items: { type: 'integer' },
-          },
+          next: { $ref: '#/components/schemas/RecursiveNode' },
+          value: { type: 'string' },
+        },
+        required: ['value'],
+        type: 'object',
+      },
+      SemanticEntity: {
+        properties: {
+          birthday: { format: 'date', type: ['string', 'null'] },
+          createdAt: { format: 'date-time', type: 'string' },
+          exclusive: { $ref: '#/components/schemas/ExclusiveNumber' },
+          id: { format: 'int64', maximum: 100, minimum: 1, type: 'integer' },
           members: {
+            items: {
+              properties: { name: { type: 'string' } },
+              required: ['name'],
+              type: 'object',
+            },
             type: 'array',
             uniqueItems: true,
-            items: {
-              type: 'object',
-              required: ['name'],
-              properties: { name: { type: 'string' } },
-            },
           },
           metadata: { $ref: '#/components/schemas/Dictionary' },
+          name: { maxLength: 8, minLength: 2, pattern: '^[a-z]+$', type: 'string' },
           recursive: { $ref: '#/components/schemas/RecursiveNode' },
-          exclusive: { $ref: '#/components/schemas/ExclusiveNumber' },
+          scores: {
+            items: { type: 'integer' },
+            maxItems: 2,
+            minItems: 1,
+            type: 'array',
+            uniqueItems: true,
+          },
+          sequence: { default: 9, format: 'int64', type: 'integer' },
         },
+        required: ['createdAt', 'id', 'members', 'name', 'scores'],
+        type: 'object',
       },
     },
   },
+  info: { title: 'Hey API semantic fixture', version: '1.0.0' },
+  openapi: '3.1.0',
   paths: {
     '/semantic/{entityId}': {
       post: {
@@ -95,23 +95,23 @@ const semanticDocument = {
           { name: 'X-Mode', in: 'header', required: true, schema: { type: 'string' } },
         ],
         requestBody: {
-          required: true,
           content: {
             'application/json': { schema: { $ref: '#/components/schemas/SemanticEntity' } },
           },
+          required: true,
         },
         responses: {
           200: {
-            description: 'Existing entity',
             content: {
               'application/json': { schema: { $ref: '#/components/schemas/SemanticEntity' } },
             },
+            description: 'Existing entity',
           },
           201: {
-            description: 'Created entity',
             content: {
               'application/json': { schema: { $ref: '#/components/schemas/SemanticEntity' } },
             },
+            description: 'Created entity',
           },
           204: { description: 'No content' },
           205: { description: 'Reset content' },
@@ -146,18 +146,18 @@ describe('Hey API schema semantics', () => {
     const generated = await importGeneratedZod(directory);
     const entity = getSchema(generated, 'zSemanticEntity');
     const validEntity = {
-      id: 7,
-      name: 'valid',
-      createdAt: '2026-09-05T12:30:00+02:00',
       birthday: null,
-      scores: [1, 2],
-      members: [{ name: 'pilot', future: true }],
-      metadata: { attempts: 2 },
-      recursive: { value: 'root', next: { value: 'leaf', future: true } },
+      createdAt: '2026-09-05T12:30:00+02:00',
       exclusive: 1.5,
       future: { preserved: true },
+      id: 7,
+      members: [{ name: 'pilot', future: true }],
+      metadata: { attempts: 2 },
+      name: 'valid',
+      recursive: { next: { future: true, value: 'leaf' }, value: 'root' },
+      scores: [1, 2],
     };
-    expect(entity.parse(validEntity)).toEqual({ ...validEntity, sequence: 9 });
+    expect(entity.parse(validEntity)).toStrictEqual({ ...validEntity, sequence: 9 });
     expect(entity.safeParse({ ...validEntity, id: 1.5 }).success).toBe(false);
     expect(entity.safeParse({ ...validEntity, id: 101 }).success).toBe(false);
     expect(entity.safeParse({ ...validEntity, id: 7n }).success).toBe(false);
@@ -171,7 +171,7 @@ describe('Hey API schema semantics', () => {
         ...validEntity,
         members: [
           { name: 'pilot', rank: 1 },
-          { rank: 1, name: 'pilot' },
+          { name: 'pilot', rank: 1 },
         ],
       }).success,
     ).toBe(false);
@@ -180,14 +180,14 @@ describe('Hey API schema semantics', () => {
     expect(entity.safeParse({ ...validEntity, birthday: undefined }).success).toBe(true);
 
     expect(
-      getSchema(generated, 'zComposedEntity').parse({ left: 'yes', right: 2, future: true }),
-    ).toEqual({ left: 'yes', right: 2, future: true });
+      getSchema(generated, 'zComposedEntity').parse({ future: true, left: 'yes', right: 2 }),
+    ).toStrictEqual({ future: true, left: 'yes', right: 2 });
     expect(
       getSchema(generated, 'zRecursiveNode').parse({
+        next: { future: true, value: 'leaf' },
         value: 'root',
-        next: { value: 'leaf', future: true },
       }),
-    ).toEqual({ value: 'root', next: { value: 'leaf', future: true } });
+    ).toStrictEqual({ next: { future: true, value: 'leaf' }, value: 'root' });
 
     const response = getSchema(generated, 'zCreateSemanticEntityResponse');
     expect(response.safeParse(validEntity).success).toBe(true);
@@ -252,7 +252,9 @@ describe('Hey API schema semantics', () => {
     { timeout: 30_000 },
     async () => {
       const document: unknown = JSON.parse(await readFile(correctedOpenApiSnapshotPath, 'utf8'));
-      if (!isRecord(document)) throw new TypeError('Expected pinned OpenAPI document');
+      if (!isRecord(document)) {
+        throw new TypeError('Expected pinned OpenAPI document');
+      }
       const generated = await importGeneratedZod(await generateFixture(document));
       const changelogEntry = {
         compatibility_date: '2026-08-18',
@@ -266,12 +268,13 @@ describe('Hey API schema semantics', () => {
         {
           name: 'int64 integer',
           schema: getSchema(generated, 'zAccessListId'),
-          values: [0, 42, 1.5, Number.MAX_SAFE_INTEGER + 1, '42'],
           valid: [true, true, false, false, false],
+          values: [0, 42, 1.5, Number.MAX_SAFE_INTEGER + 1, '42'],
         },
         {
           name: 'date-time, required, optional, reference, and loose object',
           schema: getSchema(generated, 'zAllianceDetail'),
+          valid: [true, false, false],
           values: [
             {
               creator_corporation_id: 98_000_001,
@@ -295,27 +298,27 @@ describe('Hey API schema semantics', () => {
               name: 'Alliance',
             },
           ],
-          valid: [true, false, false],
         },
         {
           name: 'unique integer array',
           schema: getSchema(generated, 'zAlliancesAllianceIdCorporationsGet'),
-          values: [[], [98_000_001], [98_000_001, 98_000_002], [98_000_001, 98_000_001], [1.5]],
           valid: [true, true, true, false, false],
+          values: [[], [98_000_001], [98_000_001, 98_000_002], [98_000_001, 98_000_001], [1.5]],
         },
         {
           name: 'optional properties and loose object',
           schema: getSchema(generated, 'zAlliancesAllianceIdIconsGet'),
+          valid: [true, true, false],
           values: [
             {},
             { px64x64: 'https://images.evetech.net/icon', future: true },
             { px64x64: false },
           ],
-          valid: [true, true, false],
         },
         {
           name: 'oneOf object branches',
           schema: getSchema(generated, 'zCharactersCosmeticsSkinrComponentsItem'),
+          valid: [false, false, false, false],
           values: [
             { component_id: 67_890, runs: { remaining: 3 }, type: 'pattern' },
             { component_id: 67_890, runs: { unlimited: true }, type: 'nanocoating' },
@@ -326,17 +329,16 @@ describe('Hey API schema semantics', () => {
             },
             { component_id: 67_890, runs: {}, type: 'unknown' },
           ],
-          valid: [false, false, false, false],
         },
         {
           name: 'typed dictionary',
           schema: getSchema(generated, 'zMetaChangelog'),
+          valid: [true, false, false],
           values: [
             { changelog: { '2026-08-18': [changelogEntry] }, future: true },
             { changelog: { '2026-08-18': [{ ...changelogEntry, method: 'PATCH' }] } },
             { changelog: { '2026-08-18': changelogEntry } },
           ],
-          valid: [true, false, false],
         },
       ];
 
@@ -344,7 +346,7 @@ describe('Hey API schema semantics', () => {
         expect({
           name: expectation.name,
           valid: schemaOutcomes(expectation.schema, expectation.values),
-        }).toEqual({
+        }).toStrictEqual({
           name: expectation.name,
           valid: expectation.valid,
         });
@@ -388,9 +390,13 @@ interface SchemaExpectation {
 }
 
 function getSchema(module: unknown, name: string): RuntimeSchema {
-  if (module === null || typeof module !== 'object') throw new TypeError('Expected schema module');
+  if (module === null || typeof module !== 'object') {
+    throw new TypeError('Expected schema module');
+  }
   const schema: unknown = Reflect.get(module, name);
-  if (!isRuntimeSchema(schema)) throw new TypeError(`Expected generated schema ${name}`);
+  if (!isRuntimeSchema(schema)) {
+    throw new TypeError(`Expected generated schema ${name}`);
+  }
   return schema;
 }
 
@@ -409,7 +415,9 @@ function schemaOutcomes(schema: RuntimeSchema, values: readonly unknown[]): read
 
 function cloneFixture(): Record<string, unknown> {
   const clone: unknown = structuredClone(semanticDocument);
-  if (!isRecord(clone)) throw new TypeError('Expected cloned OpenAPI document');
+  if (!isRecord(clone)) {
+    throw new TypeError('Expected cloned OpenAPI document');
+  }
   return clone;
 }
 
@@ -422,16 +430,18 @@ function fixtureResponses(document: Record<string, unknown>): Record<string, unk
 
 function invalidNoContentResponse(): Record<string, unknown> {
   return {
-    description: 'Invalid no-content response',
     content: {
       'application/json': { schema: { $ref: '#/components/schemas/SemanticEntity' } },
     },
+    description: 'Invalid no-content response',
   };
 }
 
 function getRecord(value: Record<string, unknown>, key: string): Record<string, unknown> {
   const child = value[key];
-  if (!isRecord(child)) throw new TypeError(`Expected object at ${key}`);
+  if (!isRecord(child)) {
+    throw new TypeError(`Expected object at ${key}`);
+  }
   return child;
 }
 

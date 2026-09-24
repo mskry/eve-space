@@ -27,9 +27,9 @@ vi.mock('../../src/universe/resolution-cache.js', () => ({
 
 const emptyCache = () => ({ fresh: new Map(), stale: new Map(), suppressed: new Set() })
 const postUniverseNamesCharacter90666561Fixture = {
-  id: 90_666_561,
-  error: 'Ensure all IDs are valid before resolving',
   cached: { category: 'character', id: 90_666_561, name: 'CCP Bartender' },
+  error: 'Ensure all IDs are valid before resolving',
+  id: 90_666_561,
 } as const
 
 beforeEach(() => {
@@ -45,7 +45,7 @@ beforeEach(() => {
 })
 
 function cached<Data>(data: Data) {
-  return { data, cachedUntil: '', validatedAt: '', quota: {}, source: 'esi' as const, stale: false }
+  return { cachedUntil: '', data, quota: {}, source: 'esi' as const, stale: false, validatedAt: '' }
 }
 
 afterEach(() => {
@@ -62,8 +62,8 @@ describe('universe name resolver', () => {
 
     const names = await resolveUniverseNames([2, 1, 2])
 
-    expect([...names.keys()]).toEqual([2, 1])
-    expect(mocks.getPublic.mock.calls[0]?.[1]).toEqual({ body: [2, 1] })
+    expect([...names.keys()]).toStrictEqual([2, 1])
+    expect(mocks.getPublic.mock.calls[0]?.[1]).toStrictEqual({ body: [2, 1] })
     expect(mocks.resolveNames).toHaveBeenCalledWith([2, 1])
   })
 
@@ -79,14 +79,16 @@ describe('universe name resolver', () => {
     })
     const { resolveUniverseNames } = await import('../../src/universe/names.js')
 
-    await resolveUniverseNames(Array.from({ length: 2_501 }, (_, index) => index + 1))
+    await resolveUniverseNames(Array.from({ length: 2501 }, (_, index) => index + 1))
 
     expect(maximumActive).toBe(4)
   })
 
   test('splits only unavailable identifier batches', async () => {
     mocks.resolveNames.mockImplementation(async (body: number[]) => {
-      if (body.length > 1) throw Object.assign(new Error('Unavailable identifier'), { status: 404 })
+      if (body.length > 1) {
+        throw Object.assign(new Error('Unavailable identifier'), { status: 404 })
+      }
       return [{ category: 'corporation', id: body[0], name: `Corporation ${body[0]}` }]
     })
     const { resolveUniverseNames } = await import('../../src/universe/names.js')
@@ -122,7 +124,7 @@ describe('universe name resolver', () => {
     })
     const { resolveUniverseNames } = await import('../../src/universe/names.js')
 
-    await expect(resolveUniverseNames([1, 2, 3])).resolves.toEqual(
+    await expect(resolveUniverseNames([1, 2, 3])).resolves.toStrictEqual(
       new Map([
         [2, { category: 'character', id: 2, name: 'Stale' }],
         [1, { category: 'character', id: 1, name: 'Fresh' }],
@@ -133,13 +135,14 @@ describe('universe name resolver', () => {
 
   test('suppresses singleton name resolution failures after preserving successful entries', async () => {
     mocks.resolveNames.mockImplementation(async (body: number[]) => {
-      if (body.includes(2))
+      if (body.includes(2)) {
         throw Object.assign(new Error('Unavailable identifier'), { status: 404 })
+      }
       return [{ category: 'character', id: 1, name: 'Resolved' }]
     })
     const { resolveUniverseNames } = await import('../../src/universe/names.js')
 
-    await expect(resolveUniverseNames([1, 2])).resolves.toEqual(
+    await expect(resolveUniverseNames([1, 2])).resolves.toStrictEqual(
       new Map([[1, { category: 'character', id: 1, name: 'Resolved' }]]),
     )
     expect(mocks.writeUniverseNames).toHaveBeenCalledWith([
@@ -166,7 +169,7 @@ describe('universe name resolver', () => {
 
     await expect(
       resolveUniverseNames([postUniverseNamesCharacter90666561Fixture.id]),
-    ).resolves.toEqual(
+    ).resolves.toStrictEqual(
       new Map([
         [
           postUniverseNamesCharacter90666561Fixture.id,
@@ -182,8 +185,12 @@ describe('universe name resolver', () => {
 
   test('records missing IDs before rethrowing a sibling split failure', async () => {
     mocks.resolveNames.mockImplementation(async (body: number[]) => {
-      if (body.length > 1) throw Object.assign(new Error('Unavailable identifier'), { status: 404 })
-      if (body[0] === 1) throw Object.assign(new Error('Unavailable identifier'), { status: 404 })
+      if (body.length > 1) {
+        throw Object.assign(new Error('Unavailable identifier'), { status: 404 })
+      }
+      if (body[0] === 1) {
+        throw Object.assign(new Error('Unavailable identifier'), { status: 404 })
+      }
       throw Object.assign(new Error('Unavailable'), { status: 503 })
     })
     const { resolveUniverseNames } = await import('../../src/universe/names.js')
@@ -194,7 +201,9 @@ describe('universe name resolver', () => {
 
   test('offers successful name batches to best-effort enrichment when another batch fails', async () => {
     mocks.resolveNames.mockImplementation(async (body: number[]) => {
-      if (body[0] === 501) throw Object.assign(new Error('Unavailable'), { status: 503 })
+      if (body[0] === 501) {
+        throw Object.assign(new Error('Unavailable'), { status: 503 })
+      }
       return body.map((id) => ({ category: 'station', id, name: `Station ${id}` }))
     })
     const { resolveUniverseNamesBestEffort } = await import('../../src/universe/names.js')
@@ -211,15 +220,15 @@ describe('universe name resolver', () => {
 
   test('does not refresh per-item entries from a stale aggregate response', async () => {
     mocks.getPublic.mockResolvedValue({
-      data: [{ category: 'character', id: 1, name: 'Stale' }],
       cachedUntil: '',
+      data: [{ category: 'character', id: 1, name: 'Stale' }],
       quota: {},
       source: 'cache',
       stale: true,
     })
     const { resolveUniverseNames } = await import('../../src/universe/names.js')
 
-    await expect(resolveUniverseNames([1])).resolves.toEqual(
+    await expect(resolveUniverseNames([1])).resolves.toStrictEqual(
       new Map([[1, { category: 'character', id: 1, name: 'Stale' }]]),
     )
     expect(mocks.writeUniverseNames).not.toHaveBeenCalled()
@@ -230,44 +239,52 @@ describe('universe name resolver', () => {
 describe('universe ID resolver', () => {
   test('deduplicates names, passes validators, and maps every returned category', async () => {
     mocks.resolveIds.mockResolvedValue([
-      { id: 1, name: 'Agent', category: 'agent' },
-      { id: 2, name: 'Alliance', category: 'alliance' },
-      { id: 3, name: 'Character', category: 'character' },
-      { id: 4, name: 'Corporation', category: 'corporation' },
-      { id: 5, name: 'Faction', category: 'faction' },
-      { id: 6, name: 'Type', category: 'inventory_type' },
-      { id: 7, name: 'System', category: 'solar_system' },
+      { category: 'agent', id: 1, name: 'Agent' },
+      { category: 'alliance', id: 2, name: 'Alliance' },
+      { category: 'character', id: 3, name: 'Character' },
+      { category: 'corporation', id: 4, name: 'Corporation' },
+      { category: 'faction', id: 5, name: 'Faction' },
+      { category: 'inventory_type', id: 6, name: 'Type' },
+      { category: 'solar_system', id: 7, name: 'System' },
     ])
     const { resolveUniverseIds } = await import('../../src/universe/names.js')
 
-    await expect(resolveUniverseIds(['Character', 'Alliance', 'Character'])).resolves.toEqual([
-      { id: 1, name: 'Agent', category: 'agent' },
-      { id: 2, name: 'Alliance', category: 'alliance' },
-      { id: 3, name: 'Character', category: 'character' },
-      { id: 4, name: 'Corporation', category: 'corporation' },
-      { id: 5, name: 'Faction', category: 'faction' },
-      { id: 6, name: 'Type', category: 'inventory_type' },
-      { id: 7, name: 'System', category: 'solar_system' },
-    ])
+    await expect(resolveUniverseIds(['Character', 'Alliance', 'Character'])).resolves.toStrictEqual(
+      [
+        { category: 'agent', id: 1, name: 'Agent' },
+        { category: 'alliance', id: 2, name: 'Alliance' },
+        { category: 'character', id: 3, name: 'Character' },
+        { category: 'corporation', id: 4, name: 'Corporation' },
+        { category: 'faction', id: 5, name: 'Faction' },
+        { category: 'inventory_type', id: 6, name: 'Type' },
+        { category: 'solar_system', id: 7, name: 'System' },
+      ],
+    )
     expect(mocks.getPublic.mock.calls.at(-1)?.[0]).toMatchObject({
       operation: 'universe-resolve-ids',
     })
-    expect(mocks.getPublic.mock.calls.at(-1)?.[1]).toEqual({ body: ['Character', 'Alliance'] })
+    expect(mocks.getPublic.mock.calls.at(-1)?.[1]).toStrictEqual({
+      body: ['Character', 'Alliance'],
+    })
     expect(mocks.resolveIds).toHaveBeenCalledWith(['Character', 'Alliance'])
   })
 
   test('treats an unmatched name as empty and preserves matches from mixed 404 batches', async () => {
     mocks.resolveIds.mockImplementation(async (body: string[]) => {
-      if (body.length > 1) throw Object.assign(new Error('Unknown name'), { status: 404 })
-      if (body[0] === 'Unknown') throw Object.assign(new Error('Unknown name'), { status: 404 })
-      return [{ id: 9, name: body[0], category: 'character' }]
+      if (body.length > 1) {
+        throw Object.assign(new Error('Unknown name'), { status: 404 })
+      }
+      if (body[0] === 'Unknown') {
+        throw Object.assign(new Error('Unknown name'), { status: 404 })
+      }
+      return [{ category: 'character', id: 9, name: body[0] }]
     })
     const { resolveUniverseIds } = await import('../../src/universe/names.js')
 
-    await expect(resolveUniverseIds(['Known', 'Unknown'])).resolves.toEqual([
-      { id: 9, name: 'Known', category: 'character' },
+    await expect(resolveUniverseIds(['Known', 'Unknown'])).resolves.toStrictEqual([
+      { category: 'character', id: 9, name: 'Known' },
     ])
-    await expect(resolveUniverseIds(['Unknown'])).resolves.toEqual([])
+    await expect(resolveUniverseIds(['Unknown'])).resolves.toStrictEqual([])
   })
 
   test('reuses cached ID resolutions without querying ESI', async () => {
@@ -278,7 +295,7 @@ describe('universe ID resolver', () => {
     })
     const { resolveUniverseIds } = await import('../../src/universe/names.js')
 
-    await expect(resolveUniverseIds(['Known', 'Unknown'])).resolves.toEqual([
+    await expect(resolveUniverseIds(['Known', 'Unknown'])).resolves.toStrictEqual([
       { category: 'character', id: 9, name: 'Known' },
     ])
     expect(mocks.getPublic).not.toHaveBeenCalled()
@@ -294,22 +311,22 @@ describe('universe ID resolver', () => {
     mocks.resolveIds.mockResolvedValue([])
     const { resolveUniverseIds } = await import('../../src/universe/names.js')
 
-    await expect(resolveUniverseIds(['Alpha'])).resolves.toEqual([staleEntry])
+    await expect(resolveUniverseIds(['Alpha'])).resolves.toStrictEqual([staleEntry])
     expect(mocks.writeUniverseIds).not.toHaveBeenCalled()
     expect(mocks.suppressUniverseIdNames).toHaveBeenCalledWith(['Alpha'])
   })
 
   test('does not refresh ID entries from a stale aggregate response', async () => {
     mocks.getPublic.mockResolvedValue({
-      data: [{ category: 'character', id: 5, name: 'Alpha' }],
       cachedUntil: '',
+      data: [{ category: 'character', id: 5, name: 'Alpha' }],
       quota: {},
       source: 'cache',
       stale: true,
     })
     const { resolveUniverseIds } = await import('../../src/universe/names.js')
 
-    await expect(resolveUniverseIds(['Alpha'])).resolves.toEqual([
+    await expect(resolveUniverseIds(['Alpha'])).resolves.toStrictEqual([
       { category: 'character', id: 5, name: 'Alpha' },
     ])
     expect(mocks.writeUniverseIds).not.toHaveBeenCalled()

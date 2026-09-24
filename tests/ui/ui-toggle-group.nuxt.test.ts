@@ -29,10 +29,10 @@ function createHost() {
             {
               label: 'Loaded data range',
               modelValue: value.value,
-              options,
               'onUpdate:modelValue': (next: string) => {
                 value.value = next
               },
+              options,
             },
             {
               option: ({ option, selected }) =>
@@ -54,7 +54,9 @@ async function mountHost() {
 }
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   document.body.replaceChildren()
 })
 
@@ -66,7 +68,7 @@ describe('UiToggleGroup', () => {
 
     expect(group?.getAttribute('aria-label')).toBe('Loaded data range')
     expect(buttons).toHaveLength(3)
-    expect(buttons.map((button) => button.getAttribute('aria-pressed'))).toEqual([
+    expect(buttons.map((button) => button.getAttribute('aria-pressed'))).toStrictEqual([
       'false',
       'true',
       'false',
@@ -79,7 +81,7 @@ describe('UiToggleGroup', () => {
     await settle()
 
     expect(wrapper.get('[data-value]').text()).toBe('month')
-    expect(buttons.map((button) => button.getAttribute('aria-pressed'))).toEqual([
+    expect(buttons.map((button) => button.getAttribute('aria-pressed'))).toStrictEqual([
       'false',
       'false',
       'true',

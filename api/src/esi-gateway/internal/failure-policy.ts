@@ -37,23 +37,36 @@ export function shouldRetryEsiError(error: unknown, completedErrors: CompletedEs
 }
 
 export function classifyEsiOperationFailure(error: unknown): EsiFailure {
-  if (error instanceof EsiQuotaError)
+  if (error instanceof EsiQuotaError) {
     return {
       kind: 'quota',
       retryAfterSeconds: error.retryAfterSeconds,
       retryAt: error.retryAt.toISOString(),
     }
+  }
 
   const status = getEsiFailureStatus(error)
-  if (status === 401 || status === 403) return { kind: 'authorization', status }
-  if (error instanceof TokenRefreshUnavailableError) return unavailableFailure(status)
+  if (status === 401 || status === 403) {
+    return { kind: 'authorization', status }
+  }
+  if (error instanceof TokenRefreshUnavailableError) {
+    return unavailableFailure(status)
+  }
 
   const sdkFailure = classifySdkEsiFailure(error)
-  if (sdkFailure === 'invalid-response') return invalidResponseFailure(status)
-  if (isTransientUnavailableFailure(error, sdkFailure, status)) return unavailableFailure(status)
+  if (sdkFailure === 'invalid-response') {
+    return invalidResponseFailure(status)
+  }
+  if (isTransientUnavailableFailure(error, sdkFailure, status)) {
+    return unavailableFailure(status)
+  }
   const quotaFailure = getQuotaFailure(error, status)
-  if (quotaFailure) return quotaFailure
-  if (status !== undefined) return { kind: 'http', status }
+  if (quotaFailure) {
+    return quotaFailure
+  }
+  if (status !== undefined) {
+    return { kind: 'http', status }
+  }
   return { kind: 'unknown' }
 }
 
@@ -61,22 +74,30 @@ export function classifyEsiRefreshFailure(
   error: unknown,
 ): NonNullable<EsiCachedResult<unknown>['refreshFailureClass']> {
   const failure = classifyEsiOperationFailure(error)
-  if (failure.kind === 'quota') return 'esi-cooldown'
-  if (failure.kind === 'unavailable') return 'esi-unavailable'
-  if (failure.kind === 'response-invalid') return 'response-invalid'
+  if (failure.kind === 'quota') {
+    return 'esi-cooldown'
+  }
+  if (failure.kind === 'unavailable') {
+    return 'esi-unavailable'
+  }
+  if (failure.kind === 'response-invalid') {
+    return 'response-invalid'
+  }
   return 'unknown'
 }
 
 export function getEsiFailureStatus(error: unknown) {
-  if (error instanceof EsiNotModifiedError) return error.status
+  if (error instanceof EsiNotModifiedError) {
+    return error.status
+  }
   if (
     error instanceof EsiHttpError ||
     error instanceof EsiResponseParseError ||
     error instanceof EsiResponseValidationError ||
     error instanceof EsiTransportError
-  )
+  ) {
     return error.status
-  return undefined
+  }
 }
 
 export function isEsiAuthorizationFailure(error: unknown) {
@@ -93,14 +114,20 @@ export function isStaleUsableForFailure(
     | { readonly kind: 'none' },
   error: unknown,
 ) {
-  if (stale.kind === 'none') return false
-  if (stale.kind === 'bounded') return true
+  if (stale.kind === 'none') {
+    return false
+  }
+  if (stale.kind === 'bounded') {
+    return true
+  }
   const failure = classifyEsiRefreshFailure(error)
   return failure === 'esi-unavailable' || failure === 'esi-cooldown'
 }
 
 export function toEsiQuotaError(error: unknown, now = Date.now()) {
-  if (error instanceof EsiQuotaError) return error
+  if (error instanceof EsiQuotaError) {
+    return error
+  }
   const failure = classifyEsiOperationFailure(error)
   return failure.kind === 'quota' ? new EsiQuotaError(failure.retryAfterSeconds, now) : error
 }
@@ -138,7 +165,9 @@ function isTransientUnavailableFailure(
 }
 
 function getQuotaFailure(error: unknown, status: number | undefined): EsiFailure | undefined {
-  if (status !== 429) return undefined
+  if (status !== 429) {
+    return undefined
+  }
   const retryAfter = error instanceof EsiHttpError ? error.metadata.retryAfterSeconds : undefined
   const retryAfterSeconds =
     retryAfter !== undefined && retryAfter > 0
@@ -147,6 +176,6 @@ function getQuotaFailure(error: unknown, status: number | undefined): EsiFailure
   return {
     kind: 'quota',
     retryAfterSeconds,
-    retryAt: new Date(Date.now() + retryAfterSeconds * 1_000).toISOString(),
+    retryAt: new Date(Date.now() + retryAfterSeconds * 1000).toISOString(),
   }
 }

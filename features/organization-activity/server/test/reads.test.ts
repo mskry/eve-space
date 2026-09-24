@@ -4,21 +4,21 @@ import { readActivitySnapshots } from '../src/snapshot-reads.js'
 import { activityRoutes, participationRoutes } from '../src/routes.js'
 
 const id = '11111111-1111-4111-8111-111111111111'
-const snapshot = { id, campaignId: null, contributed: 12, committed: true }
+const snapshot = { campaignId: null, committed: true, contributed: 12, id }
 function capabilities(status = 'current', failure: string | null = null) {
   const readSnapshots = vi.fn().mockResolvedValue([snapshot])
   const read = vi.fn().mockResolvedValue({
+    authorizationGeneration: 9,
+    lastFailureClass: failure,
     status,
     subjectLifecycleId: id,
-    authorizationGeneration: 9,
     validatedAt: '2026-09-07T10:00:00Z',
-    lastFailureClass: failure,
   })
   return {
-    readActivitySnapshots: readSnapshots,
-    read,
-    persistence: { readActivitySnapshots: readSnapshots },
     collectionStatus: { read },
+    persistence: { readActivitySnapshots: readSnapshots },
+    read,
+    readActivitySnapshots: readSnapshots,
   }
 }
 
@@ -29,16 +29,16 @@ describe('authorized snapshot reads', () => {
       cap as never,
       7,
       'character-jobs',
-      { kind: 'character', characterId: 9001 },
+      { characterId: 9001, kind: 'character' },
       id,
     )
-    expect(result.snapshots).toEqual([snapshot])
+    expect(result.snapshots).toStrictEqual([snapshot])
     expect(cap.readActivitySnapshots).toHaveBeenCalledWith({
+      activityId: id,
+      authorizationGeneration: 9,
+      organizationVersion: 7,
       resourceId: 'character-jobs',
       subjectLifecycleId: id,
-      organizationVersion: 7,
-      authorizationGeneration: 9,
-      activityId: id,
     })
   })
   test.each([
@@ -52,11 +52,11 @@ describe('authorized snapshot reads', () => {
     expect(
       (
         await readActivitySnapshots(cap as never, 7, 'character-projects', {
-          kind: 'character',
           characterId: 9001,
+          kind: 'character',
         })
       ).snapshots,
-    ).toEqual([])
+    ).toStrictEqual([])
     expect(cap.readActivitySnapshots).not.toHaveBeenCalled()
   })
   test.each(['esi-unavailable', 'esi-cooldown'])(
@@ -66,24 +66,24 @@ describe('authorized snapshot reads', () => {
       expect(
         (
           await readActivitySnapshots(cap as never, 7, 'corporation-projects', {
-            kind: 'corporation',
             corporationId: 9801,
+            kind: 'corporation',
           })
         ).snapshots,
-      ).toEqual([snapshot])
+      ).toStrictEqual([snapshot])
       expect(cap.readActivitySnapshots).toHaveBeenCalledOnce()
     },
   )
   test('does not release stale private snapshots on invalid upstream data or unauthorized subjects', async () => {
     const cap = capabilities('stale', 'response-invalid')
     await readActivitySnapshots(cap as never, 7, 'character-jobs', {
-      kind: 'character',
       characterId: 9002,
+      kind: 'character',
     })
     cap.read.mockRejectedValueOnce(new Error('outside context'))
     const denied = await readActivitySnapshots(cap as never, 7, 'character-jobs', {
-      kind: 'character',
       characterId: 9002,
+      kind: 'character',
     })
     expect(denied.status.status).toBe('unavailable')
     expect(cap.readActivitySnapshots).not.toHaveBeenCalled()
@@ -93,11 +93,11 @@ describe('authorized snapshot reads', () => {
     expect(
       (
         await readActivitySnapshots(cap as never, 7, 'public-jobs', {
-          kind: 'deployment',
           deploymentId: 1,
+          kind: 'deployment',
         })
       ).snapshots,
-    ).toEqual([snapshot])
+    ).toStrictEqual([snapshot])
   })
 })
 
@@ -109,9 +109,9 @@ describe('activity routes behind host authorization', () => {
         c.set(
           'platform' as never,
           {
-            organization: { organizationVersion: 7 },
             authorization: { characterId: 9001 },
             collectionStatus: cap.collectionStatus,
+            organization: { organizationVersion: 7 },
           } as never,
         )
         return next()
@@ -132,11 +132,11 @@ describe('activity routes behind host authorization', () => {
     const response = await server.request(`/participation/job/${id}?characterId=9002`)
     expect(await response.json()).toMatchObject({
       characterId: 9001,
-      participation: [{ activityId: id, contributed: 12, committed: true }],
+      participation: [{ activityId: id, committed: true, contributed: 12 }],
     })
     expect(cap.read).toHaveBeenCalledWith('character-jobs', {
-      kind: 'character',
       characterId: 9001,
+      kind: 'character',
     })
   })
   test('resolves a character-only job exclusively through the owned route', async () => {
@@ -148,12 +148,12 @@ describe('activity routes behind host authorization', () => {
       activity: null,
     })
     expect(await (await server.request(`/participation/job/${id}`)).json()).toMatchObject({
-      characterId: 9001,
       activity: { id },
+      characterId: 9001,
     })
     cap.read.mockResolvedValue({
-      status: 'authorization-required',
       authorizationGeneration: null,
+      status: 'authorization-required',
       validatedAt: null,
     })
     expect(await (await server.request(`/participation/job/${id}`)).json()).toMatchObject({
@@ -168,7 +168,7 @@ describe('activity routes behind host authorization', () => {
       const { server } = app()
       const response = await server.request(`/details/${kind}/${id}?corporationId=9801`)
       expect(response.status).toBe(200)
-      expect(await response.json()).toMatchObject({ organizationVersion: 7, activity: { id } })
+      expect(await response.json()).toMatchObject({ activity: { id }, organizationVersion: 7 })
     },
   )
 
@@ -179,14 +179,14 @@ describe('activity routes behind host authorization', () => {
     const participation = await server.request(`/participation/job/${id}`)
 
     await expect(detail.json()).resolves.toMatchObject({
+      refreshFailureClass: 'esi-unavailable',
       stale: true,
       validatedAt: '2026-09-07T10:00:00Z',
-      refreshFailureClass: 'esi-unavailable',
     })
     await expect(participation.json()).resolves.toMatchObject({
+      refreshFailureClass: 'esi-unavailable',
       stale: true,
       validatedAt: '2026-09-07T10:00:00Z',
-      refreshFailureClass: 'esi-unavailable',
     })
   })
 
@@ -195,7 +195,7 @@ describe('activity routes behind host authorization', () => {
 
     const body = await (await server.request(`/details/job/${id}`)).json()
 
-    expect(body).toMatchObject({ stale: false, activity: null, objectives: [] })
+    expect(body).toMatchObject({ activity: null, objectives: [], stale: false })
     expect(body).not.toHaveProperty('validatedAt')
   })
 })

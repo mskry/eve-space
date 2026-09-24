@@ -8,7 +8,7 @@ describe('application API session boundary', () => {
       const response = await app.request(path)
 
       expect(response.status).toBe(401)
-      await expect(response.json()).resolves.toEqual({
+      await expect(response.json()).resolves.toStrictEqual({
         code: 'AUTH_REQUIRED',
         message: 'Log in with EVE Online first.',
       })

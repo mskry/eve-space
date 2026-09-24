@@ -25,8 +25,8 @@ export async function runAffiliationPlanner(context: QueuePlanningContext) {
     for (const batch of batches) {
       signal?.throwIfAborted()
       const payload = {
-        operationId: affiliationJobId(batch, refreshId),
         characterIds: batch,
+        operationId: affiliationJobId(batch, refreshId),
       }
       // oxlint-disable-next-line no-await-in-loop
       const admission = await producer.enqueue(
@@ -44,7 +44,9 @@ export async function runAffiliationPlanner(context: QueuePlanningContext) {
       }
       planned += 1
     }
-    if (planned === 0) await producer.resumePlanner()
+    if (planned === 0) {
+      await producer.resumePlanner()
+    }
     await recordAffiliationPlannerOutcome(outcomes, planned === 0 ? 'idle' : 'scheduled', planned)
     return { planned, reason: 'scheduled' as const }
   } catch (error) {

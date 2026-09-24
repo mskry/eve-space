@@ -21,6 +21,8 @@ export function providePlatformIdentity(factory: () => PlatformIdentity) {
 
 export function usePlatformIdentity() {
   const factory = inject(identityKey)
-  if (!factory) throw new Error('Platform identity has not been provided by the host')
+  if (!factory) {
+    throw new Error('Platform identity has not been provided by the host')
+  }
   return factory()
 }

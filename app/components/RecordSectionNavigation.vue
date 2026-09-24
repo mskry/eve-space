@@ -30,7 +30,9 @@ function isCurrent(entry: RecordSectionNavigationEntry) {
 }
 
 function preventHorizontalWheel(event: WheelEvent) {
-  if (event.deltaX !== 0 || event.shiftKey) event.preventDefault()
+  if (event.deltaX !== 0 || event.shiftKey) {
+    event.preventDefault()
+  }
 }
 
 function updateIndicator() {
@@ -48,11 +50,15 @@ function updateIndicator() {
 
 function observeNavigation() {
   resizeObserver?.disconnect()
-  if (!navigation.value || typeof ResizeObserver === 'undefined') return
+  if (!navigation.value || typeof ResizeObserver === 'undefined') {
+    return
+  }
 
   resizeObserver = new ResizeObserver(updateIndicator)
   resizeObserver.observe(navigation.value)
-  for (const link of navigation.value.querySelectorAll('a')) resizeObserver.observe(link)
+  for (const link of navigation.value.querySelectorAll('a')) {
+    resizeObserver.observe(link)
+  }
 }
 
 watch(

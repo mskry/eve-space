@@ -30,7 +30,9 @@ export async function loadDatabaseWallClock(transaction: DatabaseTransaction) {
   const [record] = await transaction
     .select({ now: sql<string>`clock_timestamp()` })
     .from(sql`(select 1) as database_clock`)
-  if (!record) throw new Error('Database clock is unavailable')
+  if (!record) {
+    throw new Error('Database clock is unavailable')
+  }
   return new Date(record.now)
 }
 
@@ -38,7 +40,9 @@ export async function deleteEmptyTransferSourceUser(
   transaction: DatabaseTransaction,
   userId: string,
 ) {
-  if (await hasRetainedUserDependency(transaction, userId)) return false
+  if (await hasRetainedUserDependency(transaction, userId)) {
+    return false
+  }
   try {
     return await transaction.transaction(async (savepoint) => {
       const [deleted] = await savepoint
@@ -48,7 +52,9 @@ export async function deleteEmptyTransferSourceUser(
       return Boolean(deleted)
     })
   } catch (error) {
-    if (hasPostgresErrorCode(error, '23503')) return false
+    if (hasPostgresErrorCode(error, '23503')) {
+      return false
+    }
     throw error
   }
 }
@@ -107,7 +113,11 @@ async function hasRetainedUserDependency(transaction: DatabaseTransaction, userI
 }
 
 function hasPostgresErrorCode(error: unknown, code: string): boolean {
-  if (!error || typeof error !== 'object') return false
-  if ('code' in error && error.code === code) return true
+  if (!error || typeof error !== 'object') {
+    return false
+  }
+  if ('code' in error && error.code === code) {
+    return true
+  }
   return 'cause' in error && hasPostgresErrorCode(error.cause, code)
 }

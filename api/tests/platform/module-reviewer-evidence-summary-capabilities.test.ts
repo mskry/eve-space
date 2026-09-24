@@ -7,24 +7,24 @@ import { expect, test, vi } from 'vitest'
 import { createPlatformReviewerEvidenceSummaryReads } from '../../src/platform/module-reviewer-evidence-summary-capabilities.js'
 
 const target = {
-  organizationVersion: 7,
-  managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
-  selection: { kind: 'account' },
   account: {
-    userId: '00000000-0000-4000-8000-000000000002',
     mainCharacter: { characterId: 90_000_001, name: 'Target Main' },
+    userId: '00000000-0000-4000-8000-000000000002',
   },
+  block: { blocked: false },
   characters: [reviewerCharacter(90_000_001), reviewerCharacter(90_000_002)],
   compliance: {
-    state: 'compliant',
-    evidenceFreshness: 'fresh',
-    evidenceAt: '2026-09-16T11:55:00.000Z',
-    reviewDeadline: null,
     accessValidUntil: '2026-09-16T13:00:00.000Z',
     evaluatedAt: '2026-09-16T11:55:00.000Z',
+    evidenceAt: '2026-09-16T11:55:00.000Z',
+    evidenceFreshness: 'fresh',
+    reviewDeadline: null,
+    state: 'compliant',
   },
   groups: [],
-  block: { blocked: false },
+  managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+  organizationVersion: 7,
+  selection: { kind: 'account' },
 } as const satisfies PlatformReviewerTargetContext
 
 const resources = [
@@ -40,13 +40,13 @@ test('projects only safe per-resource availability and freshness for bound chara
   const summary = createPlatformReviewerEvidenceSummaryReads(
     { moduleId: 'member-audit', target },
     {
-      resources,
-      isContributionEnabled: vi.fn().mockResolvedValue(true),
       createStatusReads: () => ({ read }),
+      isContributionEnabled: vi.fn().mockResolvedValue(true),
+      resources,
     },
   )
 
-  await expect(summary.read()).resolves.toEqual([
+  await expect(summary.read()).resolves.toStrictEqual([
     characterSummary(90_000_001),
     characterSummary(90_000_002),
   ])
@@ -63,27 +63,26 @@ test('reports disabled sections unavailable without reading collection authority
       target: {
         ...target,
         selection: {
-          kind: 'character',
           characterId: 90_000_002,
+          kind: 'character',
           subjectLifecycleId: target.characters[1].subjectLifecycleId,
         },
       },
     },
     {
-      resources,
-      isContributionEnabled: vi.fn(async (_moduleId, sectionId) => sectionId === 'skills'),
       createStatusReads: () => ({ read }),
+      isContributionEnabled: vi.fn(async (_moduleId, sectionId) => sectionId === 'skills'),
+      resources,
     },
   )
 
   const result = await summary.read()
 
-  expect(result).toEqual([
+  expect(result).toStrictEqual([
     {
       characterId: 90_000_002,
       sections: [
         {
-          sectionId: 'skills',
           resources: [
             {
               resourceId: 'trained-skills',
@@ -91,13 +90,14 @@ test('reports disabled sections unavailable without reading collection authority
               validatedAt: '2026-09-16T12:00:00.000Z',
             },
           ],
+          sectionId: 'skills',
         },
         {
-          sectionId: 'wallet',
           resources: [
             { resourceId: 'wallet-balance', status: 'unavailable', validatedAt: null },
             { resourceId: 'wallet-journal', status: 'unavailable', validatedAt: null },
           ],
+          sectionId: 'wallet',
         },
       ],
     },
@@ -112,25 +112,24 @@ test('limits contribution summaries to the exact declared section and resources'
   const summary = createPlatformReviewerEvidenceSummaryReads(
     {
       moduleId: 'member-audit',
-      sectionId: 'wallet',
       resourceIds: ['wallet-balance'],
+      sectionId: 'wallet',
       target,
     },
     {
-      resources,
-      isContributionEnabled: vi.fn().mockResolvedValue(true),
       createStatusReads: () => ({ read }),
+      isContributionEnabled: vi.fn().mockResolvedValue(true),
+      resources,
     },
   )
 
   const result = await summary.read()
 
-  expect(result).toEqual(
+  expect(result).toStrictEqual(
     target.characters.map(({ characterId }) => ({
       characterId,
       sections: [
         {
-          sectionId: 'wallet',
           resources: [
             {
               resourceId: 'wallet-balance',
@@ -138,6 +137,7 @@ test('limits contribution summaries to the exact declared section and resources'
               validatedAt: '2026-09-16T12:00:00.000Z',
             },
           ],
+          sectionId: 'wallet',
         },
       ],
     })),
@@ -153,18 +153,18 @@ test('uses an explicit workspace resource allowlist across evidence sections', a
   const summary = createPlatformReviewerEvidenceSummaryReads(
     {
       moduleId: 'member-audit',
-      sectionId: 'overview',
       resourceIds: ['trained-skills', 'wallet-balance', 'wallet-journal'],
+      sectionId: 'overview',
       target,
     },
     {
-      resources,
-      isContributionEnabled: vi.fn().mockResolvedValue(true),
       createStatusReads: () => ({ read }),
+      isContributionEnabled: vi.fn().mockResolvedValue(true),
+      resources,
     },
   )
 
-  await expect(summary.read()).resolves.toEqual([
+  await expect(summary.read()).resolves.toStrictEqual([
     characterSummary(90_000_001),
     characterSummary(90_000_002),
   ])
@@ -173,52 +173,52 @@ test('uses an explicit workspace resource allowlist across evidence sections', a
 
 function resource(sectionId: string, resourceId: string) {
   return {
-    moduleId: 'member-audit',
-    sectionId,
-    resourceId,
-    subjectKind: 'character',
-    operationId: 'skills',
-    materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     implementation: {},
+    materializationIntervalSeconds: 900,
+    moduleId: 'member-audit',
+    operationId: 'skills',
+    resourceId,
+    sectionId,
+    subjectKind: 'character',
   } as PlatformInstalledResourceDescriptor
 }
 
 function reviewerCharacter(characterId: number) {
   return {
-    characterId,
-    subjectLifecycleId: `00000000-0000-4000-8000-${String(characterId).padStart(12, '0')}`,
-    authorizationGeneration: 3,
-    name: `Pilot ${characterId}`,
-    isMain: characterId === 90_000_001,
     affiliation: {
-      corporationId: 98_000_001,
       allianceId: null,
-      membership: 'managed' as const,
-      freshness: 'fresh' as const,
       checkedAt: '2026-09-16T11:55:00.000Z',
+      corporationId: 98_000_001,
+      freshness: 'fresh' as const,
+      membership: 'managed' as const,
     },
+    authorizationGeneration: 3,
+    characterId,
+    isMain: characterId === 90_000_001,
+    name: `Pilot ${characterId}`,
+    subjectLifecycleId: `00000000-0000-4000-8000-${String(characterId).padStart(12, '0')}`,
   }
 }
 
 function status(resourceId: string, characterId: number): PlatformReviewerCollectionStatus {
   return {
-    moduleId: 'member-audit',
-    sectionId: resourceId === 'trained-skills' ? 'skills' : 'wallet',
-    resourceId,
-    organizationVersion: 7,
-    targetUserId: target.account.userId,
-    managedMemberLifecycleId: target.managedMemberLifecycleId,
+    authorizationGeneration: 3,
     characterId,
     characterLifecycleId: target.characters.find(
       (character) => character.characterId === characterId,
     )!.subjectLifecycleId,
-    authorizationGeneration: 3,
     disclosureVersion: 1,
-    sectionActivationVersion: 1,
-    status: 'current',
-    validatedAt: '2026-09-16T12:00:00.000Z',
     lastFailureClass: null,
+    managedMemberLifecycleId: target.managedMemberLifecycleId,
+    moduleId: 'member-audit',
+    organizationVersion: 7,
+    resourceId,
+    sectionActivationVersion: 1,
+    sectionId: resourceId === 'trained-skills' ? 'skills' : 'wallet',
+    status: 'current',
+    targetUserId: target.account.userId,
+    validatedAt: '2026-09-16T12:00:00.000Z',
   }
 }
 
@@ -227,7 +227,6 @@ function characterSummary(characterId: number) {
     characterId,
     sections: [
       {
-        sectionId: 'skills',
         resources: [
           {
             resourceId: 'trained-skills',
@@ -235,9 +234,9 @@ function characterSummary(characterId: number) {
             validatedAt: '2026-09-16T12:00:00.000Z',
           },
         ],
+        sectionId: 'skills',
       },
       {
-        sectionId: 'wallet',
         resources: [
           {
             resourceId: 'wallet-balance',
@@ -250,6 +249,7 @@ function characterSummary(characterId: number) {
             validatedAt: '2026-09-16T12:00:00.000Z',
           },
         ],
+        sectionId: 'wallet',
       },
     ],
   }

@@ -36,8 +36,8 @@ export function indexEsiCatalogEvidence(
     [...operations].map((operation) => [
       operation,
       {
-        contract: currentContracts.get(operation)?.source ?? null,
         cacheKind: currentContracts.get(operation)?.cacheKind ?? 'unknown',
+        contract: currentContracts.get(operation)?.source ?? null,
         metadata: currentMetadata.get(operation) ?? null,
         previousContract: previousContracts.get(operation)?.source ?? null,
         previousMetadata: previousMetadata.get(operation) ?? null,
@@ -48,33 +48,48 @@ export function indexEsiCatalogEvidence(
 
 function contractEntries(source: string) {
   const entries = new Map<string, IndexedContract>()
-  if (!source) return entries
+  if (!source) {
+    return entries
+  }
   const sourceFile = ts.createSourceFile('catalog.ts', source, ts.ScriptTarget.Latest, true)
   visit(sourceFile, (node) => {
-    if (!isNamedCall(node, 'defineContract')) return
+    if (!isNamedCall(node, 'defineContract')) {
+      return
+    }
     const operation = node.arguments[0]
-    if (operation && ts.isStringLiteralLike(operation))
+    if (operation && ts.isStringLiteralLike(operation)) {
       entries.set(operation.text, {
-        source: node.getText(sourceFile),
         cacheKind: cacheKindIn(node),
+        source: node.getText(sourceFile),
       })
+    }
   })
   return entries
 }
 
 function cacheKindIn(contract: ts.CallExpression): EsiCatalogCacheKind {
   const options = contract.arguments[1]
-  if (!options || !ts.isObjectLiteralExpression(options)) return 'unknown'
+  if (!options || !ts.isObjectLiteralExpression(options)) {
+    return 'unknown'
+  }
   const cache = options.properties.find(
     (property): property is ts.PropertyAssignment =>
       ts.isPropertyAssignment(property) && propertyName(property.name) === 'cache',
   )
-  if (!cache) return 'unknown'
-  if (ts.isCallExpression(cache.initializer) && ts.isIdentifier(cache.initializer.expression)) {
-    if (cache.initializer.expression.text === 'sharedPublicCache') return 'public'
-    if (cache.initializer.expression.text === 'sharedPrivateCache') return 'private'
+  if (!cache) {
+    return 'unknown'
   }
-  if (!ts.isObjectLiteralExpression(cache.initializer)) return 'unknown'
+  if (ts.isCallExpression(cache.initializer) && ts.isIdentifier(cache.initializer.expression)) {
+    if (cache.initializer.expression.text === 'sharedPublicCache') {
+      return 'public'
+    }
+    if (cache.initializer.expression.text === 'sharedPrivateCache') {
+      return 'private'
+    }
+  }
+  if (!ts.isObjectLiteralExpression(cache.initializer)) {
+    return 'unknown'
+  }
   const kind = cache.initializer.properties.find(
     (property): property is ts.PropertyAssignment =>
       ts.isPropertyAssignment(property) && propertyName(property.name) === 'kind',
@@ -86,7 +101,9 @@ function cacheKindIn(contract: ts.CallExpression): EsiCatalogCacheKind {
 
 function metadataEntries(source: string) {
   const entries = new Map<string, string>()
-  if (!source) return entries
+  if (!source) {
+    return entries
+  }
   const sourceFile = ts.createSourceFile(
     'operation-metadata.ts',
     source,
@@ -94,13 +111,21 @@ function metadataEntries(source: string) {
     true,
   )
   visit(sourceFile, (node) => {
-    if (!isNamedCall(node, 'defineOperationMetadata')) return
+    if (!isNamedCall(node, 'defineOperationMetadata')) {
+      return
+    }
     const metadata = node.arguments[0]
-    if (!metadata || !ts.isObjectLiteralExpression(metadata)) return
+    if (!metadata || !ts.isObjectLiteralExpression(metadata)) {
+      return
+    }
     for (const property of metadata.properties) {
-      if (!ts.isPropertyAssignment(property)) continue
+      if (!ts.isPropertyAssignment(property)) {
+        continue
+      }
       const operation = propertyName(property.name)
-      if (operation) entries.set(operation, property.getText(sourceFile))
+      if (operation) {
+        entries.set(operation, property.getText(sourceFile))
+      }
     }
   })
   return entries

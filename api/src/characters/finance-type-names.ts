@@ -3,13 +3,16 @@ import { db } from '../db/client.js'
 import { sdeTypes } from '../db/schema.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 
-const financeTypeLookupBatchSize = 1_000
+const financeTypeLookupBatchSize = 1000
 
 export async function loadFinanceTypeNames(typeIds: readonly number[]) {
   const uniqueTypeIds = [...new Set(typeIds)]
-  if (uniqueTypeIds.some((typeId) => !isPositiveSafeInteger(typeId)))
+  if (uniqueTypeIds.some((typeId) => !isPositiveSafeInteger(typeId))) {
     throw new Error('Finance type lookup IDs must be positive safe integers')
-  if (uniqueTypeIds.length === 0) return new Map<number, string>()
+  }
+  if (uniqueTypeIds.length === 0) {
+    return new Map<number, string>()
+  }
 
   const batches = Array.from(
     { length: Math.ceil(uniqueTypeIds.length / financeTypeLookupBatchSize) },
@@ -28,7 +31,9 @@ export async function loadFinanceTypeNames(typeIds: readonly number[]) {
     ),
   )
   const namesByType = new Map<number, string>()
-  for (const rows of rowsByBatch) for (const row of rows) namesByType.set(row.typeId, row.typeName)
+  for (const rows of rowsByBatch) {
+    for (const row of rows) namesByType.set(row.typeId, row.typeName)
+  }
   return namesByType
 }
 

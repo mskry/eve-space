@@ -5,7 +5,9 @@ import UiPagination from '../../layers/ui/app/components/ui/UiPagination.vue'
 const mountedWrappers: { unmount: () => void }[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
 })
 
 describe('UiPagination', () => {
@@ -31,7 +33,7 @@ describe('UiPagination', () => {
     await previous.trigger('click')
     await next.trigger('click')
 
-    expect(wrapper.emitted('change-page')).toEqual([[1], [3]])
+    expect(wrapper.emitted('change-page')).toStrictEqual([[1], [3]])
   })
 
   it('disables boundary controls and never emits an out-of-range page', async () => {
@@ -49,7 +51,7 @@ describe('UiPagination', () => {
     expect(firstPrevious.attributes()).toHaveProperty('disabled')
     await firstPrevious.trigger('click')
     await firstPage.get('button[aria-label="Next page"]').trigger('click')
-    expect(firstPage.emitted('change-page')).toEqual([[2]])
+    expect(firstPage.emitted('change-page')).toStrictEqual([[2]])
 
     const lastPage = await mountSuspended(UiPagination, {
       props: {
@@ -65,7 +67,7 @@ describe('UiPagination', () => {
     expect(lastNext.attributes()).toHaveProperty('disabled')
     await lastNext.trigger('click')
     await lastPage.get('button[aria-label="Previous page"]').trigger('click')
-    expect(lastPage.emitted('change-page')).toEqual([[2]])
+    expect(lastPage.emitted('change-page')).toStrictEqual([[2]])
   })
 
   it('retains page identity while semantic ellipsis gaps change', async () => {

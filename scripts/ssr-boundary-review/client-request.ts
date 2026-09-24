@@ -10,7 +10,9 @@ export interface ClientRequest {
 export const clientRequestIn = (source: string): ClientRequest | null => {
   for (const root of source.matchAll(CLIENT_ROOT_PATTERN)) {
     const request = clientRequestAfter(source, root.index + root[0].length)
-    if (request) return request
+    if (request) {
+      return request
+    }
   }
   return null
 }
@@ -22,14 +24,17 @@ const clientRequestAfter = (source: string, start: number): ClientRequest | null
   while (true) {
     CLIENT_METHOD_PATTERN.lastIndex = offset
     const method = CLIENT_METHOD_PATTERN.exec(source)
-    if (method)
+    if (method) {
       return segments.length > 0
         ? { method: method[1].toUpperCase(), requestPath: `/${segments.join('/')}` }
         : null
+    }
 
     CLIENT_SEGMENT_PATTERN.lastIndex = offset
     const segment = CLIENT_SEGMENT_PATTERN.exec(source)
-    if (!segment) return null
+    if (!segment) {
+      return null
+    }
 
     segments.push(segment[1] ?? segment[2])
     offset = CLIENT_SEGMENT_PATTERN.lastIndex

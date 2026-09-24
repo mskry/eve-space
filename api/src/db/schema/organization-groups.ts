@@ -29,10 +29,10 @@ export const organizationPermissionBundles = pgTable(
   'organization_permission_bundles',
   {
     bundleId: uuid('bundle_id').defaultRandom().primaryKey().notNull(),
-    deploymentId: smallint('deployment_id').default(1).notNull(),
-    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
-    name: text().notNull(),
     createdByUserId: uuid('created_by_user_id').notNull(),
+    deploymentId: smallint('deployment_id').default(1).notNull(),
+    name: text().notNull(),
+    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
     ...auditTimestamps(),
   },
   (table) => [
@@ -66,16 +66,16 @@ export const organizationPermissionBundles = pgTable(
 export const organizationPermissionBundleEntries = pgTable(
   'organization_permission_bundle_entries',
   {
-    entryId: uuid('entry_id').defaultRandom().notNull(),
     bundleId: uuid('bundle_id').notNull(),
-    deploymentId: smallint('deployment_id').default(1).notNull(),
-    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
-    permissionType: text('permission_type').$type<OrganizationPermissionType>().notNull(),
-    permissionKey: text('permission_key').notNull(),
-    publisherPackage: text('publisher_package'),
-    moduleId: text('module_id'),
-    reviewAllowed: boolean('review_allowed').default(false).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    deploymentId: smallint('deployment_id').default(1).notNull(),
+    entryId: uuid('entry_id').defaultRandom().notNull(),
+    moduleId: text('module_id'),
+    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
+    permissionKey: text('permission_key').notNull(),
+    permissionType: text('permission_type').$type<OrganizationPermissionType>().notNull(),
+    publisherPackage: text('publisher_package'),
+    reviewAllowed: boolean('review_allowed').default(false).notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.entryId] }),
@@ -131,17 +131,17 @@ export const organizationPermissionBundleEntries = pgTable(
 export const organizationGroups = pgTable(
   'organization_groups',
   {
-    groupId: uuid('group_id').defaultRandom().primaryKey().notNull(),
+    complianceSource: text('compliance_source').$type<OrganizationComplianceSource>(),
+    createdByUserId: uuid('created_by_user_id').notNull(),
     deploymentId: smallint('deployment_id').default(1).notNull(),
-    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
-    name: text().notNull(),
-    restricted: boolean().default(false).notNull(),
+    groupId: uuid('group_id').defaultRandom().primaryKey().notNull(),
     managementMode: text('management_mode')
       .$type<OrganizationGroupManagementMode>()
       .default('manual')
       .notNull(),
-    complianceSource: text('compliance_source').$type<OrganizationComplianceSource>(),
-    createdByUserId: uuid('created_by_user_id').notNull(),
+    name: text().notNull(),
+    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
+    restricted: boolean().default(false).notNull(),
     ...auditTimestamps(),
   },
   (table) => [
@@ -186,11 +186,11 @@ export const organizationGroups = pgTable(
 export const organizationGroupPermissionBundles = pgTable(
   'organization_group_permission_bundles',
   {
-    groupId: uuid('group_id').notNull(),
     bundleId: uuid('bundle_id').notNull(),
-    deploymentId: smallint('deployment_id').default(1).notNull(),
-    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    deploymentId: smallint('deployment_id').default(1).notNull(),
+    groupId: uuid('group_id').notNull(),
+    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.groupId, table.bundleId] }),
@@ -218,24 +218,24 @@ export const organizationGroupPermissionBundles = pgTable(
 export const organizationGroupAssignments = pgTable(
   'organization_group_assignments',
   {
-    assignmentId: uuid('assignment_id').defaultRandom().primaryKey().notNull(),
-    groupId: uuid('group_id').notNull(),
-    deploymentId: smallint('deployment_id').default(1).notNull(),
-    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
-    userId: uuid('user_id').notNull(),
-    assignmentSource: text('assignment_source').$type<OrganizationGroupManagementMode>().notNull(),
-    complianceSource: text('compliance_source').$type<OrganizationComplianceSource>(),
     assignedActorType: text('assigned_actor_type').$type<'user' | 'system'>().notNull(),
-    assignedByUserId: uuid('assigned_by_user_id'),
-    reason: text().notNull(),
     assignedAt: timestamp('assigned_at', { withTimezone: true, mode: 'date' })
       .defaultNow()
       .notNull(),
+    assignedByUserId: uuid('assigned_by_user_id'),
+    assignmentId: uuid('assignment_id').defaultRandom().primaryKey().notNull(),
+    assignmentSource: text('assignment_source').$type<OrganizationGroupManagementMode>().notNull(),
+    complianceSource: text('compliance_source').$type<OrganizationComplianceSource>(),
+    deploymentId: smallint('deployment_id').default(1).notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
-    revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
-    revokedActorType: text('revoked_actor_type').$type<'user' | 'system'>(),
-    revokedByUserId: uuid('revoked_by_user_id'),
+    groupId: uuid('group_id').notNull(),
+    organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
+    reason: text().notNull(),
     revocationReason: text('revocation_reason'),
+    revokedActorType: text('revoked_actor_type').$type<'user' | 'system'>(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
+    revokedByUserId: uuid('revoked_by_user_id'),
+    userId: uuid('user_id').notNull(),
     ...auditTimestamps(),
   },
   (table) => [

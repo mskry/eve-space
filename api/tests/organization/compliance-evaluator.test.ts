@@ -15,9 +15,8 @@ describe('organization account compliance evaluation', () => {
     })
 
     expect(result).toMatchObject({
-      state: 'suspended',
-      evidenceFreshness: 'fresh',
       accessValidUntil: null,
+      evidenceFreshness: 'fresh',
       issues: [
         {
           issueKey: 'character:1:authorization-missing',
@@ -26,6 +25,7 @@ describe('organization account compliance evaluation', () => {
           requiredScope: null,
         },
       ],
+      state: 'suspended',
     })
   })
 
@@ -33,16 +33,14 @@ describe('organization account compliance evaluation', () => {
     const result = evaluateAccountCompliance({
       ...baseInput(),
       characters: [
-        character({ characterId: 1, corporationId: 98000001 }),
-        character({ characterId: 2, corporationId: 98000002, scopes: [] }),
+        character({ characterId: 1, corporationId: 98_000_001 }),
+        character({ characterId: 2, corporationId: 98_000_002, scopes: [] }),
       ],
       requiredScopes: ['esi-skills.read_skills.v1'],
     })
 
     expect(result).toMatchObject({
-      state: 'suspended',
       evidenceFreshness: 'fresh',
-      reviewDeadline: now,
       issues: [
         {
           issueKey: 'character:2:external',
@@ -56,6 +54,8 @@ describe('organization account compliance evaluation', () => {
           requiredScope: 'esi-skills.read_skills.v1',
         },
       ],
+      reviewDeadline: now,
+      state: 'suspended',
     })
   })
 
@@ -64,33 +64,33 @@ describe('organization account compliance evaluation', () => {
     const result = evaluateAccountCompliance({
       ...baseInput(),
       characters: [
-        character({ characterId: 1, corporationId: 98000001 }),
+        character({ characterId: 1, corporationId: 98_000_001 }),
         character({
-          characterId: 2,
-          corporationId: 98000002,
-          hasActiveException: true,
           activeExceptionExpiresAt: exceptionExpiresAt,
+          characterId: 2,
+          corporationId: 98_000_002,
+          hasActiveException: true,
         }),
       ],
     })
 
     expect(result).toMatchObject({
-      state: 'compliant',
+      accessValidUntil: exceptionExpiresAt,
+      establishedCompliantAt: now,
       evidenceFreshness: 'fresh',
       issues: [],
-      establishedCompliantAt: now,
-      accessValidUntil: exceptionExpiresAt,
+      state: 'compliant',
     })
     expect(
       evaluateAccountCompliance({
         ...baseInput(),
         characters: [
-          character({ characterId: 2, corporationId: 98000002, hasActiveException: true }),
+          character({ characterId: 2, corporationId: 98_000_002, hasActiveException: true }),
         ],
       }),
     ).toMatchObject({
-      state: 'suspended',
       issues: [{ issueCode: 'no-managed-organization-character' }],
+      state: 'suspended',
     })
   })
 
@@ -98,35 +98,35 @@ describe('organization account compliance evaluation', () => {
     const firstObservedAt = new Date('2026-09-01T11:30:00.000Z')
     const result = evaluateAccountCompliance({
       ...baseInput(),
-      characters: [character({ corporationId: 98000002 })],
-      strictRemediationDurationSeconds: 3600,
+      characters: [character({ corporationId: 98_000_002 })],
       previous: previousCompliance({
         issueFirstObservedAt: new Map([['character:1:external', firstObservedAt]]),
       }),
+      strictRemediationDurationSeconds: 3600,
     })
 
     expect(result.state).toBe('review_required')
-    expect(result.reviewDeadline).toEqual(new Date('2026-09-01T12:30:00.000Z'))
+    expect(result.reviewDeadline).toStrictEqual(new Date('2026-09-01T12:30:00.000Z'))
     expect(result.accessValidUntil).toBeNull()
   })
 
   test('retains established entitlements until a nonzero remediation deadline', () => {
     const result = evaluateAccountCompliance({
       ...baseInput(),
-      characters: [character({ corporationId: 98000002 })],
-      strictRemediationDurationSeconds: 3600,
+      characters: [character({ corporationId: 98_000_002 })],
       previous: previousCompliance({
         state: 'compliant',
         establishedCompliantAt: new Date('2026-08-01T00:00:00.000Z'),
         issues: [],
         issueFirstObservedAt: new Map(),
       }),
+      strictRemediationDurationSeconds: 3600,
     })
 
     expect(result).toMatchObject({
-      state: 'review_required',
-      reviewDeadline: new Date('2026-09-01T13:00:00.000Z'),
       accessValidUntil: new Date('2026-09-01T13:00:00.000Z'),
+      reviewDeadline: new Date('2026-09-01T13:00:00.000Z'),
+      state: 'review_required',
     })
   })
 
@@ -141,18 +141,18 @@ describe('organization account compliance evaluation', () => {
         }),
       ],
       previous: previousCompliance({
-        state: 'review_required',
+        accessValidUntil: reviewDeadline,
         establishedCompliantAt: new Date('2026-08-01T00:00:00.000Z'),
         reviewDeadline,
-        accessValidUntil: reviewDeadline,
+        state: 'review_required',
       }),
     })
 
     expect(result).toMatchObject({
-      state: 'review_required',
+      accessValidUntil: new Date('2026-09-01T12:45:00.000Z'),
       evidenceFreshness: 'stale',
       reviewDeadline,
-      accessValidUntil: new Date('2026-09-01T12:45:00.000Z'),
+      state: 'review_required',
     })
   })
 
@@ -165,29 +165,29 @@ describe('organization account compliance evaluation', () => {
           affiliationResolutionState: 'pending',
         }),
       ],
-      strictRemediationDurationSeconds: 3600,
       previous: previousCompliance({
         state: 'review_required',
         reviewDeadline: new Date('2026-09-01T13:00:00.000Z'),
         accessValidUntil: null,
         establishedCompliantAt: null,
       }),
+      strictRemediationDurationSeconds: 3600,
     })
 
-    expect(result).toMatchObject({ state: 'pending', reviewDeadline: null, accessValidUntil: null })
+    expect(result).toMatchObject({ accessValidUntil: null, reviewDeadline: null, state: 'pending' })
   })
 
   test('retains established compliance as stale only inside the bounded grace period', () => {
     const previous = previousCompliance({
-      state: 'compliant',
-      evidenceAt: new Date('2026-09-01T11:30:00.000Z'),
       establishedCompliantAt: new Date('2026-08-01T00:00:00.000Z'),
+      evidenceAt: new Date('2026-09-01T11:30:00.000Z'),
       issues: [],
+      state: 'compliant',
     })
     const unavailableCharacter = character({
       affiliationCheckedAt: new Date('2026-09-01T11:45:00.000Z'),
-      nextAffiliationCheck: new Date('2026-09-01T11:45:00.000Z'),
       affiliationResolutionState: 'pending',
+      nextAffiliationCheck: new Date('2026-09-01T11:45:00.000Z'),
     })
 
     expect(
@@ -197,21 +197,21 @@ describe('organization account compliance evaluation', () => {
         previous,
       }),
     ).toMatchObject({
-      state: 'compliant',
-      evidenceFreshness: 'stale',
       accessValidUntil: new Date('2026-09-01T12:45:00.000Z'),
+      evidenceFreshness: 'stale',
+      state: 'compliant',
     })
     expect(
       evaluateAccountCompliance({
         ...baseInput(),
-        now: new Date('2026-09-01T13:00:00.000Z'),
         characters: [unavailableCharacter],
+        now: new Date('2026-09-01T13:00:00.000Z'),
         previous,
       }),
     ).toMatchObject({
-      state: 'suspended',
       evidenceFreshness: 'unavailable',
       issues: [{ issueCode: 'character-affiliation-unavailable' }],
+      state: 'suspended',
     })
   })
 
@@ -226,23 +226,23 @@ describe('organization account compliance evaluation', () => {
           nextAffiliationCheck: new Date('2026-09-01T11:45:00.000Z'),
         }),
       ],
-      requiredScopes: ['esi-skills.read_skills.v1'],
       previous: previousCompliance({
         state: 'compliant',
         establishedCompliantAt: new Date('2026-08-01T00:00:00.000Z'),
         issues: [],
       }),
+      requiredScopes: ['esi-skills.read_skills.v1'],
     })
 
     expect(result).toMatchObject({
-      state: 'suspended',
-      evidenceFreshness: 'stale',
       accessValidUntil: null,
+      evidenceFreshness: 'stale',
+      state: 'suspended',
     })
-    expect(result.issues).toEqual(
+    expect(result.issues).toStrictEqual(
       expect.arrayContaining([
-        expect.objectContaining({ issueCode: 'required-scope-missing', characterId: 1 }),
-        expect.objectContaining({ issueCode: 'character-affiliation-stale', characterId: 2 }),
+        expect.objectContaining({ characterId: 1, issueCode: 'required-scope-missing' }),
+        expect.objectContaining({ characterId: 2, issueCode: 'character-affiliation-stale' }),
       ]),
     )
   })
@@ -250,36 +250,36 @@ describe('organization account compliance evaluation', () => {
   test('preserves a strict violation age across stale evidence and recovery', () => {
     const firstObservedAt = new Date('2026-09-01T10:00:00.000Z')
     const stalePrevious = previousCompliance({
-      state: 'suspended',
       establishedCompliantAt: new Date('2026-08-01T00:00:00.000Z'),
-      reviewDeadline: new Date('2026-09-01T11:00:00.000Z'),
       issueFirstObservedAt: new Map([['character:1:external', firstObservedAt]]),
+      reviewDeadline: new Date('2026-09-01T11:00:00.000Z'),
+      state: 'suspended',
     })
     const stale = evaluateAccountCompliance({
       ...baseInput(),
-      now: new Date('2026-09-01T14:00:00.000Z'),
       characters: [
         character({
-          corporationId: 98000002,
+          corporationId: 98_000_002,
           nextAffiliationCheck: new Date('2026-09-01T11:45:00.000Z'),
         }),
       ],
+      now: new Date('2026-09-01T14:00:00.000Z'),
       previous: stalePrevious,
     })
     expect(stale.state).toBe('suspended')
-    expect(stale.issues).toEqual(
+    expect(stale.issues).toStrictEqual(
       expect.arrayContaining([expect.objectContaining({ issueKey: 'character:1:external' })]),
     )
 
     const recovered = evaluateAccountCompliance({
       ...baseInput(),
-      characters: [character({ corporationId: 98000002 })],
-      strictRemediationDurationSeconds: 3600,
+      characters: [character({ corporationId: 98_000_002 })],
       previous: { ...stalePrevious, issues: stale.issues },
+      strictRemediationDurationSeconds: 3600,
     })
     expect(recovered).toMatchObject({
-      state: 'suspended',
       reviewDeadline: new Date('2026-09-01T11:00:00.000Z'),
+      state: 'suspended',
     })
   })
 
@@ -291,10 +291,10 @@ describe('organization account compliance evaluation', () => {
           character({ affiliationCheckedAt: null, affiliationResolutionState: 'pending' }),
         ],
       }),
-    ).toMatchObject({ state: 'pending', evidenceFreshness: 'unavailable' })
+    ).toMatchObject({ evidenceFreshness: 'unavailable', state: 'pending' })
     expect(evaluateAccountCompliance({ ...baseInput(), characters: [] })).toMatchObject({
-      state: 'pending',
       issues: [{ issueCode: 'no-attached-characters' }],
+      state: 'pending',
     })
   })
 
@@ -305,24 +305,24 @@ describe('organization account compliance evaluation', () => {
         characters: [character({ nextAffiliationCheck: now })],
       }),
     ).toMatchObject({
-      state: 'pending',
       evidenceFreshness: 'stale',
       issues: [{ issueCode: 'character-affiliation-stale' }],
+      state: 'pending',
     })
     expect(
       evaluateAccountCompliance({
         ...baseInput(),
         managedCorporationEvidence: {
-          freshness: 'stale',
           evidenceAt: checkedAt,
           freshUntil: null,
+          freshness: 'stale',
           staleSince: now,
         },
       }),
     ).toMatchObject({
-      state: 'pending',
       evidenceFreshness: 'stale',
       issues: [{ issueCode: 'managed-corporation-evidence-unavailable' }],
+      state: 'pending',
     })
   })
 })
@@ -330,18 +330,18 @@ describe('organization account compliance evaluation', () => {
 function baseInput() {
   return {
     characters: [character()],
-    managedCorporationIds: new Set([98000001]),
     managedCorporationEvidence: {
-      freshness: 'fresh' as const,
       evidenceAt: null,
       freshUntil: null,
+      freshness: 'fresh' as const,
       staleSince: null,
     },
-    requiredScopes: [] as string[],
-    strictRemediationDurationSeconds: 0,
-    staleEvidenceGraceDurationSeconds: 3600,
-    previous: null,
+    managedCorporationIds: new Set([98_000_001]),
     now,
+    previous: null,
+    requiredScopes: [] as string[],
+    staleEvidenceGraceDurationSeconds: 3600,
+    strictRemediationDurationSeconds: 0,
   }
 }
 
@@ -351,15 +351,15 @@ function character(overrides: Partial<ReturnType<typeof characterDefaults>> = {}
 
 function characterDefaults() {
   return {
-    characterId: 1,
-    corporationId: 98000001,
-    affiliationCheckedAt: checkedAt as Date | null,
-    nextAffiliationCheck: new Date('2026-09-01T12:15:00.000Z') as Date | null,
-    affiliationResolutionState: 'resolved' as 'pending' | 'resolved' | 'unresolvable',
-    hasAuthorization: true,
-    scopes: ['esi-skills.read_skills.v1'] as string[],
-    hasActiveException: false,
     activeExceptionExpiresAt: null as Date | null,
+    affiliationCheckedAt: checkedAt as Date | null,
+    affiliationResolutionState: 'resolved' as 'pending' | 'resolved' | 'unresolvable',
+    characterId: 1,
+    corporationId: 98_000_001,
+    hasActiveException: false,
+    hasAuthorization: true,
+    nextAffiliationCheck: new Date('2026-09-01T12:15:00.000Z') as Date | null,
+    scopes: ['esi-skills.read_skills.v1'] as string[],
   }
 }
 
@@ -369,12 +369,11 @@ function previousCompliance(
   > = {},
 ) {
   return {
-    state: 'review_required' as const,
-    evidenceFreshness: 'fresh' as const,
-    evidenceAt: checkedAt,
-    reviewDeadline: null,
     accessValidUntil: null,
     establishedCompliantAt: null,
+    evidenceAt: checkedAt,
+    evidenceFreshness: 'fresh' as const,
+    issueFirstObservedAt: new Map<string, Date>(),
     issues: [
       {
         issueKey: 'character:1:external',
@@ -383,7 +382,8 @@ function previousCompliance(
         requiredScope: null,
       },
     ],
-    issueFirstObservedAt: new Map<string, Date>(),
+    reviewDeadline: null,
+    state: 'review_required' as const,
     ...overrides,
   }
 }

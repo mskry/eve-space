@@ -9,7 +9,7 @@ import type { EsiResourceState } from '../../../types/esi-resource'
 import { ApiQueryError } from '../../../utils/query-error'
 import { parseRouteId } from '../../../utils/route-id'
 
-definePageMeta({ title: 'Character Overview', layout: 'headerless' })
+definePageMeta({ layout: 'headerless', title: 'Character Overview' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
@@ -36,15 +36,21 @@ const overviewMessage = computed(() =>
   overviewQuery.error.value instanceof Error ? overviewQuery.error.value.message : '',
 )
 const overviewStatus = computed(() => {
-  if (overviewQuery.data.value) return 'idle'
+  if (overviewQuery.data.value) {
+    return 'idle'
+  }
   if (
     overviewQuery.error.value instanceof ApiQueryError &&
     overviewQuery.error.value.status === 404
   ) {
     return 'not-found'
   }
-  if (overviewQuery.status.value === 'error') return 'error'
-  if (overviewQuery.asyncStatus.value === 'loading') return 'loading'
+  if (overviewQuery.status.value === 'error') {
+    return 'error'
+  }
+  if (overviewQuery.asyncStatus.value === 'loading') {
+    return 'loading'
+  }
   return 'idle'
 })
 
@@ -60,10 +66,16 @@ const ship = computed(() => overview.value?.ship)
 const skills = computed(() => overview.value?.skills)
 
 const locationLabel = computed(() => {
-  if (location.value?.status !== 'ok') return '—'
+  if (location.value?.status !== 'ok') {
+    return '—'
+  }
   const { data } = location.value
-  if (data.stationName) return data.stationName
-  if (data.structureId) return `${data.solarSystemName} // Private structure`
+  if (data.stationName) {
+    return data.stationName
+  }
+  if (data.structureId) {
+    return `${data.solarSystemName} // Private structure`
+  }
   return `${data.solarSystemName} // In space`
 })
 const shipLabel = computed(() => (ship.value?.status === 'ok' ? ship.value.data.typeName : '—'))
@@ -79,33 +91,35 @@ const pendingAuthorization = computed(() =>
 const overviewResourceState = computed<EsiResourceState>(() => {
   if (overviewStatus.value === 'loading') {
     return {
+      message: 'Establishing character-specific ESI uplink...',
       status: 'loading',
       title: '',
-      message: 'Establishing character-specific ESI uplink...',
     }
   }
   if (overviewStatus.value === 'error' || overviewStatus.value === 'not-found') {
     return {
-      status: 'error',
       code: overviewStatus.value === 'not-found' ? '404' : 'ERR / ESI',
-      title: 'Record unavailable',
       message: overviewMessage.value,
       retryLabel: 'RETRY UPLINK',
+      status: 'error',
+      title: 'Record unavailable',
     }
   }
   return { status: 'ready' }
 })
 const sectionAuthorizationState = computed<EsiResourceState>(() => {
   const authorization = pendingAuthorization.value
-  if (!authorization || authorization.status !== 'scope-required') return { status: 'ready' }
+  if (!authorization || authorization.status !== 'scope-required') {
+    return { status: 'ready' }
+  }
   return {
-    status: 'authorization-required',
-    code: 'ESI 403 / CHARACTER',
-    title: 'Character authorization required',
-    message: authorization.message,
     action: authorization.authorizeUrl
       ? { href: authorization.authorizeUrl, label: 'AUTHORIZE ACCESS' }
       : null,
+    code: 'ESI 403 / CHARACTER',
+    message: authorization.message,
+    status: 'authorization-required',
+    title: 'Character authorization required',
   }
 })
 </script>

@@ -20,8 +20,9 @@ const transferMutation = useMutation({
     const response = await apiClient.auth.eve.transfer.$post({
       json: { approvalId: approvalId.value, secret: linkSecret.value },
     })
-    if (response.status !== 200)
+    if (response.status !== 200) {
       throw await toApiQueryError(response, 'This transfer link cannot be used.')
+    }
     return response.json()
   },
   onSuccess: ({ authorizationUrl }) => {
@@ -31,7 +32,9 @@ const transferMutation = useMutation({
 
 const transferPending = computed(() => transferMutation.asyncStatus.value === 'loading')
 const transferError = computed(() => {
-  if (!transferMutation.error.value) return ''
+  if (!transferMutation.error.value) {
+    return ''
+  }
   return 'This transfer link cannot be used from this session or is no longer valid. Sign in to the intended destination account and reopen it, or ask a deployment administrator for a replacement link.'
 })
 

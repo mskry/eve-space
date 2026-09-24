@@ -81,7 +81,9 @@ describe('ESI client trusted publication workflow', () => {
   function job(name: string): string {
     const marker = `  ${name}:\n`;
     const start = workflow.indexOf(marker);
-    if (start < 0) throw new Error(`Missing workflow job: ${name}`);
+    if (start < 0) {
+      throw new Error(`Missing workflow job: ${name}`);
+    }
     const remaining = workflow.slice(start + marker.length);
     const nextJob = remaining.search(/^  [a-z][^\n]*:\n/m);
     return workflow.slice(start, nextJob < 0 ? undefined : start + marker.length + nextJob);

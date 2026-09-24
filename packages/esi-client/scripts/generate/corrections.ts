@@ -49,7 +49,9 @@ export async function applySpecificationCorrections<T>(
     const operations = await readCorrectionOperations(manifestPath, correction);
     const applicability = compareDateRange(compatibilityDate, correction);
 
-    if (applicability === 'before') continue;
+    if (applicability === 'before') {
+      continue;
+    }
     if (applicability === 'expired') {
       if (expiredCorrectionPolicy === 'fail' && patchStillApplies(correctedDocument, operations)) {
         throw new Error(`Expired correction still applies: ${correction.id}`);
@@ -125,8 +127,12 @@ function compareDateRange(
   if (!isCompatibilityDate(compatibilityDate)) {
     throw new Error(`Invalid ESI compatibility date: ${compatibilityDate}`);
   }
-  if (compatibilityDate < correction.from) return 'before';
-  if (compatibilityDate > correction.through) return 'expired';
+  if (compatibilityDate < correction.from) {
+    return 'before';
+  }
+  if (compatibilityDate > correction.through) {
+    return 'expired';
+  }
   return 'active';
 }
 

@@ -23,13 +23,14 @@ const setup = setupQuery.data
 const setupMutation = useMutation({
   mutation: async (payload: AdminSetupPayload) => {
     const response = await apiClient.api.admin.setup.$post({ json: payload })
-    if (response.status !== 201)
+    if (response.status !== 201) {
       throw await toApiQueryError(response, 'Setup could not be completed.')
+    }
     return response.json()
   },
   onSuccess: async (session) => {
     queryCache.setQueryData(ADMIN_QUERY_KEYS.session, session)
-    queryCache.setQueryData(ADMIN_QUERY_KEYS.setup, { required: false, available: true })
+    queryCache.setQueryData(ADMIN_QUERY_KEYS.setup, { available: true, required: false })
     await navigateTo('/admin')
   },
 })
@@ -37,8 +38,9 @@ const setupMutation = useMutation({
 const loginMutation = useMutation({
   mutation: async (payload: AdminLoginPayload) => {
     const response = await apiClient.api.admin.login.$post({ json: payload })
-    if (response.status !== 200)
+    if (response.status !== 200) {
       throw await toApiQueryError(response, 'Administrator login failed.')
+    }
     return response.json()
   },
   onSuccess: async (session) => {
@@ -66,7 +68,9 @@ const setupLocked = computed(() => Boolean(setup.value?.required))
 watch(
   () => sessionQuery.data.value?.authenticated,
   (authenticated) => {
-    if (authenticated) void navigateTo('/admin')
+    if (authenticated) {
+      void navigateTo('/admin')
+    }
   },
   { immediate: true },
 )

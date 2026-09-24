@@ -35,7 +35,9 @@ onMounted(() => {
   }, 30_000)
 })
 onUnmounted(() => {
-  if (queueTicker) clearInterval(queueTicker)
+  if (queueTicker) {
+    clearInterval(queueTicker)
+  }
 })
 
 const queueEntries = computed(() => props.skillQueue?.entries ?? [])
@@ -46,7 +48,9 @@ const activeQueueEntry = computed(() =>
 )
 const upcomingQueueEntries = computed(() => {
   const active = queueStatus.value.activeQueuePosition
-  if (active === null) return queueEntries.value
+  if (active === null) {
+    return queueEntries.value
+  }
   return queueEntries.value.filter((entry) => entry.queuePosition > active)
 })
 const activeQueueRemaining = computed(() =>
@@ -60,37 +64,41 @@ const queueEndsSoon = computed(
 )
 const queueStateLabel = computed(
   () =>
-    ({ training: 'TRAINING', paused: 'PAUSED', empty: 'EMPTY', lapsed: 'COMPLETED' })[
+    ({ empty: 'EMPTY', lapsed: 'COMPLETED', paused: 'PAUSED', training: 'TRAINING' })[
       queueState.value
     ],
 )
 const queueIdleCopy = computed(() => {
-  if (queueState.value === 'paused') return 'Training is paused. Restart the queue in game.'
-  if (queueState.value === 'lapsed') return 'Queue finished. Trained levels update at next login.'
+  if (queueState.value === 'paused') {
+    return 'Training is paused. Restart the queue in game.'
+  }
+  if (queueState.value === 'lapsed') {
+    return 'Queue finished. Trained levels update at next login.'
+  }
   return 'Nothing queued. Training time is going to waste.'
 })
 const resourceState = computed<EsiResourceState>(() => {
   if (props.status === 'loading') {
-    return { status: 'loading', title: '', message: 'Resolving training queue...' }
+    return { message: 'Resolving training queue...', status: 'loading', title: '' }
   }
   if (props.status === 'scope-required') {
     return {
-      status: 'authorization-required',
-      code: 'ESI 403 / QUEUE',
-      title: 'Skill queue authorization required',
-      message: props.message,
       action: props.authorizeUrl
         ? { href: props.authorizeUrl, label: 'AUTHORIZE THIS CHARACTER' }
         : null,
+      code: 'ESI 403 / QUEUE',
+      message: props.message,
+      status: 'authorization-required',
+      title: 'Skill queue authorization required',
     }
   }
   if (props.status === 'error') {
     return {
-      status: 'error',
       code: 'ERR / QUEUE',
-      title: 'Training queue unavailable',
       message: props.message,
       retryLabel: 'RETRY UPLINK',
+      status: 'error',
+      title: 'Training queue unavailable',
     }
   }
   return { status: 'ready' }

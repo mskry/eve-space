@@ -15,16 +15,16 @@ const mocks = vi.hoisted(() => {
     CharacterTokenNotFoundError,
     EveSsoTokenRefreshError,
     TokenRefreshLockUnavailableError,
-    appendDomainEvent: vi.fn(),
     advanceCharacterAuthorityAuthorizationGenerationInTransaction: vi.fn(),
+    appendDomainEvent: vi.fn(),
     decryptTokens: vi.fn(),
     deleteCharacterTokenAuthorization: vi.fn(),
     encryptTokens: vi.fn(),
     enqueueInstalledResourceLifecyclePurges: vi.fn(),
     findCharacterCacheAuthorizationForLifecycle: vi.fn(),
     findCharacterTokenForLifecycle: vi.fn(),
-    lockCurrentOrganizationVersionForCompliance: vi.fn(),
     invalidateCharacterAuthoritySourcesInTransaction: vi.fn(),
+    lockCurrentOrganizationVersionForCompliance: vi.fn(),
     recomputeOrganizationAccountCompliance: vi.fn(),
     refreshAccessToken: vi.fn(),
     updateCharacterToken: vi.fn(),
@@ -35,8 +35,8 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('../../src/auth/character-token-store.js', () => ({
   CharacterTokenNotFoundError: mocks.CharacterTokenNotFoundError,
-  deleteCharacterTokenAuthorization: mocks.deleteCharacterTokenAuthorization,
   TokenRefreshLockUnavailableError: mocks.TokenRefreshLockUnavailableError,
+  deleteCharacterTokenAuthorization: mocks.deleteCharacterTokenAuthorization,
   findCharacterCacheAuthorizationForLifecycle: mocks.findCharacterCacheAuthorizationForLifecycle,
   findCharacterTokenForLifecycle: mocks.findCharacterTokenForLifecycle,
   updateCharacterToken: mocks.updateCharacterToken,
@@ -85,17 +85,17 @@ import {
 import { SsoTokenRejectedError, SsoTransportError } from '../../src/auth/sso-errors.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/token-errors.js'
 
-const characterId = 1404328063
+const characterId = 1_404_328_063
 const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
 const scope = 'esi-wallet.read_character_wallet.v1'
 const subjectLifecycleId = '35acd527-9539-44ad-aacf-9f8e45232267'
 const expired = {
-  userId,
-  ownerHash: 'test-owner',
-  encryptedTokens: 'original',
   accessTokenExpiresAt: new Date(0),
+  encryptedTokens: 'original',
+  ownerHash: 'test-owner',
   scopes: [scope],
   tokenVersion: 1,
+  userId,
 }
 
 function getCharacterAccessToken(targetCharacterId: number, requiredScope: string) {
@@ -146,8 +146,8 @@ beforeEach(() => {
   )
   mocks.refreshAccessToken.mockResolvedValue({
     access_token: 'new-access',
-    refresh_token: 'new-refresh',
     expires_in: 1200,
+    refresh_token: 'new-refresh',
     token_type: 'Bearer',
   })
   mocks.verifyAccessToken.mockResolvedValue({
@@ -160,13 +160,13 @@ beforeEach(() => {
 
 describe('token refresh', () => {
   test('reads direct and lifecycle cache authorization without token material', async () => {
-    await expect(getCharacterCacheAuthorization(characterId, scope)).resolves.toEqual({
+    await expect(getCharacterCacheAuthorization(characterId, scope)).resolves.toStrictEqual({
       scopes: [scope],
       tokenVersion: 1,
     })
     await expect(
       getCharacterCacheAuthorizationForLifecycle(characterId, subjectLifecycleId, scope),
-    ).resolves.toEqual({ scopes: [scope], tokenVersion: 1 })
+    ).resolves.toStrictEqual({ scopes: [scope], tokenVersion: 1 })
 
     expect(mocks.findCharacterCacheAuthorizationForLifecycle).toHaveBeenCalledWith(
       characterId,
@@ -206,7 +206,7 @@ describe('token refresh', () => {
 
     await expect(
       getCharacterAuthorizationForLifecycle(characterId, subjectLifecycleId, scope),
-    ).resolves.toEqual({ accessToken: 'original-access', tokenVersion: 1 })
+    ).resolves.toStrictEqual({ accessToken: 'original-access', tokenVersion: 1 })
     expect(mocks.withCharacterTokenLifecycleLock).toHaveBeenCalledWith(
       characterId,
       subjectLifecycleId,
@@ -373,8 +373,8 @@ describe('token refresh', () => {
     controller.abort()
     resolveRefresh?.({
       access_token: 'new-access',
-      refresh_token: 'rotated-refresh',
       expires_in: 1200,
+      refresh_token: 'rotated-refresh',
       token_type: 'Bearer',
     })
 
@@ -412,8 +412,8 @@ describe('token refresh', () => {
       await refreshGate
       return {
         access_token: `new-access-${refreshToken.replace('-refresh', '')}`,
-        refresh_token: 'new-refresh',
         expires_in: 1200,
+        refresh_token: 'new-refresh',
         token_type: 'Bearer',
       }
     })
@@ -454,8 +454,8 @@ describe('token refresh', () => {
           if (result && typeof result === 'object' && 'authorization' in result) {
             stored = {
               ...stored,
-              encryptedTokens: 'refreshed',
               accessTokenExpiresAt: new Date(Date.now() + 120_000),
+              encryptedTokens: 'refreshed',
               scopes: result.scopes,
               tokenVersion: result.authorization.tokenVersion,
             }
@@ -472,8 +472,8 @@ describe('token refresh', () => {
           resolveRefresh = () =>
             resolve({
               access_token: 'new-access',
-              refresh_token: 'new-refresh',
               expires_in: 1200,
+              refresh_token: 'new-refresh',
               token_type: 'Bearer',
             })
         }),
@@ -484,7 +484,7 @@ describe('token refresh', () => {
     const second = getCharacterAuthorization(characterId, secondaryScope)
     resolveRefresh?.()
 
-    await expect(first).resolves.toEqual({ accessToken: 'new-access', tokenVersion: 2 })
+    await expect(first).resolves.toStrictEqual({ accessToken: 'new-access', tokenVersion: 2 })
     await expect(second).rejects.toBeInstanceOf(ScopeRequiredError)
     expect(mocks.refreshAccessToken).toHaveBeenCalledOnce()
   })
@@ -508,15 +508,15 @@ describe('token refresh', () => {
       expect.anything(),
     )
     expect(mocks.appendDomainEvent).toHaveBeenCalledWith(expect.anything(), {
-      type: 'character.scopes-changed',
-      payloadVersion: 1,
       aggregateId: String(characterId),
       payload: {
-        userId,
-        characterId,
         addedScopes: ['a.scope', 'z.scope'],
+        characterId,
         removedScopes: ['removed.scope'],
+        userId,
       },
+      payloadVersion: 1,
+      type: 'character.scopes-changed',
     })
   })
 
@@ -547,8 +547,8 @@ describe('token refresh', () => {
   test('returns the persisted winner without an SSO refresh when another replica won', async () => {
     const winner = {
       ...expired,
-      encryptedTokens: 'winner',
       accessTokenExpiresAt: new Date(Date.now() + 120_000),
+      encryptedTokens: 'winner',
       tokenVersion: 2,
     }
     mocks.withCharacterTokenLifecycleLock.mockImplementation(
@@ -604,8 +604,8 @@ describe('token refresh', () => {
     expect(mocks.appendDomainEvent).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        type: 'character.scopes-changed',
         payload: expect.objectContaining({ removedScopes: [scope] }),
+        type: 'character.scopes-changed',
       }),
     )
     expect(mocks.recomputeOrganizationAccountCompliance).toHaveBeenCalledWith(
@@ -630,8 +630,8 @@ describe('token refresh', () => {
     expect(mocks.appendDomainEvent).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        type: 'character.scopes-changed',
         payload: expect.objectContaining({ removedScopes: [scope] }),
+        type: 'character.scopes-changed',
       }),
     )
     expect(mocks.recomputeOrganizationAccountCompliance).toHaveBeenCalledOnce()
@@ -702,8 +702,8 @@ describe('token refresh', () => {
     expect(mocks.appendDomainEvent).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        type: 'character.scopes-changed',
         payload: expect.objectContaining({ removedScopes: [scope] }),
+        type: 'character.scopes-changed',
       }),
     )
     expect(mocks.recomputeOrganizationAccountCompliance).toHaveBeenCalledOnce()
@@ -753,8 +753,8 @@ describe('token refresh', () => {
           resolvers.push(() =>
             resolve({
               access_token: accessToken,
-              refresh_token: 'new-refresh',
               expires_in: 1200,
+              refresh_token: 'new-refresh',
               token_type: 'Bearer',
             }),
           )
@@ -795,8 +795,8 @@ describe('token refresh', () => {
             resolvers.push(() =>
               resolve({
                 access_token: accessToken,
-                refresh_token: 'new-refresh',
                 expires_in: 1200,
+                refresh_token: 'new-refresh',
                 token_type: 'Bearer',
               }),
             )

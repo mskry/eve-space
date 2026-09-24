@@ -20,22 +20,22 @@ describe('managed corporation materialization', () => {
       alliance.database,
       {
         deploymentId: 1,
-        organizationVersion: 4,
+        organizationId: 99_000_001,
         organizationType: 'alliance',
-        organizationId: 99000001,
+        organizationVersion: 4,
       },
       observedAt,
     )
-    expect(alliance.inserts).toEqual([
+    expect(alliance.inserts).toStrictEqual([
       expect.objectContaining({
-        subjectKind: 'deployment',
-        subjectId: '1',
         organizationVersion: 4,
+        subjectId: '1',
+        subjectKind: 'deployment',
       }),
       expect.objectContaining({
-        subjectKind: 'alliance',
-        subjectId: '99000001',
         organizationVersion: 4,
+        subjectId: '99000001',
+        subjectKind: 'alliance',
       }),
     ])
     expect(mocks.appendEvent).not.toHaveBeenCalled()
@@ -45,25 +45,25 @@ describe('managed corporation materialization', () => {
       corporation.database,
       {
         deploymentId: 1,
-        organizationVersion: 4,
+        organizationId: 98_000_001,
         organizationType: 'corporation',
-        organizationId: 98000001,
+        organizationVersion: 4,
       },
       observedAt,
     )
-    expect(corporation.inserts).toEqual([
+    expect(corporation.inserts).toStrictEqual([
       expect.objectContaining({
-        subjectKind: 'deployment',
-        subjectId: '1',
         organizationVersion: 4,
+        subjectId: '1',
+        subjectKind: 'deployment',
       }),
-      expect.objectContaining({ corporationId: 98000001, organizationVersion: 4 }),
+      expect.objectContaining({ corporationId: 98_000_001, organizationVersion: 4 }),
     ])
     expect(mocks.appendEvent).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
+        payload: { corporationId: 98_000_001, deploymentId: 1, organizationVersion: 4 },
         type: 'organization.managed-corporation-added',
-        payload: { deploymentId: 1, organizationVersion: 4, corporationId: 98000001 },
       }),
     )
   })
@@ -72,23 +72,23 @@ describe('managed corporation materialization', () => {
     const current = transaction([
       [{ id: 1 }],
       [
-        { corporationId: 98000001, isCurrent: true },
-        { corporationId: 98000002, isCurrent: true },
-        { corporationId: 98000004, isCurrent: false },
+        { corporationId: 98_000_001, isCurrent: true },
+        { corporationId: 98_000_002, isCurrent: true },
+        { corporationId: 98_000_004, isCurrent: false },
       ],
     ])
     await expect(
       materializeManagedAllianceCorporations(current.database, {
+        allianceId: 99_000_001,
+        corporationIds: [98_000_002, 98_000_003],
         organizationVersion: 4,
-        allianceId: 99000001,
-        corporationIds: [98000002, 98000003],
         validatedAt: observedAt,
       }),
-    ).resolves.toEqual({
+    ).resolves.toStrictEqual({
+      addedIds: [98_000_003],
+      corporationIds: [98_000_002, 98_000_003],
       outcome: 'refreshed',
-      addedIds: [98000003],
-      removedIds: [98000001],
-      corporationIds: [98000002, 98000003],
+      removedIds: [98_000_001],
     })
     expect(current.inserts).toHaveLength(1)
     expect(current.updates).toHaveLength(1)
@@ -109,12 +109,12 @@ describe('managed corporation materialization', () => {
     const obsolete = transaction([[]])
     await expect(
       materializeManagedAllianceCorporations(obsolete.database, {
+        allianceId: 99_000_001,
+        corporationIds: [98_000_001],
         organizationVersion: 3,
-        allianceId: 99000001,
-        corporationIds: [98000001],
         validatedAt: observedAt,
       }),
-    ).resolves.toEqual({ outcome: 'obsolete' })
+    ).resolves.toStrictEqual({ outcome: 'obsolete' })
     expect(obsolete.inserts).toHaveLength(0)
     expect(mocks.appendEvent).not.toHaveBeenCalled()
   })
@@ -124,8 +124,6 @@ function transaction(selectResults: unknown[][] = []) {
   const inserts: unknown[] = []
   const updates: unknown[] = []
   return {
-    inserts,
-    updates,
     database: {
       select() {
         return query(selectResults.shift() ?? [])
@@ -137,18 +135,22 @@ function transaction(selectResults: unknown[][] = []) {
         return query([], (value) => updates.push(value))
       },
     } as never,
+    inserts,
+    updates,
   }
 }
 
 function query(result: unknown[], record?: (value: unknown) => void) {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'where', 'for', 'onConflictDoUpdate'])
+  for (const method of ['from', 'where', 'for', 'onConflictDoUpdate']) {
     builder[method] = () => builder
-  for (const method of ['values', 'set'])
+  }
+  for (const method of ['values', 'set']) {
     builder[method] = (value: unknown) => {
       record?.(value)
       return builder
     }
+  }
   // oxlint-disable-next-line unicorn/no-thenable -- Drizzle query builders are awaitable.
   builder.then = (resolve: (value: unknown[]) => unknown, reject: (error: unknown) => unknown) =>
     Promise.resolve(result).then(resolve, reject)

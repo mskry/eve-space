@@ -8,14 +8,14 @@ test('purges expired and invalid-authority evidence in bounded batches', async (
   const purgeEvidence = vi.fn().mockResolvedValue({ deleted: 0, remaining: false })
   const persistence: EvidenceMaintenancePersistence = { purgeEvidence }
   const invalidAuthority = {
-    organizationVersion: 4,
-    targetUserId: '22222222-2222-4222-8222-222222222222',
-    managedMemberLifecycleId: '33333333-3333-4333-8333-333333333333',
+    authorizationGeneration: 8,
     characterId: subject.characterId,
     characterLifecycleId: subject.lifecycleId,
-    authorizationGeneration: 8,
     disclosureVersion: 2,
+    managedMemberLifecycleId: '33333333-3333-4333-8333-333333333333',
+    organizationVersion: 4,
     sectionActivationVersion: 3,
+    targetUserId: '22222222-2222-4222-8222-222222222222',
   }
   const context = {
     ...maintenanceContext(persistence),
@@ -27,16 +27,16 @@ test('purges expired and invalid-authority evidence in bounded batches', async (
 
   expect(purgeEvidence).toHaveBeenCalledTimes(8)
   expect(purgeEvidence).toHaveBeenCalledWith({
+    cutoff: '2026-09-17T10:00:00.000Z',
+    limit: 1000,
     mode: 'retention',
     store: 'continuations',
-    cutoff: '2026-09-17T10:00:00.000Z',
-    limit: 1_000,
   })
   expect(purgeEvidence).toHaveBeenCalledWith({
     mode: 'authority',
     store: 'trained-skills',
     ...invalidAuthority,
-    limit: 1_000,
+    limit: 1000,
   })
   purgeEvidence.mockClear()
   await walletBalanceResource.maintain?.(context)
@@ -45,21 +45,21 @@ test('purges expired and invalid-authority evidence in bounded batches', async (
     mode: 'authority',
     store: 'wallet-balance',
     ...invalidAuthority,
-    limit: 1_000,
+    limit: 1000,
   })
 
   purgeEvidence.mockClear()
   await trainedSkillsResource.maintain?.({
     ...context,
-    purgeAccountIds: [invalidAuthority.targetUserId],
     invalidAuthorities: [],
+    purgeAccountIds: [invalidAuthority.targetUserId],
     purgeRetention: false,
   })
   expect(purgeEvidence).toHaveBeenCalledOnce()
   expect(purgeEvidence).toHaveBeenCalledWith({
+    limit: 1000,
     mode: 'account',
     store: 'trained-skills',
     targetUserId: invalidAuthority.targetUserId,
-    limit: 1_000,
   })
 })

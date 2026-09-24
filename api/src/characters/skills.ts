@@ -16,8 +16,6 @@ interface CharacterSkillsRepresentationInput {
 }
 
 const characterSkillsCacheSchema = z.object({
-  totalSp: z.number(),
-  unallocatedSp: z.number(),
   skills: z.array(
     z.object({
       typeId: z.number(),
@@ -26,17 +24,19 @@ const characterSkillsCacheSchema = z.object({
       skillpoints: z.number(),
     }),
   ),
+  totalSp: z.number(),
+  unallocatedSp: z.number(),
 })
 
 const characterSkillsRead = createCharacterEsiRead({
-  operation: 'skills',
-  name: 'character-skills-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
   cacheSchema: characterSkillsCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
   encodeRequest: (input: CharacterSkillsRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
   map: (response) => mapCharacterSkillsSnapshot(response.data),
+  name: 'character-skills-core',
+  operation: 'skills',
 })
 
 export const characterSkillsScope = characterSkillsRead.requiredScope
@@ -119,14 +119,14 @@ function mapCharacterSkillsSnapshot(
   result: GetCharactersCharacterIdSkillsResponse,
 ): CharacterSkillsSnapshot {
   return {
-    totalSp: result.total_sp,
-    unallocatedSp: result.unallocated_sp ?? 0,
     skills: result.skills.map((skill) => ({
       typeId: skill.skill_id,
       activeLevel: skill.active_skill_level,
       trainedLevel: skill.trained_skill_level,
       skillpoints: skill.skillpoints_in_skill,
     })),
+    totalSp: result.total_sp,
+    unallocatedSp: result.unallocated_sp ?? 0,
   }
 }
 
@@ -139,16 +139,13 @@ function composeCharacterSkills(
       ...group,
       skills: group.skills.map((skill) => ({
         ...skill,
-        rank: null,
         primaryAttribute: null,
+        rank: null,
         secondaryAttribute: null,
       })),
     })),
   })
   return {
-    totalSp: projected.totalSp,
-    unallocatedSp: projected.unallocatedSp,
-    injectedSkillCount: projected.injectedSkillCount,
     groups: projected.groups.map((group) => ({
       groupId: group.groupId,
       name: group.name,
@@ -162,5 +159,8 @@ function composeCharacterSkills(
         skillpoints: skill.skillpoints,
       })),
     })),
+    injectedSkillCount: projected.injectedSkillCount,
+    totalSp: projected.totalSp,
+    unallocatedSp: projected.unallocatedSp,
   }
 }

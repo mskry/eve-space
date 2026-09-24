@@ -51,8 +51,8 @@ export const characterAssetRoutesQuery = defineEsiQueryOptions(
         const response = await apiClient.api.universe.routes.$post(
           {
             json: {
-              originSystemId,
               destinationSystemIds: destinations,
+              originSystemId,
               policy: { kind: 'shortest' },
             },
           },
@@ -76,8 +76,8 @@ export const characterAssetRoutesQuery = defineEsiQueryOptions(
           )
         ) {
           throw new ApiQueryError('Asset routes response did not match the requested identity.', {
-            status: 409,
             code: 'ASSET_ROUTES_IDENTITY_MISMATCH',
+            status: 409,
           })
         }
         return result

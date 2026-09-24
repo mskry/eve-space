@@ -12,15 +12,15 @@ describe('module persistence routine canonicalization', () => {
       readRoutineSql("input ->> 'value'").replace('(input jsonb)', '(in input jsonb)'),
     )
 
-    expect(formatted).toEqual(compact)
-    expect(explicitInputMode).toEqual(compact)
-    expect(compact.identity).toEqual({
+    expect(formatted).toStrictEqual(compact)
+    expect(explicitInputMode).toStrictEqual(compact)
+    expect(compact.identity).toStrictEqual({
+      mode: 'read',
       moduleId: 'alpha',
       operationId: 'read-snapshot',
       revision: 1,
-      mode: 'read',
-      schemaName: 'eve_module_alpha',
       routineName: 'persist_read_snapshot',
+      schemaName: 'eve_module_alpha',
     })
     expect(compact.definitionFingerprint).toMatch(/^[a-f0-9]{64}$/)
     expect(compact.canonicalDefinition).not.toContain('location')
@@ -41,21 +41,21 @@ describe('module persistence routine canonicalization', () => {
 
   test('normalizes PostgreSQL omitted routine option defaults', async () => {
     const explicit = await canonicalizePersistenceRoutineSql({
+      mode: 'write',
       moduleId: 'alpha',
       operationId: 'read-snapshot',
       revision: 1,
-      mode: 'write',
       sql: readRoutineSql('input').replace('stable', 'volatile'),
     })
     const omitted = await canonicalizePersistenceRoutineSql({
+      mode: 'write',
       moduleId: 'alpha',
       operationId: 'read-snapshot',
       revision: 1,
-      mode: 'write',
       sql: readRoutineSql('input').replace('stable', '').replace('parallel unsafe', ''),
     })
 
-    expect(omitted).toEqual(explicit)
+    expect(omitted).toStrictEqual(explicit)
   })
 
   test('normalizes PostgreSQL parameter qualification and implicit target aliases', async () => {
@@ -163,10 +163,10 @@ describe('module persistence routine canonicalization', () => {
   test('requires exactly one canonical routine identity', async () => {
     await expect(
       canonicalizePersistenceRoutineSql({
+        mode: 'read',
         moduleId: 'alpha',
         operationId: 'read-snapshot',
         revision: 1,
-        mode: 'read',
         sql: readRoutineSql("input ->> 'value'").replace('persist_read_snapshot', 'other_routine'),
       }),
     ).rejects.toThrow('Persistence routine definition mismatch: alpha/read-snapshot')
@@ -175,10 +175,10 @@ describe('module persistence routine canonicalization', () => {
 
 function canonicalize(sql: string, revision = 1) {
   return canonicalizePersistenceRoutineSql({
+    mode: 'read',
     moduleId: 'alpha',
     operationId: 'read-snapshot',
     revision,
-    mode: 'read',
     sql,
   })
 }
@@ -196,10 +196,10 @@ function readRoutineSql(expression: string) {
 
 function canonicalizeWriteRoutine(body: string) {
   return canonicalizePersistenceRoutineSql({
+    mode: 'write',
     moduleId: 'alpha',
     operationId: 'write-record',
     revision: 1,
-    mode: 'write',
     sql: `
       create function eve_module_alpha.persist_write_record(input jsonb)
       returns jsonb

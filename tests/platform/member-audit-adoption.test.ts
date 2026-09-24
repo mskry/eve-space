@@ -21,7 +21,7 @@ describe('Member Audit reviewer adoption', () => {
       nuxt: { navigation: unknown[]; pages: unknown[] }
     }
 
-    expect(manifest.permissions.map(({ key }) => key)).toEqual([
+    expect(manifest.permissions.map(({ key }) => key)).toStrictEqual([
       'member-audit.assets.read',
       'member-audit.groups.manage',
       'member-audit.mail.read',
@@ -33,12 +33,12 @@ describe('Member Audit reviewer adoption', () => {
     ])
     expect(manifest.permissions.every(({ audiences }) => audiences.includes('hr'))).toBe(true)
     expect(manifest.permissions.every(({ audiences }) => audiences.includes('director'))).toBe(true)
-    expect(manifest.permissionProfiles.map(({ id }) => id)).toEqual([
+    expect(manifest.permissionProfiles.map(({ id }) => id)).toStrictEqual([
       'access-management',
       'evidence-review',
       'member-review',
     ])
-    expect(manifest.reviewerContributions.map(({ id }) => id)).toEqual([
+    expect(manifest.reviewerContributions.map(({ id }) => id)).toStrictEqual([
       'overview',
       'trained-skills',
       'assets',
@@ -59,8 +59,8 @@ describe('Member Audit reviewer adoption', () => {
           target === 'managed-organization-account' || target === 'managed-organization-character',
       ),
     ).toBe(true)
-    expect(manifest.nuxt.pages).toEqual([])
-    expect(manifest.nuxt.navigation).toEqual([])
+    expect(manifest.nuxt.pages).toStrictEqual([])
+    expect(manifest.nuxt.navigation).toStrictEqual([])
   })
 
   test('passes the external source boundary with only bounded platform capabilities', async () => {
@@ -68,23 +68,23 @@ describe('Member Audit reviewer adoption', () => {
     const nuxtSources = await loadSources(join(moduleRoot, 'nuxt/src'))
     const serverViolations = serverSources.flatMap(({ path, source }) =>
       serverSourceBoundaryViolations({
+        boundaryRoot: join(moduleRoot, 'server/src'),
         moduleId: 'member-audit',
         path,
         source,
-        boundaryRoot: join(moduleRoot, 'server/src'),
       }),
     )
     const nuxtViolations = nuxtSources.flatMap(({ path, source }) =>
       nuxtSourceBoundaryViolations({
+        boundaryRoot: join(moduleRoot, 'nuxt/src'),
         moduleId: 'member-audit',
         path,
         source,
-        boundaryRoot: join(moduleRoot, 'nuxt/src'),
       }),
     )
 
-    expect(serverViolations).toEqual([])
-    expect(nuxtViolations).toEqual([])
+    expect(serverViolations).toStrictEqual([])
+    expect(nuxtViolations).toStrictEqual([])
   }, 30_000)
 
   test('exports panels without a reusable model or cross-feature barrel', async () => {

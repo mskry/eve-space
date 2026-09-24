@@ -18,5 +18,6 @@ const violations = [
   ...queryPersistenceConsumerImportViolations(consumerSources),
 ]
 
-if (violations.length > 0)
+if (violations.length > 0) {
   throw new Error(`Query persistence boundary verification failed:\n${violations.join('\n')}`)
+}

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  rows: [] as Record<string, unknown>[],
   limit: vi.fn(),
+  rows: [] as Record<string, unknown>[],
 }))
 
 vi.mock('../../src/db/client.js', () => ({
@@ -25,12 +25,12 @@ describe('organization audit history', () => {
     const result = await listCurrentOrganizationAuditHistory({ limit: 1 })
 
     expect(mocks.limit).toHaveBeenCalledWith(2)
-    expect(result).toEqual({
+    expect(result).toStrictEqual({
       events: [
         expect.objectContaining({
           auditSequence: '9',
-          eventType: 'exception.approved',
           entitlementExpiresAt: '2026-09-10T12:00:00.000Z',
+          eventType: 'exception.approved',
           occurredAt: '2026-09-08T12:00:00.000Z',
         }),
       ],
@@ -47,7 +47,7 @@ describe('organization audit history', () => {
     mocks.rows = [event(7n)]
 
     await expect(
-      listCurrentOrganizationAuditHistory({ limit: 10, beforeAuditSequence: 8n }),
+      listCurrentOrganizationAuditHistory({ beforeAuditSequence: 8n, limit: 10 }),
     ).resolves.toMatchObject({ nextBeforeAuditSequence: null })
   })
 
@@ -55,19 +55,19 @@ describe('organization audit history', () => {
     mocks.rows = [
       {
         ...event(7n),
+        disclosureVersion: 3,
         eventType: 'sensitive-access.decided',
         sectionId: 'mail',
         targetCharacterId: 90_000_001,
-        disclosureVersion: 3,
       },
     ]
 
     const result = await listCurrentOrganizationAuditHistory({ limit: 10 })
 
     expect(result.events[0]).toMatchObject({
+      disclosureVersion: 3,
       sectionId: 'mail',
       targetCharacterId: 90_000_001,
-      disclosureVersion: 3,
     })
     expect(result.events[0]).not.toHaveProperty('query')
     expect(result.events[0]).not.toHaveProperty('evidence')
@@ -76,34 +76,36 @@ describe('organization audit history', () => {
 
 function event(auditSequence: bigint) {
   return {
+    actorId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+    actorType: 'user' as const,
+    assignmentId: null,
+    assignmentSource: null,
     auditId: '35acd527-9539-44ad-aacf-9f8e45232267',
     auditSequence,
-    organizationVersion: 1,
-    policyVersion: 2,
-    eventType: 'exception.approved' as const,
-    actorType: 'user' as const,
-    actorId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
-    subjectType: 'exception' as const,
-    subjectId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
-    reason: 'Approved external character.',
-    outcome: 'granted' as const,
-    groupId: null,
-    assignmentId: null,
-    targetUserId: null,
-    targetCharacterId: null,
-    sectionId: null,
-    disclosureVersion: null,
-    assignmentSource: null,
-    complianceSource: null,
-    entitlementExpiresAt: new Date('2026-09-10T12:00:00.000Z'),
     causationAuditId: null,
+    complianceSource: null,
+    disclosureVersion: null,
+    entitlementExpiresAt: new Date('2026-09-10T12:00:00.000Z'),
+    eventType: 'exception.approved' as const,
+    groupId: null,
     occurredAt: new Date('2026-09-08T12:00:00.000Z'),
+    organizationVersion: 1,
+    outcome: 'granted' as const,
+    policyVersion: 2,
+    reason: 'Approved external character.',
+    sectionId: null,
+    subjectId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+    subjectType: 'exception' as const,
+    targetCharacterId: null,
+    targetUserId: null,
   }
 }
 
 function query() {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'innerJoin', 'orderBy']) builder[method] = () => builder
+  for (const method of ['from', 'innerJoin', 'orderBy']) {
+    builder[method] = () => builder
+  }
   builder.limit = (limit: number) => {
     mocks.limit(limit)
     return Promise.resolve(mocks.rows)

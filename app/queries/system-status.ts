@@ -21,8 +21,8 @@ export const systemStatusQuery = defineEsiQueryOptions((apiClient: ApiClient) =>
       throw await toApiQueryError(response, 'System telemetry is unavailable.')
     }
     return {
-      telemetry: await response.json(),
       latencyMs: Math.round(performance.now() - startedAt),
+      telemetry: await response.json(),
     }
   },
   ...QUERY_POLICY.systemStatus,

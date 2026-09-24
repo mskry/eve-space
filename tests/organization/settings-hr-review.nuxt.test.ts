@@ -24,7 +24,9 @@ afterAll(() => queryServer.close())
 beforeEach(clearQueryCache)
 
 afterEach(async () => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   clearQueryCache()
   queryServer.resetHandlers()
   await flushPromises()
@@ -41,8 +43,8 @@ describe('SettingsOrganizationHrReview', () => {
           const body = (await request.json()) as { reason: string }
           approvedRequest = {
             characterId: String(params.characterId),
-            userId: String(params.userId),
             reason: body.reason,
+            userId: String(params.userId),
           }
           return HttpResponse.json({ exception: { exceptionId: 'new-exception' } }, { status: 201 })
         },
@@ -70,10 +72,10 @@ describe('SettingsOrganizationHrReview', () => {
     await wrapper.get('.hr-candidate-form textarea').setValue('Approved from the review queue.')
     await wrapper.get('.hr-candidate-form').trigger('submit')
     await vi.waitFor(() => expect(approvedRequest).not.toBeNull())
-    expect(approvedRequest).toEqual({
-      userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+    expect(approvedRequest).toStrictEqual({
       characterId: '90000002',
       reason: 'Approved from the review queue.',
+      userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
     })
   })
 
@@ -95,8 +97,8 @@ describe('SettingsOrganizationHrReview', () => {
       setup() {
         useQueryCache().setQueryData(PRIVATE_QUERY_KEYS.organizationContext(), {
           ...contextResponse,
-          memberAccess: false,
           capabilities: { reviewRegistration: true, viewRosterCoverage: true },
+          memberAccess: false,
         })
         return () => h(SettingsOrganizationHrReview)
       },
@@ -134,29 +136,29 @@ function installCommonHandlers(canReview: boolean, memberAccess = canReview) {
   queryServer.use(
     http.get('*/auth/config', () =>
       HttpResponse.json({
+        attachUrl: '/auth/eve/attach',
         configured: true,
         loginUrl: '/auth/eve/login',
-        attachUrl: '/auth/eve/attach',
       }),
     ),
     http.get('*/auth/session', () =>
       HttpResponse.json({
-        authenticated: true,
         account: {
-          userId: 'member-user',
           mainCharacter: { characterId: 1_404_328_063, name: 'Main Pilot' },
+          userId: 'member-user',
         },
+        authenticated: true,
       }),
     ),
     http.get('*/api/me/cache-admission', () =>
       HttpResponse.json(cacheAdmissionForOrganization('member-user', 1_404_328_063)),
     ),
-    http.get('*/api/admin/setup', () => HttpResponse.json({ required: false, available: true })),
+    http.get('*/api/admin/setup', () => HttpResponse.json({ available: true, required: false })),
     http.get('*/api/organization/context', () =>
       HttpResponse.json({
         ...contextResponse,
-        memberAccess,
         capabilities: { reviewRegistration: canReview, viewRosterCoverage: canReview },
+        memberAccess,
       }),
     ),
     http.get('*/api/organization/exceptions', () => HttpResponse.json(exceptionResponse)),
@@ -165,39 +167,27 @@ function installCommonHandlers(canReview: boolean, memberAccess = canReview) {
 }
 
 const contextResponse = {
+  authorityCharacter: null,
+  capabilities: { reviewRegistration: true, viewRosterCoverage: true },
+  claimAvailable: false,
+  freshUntil: '2026-09-10T13:00:00.000Z',
+  graceUntil: null,
+  isBlocked: false,
+  isOrganizationOwner: false,
+  memberAccess: true,
   organization: {
-    organizationType: 'corporation',
     organizationId: 98_000_001,
     organizationName: 'Example Corporation',
     organizationTicker: 'EX',
+    organizationType: 'corporation',
     organizationVersion: 1,
   },
-  isOrganizationOwner: false,
-  isBlocked: false,
-  memberAccess: true,
-  capabilities: { reviewRegistration: true, viewRosterCoverage: true },
-  claimAvailable: false,
-  ownerStatus: 'fresh',
   ownerFailureClass: null,
-  freshUntil: '2026-09-10T13:00:00.000Z',
-  graceUntil: null,
+  ownerStatus: 'fresh',
   reviewDeadline: null,
-  authorityCharacter: null,
 } satisfies OrganizationContext
 
 const exceptionResponse = {
-  reviewCandidates: [
-    {
-      userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
-      characterId: 90_000_002,
-      characterName: 'Review Pilot',
-      reasonCode: 'character-outside-managed-organization',
-      state: 'review_required',
-      evidenceFreshness: 'fresh',
-      reviewDeadline: '2026-09-10T12:00:00.000Z',
-      affiliationCheckedAt: '2026-09-08T12:00:00.000Z',
-    },
-  ],
   exceptions: [
     {
       exceptionId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
@@ -230,30 +220,42 @@ const exceptionResponse = {
       revocationReason: null,
     },
   ],
+  reviewCandidates: [
+    {
+      userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+      characterId: 90_000_002,
+      characterName: 'Review Pilot',
+      reasonCode: 'character-outside-managed-organization',
+      state: 'review_required',
+      evidenceFreshness: 'fresh',
+      reviewDeadline: '2026-09-10T12:00:00.000Z',
+      affiliationCheckedAt: '2026-09-08T12:00:00.000Z',
+    },
+  ],
 } satisfies OrganizationExceptions
 
 const auditResponse = {
   events: [
     {
+      actorId: 'db7121b5-a761-41e4-ba5d-217ed1b2fa38',
+      actorType: 'user',
+      assignmentId: null,
+      assignmentSource: null,
       auditId: '35acd527-9539-44ad-aacf-9f8e45232267',
       auditSequence: '9',
-      organizationVersion: 1,
-      policyVersion: 2,
-      eventType: 'exception.approved',
-      actorType: 'user',
-      actorId: 'db7121b5-a761-41e4-ba5d-217ed1b2fa38',
-      subjectType: 'exception',
-      subjectId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
-      reason: 'Approved external character.',
-      outcome: 'granted',
-      groupId: null,
-      assignmentId: null,
-      targetUserId: null,
-      assignmentSource: null,
+      causationAuditId: null,
       complianceSource: null,
       entitlementExpiresAt: null,
-      causationAuditId: null,
+      eventType: 'exception.approved',
+      groupId: null,
       occurredAt: '2026-09-08T10:00:00.000Z',
+      organizationVersion: 1,
+      outcome: 'granted',
+      policyVersion: 2,
+      reason: 'Approved external character.',
+      subjectId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+      subjectType: 'exception',
+      targetUserId: null,
     },
   ],
   nextBeforeAuditSequence: null,

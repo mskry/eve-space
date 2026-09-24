@@ -15,8 +15,8 @@ beforeAll(async () => {
   container = await new GenericContainer('postgres:17-alpine')
     .withEnvironment({
       POSTGRES_DB: 'eve_space',
-      POSTGRES_USER: 'eve_space',
       POSTGRES_PASSWORD: password,
+      POSTGRES_USER: 'eve_space',
     })
     .withExposedPorts(5432)
     .withWaitStrategy(Wait.forLogMessage(/database system is ready to accept connections/, 2))
@@ -52,18 +52,18 @@ afterAll(async () => {
 
 describe('SDE location projection', () => {
   test('keeps raw SDE data available alongside the location projection', async () => {
-    expect(
-      await connection`select ingest_version from sde_builds where build_number = 1234`,
-    ).toEqual([{ ingest_version: 2 }])
-    expect(
-      await connection`select key from sde_dataset_rows where dataset = 'npcStations'`,
-    ).toEqual([{ key: '60003760' }])
+    expect([
+      ...(await connection`select ingest_version from sde_builds where build_number = 1234`),
+    ]).toStrictEqual([{ ingest_version: 2 }])
+    expect([
+      ...(await connection`select key from sde_dataset_rows where dataset = 'npcStations'`),
+    ]).toStrictEqual([{ key: '60003760' }])
   })
 
   test('resolves hundreds of stations and direct systems, then serves them without database work', async () => {
     const locations = Array.from({ length: 300 }, (_, index) => [
-      { id: 60000001 + index, type: 'station' as const },
-      { id: 30000001 + index, type: 'solar_system' as const },
+      { id: 60_000_001 + index, type: 'station' as const },
+      { id: 30_000_001 + index, type: 'solar_system' as const },
     ]).flat()
     queries.length = 0
     const result = await getStaticLocations(locations)
@@ -71,59 +71,59 @@ describe('SDE location projection', () => {
     expect(initializationQueries).toBeGreaterThan(0)
     expect(result).toHaveLength(600)
     expect(result.every((location) => location.solarSystemSecurityStatus !== null)).toBe(true)
-    expect(result).toEqual(
+    expect(result).toStrictEqual(
       expect.arrayContaining([
         {
-          id: 60000001,
-          type: 'station',
+          id: 60_000_001,
           name: null,
-          solarSystemId: 30000001,
+          solarSystemId: 30_000_001,
           solarSystemSecurityStatus: -0.06,
+          type: 'station',
         },
         {
-          id: 30000001,
-          type: 'solar_system',
+          id: 30_000_001,
           name: 'System 1',
-          solarSystemId: 30000001,
+          solarSystemId: 30_000_001,
           solarSystemSecurityStatus: -0.06,
-        },
-        {
-          id: 60000002,
-          type: 'station',
-          name: null,
-          solarSystemId: 30000002,
-          solarSystemSecurityStatus: 0,
-        },
-        {
-          id: 30000003,
           type: 'solar_system',
+        },
+        {
+          id: 60_000_002,
+          name: null,
+          solarSystemId: 30_000_002,
+          solarSystemSecurityStatus: 0,
+          type: 'station',
+        },
+        {
+          id: 30_000_003,
           name: 'System 3',
-          solarSystemId: 30000003,
+          solarSystemId: 30_000_003,
           solarSystemSecurityStatus: 0.945913,
+          type: 'solar_system',
         },
       ]),
     )
-    await expect(getStaticLocations(locations)).resolves.toEqual(result)
+    await expect(getStaticLocations(locations)).resolves.toStrictEqual(result)
     expect(queries).toHaveLength(initializationQueries)
   })
 
   test('keeps missing and mismatched locations unresolved', async () => {
     const locations = [
-      { id: 30000001, type: 'station' as const },
-      { id: 60000001, type: 'solar_system' as const },
-      { id: 1035466617946, type: 'station' as const },
+      { id: 30_000_001, type: 'station' as const },
+      { id: 60_000_001, type: 'solar_system' as const },
+      { id: 1_035_466_617_946, type: 'station' as const },
     ]
-    expect(await getStaticLocations(locations)).toEqual(
+    expect(await getStaticLocations(locations)).toStrictEqual(
       locations.map((location) => ({
         id: location.id,
-        type: location.type,
         name: null,
         solarSystemId: null,
         solarSystemSecurityStatus: null,
+        type: location.type,
       })),
     )
     queries.length = 0
-    expect(await getStaticLocations([])).toEqual([])
+    expect(await getStaticLocations([])).toStrictEqual([])
     expect(queries).toHaveLength(0)
   })
 
@@ -134,13 +134,13 @@ describe('SDE location projection', () => {
         await transaction`insert into sde_solar_systems values (30000001, 'Invalid', 2)`
       }),
     ).rejects.toMatchObject({ code: '23514' })
-    expect(await getStaticLocations([{ id: 60000001, type: 'station' }])).toEqual([
+    expect(await getStaticLocations([{ id: 60_000_001, type: 'station' }])).toStrictEqual([
       {
-        id: 60000001,
-        type: 'station',
+        id: 60_000_001,
         name: null,
-        solarSystemId: 30000001,
+        solarSystemId: 30_000_001,
         solarSystemSecurityStatus: -0.06,
+        type: 'station',
       },
     ])
   })

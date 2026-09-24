@@ -10,22 +10,22 @@ const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
 describe('organization compliance access locking', () => {
   test.each([
     {
-      state: 'review_required' as const,
-      reviewDeadline: new Date('2026-09-01T13:00:00Z'),
       accessValidUntil: null,
       expected: false,
+      reviewDeadline: new Date('2026-09-01T13:00:00Z'),
+      state: 'review_required' as const,
     },
     {
-      state: 'review_required' as const,
-      reviewDeadline: new Date('2026-09-01T13:00:00Z'),
       accessValidUntil: new Date('2026-09-01T11:00:00Z'),
       expected: true,
+      reviewDeadline: new Date('2026-09-01T13:00:00Z'),
+      state: 'review_required' as const,
     },
     {
-      state: 'suspended' as const,
-      reviewDeadline: new Date('2026-09-01T11:00:00Z'),
       accessValidUntil: null,
       expected: false,
+      reviewDeadline: new Date('2026-09-01T11:00:00Z'),
+      state: 'suspended' as const,
     },
   ])('classifies projection convergence as $expected', ({ expected, ...projection }) => {
     expect(isComplianceProjectionDue(projection, new Date('2026-09-01T12:00:00Z'))).toBe(expected)
@@ -33,6 +33,7 @@ describe('organization compliance access locking', () => {
 
   test.each([
     {
+      expected: true,
       rows: [
         {
           userId,
@@ -41,9 +42,8 @@ describe('organization compliance access locking', () => {
           accessValidUntil: new Date('2026-09-01T13:00:00Z'),
         },
       ],
-      expected: true,
     },
-    { rows: [], expected: false },
+    { expected: false, rows: [] },
   ])('returns $expected from the locked current projection', async ({ rows, expected }) => {
     const forLock = vi.fn<(lock: string) => void>()
     const database = {
@@ -60,30 +60,30 @@ describe('organization compliance access locking', () => {
 describe('organization entitlement scope', () => {
   test.each([
     {
-      projection: {
-        state: 'compliant' as const,
-        reviewDeadline: null,
-        accessValidUntil: new Date('2026-09-01T13:00:00Z'),
-      },
       expected: 'all',
+      projection: {
+        accessValidUntil: new Date('2026-09-01T13:00:00Z'),
+        reviewDeadline: null,
+        state: 'compliant' as const,
+      },
     },
     {
-      projection: {
-        state: 'review_required' as const,
-        reviewDeadline: new Date('2026-09-01T13:00:00Z'),
-        accessValidUntil: new Date('2026-09-01T13:00:00Z'),
-      },
       expected: 'review',
+      projection: {
+        accessValidUntil: new Date('2026-09-01T13:00:00Z'),
+        reviewDeadline: new Date('2026-09-01T13:00:00Z'),
+        state: 'review_required' as const,
+      },
     },
     {
-      projection: {
-        state: 'review_required' as const,
-        reviewDeadline: new Date('2026-09-01T11:00:00Z'),
-        accessValidUntil: new Date('2026-09-01T13:00:00Z'),
-      },
       expected: 'none',
+      projection: {
+        accessValidUntil: new Date('2026-09-01T13:00:00Z'),
+        reviewDeadline: new Date('2026-09-01T11:00:00Z'),
+        state: 'review_required' as const,
+      },
     },
-    { projection: null, expected: 'none' },
+    { expected: 'none', projection: null },
   ])('resolves $expected access', ({ projection, expected }) => {
     expect(resolveOrganizationEntitlementScope(projection, new Date('2026-09-01T12:00:00Z'))).toBe(
       expected,
@@ -93,7 +93,9 @@ describe('organization entitlement scope', () => {
 
 function query(result: unknown[], forLock: (lock: string) => void) {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'innerJoin', 'where']) builder[method] = () => builder
+  for (const method of ['from', 'innerJoin', 'where']) {
+    builder[method] = () => builder
+  }
   builder.for = (lock: string) => {
     forLock(lock)
     return builder

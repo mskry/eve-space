@@ -47,7 +47,9 @@ const labelChips = computed(() => {
   }))
 })
 const formattedDate = computed(() => {
-  if (!props.detail?.sentAt) return 'Time unknown'
+  if (!props.detail?.sentAt) {
+    return 'Time unknown'
+  }
   return new Intl.DateTimeFormat('en-GB', {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -55,12 +57,21 @@ const formattedDate = computed(() => {
   }).format(new Date(props.detail.sentAt))
 })
 const readerTitleId = computed(() => {
-  if (!props.selected) return 'mail-reader-empty-title'
-  if (props.loading && !props.detail) return 'mail-reader-loading-title'
-  if (props.errorCode === 'MAIL_NOT_FOUND') return 'mail-reader-not-found-title'
-  if (props.errorMessage) return 'mail-reader-error-title'
-  if (props.detail) return 'mail-reader-message-title'
-  return undefined
+  if (!props.selected) {
+    return 'mail-reader-empty-title'
+  }
+  if (props.loading && !props.detail) {
+    return 'mail-reader-loading-title'
+  }
+  if (props.errorCode === 'MAIL_NOT_FOUND') {
+    return 'mail-reader-not-found-title'
+  }
+  if (props.errorMessage) {
+    return 'mail-reader-error-title'
+  }
+  if (props.detail) {
+    return 'mail-reader-message-title'
+  }
 })
 
 watch(recipientsLabel, () => {

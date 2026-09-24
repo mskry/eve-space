@@ -32,25 +32,25 @@ import { queryServer } from '../support/query-server'
 
 const apiClient = createApiClient('http://localhost')
 const allowed: ProtectedCharacterQueryAccess = {
-  isClient: true,
   authenticated: true,
   authenticationReady: true,
+  isClient: true,
   ownsCharacter: true,
 }
 const characterId = 7
 const contractId = 7001
 const freshness = {
   cachedUntil: '2026-09-02T12:05:00.000Z',
-  validatedAt: '2026-09-02T12:00:00.000Z',
-  stale: true,
   refreshFailureClass: 'esi-unavailable' as const,
+  stale: true,
+  validatedAt: '2026-09-02T12:00:00.000Z',
 }
 
 afterEach(() => vi.restoreAllMocks())
 
 describe('character Finance query identities and policies', () => {
   it('uses a hierarchical identity for every Finance resource boundary', () => {
-    expect(PRIVATE_QUERY_KEYS.characterFinanceBalance(7)).toEqual([
+    expect(PRIVATE_QUERY_KEYS.characterFinanceBalance(7)).toStrictEqual([
       'private',
       'characters',
       7,
@@ -58,7 +58,7 @@ describe('character Finance query identities and policies', () => {
       'wallet',
       'balance',
     ])
-    expect(PRIVATE_QUERY_KEYS.characterFinanceJournal(7, 2)).toEqual([
+    expect(PRIVATE_QUERY_KEYS.characterFinanceJournal(7, 2)).toStrictEqual([
       'private',
       'characters',
       7,
@@ -67,7 +67,7 @@ describe('character Finance query identities and policies', () => {
       'journal',
       2,
     ])
-    expect(PRIVATE_QUERY_KEYS.characterFinanceTransactions(7, 501)).toEqual([
+    expect(PRIVATE_QUERY_KEYS.characterFinanceTransactions(7, 501)).toStrictEqual([
       'private',
       'characters',
       7,
@@ -76,7 +76,7 @@ describe('character Finance query identities and policies', () => {
       'transactions',
       501,
     ])
-    expect(PRIVATE_QUERY_KEYS.characterFinanceOpenOrders(7)).toEqual([
+    expect(PRIVATE_QUERY_KEYS.characterFinanceOpenOrders(7)).toStrictEqual([
       'private',
       'characters',
       7,
@@ -84,7 +84,7 @@ describe('character Finance query identities and policies', () => {
       'market',
       'open-orders',
     ])
-    expect(PRIVATE_QUERY_KEYS.characterFinanceOrderHistory(7, 3)).toEqual([
+    expect(PRIVATE_QUERY_KEYS.characterFinanceOrderHistory(7, 3)).toStrictEqual([
       'private',
       'characters',
       7,
@@ -93,7 +93,7 @@ describe('character Finance query identities and policies', () => {
       'history',
       3,
     ])
-    expect(PRIVATE_QUERY_KEYS.characterFinanceContractPage(7, 4)).toEqual([
+    expect(PRIVATE_QUERY_KEYS.characterFinanceContractPage(7, 4)).toStrictEqual([
       'private',
       'characters',
       7,
@@ -102,7 +102,7 @@ describe('character Finance query identities and policies', () => {
       'pages',
       4,
     ])
-    expect(PRIVATE_QUERY_KEYS.characterFinanceContractItems(7, contractId)).toEqual([
+    expect(PRIVATE_QUERY_KEYS.characterFinanceContractItems(7, contractId)).toStrictEqual([
       'private',
       'characters',
       7,
@@ -112,7 +112,7 @@ describe('character Finance query identities and policies', () => {
       contractId,
       'items',
     ])
-    expect(PRIVATE_QUERY_KEYS.characterFinanceContractBids(7, contractId)).toEqual([
+    expect(PRIVATE_QUERY_KEYS.characterFinanceContractBids(7, contractId)).toStrictEqual([
       'private',
       'characters',
       7,
@@ -125,64 +125,66 @@ describe('character Finance query identities and policies', () => {
   })
 
   it('isolates characters, pages, continuations, contracts, and detail kinds', () => {
-    expect(PRIVATE_QUERY_KEYS.characterFinanceJournal(7, 1)).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.characterFinanceJournal(7, 1)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.characterFinanceJournal(7, 2),
     )
-    expect(PRIVATE_QUERY_KEYS.characterFinanceTransactions(7, null)).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.characterFinanceTransactions(7, null)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.characterFinanceTransactions(7, 501),
     )
-    expect(PRIVATE_QUERY_KEYS.characterFinanceOrderHistory(7, 1)).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.characterFinanceOrderHistory(7, 1)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.characterFinanceOrderHistory(7, 2),
     )
-    expect(PRIVATE_QUERY_KEYS.characterFinanceContractPage(7, 1)).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.characterFinanceContractPage(7, 1)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.characterFinanceContractPage(7, 2),
     )
-    expect(PRIVATE_QUERY_KEYS.characterFinanceContractItems(7, 7001)).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.characterFinanceContractItems(7, 7001)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.characterFinanceContractItems(7, 7002),
     )
-    expect(PRIVATE_QUERY_KEYS.characterFinanceContractItems(7, 7001)).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.characterFinanceContractItems(7, 7001)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.characterFinanceContractBids(7, 7001),
     )
 
-    for (const [seven, eight] of financeKeyPairs()) expect(seven).not.toEqual(eight)
+    for (const [seven, eight] of financeKeyPairs()) {
+      expect(seven).not.toStrictEqual(eight)
+    }
   })
 
   it('keeps contractPage out of detail cache identity', () => {
     const firstPage = characterFinanceContractItemsQuery({
+      access: allowed,
       apiClient,
       characterId,
-      access: allowed,
-      requested: true,
       contractId,
       contractPage: 1,
+      requested: true,
     })
     const secondPage = characterFinanceContractItemsQuery({
+      access: allowed,
       apiClient,
       characterId,
-      access: allowed,
-      requested: true,
       contractId,
       contractPage: 9,
+      requested: true,
     })
     const firstBidPage = characterFinanceContractBidsQuery({
+      access: allowed,
       apiClient,
       characterId,
-      access: allowed,
-      requested: true,
       contractId,
       contractPage: 1,
+      requested: true,
     })
     const secondBidPage = characterFinanceContractBidsQuery({
+      access: allowed,
       apiClient,
       characterId,
-      access: allowed,
-      requested: true,
       contractId,
       contractPage: 9,
+      requested: true,
     })
 
-    expect(firstPage.key).toEqual(secondPage.key)
-    expect(firstBidPage.key).toEqual(secondBidPage.key)
+    expect(firstPage.key).toStrictEqual(secondPage.key)
+    expect(firstBidPage.key).toStrictEqual(secondBidPage.key)
   })
 
   it('uses each ESI resource freshness window and persisted retention policy', () => {
@@ -222,14 +224,18 @@ describe('character Finance query gates', () => {
 
   it('leaves every secondary and detail query unopened until requested', () => {
     expect(characterFinanceBalanceQuery(balanceParameters()).enabled).toBe(true)
-    for (const options of secondaryOptions(false)) expect(options.enabled).toBe(false)
+    for (const options of secondaryOptions(false)) {
+      expect(options.enabled).toBe(false)
+    }
   })
 
   it('does not issue client requests for unopened secondary or detail queries', async () => {
     const fetchRequest = vi.spyOn(globalThis, 'fetch')
     const Root = defineComponent({
       setup() {
-        for (const options of secondaryOptions(false)) useQuery(options)
+        for (const options of secondaryOptions(false)) {
+          useQuery(options)
+        }
         return () => h('span')
       },
     })
@@ -267,7 +273,9 @@ describe('character Finance query gates', () => {
     const Root = defineComponent({
       setup() {
         useQuery(characterFinanceBalanceQuery(balanceParameters(serverAccess)))
-        for (const options of secondaryOptions(true, serverAccess)) useQuery(options)
+        for (const options of secondaryOptions(true, serverAccess)) {
+          useQuery(options)
+        }
         return () => h('span', 'finance locked')
       },
     })
@@ -296,7 +304,7 @@ describe('character Finance Hono query factories', () => {
         queryCache.getQueryData<typeof freshness & Record<string, unknown>>(key),
       ).toMatchObject(freshness)
     }
-    expect(parameters).toEqual(
+    expect(parameters).toStrictEqual(
       new Map([
         ['journalPage', '2'],
         ['fromId', '501'],
@@ -327,7 +335,7 @@ describe('character Finance Hono query factories', () => {
     expect(errors).toHaveLength(8)
     for (const error of errors) {
       expect(error).toBeInstanceOf(ApiQueryError)
-      expect(error).toMatchObject({ status: 409, code: 'FINANCE_IDENTITY_MISMATCH' })
+      expect(error).toMatchObject({ code: 'FINANCE_IDENTITY_MISMATCH', status: 409 })
     }
     wrapper.unmount()
   })
@@ -346,9 +354,9 @@ describe('character Finance Hono query factories', () => {
       http.get('http://localhost/api/me/characters/7/wallet/transactions', () =>
         HttpResponse.json({
           characterId,
-          transactions: [],
           fromId: 999,
           nextFromId: null,
+          transactions: [],
           ...freshness,
         }),
       ),
@@ -389,7 +397,7 @@ describe('character Finance Hono query factories', () => {
 
     expect(errors).toHaveLength(3)
     for (const error of errors) {
-      expect(error).toMatchObject({ status: 409, code: 'FINANCE_IDENTITY_MISMATCH' })
+      expect(error).toMatchObject({ code: 'FINANCE_IDENTITY_MISMATCH', status: 409 })
     }
     wrapper.unmount()
   })
@@ -427,9 +435,9 @@ describe('character Finance Hono query factories', () => {
     await flushPromises()
 
     expect(journalError).toMatchObject({
-      status: 502,
       code: 'ESI_UNAVAILABLE',
       message: 'Journal is unavailable.',
+      status: 502,
     })
     expect(orderData).toMatchObject({ characterId, orders: [], stale: true })
     wrapper.unmount()
@@ -452,10 +460,10 @@ describe('character Finance Hono query factories', () => {
     const { wrapper } = mountWithQueryPlugins(Root)
     await flushPromises()
 
-    expect(requestedPages).toEqual(['9'])
+    expect(requestedPages).toStrictEqual(['9'])
     expect(
       characterFinanceContractItemsQuery({ ...detailParameters(), contractPage: 9 }).key,
-    ).toEqual(PRIVATE_QUERY_KEYS.characterFinanceContractItems(characterId, contractId))
+    ).toStrictEqual(PRIVATE_QUERY_KEYS.characterFinanceContractItems(characterId, contractId))
     wrapper.unmount()
   })
 })
@@ -469,8 +477,12 @@ describe('character Finance private cache lifecycle', () => {
 
     removeCharacterQueries(queryCache, 7)
 
-    for (const key of financeKeys(7)) expect(queryCache.getQueryData(key)).toBeUndefined()
-    for (const key of financeKeys(8)) expect(queryCache.getQueryData(key)).toBeDefined()
+    for (const key of financeKeys(7)) {
+      expect(queryCache.getQueryData(key)).toBeUndefined()
+    }
+    for (const key of financeKeys(8)) {
+      expect(queryCache.getQueryData(key)).toBeDefined()
+    }
     wrapper.unmount()
   })
 
@@ -483,9 +495,13 @@ describe('character Finance private cache lifecycle', () => {
     clearAuthenticatedQueries(queryCache, unauthenticatedSession)
 
     for (const character of [7, 8]) {
-      for (const key of financeKeys(character)) expect(queryCache.getQueryData(key)).toBeUndefined()
+      for (const key of financeKeys(character)) {
+        expect(queryCache.getQueryData(key)).toBeUndefined()
+      }
     }
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(unauthenticatedSession)
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
+      unauthenticatedSession,
+    )
     wrapper.unmount()
   })
 
@@ -496,8 +512,8 @@ describe('character Finance private cache lifecycle', () => {
     seedFinanceCache(queryCache, 8)
 
     for (const [seven, eight] of financeKeyPairs()) {
-      expect(queryCache.getQueryData(seven)).toEqual({ characterId: 7 })
-      expect(queryCache.getQueryData(eight)).toEqual({ characterId: 8 })
+      expect(queryCache.getQueryData(seven)).toStrictEqual({ characterId: 7 })
+      expect(queryCache.getQueryData(eight)).toStrictEqual({ characterId: 8 })
     }
     wrapper.unmount()
   })
@@ -516,7 +532,7 @@ describe('character Finance private cache lifecycle', () => {
 })
 
 function balanceParameters(access = allowed) {
-  return { apiClient, characterId, access }
+  return { access, apiClient, characterId }
 }
 
 function requestedParameters(access = allowed) {
@@ -563,7 +579,9 @@ function secondaryOptions(requested: boolean, access = allowed) {
 function allFinanceConsumer() {
   return defineComponent({
     setup() {
-      for (const options of allFinanceOptions()) useQuery(options)
+      for (const options of allFinanceOptions()) {
+        useQuery(options)
+      }
       return () => h('span')
     },
   })
@@ -602,7 +620,7 @@ function installSuccessfulHandlers(
 ) {
   queryServer.use(
     http.get('http://localhost/api/me/characters/7/wallet', () =>
-      HttpResponse.json({ characterId: responseCharacterId, balance: 123, ...freshness }),
+      HttpResponse.json({ balance: 123, characterId: responseCharacterId, ...freshness }),
     ),
     http.get('http://localhost/api/me/characters/7/wallet/journal', ({ request }) => {
       parameters.set('journalPage', new URL(request.url).searchParams.get('page'))
@@ -618,9 +636,9 @@ function installSuccessfulHandlers(
       parameters.set('fromId', new URL(request.url).searchParams.get('fromId'))
       return HttpResponse.json({
         characterId: responseCharacterId,
-        transactions: [],
         fromId: 501,
         nextFromId: null,
+        transactions: [],
         ...freshness,
       })
     }),
@@ -659,9 +677,9 @@ function installSuccessfulHandlers(
     http.get('http://localhost/api/me/characters/7/contracts/7001/bids', ({ request }) => {
       parameters.set('bidContractPage', new URL(request.url).searchParams.get('contractPage'))
       return HttpResponse.json({
+        bids: [],
         characterId: responseCharacterId,
         contractId,
-        bids: [],
         ...freshness,
       })
     }),

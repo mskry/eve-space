@@ -45,54 +45,54 @@ interface PublicBloodlineResult {
 }
 
 const publicCharacterCacheSchema = z.object({
-  name: z.string(),
-  birthday: z.string(),
-  gender: z.string(),
-  raceId: z.number(),
-  bloodlineId: z.number(),
-  securityStatus: z.number(),
   achievementScore: z.number(),
+  allianceId: z.number().nullable(),
+  birthday: z.string(),
+  bloodlineId: z.number(),
   corporationId: z.number(),
   corporationTitle: z.string().optional(),
   description: z.string().optional(),
   factionId: z.number().nullable(),
-  allianceId: z.number().nullable(),
+  gender: z.string(),
+  name: z.string(),
+  raceId: z.number(),
+  securityStatus: z.number(),
 })
-const publicRacesCacheSchema = z.array(z.object({ raceId: z.number(), name: z.string() }))
+const publicRacesCacheSchema = z.array(z.object({ name: z.string(), raceId: z.number() }))
 const publicBloodlinesCacheSchema = z.array(z.object({ bloodlineId: z.number(), name: z.string() }))
 
 const publicCharacterRead = createPublicEsiRead({
-  operation: 'public-character',
-  name: 'public-character-core',
-  descriptor: operationRegistry.GetCharactersDetail.transport,
   cacheSchema: publicCharacterCacheSchema,
+  descriptor: operationRegistry.GetCharactersDetail.transport,
   encodeRequest: (input: { characterId: number }) => ({
     path: { character_id: input.characterId },
   }),
   map: (response): PublicCharacterResult => mapPublicCharacter(response.data),
+  name: 'public-character-core',
+  operation: 'public-character',
 })
 
 const universeRacesRead = createPublicEsiRead({
-  operation: 'universe-races',
-  name: 'universe-races-core',
-  descriptor: operationRegistry.GetUniverseRaces.transport,
   cacheSchema: publicRacesCacheSchema,
+  descriptor: operationRegistry.GetUniverseRaces.transport,
   encodeRequest: () => ({}),
   map: (response): PublicRaceResult[] =>
     response.data.map((race) => ({ raceId: race.race_id, name: race.name })),
+  name: 'universe-races-core',
+  operation: 'universe-races',
 })
 
 const universeBloodlinesRead = createPublicEsiRead({
-  operation: 'universe-bloodlines',
-  name: 'universe-bloodlines-core',
-  descriptor: operationRegistry.GetUniverseBloodlines.transport,
   cacheSchema: publicBloodlinesCacheSchema,
+  descriptor: operationRegistry.GetUniverseBloodlines.transport,
   encodeRequest: () => ({}),
   map: (response): PublicBloodlineResult[] =>
     response.data.map((bloodline) => ({
       bloodlineId: bloodline.bloodline_id,
       name: bloodline.name,
     })),
+  name: 'universe-bloodlines-core',
+  operation: 'universe-bloodlines',
 })
 
 interface CharacterProfileData {
@@ -161,9 +161,9 @@ export async function getCharacterProfile(characterId: number) {
     factionId: character.factionId,
     corporation: {
       id: character.corporationId,
+      memberCount: corporation.memberCount,
       name: corporation.name,
       ticker: corporation.ticker,
-      memberCount: corporation.memberCount,
     },
     alliance:
       alliance && character.allianceId
@@ -183,26 +183,26 @@ export async function getCharacterAffiliation(characterId: number) {
   const result = await publicCharacterRead.execute({ characterId })
   const character = result.data
   return {
-    corporationId: character.corporationId,
-    allianceId: character.allianceId,
     affiliationCheckedAt: new Date(result.validatedAt),
+    allianceId: character.allianceId,
+    corporationId: character.corporationId,
     stale: result.stale,
   }
 }
 
 function mapPublicCharacter(character: GetCharactersDetailResponse): PublicCharacterResult {
   return {
-    name: character.name,
-    birthday: character.birthday,
-    gender: character.gender,
-    raceId: character.race_id,
-    bloodlineId: character.bloodline_id,
-    securityStatus: character.security_status ?? 0,
     achievementScore: character.achievement_score,
+    allianceId: character.alliance_id ?? null,
+    birthday: character.birthday,
+    bloodlineId: character.bloodline_id,
     corporationId: character.corporation_id,
     corporationTitle: character.corporation_title,
     description: character.description,
     factionId: character.faction_id ?? null,
-    allianceId: character.alliance_id ?? null,
+    gender: character.gender,
+    name: character.name,
+    raceId: character.race_id,
+    securityStatus: character.security_status ?? 0,
   }
 }

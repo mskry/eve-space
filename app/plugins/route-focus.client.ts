@@ -13,7 +13,9 @@ export default defineNuxtPlugin((nuxtApp) => {
     })
   })
   router.afterEach((_to, _from, failure) => {
-    if (failure) focusManager.cancelNavigation()
+    if (failure) {
+      focusManager.cancelNavigation()
+    }
   })
   nuxtApp.hook('page:finish', () => {
     focusManager.focusFinishedPage(router.currentRoute.value.path)

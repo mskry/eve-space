@@ -34,15 +34,23 @@ watch(rowIdentity, () => {
 })
 
 const locationKind = computed(() => {
-  if (props.group.placement === 'unresolved-container') return 'NO ACCESS'
-  if (props.group.placement === 'broken-cycle') return 'CYCLE RECOVERY'
-  if (props.group.locationType === 'solar_system') return 'SOLAR SYSTEM'
+  if (props.group.placement === 'unresolved-container') {
+    return 'NO ACCESS'
+  }
+  if (props.group.placement === 'broken-cycle') {
+    return 'CYCLE RECOVERY'
+  }
+  if (props.group.locationType === 'solar_system') {
+    return 'SOLAR SYSTEM'
+  }
   return (props.group.locationType || 'other').replaceAll('_', ' ').toLocaleUpperCase('en')
 })
 const exceptional = computed(() => props.group.placement !== 'location')
 const restricted = computed(() => props.group.placement === 'unresolved-container')
 const jumpLabel = computed(() => {
-  if (props.jumpCount === null) return null
+  if (props.jumpCount === null) {
+    return null
+  }
   return `${props.jumpCount.toLocaleString('en-US')} ${props.jumpCount === 1 ? 'Jump' : 'Jumps'}`
 })
 </script>

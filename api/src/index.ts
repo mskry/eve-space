@@ -34,14 +34,16 @@ export const app = new Hono<{ Variables: HonoLogLayerVariables }>()
   .use(
     '*',
     honoLogLayer({
-      instance: apiLogger,
       autoLogging: false,
+      instance: apiLogger,
     }),
   )
   .use('*', async (context, next) => {
     const startedAt = Date.now()
     await next()
-    if (context.req.path === '/health') return
+    if (context.req.path === '/health') {
+      return
+    }
     context.var.logger
       .withMetadata({
         req: safeRequestMetadata(context.req.raw, context.req.path),
@@ -52,8 +54,8 @@ export const app = new Hono<{ Variables: HonoLogLayerVariables }>()
   })
   .use('*', secureHeaders())
   .use('*', csrf({ origin: isTrustedFormOrigin }))
-  .use('/api/*', cors({ origin: env.WEB_ORIGIN, credentials: true }))
-  .use('/auth/*', cors({ origin: env.WEB_ORIGIN, credentials: true }))
+  .use('/api/*', cors({ credentials: true, origin: env.WEB_ORIGIN }))
+  .use('/auth/*', cors({ credentials: true, origin: env.WEB_ORIGIN }))
   .route('/health', healthRoutes)
   .route('/api/status', statusRoutes)
   .route('/api/modules', moduleRuntimeRoutes)
@@ -91,8 +93,8 @@ app.onError((error, context) => {
   const request = safeRequestMetadata(context.req.raw, context.req.path)
   const requestId = context.var.logger.getContext().requestId
   recordDiagnostic('api.request.failed', {
-    correlationId: typeof requestId === 'string' ? requestId : undefined,
     context: { method: request.method, path: request.url },
+    correlationId: typeof requestId === 'string' ? requestId : undefined,
     error,
   })
   return context.json({ message: 'Internal server error' }, 500)
@@ -114,7 +116,9 @@ export type AppType = ApplyGlobalResponse<
 >
 
 function isTrustedFormOrigin(origin: string, context: Context) {
-  if (origin === env.WEB_ORIGIN) return true
+  if (origin === env.WEB_ORIGIN) {
+    return true
+  }
   // The file-based local fixture handoff form submits from an opaque origin.
   return (
     env.NODE_ENV === 'development' &&

@@ -25,19 +25,19 @@ describe('query persistence envelope policy', () => {
   it('filters by coherent typed metadata rather than a key prefix', () => {
     expect(shouldPersistEsiQuery(candidate(PUBLIC_KEY, { kind: 'public-esi' }))).toBe(true)
     expect(
-      shouldPersistEsiQuery(candidate(CHARACTER_KEY, { kind: 'character-esi', characterId: 7 })),
+      shouldPersistEsiQuery(candidate(CHARACTER_KEY, { characterId: 7, kind: 'character-esi' })),
     ).toBe(true)
     expect(
       shouldPersistEsiQuery(
         candidate(ORGANIZATION_KEY, {
-          kind: 'organization-esi',
           admissionScope: ORGANIZATION_SCOPE,
+          kind: 'organization-esi',
         }),
       ),
     ).toBe(true)
     expect(shouldPersistEsiQuery(candidate(['private', 'session'], { kind: 'none' }))).toBe(false)
     expect(
-      shouldPersistEsiQuery(candidate(PUBLIC_KEY, { kind: 'character-esi', characterId: 7 })),
+      shouldPersistEsiQuery(candidate(PUBLIC_KEY, { characterId: 7, kind: 'character-esi' })),
     ).toBe(false)
   })
 
@@ -48,19 +48,19 @@ describe('query persistence envelope policy', () => {
           kind: 'public-esi',
         }),
         [JSON.stringify(CHARACTER_KEY)]: tuple({ name: 'Character' }, NOW, {
-          kind: 'character-esi',
           characterId: 7,
+          kind: 'character-esi',
         }),
         [JSON.stringify(ORGANIZATION_KEY)]: tuple({ name: 'Organization' }, NOW, {
-          kind: 'organization-esi',
           admissionScope: ORGANIZATION_SCOPE,
+          kind: 'organization-esi',
         }),
         '["private","session"]': tuple({ authenticated: true }, NOW, { kind: 'none' }),
       },
       serializeOptions(),
     )
 
-    expect(JSON.parse(result.serialized)).toEqual(envelopeWithPrivatePartitions(NOW))
+    expect(JSON.parse(result.serialized)).toStrictEqual(envelopeWithPrivatePartitions(NOW))
   })
 
   it('rejects unsupported, corrupt, and incoherently partitioned envelopes', () => {
@@ -73,8 +73,8 @@ describe('query persistence envelope policy', () => {
           ...emptyEnvelope(),
           public: {
             [JSON.stringify(CHARACTER_KEY)]: tuple({ name: 'Character' }, NOW, {
-              kind: 'character-esi',
               characterId: 7,
+              kind: 'character-esi',
             }),
           },
         }),
@@ -188,7 +188,7 @@ describe('query persistence envelope policy', () => {
       serializeOptions(),
     )
 
-    expect(result.envelope.public).toEqual({})
+    expect(Object.keys(result.envelope.public)).toStrictEqual([])
   })
 
   it('retains the newest entries within each partition limit', () => {
@@ -246,7 +246,7 @@ describe('query persistence envelope policy', () => {
       readOriginalSuccessTime: () => NOW,
     })
 
-    expect(result.envelope.public).toEqual({})
+    expect(Object.keys(result.envelope.public)).toStrictEqual([])
     expect(result.acceptedSuccessfulTimes.size).toBe(0)
     expect(new TextEncoder().encode(result.serialized).byteLength).toBeLessThanOrEqual(
       PERSISTED_ESI_QUERY_CACHE_MAX_BYTES,
@@ -268,8 +268,8 @@ describe('query persistence envelope policy', () => {
     const cache: PersistedQueryCache = {
       [publicKey]: tuple({ payload }, NOW, { kind: 'public-esi' }),
       [JSON.stringify(CHARACTER_KEY)]: tuple({ name: 'Old character data' }, NOW - 1, {
-        kind: 'character-esi',
         characterId: 7,
+        kind: 'character-esi',
       }),
     }
 
@@ -279,7 +279,7 @@ describe('query persistence envelope policy', () => {
     })
 
     expect(result.envelope.public[publicKey]).toBeDefined()
-    expect(result.envelope.characters).toEqual({})
+    expect(result.envelope.characters).toStrictEqual({})
     expect(new TextEncoder().encode(result.serialized).byteLength).toBe(
       PERSISTED_ESI_QUERY_CACHE_MAX_BYTES,
     )
@@ -372,7 +372,7 @@ describe('query persistence envelope policy', () => {
         },
       )
 
-      expect(result.envelope.public).toEqual({})
+      expect(Object.keys(result.envelope.public)).toStrictEqual([])
     },
   )
 
@@ -393,7 +393,7 @@ describe('query persistence envelope policy', () => {
       },
     )
 
-    expect(result.envelope.public[keyHash]).toEqual(priorEnvelope.public[keyHash])
+    expect(result.envelope.public[keyHash]).toStrictEqual(priorEnvelope.public[keyHash])
   })
 
   it('retains admitted character and organization tuples when their refreshes fail', () => {
@@ -410,8 +410,12 @@ describe('query persistence envelope policy', () => {
       },
     )
 
-    expect(result.envelope.characters).toEqual(priorEnvelope.characters)
-    expect(result.envelope.organizations).toEqual(priorEnvelope.organizations)
+    expect(JSON.parse(JSON.stringify(result.envelope.characters))).toStrictEqual(
+      JSON.parse(JSON.stringify(priorEnvelope.characters)),
+    )
+    expect(JSON.parse(JSON.stringify(result.envelope.organizations))).toStrictEqual(
+      JSON.parse(JSON.stringify(priorEnvelope.organizations)),
+    )
   })
 
   it.each([
@@ -494,14 +498,14 @@ function envelopeWithCharacterEntryCount(partitionCount: number, entriesPerParti
         const ordinal = (characterId - 1) * entriesPerPartition + index
         return [
           JSON.stringify(['private', 'characters', characterId, 'bounded', index]),
-          tuple({ index }, NOW - ordinal, { kind: 'character-esi', characterId }),
+          tuple({ index }, NOW - ordinal, { characterId, kind: 'character-esi' }),
         ]
       }),
     )
     envelope.characters[String(characterId)] = {
-      ownerUserId: 'user-1',
       admissionRevision: `character-revision-${characterId}`,
       cache,
+      ownerUserId: 'user-1',
     }
   }
   return envelope
@@ -539,24 +543,18 @@ function tuple(
 
 function emptyEnvelope(): EsiQueryCacheEnvelope {
   return {
-    version: 1,
-    invalidationGeneration: 0,
-    public: {},
     characters: {},
+    invalidationGeneration: 0,
     organizations: {},
+    public: {},
+    version: 1,
   }
 }
 
 function envelopeWithPrivatePartitions(when: number): EsiQueryCacheEnvelope {
   return {
-    version: 1,
-    invalidationGeneration: 0,
-    public: {
-      [JSON.stringify(PUBLIC_KEY)]: tuple({ name: 'Public' }, when, { kind: 'public-esi' }),
-    },
     characters: {
       7: {
-        ownerUserId: 'user-1',
         admissionRevision: 'character-revision-1',
         cache: {
           [JSON.stringify(CHARACTER_KEY)]: tuple({ name: 'Character' }, when, {
@@ -564,8 +562,10 @@ function envelopeWithPrivatePartitions(when: number): EsiQueryCacheEnvelope {
             characterId: 7,
           }),
         },
+        ownerUserId: 'user-1',
       },
     },
+    invalidationGeneration: 0,
     organizations: {
       [ORGANIZATION_SCOPE]: {
         ownerUserId: 'user-1',
@@ -580,6 +580,10 @@ function envelopeWithPrivatePartitions(when: number): EsiQueryCacheEnvelope {
         },
       },
     },
+    public: {
+      [JSON.stringify(PUBLIC_KEY)]: tuple({ name: 'Public' }, when, { kind: 'public-esi' }),
+    },
+    version: 1,
   }
 }
 
@@ -593,7 +597,6 @@ function admission(
   } = {},
 ): CacheAdmissionContext {
   return {
-    userId: 'user-1',
     characters: [
       {
         characterId: 7,
@@ -604,10 +607,11 @@ function admission(
       },
     ],
     organization: {
-      organizationVersion: overrides.organizationVersion ?? 3,
       admissionRevision: overrides.organizationRevision ?? 'organization-revision-1',
-      validUntil: overrides.organizationValidUntil ?? null,
       admissionScopes: overrides.admissionScopes ?? [ORGANIZATION_SCOPE],
+      organizationVersion: overrides.organizationVersion ?? 3,
+      validUntil: overrides.organizationValidUntil ?? null,
     },
+    userId: 'user-1',
   }
 }

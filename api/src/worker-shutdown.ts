@@ -41,14 +41,18 @@ async function runWorkerShutdown(dependencies: WorkerShutdownDependencies): Prom
   })
   try {
     const startup = dependencies.getStartupOperation()
-    if (startup) await waitForShutdownOperation(startup, deadline.signal)
+    if (startup) {
+      await waitForShutdownOperation(startup, deadline.signal)
+    }
     const platform = dependencies.getPlatform()
     if (platform) {
       const result = await waitForShutdownOperation(
         platform.close(deadline.remaining()),
         deadline.signal,
       )
-      if (result.status === 'aborted') forceClosePlatform(platform, dependencies)
+      if (result.status === 'aborted') {
+        forceClosePlatform(platform, dependencies)
+      }
       handlePlatformResult(result, deadline, dependencies)
     }
     await runStep(deadline, 'esi-runtime', dependencies.closeEsiRuntime, dependencies)
@@ -92,8 +96,12 @@ function handlePlatformResult(
   deadline: ShutdownDeadline,
   dependencies: WorkerShutdownDependencies,
 ) {
-  if (result.status === 'fulfilled' && result.value.timedOut) deadline.expire()
-  if (result.status !== 'rejected') return
+  if (result.status === 'fulfilled' && result.value.timedOut) {
+    deadline.expire()
+  }
+  if (result.status !== 'rejected') {
+    return
+  }
   dependencies.recordFailure('platform', result.reason)
   dependencies.markFailed()
 }
@@ -105,7 +113,9 @@ async function runStep(
   dependencies: WorkerShutdownDependencies,
 ) {
   const result = await waitForShutdownOperation(operation(), deadline.signal)
-  if (result.status !== 'rejected') return
+  if (result.status !== 'rejected') {
+    return
+  }
   dependencies.recordFailure(component, result.reason)
   dependencies.markFailed()
 }

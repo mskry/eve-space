@@ -10,14 +10,14 @@ describe('installed module migration loading', () => {
   test('does not load SQL when no modules are installed', async () => {
     const loadSql = vi.fn()
 
-    await expect(loadInstalledModuleMigrationSets([], loadSql)).resolves.toEqual([])
+    await expect(loadInstalledModuleMigrationSets([], loadSql)).resolves.toStrictEqual([])
     expect(loadSql).not.toHaveBeenCalled()
   })
 
   test('retains installed modules that have no migrations', async () => {
     await expect(
       loadInstalledModuleMigrationSets([], undefined, ['empty-module']),
-    ).resolves.toEqual([{ moduleId: 'empty-module', migrations: [] }])
+    ).resolves.toStrictEqual([{ migrations: [], moduleId: 'empty-module' }])
   })
 
   test('sorts modules while preserving each declared migration order', async () => {
@@ -32,17 +32,17 @@ describe('installed module migration loading', () => {
         ],
         loadSql,
       ),
-    ).resolves.toEqual([
+    ).resolves.toStrictEqual([
       {
-        moduleId: 'alpha',
         migrations: [{ name: 'alpha-001-first.sql', sql: "select 'alpha/alpha-001-first.sql'" }],
+        moduleId: 'alpha',
       },
       {
-        moduleId: 'beta',
         migrations: [
           { name: 'beta-002-second.sql', sql: "select 'beta/beta-002-second.sql'" },
           { name: 'beta-001-first.sql', sql: "select 'beta/beta-001-first.sql'" },
         ],
+        moduleId: 'beta',
       },
     ])
   })
@@ -57,10 +57,10 @@ describe('installed module migration loading', () => {
         ['alpha'],
         [operation],
       ),
-    ).resolves.toEqual([
+    ).resolves.toStrictEqual([
       {
-        moduleId: 'alpha',
         migrations: [{ name: 'alpha-001-first.sql', sql: declaredReadRoutine() }],
+        moduleId: 'alpha',
         persistenceOperations: [operation],
       },
     ])
@@ -97,10 +97,10 @@ describe('installed module migration loading', () => {
 
 describe('module persistence names', () => {
   test('maps module IDs to bounded PostgreSQL identifiers', () => {
-    expect(modulePersistenceNames('member-audit')).toEqual({
+    expect(modulePersistenceNames('member-audit')).toStrictEqual({
       migrationRoleName: 'eve_module_member_audit_migrate',
-      schemaName: 'eve_module_member_audit',
       runtimeRoleName: 'eve_module_member_audit_runtime',
+      schemaName: 'eve_module_member_audit',
     })
     expect(modulePersistenceNames('a'.repeat(44)).runtimeRoleName).toHaveLength(63)
     expect(modulePersistenceNames('a'.repeat(44)).migrationRoleName).toHaveLength(63)
@@ -149,7 +149,7 @@ describe('module migration SQL validation', () => {
             select input;
           end
         `,
-        { operationId: 'write-snapshot', routineName: 'persist_write_snapshot', mode: 'write' },
+        { mode: 'write', operationId: 'write-snapshot', routineName: 'persist_write_snapshot' },
       ),
     ).resolves.toBeUndefined()
   })
@@ -574,9 +574,9 @@ describe('module migration SQL validation', () => {
 
     expect(failure).toBeInstanceOf(ModuleMigrationValidationError)
     expect(failure).toMatchObject({
-      moduleId: 'alpha',
-      migrationName: 'alpha-001-test.sql',
       category: 'cross-schema',
+      migrationName: 'alpha-001-test.sql',
+      moduleId: 'alpha',
     })
     expect(String(failure)).not.toContain(sql)
   })
@@ -590,9 +590,9 @@ async function validateModuleSql(sql: string) {
 }
 
 const readRoutineDeclaration = {
+  mode: 'read',
   operationId: 'read-snapshot',
   routineName: 'persist_read_snapshot',
-  mode: 'read',
 } as const
 
 async function validateDeclaredRoutine(
@@ -634,9 +634,9 @@ function persistenceOperationDescriptor() {
 
 function migration(moduleId: string, name: string) {
   return {
+    exportPath: `./migrations/${name}`,
     moduleId,
     name,
     packageName: `@example/${moduleId}-server`,
-    exportPath: `./migrations/${name}`,
   }
 }

@@ -32,8 +32,8 @@ describe('organization owner authority', () => {
   test('accepts fresh affiliation with the managed corporation', async () => {
     await expect(
       resolveOrganizationAuthorityCorporation(
-        { organizationType: 'corporation', organizationId: corporationId },
-        { corporationId, allianceId: null },
+        { organizationId: corporationId, organizationType: 'corporation' },
+        { allianceId: null, corporationId },
       ),
     ).resolves.toBe(corporationId)
     expect(mocks.get).not.toHaveBeenCalled()
@@ -42,35 +42,35 @@ describe('organization owner authority', () => {
   test('requires alliance claimants to belong to the current executor corporation', async () => {
     await expect(
       resolveOrganizationAuthorityCorporation(
-        { organizationType: 'alliance', organizationId: allianceId },
-        { corporationId, allianceId },
+        { organizationId: allianceId, organizationType: 'alliance' },
+        { allianceId, corporationId },
       ),
     ).resolves.toBe(corporationId)
-    expect(mocks.get.mock.calls[0]?.[1]).toEqual({ allianceId })
+    expect(mocks.get.mock.calls[0]?.[1]).toStrictEqual({ allianceId })
   })
 
   test('rejects a corporation outside the managed organization authority', async () => {
     await expect(
       resolveOrganizationAuthorityCorporation(
-        { organizationType: 'corporation', organizationId: corporationId },
-        { corporationId: corporationId + 1, allianceId: null },
+        { organizationId: corporationId, organizationType: 'corporation' },
+        { allianceId: null, corporationId: corporationId + 1 },
       ),
-    ).rejects.toEqual(new OrganizationAuthorityError('wrong-corporation'))
+    ).rejects.toStrictEqual(new OrganizationAuthorityError('wrong-corporation'))
     await expect(
       resolveOrganizationAuthorityCorporation(
-        { organizationType: 'alliance', organizationId: allianceId },
-        { corporationId: corporationId + 1, allianceId },
+        { organizationId: allianceId, organizationType: 'alliance' },
+        { allianceId, corporationId: corporationId + 1 },
       ),
-    ).rejects.toEqual(new OrganizationAuthorityError('wrong-corporation'))
+    ).rejects.toStrictEqual(new OrganizationAuthorityError('wrong-corporation'))
   })
 
   test('rejects a character outside the managed alliance before executor lookup', async () => {
     await expect(
       resolveOrganizationAuthorityCorporation(
-        { organizationType: 'alliance', organizationId: allianceId },
-        { corporationId, allianceId: allianceId + 1 },
+        { organizationId: allianceId, organizationType: 'alliance' },
+        { allianceId: allianceId + 1, corporationId },
       ),
-    ).rejects.toEqual(new OrganizationAuthorityError('wrong-alliance'))
+    ).rejects.toStrictEqual(new OrganizationAuthorityError('wrong-alliance'))
     expect(mocks.get).not.toHaveBeenCalled()
   })
 
@@ -82,20 +82,20 @@ describe('organization owner authority', () => {
     }))
     await expect(
       resolveOrganizationAuthorityCorporation(
-        { organizationType: 'alliance', organizationId: allianceId },
-        { corporationId, allianceId },
+        { organizationId: allianceId, organizationType: 'alliance' },
+        { allianceId, corporationId },
       ),
-    ).rejects.toEqual(new OrganizationAuthorityError('stale-affiliation'))
+    ).rejects.toStrictEqual(new OrganizationAuthorityError('stale-affiliation'))
   })
 
   test('treats an alliance without a current executor as unavailable evidence', async () => {
     mocks.get.mockResolvedValueOnce(response({ name: 'Alliance' }))
     await expect(
       resolveOrganizationAuthorityCorporation(
-        { organizationType: 'alliance', organizationId: allianceId },
-        { corporationId, allianceId },
+        { organizationId: allianceId, organizationType: 'alliance' },
+        { allianceId, corporationId },
       ),
-    ).rejects.toEqual(new OrganizationAuthorityError('executor-unavailable'))
+    ).rejects.toStrictEqual(new OrganizationAuthorityError('executor-unavailable'))
   })
 
   test('requires the corporation-role scope and current Director role', async () => {
@@ -125,23 +125,23 @@ describe('derived Director authority policy', () => {
   const now = new Date('2026-09-21T12:00:00.000Z')
 
   test('accepts only a complete predicate from one current character source', () => {
-    expect(evaluateDerivedDirectorSource(derivedSource(), now)).toEqual({
-      state: 'fresh',
+    expect(evaluateDerivedDirectorSource(derivedSource(), now)).toStrictEqual({
       eligible: true,
       failure: null,
+      state: 'fresh',
     })
     expect(
       evaluateDerivedDirectorSource(
-        derivedSource({ scopes: [], roles: { roles: ['Director'] } }),
+        derivedSource({ roles: { roles: ['Director'] }, scopes: [] }),
         now,
       ),
-    ).toMatchObject({ state: 'invalid', failure: 'missing-scope' })
+    ).toMatchObject({ failure: 'missing-scope', state: 'invalid' })
     expect(
       evaluateDerivedDirectorSource(
-        derivedSource({ scopes: [requiredScope], roles: { roles: ['Accountant'] } }),
+        derivedSource({ roles: { roles: ['Accountant'] }, scopes: [requiredScope] }),
         now,
       ),
-    ).toMatchObject({ state: 'invalid', failure: 'not-director' })
+    ).toMatchObject({ failure: 'not-director', state: 'invalid' })
   })
 
   test('unions independent qualifying sources without creating authority from partial sources', () => {
@@ -152,30 +152,30 @@ describe('derived Director authority policy', () => {
     expect(
       hasEffectiveDirectorAuthority({
         explicitGrant: false,
-        sourceStates: decisions.filter(({ eligible }) => eligible).map(({ state }) => state),
         operation: 'mutate',
+        sourceStates: decisions.filter(({ eligible }) => eligible).map(({ state }) => state),
       }),
     ).toBe(false)
 
     expect(
       hasEffectiveDirectorAuthority({
         explicitGrant: false,
+        operation: 'mutate',
         sourceStates: ['invalid', 'fresh'],
-        operation: 'mutate',
       }),
     ).toBe(true)
     expect(
       hasEffectiveDirectorAuthority({
         explicitGrant: false,
+        operation: 'mutate',
         sourceStates: ['fresh', 'fresh'],
-        operation: 'mutate',
       }),
     ).toBe(true)
     expect(
       hasEffectiveDirectorAuthority({
         explicitGrant: false,
-        sourceStates: [],
         operation: 'mutate',
+        sourceStates: [],
       }),
     ).toBe(false)
   })
@@ -184,22 +184,22 @@ describe('derived Director authority policy', () => {
     expect(
       hasEffectiveDirectorAuthority({
         explicitGrant: true,
+        operation: 'mutate',
         sourceStates: ['invalid'],
-        operation: 'mutate',
       }),
     ).toBe(true)
     expect(
       hasEffectiveDirectorAuthority({
         explicitGrant: false,
-        sourceStates: ['degraded'],
         operation: 'read-continuity',
+        sourceStates: ['degraded'],
       }),
     ).toBe(true)
     expect(
       hasEffectiveDirectorAuthority({
         explicitGrant: false,
-        sourceStates: ['degraded'],
         operation: 'mutate',
+        sourceStates: ['degraded'],
       }),
     ).toBe(false)
   })
@@ -208,23 +208,23 @@ describe('derived Director authority policy', () => {
     expect(
       evaluateDerivedDirectorSource(
         derivedSource({
-          organization: { organizationType: 'alliance', organizationId: allianceId },
+          affiliation: { allianceId, corporationId: corporationId + 1 },
           authorityCorporationId: corporationId,
-          affiliation: { corporationId: corporationId + 1, allianceId },
+          organization: { organizationId: allianceId, organizationType: 'alliance' },
         }),
         now,
       ),
-    ).toMatchObject({ state: 'invalid', failure: 'wrong-corporation' })
+    ).toMatchObject({ failure: 'wrong-corporation', state: 'invalid' })
   })
 
   test('treats freshness and grace deadlines as exclusive boundaries', () => {
     expect(
       resolveAuthorityEvidenceState(
         {
-          status: 'fresh',
           freshUntil: now,
           graceUntil: null,
           invalidatedAt: null,
+          status: 'fresh',
         },
         now,
       ),
@@ -232,10 +232,10 @@ describe('derived Director authority policy', () => {
     expect(
       resolveAuthorityEvidenceState(
         {
-          status: 'degraded',
           freshUntil: new Date(now.getTime() - 1),
           graceUntil: new Date(now.getTime() + 1),
           invalidatedAt: null,
+          status: 'degraded',
         },
         now,
       ),
@@ -243,10 +243,10 @@ describe('derived Director authority policy', () => {
     expect(
       resolveAuthorityEvidenceState(
         {
-          status: 'degraded',
           freshUntil: new Date(now.getTime() - 2),
           graceUntil: now,
           invalidatedAt: null,
+          status: 'degraded',
         },
         now,
       ),
@@ -255,29 +255,29 @@ describe('derived Director authority policy', () => {
 })
 
 function response<Data>(data: Data) {
-  return { data, cachedUntil: '', validatedAt: '', quota: {}, source: 'esi' as const, stale: false }
+  return { cachedUntil: '', data, quota: {}, source: 'esi' as const, stale: false, validatedAt: '' }
 }
 
 function derivedSource(
   overrides: Partial<DerivedDirectorSourcePredicate> = {},
 ): DerivedDirectorSourcePredicate {
   return {
-    enabled: true,
-    organization: { organizationType: 'corporation', organizationId: corporationId },
+    affiliation: { allianceId: null, corporationId },
     authorityCorporationId: corporationId,
-    affiliation: { corporationId, allianceId: null },
-    requiredScope,
-    scopes: [requiredScope],
-    roles: { roles: ['Director'] },
-    lifecycleCurrent: true,
     authorizationGenerationCurrent: true,
     blocked: false,
+    enabled: true,
     evidence: {
-      status: 'fresh',
       freshUntil: new Date('2026-09-21T13:00:00.000Z'),
       graceUntil: null,
       invalidatedAt: null,
+      status: 'fresh',
     },
+    lifecycleCurrent: true,
+    organization: { organizationId: corporationId, organizationType: 'corporation' },
+    requiredScope,
+    roles: { roles: ['Director'] },
+    scopes: [requiredScope],
     ...overrides,
   }
 }

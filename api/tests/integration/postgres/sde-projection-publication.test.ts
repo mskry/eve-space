@@ -100,20 +100,24 @@ describe('SDE projection publication', () => {
       finishNewer.resolve()
     }
 
-    await expect(Promise.all([newerPublication, olderPublication])).resolves.toEqual([102, 102])
+    await expect(Promise.all([newerPublication, olderPublication])).resolves.toStrictEqual([
+      102, 102,
+    ])
     await expect(
       connection`
         select active_build_number::text as active_build_number
         from sde_projection_state
         where singleton = true
-      `,
-    ).resolves.toEqual([{ active_build_number: '102' }])
-    await expect(connection`select name from sde_categories`).resolves.toEqual([
-      { name: 'Build 102' },
-    ])
+      `.then((rows) => [...rows]),
+    ).resolves.toStrictEqual([{ active_build_number: '102' }])
     await expect(
-      connection`select build_number::text as build_number from sde_builds order by build_number`,
-    ).resolves.toEqual([{ build_number: '100' }, { build_number: '102' }])
+      connection`select name from sde_categories`.then((rows) => [...rows]),
+    ).resolves.toStrictEqual([{ name: 'Build 102' }])
+    await expect(
+      connection`select build_number::text as build_number from sde_builds order by build_number`.then(
+        (rows) => [...rows],
+      ),
+    ).resolves.toStrictEqual([{ build_number: '100' }, { build_number: '102' }])
 
     await Promise.all([newerConnection.end(), olderConnection.end()])
   })
@@ -124,7 +128,9 @@ function isNewerProjection(
   ingestVersion: number,
   active: { build_number: string; ingest_version: number } | undefined,
 ) {
-  if (!active) return true
+  if (!active) {
+    return true
+  }
   const activeBuildNumber = Number(active.build_number)
   return (
     buildNumber > activeBuildNumber ||
@@ -134,12 +140,14 @@ function isNewerProjection(
 
 async function waitForLock(pidPromise: Promise<number>) {
   const pid = await pidPromise
-  const deadline = Date.now() + 5_000
+  const deadline = Date.now() + 5000
   while (Date.now() < deadline) {
     const [activity] = await connection<{ wait_event_type: string | null }[]>`
       select wait_event_type from pg_stat_activity where pid = ${pid}
     `
-    if (activity?.wait_event_type === 'Lock') return
+    if (activity?.wait_event_type === 'Lock') {
+      return
+    }
     await new Promise((resolve) => setTimeout(resolve, 10))
   }
   throw new Error('Older SDE publisher did not wait for publication ownership')

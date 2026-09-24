@@ -18,10 +18,10 @@ export function createOwnedCharacterCoreReads(
     async loadAffiliation() {
       const [record] = await db
         .select({
-          characterId: characters.characterId,
-          corporationId: characters.corporationId,
           allianceId: characters.allianceId,
+          characterId: characters.characterId,
           checkedAt: characters.affiliationCheckedAt,
+          corporationId: characters.corporationId,
           resolutionState: characters.affiliationResolutionState,
         })
         .from(characters)
@@ -38,7 +38,9 @@ export function createOwnedCharacterCoreReads(
         )
         .limit(1)
 
-      if (!record) return null
+      if (!record) {
+        return null
+      }
       return {
         ...record,
         checkedAt: record.checkedAt?.toISOString() ?? null,

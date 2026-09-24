@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  read: vi.fn().mockResolvedValue({ operations: [], groups: [] }),
+  read: vi.fn().mockResolvedValue({ groups: [], operations: [] }),
 }))
 
 vi.mock('../../src/esi-gateway/status-interface.js', () => ({
@@ -26,8 +26,8 @@ describe('ESI call-rate report command', () => {
 
   test('records failures without exposing arbitrary errors or writing command output', async () => {
     const error = Object.assign(new Error('message-private-sentinel'), {
-      cause: new Error('cause-private-sentinel'),
       authorization: 'property-private-sentinel',
+      cause: new Error('cause-private-sentinel'),
     })
     error.stack = 'Error: stack-private-sentinel'
     mocks.read.mockRejectedValueOnce(error)
@@ -42,7 +42,7 @@ describe('ESI call-rate report command', () => {
       expect(stdout).not.toHaveBeenCalled()
       expect(process.exitCode).toBe(1)
       const serialized = String(consoleError.mock.calls[0]?.[0])
-      expect(JSON.parse(serialized)).toEqual(
+      expect(JSON.parse(serialized)).toStrictEqual(
         expect.objectContaining({
           event: 'command.esi-call-rate-report.failed',
           thrownType: 'object',

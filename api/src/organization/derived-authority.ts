@@ -28,8 +28,8 @@ import {
 import { classifyOrganizationAuthorityFailure } from './owner-evidence.js'
 import { hasActiveOrganizationMemberBlock } from './member-block.js'
 
-const failedEvidenceRetryIntervalMilliseconds = 5 * 60 * 1_000
-const evidenceRefreshAheadMilliseconds = 20 * 60 * 1_000
+const failedEvidenceRetryIntervalMilliseconds = 5 * 60 * 1000
+const evidenceRefreshAheadMilliseconds = 20 * 60 * 1000
 
 export interface DerivedAuthorityJobCandidate {
   readonly organizationVersion: number
@@ -74,13 +74,13 @@ export async function selectDueDerivedDirectorCharacters(
   const refreshBoundary = new Date(now.getTime() + evidenceRefreshAheadMilliseconds)
   return db
     .select({
-      organizationVersion: deploymentSettings.organizationVersion,
-      userId: characters.userId,
-      characterId: characters.characterId,
-      subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
       authorizationGeneration: eveTokens.tokenVersion,
-      sourceId: organizationDerivedAuthoritySources.sourceId,
+      characterId: characters.characterId,
+      organizationVersion: deploymentSettings.organizationVersion,
       roleEvidenceRevision: organizationDerivedAuthoritySources.roleEvidenceRevision,
+      sourceId: organizationDerivedAuthoritySources.sourceId,
+      subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+      userId: characters.userId,
     })
     .from(characters)
     .innerJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
@@ -161,23 +161,28 @@ export async function refreshDerivedDirectorAuthority(
 ) {
   options.signal?.throwIfAborted()
   const snapshot = await loadSnapshot(candidate)
-  if (!snapshot) return 'superseded' as const
+  if (!snapshot) {
+    return 'superseded' as const
+  }
 
   const checkedAt = new Date()
-  if (!snapshot.scopes.includes(characterCorporationRolesScope))
+  if (!snapshot.scopes.includes(characterCorporationRolesScope)) {
     return persistProjectionFailure(
       snapshot,
-      { kind: 'strict', failureClass: 'missing-scope' },
+      { failureClass: 'missing-scope', kind: 'strict' },
       checkedAt,
       options.signal,
     )
+  }
   try {
     const affiliation = await observeAndPersistCharacterAffiliation(
       snapshot.characterId,
       options.signal,
       convergeObservedAffiliationInTransaction,
     )
-    if (!affiliation || affiliation.stale) throw new OrganizationAuthorityError('stale-affiliation')
+    if (!affiliation || affiliation.stale) {
+      throw new OrganizationAuthorityError('stale-affiliation')
+    }
     const authorityCorporation = await resolveOrganizationAuthorityCorporationEvidence(
       snapshot,
       affiliation,
@@ -187,27 +192,31 @@ export async function refreshDerivedDirectorAuthority(
       snapshot.subjectLifecycleId,
       options.signal,
     )
-    if (roles.stale) throw new OrganizationAuthorityError('stale-role-evidence')
+    if (roles.stale) {
+      throw new OrganizationAuthorityError('stale-role-evidence')
+    }
     assertOrganizationOwnerDirectorRole(roles)
     return persistSuccessfulProjection(snapshot, {
+      affiliationObservedAt: affiliation.affiliationCheckedAt,
       authorityCorporationId: authorityCorporation.corporationId,
-      observedCorporationId: affiliation.corporationId,
-      observedAllianceId: affiliation.allianceId,
-      roleEvidenceRevision: roles.roleEvidenceRevision,
+      checkedAt,
       evidenceAuthorizationGeneration: roles.authorizationGeneration,
       evidenceFreshUntil: earliestDate(
         affiliation.affiliationFreshUntil,
         roles.freshUntil,
         authorityCorporation.freshUntil,
       ),
-      affiliationObservedAt: affiliation.affiliationCheckedAt,
-      checkedAt,
+      observedAllianceId: affiliation.allianceId,
+      observedCorporationId: affiliation.corporationId,
+      roleEvidenceRevision: roles.roleEvidenceRevision,
       signal: options.signal,
     })
   } catch (error) {
     options.signal?.throwIfAborted()
     const failure = classifyOrganizationAuthorityFailure(error)
-    if (!failure) throw error
+    if (!failure) {
+      throw error
+    }
     return persistProjectionFailure(snapshot, failure, checkedAt, options.signal)
   }
 }
@@ -215,7 +224,9 @@ export async function refreshDerivedDirectorAuthority(
 async function loadSnapshot(
   candidate: DerivedAuthorityJobCandidate,
 ): Promise<DerivedAuthoritySnapshot | null> {
-  if ((candidate.sourceId === null) !== (candidate.roleEvidenceRevision === null)) return null
+  if ((candidate.sourceId === null) !== (candidate.roleEvidenceRevision === null)) {
+    return null
+  }
   const sourcePredicate =
     candidate.sourceId === null || candidate.roleEvidenceRevision === null
       ? isNull(organizationDerivedAuthoritySources.sourceId)
@@ -228,16 +239,16 @@ async function loadSnapshot(
         )
   const [snapshot] = await db
     .select({
-      organizationType: deploymentSettings.organizationType,
-      organizationId: deploymentSettings.organizationId,
-      organizationVersion: deploymentSettings.organizationVersion,
-      userId: characters.userId,
-      characterId: characters.characterId,
-      subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
       authorizationGeneration: eveTokens.tokenVersion,
-      sourceId: organizationDerivedAuthoritySources.sourceId,
+      characterId: characters.characterId,
+      organizationId: deploymentSettings.organizationId,
+      organizationType: deploymentSettings.organizationType,
+      organizationVersion: deploymentSettings.organizationVersion,
       roleEvidenceRevision: organizationDerivedAuthoritySources.roleEvidenceRevision,
       scopes: eveTokens.scopes,
+      sourceId: organizationDerivedAuthoritySources.sourceId,
+      subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+      userId: characters.userId,
     })
     .from(characters)
     .innerJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
@@ -295,29 +306,30 @@ async function persistSuccessfulProjection(
   return db.transaction(async (transaction) => {
     const current = await lockCurrentSnapshot(transaction, snapshot)
     evidence.signal?.throwIfAborted()
-    if (!current || current.blocked) return 'superseded' as const
-    if (
-      current.corporationId !== evidence.observedCorporationId ||
-      current.allianceId !== evidence.observedAllianceId ||
-      !current.affiliationCheckedAt ||
-      current.affiliationCheckedAt < evidence.affiliationObservedAt
-    )
+    if (!current || current.blocked) {
       return 'superseded' as const
-    if (current.authorizationGeneration !== evidence.evidenceAuthorizationGeneration)
+    }
+    if (!projectionMatchesEvidence(current, evidence)) {
       return 'superseded' as const
+    }
+    if (current.authorizationGeneration !== evidence.evidenceAuthorizationGeneration) {
+      return 'superseded' as const
+    }
 
     await invalidateReplacedLifecycles(transaction, snapshot, evidence.checkedAt)
     evidence.signal?.throwIfAborted()
     const freshUntil = earliestDate(
       evidence.evidenceFreshUntil,
-      new Date(evidence.checkedAt.getTime() + current.freshDurationSeconds * 1_000),
+      new Date(evidence.checkedAt.getTime() + current.freshDurationSeconds * 1000),
     )
-    if (freshUntil <= evidence.checkedAt) return 'superseded' as const
+    if (freshUntil <= evidence.checkedAt) {
+      return 'superseded' as const
+    }
     const [existing] = await transaction
       .select({
-        sourceId: organizationDerivedAuthoritySources.sourceId,
-        roleEvidenceRevision: organizationDerivedAuthoritySources.roleEvidenceRevision,
         invalidatedAt: organizationDerivedAuthoritySources.invalidatedAt,
+        roleEvidenceRevision: organizationDerivedAuthoritySources.roleEvidenceRevision,
+        sourceId: organizationDerivedAuthoritySources.sourceId,
       })
       .from(organizationDerivedAuthoritySources)
       .where(
@@ -334,57 +346,85 @@ async function persistSuccessfulProjection(
       )
       .for('update')
     evidence.signal?.throwIfAborted()
-    if (
-      (snapshot.sourceId === null && existing) ||
-      (snapshot.sourceId !== null &&
-        (existing?.sourceId !== snapshot.sourceId ||
-          existing.roleEvidenceRevision !== snapshot.roleEvidenceRevision))
-    )
+    if (derivedSourceChanged(existing, snapshot)) {
       return 'superseded' as const
+    }
 
     const values = {
       authorityCorporationId: evidence.authorityCorporationId,
-      observedCorporationId: evidence.observedCorporationId,
-      observedAllianceId: evidence.observedAllianceId,
       authorizationGeneration: current.authorizationGeneration,
-      requiredScope: characterCorporationRolesScope,
-      roleEvidenceRevision: evidence.roleEvidenceRevision,
       directorRolePresent: true,
-      observedAt: evidence.checkedAt,
+      failureClass: null,
       freshUntil,
       graceUntil: null,
-      status: 'fresh' as const,
-      failureClass: null,
       invalidatedAt: null,
       invalidationOutcome: null,
+      observedAllianceId: evidence.observedAllianceId,
+      observedAt: evidence.checkedAt,
+      observedCorporationId: evidence.observedCorporationId,
+      requiredScope: characterCorporationRolesScope,
+      roleEvidenceRevision: evidence.roleEvidenceRevision,
+      status: 'fresh' as const,
       updatedAt: evidence.checkedAt,
     }
     let source
-    if (existing?.roleEvidenceRevision === evidence.roleEvidenceRevision)
+    if (existing?.roleEvidenceRevision === evidence.roleEvidenceRevision) {
       source = await updateSource(transaction, existing.sourceId, values)
-    else {
-      if (existing)
+    } else {
+      if (existing) {
         await invalidateSourceRevision(transaction, existing.sourceId, evidence.checkedAt)
+      }
       source = await insertSource(transaction, snapshot, values, evidence.checkedAt)
     }
     evidence.signal?.throwIfAborted()
-    if (!source) return 'superseded' as const
+    if (!source) {
+      return 'superseded' as const
+    }
     await appendOrganizationAuditEvent(transaction, {
-      deploymentId: 1,
-      organizationVersion: snapshot.organizationVersion,
-      policyVersion: current.policyVersion,
-      eventType: 'authority-source.observed',
-      actorType: 'system',
       actorId: null,
-      subjectType: 'authority_source',
-      subjectId: source.sourceId,
-      reason: 'Fresh EVE Director authority evidence was observed.',
-      outcome: existing ? 'unchanged' : 'granted',
+      actorType: 'system',
+      deploymentId: 1,
+      eventType: 'authority-source.observed',
       occurredAt: evidence.checkedAt,
+      organizationVersion: snapshot.organizationVersion,
+      outcome: existing ? 'unchanged' : 'granted',
+      policyVersion: current.policyVersion,
+      reason: 'Fresh EVE Director authority evidence was observed.',
+      subjectId: source.sourceId,
+      subjectType: 'authority_source',
     })
     evidence.signal?.throwIfAborted()
     return 'fresh' as const
   })
+}
+
+function projectionMatchesEvidence(
+  current: NonNullable<Awaited<ReturnType<typeof lockCurrentSnapshot>>>,
+  evidence: Parameters<typeof persistSuccessfulProjection>[1],
+) {
+  return (
+    current.corporationId === evidence.observedCorporationId &&
+    current.allianceId === evidence.observedAllianceId &&
+    current.affiliationCheckedAt !== null &&
+    current.affiliationCheckedAt >= evidence.affiliationObservedAt
+  )
+}
+
+function derivedSourceChanged(
+  existing:
+    | Pick<
+        typeof organizationDerivedAuthoritySources.$inferSelect,
+        'sourceId' | 'roleEvidenceRevision'
+      >
+    | undefined,
+  snapshot: DerivedAuthoritySnapshot,
+) {
+  return (
+    (snapshot.sourceId === null && existing !== undefined) ||
+    (snapshot.sourceId !== null &&
+      (existing?.sourceId !== snapshot.sourceId ||
+        existing.roleEvidenceRevision !== snapshot.roleEvidenceRevision))
+  )
 }
 
 async function lockCurrentSnapshot(
@@ -393,16 +433,16 @@ async function lockCurrentSnapshot(
 ) {
   const [current] = await transaction
     .select({
-      corporationId: characters.corporationId,
-      allianceId: characters.allianceId,
       affiliationCheckedAt: characters.affiliationCheckedAt,
-      subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+      allianceId: characters.allianceId,
       authorizationGeneration: eveTokens.tokenVersion,
-      scopes: eveTokens.scopes,
-      organizationVersion: deploymentSettings.organizationVersion,
+      corporationId: characters.corporationId,
       derivedDirectorAuthorityEnabled: deploymentSettings.derivedDirectorAuthorityEnabled,
       freshDurationSeconds: deploymentSettings.authorityEvidenceFreshDurationSeconds,
+      organizationVersion: deploymentSettings.organizationVersion,
       policyVersion: deploymentSettings.registrationPolicyVersion,
+      scopes: eveTokens.scopes,
+      subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
     })
     .from(characters)
     .innerJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
@@ -422,8 +462,9 @@ async function lockCurrentSnapshot(
     current.authorizationGeneration !== snapshot.authorizationGeneration ||
     !current.scopes.includes(characterCorporationRolesScope) ||
     !current.affiliationCheckedAt
-  )
+  ) {
     return null
+  }
   const blocked = await hasActiveOrganizationMemberBlock(
     transaction,
     snapshot.organizationVersion,
@@ -440,11 +481,11 @@ async function invalidateReplacedLifecycles(
   await transaction
     .update(organizationDerivedAuthoritySources)
     .set({
-      status: 'invalid',
-      graceUntil: null,
       failureClass: 'strict:lifecycle-replaced',
+      graceUntil: null,
       invalidatedAt,
       invalidationOutcome: 'lifecycle-replaced',
+      status: 'invalid',
       updatedAt: invalidatedAt,
     })
     .where(
@@ -471,7 +512,9 @@ async function updateSource(
     .set(values)
     .where(eq(organizationDerivedAuthoritySources.sourceId, sourceId))
     .returning({ sourceId: organizationDerivedAuthoritySources.sourceId })
-  if (!source) throw new Error('Failed to update derived authority source')
+  if (!source) {
+    throw new Error('Failed to update derived authority source')
+  }
   return source
 }
 
@@ -483,11 +526,11 @@ async function invalidateSourceRevision(
   await transaction
     .update(organizationDerivedAuthoritySources)
     .set({
-      status: 'invalid',
-      graceUntil: null,
       failureClass: 'strict:source-replaced',
+      graceUntil: null,
       invalidatedAt,
       invalidationOutcome: 'source-replaced',
+      status: 'invalid',
       updatedAt: invalidatedAt,
     })
     .where(
@@ -508,17 +551,19 @@ async function insertSource(
     .insert(organizationDerivedAuthoritySources)
     .values({
       ...values,
+      characterId: snapshot.characterId,
+      createdAt,
       deploymentId: 1,
       organizationVersion: snapshot.organizationVersion,
-      userId: snapshot.userId,
       role: 'director',
-      characterId: snapshot.characterId,
       sourceSubjectLifecycleId: snapshot.subjectLifecycleId,
-      createdAt,
+      userId: snapshot.userId,
     })
     .onConflictDoNothing()
     .returning({ sourceId: organizationDerivedAuthoritySources.sourceId })
-  if (source) return source
+  if (source) {
+    return source
+  }
   const [current] = await transaction
     .select({ sourceId: organizationDerivedAuthoritySources.sourceId })
     .from(organizationDerivedAuthoritySources)
@@ -555,12 +600,15 @@ async function persistProjectionFailure(
       .from(deploymentSettings)
       .where(eq(deploymentSettings.id, 1))
       .for('update')
-    if (organization?.organizationVersion !== snapshot.organizationVersion)
+    if (organization?.organizationVersion !== snapshot.organizationVersion) {
       return 'superseded' as const
+    }
 
     const current = await lockCurrentSnapshot(transaction, snapshot)
     signal?.throwIfAborted()
-    if (!current || current.blocked) return 'superseded' as const
+    if (!current || current.blocked) {
+      return 'superseded' as const
+    }
 
     const [source] = await transaction
       .select()
@@ -579,23 +627,26 @@ async function persistProjectionFailure(
       )
       .for('update')
     signal?.throwIfAborted()
-    if (!source) return 'ineligible' as const
+    if (!source) {
+      return 'ineligible' as const
+    }
     if (
       source.sourceId !== snapshot.sourceId ||
       source.roleEvidenceRevision !== snapshot.roleEvidenceRevision
-    )
+    ) {
       return 'superseded' as const
+    }
 
     if (failure.kind === 'strict') {
       await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
         characterId: snapshot.characterId,
-        outcome: invalidationOutcome(failure),
-        now: checkedAt,
         expected: {
+          authorizationGeneration: snapshot.authorizationGeneration,
           organizationVersion: snapshot.organizationVersion,
           sourceSubjectLifecycleId: snapshot.subjectLifecycleId,
-          authorizationGeneration: snapshot.authorizationGeneration,
         },
+        now: checkedAt,
+        outcome: invalidationOutcome(failure),
       })
       signal?.throwIfAborted()
       return 'invalid' as const
@@ -609,7 +660,7 @@ async function persistProjectionFailure(
       signal?.throwIfAborted()
       return 'fresh' as const
     }
-    const graceBoundary = new Date(source.freshUntil.getTime() + organization.staleSeconds * 1_000)
+    const graceBoundary = new Date(source.freshUntil.getTime() + organization.staleSeconds * 1000)
     const graceUntil = source.graceUntil
       ? new Date(Math.min(source.graceUntil.getTime(), graceBoundary.getTime()))
       : graceBoundary
@@ -617,9 +668,9 @@ async function persistProjectionFailure(
       await transaction
         .update(organizationDerivedAuthoritySources)
         .set({
-          status: 'degraded',
-          graceUntil,
           failureClass: `transient:${failure.failureClass}`,
+          graceUntil,
+          status: 'degraded',
           updatedAt: checkedAt,
         })
         .where(eq(organizationDerivedAuthoritySources.sourceId, source.sourceId))
@@ -629,13 +680,13 @@ async function persistProjectionFailure(
 
     await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
       characterId: snapshot.characterId,
-      outcome: 'expired',
-      now: checkedAt,
       expected: {
+        authorizationGeneration: snapshot.authorizationGeneration,
         organizationVersion: snapshot.organizationVersion,
         sourceSubjectLifecycleId: snapshot.subjectLifecycleId,
-        authorizationGeneration: snapshot.authorizationGeneration,
       },
+      now: checkedAt,
+      outcome: 'expired',
     })
     signal?.throwIfAborted()
     return 'invalid' as const
@@ -646,7 +697,9 @@ function invalidationOutcome(failure: {
   kind: 'strict' | 'transient'
   failureClass: string
 }): OrganizationAuthorityInvalidationOutcome {
-  if (failure.kind === 'transient') return 'expired'
+  if (failure.kind === 'transient') {
+    return 'expired'
+  }
   switch (failure.failureClass) {
     case 'affiliation-changed':
     case 'authorization-generation-changed':

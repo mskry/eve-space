@@ -10,5 +10,6 @@ const sources = await loadTypescriptSourceDirectory(
 )
 const violations = mailCompositionImportViolations(sources)
 
-if (violations.length > 0)
+if (violations.length > 0) {
   throw new Error(`Mail composition boundary verification failed:\n${violations.join('\n')}`)
+}

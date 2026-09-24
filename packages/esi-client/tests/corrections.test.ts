@@ -25,9 +25,9 @@ describe('specification corrections', () => {
 
     const result = await applySpecificationCorrections(source, '2026-08-18', { manifestPath });
 
-    expect(result.document).toEqual({ info: { title: 'after', version: '2' } });
-    expect(result.appliedCorrections).toEqual(['title', 'version']);
-    expect(source).toEqual({ info: { title: 'before', version: '1' } });
+    expect(result.document).toStrictEqual({ info: { title: 'after', version: '2' } });
+    expect(result.appliedCorrections).toStrictEqual(['title', 'version']);
+    expect(source).toStrictEqual({ info: { title: 'before', version: '1' } });
   });
 
   it('fails when an active correction precondition is stale', async () => {
@@ -62,10 +62,10 @@ describe('specification corrections', () => {
 
 function correction(id: string, patch: string) {
   return {
+    from: '2026-01-01',
     id,
     patch,
     reason: `Correct ${id}`,
-    from: '2026-01-01',
     through: '2026-12-31',
   };
 }
@@ -82,6 +82,6 @@ async function writeCorrections(
     ),
   );
   const manifestPath = join(directory, 'manifest.json');
-  await writeFile(manifestPath, `${JSON.stringify({ schemaVersion: 1, corrections })}\n`);
+  await writeFile(manifestPath, `${JSON.stringify({ corrections, schemaVersion: 1 })}\n`);
   return manifestPath;
 }

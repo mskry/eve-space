@@ -9,7 +9,7 @@ mockNuxtImport('useRoute', () => () => currentRoute)
 
 const mountedWrappers: { unmount: () => void }[] = []
 const entries = [
-  { id: 'overview', label: 'OVERVIEW', to: '/characters/42', exact: true },
+  { exact: true, id: 'overview', label: 'OVERVIEW', to: '/characters/42' },
   {
     id: 'history',
     label: 'HISTORY',
@@ -18,7 +18,9 @@ const entries = [
 ]
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
 })
 
 describe('RecordSectionNavigation', () => {
@@ -58,13 +60,13 @@ describe('RecordSectionNavigation', () => {
     expect(historyLinkComponent?.attributes('prefetch-on')).toBe('interaction')
 
     await historyLink?.trigger('pointerenter')
-    expect(wrapper.emitted('intent')?.[0]?.[0]).toEqual(entries[1])
+    expect(wrapper.emitted('intent')?.[0]?.[0]).toStrictEqual(entries[1])
 
     historyLink?.element.focus()
     await historyLink?.trigger('focus')
 
     expect(document.activeElement).toBe(historyLink?.element)
-    expect(wrapper.emitted('intent')?.[1]?.[0]).toEqual(entries[1])
+    expect(wrapper.emitted('intent')?.[1]?.[0]).toStrictEqual(entries[1])
   })
 
   it('renders additional contributed sections without assuming a fixed count', async () => {

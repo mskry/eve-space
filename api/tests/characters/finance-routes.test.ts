@@ -62,8 +62,8 @@ vi.mock('../../src/characters/attributes.js', () => ({
 }))
 
 vi.mock('../../src/characters/contracts.js', () => ({
-  characterContractsScope: 'esi-contracts.read_character_contracts.v1',
   ContractNotFoundError: mocks.ContractNotFoundError,
+  characterContractsScope: 'esi-contracts.read_character_contracts.v1',
   getCharacterContractBids: mocks.getCharacterContractBids,
   getCharacterContractItems: mocks.getCharacterContractItems,
   getCharacterContracts: mocks.getCharacterContracts,
@@ -116,45 +116,45 @@ import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { app } from '../../src/index.js'
 
 const characterId = 90_000_001
-const contractId = 7_001
+const contractId = 7001
 const sessionHeaders = { Cookie: 'eve_space_session=active-session' }
 const mountedHeaders = { ...sessionHeaders, Origin: 'http://localhost:3000' }
 const session = {
-  userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
   mainCharacter: {
-    characterId: 90_000_099,
-    name: 'Main Pilot',
-    corporationId: 98_000_001,
     allianceId: null,
+    characterId: 90_000_099,
+    corporationId: 98_000_001,
     isMain: true,
+    name: 'Main Pilot',
   },
+  userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
 }
 const ownedCharacter = {
-  characterId,
-  name: 'Finance Alt',
-  corporationId: 98_000_001,
   allianceId: null,
+  characterId,
+  corporationId: 98_000_001,
   isMain: false,
+  name: 'Finance Alt',
   subjectLifecycleId: 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011',
 }
 const freshness = {
   cachedUntil: '2026-09-02T12:05:00.000Z',
-  validatedAt: '2026-09-02T12:00:00.000Z',
   stale: false,
+  validatedAt: '2026-09-02T12:00:00.000Z',
 }
 const walletBalance = { balance: 1_234_567.89, ...freshness }
 const walletJournal = {
   entries: [
     {
-      journalId: 101,
-      date: '2026-09-02T11:00:00.000Z',
       amount: null,
       balance: null,
-      referenceType: 'market_transaction',
-      description: 'Market transaction',
-      reason: null,
-      taxAmount: 2.5,
       context: { id: 88, type: 'market_transaction_id' },
+      date: '2026-09-02T11:00:00.000Z',
+      description: 'Market transaction',
+      journalId: 101,
+      reason: null,
+      referenceType: 'market_transaction',
+      taxAmount: 2.5,
     },
   ],
   page: 2,
@@ -162,6 +162,8 @@ const walletJournal = {
   ...freshness,
 }
 const walletTransactions = {
+  fromId: 600,
+  nextFromId: 501,
   transactions: [
     {
       transactionId: 501,
@@ -176,28 +178,26 @@ const walletTransactions = {
       locationId: 60_000_001,
     },
   ],
-  fromId: 600,
-  nextFromId: 501,
   ...freshness,
 }
 const marketOrders = {
   orders: [
     {
+      durationDays: 30,
+      escrow: null,
+      expiresAt: '2026-10-01T10:00:00.000Z',
+      isBuy: false,
+      issuedAt: '2026-09-01T10:00:00.000Z',
+      locationId: 60_000_001,
+      minimumVolume: null,
       orderId: 201,
+      price: 12,
+      range: 'station',
+      regionId: 10_000_002,
       typeId: 35,
       typeName: 'Pyerite',
-      isBuy: false,
-      price: 12,
       volumeRemain: 10,
       volumeTotal: 20,
-      minimumVolume: null,
-      escrow: null,
-      range: 'station',
-      locationId: 60_000_001,
-      regionId: 10_000_002,
-      issuedAt: '2026-09-01T10:00:00.000Z',
-      durationDays: 30,
-      expiresAt: '2026-10-01T10:00:00.000Z',
     },
   ],
   ...freshness,
@@ -211,22 +211,22 @@ const marketOrderHistory = {
 const contracts = {
   contracts: [
     {
-      contractId,
-      type: 'auction',
-      status: 'outstanding',
-      availability: 'personal',
-      title: null,
-      issuedAt: '2026-09-01T10:00:00.000Z',
-      expiredAt: '2026-09-08T10:00:00.000Z',
       acceptedAt: null,
+      availability: 'personal',
+      buyout: 200,
+      collateral: 100,
       completedAt: null,
+      contractId,
       daysToComplete: null,
-      startLocationId: 60_000_001,
       endLocationId: null,
+      expiredAt: '2026-09-08T10:00:00.000Z',
+      issuedAt: '2026-09-01T10:00:00.000Z',
       price: null,
       reward: null,
-      collateral: 100,
-      buyout: 200,
+      startLocationId: 60_000_001,
+      status: 'outstanding',
+      title: null,
+      type: 'auction',
       volume: 5,
     },
   ],
@@ -237,19 +237,19 @@ const contracts = {
 const contractItems = {
   items: [
     {
+      blueprint: 'copy',
+      direction: 'included',
+      isSingleton: true,
+      quantity: 1,
       recordId: 301,
       typeId: 36,
       typeName: 'Mexallon',
-      direction: 'included',
-      quantity: 1,
-      isSingleton: true,
-      blueprint: 'copy',
     },
   ],
   ...freshness,
 }
 const contractBids = {
-  bids: [{ bidId: 401, amount: 250, bidAt: '2026-09-02T11:30:00.000Z' }],
+  bids: [{ amount: 250, bidAt: '2026-09-02T11:30:00.000Z', bidId: 401 }],
   ...freshness,
 }
 
@@ -273,7 +273,7 @@ describe('owned-character Finance route successes', () => {
       const response = await authorizedRequest(subject.path)
 
       expect(response.status).toBe(200)
-      expect(await response.json()).toEqual(subject.body)
+      expect(await response.json()).toStrictEqual(subject.body)
       expect(subject.service).toHaveBeenCalledWith(...subject.args)
       expectFinanceServicesCalledOnly(subject.service)
       expectPrivateNoStore(response)
@@ -359,7 +359,7 @@ describe('Finance validation and middleware ordering', () => {
       const response = await characterRoutes.request(subject.path)
 
       expect(response.status).toBe(401)
-      await expect(response.json()).resolves.toEqual({
+      await expect(response.json()).resolves.toStrictEqual({
         code: 'AUTH_REQUIRED',
         message: 'Log in with EVE Online first.',
       })
@@ -378,7 +378,7 @@ describe('Finance validation and middleware ordering', () => {
       const response = await authorizedRequest(subject.path)
 
       expect(response.status).toBe(404)
-      await expect(response.json()).resolves.toEqual({
+      await expect(response.json()).resolves.toStrictEqual({
         code: 'CHARACTER_NOT_FOUND',
         message: 'Character not found.',
       })
@@ -397,11 +397,11 @@ describe('Finance authorization outcomes', () => {
       const response = await authorizedRequest(subject.path)
 
       expect(response.status).toBe(403)
-      await expect(response.json()).resolves.toEqual({
+      await expect(response.json()).resolves.toStrictEqual({
+        authorizeUrl: authorizeUrl(characterId),
         code: 'EVE_SCOPE_REQUIRED',
         message: subject.scopeMessage,
         requiredScope: subject.scope,
-        authorizeUrl: authorizeUrl(characterId),
       })
       expectPrivateNoStore(response)
     },
@@ -416,11 +416,11 @@ describe('Finance authorization outcomes', () => {
         const response = await authorizedRequest(subject.path)
 
         expect(response.status).toBe(403)
-        await expect(response.json()).resolves.toEqual({
+        await expect(response.json()).resolves.toStrictEqual({
+          authorizeUrl: authorizeUrl(characterId),
           code: 'EVE_REAUTH_REQUIRED',
           message: 'EVE authorization is no longer valid.',
           requiredScope: subject.scope,
-          authorizeUrl: authorizeUrl(characterId),
         })
         expectPrivateNoStore(response)
       }
@@ -431,25 +431,25 @@ describe('Finance authorization outcomes', () => {
 describe('Finance quota, not-found, and unavailable outcomes', () => {
   test.each([
     {
-      name: 'wallet journal',
-      service: mocks.getWalletJournal,
-      path: `/${characterId}/wallet/journal?page=2`,
       error: new EsiQuotaError(11),
       message: 'ESI wallet quota is temporarily exhausted.',
+      name: 'wallet journal',
+      path: `/${characterId}/wallet/journal?page=2`,
+      service: mocks.getWalletJournal,
     },
     {
-      name: 'market orders',
-      service: mocks.getCharacterMarketOrders,
-      path: `/${characterId}/market/orders`,
       error: new EsiQuotaError(12),
       message: 'ESI market quota is temporarily exhausted.',
+      name: 'market orders',
+      path: `/${characterId}/market/orders`,
+      service: mocks.getCharacterMarketOrders,
     },
     {
-      name: 'contract items',
-      service: mocks.getCharacterContractItems,
-      path: `/${characterId}/contracts/${contractId}/items?contractPage=4`,
       error: new EsiQuotaError(13),
       message: 'ESI contract quota is temporarily exhausted.',
+      name: 'contract items',
+      path: `/${characterId}/contracts/${contractId}/items?contractPage=4`,
+      service: mocks.getCharacterContractItems,
     },
   ])('$name exposes bounded retry timing', async (subject) => {
     subject.service.mockRejectedValueOnce(subject.error)
@@ -458,7 +458,7 @@ describe('Finance quota, not-found, and unavailable outcomes', () => {
 
     expect(response.status).toBe(429)
     expect(response.headers.get('retry-after')).toBe(String(subject.error.retryAfterSeconds))
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'ESI_QUOTA_EXHAUSTED',
       message: subject.message,
       retryAfterSeconds: subject.error.retryAfterSeconds,
@@ -483,7 +483,7 @@ describe('Finance quota, not-found, and unavailable outcomes', () => {
     const response = await authorizedRequest(path)
 
     expect(response.status).toBe(404)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'CONTRACT_NOT_FOUND',
       message: 'Contract not found in the referenced page.',
     })
@@ -502,7 +502,7 @@ describe('Finance quota, not-found, and unavailable outcomes', () => {
     const response = await authorizedRequest(subject.path)
 
     expect(response.status).toBe(502)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'ESI_UNAVAILABLE',
       message: subject.unavailableMessage,
     })
@@ -518,7 +518,7 @@ describe('Finance quota, not-found, and unavailable outcomes', () => {
       const response = await authorizedRequest(subject.path)
 
       expect(response.status).toBe(503)
-      await expect(response.json()).resolves.toEqual({
+      await expect(response.json()).resolves.toStrictEqual({
         code: 'EVE_TOKEN_REFRESH_UNAVAILABLE',
         message: 'EVE token refresh is temporarily unavailable. Try again shortly.',
       })
@@ -547,60 +547,60 @@ describe('Finance route exclusions', () => {
 function successCases() {
   return [
     {
+      args: [characterId, ownedCharacter.subjectLifecycleId],
+      body: { characterId, ...walletBalance },
       name: 'wallet balance',
       path: `/${characterId}/wallet`,
       service: mocks.getWalletBalance,
-      args: [characterId, ownedCharacter.subjectLifecycleId],
-      body: { characterId, ...walletBalance },
     },
     {
+      args: [characterId, 2, ownedCharacter.subjectLifecycleId],
+      body: { characterId, ...walletJournal },
       name: 'wallet journal page',
       path: `/${characterId}/wallet/journal?page=2`,
       service: mocks.getWalletJournal,
-      args: [characterId, 2, ownedCharacter.subjectLifecycleId],
-      body: { characterId, ...walletJournal },
     },
     {
+      args: [characterId, 600, ownedCharacter.subjectLifecycleId],
+      body: { characterId, ...walletTransactions },
       name: 'wallet transaction continuation',
       path: `/${characterId}/wallet/transactions?fromId=600`,
       service: mocks.getWalletTransactions,
-      args: [characterId, 600, ownedCharacter.subjectLifecycleId],
-      body: { characterId, ...walletTransactions },
     },
     {
+      args: [characterId, ownedCharacter.subjectLifecycleId],
+      body: { characterId, ...marketOrders },
       name: 'personal market orders',
       path: `/${characterId}/market/orders`,
       service: mocks.getCharacterMarketOrders,
-      args: [characterId, ownedCharacter.subjectLifecycleId],
-      body: { characterId, ...marketOrders },
     },
     {
+      args: [characterId, 3, ownedCharacter.subjectLifecycleId],
+      body: { characterId, ...marketOrderHistory },
       name: 'personal market order history page',
       path: `/${characterId}/market/orders/history?page=3`,
       service: mocks.getCharacterMarketOrderHistory,
-      args: [characterId, 3, ownedCharacter.subjectLifecycleId],
-      body: { characterId, ...marketOrderHistory },
     },
     {
+      args: [characterId, 4, ownedCharacter.subjectLifecycleId],
+      body: { characterId, ...contracts },
       name: 'personal contract page',
       path: `/${characterId}/contracts?page=4`,
       service: mocks.getCharacterContracts,
-      args: [characterId, 4, ownedCharacter.subjectLifecycleId],
-      body: { characterId, ...contracts },
     },
     {
+      args: [characterId, contractId, 4, ownedCharacter.subjectLifecycleId],
+      body: { characterId, contractId, ...contractItems },
       name: 'contract items with parent-page authorization',
       path: `/${characterId}/contracts/${contractId}/items?contractPage=4`,
       service: mocks.getCharacterContractItems,
-      args: [characterId, contractId, 4, ownedCharacter.subjectLifecycleId],
-      body: { characterId, contractId, ...contractItems },
     },
     {
+      args: [characterId, contractId, 4, ownedCharacter.subjectLifecycleId],
+      body: { characterId, contractId, ...contractBids },
       name: 'contract bids with parent-page authorization',
       path: `/${characterId}/contracts/${contractId}/bids?contractPage=4`,
       service: mocks.getCharacterContractBids,
-      args: [characterId, contractId, 4, ownedCharacter.subjectLifecycleId],
-      body: { characterId, contractId, ...contractBids },
     },
   ]
 }
@@ -614,65 +614,65 @@ function financeCases() {
     {
       name: 'wallet balance',
       path: `/${characterId}/wallet`,
-      service: mocks.getWalletBalance,
       scope: 'esi-wallet.read_character_wallet.v1',
       scopeMessage: 'Authorize wallet access for this character.',
+      service: mocks.getWalletBalance,
       unavailableMessage: 'Unable to retrieve the EVE wallet balance.',
     },
     {
       name: 'wallet journal',
       path: `/${characterId}/wallet/journal?page=2`,
-      service: mocks.getWalletJournal,
       scope: 'esi-wallet.read_character_wallet.v1',
       scopeMessage: 'Authorize wallet access for this character.',
+      service: mocks.getWalletJournal,
       unavailableMessage: 'Unable to retrieve the wallet journal.',
     },
     {
       name: 'wallet transactions',
       path: `/${characterId}/wallet/transactions?fromId=600`,
-      service: mocks.getWalletTransactions,
       scope: 'esi-wallet.read_character_wallet.v1',
       scopeMessage: 'Authorize wallet access for this character.',
+      service: mocks.getWalletTransactions,
       unavailableMessage: 'Unable to retrieve wallet transactions.',
     },
     {
       name: 'market orders',
       path: `/${characterId}/market/orders`,
-      service: mocks.getCharacterMarketOrders,
       scope: 'esi-markets.read_character_orders.v1',
       scopeMessage: 'Authorize market order access for this character.',
+      service: mocks.getCharacterMarketOrders,
       unavailableMessage: 'Unable to retrieve character market orders.',
     },
     {
       name: 'market order history',
       path: `/${characterId}/market/orders/history?page=3`,
-      service: mocks.getCharacterMarketOrderHistory,
       scope: 'esi-markets.read_character_orders.v1',
       scopeMessage: 'Authorize market order access for this character.',
+      service: mocks.getCharacterMarketOrderHistory,
       unavailableMessage: 'Unable to retrieve character market order history.',
     },
     {
       name: 'contracts',
       path: `/${characterId}/contracts?page=4`,
-      service: mocks.getCharacterContracts,
       scope: 'esi-contracts.read_character_contracts.v1',
       scopeMessage: 'Authorize contract access for this character.',
+      service: mocks.getCharacterContracts,
       unavailableMessage: 'Unable to retrieve character contracts.',
     },
     {
       name: 'contract items',
       path: `/${characterId}/contracts/${contractId}/items?contractPage=4`,
-      service: mocks.getCharacterContractItems,
       scope: 'esi-contracts.read_character_contracts.v1',
       scopeMessage: 'Authorize contract access for this character.',
+      service: mocks.getCharacterContractItems,
       unavailableMessage: 'Unable to retrieve character contract items.',
     },
     {
       name: 'contract bids',
       path: `/${characterId}/contracts/${contractId}/bids?contractPage=4`,
-      service: mocks.getCharacterContractBids,
       scope: 'esi-contracts.read_character_contracts.v1',
       scopeMessage: 'Authorize contract access for this character.',
+      service: mocks.getCharacterContractBids,
       unavailableMessage: 'Unable to retrieve character contract bids.',
     },
   ]
@@ -696,12 +696,14 @@ function financeServices() {
 }
 
 function expectFinanceServicesUntouched() {
-  for (const service of financeServices()) expect(service).not.toHaveBeenCalled()
+  for (const service of financeServices()) {
+    expect(service).not.toHaveBeenCalled()
+  }
 }
 
 function expectFinanceServicesCalledOnly(expected: ReturnType<typeof vi.fn>) {
   const services = financeServices()
-  expect(services.map((service) => service.mock.calls.length)).toEqual(
+  expect(services.map((service) => service.mock.calls.length)).toStrictEqual(
     services.map((service) => (service === expected ? 1 : 0)),
   )
 }

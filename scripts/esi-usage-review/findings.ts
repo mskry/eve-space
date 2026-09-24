@@ -25,16 +25,19 @@ export function classifyEsiUsage(
     (item) => item.severe && item.confidence >= AUTO_REPORT_CONFIDENCE,
   )
   let verdict: JevReviewVerdict = 'pass'
-  if (reportable.length > 0) verdict = 'report'
-  else if (concerns.length > 0) verdict = 'review'
+  if (reportable.length > 0) {
+    verdict = 'report'
+  } else if (concerns.length > 0) {
+    verdict = 'review'
+  }
 
   return {
-    verdict,
     location: `${state.site.file}:${state.site.line} (${state.site.operation})`,
-    site: `${state.site.file}:${state.site.line}`,
     operation: state.site.operation,
     reason: reasonFor(verdict, concerns),
     signals: judgment,
+    site: `${state.site.file}:${state.site.line}`,
+    verdict,
   }
 }
 
@@ -58,15 +61,19 @@ function concern(
   severeChoices: readonly string[],
   reviewChoices: readonly string[] = [],
 ): Concern | null {
-  if (severeChoices.includes(judgment.choice))
-    return { label, choice: judgment.choice, confidence: judgment.confidence, severe: true }
-  if (reviewChoices.includes(judgment.choice) || judgment.choice === 'unclear')
-    return { label, choice: judgment.choice, confidence: judgment.confidence, severe: false }
+  if (severeChoices.includes(judgment.choice)) {
+    return { choice: judgment.choice, confidence: judgment.confidence, label, severe: true }
+  }
+  if (reviewChoices.includes(judgment.choice) || judgment.choice === 'unclear') {
+    return { choice: judgment.choice, confidence: judgment.confidence, label, severe: false }
+  }
   return null
 }
 
 function reasonFor(verdict: JevReviewVerdict, concerns: readonly Concern[]) {
-  if (verdict === 'pass') return 'Operation, identity, cache, and version fit.'
+  if (verdict === 'pass') {
+    return 'Operation, identity, cache, and version fit.'
+  }
   const details = concerns.map(
     ({ label, choice, confidence }) => `${label}=${choice} (${confidence.toFixed(2)})`,
   )

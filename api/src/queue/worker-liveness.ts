@@ -18,9 +18,11 @@ export async function probeScopedWorkerLiveness(workerId: string): Promise<Scope
     await connection.ping()
     return evaluateScopedWorkerLiveness(await connection.get(workerHeartbeatKey(workerId)))
   } catch {
-    return { status: 'unavailable', heartbeatAt: null }
+    return { heartbeatAt: null, status: 'unavailable' }
   } finally {
-    if (connection) await closeCoordinationRedisConnection(connection).catch(() => {})
+    if (connection) {
+      await closeCoordinationRedisConnection(connection).catch(() => {})
+    }
   }
 }
 
@@ -29,19 +31,23 @@ export function evaluateScopedWorkerLiveness(
   now = Date.now(),
 ): ScopedWorkerLiveness {
   const decoded = decodeWorkerHeartbeat(heartbeat, now)
-  if (!decoded || now - decoded.time > workerHeartbeatStaleAfterMs)
-    return { status: 'stale', heartbeatAt: null }
-  return { status: 'operational', heartbeatAt: decoded.heartbeatAt }
+  if (!decoded || now - decoded.time > workerHeartbeatStaleAfterMs) {
+    return { heartbeatAt: null, status: 'stale' }
+  }
+  return { heartbeatAt: decoded.heartbeatAt, status: 'operational' }
 }
 
 export function decodeWorkerHeartbeat(heartbeat: string | null, now = Date.now()) {
-  if (!heartbeat) return null
+  if (!heartbeat) {
+    return null
+  }
   const time = Date.parse(heartbeat)
   if (
     !Number.isFinite(time) ||
     new Date(time).toISOString() !== heartbeat ||
     time > now + workerHeartbeatStaleAfterMs
-  )
+  ) {
     return null
+  }
   return { heartbeatAt: heartbeat, time }
 }

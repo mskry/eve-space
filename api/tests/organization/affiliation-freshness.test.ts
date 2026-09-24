@@ -7,24 +7,24 @@ describe('organization affiliation freshness', () => {
   test.each([
     {
       character: {
-        affiliationResolutionState: 'resolved' as const,
         affiliationCheckedAt: new Date('2026-09-01T11:00:00Z'),
+        affiliationResolutionState: 'resolved' as const,
         nextAffiliationCheck: new Date('2026-09-01T13:00:00Z'),
       },
       expected: 'fresh',
     },
     {
       character: {
-        affiliationResolutionState: 'resolved' as const,
         affiliationCheckedAt: new Date('2026-09-01T11:00:00Z'),
+        affiliationResolutionState: 'resolved' as const,
         nextAffiliationCheck: new Date('2026-09-01T12:00:00Z'),
       },
       expected: 'stale',
     },
     {
       character: {
-        affiliationResolutionState: 'pending' as const,
         affiliationCheckedAt: null,
+        affiliationResolutionState: 'pending' as const,
         nextAffiliationCheck: null,
       },
       expected: 'unavailable',

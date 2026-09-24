@@ -13,7 +13,9 @@ export function withEsiRevalidation<Arguments extends OperationRequestArguments>
   revalidation: EsiConditionalRevalidation,
 ) {
   assertNoCallerEsiRevalidationHeaders(inputs)
-  if (!revalidation.ifNoneMatch && !revalidation.ifModifiedSince) return inputs
+  if (!revalidation.ifNoneMatch && !revalidation.ifModifiedSince) {
+    return inputs
+  }
   const headers = isRecord(inputs.headers) ? inputs.headers : {}
   return {
     ...inputs,
@@ -31,8 +33,12 @@ export function assertNoCallerEsiRevalidationHeaders(
   inputs: OperationRequestArguments & { readonly header?: unknown },
 ) {
   for (const headers of [inputs.header, inputs.headers]) {
-    if (!isRecord(headers)) continue
+    if (!isRecord(headers)) {
+      continue
+    }
     const reserved = Object.keys(headers).find((name) => reservedHeaders.has(name.toLowerCase()))
-    if (reserved) throw new Error(`ESI request header ${reserved} is executor-owned`)
+    if (reserved) {
+      throw new Error(`ESI request header ${reserved} is executor-owned`)
+    }
   }
 }

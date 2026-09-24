@@ -22,9 +22,13 @@ function groupCountLabel(count: number) {
 
 // Unnamed clones number among themselves, so the visible labels run 1..n without holes.
 function cloneDisplayName(clone: JumpClone, group: JumpClone[]) {
-  if (clone.name) return clone.name
+  if (clone.name) {
+    return clone.name
+  }
   const unnamed = group.filter((entry) => !entry.name)
-  if (unnamed.length === 1) return 'Unnamed clone'
+  if (unnamed.length === 1) {
+    return 'Unnamed clone'
+  }
   return `Clone ${unnamed.indexOf(clone) + 1} of ${unnamed.length}`
 }
 </script>

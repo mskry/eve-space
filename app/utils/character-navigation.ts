@@ -18,13 +18,15 @@ export function resolveCharacterNavigation(
   entries: readonly CharacterNavigationSource[],
   characterId: number | undefined,
 ): readonly RecordSectionNavigationEntry[] {
-  if (characterId === undefined) return []
+  if (characterId === undefined) {
+    return []
+  }
   const recordRoot = `/characters/${characterId}`
   return entries.map((entry) => ({
+    exact: entry.to === '/characters/:characterId' || entry.to === recordRoot,
     id: entry.navigationId,
     label: entry.label.toUpperCase(),
     to: entry.to.replaceAll(':characterId', String(characterId)),
-    exact: entry.to === '/characters/:characterId' || entry.to === recordRoot,
   }))
 }
 

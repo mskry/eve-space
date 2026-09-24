@@ -123,11 +123,17 @@ export function serializePersistedEnvelope(
   for (const [keyHash, value] of Object.entries(cache)) {
     observedKeys.add(keyHash)
     const parsed = parseTuple(keyHash, value, options.now, false)
-    if (!parsed) continue
+    if (!parsed) {
+      continue
+    }
     const successfulAt = options.readOriginalSuccessTime(keyHash)
-    if (!isRetainedSuccessTimestamp(successfulAt, options.now)) continue
+    if (!isRetainedSuccessTimestamp(successfulAt, options.now)) {
+      continue
+    }
     const tuple: PersistedQueryTuple = [parsed.tuple[0], null, successfulAt, parsed.meta]
-    if (!addAdmittedTuple(next, keyHash, tuple, parsed.persistence, options)) continue
+    if (!addAdmittedTuple(next, keyHash, tuple, parsed.persistence, options)) {
+      continue
+    }
     acceptedSuccessfulTimes.set(keyHash, successfulAt)
   }
 
@@ -135,7 +141,9 @@ export function serializePersistedEnvelope(
   const serialized = serializeBoundedEnvelope(next)
   const retainedKeys = new Set(envelopeEntries(next).map(({ keyHash }) => keyHash))
   for (const keyHash of acceptedSuccessfulTimes.keys()) {
-    if (!retainedKeys.has(keyHash)) acceptedSuccessfulTimes.delete(keyHash)
+    if (!retainedKeys.has(keyHash)) {
+      acceptedSuccessfulTimes.delete(keyHash)
+    }
   }
   return {
     acceptedSuccessfulTimes,
@@ -185,11 +193,11 @@ export function parsePersistedEnvelope(stored: string, now: number) {
 
   return {
     envelope: {
-      version: PERSISTED_CACHE_VERSION,
-      invalidationGeneration: value.invalidationGeneration,
-      public: publicCache.cache,
       characters: characters.partitions,
+      invalidationGeneration: value.invalidationGeneration,
       organizations: organizations.partitions,
+      public: publicCache.cache,
+      version: PERSISTED_CACHE_VERSION,
     } satisfies EsiQueryCacheEnvelope,
     pruned,
   }
@@ -212,8 +220,8 @@ export function parseCacheAdmissionContext(value: unknown): CacheAdmissionContex
     }
     characterIds.add(candidate.characterId)
     characters.push({
-      characterId: candidate.characterId,
       admissionRevision: candidate.admissionRevision,
+      characterId: candidate.characterId,
     })
   }
 
@@ -237,13 +245,13 @@ export function parseCacheAdmissionContext(value: unknown): CacheAdmissionContex
       return null
     }
     organization = {
-      organizationVersion: candidate.organizationVersion,
       admissionRevision: candidate.admissionRevision,
-      validUntil: candidate.validUntil,
       admissionScopes,
+      organizationVersion: candidate.organizationVersion,
+      validUntil: candidate.validUntil,
     }
   }
-  return { userId: value.userId, characters, organization }
+  return { characters, organization, userId: value.userId }
 }
 
 export function readEsiPersistence(meta: QueryMeta) {
@@ -257,16 +265,22 @@ export function partitionMatchesAdmission(
   admission: CacheAdmissionContext,
   now: number,
 ) {
-  if (partition.ownerUserId !== admission.userId) return false
+  if (partition.ownerUserId !== admission.userId) {
+    return false
+  }
   if (persistence.kind === 'character-esi') {
-    if (!isCharacterPartition(partition)) return false
+    if (!isCharacterPartition(partition)) {
+      return false
+    }
     return admission.characters.some(
       (character) =>
         character.characterId === persistence.characterId &&
         character.admissionRevision === partition.admissionRevision,
     )
   }
-  if (!isOrganizationPartition(partition)) return false
+  if (!isOrganizationPartition(partition)) {
+    return false
+  }
   const organization = admission.organization
   return (
     !!organization &&
@@ -280,11 +294,19 @@ export function partitionMatchesAdmission(
 
 export function combineInvalidationScopes(scopes: readonly PrivateQueryInvalidationScope[]) {
   const uniqueScopes = new Map<string, PrivateQueryInvalidationScope>()
-  for (const scope of scopes) uniqueScopes.set(JSON.stringify(scope), scope)
+  for (const scope of scopes) {
+    uniqueScopes.set(JSON.stringify(scope), scope)
+  }
   const unique = [...uniqueScopes.values()]
-  if (unique.length === 0) return null
-  if (unique.length === 1) return unique[0]!
-  if (unique.every((scope) => scope.kind === 'character')) return { kind: 'character' } as const
+  if (unique.length === 0) {
+    return null
+  }
+  if (unique.length === 1) {
+    return unique[0]!
+  }
+  if (unique.every((scope) => scope.kind === 'character')) {
+    return { kind: 'character' } as const
+  }
   if (unique.every((scope) => scope.kind === 'organization')) {
     return { kind: 'organization' } as const
   }
@@ -295,15 +317,17 @@ export function invalidationScopeForPersistence(
   persistence: PrivateEsiQuery,
 ): PrivateQueryInvalidationScope {
   return persistence.kind === 'character-esi'
-    ? { kind: 'character', characterId: persistence.characterId }
-    : { kind: 'organization', admissionScope: persistence.admissionScope }
+    ? { characterId: persistence.characterId, kind: 'character' }
+    : { admissionScope: persistence.admissionScope, kind: 'organization' }
 }
 
 export function invalidationScopeMatchesPersistence(
   scope: PrivateQueryInvalidationScope,
   persistence: PrivateEsiQuery,
 ) {
-  if (scope.kind === 'all') return true
+  if (scope.kind === 'all') {
+    return true
+  }
   if (scope.kind === 'character') {
     return (
       persistence.kind === 'character-esi' &&
@@ -326,13 +350,13 @@ export function forEachPrivateTuple(
   ) => void,
 ) {
   for (const [characterId, partition] of Object.entries(envelope.characters)) {
-    const persistence = { kind: 'character-esi', characterId: Number(characterId) } as const
+    const persistence = { characterId: Number(characterId), kind: 'character-esi' } as const
     for (const [keyHash, tuple] of Object.entries(partition.cache)) {
       visitor(keyHash, tuple, partition, persistence)
     }
   }
   for (const [admissionScope, partition] of Object.entries(envelope.organizations)) {
-    const persistence = { kind: 'organization-esi', admissionScope } as const
+    const persistence = { admissionScope, kind: 'organization-esi' } as const
     for (const [keyHash, tuple] of Object.entries(partition.cache)) {
       visitor(keyHash, tuple, partition, persistence)
     }
@@ -345,12 +369,16 @@ export function removeTupleFromEnvelope(envelope: EsiQueryCacheEnvelope, keyHash
   for (const [characterId, partition] of Object.entries(envelope.characters)) {
     changed = Object.hasOwn(partition.cache, keyHash) || changed
     delete partition.cache[keyHash]
-    if (Object.keys(partition.cache).length === 0) delete envelope.characters[characterId]
+    if (Object.keys(partition.cache).length === 0) {
+      delete envelope.characters[characterId]
+    }
   }
   for (const [scope, partition] of Object.entries(envelope.organizations)) {
     changed = Object.hasOwn(partition.cache, keyHash) || changed
     delete partition.cache[keyHash]
-    if (Object.keys(partition.cache).length === 0) delete envelope.organizations[scope]
+    if (Object.keys(partition.cache).length === 0) {
+      delete envelope.organizations[scope]
+    }
   }
   return changed
 }
@@ -373,11 +401,11 @@ export function removeEnvelopePartitions(
 
 export function emptyEnvelope(generation = 0): EsiQueryCacheEnvelope {
   return {
-    version: PERSISTED_CACHE_VERSION,
-    invalidationGeneration: generation,
-    public: createCache(),
     characters: {},
+    invalidationGeneration: generation,
     organizations: {},
+    public: createCache(),
+    version: PERSISTED_CACHE_VERSION,
   }
 }
 
@@ -399,7 +427,9 @@ export function isRetainedSuccessTimestamp(value: unknown, now: number): value i
 }
 
 export function readSerializedEnvelopeGeneration(value: string | null) {
-  if (value === null || serializedEnvelopeExceedsByteLimit(value)) return null
+  if (value === null || serializedEnvelopeExceedsByteLimit(value)) {
+    return null
+  }
   try {
     const parsed: unknown = JSON.parse(value)
     return isRecord(parsed) && isInvalidationGeneration(parsed.invalidationGeneration)
@@ -415,16 +445,20 @@ export function toPublicOnlySerializedEnvelope(
   generation: number,
   now: number,
 ) {
-  if (value === null) return null
-  if (serializedEnvelopeExceedsByteLimit(value)) return null
+  if (value === null) {
+    return null
+  }
+  if (serializedEnvelopeExceedsByteLimit(value)) {
+    return null
+  }
   try {
     const parsed = parsePersistedEnvelope(value, now).envelope
     return serializeBoundedEnvelope({
-      version: parsed.version,
-      invalidationGeneration: generation,
-      public: parsed.public,
       characters: {},
+      invalidationGeneration: generation,
       organizations: {},
+      public: parsed.public,
+      version: parsed.version,
     })
   } catch {
     return null
@@ -441,16 +475,18 @@ export function mergePublicSerializedEnvelope(
   if (storedValue !== null) {
     try {
       const stored = parsePersistedEnvelope(storedValue, now).envelope
-      if (stored.invalidationGeneration === generation) retainedPrivate = stored
+      if (stored.invalidationGeneration === generation) {
+        retainedPrivate = stored
+      }
     } catch {
       retainedPrivate = emptyEnvelope(generation)
     }
   }
   const merged = {
     ...retainedPrivate,
-    version: PERSISTED_CACHE_VERSION,
     invalidationGeneration: generation,
     public: candidate.public,
+    version: PERSISTED_CACHE_VERSION,
   } satisfies EsiQueryCacheEnvelope
   return serializeBoundedEnvelope(merged)
 }
@@ -467,8 +503,8 @@ export function invalidateSerializedEnvelope(
     if (stored.invalidationGeneration !== currentGeneration) {
       return serializeBoundedEnvelope({
         ...stored,
-        invalidationGeneration: generation,
         characters: {},
+        invalidationGeneration: generation,
         organizations: {},
       } satisfies EsiQueryCacheEnvelope)
     }
@@ -489,7 +525,9 @@ function parseCharacterPartitions(
   for (const [characterIdKey, candidate] of Object.entries(value)) {
     const parsed = parseCharacterPartition(characterIdKey, candidate, now, budget)
     pruned ||= parsed.pruned
-    if (parsed.partition) partitions[characterIdKey] = parsed.partition
+    if (parsed.partition) {
+      partitions[characterIdKey] = parsed.partition
+    }
   }
   return { partitions, pruned }
 }
@@ -517,12 +555,14 @@ function parseCharacterPartition(
       persistence.kind === 'character-esi' && persistence.characterId === characterId,
     budget,
   )
-  if (Object.keys(parsed.cache).length === 0) return { partition: null, pruned: true }
+  if (Object.keys(parsed.cache).length === 0) {
+    return { partition: null, pruned: true }
+  }
   return {
     partition: {
-      ownerUserId: candidate.ownerUserId,
       admissionRevision: candidate.admissionRevision,
       cache: parsed.cache,
+      ownerUserId: candidate.ownerUserId,
     },
     pruned: parsed.pruned,
   }
@@ -538,7 +578,9 @@ function parseOrganizationPartitions(
   for (const [admissionScope, candidate] of Object.entries(value)) {
     const parsed = parseOrganizationPartition(admissionScope, candidate, now, budget)
     pruned ||= parsed.pruned
-    if (parsed.partition) partitions[admissionScope] = parsed.partition
+    if (parsed.partition) {
+      partitions[admissionScope] = parsed.partition
+    }
   }
   return { partitions, pruned }
 }
@@ -578,14 +620,16 @@ function parseOrganizationPartition(
       persistence.kind === 'organization-esi' && persistence.admissionScope === admissionScope,
     budget,
   )
-  if (Object.keys(parsed.cache).length === 0) return { partition: null, pruned: true }
+  if (Object.keys(parsed.cache).length === 0) {
+    return { partition: null, pruned: true }
+  }
   return {
     partition: {
-      ownerUserId: candidate.ownerUserId,
-      organizationVersion: candidate.organizationVersion,
       admissionRevision: candidate.admissionRevision,
-      validUntil: candidate.validUntil,
       cache: parsed.cache,
+      organizationVersion: candidate.organizationVersion,
+      ownerUserId: candidate.ownerUserId,
+      validUntil: candidate.validUntil,
     },
     pruned: parsed.pruned,
   }
@@ -596,7 +640,9 @@ function removePartitions(partitions: Record<string, unknown>, key?: string) {
     delete partitions[key]
     return
   }
-  for (const partitionKey of Object.keys(partitions)) delete partitions[partitionKey]
+  for (const partitionKey of Object.keys(partitions)) {
+    delete partitions[partitionKey]
+  }
 }
 
 function mergePriorSuccessfulTuples(
@@ -605,10 +651,16 @@ function mergePriorSuccessfulTuples(
   options: SerializeEnvelopeOptions,
 ) {
   forEachEnvelopeTuple(options.priorEnvelope, (keyHash, tuple, partition, persistence) => {
-    if (observed.has(keyHash) || options.isRemovalTombstoned(keyHash)) return
-    if (tuple[2] <= options.now - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS) return
+    if (observed.has(keyHash) || options.isRemovalTombstoned(keyHash)) {
+      return
+    }
+    if (tuple[2] <= options.now - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS) {
+      return
+    }
     if (persistence.kind === 'public-esi') {
-      if (options.hasFailedData(keyHash)) addTuple(next, keyHash, tuple, partition, persistence)
+      if (options.hasFailedData(keyHash)) {
+        addTuple(next, keyHash, tuple, partition, persistence)
+      }
       return
     }
     if (!options.durableGenerationVerified || !options.privatePersistenceEnabled || !partition) {
@@ -653,11 +705,13 @@ function addAdmittedTuple(
     const character = admission.characters.find(
       (candidate) => candidate.characterId === persistence.characterId,
     )
-    if (!character?.admissionRevision) return false
+    if (!character?.admissionRevision) {
+      return false
+    }
     const partition = (envelope.characters[String(persistence.characterId)] ??= {
-      ownerUserId: admission.userId,
       admissionRevision: character.admissionRevision,
       cache: createCache(),
+      ownerUserId: admission.userId,
     })
     partition.cache[keyHash] = tuple
     return true
@@ -671,11 +725,11 @@ function addAdmittedTuple(
     return false
   }
   const partition = (envelope.organizations[persistence.admissionScope] ??= {
-    ownerUserId: admission.userId,
-    organizationVersion: organization.organizationVersion,
     admissionRevision: organization.admissionRevision,
-    validUntil: organization.validUntil,
     cache: createCache(),
+    organizationVersion: organization.organizationVersion,
+    ownerUserId: admission.userId,
+    validUntil: organization.validUntil,
   })
   partition.cache[keyHash] = tuple
   return true
@@ -692,18 +746,18 @@ function addTuple(
     envelope.public[keyHash] = tuple
   } else if (persistence.kind === 'character-esi' && isCharacterPartition(partition)) {
     const target = (envelope.characters[String(persistence.characterId)] ??= {
-      ownerUserId: partition.ownerUserId,
       admissionRevision: partition.admissionRevision,
       cache: createCache(),
+      ownerUserId: partition.ownerUserId,
     })
     target.cache[keyHash] = tuple
   } else if (persistence.kind === 'organization-esi' && isOrganizationPartition(partition)) {
     const target = (envelope.organizations[persistence.admissionScope] ??= {
-      ownerUserId: partition.ownerUserId,
-      organizationVersion: partition.organizationVersion,
       admissionRevision: partition.admissionRevision,
-      validUntil: partition.validUntil,
       cache: createCache(),
+      organizationVersion: partition.organizationVersion,
+      ownerUserId: partition.ownerUserId,
+      validUntil: partition.validUntil,
     })
     target.cache[keyHash] = tuple
   }
@@ -727,7 +781,9 @@ function forEachEnvelopeTuple(
 export function serializeBoundedEnvelope(envelope: EsiQueryCacheEnvelope) {
   pruneEnvelopeEntryCounts(envelope)
   let serialized = JSON.stringify(envelope)
-  if (!serializedEnvelopeExceedsByteLimit(serialized)) return serialized
+  if (!serializedEnvelopeExceedsByteLimit(serialized)) {
+    return serialized
+  }
 
   pruneEnvelopeBytes(envelope, utf8ByteLength(serialized))
   removeEmptyPrivatePartitions(envelope)
@@ -751,7 +807,9 @@ function pruneEnvelopeBytes(envelope: EsiQueryCacheEnvelope, serializedBytes: nu
   }
   const oldestEntries = envelopeEntries(envelope).toSorted(compareOldestEnvelopeEntry)
   for (const entry of oldestEntries) {
-    if (serializedBytes <= PERSISTED_ESI_QUERY_CACHE_MAX_BYTES) break
+    if (serializedBytes <= PERSISTED_ESI_QUERY_CACHE_MAX_BYTES) {
+      break
+    }
     serializedBytes -= removeEnvelopeEntry(envelope, entry, state)
   }
 }
@@ -827,17 +885,29 @@ function cacheEntries(cache: PersistedQueryCache): EnvelopeEntry[] {
 
 function compareNewestEnvelopeEntry(left: EnvelopeEntry, right: EnvelopeEntry) {
   const timestampDifference = right.tuple[2] - left.tuple[2]
-  if (timestampDifference !== 0) return timestampDifference
-  if (left.keyHash < right.keyHash) return -1
-  if (left.keyHash > right.keyHash) return 1
+  if (timestampDifference !== 0) {
+    return timestampDifference
+  }
+  if (left.keyHash < right.keyHash) {
+    return -1
+  }
+  if (left.keyHash > right.keyHash) {
+    return 1
+  }
   return 0
 }
 
 function compareOldestEnvelopeEntry(left: EnvelopeEntry, right: EnvelopeEntry) {
   const timestampDifference = left.tuple[2] - right.tuple[2]
-  if (timestampDifference !== 0) return timestampDifference
-  if (left.keyHash > right.keyHash) return -1
-  if (left.keyHash < right.keyHash) return 1
+  if (timestampDifference !== 0) {
+    return timestampDifference
+  }
+  if (left.keyHash > right.keyHash) {
+    return -1
+  }
+  if (left.keyHash < right.keyHash) {
+    return 1
+  }
   return 0
 }
 
@@ -852,20 +922,24 @@ function serializedEnvelopePartitionBytes(key: string, partition: PrivatePartiti
 function locatePrivateCaches(envelope: EsiQueryCacheEnvelope) {
   const locations = new Map<PersistedQueryCache, PrivateCacheLocation>()
   for (const [key, partition] of Object.entries(envelope.characters)) {
-    locations.set(partition.cache, { kind: 'character', key })
+    locations.set(partition.cache, { key, kind: 'character' })
   }
   for (const [key, partition] of Object.entries(envelope.organizations)) {
-    locations.set(partition.cache, { kind: 'organization', key })
+    locations.set(partition.cache, { key, kind: 'organization' })
   }
   return locations
 }
 
 function removeEmptyPrivatePartitions(envelope: EsiQueryCacheEnvelope) {
   for (const [characterId, partition] of Object.entries(envelope.characters)) {
-    if (Object.keys(partition.cache).length === 0) delete envelope.characters[characterId]
+    if (Object.keys(partition.cache).length === 0) {
+      delete envelope.characters[characterId]
+    }
   }
   for (const [admissionScope, partition] of Object.entries(envelope.organizations)) {
-    if (Object.keys(partition.cache).length === 0) delete envelope.organizations[admissionScope]
+    if (Object.keys(partition.cache).length === 0) {
+      delete envelope.organizations[admissionScope]
+    }
   }
 }
 
@@ -886,7 +960,9 @@ function parsePartitionCache(
   accepts: (persistence: PersistableEsiQuery) => boolean,
   budget: ParseEnvelopeBudget,
 ) {
-  if (!isRecord(value)) throw new TypeError('Persisted ESI query cache is invalid.')
+  if (!isRecord(value)) {
+    throw new TypeError('Persisted ESI query cache is invalid.')
+  }
   const entries = Object.entries(value)
   if (entries.length > PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES_PER_PARTITION) {
     throw new TypeError('Persisted ESI query cache exceeds the partition entry limit.')
@@ -924,7 +1000,9 @@ function parseTuple(keyHash: string, value: unknown, now: number, strict: boolea
     ) {
       throw new TypeError('Persisted ESI query timestamp is invalid.')
     }
-    if (!isJsonDto(value[0])) throw new TypeError('Persisted ESI query data is invalid.')
+    if (!isJsonDto(value[0])) {
+      throw new TypeError('Persisted ESI query data is invalid.')
+    }
     const keyValue: unknown = JSON.parse(keyHash)
     if (!Array.isArray(keyValue) || keyValue.length === 0 || toCacheKey(keyValue) !== keyHash) {
       throw new TypeError('Persisted ESI query identity is invalid.')
@@ -941,19 +1019,25 @@ function parseTuple(keyHash: string, value: unknown, now: number, strict: boolea
       tuple: [value[0], null, value[2], meta],
     } satisfies ParsedTuple
   } catch (error) {
-    if (strict) throw error
+    if (strict) {
+      throw error
+    }
     return null
   }
 }
 
 function parsePersistedQueryMeta(value: unknown): QueryMeta {
-  if (!isRecord(value)) throw new TypeError('Persisted ESI query metadata is invalid.')
+  if (!isRecord(value)) {
+    throw new TypeError('Persisted ESI query metadata is invalid.')
+  }
   const keys = Object.keys(value)
   if (keys.some((key) => key !== 'esiPersistence' && key !== 'globalErrorMessage')) {
     throw new TypeError('Persisted ESI query metadata contains unsupported fields.')
   }
   const persistence = parsePersistableEsiPersistence(value.esiPersistence)
-  if (!persistence) throw new TypeError('Persisted ESI query declaration is invalid.')
+  if (!persistence) {
+    throw new TypeError('Persisted ESI query declaration is invalid.')
+  }
   if (value.globalErrorMessage !== undefined && typeof value.globalErrorMessage !== 'string') {
     throw new TypeError('Persisted ESI query error metadata is invalid.')
   }
@@ -966,21 +1050,25 @@ function parsePersistedQueryMeta(value: unknown): QueryMeta {
 }
 
 function parsePersistableEsiPersistence(value: unknown): PersistableEsiQuery | null {
-  if (!isRecord(value) || !isNonemptyString(value.kind)) return null
-  if (value.kind === 'public-esi' && hasExactKeys(value, ['kind'])) return { kind: 'public-esi' }
+  if (!isRecord(value) || !isNonemptyString(value.kind)) {
+    return null
+  }
+  if (value.kind === 'public-esi' && hasExactKeys(value, ['kind'])) {
+    return { kind: 'public-esi' }
+  }
   if (
     value.kind === 'character-esi' &&
     hasExactKeys(value, ['kind', 'characterId']) &&
     isPositiveInteger(value.characterId)
   ) {
-    return { kind: 'character-esi', characterId: value.characterId }
+    return { characterId: value.characterId, kind: 'character-esi' }
   }
   if (
     value.kind === 'organization-esi' &&
     hasExactKeys(value, ['kind', 'admissionScope']) &&
     isNonemptyString(value.admissionScope)
   ) {
-    return { kind: 'organization-esi', admissionScope: value.admissionScope }
+    return { admissionScope: value.admissionScope, kind: 'organization-esi' }
   }
   return null
 }
@@ -994,8 +1082,12 @@ function isOrganizationPartition(value: PrivatePartition | null): value is Organ
 }
 
 function isNullableIsoTimestamp(value: unknown): value is string | null {
-  if (value === null) return true
-  if (typeof value !== 'string') return false
+  if (value === null) {
+    return true
+  }
+  if (typeof value !== 'string') {
+    return false
+  }
   const timestamp = Date.parse(value)
   return Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value
 }
@@ -1013,7 +1105,9 @@ function isJsonDto(value: unknown) {
     ) {
       continue
     }
-    if (typeof current !== 'object' || visited.has(current)) return false
+    if (typeof current !== 'object' || visited.has(current)) {
+      return false
+    }
     const prototype = Object.getPrototypeOf(current)
     if (!Array.isArray(current) && prototype !== Object.prototype && prototype !== null) {
       return false

@@ -45,7 +45,9 @@ watch(
 watch(
   () => props.focusRequest,
   (current) => {
-    if (current <= consumedFocusRequest) return
+    if (current <= consumedFocusRequest) {
+      return
+    }
     pendingFocusRequest = {
       contributionIdentity: contributionIdentity(),
       revision: current,
@@ -63,16 +65,22 @@ async function loadPanel() {
   announcer.polite(`Loading ${props.contribution.label}.`)
   try {
     const loaded = await props.contribution.load()
-    if (revision !== loadRevision) return
+    if (revision !== loadRevision) {
+      return
+    }
     component.value = loaded.default
     announcer.polite(`${props.contribution.label} loaded.`)
     await focusLoadedPanel()
   } catch (error) {
-    if (revision !== loadRevision) return
+    if (revision !== loadRevision) {
+      return
+    }
     loadError.value = error
     announcer.assertive(`${props.contribution.label} could not be loaded.`)
   } finally {
-    if (revision === loadRevision) loading.value = false
+    if (revision === loadRevision) {
+      loading.value = false
+    }
   }
 }
 
@@ -84,14 +92,18 @@ function retryPanel() {
 async function focusLoadedPanel() {
   const identity = contributionIdentity()
   const requested = pendingFocusRequest?.contributionIdentity === identity
-  if (!component.value || (!requested && !focusAfterLoad)) return
+  if (!component.value || (!requested && !focusAfterLoad)) {
+    return
+  }
   if (requested) {
     consumedFocusRequest = pendingFocusRequest!.revision
     pendingFocusRequest = undefined
   }
   focusAfterLoad = false
   await nextTick()
-  if (identity === contributionIdentity() && component.value) heading.value?.focus()
+  if (identity === contributionIdentity() && component.value) {
+    heading.value?.focus()
+  }
 }
 
 function contributionIdentity() {
@@ -100,13 +112,13 @@ function contributionIdentity() {
 
 function panelProps() {
   return {
-    moduleId: props.contribution.moduleId,
     contributionId: props.contribution.contributionId,
+    moduleId: props.contribution.moduleId,
+    organizationVersion: props.organizationVersion,
+    queryAccess: props.queryAccess,
     routeId: props.contribution.routeId,
     sectionId: props.contribution.sectionId,
-    organizationVersion: props.organizationVersion,
     target: props.target,
-    queryAccess: props.queryAccess,
   }
 }
 

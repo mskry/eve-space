@@ -4,6 +4,8 @@ export function resolveRouteAudience(
   path: string,
   declaredAudience: PlatformNavigationAudience | undefined,
 ): PlatformNavigationAudience {
-  if (path.startsWith('/admin')) return 'admin'
+  if (path.startsWith('/admin')) {
+    return 'admin'
+  }
   return declaredAudience ?? 'authenticated'
 }

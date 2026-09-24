@@ -6,8 +6,9 @@ export function resolveAffiliationFreshness(
   },
   now: Date,
 ) {
-  if (character.affiliationResolutionState !== 'resolved' || !character.affiliationCheckedAt)
+  if (character.affiliationResolutionState !== 'resolved' || !character.affiliationCheckedAt) {
     return 'unavailable' as const
+  }
   return character.nextAffiliationCheck && character.nextAffiliationCheck > now
     ? ('fresh' as const)
     : ('stale' as const)

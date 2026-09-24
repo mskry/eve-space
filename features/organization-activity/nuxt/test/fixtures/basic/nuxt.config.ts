@@ -3,7 +3,6 @@ import { fileURLToPath } from 'node:url'
 import platform from '@eve-space/platform-module-nuxt'
 
 export default defineNuxtConfig({
-  runtimeConfig: { public: { apiBase: 'http://localhost:8788' } },
   alias: {
     '@eve-space/organization-activity-nuxt': fileURLToPath(
       new URL('../../../src/module.ts', import.meta.url),
@@ -69,4 +68,5 @@ export default defineNuxtConfig({
       },
     ],
   ],
+  runtimeConfig: { public: { apiBase: 'http://localhost:8788' } },
 })

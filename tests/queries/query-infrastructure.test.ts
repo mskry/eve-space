@@ -78,23 +78,23 @@ describe('query infrastructure', () => {
     const error = await toApiQueryError(
       new Response(
         JSON.stringify({
+          authorizeUrl: 'https://login.example.test',
           code: 'EVE_SCOPE_REQUIRED',
           message: 'Authorize access.',
-          authorizeUrl: 'https://login.example.test',
           requiredScope: 'scope.read',
         }),
-        { status: 403, headers: { 'Content-Type': 'application/json', 'Retry-After': '60' } },
+        { headers: { 'Content-Type': 'application/json', 'Retry-After': '60' }, status: 403 },
       ),
       'Fallback',
     )
 
     expect(error).toMatchObject({
-      status: 403,
+      authorizeUrl: 'https://login.example.test',
       code: 'EVE_SCOPE_REQUIRED',
       message: 'Authorize access.',
-      authorizeUrl: 'https://login.example.test',
       requiredScope: 'scope.read',
       retryAfterSeconds: 60,
+      status: 403,
     })
     expect(Object.keys(error)).not.toContain('body')
     expect(Object.keys(error)).not.toContain('headers')
@@ -103,8 +103,8 @@ describe('query infrastructure', () => {
   it('leaves retry timing undefined when Retry-After is absent', async () => {
     const error = await toApiQueryError(
       new Response(JSON.stringify({ message: 'Not found.' }), {
-        status: 404,
         headers: { 'Content-Type': 'application/json' },
+        status: 404,
       }),
       'Fallback',
     )
@@ -118,7 +118,7 @@ describe('query infrastructure', () => {
     expect(shouldRetryQuery(2, new TypeError('network'))).toBe(false)
 
     expect(queryRetryDelay(0)).toBe(500)
-    expect(queryRetryDelay(1)).toBe(1_000)
+    expect(queryRetryDelay(1)).toBe(1000)
   })
 
   it.each([
@@ -179,37 +179,37 @@ describe('query infrastructure', () => {
   })
 
   it('keys private resources by character identity', () => {
-    expect(PRIVATE_QUERY_KEYS.characterFinance(7)).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.characterFinance(7)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.characterFinance(8),
     )
-    expect(PRIVATE_QUERY_KEYS.characterHistory(7)).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.characterHistory(7)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.characterHistory(8),
     )
-    expect(PRIVATE_QUERY_KEYS.characterAttributes(7)).toEqual([
+    expect(PRIVATE_QUERY_KEYS.characterAttributes(7)).toStrictEqual([
       'private',
       'characters',
       7,
       'attributes',
     ])
-    expect(PRIVATE_QUERY_KEYS.characterAttributes(7)).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.characterAttributes(7)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.characterAttributes(8),
     )
-    expect(PRIVATE_QUERY_KEYS.characterSkillQueue(7)).toEqual([
+    expect(PRIVATE_QUERY_KEYS.characterSkillQueue(7)).toStrictEqual([
       'private',
       'characters',
       7,
       'skill-queue',
     ])
-    expect(PRIVATE_QUERY_KEYS.characterSkillQueue(7)).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.characterSkillQueue(7)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.characterSkillQueue(8),
     )
-    expect(PRIVATE_QUERY_KEYS.characterOverview(7)).toEqual([
+    expect(PRIVATE_QUERY_KEYS.characterOverview(7)).toStrictEqual([
       'private',
       'characters',
       7,
       'overview-v2',
     ])
-    expect(PRIVATE_QUERY_KEYS.characterModuleResource(7, 'member-audit', 'records')).toEqual([
+    expect(PRIVATE_QUERY_KEYS.characterModuleResource(7, 'member-audit', 'records')).toStrictEqual([
       'private',
       'characters',
       7,

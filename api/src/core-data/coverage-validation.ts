@@ -110,7 +110,9 @@ function recordManifestedProduct(
   manifestedProducts: Map<string, number>,
   issues: string[],
 ): void {
-  if (productId === undefined) return
+  if (productId === undefined) {
+    return
+  }
   if (typeof productId !== 'string') {
     issues.push(`${key} has invalid product identifier`)
     return
@@ -157,7 +159,9 @@ function validateEsiOperationLinks(
   validEsiOperations: Set<string>,
   issues: string[],
 ): void {
-  if (esiOperationIds === undefined) return
+  if (esiOperationIds === undefined) {
+    return
+  }
   if (!Array.isArray(esiOperationIds)) {
     issues.push(`${key} has invalid ESI operation links`)
     return
@@ -167,8 +171,9 @@ function validateEsiOperationLinks(
       issues.push(`${key} has invalid ESI operation identifier`)
       continue
     }
-    if (!validEsiOperations.has(operation))
+    if (!validEsiOperations.has(operation)) {
       issues.push(`${key} references stale ESI operation ${operation}`)
+    }
   }
 }
 
@@ -178,10 +183,12 @@ function validateRequiredProducts(
   issues: string[],
 ): void {
   for (const productId of CORE_DATA_PRODUCT_IDS) {
-    if (manifestedProducts.get(productId) !== 1)
+    if (manifestedProducts.get(productId) !== 1) {
       issues.push(`product ${productId} must have exactly one coverage entry`)
-    if (executableCounts.get(productId) !== 1)
+    }
+    if (executableCounts.get(productId) !== 1) {
       issues.push(`product ${productId} must have exactly one executable adapter`)
+    }
   }
 }
 
@@ -191,29 +198,36 @@ function validateExecutableProducts(
   issues: string[],
 ): void {
   for (const productId of executableCounts.keys()) {
-    if (!isCoreDataProductId(productId)) issues.push(`unknown executable product ${productId}`)
-    else if (!manifestedProducts.has(productId))
+    if (!isCoreDataProductId(productId)) {
+      issues.push(`unknown executable product ${productId}`)
+    } else if (!manifestedProducts.has(productId)) {
       issues.push(`executable product ${productId} is missing coverage`)
+    }
   }
 }
 
 function throwForCoverageIssues(issues: string[]): void {
-  if (issues.length > 0)
+  if (issues.length > 0) {
     throw new Error(
       `Invalid core-data coverage manifest:\n${issues
         .toSorted((left, right) => left.localeCompare(right))
         .map((issue) => `- ${issue}`)
         .join('\n')}`,
     )
+  }
 }
 
 function reportIssueWhen(condition: boolean, issue: string, issues: string[]): void {
-  if (condition) issues.push(issue)
+  if (condition) {
+    issues.push(issue)
+  }
 }
 
 function countValues(values: readonly string[]) {
   const counts = new Map<string, number>()
-  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1)
+  for (const value of values) {
+    counts.set(value, (counts.get(value) ?? 0) + 1)
+  }
   return counts
 }
 

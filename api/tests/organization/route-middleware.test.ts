@@ -57,7 +57,7 @@ describe('organization route middleware', () => {
   })
 
   test('requires current compliance before ordinary owner, manager, and HR checks', async () => {
-    const organization = organizationContext({ state: 'suspended', accessValidUntil: null })
+    const organization = organizationContext({ accessValidUntil: null, state: 'suspended' })
 
     for (const middleware of [
       requireOrganizationOwner,
@@ -128,7 +128,7 @@ describe('organization route middleware', () => {
 
   test('requires fresh owner evidence for privilege expansion', async () => {
     mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValueOnce(
-      authority({ owner: 'degraded', organizationOwner: true }),
+      authority({ organizationOwner: true, owner: 'degraded' }),
     )
     expect(await responseCode((await invoke(requireFreshOrganizationOwner)).response)).toBe(
       'ORGANIZATION_AUTHORITY_DEGRADED',
@@ -147,7 +147,7 @@ describe('organization route middleware', () => {
     )
 
     mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValueOnce(
-      authority({ owner: 'degraded', organizationOwner: true }),
+      authority({ organizationOwner: true, owner: 'degraded' }),
     )
     expect((await invoke(requireOrganizationOwnerRemediation)).next).toHaveBeenCalledOnce()
     expect(mocks.loadCurrentOrganizationAuthorityForUser).toHaveBeenLastCalledWith(
@@ -161,7 +161,7 @@ describe('organization route middleware', () => {
     [authority({ explicitDirector: true }), null],
     [authority({ owner: 'fresh' }), null],
     [authority({ derived: ['fresh'] }), null],
-    [authority({ owner: 'degraded', organizationOwner: true }), 'ORGANIZATION_AUTHORITY_DEGRADED'],
+    [authority({ organizationOwner: true, owner: 'degraded' }), 'ORGANIZATION_AUTHORITY_DEGRADED'],
     [authority({ derived: ['invalid'] }), 'ORGANIZATION_AUTHORITY_SOURCE_INVALID'],
     [null, 'ORGANIZATION_MANAGER_REQUIRED'],
   ] as const)('classifies fresh manager authority %#', async (value, code) => {
@@ -224,12 +224,12 @@ async function invoke(
 ) {
   const next = vi.fn(async () => undefined)
   const context = {
+    json: vi.fn((body: unknown, status: number) => Response.json(body, { status })),
     req: { header: vi.fn(() => options.origin ?? 'http://localhost:3000') },
     var: {
-      session: { userId },
       organization: 'organization' in options ? options.organization : organizationContext(),
+      session: { userId },
     },
-    json: vi.fn((body: unknown, status: number) => Response.json(body, { status })),
   } as unknown as Context<OrganizationSessionEnv>
   const response = await middleware(context, next)
   return { next, response: response instanceof Response ? response : undefined }
@@ -248,10 +248,10 @@ function organizationContext(
   }> = {},
 ) {
   return {
-    blocked: false,
-    state: 'compliant' as const,
     accessValidUntil: new Date(Date.now() + 60_000),
+    blocked: false,
     reviewDeadline: null,
+    state: 'compliant' as const,
     ...overrides,
   }
 }
@@ -266,18 +266,18 @@ function authority(
   } = {},
 ) {
   const derivedSources = (options.derived ?? []).map((state, index) => ({
-    sourceId: `derived-${index}`,
     characterId: index + 1,
+    sourceId: `derived-${index}`,
     state,
   }))
   return {
-    organizationOwner: options.organizationOwner ?? false,
-    explicitDirector: options.explicitDirector ?? false,
-    derivedDirector: derivedSources.some(({ state }) => state !== 'invalid'),
-    director: options.director ?? options.explicitDirector ?? false,
     degraded:
       options.owner === 'degraded' || derivedSources.some(({ state }) => state === 'degraded'),
-    ownerSource: options.owner ? { sourceId: 'owner', characterId: 1, state: options.owner } : null,
+    derivedDirector: derivedSources.some(({ state }) => state !== 'invalid'),
     derivedSources,
+    director: options.director ?? options.explicitDirector ?? false,
+    explicitDirector: options.explicitDirector ?? false,
+    organizationOwner: options.organizationOwner ?? false,
+    ownerSource: options.owner ? { sourceId: 'owner', characterId: 1, state: options.owner } : null,
   }
 }

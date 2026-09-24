@@ -14,10 +14,10 @@ import { createPlatformModuleCollectionStatusReads } from '../../src/platform/mo
 const characterLifecycleId = '35acd527-9539-44ad-aacf-9f8e45232267'
 const corporationLifecycleId = 'ad599062-762a-46a4-8f89-b900b06c8311'
 const currentStatus: PlatformCollectionStatus = {
-  status: 'current',
   authorizationGeneration: 4,
-  validatedAt: '2026-09-06T10:00:00.000Z',
   lastFailureClass: null,
+  status: 'current',
+  validatedAt: '2026-09-06T10:00:00.000Z',
 }
 const resources = [
   resource('alpha', 'character-activity', 'character'),
@@ -39,23 +39,23 @@ describe('platform module collection-status capabilities', () => {
     const readStatus = vi.fn().mockResolvedValue(currentStatus)
     const reads = createPlatformModuleCollectionStatusReads(
       {
+        characters: [{ characterId: 9001, subjectLifecycleId: characterLifecycleId }],
         moduleId: 'alpha',
         organizationVersion: 7,
-        characters: [{ characterId: 9001, subjectLifecycleId: characterLifecycleId }],
       },
-      { resources, readStatus },
+      { readStatus, resources },
     )
 
     await expect(
-      reads.read('character-activity', { kind: 'character', characterId: 9001 }),
-    ).resolves.toEqual({ ...currentStatus, subjectLifecycleId: characterLifecycleId })
+      reads.read('character-activity', { characterId: 9001, kind: 'character' }),
+    ).resolves.toStrictEqual({ ...currentStatus, subjectLifecycleId: characterLifecycleId })
     expect(readStatus).toHaveBeenCalledWith(
       {
         moduleId: 'alpha',
         resourceId: 'character-activity',
+        subjectId: '9001',
         subjectKind: 'character',
         subjectLifecycleId: characterLifecycleId,
-        subjectId: '9001',
       },
       { resources: [resources[0]] },
     )
@@ -70,19 +70,19 @@ describe('platform module collection-status capabilities', () => {
     ]
     const reads = createPlatformModuleCollectionStatusReads(
       {
-        moduleId: 'alpha',
-        sectionId: 'skills',
-        organizationVersion: 7,
         characters: [{ characterId: 9001, subjectLifecycleId: characterLifecycleId }],
+        moduleId: 'alpha',
+        organizationVersion: 7,
+        sectionId: 'skills',
       },
-      { resources: sectionResources, readStatus, isContributionEnabled },
+      { isContributionEnabled, readStatus, resources: sectionResources },
     )
 
     await expect(
-      reads.read('character-activity', { kind: 'character', characterId: 9001 }),
+      reads.read('character-activity', { characterId: 9001, kind: 'character' }),
     ).rejects.toThrow('resource is unavailable')
     await expect(
-      reads.read('corporation-activity', { kind: 'corporation', corporationId: 98_000_001 }),
+      reads.read('corporation-activity', { corporationId: 98_000_001, kind: 'corporation' }),
     ).rejects.toThrow('resource is unavailable')
     expect(isContributionEnabled).toHaveBeenCalledWith('alpha', 'skills')
     expect(readStatus).not.toHaveBeenCalled()
@@ -93,24 +93,24 @@ describe('platform module collection-status capabilities', () => {
     const readStatus = vi.fn()
     const reads = createPlatformModuleCollectionStatusReads(
       {
+        characters: [{ characterId: 9001, subjectLifecycleId: characterLifecycleId }],
         moduleId: 'alpha',
         organizationVersion: 7,
-        characters: [{ characterId: 9001, subjectLifecycleId: characterLifecycleId }],
       },
-      { resources, readStatus },
+      { readStatus, resources },
     )
 
-    await expect(reads.read('missing', { kind: 'character', characterId: 9001 })).rejects.toThrow(
+    await expect(reads.read('missing', { characterId: 9001, kind: 'character' })).rejects.toThrow(
       'resource is unavailable',
     )
-    await expect(reads.read('beta-only', { kind: 'character', characterId: 9001 })).rejects.toThrow(
+    await expect(reads.read('beta-only', { characterId: 9001, kind: 'character' })).rejects.toThrow(
       'resource is unavailable',
     )
     await expect(
-      reads.read('character-activity', { kind: 'character', characterId: 9002 }),
+      reads.read('character-activity', { characterId: 9002, kind: 'character' }),
     ).rejects.toThrow('outside the authorized module context')
     await expect(
-      reads.read('corporation-activity', { kind: 'character', characterId: 9001 }),
+      reads.read('corporation-activity', { characterId: 9001, kind: 'character' }),
     ).rejects.toThrow('resource is unavailable')
     expect(readStatus).not.toHaveBeenCalled()
   })
@@ -118,28 +118,28 @@ describe('platform module collection-status capabilities', () => {
   test('resolves organization lifecycles inside the authorized organization version', async () => {
     const readStatus = vi.fn().mockResolvedValue(currentStatus)
     const loadOrganizationLifecycle = vi.fn().mockResolvedValue({
-      subjectLifecycleId: corporationLifecycleId,
       subjectId: '98000001',
+      subjectLifecycleId: corporationLifecycleId,
     })
     const reads = createPlatformModuleCollectionStatusReads(
       { moduleId: 'alpha', organizationVersion: 7 },
-      { resources, readStatus, loadOrganizationLifecycle },
+      { loadOrganizationLifecycle, readStatus, resources },
     )
 
     await reads.read('corporation-activity', {
-      kind: 'corporation',
       corporationId: 98_000_001,
+      kind: 'corporation',
     })
 
     expect(loadOrganizationLifecycle).toHaveBeenCalledWith(7, {
-      kind: 'corporation',
       corporationId: 98_000_001,
+      kind: 'corporation',
     })
     expect(readStatus).toHaveBeenCalledWith(
       expect.objectContaining({
         moduleId: 'alpha',
-        subjectLifecycleId: corporationLifecycleId,
         subjectId: '98000001',
+        subjectLifecycleId: corporationLifecycleId,
       }),
       { resources: [resources[1]] },
     )
@@ -151,23 +151,23 @@ describe('platform module collection-status capabilities', () => {
     const readStatus = vi.fn()
     const reads = createPlatformModuleCollectionStatusReads(
       {
+        characters: [{ characterId: 9001, subjectLifecycleId: characterLifecycleId }],
         moduleId: 'alpha',
         organizationVersion: 7,
-        characters: [{ characterId: 9001, subjectLifecycleId: characterLifecycleId }],
         signal: controller.signal,
       },
-      { resources, readStatus },
+      { readStatus, resources },
     )
 
     await expect(
-      reads.read('character-activity', { kind: 'character', characterId: 9001 }),
+      reads.read('character-activity', { characterId: 9001, kind: 'character' }),
     ).rejects.toThrow('was aborted')
     expect(readStatus).not.toHaveBeenCalled()
   })
 
   test.each([
-    ['deployment-activity', { kind: 'deployment', deploymentId: 1 }, '1'],
-    ['alliance-activity', { kind: 'alliance', allianceId: 99_000_001 }, '99000001'],
+    ['deployment-activity', { deploymentId: 1, kind: 'deployment' }, '1'],
+    ['alliance-activity', { allianceId: 99_000_001, kind: 'alliance' }, '99000001'],
   ] as const)(
     'loads the current %s lifecycle from storage',
     async (resourceId, subject, subjectId) => {
@@ -175,10 +175,10 @@ describe('platform module collection-status capabilities', () => {
       const readStatus = vi.fn().mockResolvedValue(currentStatus)
       const reads = createPlatformModuleCollectionStatusReads(
         { moduleId: 'alpha', organizationVersion: 7 },
-        { resources, readStatus },
+        { readStatus, resources },
       )
 
-      await expect(reads.read(resourceId, subject)).resolves.toEqual({
+      await expect(reads.read(resourceId, subject)).resolves.toStrictEqual({
         ...currentStatus,
         subjectLifecycleId: corporationLifecycleId,
       })
@@ -198,25 +198,25 @@ describe('platform module collection-status capabilities', () => {
     const readStatus = vi.fn()
     const reads = createPlatformModuleCollectionStatusReads(
       { moduleId: 'alpha', organizationVersion: 7 },
-      { resources, readStatus },
+      { readStatus, resources },
     )
 
     await expect(
-      reads.read('corporation-activity', { kind: 'corporation', corporationId: 98_000_001 }),
-    ).resolves.toEqual({
-      status: 'never-configured',
+      reads.read('corporation-activity', { corporationId: 98_000_001, kind: 'corporation' }),
+    ).resolves.toStrictEqual({
       authorizationGeneration: null,
-      validatedAt: null,
       lastFailureClass: null,
+      status: 'never-configured',
+      validatedAt: null,
     })
     expect(readStatus).not.toHaveBeenCalled()
   })
 
   test.each([
-    { kind: 'character', characterId: 0 },
-    { kind: 'corporation', corporationId: Number.NaN },
-    { kind: 'alliance', allianceId: -1 },
-    { kind: 'deployment', deploymentId: Number.MAX_SAFE_INTEGER + 1 },
+    { characterId: 0, kind: 'character' },
+    { corporationId: Number.NaN, kind: 'corporation' },
+    { allianceId: -1, kind: 'alliance' },
+    { deploymentId: Number.MAX_SAFE_INTEGER + 1, kind: 'deployment' },
   ] as const)('rejects an invalid $kind subject identifier', async (subject) => {
     const reads = createPlatformModuleCollectionStatusReads(
       { moduleId: 'alpha', organizationVersion: 7 },
@@ -236,16 +236,16 @@ describe('platform module collection-status capabilities', () => {
     })
     const reads = createPlatformModuleCollectionStatusReads(
       {
+        characters: [{ characterId: 9001, subjectLifecycleId: characterLifecycleId }],
         moduleId: 'alpha',
         organizationVersion: 7,
-        characters: [{ characterId: 9001, subjectLifecycleId: characterLifecycleId }],
         signal: controller.signal,
       },
-      { resources, readStatus },
+      { readStatus, resources },
     )
 
     await expect(
-      reads.read('character-activity', { kind: 'character', characterId: 9001 }),
+      reads.read('character-activity', { characterId: 9001, kind: 'character' }),
     ).rejects.toThrow('was aborted')
   })
 })
@@ -264,13 +264,13 @@ function resource(
           ? { kind: 'current-managed-alliance' }
           : { kind: 'current-deployment' }
   return {
-    moduleId,
-    resourceId,
-    operationId: `${moduleId}-${resourceId}`,
-    subjectKind,
-    materializationIntervalSeconds: 900,
     eligibility,
     implementation: {},
+    materializationIntervalSeconds: 900,
+    moduleId,
+    operationId: `${moduleId}-${resourceId}`,
+    resourceId,
+    subjectKind,
   } as PlatformInstalledResourceDescriptor
 }
 

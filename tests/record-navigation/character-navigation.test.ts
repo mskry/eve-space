@@ -9,18 +9,18 @@ import {
 
 const registryEntries = [
   {
-    navigationId: 'core-character-overview',
     label: 'Overview',
+    navigationId: 'core-character-overview',
     to: '/characters/:characterId',
   },
   {
-    navigationId: 'core-character-skills',
     label: 'Skills',
+    navigationId: 'core-character-skills',
     to: '/characters/:characterId/skills',
   },
   {
-    navigationId: 'module-intel',
     label: 'Threat intelligence',
+    navigationId: 'module-intel',
     to: '/characters/:characterId/intel',
   },
 ]
@@ -50,12 +50,12 @@ describe('character record navigation coordination', () => {
     )
 
     expect(characterEntries[skillsIndex + 1]).toMatchObject({
-      navigationId: 'core-character-clones',
       label: 'Clones',
-      path: '/characters/:characterId/clones',
+      navigationId: 'core-character-clones',
       order: 30,
+      path: '/characters/:characterId/clones',
     })
-    expect(characterEntries.map((entry) => [entry.navigationId, entry.order])).toEqual([
+    expect(characterEntries.map((entry) => [entry.navigationId, entry.order])).toStrictEqual([
       ['core-character-overview', 10],
       ['core-character-skills', 20],
       ['core-character-clones', 30],
@@ -75,35 +75,35 @@ describe('character record navigation coordination', () => {
     )
 
     expect(characterEntries[financeIndex + 1]).toMatchObject({
-      navigationId: 'core-character-assets',
-      label: 'Assets',
-      path: '/characters/:characterId/assets',
       icon: 'ship',
+      label: 'Assets',
+      navigationId: 'core-character-assets',
       order: 50,
+      path: '/characters/:characterId/assets',
     })
   })
 
   it('resolves the selected character into core and contributed destinations', () => {
     const entries = resolveCharacterNavigation(registryEntries, 42)
 
-    expect(entries).toEqual([
+    expect(entries).toStrictEqual([
       {
+        exact: true,
         id: 'core-character-overview',
         label: 'OVERVIEW',
         to: '/characters/42',
-        exact: true,
       },
       {
+        exact: false,
         id: 'core-character-skills',
         label: 'SKILLS',
         to: '/characters/42/skills',
-        exact: false,
       },
       {
+        exact: false,
         id: 'module-intel',
         label: 'THREAT INTELLIGENCE',
         to: '/characters/42/intel',
-        exact: false,
       },
     ])
   })
@@ -128,11 +128,11 @@ describe('character record navigation coordination', () => {
     expect(resolveCharacterNavigation(enabledEntries, 42).map((entry) => entry.id)).not.toContain(
       'module-intel',
     )
-    expect(resolveCharacterNavigation(registryEntries, undefined)).toEqual([])
+    expect(resolveCharacterNavigation(registryEntries, undefined)).toStrictEqual([])
   })
 
   it('limits data-prefetch intent to the existing core query owners', () => {
-    expect(CORE_CHARACTER_DATA_PREFETCH_IDS).toEqual([
+    expect(CORE_CHARACTER_DATA_PREFETCH_IDS).toStrictEqual([
       'core-character-skills',
       'core-character-clones',
       'core-character-finance',

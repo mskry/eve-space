@@ -19,7 +19,9 @@ export interface StaticLocationRequest {
 }
 
 export async function getStaticLocations(locations: readonly StaticLocationRequest[]) {
-  if (locations.length === 0) return []
+  if (locations.length === 0) {
+    return []
+  }
   const snapshot = await getStaticLocationSnapshot(staticLocationCacheState)
   return locations.map((location) => locationResult(snapshot, location))
 }
@@ -33,15 +35,21 @@ async function getStaticLocationSnapshot(state: StaticLocationCacheState) {
     const current = state.read()
     const now = performance.now()
     if (now < current.nextCheckAt) {
-      if (current.snapshot) return current.snapshot
+      if (current.snapshot) {
+        return current.snapshot
+      }
       throw current.failure ?? new StaticLocationProjectionUnavailableError()
     }
-    if (current.inFlight) return current.inFlight
+    if (current.inFlight) {
+      return current.inFlight
+    }
 
     const inFlight = state.begin(current.generation, () =>
       refreshStaticLocationSnapshot(state, current.snapshot, current.generation),
     )
-    if (inFlight) return inFlight
+    if (inFlight) {
+      return inFlight
+    }
   }
 }
 
@@ -60,8 +68,9 @@ async function refreshStaticLocationSnapshot(
             generation,
             performance.now() + staticLocationRevisionCheckIntervalMilliseconds,
           )
-        )
+        ) {
           throw new StaticLocationCacheSupersededError()
+        }
         return current
       }
     }
@@ -73,20 +82,26 @@ async function refreshStaticLocationSnapshot(
         generation,
         performance.now() + staticLocationRevisionCheckIntervalMilliseconds,
       )
-    )
+    ) {
       throw new StaticLocationCacheSupersededError()
+    }
     return candidate
   } catch (error) {
-    if (error instanceof StaticLocationCacheSupersededError) throw error
+    if (error instanceof StaticLocationCacheSupersededError) {
+      throw error
+    }
     if (
       !state.retain(
         generation,
         error,
         performance.now() + staticLocationRevisionCheckIntervalMilliseconds,
       )
-    )
+    ) {
       throw new StaticLocationCacheSupersededError()
-    if (current) return current
+    }
+    if (current) {
+      return current
+    }
     throw error
   }
 }
@@ -97,10 +112,10 @@ function locationResult(snapshot: StaticLocationSnapshot, location: StaticLocati
   const system = systemId === undefined ? undefined : snapshot.systems.get(systemId)
   return {
     id: location.id,
-    type: location.type,
     name: location.type === 'solar_system' ? (system?.name ?? null) : null,
     solarSystemId: system?.id ?? null,
     solarSystemSecurityStatus: system?.securityStatus ?? null,
+    type: location.type,
   }
 }
 

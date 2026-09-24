@@ -27,17 +27,17 @@ export async function startWorker() {
     resolveSignal = resolve
   })
   const shutdown = createWorkerShutdownCoordinator({
-    timeoutMs: env.WORKER_SHUTDOWN_TIMEOUT_MS,
-    getStartupOperation: () => startupOperation,
-    getPlatform: () => platform,
-    closeEsiRuntime: closeProductionEsiExecutionRuntime,
     closeCacheRedis: closeSharedCacheRedisConnection,
     closeCoordinationRedis: closeSharedCoordinationRedisConnection,
-    closePostgres: (timeoutMs) => sql.end({ timeout: timeoutMs / 1_000 }),
+    closeEsiRuntime: closeProductionEsiExecutionRuntime,
+    closePostgres: (timeoutMs) => sql.end({ timeout: timeoutMs / 1000 }),
+    getPlatform: () => platform,
+    getStartupOperation: () => startupOperation,
+    markFailed: markProcessShutdownFailed,
     recordFailure: (component, error) =>
       recordDiagnostic('worker.shutdown.failed', { context: { component }, error }),
     recordTimeout: () => recordDiagnostic('worker.shutdown.timed-out'),
-    markFailed: markProcessShutdownFailed,
+    timeoutMs: env.WORKER_SHUTDOWN_TIMEOUT_MS,
   })
   const disposeSignals = installShutdownSignalHandlers(() => {
     startupController.abort()
@@ -50,8 +50,8 @@ export async function startWorker() {
     assertCoreDataCoverageManifest({ esiOperationIds: coreEsiOperationIds })
     assertEsiCatalogConfiguration({
       compatibilityDate: env.ESI_COMPATIBILITY_DATE,
-      ssoEnabled: isSsoConfigured(),
       requestableScopes: env.EVE_SCOPES.split(/\s+/).filter(Boolean),
+      ssoEnabled: isSsoConfigured(),
     })
     assertInstalledResourceDeclarations()
     await runStartupOperation(
@@ -67,20 +67,24 @@ export async function startWorker() {
     await runStartupOperation(startingPlatform, startupController.signal, (value) => {
       startupOperation = value
     })
-    if (!platform) throw new Error('Worker platform startup did not complete')
+    if (!platform) {
+      throw new Error('Worker platform startup did not complete')
+    }
     recordDiagnostic('worker.dependencies.verified')
 
     const reason = await Promise.race([
       signal.then(() => ({ type: 'signal' as const })),
       platform.stopped.then(
         () => ({ type: 'run-loop-stopped' as const }),
-        (error: unknown) => ({ type: 'run-loop-failed' as const, error }),
+        (error: unknown) => ({ error, type: 'run-loop-failed' as const }),
       ),
     ])
     if (reason.type !== 'signal') {
-      if (reason.type === 'run-loop-failed')
+      if (reason.type === 'run-loop-failed') {
         recordDiagnostic('worker.run-loop.failed', { error: reason.error })
-      else recordDiagnostic('worker.processing-loop.stopped')
+      } else {
+        recordDiagnostic('worker.processing-loop.stopped')
+      }
       markProcessShutdownFailed()
     }
     await shutdown()
@@ -101,8 +105,8 @@ async function runStartupOperation(
   setOperation: (operation: Promise<void> | undefined) => void,
 ) {
   const settled = operation.then(
-    () => undefined,
-    () => undefined,
+    () => {},
+    () => {},
   )
   setOperation(settled)
   try {

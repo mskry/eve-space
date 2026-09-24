@@ -59,24 +59,24 @@ import { characterRoutes } from '../../src/characters/routes.js'
 import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 
 const client = testClient(characterRoutes)
-const characterId = 1404328063
+const characterId = 1_404_328_063
 const sessionHeaders = { Cookie: 'eve_space_session=active-session' }
 const character = {
-  characterId,
-  name: 'Clone Pilot',
-  corporationId: 1000166,
   allianceId: null,
+  characterId,
+  corporationId: 1_000_166,
   isMain: true,
+  name: 'Clone Pilot',
   subjectLifecycleId: 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011',
 }
 const session = {
-  userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
   mainCharacter: character,
+  userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
 }
 const freshness = {
   cachedUntil: '2026-09-03T11:02:00.000Z',
-  validatedAt: '2026-09-03T11:00:00.000Z',
   stale: false,
+  validatedAt: '2026-09-03T11:00:00.000Z',
 }
 const clones = {
   homeLocation: {
@@ -87,10 +87,10 @@ const clones = {
   },
   jumpClones: [
     {
-      jumpCloneId: 11,
-      name: 'Industry',
-      location: { locationId: 1_035_466_617_946, locationType: 'structure', name: null },
       implants: [{ typeId: 2, name: 'Memory Augmentation' }],
+      jumpCloneId: 11,
+      location: { locationId: 1_035_466_617_946, locationType: 'structure', name: null },
+      name: 'Industry',
     },
   ],
   lastCloneJumpAt: '2026-09-02T12:00:00Z',
@@ -98,7 +98,7 @@ const clones = {
   ...freshness,
 }
 const implants = {
-  implants: [{ typeId: 3, name: 'Ocular Filter' }],
+  implants: [{ name: 'Ocular Filter', typeId: 3 }],
   ...freshness,
 }
 
@@ -125,10 +125,10 @@ describe('typed character clone routes', () => {
     )
 
     expect(cloneResponse.status).toBe(200)
-    await expect(cloneResponse.json()).resolves.toEqual(clones)
+    await expect(cloneResponse.json()).resolves.toStrictEqual(clones)
     expectPrivateHeaders(cloneResponse)
     expect(implantResponse.status).toBe(200)
-    await expect(implantResponse.json()).resolves.toEqual(implants)
+    await expect(implantResponse.json()).resolves.toStrictEqual(implants)
     expectPrivateHeaders(implantResponse)
     expect(mocks.getCharacterClones).toHaveBeenCalledWith(characterId, character.subjectLifecycleId)
     expect(mocks.getCharacterImplants).toHaveBeenCalledWith(
@@ -143,7 +143,7 @@ describe('typed character clone routes', () => {
       const response = await characterRoutes.request(`/${characterId}/${resource}`)
 
       expect(response.status).toBe(401)
-      await expect(response.json()).resolves.toEqual({
+      await expect(response.json()).resolves.toStrictEqual({
         code: 'AUTH_REQUIRED',
         message: 'Log in with EVE Online first.',
       })
@@ -174,7 +174,7 @@ describe('typed character clone routes', () => {
       const response = await authorizedRequest('/90000001/clones')
 
       expect(response.status).toBe(404)
-      await expect(response.json()).resolves.toEqual({
+      await expect(response.json()).resolves.toStrictEqual({
         code: 'CHARACTER_NOT_FOUND',
         message: 'Character not found.',
       })
@@ -189,15 +189,15 @@ const resourceCases = [
     path: 'clones',
     scope: 'esi-clones.read_clones.v1',
     scopeMessage: 'Authorize clone access for this character.',
-    unavailableMessage: 'Unable to retrieve character clone state.',
     service: mocks.getCharacterClones,
+    unavailableMessage: 'Unable to retrieve character clone state.',
   },
   {
     path: 'implants',
     scope: 'esi-clones.read_implants.v1',
     scopeMessage: 'Authorize implant access for this character.',
-    unavailableMessage: 'Unable to retrieve active implants.',
     service: mocks.getCharacterImplants,
+    unavailableMessage: 'Unable to retrieve active implants.',
   },
 ] as const
 
@@ -208,11 +208,11 @@ describe.each(resourceCases)('character $path route failures', (resource) => {
     const response = await authorizedRequest(`/${characterId}/${resource.path}`)
 
     expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
+      authorizeUrl: reauthorizationUrl(),
       code: 'EVE_SCOPE_REQUIRED',
       message: resource.scopeMessage,
       requiredScope: resource.scope,
-      authorizeUrl: reauthorizationUrl(),
     })
     expectPrivateHeaders(response)
   })
@@ -227,11 +227,11 @@ describe.each(resourceCases)('character $path route failures', (resource) => {
       const response = await authorizedRequest(`/${characterId}/${resource.path}`)
 
       expect(response.status).toBe(403)
-      await expect(response.json()).resolves.toEqual({
+      await expect(response.json()).resolves.toStrictEqual({
+        authorizeUrl: reauthorizationUrl(),
         code: 'EVE_REAUTH_REQUIRED',
         message: 'EVE authorization is no longer valid.',
         requiredScope: resource.scope,
-        authorizeUrl: reauthorizationUrl(),
       })
       expectPrivateHeaders(response)
     },
@@ -244,7 +244,7 @@ describe.each(resourceCases)('character $path route failures', (resource) => {
 
     expect(response.status).toBe(429)
     expect(response.headers.get('retry-after')).toBe('12')
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'ESI_COOLDOWN',
       message: 'EVE Online ESI is temporarily rate limited.',
       retryAfterSeconds: 12,
@@ -258,7 +258,7 @@ describe.each(resourceCases)('character $path route failures', (resource) => {
     const response = await authorizedRequest(`/${characterId}/${resource.path}`)
 
     expect(response.status).toBe(503)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'EVE_TOKEN_REFRESH_UNAVAILABLE',
       message: 'EVE token refresh is temporarily unavailable. Try again shortly.',
     })
@@ -271,7 +271,7 @@ describe.each(resourceCases)('character $path route failures', (resource) => {
     const response = await authorizedRequest(`/${characterId}/${resource.path}`)
 
     expect(response.status).toBe(502)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'ESI_UNAVAILABLE',
       message: resource.unavailableMessage,
     })

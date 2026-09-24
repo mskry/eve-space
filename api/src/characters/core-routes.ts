@@ -23,7 +23,7 @@ import {
 } from './skills.js'
 import { getWalletBalance } from './wallet.js'
 
-const rosterEnrichmentTimeoutMs = 2_000
+const rosterEnrichmentTimeoutMs = 2000
 
 type Section<Data> =
   | { status: 'ok'; data: Data }
@@ -33,8 +33,9 @@ type Section<Data> =
 export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
   .get('/', privateNoStore, loadSession, async (context) => {
     const session = context.var.session
-    if (!session)
+    if (!session) {
       return context.json({ code: 'AUTH_REQUIRED', message: 'Log in with EVE Online first.' }, 401)
+    }
 
     const characters = await listUserCharacters(session.userId)
     const [profiles, locations, ships, wallets, skillSummaries] = await Promise.all([
@@ -74,28 +75,28 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
     ])
     return context.json({
       characters: characters.map((character, index) => ({
-        characterId: character.characterId,
-        name: character.name,
-        corporationId: character.corporationId,
-        allianceId: character.allianceId,
-        isMain: character.isMain,
-        birthday: profiles[index]?.birthday ?? null,
-        securityStatus: profiles[index]?.securityStatus ?? null,
-        raceFactionId: profiles[index]?.raceFactionId ?? null,
-        location: locations[index] ? toCharacterEsiResponse(locations[index]) : null,
-        ship: ships[index] ? toCharacterEsiResponse(ships[index]) : null,
-        walletBalance: wallets[index]?.balance ?? null,
-        totalSp: skillSummaries[index]?.totalSp ?? null,
-        corporation: {
-          id: character.corporationId,
-          name: profiles[index]?.corporation.name ?? 'Unknown corporation',
-        },
         alliance: character.allianceId
           ? {
               id: character.allianceId,
               name: profiles[index]?.alliance?.name ?? 'Unknown alliance',
             }
           : null,
+        allianceId: character.allianceId,
+        birthday: profiles[index]?.birthday ?? null,
+        characterId: character.characterId,
+        corporation: {
+          id: character.corporationId,
+          name: profiles[index]?.corporation.name ?? 'Unknown corporation',
+        },
+        corporationId: character.corporationId,
+        isMain: character.isMain,
+        location: locations[index] ? toCharacterEsiResponse(locations[index]) : null,
+        name: character.name,
+        raceFactionId: profiles[index]?.raceFactionId ?? null,
+        securityStatus: profiles[index]?.securityStatus ?? null,
+        ship: ships[index] ? toCharacterEsiResponse(ships[index]) : null,
+        totalSp: skillSummaries[index]?.totalSp ?? null,
+        walletBalance: wallets[index]?.balance ?? null,
       })),
     })
   })
@@ -139,8 +140,8 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
         ...(skills.status === 'ok' ? [skills.data] : []),
       ])
       return context.json({
-        profile,
         location: toPublicEsiSection(location),
+        profile,
         ship: toPublicEsiSection(ship),
         skills: toPublicEsiSection(skills),
         ...metadata,
@@ -159,8 +160,9 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
         session.userId,
         context.var.ownedCharacter.characterId,
       )
-      if (!mainCharacter)
+      if (!mainCharacter) {
         return context.json({ code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' }, 404)
+      }
       return context.json({ mainCharacter })
     },
   )
@@ -204,8 +206,9 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
           409,
         )
       }
-      if (result === 'not-found')
+      if (result === 'not-found') {
         return context.json({ code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' }, 404)
+      }
       return context.body(null, 204)
     },
   )
@@ -230,29 +233,29 @@ async function resolveSection<Data>(
   characterId: number,
 ): Promise<Section<Data>> {
   try {
-    return { status: 'ok', data: await load() }
+    return { data: await load(), status: 'ok' }
   } catch (error) {
     const failure = classifyCharacterResourceFailure(error, { configuredScope: requiredScope })
     switch (failure.kind) {
       case 'token-refresh-unavailable':
-        return { status: 'unavailable', message: 'EVE token refresh is temporarily unavailable.' }
+        return { message: 'EVE token refresh is temporarily unavailable.', status: 'unavailable' }
       case 'scope-required':
         return {
-          status: 'scope-required',
+          authorizeUrl: characterReauthorizationUrl(characterId),
           message: `Authorize this scope to view this data: ${failure.requiredScope}`,
           requiredScope: failure.requiredScope,
-          authorizeUrl: characterReauthorizationUrl(characterId),
+          status: 'scope-required',
         }
       case 'authorization-rejected':
         return {
-          status: 'scope-required',
+          authorizeUrl: characterReauthorizationUrl(characterId),
           message: 'EVE authorization is no longer valid.',
           requiredScope: failure.requiredScope,
-          authorizeUrl: characterReauthorizationUrl(characterId),
+          status: 'scope-required',
         }
       case 'cooldown':
       case 'unavailable':
-        return { status: 'unavailable', message: 'EVE Online ESI is temporarily unavailable.' }
+        return { message: 'EVE Online ESI is temporarily unavailable.', status: 'unavailable' }
     }
   }
 }
@@ -261,6 +264,6 @@ function toPublicEsiSection<Data extends EsiReadResultMetadata>(
   section: Section<Data>,
 ): Section<Omit<Data, 'source' | 'quota'>> {
   return section.status === 'ok'
-    ? { status: 'ok', data: toCharacterEsiResponse(section.data) }
+    ? { data: toCharacterEsiResponse(section.data), status: 'ok' }
     : section
 }

@@ -12,8 +12,8 @@ describe('local organization fixture database guard', () => {
   test.each(['production', 'test', undefined])('refuses NODE_ENV=%s', (nodeEnvironment) => {
     expect(() =>
       parseLocalDatabaseGuard(['--confirm-database=eve_space_fixture', sessionHandoffArgument], {
-        NODE_ENV: nodeEnvironment,
         DATABASE_URL: databaseUrl,
+        NODE_ENV: nodeEnvironment,
       }),
     ).toThrow('NODE_ENV=development')
   })
@@ -32,8 +32,8 @@ describe('local organization fixture database guard', () => {
   ])('refuses non-loopback database URL %s', (url) => {
     expect(() =>
       parseLocalDatabaseGuard(['--confirm-database=eve_space_fixture', sessionHandoffArgument], {
-        NODE_ENV: 'development',
         DATABASE_URL: url,
+        NODE_ENV: 'development',
       }),
     ).toThrow('loopback database host')
   })
@@ -46,8 +46,8 @@ describe('local organization fixture database guard', () => {
   ])('refuses unsafe database target', (url, message) => {
     expect(() =>
       parseLocalDatabaseGuard(['--confirm-database=eve_space_fixture', sessionHandoffArgument], {
-        NODE_ENV: 'development',
         DATABASE_URL: url,
+        NODE_ENV: 'development',
       }),
     ).toThrow(message)
   })
@@ -60,8 +60,8 @@ describe('local organization fixture database guard', () => {
   ] as const)('requires exact confirmation and handoff for arguments %j', (args) => {
     expect(() =>
       parseLocalDatabaseGuard(args, {
-        NODE_ENV: 'development',
         DATABASE_URL: databaseUrl,
+        NODE_ENV: 'development',
       }),
     ).toThrow('exact database and session handoff arguments')
   })
@@ -71,8 +71,8 @@ describe('local organization fixture database guard', () => {
       parseLocalDatabaseGuard(
         ['--confirm-database=eve_space_fixture', '--session-handoff=fixture-session.html'],
         {
-          NODE_ENV: 'development',
           DATABASE_URL: databaseUrl,
+          NODE_ENV: 'development',
         },
       ),
     ).toThrow('must be absolute')
@@ -86,18 +86,18 @@ describe('local organization fixture database guard', () => {
     const databaseName = new URL(url).pathname.slice(1)
     expect(
       parseLocalDatabaseGuard([`--confirm-database=${databaseName}`, sessionHandoffArgument], {
-        NODE_ENV: 'development',
         DATABASE_URL: url,
+        NODE_ENV: 'development',
       }),
-    ).toEqual({ databaseName, databaseUrl: url, sessionHandoffPath })
+    ).toStrictEqual({ databaseName, databaseUrl: url, sessionHandoffPath })
   })
 
   test('does not include credentials or URLs in failures', () => {
     let message = ''
     try {
       parseLocalDatabaseGuard(['--confirm-database=wrong', sessionHandoffArgument], {
-        NODE_ENV: 'development',
         DATABASE_URL: databaseUrl,
+        NODE_ENV: 'development',
       })
     } catch (error) {
       message = error instanceof Error ? error.message : String(error)

@@ -22,36 +22,16 @@ export async function judgeDomainEvent(
 ): Promise<DomainEventJudgment> {
   const answers = await evaluateSystemOne(client, toModelState(evidence), domainEventQuestions)
   return {
+    deliverySafety: choice(answers.delivery_safety),
+    identityFit: choice(answers.identity_fit),
     mutationFit: choice(answers.mutation_fit),
     schemaFit: choice(answers.schema_fit),
-    identityFit: choice(answers.identity_fit),
-    deliverySafety: choice(answers.delivery_safety),
     sensitivityFit: choice(answers.sensitivity_fit),
   }
 }
 
 function toModelState(evidence: DomainEventEvidence): EntryType {
   return {
-    producer: {
-      source: `${evidence.producer.file}:${evidence.producer.line}`,
-      function: evidence.producer.functionName ?? 'No enclosing named function was found.',
-      resolved_event_type: evidence.producer.eventType,
-      event_type_expression: evidence.producer.eventTypeExpression,
-      payload_version: evidence.producer.payloadVersion,
-      aggregate_id: evidence.producer.aggregateId ?? 'No aggregate ID expression was found.',
-      payload: evidence.producer.payload ?? 'No payload expression was found.',
-      append_call: evidence.producer.appendCall,
-      mutation_context: evidence.producer.mutationContext,
-    },
-    definition: evidence.definition
-      ? {
-          aggregate_type: evidence.definition.aggregateType,
-          payload_version: evidence.definition.payloadVersion,
-          registry_entry: evidence.definition.registryEntry,
-          payload_schema:
-            evidence.definition.payloadSchema ?? 'No payload schema declaration was resolved.',
-        }
-      : 'No matching registered domain-event definition was found.',
     consumers:
       evidence.consumers.length > 0
         ? evidence.consumers.map((consumer) => ({
@@ -69,7 +49,27 @@ function toModelState(evidence: DomainEventEvidence): EntryType {
             })),
           }))
         : 'No consuming handler is registered for this event.',
+    definition: evidence.definition
+      ? {
+          aggregate_type: evidence.definition.aggregateType,
+          payload_version: evidence.definition.payloadVersion,
+          registry_entry: evidence.definition.registryEntry,
+          payload_schema:
+            evidence.definition.payloadSchema ?? 'No payload schema declaration was resolved.',
+        }
+      : 'No matching registered domain-event definition was found.',
     policy: domainEventPolicy,
+    producer: {
+      aggregate_id: evidence.producer.aggregateId ?? 'No aggregate ID expression was found.',
+      append_call: evidence.producer.appendCall,
+      event_type_expression: evidence.producer.eventTypeExpression,
+      function: evidence.producer.functionName ?? 'No enclosing named function was found.',
+      mutation_context: evidence.producer.mutationContext,
+      payload: evidence.producer.payload ?? 'No payload expression was found.',
+      payload_version: evidence.producer.payloadVersion,
+      resolved_event_type: evidence.producer.eventType,
+      source: `${evidence.producer.file}:${evidence.producer.line}`,
+    },
   }
 }
 

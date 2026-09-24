@@ -44,8 +44,8 @@ describe('ESI execution path selection', () => {
       'mail-headers': 'GetCharactersCharacterIdMail',
       'mail-lists': 'GetCharactersCharacterIdMailLists',
       'mail-message': 'GetCharactersCharacterIdMailMailId',
-      skills: 'GetCharactersCharacterIdSkills',
       'skill-queue': 'GetCharactersCharacterIdSkillqueue',
+      skills: 'GetCharactersCharacterIdSkills',
       'universe-resolve-names': 'PostUniverseNames',
       'wallet-balance': 'GetCharactersCharacterIdWallet',
       'wallet-journal': 'GetCharactersCharacterIdWalletJournal',
@@ -61,26 +61,26 @@ describe('ESI execution path selection', () => {
 
   test('routes a callable core read only through representation execution', async () => {
     const result = {
-      data: { players: 1 },
-      source: 'esi' as const,
-      validatedAt: '2026-09-11T12:00:00.000Z',
       cachedUntil: '2026-09-11T12:01:00.000Z',
-      stale: false,
+      data: { players: 1 },
       quota: {},
+      source: 'esi' as const,
+      stale: false,
+      validatedAt: '2026-09-11T12:00:00.000Z',
     }
     mocks.executeRepresentation.mockResolvedValue(result)
     const status = createPublicEsiRead({
-      operation: 'status',
-      name: 'status-execution-selection-fixture',
-      descriptor: operationRegistry.GetStatus.transport,
       cacheSchema: operationRegistry.GetStatus.responseSchema,
+      descriptor: operationRegistry.GetStatus.transport,
       encodeRequest: () => ({}),
       map: ({ data }) => data,
+      name: 'status-execution-selection-fixture',
+      operation: 'status',
     })
 
-    await expect(status.execute(undefined)).resolves.toEqual(result)
+    await expect(status.execute(undefined)).resolves.toStrictEqual(result)
     expect(mocks.executeRepresentation).toHaveBeenCalledWith(
-      expect.objectContaining({ operation: 'status', name: 'status-execution-selection-fixture' }),
+      expect.objectContaining({ name: 'status-execution-selection-fixture', operation: 'status' }),
       undefined,
       undefined,
     )
@@ -90,18 +90,18 @@ describe('ESI execution path selection', () => {
   test('routes an installed-module read only through platform execution', async () => {
     const operation = 'organization-activity-campaign-list'
     const request = {
-      operation,
-      inputs: {},
       authorization: { kind: 'public' as const },
+      inputs: {},
+      operation,
     } as const
     mocks.executePlatformOperation.mockResolvedValue({
-      result: { data: { campaigns: [] }, source: 'esi' },
       authorizationGeneration: null,
+      result: { data: { campaigns: [] }, source: 'esi' },
     })
 
     await expect(executePlatformEsiOperation(request)).resolves.toMatchObject({
-      data: { campaigns: [] },
       authorizationGeneration: null,
+      data: { campaigns: [] },
       source: 'esi',
     })
     expect(mocks.executePlatformOperation).toHaveBeenCalledWith(

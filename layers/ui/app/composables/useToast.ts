@@ -50,7 +50,9 @@ export function useToast() {
   }
 
   function dismissToast(key?: number) {
-    if (key !== undefined && toast.value.key !== key) return
+    if (key !== undefined && toast.value.key !== key) {
+      return
+    }
     toastOpen.value = false
   }
 

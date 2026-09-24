@@ -11,9 +11,9 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 const tabs = computed(() =>
   props.contributions.map((contribution) => ({
+    contribution,
     label: contribution.label,
     value: reviewerContributionIdentity(contribution),
-    contribution,
   })),
 )
 </script>

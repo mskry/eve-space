@@ -23,6 +23,7 @@ export function createModulePersistenceContractFingerprint(
   operations: readonly ModulePersistenceContractOperation[],
   moduleIds: readonly string[] = [...new Set(operations.map(({ moduleId }) => moduleId))],
 ) {
+  // Operation field order defines the persisted contract fingerprint.
   const contract = {
     moduleIds: [...moduleIds].toSorted((left, right) => left.localeCompare(right)),
     operations: operations
@@ -48,7 +49,14 @@ export function createModulePersistenceContractFingerprint(
           schemaName,
           routineName,
           definitionFingerprint,
-          grants: grants ?? null,
+          grants: grants
+            ? {
+                routes: grants.routes,
+                activityProviders: grants.activityProviders,
+                resourceProjections: grants.resourceProjections,
+                resourceMaterializations: grants.resourceMaterializations,
+              }
+            : null,
         }),
       )
       .toSorted((left, right) =>

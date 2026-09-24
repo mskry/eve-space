@@ -28,7 +28,9 @@ try {
       max(published_at) as "latestPublishedAt"
     from domain_events
   `
-  if (!row) throw new Error('PostgreSQL domain-event recovery is unavailable')
+  if (!row) {
+    throw new Error('PostgreSQL domain-event recovery is unavailable')
+  }
   const snapshot: DomainEventRecoverySnapshot = {
     ...row,
   }
@@ -36,8 +38,8 @@ try {
     JSON.stringify(
       verifyQueueDiscardRecovery({
         confirmation: process.env.EVE_SPACE_CONFIRM_QUEUE_DISCARD,
-        snapshot,
         expectedSnapshot,
+        snapshot,
       }),
     ),
   )

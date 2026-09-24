@@ -22,16 +22,16 @@ export async function startApi() {
   let server: Server | undefined
   let disposeSignals: (() => void) | undefined
   const shutdown = createApiShutdownCoordinator({
-    timeoutMs: env.API_SHUTDOWN_TIMEOUT_MS,
-    getServer: () => server,
-    closeEsiRuntime: closeProductionEsiExecutionRuntime,
     closeCacheRedis: closeSharedCacheRedisConnection,
     closeCoordinationRedis: closeSharedCoordinationRedisConnection,
-    closePostgres: (timeoutMs) => sql.end({ timeout: timeoutMs / 1_000 }),
+    closeEsiRuntime: closeProductionEsiExecutionRuntime,
+    closePostgres: (timeoutMs) => sql.end({ timeout: timeoutMs / 1000 }),
+    getServer: () => server,
+    markFailed: markProcessShutdownFailed,
     recordFailure: (component, error) =>
       recordDiagnostic('api.shutdown.failed', { context: { component }, error }),
     recordTimeout: () => recordDiagnostic('api.shutdown.timed-out'),
-    markFailed: markProcessShutdownFailed,
+    timeoutMs: env.API_SHUTDOWN_TIMEOUT_MS,
   })
   const dispose = () => {
     disposeSignals?.()
@@ -48,8 +48,8 @@ export async function startApi() {
     assertCoreDataCoverageManifest({ esiOperationIds: coreEsiOperationIds })
     assertEsiCatalogConfiguration({
       compatibilityDate: env.ESI_COMPATIBILITY_DATE,
-      ssoEnabled: isSsoConfigured(),
       requestableScopes: env.EVE_SCOPES.split(/\s+/).filter(Boolean),
+      ssoEnabled: isSsoConfigured(),
     })
     assertInstalledResourceDeclarations()
     const startedServer = serve({ createServer, fetch: app.fetch, port: env.PORT }, (info) => {

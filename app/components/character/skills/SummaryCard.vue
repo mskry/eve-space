@@ -27,9 +27,9 @@ const attributeCells = computed(() => {
   const profile = props.attributes
   return profile
     ? attributeDefinitions.map((attribute) => ({
+        icon: `/images/eve-attributes/${attribute.key}.png`,
         key: attribute.key,
         label: attribute.label,
-        icon: `/images/eve-attributes/${attribute.key}.png`,
         value: profile[attribute.key],
       }))
     : []
@@ -37,35 +37,40 @@ const attributeCells = computed(() => {
 
 const remapAvailability = computed(() => {
   const profile = props.attributes
-  if (!profile) return null
-  if (profile.bonusRemaps > 0) return { kind: 'bonus' as const, count: profile.bonusRemaps }
+  if (!profile) {
+    return null
+  }
+  if (profile.bonusRemaps > 0) {
+    return { count: profile.bonusRemaps, kind: 'bonus' as const }
+  }
 
   const cooldown = profile.accruedRemapCooldownDate
-  if (cooldown && Date.parse(cooldown) > Date.now())
-    return { kind: 'cooldown' as const, date: cooldown }
+  if (cooldown && Date.parse(cooldown) > Date.now()) {
+    return { date: cooldown, kind: 'cooldown' as const }
+  }
   return { kind: 'available' as const }
 })
 const attributesResourceState = computed<EsiResourceState>(() => {
   if (props.attributesStatus === 'loading') {
-    return { status: 'loading', title: '', message: 'Loading attributes...' }
+    return { message: 'Loading attributes...', status: 'loading', title: '' }
   }
   if (props.attributesStatus === 'scope-required') {
     return {
-      status: 'authorization-required',
-      code: 'ESI 403 / ATTRIBUTES',
-      title: 'Attributes not authorized',
-      message: props.attributesMessage,
       action: props.attributesAuthorizeUrl
         ? { href: props.attributesAuthorizeUrl, label: 'AUTHORIZE' }
         : null,
+      code: 'ESI 403 / ATTRIBUTES',
+      message: props.attributesMessage,
+      status: 'authorization-required',
+      title: 'Attributes not authorized',
     }
   }
   if (props.attributesStatus === 'error') {
     return {
-      status: 'error',
-      title: 'Attributes unavailable',
       message: props.attributesMessage,
       retryLabel: 'RETRY',
+      status: 'error',
+      title: 'Attributes unavailable',
     }
   }
   return { status: 'ready' }
@@ -75,8 +80,8 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: 'short',
-    year: 'numeric',
     timeZone: 'UTC',
+    year: 'numeric',
   })
     .format(new Date(value))
     .toUpperCase()

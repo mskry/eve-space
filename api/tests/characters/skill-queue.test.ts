@@ -2,25 +2,25 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { createFeatureExecutionMock } from '../support/mock-feature-execution.js'
 
 const mocks = vi.hoisted(() => ({
+  acquire: vi.fn(),
+  cacheDel: vi.fn(),
+  cacheGet: vi.fn(),
+  cacheSet: vi.fn(),
+  commit: vi.fn(),
   createEsiClient: vi.fn(),
-  getSkillQueue: vi.fn(),
+  from: vi.fn(),
   getCharacterAuthorization: vi.fn(),
   getCharacterCacheAuthorization: vi.fn(),
-  acquire: vi.fn(),
-  commit: vi.fn(),
   getCommitted: vi.fn(),
   getLeaseTtl: vi.fn(),
   getRevision: vi.fn(),
+  getSkillQueue: vi.fn(),
   incrementRevision: vi.fn(),
   initialize: vi.fn(),
-  release: vi.fn(),
-  renew: vi.fn(),
-  cacheGet: vi.fn(),
-  cacheSet: vi.fn(),
-  cacheDel: vi.fn(),
   innerJoin: vi.fn(),
   leftJoin: vi.fn(),
-  from: vi.fn(),
+  release: vi.fn(),
+  renew: vi.fn(),
   select: vi.fn(),
   staticRows: [] as Array<{
     typeId: number
@@ -40,10 +40,10 @@ vi.mock('../../src/auth/tokens.js', () => ({
 }))
 vi.mock('../../src/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => ({
-    get: mocks.cacheGet,
-    set: mocks.cacheSet,
     del: mocks.cacheDel,
+    get: mocks.cacheGet,
     ping: vi.fn().mockResolvedValue('PONG'),
+    set: mocks.cacheSet,
   }),
   observeCacheRedisConnectionErrors: vi.fn(),
 }))
@@ -51,15 +51,15 @@ vi.mock('../../src/esi-gateway/feature-execution.js', () =>
   createFeatureExecutionMock((_definition, input) => mocks.getSkillQueue(input)),
 )
 
-const characterId = 1404328063
+const characterId = 1_404_328_063
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const scope = 'esi-skills.read_skillqueue.v1'
 const now = Date.parse('2026-09-01T11:00:00.000Z')
-const lease = { key: 'lease', ownerToken: 'owner', fence: 7, ttlMs: 15_000 }
+const lease = { fence: 7, key: 'lease', ownerToken: 'owner', ttlMs: 15_000 }
 const publicMetadata = {
   cachedUntil: '2026-09-01T11:02:00.000Z',
-  validatedAt: '2026-09-01T11:00:00.000Z',
   stale: false,
+  validatedAt: '2026-09-01T11:00:00.000Z',
 }
 
 interface QueueEntry {
@@ -137,22 +137,22 @@ describe('character skill queue', () => {
       response([
         {
           ...queueEntry(1, 3300, 5, {
-            name: 'Gunnery',
             groupId: 255,
             groupName: 'Gunnery',
+            name: 'Gunnery',
             primaryAttribute: 'perception',
             secondaryAttribute: 'willpower',
           }),
-          startDate: '2026-08-29T12:00:00Z',
           finishDate: '2026-08-30T12:00:00Z',
-          levelStartSp: 256000,
-          levelEndSp: 512000,
-          trainingStartSp: 260000,
+          levelEndSp: 512_000,
+          levelStartSp: 256_000,
+          startDate: '2026-08-29T12:00:00Z',
+          trainingStartSp: 260_000,
         },
         queueEntry(2, 3301, 4, {
-          name: 'Small Hybrid Turret',
           groupId: 255,
           groupName: 'Gunnery',
+          name: 'Small Hybrid Turret',
           primaryAttribute: 'perception',
           secondaryAttribute: 'willpower',
         }),
@@ -165,25 +165,25 @@ describe('character skill queue', () => {
       ...publicMetadata,
       entries: [
         {
-          queuePosition: 1,
-          typeId: 3300,
-          name: 'Gunnery',
+          finishDate: '2026-08-30T12:00:00Z',
+          finishedLevel: 5,
           groupId: 255,
           groupName: 'Gunnery',
-          finishedLevel: 5,
-          levelStartSp: 256000,
-          levelEndSp: 512000,
-          trainingStartSp: 260000,
-          startDate: '2026-08-29T12:00:00Z',
-          finishDate: '2026-08-30T12:00:00Z',
+          levelEndSp: 512_000,
+          levelStartSp: 256_000,
+          name: 'Gunnery',
           primaryAttribute: 'perception',
+          queuePosition: 1,
           secondaryAttribute: 'willpower',
+          startDate: '2026-08-29T12:00:00Z',
+          trainingStartSp: 260_000,
+          typeId: 3300,
         },
         expect.objectContaining({
-          queuePosition: 2,
-          typeId: 3301,
           primaryAttribute: 'perception',
+          queuePosition: 2,
           secondaryAttribute: 'willpower',
+          typeId: 3301,
         }),
       ],
     })
@@ -192,18 +192,18 @@ describe('character skill queue', () => {
   })
 
   test('retains entries with deterministic unknown static labels', async () => {
-    mocks.getSkillQueue.mockResolvedValue(response([queueEntry(0, 999999, 1)]))
+    mocks.getSkillQueue.mockResolvedValue(response([queueEntry(0, 999_999, 1)]))
     const { getCharacterSkillQueue } = await import('../../src/characters/skill-queue.js')
 
     await expect(getCharacterSkillQueue(characterId, subjectLifecycleId)).resolves.toMatchObject({
       entries: [
         expect.objectContaining({
-          typeId: 999999,
-          name: 'Unknown skill 999999',
           groupId: null,
           groupName: 'Unknown',
+          name: 'Unknown skill 999999',
           primaryAttribute: null,
           secondaryAttribute: null,
+          typeId: 999_999,
         }),
       ],
     })
@@ -214,21 +214,20 @@ describe('character skill queue', () => {
     const { getCharacterSkillQueue } = await import('../../src/characters/skill-queue.js')
 
     await expect(getCharacterSkillQueue(characterId, subjectLifecycleId)).resolves.toMatchObject({
-      state: 'empty',
       activeQueuePosition: null,
       entries: [],
+      state: 'empty',
     })
     expect(mocks.select).not.toHaveBeenCalled()
   })
 
   test.each([
     {
-      name: 'paused when no entry has started',
       entries: [queueEntry(0, 3300, 5), queueEntry(1, 3301, 5)],
-      expected: { state: 'paused', activeQueuePosition: null },
+      expected: { activeQueuePosition: null, state: 'paused' },
+      name: 'paused when no entry has started',
     },
     {
-      name: 'lapsed when every entry finished at or before the current time',
       entries: [
         queueEntry(0, 3300, 5, {
           startDate: '2026-08-30T10:00:00.000Z',
@@ -239,10 +238,10 @@ describe('character skill queue', () => {
           finishDate: '2026-09-01T11:00:00.000Z',
         }),
       ],
-      expected: { state: 'lapsed', activeQueuePosition: null },
+      expected: { activeQueuePosition: null, state: 'lapsed' },
+      name: 'lapsed when every entry finished at or before the current time',
     },
     {
-      name: 'training on the first entry finishing after the current time',
       entries: [
         queueEntry(0, 3300, 5, {
           startDate: '2026-08-31T10:00:00.000Z',
@@ -257,10 +256,10 @@ describe('character skill queue', () => {
           finishDate: '2026-09-02T12:00:00.000Z',
         }),
       ],
-      expected: { state: 'training', activeQueuePosition: 1 },
+      expected: { activeQueuePosition: 1, state: 'training' },
+      name: 'training on the first entry finishing after the current time',
     },
     {
-      name: 'paused when the first unfinished entry has no finish date',
       entries: [
         queueEntry(0, 3300, 5, {
           startDate: '2026-08-31T10:00:00.000Z',
@@ -271,7 +270,8 @@ describe('character skill queue', () => {
           finishDate: null,
         }),
       ],
-      expected: { state: 'paused', activeQueuePosition: null },
+      expected: { activeQueuePosition: null, state: 'paused' },
+      name: 'paused when the first unfinished entry has no finish date',
     },
   ])('reports $name through the character skill-queue interface', async ({ entries, expected }) => {
     mocks.getSkillQueue.mockResolvedValue(response(entries))
@@ -291,19 +291,19 @@ describe('character skill queue', () => {
     const first = await getCharacterSkillQueue(characterId, subjectLifecycleId)
     const second = await getCharacterSkillQueue(characterId, subjectLifecycleId)
 
-    expect(second).toEqual(first)
+    expect(second).toStrictEqual(first)
     expect(mocks.getSkillQueue).toHaveBeenCalledTimes(2)
   })
 
   test('classifies the queue against the current time rather than the cached representation', async () => {
     const entries = [
       queueEntry(0, 3300, 5, {
-        startDate: '2026-09-01T10:00:00.000Z',
         finishDate: '2026-09-01T11:00:10.000Z',
+        startDate: '2026-09-01T10:00:00.000Z',
       }),
       queueEntry(1, 3301, 5, {
-        startDate: '2026-09-01T10:00:00.000Z',
         finishDate: '2026-09-01T11:00:40.000Z',
+        startDate: '2026-09-01T10:00:00.000Z',
       }),
     ]
     mocks.getSkillQueue
@@ -312,20 +312,20 @@ describe('character skill queue', () => {
     const { getCharacterSkillQueue } = await import('../../src/characters/skill-queue.js')
 
     await expect(getCharacterSkillQueue(characterId, subjectLifecycleId)).resolves.toMatchObject({
-      state: 'training',
       activeQueuePosition: 0,
+      state: 'training',
     })
 
     vi.setSystemTime(new Date('2026-09-01T11:00:15.000Z'))
     await expect(getCharacterSkillQueue(characterId, subjectLifecycleId)).resolves.toMatchObject({
-      state: 'training',
       activeQueuePosition: 1,
+      state: 'training',
     })
 
     vi.setSystemTime(new Date('2026-09-01T11:00:45.000Z'))
     await expect(getCharacterSkillQueue(characterId, subjectLifecycleId)).resolves.toMatchObject({
-      state: 'lapsed',
       activeQueuePosition: null,
+      state: 'lapsed',
     })
 
     expect(mocks.getSkillQueue).toHaveBeenCalledTimes(3)
@@ -334,12 +334,12 @@ describe('character skill queue', () => {
 
 function response(data: QueueEntry[], source: 'cache' | 'esi' = 'esi') {
   return {
-    data: { entries: data },
     cachedUntil: publicMetadata.cachedUntil,
-    validatedAt: publicMetadata.validatedAt,
+    data: { entries: data },
     quota: {},
     source,
     stale: false,
+    validatedAt: publicMetadata.validatedAt,
   }
 }
 
@@ -350,19 +350,19 @@ function queueEntry(
   overrides: Partial<QueueEntry> = {},
 ): QueueEntry {
   return {
-    queuePosition,
-    typeId,
-    name: `Unknown skill ${typeId}`,
+    finishDate: null,
+    finishedLevel,
     groupId: null,
     groupName: 'Unknown',
-    finishedLevel,
-    levelStartSp: null,
     levelEndSp: null,
-    trainingStartSp: null,
-    startDate: null,
-    finishDate: null,
+    levelStartSp: null,
+    name: `Unknown skill ${typeId}`,
     primaryAttribute: null,
+    queuePosition,
     secondaryAttribute: null,
+    startDate: null,
+    trainingStartSp: null,
+    typeId,
     ...overrides,
   }
 }

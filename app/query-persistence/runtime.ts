@@ -249,8 +249,11 @@ function createQueryPersistenceRuntime(
     host: {
       applyVerifiedSession(session, ownerMatches) {
         const sessionKey = PRIVATE_QUERY_KEYS.session()
-        if (ownerMatches) queryCache.setQueryData(sessionKey, session)
-        else clearAuthenticatedQueriesAfterSessionTransition(queryCache, session, sessionKey)
+        if (ownerMatches) {
+          queryCache.setQueryData(sessionKey, session)
+        } else {
+          clearAuthenticatedQueriesAfterSessionTransition(queryCache, session, sessionKey)
+        }
       },
       clearCorruptCache(envelope) {
         clearCorruptCacheState(state, envelope)
@@ -297,6 +300,9 @@ function createQueryPersistenceRuntime(
       isRestorationSettled() {
         return state.restorationSettled
       },
+      quarantineRetainedData() {
+        quarantineRetainedPrivateData(state)
+      },
       readCachedUserId() {
         return authenticatedUserId(
           queryCache.getQueryData<AuthSession>(PRIVATE_QUERY_KEYS.session()),
@@ -311,14 +317,11 @@ function createQueryPersistenceRuntime(
       readPersistedPrivateOwner() {
         return persistedPrivateOwner(state.envelope)
       },
-      refetchParkedPrivateQueries() {
-        refetchParkedPrivateQueries(state)
-      },
-      quarantineRetainedData() {
-        quarantineRetainedPrivateData(state)
-      },
       reconcileRetainedData() {
         reconcileRetainedDataExpiry(state, privateLifecycle, now, timers)
+      },
+      refetchParkedPrivateQueries() {
+        refetchParkedPrivateQueries(state)
       },
       resolveAdmissionInvalidationScope(
         admission,
@@ -357,7 +360,9 @@ function createQueryPersistenceRuntime(
 
   async function waitForRestoration() {
     await state.restorationReady
-    if (state.officialPersisterInstalled) await isCacheReady()
+    if (state.officialPersisterInstalled) {
+      await isCacheReady()
+    }
     privateLifecycle.runIfActive(() => extendRestoredEntries(queryCache))
   }
 
@@ -369,6 +374,21 @@ function createQueryPersistenceRuntime(
     },
     awaitRestoration() {
       return waitForRestoration()
+    },
+    canPrefetch(options) {
+      const meta = toValue(options.meta)
+      const persistence = meta ? readEsiPersistence(meta) : null
+      if (!persistence || persistence.kind === 'public-esi') {
+        return true
+      }
+      if (privateLifecycle.hasCurrentAdmission(persistence)) {
+        return true
+      }
+      const key = toValue(options.key)
+      return (
+        queryCache.get(key)?.state.value.data === undefined ||
+        state.entryState.readRetentionDeadline(toCacheKey(key)) === undefined
+      )
     },
     dispose() {
       privateLifecycle.dispose()
@@ -382,7 +402,9 @@ function createQueryPersistenceRuntime(
       }
     },
     finishHydration() {
-      if (state.hydrationFinished) return
+      if (state.hydrationFinished) {
+        return
+      }
       state.hydrationFinished = true
       recordUnclassifiedSuccessfulEntries(state, now())
       applyStagedPublicFallbacks(state, privateLifecycle, now)
@@ -390,17 +412,6 @@ function createQueryPersistenceRuntime(
       state.resolveHydration()
       touchQueryPersistenceState(state)
       reconcileRetainedDataExpiry(state, privateLifecycle, now, timers)
-    },
-    canPrefetch(options) {
-      const meta = toValue(options.meta)
-      const persistence = meta ? readEsiPersistence(meta) : null
-      if (!persistence || persistence.kind === 'public-esi') return true
-      if (privateLifecycle.hasCurrentAdmission(persistence)) return true
-      const key = toValue(options.key)
-      return (
-        queryCache.get(key)?.state.value.data === undefined ||
-        state.entryState.readRetentionDeadline(toCacheKey(key)) === undefined
-      )
     },
     installOfficialPlugin(context) {
       initializeQueryCacheHooks(state, privateLifecycle, now, timers)
@@ -421,24 +432,11 @@ function createQueryPersistenceRuntime(
         onParseError: () => {
           void privateLifecycle.clearCorruptCache().finally(() => settleRestoration(state))
         },
-        onStringifyError: () => undefined,
+        onStringifyError: () => {},
       })(context)
     },
     invalidate(scope) {
       return privateLifecycle.invalidate(scope)
-    },
-    reportAuthorizationDenial(scope, error) {
-      const invalidationScope = authoritativeDenialInvalidationScope(scope, error)
-      if (!invalidationScope) return false
-      // A missing write scope leaves read access intact, so live results and consumer state survive.
-      void privateLifecycle.invalidate(invalidationScope, false, isMissingScopeDenial(error))
-      return true
-    },
-    refreshAdmission(scope) {
-      return privateLifecycle.refreshAdmission(scope)
-    },
-    suspendAdmission() {
-      privateLifecycle.suspendAdmission()
     },
     readActiveState() {
       return computedPresentation(state, () => {
@@ -450,6 +448,9 @@ function createQueryPersistenceRuntime(
           ? selectEsiQueryPersistencePresentation(presentations)
           : undefined
       })
+    },
+    readCharacterOwnership(characterId) {
+      return computedPresentation(state, () => privateLifecycle.ownsCharacter(toValue(characterId)))
     },
     readState(key) {
       return computedPresentation(state, () => {
@@ -468,13 +469,25 @@ function createQueryPersistenceRuntime(
         }
       })
     },
-    readCharacterOwnership(characterId) {
-      return computedPresentation(state, () => privateLifecycle.ownsCharacter(toValue(characterId)))
+    refreshAdmission(scope) {
+      return privateLifecycle.refreshAdmission(scope)
+    },
+    reportAuthorizationDenial(scope, error) {
+      const invalidationScope = authoritativeDenialInvalidationScope(scope, error)
+      if (!invalidationScope) {
+        return false
+      }
+      // A missing write scope leaves read access intact, so live results and consumer state survive.
+      void privateLifecycle.invalidate(invalidationScope, false, isMissingScopeDenial(error))
+      return true
     },
     subscribeInvalidation(scope, listener) {
       const subscription = { listener, scope }
       invalidationSubscribers.add(subscription)
       return () => invalidationSubscribers.delete(subscription)
+    },
+    suspendAdmission() {
+      privateLifecycle.suspendAdmission()
     },
   }
 
@@ -495,10 +508,14 @@ function createColadaStorage(
 ): PiniaColadaStorage {
   return {
     async getItem(key) {
-      if (key !== PERSISTED_ESI_QUERY_CACHE_KEY) return null
+      if (key !== PERSISTED_ESI_QUERY_CACHE_KEY) {
+        return null
+      }
       try {
         const value = await privateLifecycle.readStoredEnvelope()
-        if (value === null) settle()
+        if (value === null) {
+          settle()
+        }
         return value
       } catch (error) {
         settle()
@@ -506,10 +523,14 @@ function createColadaStorage(
       }
     },
     async removeItem(key) {
-      if (key === PERSISTED_ESI_QUERY_CACHE_KEY) await privateLifecycle.removeStoredEnvelope()
+      if (key === PERSISTED_ESI_QUERY_CACHE_KEY) {
+        await privateLifecycle.removeStoredEnvelope()
+      }
     },
     async setItem(key, value) {
-      if (key !== PERSISTED_ESI_QUERY_CACHE_KEY) return
+      if (key !== PERSISTED_ESI_QUERY_CACHE_KEY) {
+        return
+      }
       await privateLifecycle.writeStoredEnvelope(value)
     },
   }
@@ -528,13 +549,17 @@ function parseCache(
   for (const [keyHash, tuple] of Object.entries(parsed.envelope.public)) {
     state.pendingPublicHydration[keyHash] = tuple
   }
-  if (state.hydrationFinished) applyStagedPublicFallbacks(state, privateLifecycle, now)
+  if (state.hydrationFinished) {
+    applyStagedPublicFallbacks(state, privateLifecycle, now)
+  }
 
   touchQueryPersistenceState(state)
   reconcileRetainedDataExpiry(state, privateLifecycle, now, timers)
   if (parsed.pruned) {
     void persistCurrentEnvelope(state, privateLifecycle).finally(() => settleRestoration(state))
-  } else settleRestoration(state)
+  } else {
+    settleRestoration(state)
+  }
   return createCache()
 }
 
@@ -575,7 +600,9 @@ function applyStagedPublicFallbacks(
     }
     state.entryState.restored(keyHash, tuple[0], tuple[2])
   }
-  if (expired) void persistCurrentEnvelope(state, privateLifecycle)
+  if (expired) {
+    void persistCurrentEnvelope(state, privateLifecycle)
+  }
   touchQueryPersistenceState(state)
 }
 
@@ -614,8 +641,12 @@ function reconcileRetainedDataExpiry(
     stateChanged = stateChanged || changes.stateChanged
   }
 
-  if (stateChanged || envelopeChanged) touchQueryPersistenceState(state)
-  if (envelopeChanged) void persistCurrentEnvelope(state, privateLifecycle)
+  if (stateChanged || envelopeChanged) {
+    touchQueryPersistenceState(state)
+  }
+  if (envelopeChanged) {
+    void persistCurrentEnvelope(state, privateLifecycle)
+  }
   scheduleRetainedDataExpiry(state, privateLifecycle, now, timers)
 }
 
@@ -668,14 +699,18 @@ function expireRetainedQueryEntry(state: QueryPersistenceRuntimeState, entry: Us
   state.queryCache.setEntryState(
     entry,
     priorError === null
-      ? { status: 'pending', data: undefined, error: null }
-      : { status: 'error', data: undefined, error: priorError },
+      ? { data: undefined, error: null, status: 'pending' }
+      : { data: undefined, error: priorError, status: 'error' },
   )
   entry.when = 0
   touchQueryPersistenceState(state)
 
-  if (!entry.active) state.queryCache.remove(entry)
-  if (shouldRefresh) void state.queryCache.fetch(entry).catch(() => undefined)
+  if (!entry.active) {
+    state.queryCache.remove(entry)
+  }
+  if (shouldRefresh) {
+    void state.queryCache.fetch(entry).catch(() => {})
+  }
 }
 
 function retainedDataExpiryError(
@@ -685,9 +720,9 @@ function retainedDataExpiryError(
     return new ApiQueryError(
       'Previously cached data expired before current ESI data became available.',
       {
-        status: presentation.refreshFailureStatus ?? 502,
         code: presentation.refreshFailureCode ?? 'ESI_UNAVAILABLE',
         retryAt: presentation.retryAt,
+        status: presentation.refreshFailureStatus ?? 502,
       },
     )
   }
@@ -695,9 +730,9 @@ function retainedDataExpiryError(
     return new ApiQueryError(
       'Previously cached data expired before current ESI data became available.',
       {
-        status: 502,
         code: 'ESI_UNAVAILABLE',
         retryAt: presentation.retryAt,
+        status: 502,
       },
     )
   }
@@ -714,9 +749,13 @@ function scheduleRetainedDataExpiry(
   const deadlines = [...retainedEnvelopeDeadlines(state.envelope).values()]
   for (const entry of state.queryCache.getEntries({ predicate: shouldPersistEsiQuery })) {
     const deadline = state.entryState.readRetentionDeadline(entry.keyHash)
-    if (deadline !== undefined) deadlines.push(deadline)
+    if (deadline !== undefined) {
+      deadlines.push(deadline)
+    }
   }
-  if (deadlines.length === 0) return
+  if (deadlines.length === 0) {
+    return
+  }
   const deadline = Math.min(...deadlines)
   const delay = Math.min(Math.max(0, deadline - now()), MAX_TIMEOUT_MS)
   state.retainedDataExpiryTimer = timers.setTimeout(() => {
@@ -766,10 +805,14 @@ function collectAdmittedPrivateCache(
 ) {
   const admittedCache = createCache()
   forEachPrivateTuple(state.envelope, (keyHash, tuple, partition, persistence) => {
-    if (!partitionMatchesAdmission(partition, persistence, admission, now)) return
+    if (!partitionMatchesAdmission(partition, persistence, admission, now)) {
+      return
+    }
     const key = JSON.parse(keyHash) as EntryKey
     const current = state.queryCache.get(key)
-    if (current?.state.value.data !== undefined) return
+    if (current?.state.value.data !== undefined) {
+      return
+    }
     admittedCache[keyHash] = tuple
   })
   return admittedCache
@@ -788,7 +831,9 @@ function commitAdmittedPrivateCache(
       state.entryState.removed(keyHash)
       continue
     }
-    if (state.queryCache.get(key)?.state.value.data !== undefined) delete admittedCache[keyHash]
+    if (state.queryCache.get(key)?.state.value.data !== undefined) {
+      delete admittedCache[keyHash]
+    }
   }
   hydrateAbsoluteCache(state.queryCache, admittedCache, now)
   for (const [keyHash, tuple] of Object.entries(admittedCache)) {
@@ -814,7 +859,7 @@ function refetchParkedPrivateQueries(state: QueryPersistenceRuntimeState) {
     ) {
       continue
     }
-    void state.queryCache.fetch(entry).catch(() => undefined)
+    void state.queryCache.fetch(entry).catch(() => {})
   }
 }
 
@@ -831,8 +876,12 @@ function admissionInvalidationScope(
     now,
     alreadyInvalidatedScope,
   )
-  if (!previousAdmission) return combineInvalidationScopes(scopes)
-  if (previousAdmission.userId !== admission.userId) return { kind: 'all' } as const
+  if (!previousAdmission) {
+    return combineInvalidationScopes(scopes)
+  }
+  if (previousAdmission.userId !== admission.userId) {
+    return { kind: 'all' } as const
+  }
   scopes.push(
     ...changedAdmissionInvalidationScopes(
       previousAdmission,
@@ -852,26 +901,26 @@ function persistedPartitionInvalidationScopes(
 ) {
   const scopes: PrivateQueryInvalidationScope[] = []
   for (const [characterId, partition] of Object.entries(envelope.characters)) {
-    const persistence = { kind: 'character-esi', characterId: Number(characterId) } as const
+    const persistence = { characterId: Number(characterId), kind: 'character-esi' } as const
     if (!partitionMatchesAdmission(partition, persistence, admission, now)) {
       appendUncoveredInvalidationScope(
         scopes,
         {
-          kind: 'character',
           characterId: persistence.characterId,
+          kind: 'character',
         },
         alreadyInvalidatedScope,
       )
     }
   }
   for (const [admissionScope, partition] of Object.entries(envelope.organizations)) {
-    const persistence = { kind: 'organization-esi', admissionScope } as const
+    const persistence = { admissionScope, kind: 'organization-esi' } as const
     if (!partitionMatchesAdmission(partition, persistence, admission, now)) {
       appendUncoveredInvalidationScope(
         scopes,
         {
-          kind: 'organization',
           admissionScope,
+          kind: 'organization',
         },
         alreadyInvalidatedScope,
       )
@@ -885,7 +934,9 @@ function appendUncoveredInvalidationScope(
   scope: PrivateQueryInvalidationScope,
   alreadyInvalidatedScope?: PrivateQueryInvalidationScope,
 ) {
-  if (alreadyInvalidatedScope && invalidationScopeCovers(alreadyInvalidatedScope, scope)) return
+  if (alreadyInvalidatedScope && invalidationScopeCovers(alreadyInvalidatedScope, scope)) {
+    return
+  }
   scopes.push(scope)
 }
 
@@ -908,8 +959,8 @@ function changedAdmissionInvalidationScopes(
       appendUncoveredInvalidationScope(
         scopes,
         {
-          kind: 'character',
           characterId,
+          kind: 'character',
         },
         alreadyInvalidatedScope,
       )
@@ -939,7 +990,9 @@ function organizationAdmissionChanged(
 ) {
   const previousOrganization = previous.organization
   const nextOrganization = next.organization
-  if (!previousOrganization || !nextOrganization) return previousOrganization !== nextOrganization
+  if (!previousOrganization || !nextOrganization) {
+    return previousOrganization !== nextOrganization
+  }
   return (
     previousOrganization.organizationVersion !== nextOrganization.organizationVersion ||
     previousOrganization.admissionRevision !== nextOrganization.admissionRevision ||
@@ -956,8 +1009,12 @@ function invalidationScopeCovers(
   scope: PrivateQueryInvalidationScope,
   candidate: PrivateQueryInvalidationScope,
 ) {
-  if (scope.kind === 'all') return true
-  if (scope.kind !== candidate.kind) return false
+  if (scope.kind === 'all') {
+    return true
+  }
+  if (scope.kind !== candidate.kind) {
+    return false
+  }
   if (scope.kind === 'character' && candidate.kind === 'character') {
     return scope.characterId === undefined || scope.characterId === candidate.characterId
   }
@@ -999,8 +1056,8 @@ function quarantineRetainedPrivateData(state: QueryPersistenceRuntimeState) {
     state.queryCache.setEntryState(
       entry,
       entryState.status === 'error'
-        ? { status: 'error', data: undefined, error: entryState.error }
-        : { status: 'pending', data: undefined, error: null },
+        ? { data: undefined, error: entryState.error, status: 'error' }
+        : { data: undefined, error: null, status: 'pending' },
     )
   }
 }
@@ -1011,7 +1068,9 @@ function cancelPendingPrivateQueries(
   preserveSession: boolean,
 ) {
   for (const entry of queryCache.getEntries({ key: PRIVATE_QUERY_KEYS.root })) {
-    if (preserveSession && entry.keyHash === toCacheKey(PRIVATE_QUERY_KEYS.session())) continue
+    if (preserveSession && entry.keyHash === toCacheKey(PRIVATE_QUERY_KEYS.session())) {
+      continue
+    }
     if (privateQueryEntryMatchesScope(entry, scope) && entry.pending) {
       queryCache.cancel(entry, new Error('Persisted query admission changed.'))
     }
@@ -1026,8 +1085,12 @@ function purgePrivateQueryData(
   preserveSession = true,
 ) {
   for (const entry of state.queryCache.getEntries({ key: PRIVATE_QUERY_KEYS.root })) {
-    if (preserveSession && entry.keyHash === toCacheKey(PRIVATE_QUERY_KEYS.session())) continue
-    if (!privateQueryEntryMatchesScope(entry, scope)) continue
+    if (preserveSession && entry.keyHash === toCacheKey(PRIVATE_QUERY_KEYS.session())) {
+      continue
+    }
+    if (!privateQueryEntryMatchesScope(entry, scope)) {
+      continue
+    }
     if (
       preserveFreshSuccesses &&
       entry.state.value.status === 'success' &&
@@ -1048,16 +1111,16 @@ function purgeQueryEntryData(
   const entryState = entry.state.value
   if (preserveError && entryState.status === 'error') {
     state.queryCache.setEntryState(entry, {
-      status: 'error',
       data: undefined,
       error: entryState.error,
+      status: 'error',
     })
     touchQueryPersistenceState(state)
     return
   }
 
   if (entryState.data !== undefined || entryState.status !== 'pending') {
-    state.queryCache.setEntryState(entry, { status: 'pending', data: undefined, error: null })
+    state.queryCache.setEntryState(entry, { data: undefined, error: null, status: 'pending' })
   }
   // setEntryState stamps `when`, which would leave a cleared entry looking fresh and suppress every
   // staleness-driven refetch, so a purged query would stay pending with no request in flight.
@@ -1070,14 +1133,22 @@ function purgePrivateEnvelopePartitions(
   scope: PrivateQueryInvalidationScope,
 ) {
   for (const [characterId, partition] of Object.entries(state.envelope.characters)) {
-    const persistence = { kind: 'character-esi', characterId: Number(characterId) } as const
-    if (!invalidationScopeMatchesPersistence(scope, persistence)) continue
-    for (const keyHash of Object.keys(partition.cache)) state.entryState.removed(keyHash)
+    const persistence = { characterId: Number(characterId), kind: 'character-esi' } as const
+    if (!invalidationScopeMatchesPersistence(scope, persistence)) {
+      continue
+    }
+    for (const keyHash of Object.keys(partition.cache)) {
+      state.entryState.removed(keyHash)
+    }
   }
   for (const [admissionScope, partition] of Object.entries(state.envelope.organizations)) {
-    const persistence = { kind: 'organization-esi', admissionScope } as const
-    if (!invalidationScopeMatchesPersistence(scope, persistence)) continue
-    for (const keyHash of Object.keys(partition.cache)) state.entryState.removed(keyHash)
+    const persistence = { admissionScope, kind: 'organization-esi' } as const
+    if (!invalidationScopeMatchesPersistence(scope, persistence)) {
+      continue
+    }
+    for (const keyHash of Object.keys(partition.cache)) {
+      state.entryState.removed(keyHash)
+    }
   }
   removeEnvelopePartitions(state.envelope, scope)
 }
@@ -1089,13 +1160,17 @@ function privateInvalidationScopeForEntry(
   if (persistence?.kind === 'character-esi' || persistence?.kind === 'organization-esi') {
     return invalidationScopeForPersistence(persistence)
   }
-  if (entry.key[0] !== PRIVATE_QUERY_KEYS.root[0]) return null
+  if (entry.key[0] !== PRIVATE_QUERY_KEYS.root[0]) {
+    return null
+  }
   if (entry.key[1] === 'characters') {
     return typeof entry.key[2] === 'number'
-      ? { kind: 'character', characterId: entry.key[2] }
+      ? { characterId: entry.key[2], kind: 'character' }
       : { kind: 'character' }
   }
-  if (entry.key[1] === 'organization') return { kind: 'organization' }
+  if (entry.key[1] === 'organization') {
+    return { kind: 'organization' }
+  }
   return { kind: 'all' }
 }
 
@@ -1104,9 +1179,15 @@ function privateQueryEntryMatchesScope(
   scope: PrivateQueryInvalidationScope,
 ) {
   const entryScope = privateInvalidationScopeForEntry(entry)
-  if (!entryScope) return false
-  if (scope.kind === 'all') return true
-  if (entryScope.kind === 'all' || entryScope.kind !== scope.kind) return false
+  if (!entryScope) {
+    return false
+  }
+  if (scope.kind === 'all') {
+    return true
+  }
+  if (entryScope.kind === 'all' || entryScope.kind !== scope.kind) {
+    return false
+  }
   if (scope.kind === 'character' && entryScope.kind === 'character') {
     return (
       scope.characterId === undefined ||
@@ -1151,7 +1232,9 @@ function initializeQueryCacheHooks(
       const privateRequestIsCurrent =
         privateScope === null ? undefined : privateLifecycle.guardPrivateRequest()
       onError((error) => {
-        if (privateRequestIsCurrent && !privateRequestIsCurrent()) return
+        if (privateRequestIsCurrent && !privateRequestIsCurrent()) {
+          return
+        }
         const scope = authoritativeDenialInvalidationScope(privateScope, error)
         if (scope) {
           void privateLifecycle.invalidate(scope, true, isMissingScopeDenial(error))
@@ -1176,7 +1259,9 @@ function initializeQueryCacheHooks(
           }
           return
         }
-        if (entryState.status !== 'success') return
+        if (entryState.status !== 'success') {
+          return
+        }
         if (persistenceEligible) {
           recordSuccessfulCurrentResult(state, entry, 'fetch', now(), false, entryState.data)
           reconcileRetainedDataExpiry(state, privateLifecycle, now, timers)
@@ -1199,9 +1284,13 @@ function initializeQueryCacheHooks(
       })
       return
     }
-    if (name !== 'remove') return
+    if (name !== 'remove') {
+      return
+    }
     const entry = args[0] as UseQueryEntry
-    if (!shouldPersistEsiQuery(entry)) return
+    if (!shouldPersistEsiQuery(entry)) {
+      return
+    }
     after(() => {
       state.entryState.removed(entry.keyHash)
       touchQueryPersistenceState(state)
@@ -1222,29 +1311,37 @@ function recordSuccessfulCurrentResult(
   data = entry.state.value.data,
 ) {
   const changed = state.entryState.succeeded({
-    keyHash: entry.keyHash,
     data,
-    source,
-    when: entry.when,
+    keyHash: entry.keyHash,
     now: currentTime,
     priorSuccessAt: persistedOriginalSuccessAt(state, entry.keyHash, currentTime),
     reconcileStagedRestore,
+    source,
+    when: entry.when,
   })
   const hydrationChanged = Object.hasOwn(state.pendingPublicHydration, entry.keyHash)
-  if (hydrationChanged) delete state.pendingPublicHydration[entry.keyHash]
-  if (changed || hydrationChanged) touchQueryPersistenceState(state)
+  if (hydrationChanged) {
+    delete state.pendingPublicHydration[entry.keyHash]
+  }
+  if (changed || hydrationChanged) {
+    touchQueryPersistenceState(state)
+  }
 }
 
 function recordUnclassifiedSuccessfulEntries(state: QueryPersistenceRuntimeState, now: number) {
   for (const entry of state.queryCache.getEntries({ predicate: shouldPersistEsiQuery })) {
-    if (entry.state.value.status !== 'success') continue
+    if (entry.state.value.status !== 'success') {
+      continue
+    }
     recordSuccessfulCurrentResult(state, entry, 'ssr', now)
   }
 }
 
 function signalSuccessfulEntriesForPersistence(state: QueryPersistenceRuntimeState) {
   for (const entry of state.queryCache.getEntries({ predicate: shouldPersistEsiQuery })) {
-    if (entry.state.value.status !== 'success') continue
+    if (entry.state.value.status !== 'success') {
+      continue
+    }
     const when = entry.when
     state.queryCache.setEntryState(entry, { ...entry.state.value })
     entry.when = when
@@ -1298,8 +1395,12 @@ function authoritativeDenialInvalidationScope(
   privateScope: PrivateQueryInvalidationScope | null,
   error: unknown,
 ): PrivateQueryInvalidationScope | null {
-  if (isAuthenticationDenial(error)) return { kind: 'all' }
-  if (!(error instanceof ApiQueryError) || !privateScope || !error.code) return null
+  if (isAuthenticationDenial(error)) {
+    return { kind: 'all' }
+  }
+  if (!(error instanceof ApiQueryError) || !privateScope || !error.code) {
+    return null
+  }
   if (privateScope.kind === 'character' && CHARACTER_AUTHORIZATION_DENIAL_CODES.has(error.code)) {
     return privateScope
   }
@@ -1324,7 +1425,9 @@ function notifyPrivateQueryInvalidation(
   scope: PrivateQueryInvalidationScope,
 ) {
   for (const subscription of subscribers) {
-    if (!invalidationScopesOverlap(toValue(subscription.scope), scope)) continue
+    if (!invalidationScopesOverlap(toValue(subscription.scope), scope)) {
+      continue
+    }
     subscription.listener()
   }
 }
@@ -1333,8 +1436,12 @@ function invalidationScopesOverlap(
   left: PrivateQueryInvalidationScope,
   right: PrivateQueryInvalidationScope,
 ) {
-  if (left.kind === 'all' || right.kind === 'all') return true
-  if (left.kind !== right.kind) return false
+  if (left.kind === 'all' || right.kind === 'all') {
+    return true
+  }
+  if (left.kind !== right.kind) {
+    return false
+  }
   if (left.kind === 'character' && right.kind === 'character') {
     return (
       left.characterId === undefined ||
@@ -1367,7 +1474,9 @@ function clearCorruptCacheState(
   envelope: EsiQueryCacheEnvelope,
 ) {
   for (const entry of state.queryCache.getEntries({ predicate: shouldPersistEsiQuery })) {
-    if (!state.entryState.hasRestoredData(entry.keyHash)) continue
+    if (!state.entryState.hasRestoredData(entry.keyHash)) {
+      continue
+    }
     purgeQueryEntryData(state, entry)
     state.queryCache.remove(entry)
   }
@@ -1407,13 +1516,17 @@ function authenticatedUserId(session: AuthSession | undefined) {
 }
 
 function settleRestoration(state: QueryPersistenceRuntimeState) {
-  if (state.restorationSettled) return
+  if (state.restorationSettled) {
+    return
+  }
   state.restorationSettled = true
   state.resolveRestoration()
 }
 
 function requireRuntime(queryCache: QueryCache) {
   const runtime = (queryCache as QueryCacheWithPersistence)[QUERY_PERSISTENCE_RUNTIME]
-  if (!runtime) throw new Error('Query persistence is not installed for this query cache.')
+  if (!runtime) {
+    throw new Error('Query persistence is not installed for this query cache.')
+  }
   return runtime
 }

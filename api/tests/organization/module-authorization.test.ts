@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   currentCatalogPermission: vi.fn(),
-  effectiveAuthority: { organizationOwner: false, director: false },
+  effectiveAuthority: { director: false, organizationOwner: false },
   getOrganizationGroupPermissions: vi.fn(),
   grants: [] as unknown[],
   loadEffectiveOrganizationAuthority: vi.fn(),
@@ -28,18 +28,18 @@ import {
 
 const now = new Date('2026-09-02T12:00:00.000Z')
 const organization = {
-  organizationVersion: 7,
-  state: 'compliant' as 'pending' | 'compliant' | 'review_required' | 'suspended',
-  evidenceFreshness: 'fresh' as const,
-  reviewDeadline: null as Date | null,
   accessValidUntil: new Date('2026-09-02T13:00:00.000Z') as Date | null,
   blocked: false,
+  evidenceFreshness: 'fresh' as const,
+  organizationVersion: 7,
+  reviewDeadline: null as Date | null,
+  state: 'compliant' as 'pending' | 'compliant' | 'review_required' | 'suspended',
 }
 
 describe('organization module contribution authorization', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.effectiveAuthority = { organizationOwner: false, director: false }
+    mocks.effectiveAuthority = { director: false, organizationOwner: false }
     mocks.grants = []
     mocks.loadEffectiveOrganizationAuthority.mockImplementation(() =>
       Promise.resolve(mocks.effectiveAuthority),
@@ -59,13 +59,13 @@ describe('organization module contribution authorization', () => {
         moduleDeclaration('member', 'alpha.view'),
         now,
       ),
-    ).resolves.toEqual({
+    ).resolves.toStrictEqual({
       authorized: true,
       context: {
-        organizationVersion: 7,
         audience: 'member',
-        requiredPermission: 'alpha.view',
         entitlementScope: 'all',
+        organizationVersion: 7,
+        requiredPermission: 'alpha.view',
       },
     })
     expect(mocks.getOrganizationGroupPermissions).toHaveBeenCalledWith('user-1', now, 7)
@@ -79,15 +79,15 @@ describe('organization module contribution authorization', () => {
         moduleDeclaration('member', 'alpha.view'),
         now,
       ),
-    ).resolves.toEqual({ authorized: false, reason: 'blocked' })
+    ).resolves.toStrictEqual({ authorized: false, reason: 'blocked' })
     await expect(
       authorizeOrganizationContribution(
         'user-1',
-        { ...organization, state: 'suspended', accessValidUntil: null },
+        { ...organization, accessValidUntil: null, state: 'suspended' },
         moduleDeclaration('member', 'alpha.view'),
         now,
       ),
-    ).resolves.toEqual({ authorized: false, reason: 'compliance' })
+    ).resolves.toStrictEqual({ authorized: false, reason: 'compliance' })
     expect(mocks.getOrganizationGroupPermissions).not.toHaveBeenCalled()
   })
 
@@ -97,8 +97,8 @@ describe('organization module contribution authorization', () => {
       .mockResolvedValueOnce({ modules: ['alpha.view'], services: [] })
     const review = {
       ...organization,
-      state: 'review_required' as const,
       reviewDeadline: new Date('2026-09-02T12:30:00.000Z'),
+      state: 'review_required' as const,
     }
 
     await expect(
@@ -108,7 +108,7 @@ describe('organization module contribution authorization', () => {
         moduleDeclaration('member', 'alpha.view'),
         now,
       ),
-    ).resolves.toEqual({ authorized: false, reason: 'permission' })
+    ).resolves.toStrictEqual({ authorized: false, reason: 'permission' })
     await expect(
       authorizeOrganizationContribution(
         'user-1',
@@ -135,7 +135,7 @@ describe('organization module contribution authorization', () => {
         },
         now,
       ),
-    ).resolves.toEqual({ authorized: false, reason: 'permission' })
+    ).resolves.toStrictEqual({ authorized: false, reason: 'permission' })
     expect(mocks.getOrganizationGroupPermissions).not.toHaveBeenCalled()
   })
 
@@ -147,9 +147,9 @@ describe('organization module contribution authorization', () => {
         moduleDeclaration('hr', 'alpha.view'),
         now,
       ),
-    ).resolves.toEqual({ authorized: false, reason: 'audience' })
+    ).resolves.toStrictEqual({ authorized: false, reason: 'audience' })
 
-    mocks.grants = [{ role: 'hr_auditor', evidenceStatus: null, reviewDeadline: null }]
+    mocks.grants = [{ evidenceStatus: null, reviewDeadline: null, role: 'hr_auditor' }]
     await expect(
       authorizeOrganizationContribution(
         'user-1',
@@ -160,7 +160,7 @@ describe('organization module contribution authorization', () => {
     ).resolves.toMatchObject({ authorized: true })
 
     mocks.grants = []
-    mocks.effectiveAuthority = { organizationOwner: true, director: false }
+    mocks.effectiveAuthority = { director: false, organizationOwner: true }
     await expect(
       authorizeOrganizationContribution(
         'user-1',
@@ -175,7 +175,7 @@ describe('organization module contribution authorization', () => {
 describe('organization reviewer contribution authorization', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.effectiveAuthority = { organizationOwner: false, director: false }
+    mocks.effectiveAuthority = { director: false, organizationOwner: false }
     mocks.grants = []
     mocks.loadEffectiveOrganizationAuthority.mockImplementation(() =>
       Promise.resolve(mocks.effectiveAuthority),
@@ -192,8 +192,8 @@ describe('organization reviewer contribution authorization', () => {
     async (role) => {
       mocks.grants = role === 'hr_auditor' ? [{ role }] : []
       mocks.effectiveAuthority = {
-        organizationOwner: false,
         director: role === 'director',
+        organizationOwner: false,
       }
 
       await expect(
@@ -203,13 +203,13 @@ describe('organization reviewer contribution authorization', () => {
           moduleDeclaration('hr', 'member-audit.skills.read'),
           now,
         ),
-      ).resolves.toEqual({
+      ).resolves.toStrictEqual({
         authorized: true,
         context: {
-          organizationVersion: 7,
           audience: 'hr',
-          requiredPermission: 'member-audit.skills.read',
           entitlementScope: 'all',
+          organizationVersion: 7,
+          requiredPermission: 'member-audit.skills.read',
         },
       })
       expect(mocks.getOrganizationGroupPermissions).toHaveBeenCalledWith('user-1', now, 7)
@@ -217,7 +217,7 @@ describe('organization reviewer contribution authorization', () => {
   )
 
   test('does not treat organization-owner authority as a reviewer grant', async () => {
-    mocks.effectiveAuthority = { organizationOwner: true, director: false }
+    mocks.effectiveAuthority = { director: false, organizationOwner: true }
 
     await expect(
       authorizeOrganizationReviewerContribution(
@@ -226,7 +226,7 @@ describe('organization reviewer contribution authorization', () => {
         moduleDeclaration('hr', 'member-audit.skills.read'),
         now,
       ),
-    ).resolves.toEqual({ authorized: false, reason: 'audience' })
+    ).resolves.toStrictEqual({ authorized: false, reason: 'audience' })
     expect(mocks.getOrganizationGroupPermissions).not.toHaveBeenCalled()
   })
 
@@ -240,11 +240,11 @@ describe('organization reviewer contribution authorization', () => {
         moduleDeclaration('director', 'member-audit.skills.read'),
         now,
       ),
-    ).resolves.toEqual({ authorized: false, reason: 'audience' })
+    ).resolves.toStrictEqual({ authorized: false, reason: 'audience' })
     expect(mocks.getOrganizationGroupPermissions).not.toHaveBeenCalled()
 
     mocks.grants = []
-    mocks.effectiveAuthority = { organizationOwner: false, director: true }
+    mocks.effectiveAuthority = { director: true, organizationOwner: false }
     await expect(
       authorizeOrganizationReviewerContribution(
         'user-1',
@@ -263,18 +263,18 @@ describe('organization reviewer contribution authorization', () => {
         'user-1',
         {
           ...organization,
-          state: 'review_required',
           reviewDeadline: new Date('2026-09-02T12:30:00.000Z'),
+          state: 'review_required',
         },
         moduleDeclaration('hr', 'member-audit.skills.read'),
         now,
       ),
-    ).resolves.toEqual({ authorized: false, reason: 'compliance' })
+    ).resolves.toStrictEqual({ authorized: false, reason: 'compliance' })
     expect(mocks.getOrganizationGroupPermissions).not.toHaveBeenCalled()
   })
 
   test('refuses a blocked reviewer before role and permission reads', async () => {
-    mocks.effectiveAuthority = { organizationOwner: false, director: true }
+    mocks.effectiveAuthority = { director: true, organizationOwner: false }
 
     await expect(
       authorizeOrganizationReviewerContribution(
@@ -283,7 +283,7 @@ describe('organization reviewer contribution authorization', () => {
         moduleDeclaration('director', 'member-audit.skills.read'),
         now,
       ),
-    ).resolves.toEqual({ authorized: false, reason: 'blocked' })
+    ).resolves.toStrictEqual({ authorized: false, reason: 'blocked' })
     expect(mocks.getOrganizationGroupPermissions).not.toHaveBeenCalled()
   })
 
@@ -293,7 +293,7 @@ describe('organization reviewer contribution authorization', () => {
     ['wallet', 'mail'],
     ['mail', 'skills'],
   ] as const)('does not let %s permission authorize the %s section', async (granted, requested) => {
-    mocks.effectiveAuthority = { organizationOwner: false, director: true }
+    mocks.effectiveAuthority = { director: true, organizationOwner: false }
     mocks.getOrganizationGroupPermissions.mockResolvedValue({
       modules: [`member-audit.${granted}.read`],
       services: [],
@@ -306,11 +306,11 @@ describe('organization reviewer contribution authorization', () => {
         moduleDeclaration('director', `member-audit.${requested}.read`),
         now,
       ),
-    ).resolves.toEqual({ authorized: false, reason: 'permission' })
+    ).resolves.toStrictEqual({ authorized: false, reason: 'permission' })
   })
 
   test('requires the exact permission and a reviewer audience', async () => {
-    mocks.effectiveAuthority = { organizationOwner: false, director: true }
+    mocks.effectiveAuthority = { director: true, organizationOwner: false }
     mocks.getOrganizationGroupPermissions.mockResolvedValue({
       modules: ['member-audit.assets.read'],
       services: [],
@@ -323,7 +323,7 @@ describe('organization reviewer contribution authorization', () => {
         moduleDeclaration('hr', 'member-audit.skills.read'),
         now,
       ),
-    ).resolves.toEqual({ authorized: false, reason: 'permission' })
+    ).resolves.toStrictEqual({ authorized: false, reason: 'permission' })
     await expect(
       authorizeOrganizationReviewerContribution(
         'user-1',
@@ -331,7 +331,7 @@ describe('organization reviewer contribution authorization', () => {
         moduleDeclaration('member', 'member-audit.assets.read'),
         now,
       ),
-    ).resolves.toEqual({ authorized: false, reason: 'audience' })
+    ).resolves.toStrictEqual({ authorized: false, reason: 'audience' })
   })
 
   test('requires every permission declared by a reviewer contribution', async () => {
@@ -341,16 +341,16 @@ describe('organization reviewer contribution authorization', () => {
       services: [],
     })
     const declaration = {
-      publisherPackage: '@eve-space/member-audit-manifest',
-      moduleId: 'member-audit',
-      audience: 'hr' as const,
-      requiredPermission: 'member-audit.search',
       additionalRequiredPermissions: ['member-audit.summary.read'],
+      audience: 'hr' as const,
+      moduleId: 'member-audit',
+      publisherPackage: '@eve-space/member-audit-manifest',
+      requiredPermission: 'member-audit.search',
     }
 
     await expect(
       authorizeOrganizationReviewerContribution('user-1', organization, declaration, now),
-    ).resolves.toEqual({ authorized: false, reason: 'permission' })
+    ).resolves.toStrictEqual({ authorized: false, reason: 'permission' })
 
     mocks.getOrganizationGroupPermissions.mockResolvedValue({
       modules: ['member-audit.search', 'member-audit.summary.read'],
@@ -365,18 +365,19 @@ describe('organization reviewer contribution authorization', () => {
 function moduleDeclaration(audience: 'member' | 'hr' | 'director', requiredPermission: string) {
   const moduleId = requiredPermission.split('.')[0]!
   return {
+    audience,
+    moduleId,
     publisherPackage:
       moduleId === 'member-audit' ? '@eve-space/member-audit-manifest' : '@example/alpha-manifest',
-    moduleId,
-    audience,
     requiredPermission,
   }
 }
 
 function query(result: unknown[]) {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'innerJoin', 'leftJoin', 'where', 'limit'])
+  for (const method of ['from', 'innerJoin', 'leftJoin', 'where', 'limit']) {
     builder[method] = () => builder
+  }
   // oxlint-disable-next-line unicorn/no-thenable -- Drizzle query builders are awaitable.
   builder.then = (resolve: (value: unknown[]) => unknown, reject: (error: unknown) => unknown) =>
     Promise.resolve(result).then(resolve, reject)

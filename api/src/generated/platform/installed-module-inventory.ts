@@ -4,47 +4,47 @@ import type { PlatformInstalledModuleProvenance } from '@eve-space/platform-modu
 
 export const installedModuleInventory = [
   {
-    publisherPackage: '@eve-space/member-audit-manifest',
     moduleId: 'member-audit',
-    releaseVersion: '0.1.0',
     packages: {
       manifest: {
+        integrity: 'workspace',
         name: '@eve-space/member-audit-manifest',
         version: '0.1.0',
-        integrity: 'workspace',
-      },
-      server: {
-        name: '@eve-space/member-audit-server',
-        version: '0.1.0',
-        integrity: 'workspace',
       },
       nuxt: {
+        integrity: 'workspace',
         name: '@eve-space/member-audit-nuxt',
         version: '0.1.0',
-        integrity: 'workspace',
-      },
-    },
-  },
-  {
-    publisherPackage: '@eve-space/organization-activity-manifest',
-    moduleId: 'organization-activity',
-    releaseVersion: '0.1.0',
-    packages: {
-      manifest: {
-        name: '@eve-space/organization-activity-manifest',
-        version: '0.1.0',
-        integrity: 'workspace',
       },
       server: {
-        name: '@eve-space/organization-activity-server',
-        version: '0.1.0',
         integrity: 'workspace',
-      },
-      nuxt: {
-        name: '@eve-space/organization-activity-nuxt',
+        name: '@eve-space/member-audit-server',
         version: '0.1.0',
-        integrity: 'workspace',
       },
     },
+    publisherPackage: '@eve-space/member-audit-manifest',
+    releaseVersion: '0.1.0',
+  },
+  {
+    moduleId: 'organization-activity',
+    packages: {
+      manifest: {
+        integrity: 'workspace',
+        name: '@eve-space/organization-activity-manifest',
+        version: '0.1.0',
+      },
+      nuxt: {
+        integrity: 'workspace',
+        name: '@eve-space/organization-activity-nuxt',
+        version: '0.1.0',
+      },
+      server: {
+        integrity: 'workspace',
+        name: '@eve-space/organization-activity-server',
+        version: '0.1.0',
+      },
+    },
+    publisherPackage: '@eve-space/organization-activity-manifest',
+    releaseVersion: '0.1.0',
   },
 ] as const satisfies readonly PlatformInstalledModuleProvenance[]

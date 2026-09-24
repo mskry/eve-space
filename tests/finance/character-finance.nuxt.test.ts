@@ -27,7 +27,7 @@ interface FinanceScenario {
 const mountedWrappers: { unmount: () => void }[] = []
 const requests: URL[] = []
 const componentCharacterId = 0
-let activeCharacterId = 7_001
+let activeCharacterId = 7001
 let scenario: FinanceScenario
 let queryCache: ReturnType<typeof useQueryCache>
 
@@ -36,8 +36,8 @@ const FinanceHost = defineComponent({
     provideCharacterReauthorization()
     queryCache = useQueryCache()
     queryCache.setQueryData(PRIVATE_QUERY_KEYS.characterFinanceBalance(componentCharacterId), {
-      characterId: componentCharacterId,
       balance: 1_234_567.89,
+      characterId: componentCharacterId,
       ...metadata(),
     })
     return () => h(TooltipProvider, { delayDuration: 0 }, { default: () => h(FinancePage) })
@@ -53,8 +53,8 @@ async function settle() {
 function metadata(stale = false) {
   return {
     cachedUntil: '2026-09-02T13:00:00.000Z',
-    validatedAt: '2026-09-02T12:00:00.000Z',
     stale,
+    validatedAt: '2026-09-02T12:00:00.000Z',
   }
 }
 
@@ -88,7 +88,9 @@ beforeEach(() => {
 })
 
 afterEach(async () => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   clearQueryCache()
   queryServer.resetHandlers()
   await settle()
@@ -98,7 +100,7 @@ afterEach(async () => {
 
 describe('character Finance page', () => {
   it('labels complete and current-page summaries and keeps ledger filters local to each tab', async () => {
-    const wrapper = await mountFinance(7_101)
+    const wrapper = await mountFinance(7101)
 
     expect(wrapper.get('.character-finance-route').attributes('aria-label')).toBe(
       'Character finance',
@@ -128,8 +130,9 @@ describe('character Finance page', () => {
     expect(wrapper.text()).not.toContain('Tritanium')
     expect(wrapper.text()).not.toContain('Courier package')
 
-    for (const section of wrapper.findAll('.finance-service'))
+    for (const section of wrapper.findAll('.finance-service')) {
       expect(section.attributes('aria-label')).toBeTruthy()
+    }
 
     await chip(wrapper, 'Income').trigger('click')
     expect(wrapper.findAll('.finance-table--journal tbody tr')).toHaveLength(2)
@@ -197,7 +200,7 @@ describe('character Finance page', () => {
   })
 
   it('scopes the ledger range to loaded data without refetching a service', async () => {
-    const wrapper = await mountFinance(7_105)
+    const wrapper = await mountFinance(7105)
     await vi.waitFor(() => expect(wrapper.text()).toContain('Mission reward'))
 
     const before = financeRequests().length
@@ -214,7 +217,7 @@ describe('character Finance page', () => {
   })
 
   it('wires accessible ledger tabs with roving keyboard navigation', async () => {
-    const wrapper = await mountFinance(7_106)
+    const wrapper = await mountFinance(7106)
     const tabs = wrapper.findAll('.finance-tabs .ui-tabs-trigger')
     const journalTab = tabs[0]!
     const transactionsTab = tabs[1]!
@@ -291,6 +294,7 @@ describe('character Finance page', () => {
               FinanceServicePanel,
               {
                 hasData: true,
+                onRetry: startRefresh,
                 state: resourceState({
                   canRetry: refreshError.value !== null,
                   errorCode: refreshError.value ? 'ESI 502 / FINANCE' : null,
@@ -300,7 +304,6 @@ describe('character Finance page', () => {
                 }),
                 title: 'Successful service',
                 validatedAt: '2026-09-02T12:00:00.000Z',
-                onRetry: startRefresh,
               },
               { default: () => h('p', { 'data-sibling-data': '' }, 'Preserved sibling data') },
             ),
@@ -335,7 +338,7 @@ describe('character Finance page', () => {
   it('keeps wallet authorization and retained errors actionable', async () => {
     const wrapper = await mountSuspended(FinanceSummary, {
       props: {
-        balance: { balance: 1_234.5, ...metadata() },
+        balance: { balance: 1234.5, ...metadata() },
         balanceLabel: 'Available balance',
         eyebrow: 'Character wallet',
         metrics: [],
@@ -378,20 +381,20 @@ describe('character Finance page', () => {
   it('formats journal currency, sign color, and truncated-description titles', async () => {
     const entries = [
       {
-        journalId: 1,
-        date: '2026-09-04T12:57:00.000Z',
-        referenceType: 'player_donation',
-        description: "Skiasten deposited cash into Bandera Primary's account",
         amount: 0,
         balance: 15_226_991.54,
+        date: '2026-09-04T12:57:00.000Z',
+        description: "Skiasten deposited cash into Bandera Primary's account",
+        journalId: 1,
+        referenceType: 'player_donation',
       },
       {
-        journalId: 2,
-        date: '2026-09-04T12:58:00.000Z',
-        referenceType: 'market_transaction',
-        description: 'Market purchase',
         amount: -1_050_000,
         balance: 14_176_991.54,
+        date: '2026-09-04T12:58:00.000Z',
+        description: 'Market purchase',
+        journalId: 2,
+        referenceType: 'market_transaction',
       },
     ]
     const wrapper = await mountSuspended(FinanceJournal, {
@@ -407,18 +410,25 @@ describe('character Finance page', () => {
     })
     mountedWrappers.push(wrapper)
     const rows = wrapper.findAll('.finance-table--journal tbody tr')
+    const firstRow = rows[0]
+    const secondRow = rows[1]
+    if (!firstRow || !secondRow) {
+      throw new Error('Journal rows were not rendered')
+    }
+    const firstCells = firstRow.findAll('td')
+    const secondCells = secondRow.findAll('td')
 
-    expect(rows[0]?.findAll('td')[0]?.classes()).toContain('is-subtle')
-    expect(rows[0]?.findAll('td')[1]?.classes()).toContain('is-subtle')
-    expect(rows[0]?.findAll('td')[2]?.classes()).toContain('is-subtle')
-    expect(rows[0]?.findAll('td')[2]?.attributes('title')).toBe(entries[0]?.description)
-    expect(rows[0]?.findAll('td')[3]?.text()).toBe('0 ISK')
-    expect(rows[0]?.findAll('td')[3]?.classes()).toContain('is-income')
-    expect(rows[0]?.findAll('td')[3]?.classes()).not.toContain('is-expense')
-    expect(rows[0]?.findAll('td')[4]?.text()).toBe('15,226,991.54 ISK')
-    expect(rows[0]?.findAll('td')[4]?.classes()).not.toContain('is-subtle')
-    expect(rows[1]?.findAll('td')[3]?.text()).toBe('-1,050,000 ISK')
-    expect(rows[1]?.findAll('td')[3]?.classes()).toContain('is-expense')
+    expect(firstCells[0]?.classes()).toContain('is-subtle')
+    expect(firstCells[1]?.classes()).toContain('is-subtle')
+    expect(firstCells[2]?.classes()).toContain('is-subtle')
+    expect(firstCells[2]?.attributes('title')).toBe(entries[0]?.description)
+    expect(firstCells[3]?.text()).toBe('0 ISK')
+    expect(firstCells[3]?.classes()).toContain('is-income')
+    expect(firstCells[3]?.classes()).not.toContain('is-expense')
+    expect(firstCells[4]?.text()).toBe('15,226,991.54 ISK')
+    expect(firstCells[4]?.classes()).not.toContain('is-subtle')
+    expect(secondCells[3]?.text()).toBe('-1,050,000 ISK')
+    expect(secondCells[3]?.classes()).toContain('is-expense')
   })
 
   it('forwards service-panel retries', async () => {
@@ -440,7 +450,7 @@ describe('character Finance page', () => {
     const drawerContract: FinanceContract = {
       availability: 'personal',
       collateral: null,
-      contractId: 7_001,
+      contractId: 7001,
       daysToComplete: null,
       expiredAt: '2026-09-08T10:00:00.000Z',
       issuedAt: '2026-09-01T10:00:00.000Z',
@@ -484,7 +494,7 @@ describe('character Finance page', () => {
   })
 
   it('keeps contract drill-downs applicable and restores focus on close and page-local navigation', async () => {
-    const wrapper = await mountFinance(7_103)
+    const wrapper = await mountFinance(7103)
     await openTab(wrapper, 'Contracts')
     await seedOnly('Contracts')
     await vi.waitFor(() => expect(wrapper.text()).toContain('Loan terms'))
@@ -551,7 +561,7 @@ describe('character Finance page', () => {
   })
 
   it('requests only activated public item details without refetching Finance collections', async () => {
-    const wrapper = await mountFinance(7_104)
+    const wrapper = await mountFinance(7104)
     await openTab(wrapper, 'Transactions')
     await seedOnly('Market transactions')
     await openTab(wrapper, 'Orders')
@@ -564,19 +574,19 @@ describe('character Finance page', () => {
     await contractButton(wrapper, 'Auction lot').trigger('click')
     await settle()
     queryCache.setQueryData(
-      PRIVATE_QUERY_KEYS.characterFinanceContractItems(componentCharacterId, 7_001),
+      PRIVATE_QUERY_KEYS.characterFinanceContractItems(componentCharacterId, 7001),
       {
         characterId: componentCharacterId,
-        contractId: 7_001,
+        contractId: 7001,
         items: [
           {
+            blueprint: 'copy',
+            direction: 'included',
+            isSingleton: true,
+            quantity: 1,
             recordId: 301,
             typeId: 37,
             typeName: 'Mexallon',
-            direction: 'included',
-            quantity: 1,
-            isSingleton: true,
-            blueprint: 'copy',
           },
         ],
         ...metadata(),
@@ -593,7 +603,7 @@ describe('character Finance page', () => {
       trigger.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }))
     }
     await settle()
-    expect(typeDetailRequests()).toEqual([])
+    expect(typeDetailRequests()).toStrictEqual([])
 
     const financeBeforePopovers = financeRequests().map((url) => url.href)
     for (const trigger of triggers) {
@@ -610,8 +620,10 @@ describe('character Finance page', () => {
       expect(document.activeElement).toBe(trigger)
     }
 
-    expect(typeDetailRequests().map((url) => url.pathname)).toEqual(['/api/universe/types/37'])
-    expect(financeRequests().map((url) => url.href)).toEqual(financeBeforePopovers)
+    expect(typeDetailRequests().map((url) => url.pathname)).toStrictEqual([
+      '/api/universe/types/37',
+    ])
+    expect(financeRequests().map((url) => url.href)).toStrictEqual(financeBeforePopovers)
   })
 })
 
@@ -752,18 +764,18 @@ function installHandlers() {
   queryServer.use(
     http.get('*/auth/config', () =>
       HttpResponse.json({
+        attachUrl: '/auth/eve/attach',
         configured: true,
         loginUrl: '/auth/eve/login',
-        attachUrl: '/auth/eve/attach',
       }),
     ),
     http.get('*/auth/session', () =>
       HttpResponse.json({
-        authenticated: true,
         account: {
-          userId: 'finance-component-user',
           mainCharacter: { characterId: activeCharacterId, name: 'Finance Pilot' },
+          userId: 'finance-component-user',
         },
+        authenticated: true,
       }),
     ),
     http.get('*/api/me/cache-admission', () =>
@@ -775,8 +787,8 @@ function installHandlers() {
     http.get('*/api/me/characters/:characterId/wallet', ({ request, params }) => {
       requests.push(new URL(request.url))
       return HttpResponse.json({
-        characterId: Number(params.characterId),
         balance: 1_234_567.89,
+        characterId: Number(params.characterId),
         ...metadata(),
       })
     }),
@@ -785,10 +797,10 @@ function installHandlers() {
       if (scenario.journal === 'scope') {
         return HttpResponse.json(
           {
+            authorizeUrl: `/auth/eve/reauthorize/${params.characterId}`,
             code: 'EVE_SCOPE_REQUIRED',
             message: 'Authorize wallet journal access.',
             requiredScope: 'esi-wallet.read_character_wallet.v1',
-            authorizeUrl: `/auth/eve/reauthorize/${params.characterId}`,
           },
           { status: 403 },
         )
@@ -861,13 +873,13 @@ function installHandlers() {
           contractId: Number(params.contractId),
           items: [
             {
+              blueprint: 'copy',
+              direction: 'included',
+              isSingleton: true,
+              quantity: 1,
               recordId: 301,
               typeId: 37,
               typeName: 'Mexallon',
-              direction: 'included',
-              quantity: 1,
-              isSingleton: true,
-              blueprint: 'copy',
             },
           ],
           ...metadata(),
@@ -879,9 +891,9 @@ function installHandlers() {
       ({ request, params }) => {
         requests.push(new URL(request.url))
         return HttpResponse.json({
+          bids: [{ bidId: 401, amount: 250, bidAt: '2026-09-02T11:30:00.000Z' }],
           characterId: Number(params.characterId),
           contractId: Number(params.contractId),
-          bids: [{ bidId: 401, amount: 250, bidAt: '2026-09-02T11:30:00.000Z' }],
           ...metadata(),
         })
       },
@@ -902,12 +914,12 @@ function installHandlers() {
         [37, 'Mexallon'],
       ])
       return HttpResponse.json({
-        typeId,
-        name: names.get(typeId),
-        description: `Public static detail for type ${typeId}.`,
-        group: { id: 18, name: 'Mineral' },
         category: { id: 4, name: 'Material' },
+        description: `Public static detail for type ${typeId}.`,
         detail: null,
+        group: { id: 18, name: 'Mineral' },
+        name: names.get(typeId),
+        typeId,
       })
     }),
   )
@@ -915,58 +927,58 @@ function installHandlers() {
 
 function transactionPage(fromId: number | null) {
   return {
+    fromId,
+    nextFromId: fromId === null ? 900 : null,
     transactions:
       fromId === null
         ? [
-            transaction(1_002, 34, 'Tritanium', true),
-            transaction(1_001, 999_999, 'Unknown type 999999', false),
+            transaction(1002, 34, 'Tritanium', true),
+            transaction(1001, 999_999, 'Unknown type 999999', false),
           ]
         : [transaction(899, 999_999, 'Older unknown item', false)],
-    fromId,
-    nextFromId: fromId === null ? 900 : null,
     ...metadata(),
   }
 }
 
 function transaction(transactionId: number, typeId: number, typeName: string, isBuy: boolean) {
   return {
-    transactionId,
-    journalRefId: transactionId + 10,
     date: '2026-09-02T11:00:00.000Z',
-    typeId,
-    typeName,
-    quantity: 5,
-    unitPrice: 10,
-    totalPrice: 50,
     isBuy,
+    journalRefId: transactionId + 10,
     locationId: 60_000_001,
     locationName: 'Jita IV - Moon 4',
+    quantity: 5,
+    totalPrice: 50,
+    transactionId,
+    typeId,
+    typeName,
+    unitPrice: 10,
   }
 }
 
 function journalEntries() {
   return [
     {
-      journalId: 101,
-      date: '2026-09-02T11:00:00.000Z',
       amount: 50,
-      balance: 1_000,
-      referenceType: 'market_transaction',
-      description: 'Market purchase',
-      reason: null,
-      taxAmount: null,
+      balance: 1000,
       context: null,
+      date: '2026-09-02T11:00:00.000Z',
+      description: 'Market purchase',
+      journalId: 101,
+      reason: null,
+      referenceType: 'market_transaction',
+      taxAmount: null,
     },
     {
-      journalId: 102,
-      date: '2026-09-01T11:00:00.000Z',
       amount: 100,
       balance: 950,
-      referenceType: 'mission_reward',
-      description: 'Mission reward',
-      reason: 'Objective complete',
-      taxAmount: null,
       context: null,
+      date: '2026-09-01T11:00:00.000Z',
+      description: 'Mission reward',
+      journalId: 102,
+      reason: 'Objective complete',
+      referenceType: 'mission_reward',
+      taxAmount: null,
     },
   ]
 }
@@ -982,8 +994,8 @@ function historyOrders() {
   return [
     {
       ...marketOrder(301, 36, 'Scordite', false, 20),
-      volumeRemain: 20,
       state: 'expired',
+      volumeRemain: 20,
     },
     { ...marketOrder(302, 35, 'Pyerite', true, 30), state: 'cancelled' },
   ]
@@ -997,71 +1009,71 @@ function marketOrder(
   price: number,
 ) {
   return {
-    orderId,
-    typeId,
-    typeName,
-    isBuy,
-    price,
-    volumeRemain: 10,
-    volumeTotal: 20,
-    minimumVolume: null,
+    durationDays: 30,
     escrow: null,
-    range: 'station',
+    expiresAt: '2026-10-01T10:00:00.000Z',
+    isBuy,
+    issuedAt: '2026-09-01T10:00:00.000Z',
     locationId: 60_000_001,
     locationName: 'Jita IV - Moon 4',
+    minimumVolume: null,
+    orderId,
+    price,
+    range: 'station',
     regionId: 10_000_002,
-    issuedAt: '2026-09-01T10:00:00.000Z',
-    durationDays: 30,
-    expiresAt: '2026-10-01T10:00:00.000Z',
+    typeId,
+    typeName,
+    volumeRemain: 10,
+    volumeTotal: 20,
   }
 }
 
 function contracts() {
   return [
-    contract(7_001, 'auction', 'Auction lot'),
-    contract(7_002, 'courier', 'Courier package'),
-    contract(7_003, 'loan', 'Loan terms'),
+    contract(7001, 'auction', 'Auction lot'),
+    contract(7002, 'courier', 'Courier package'),
+    contract(7003, 'loan', 'Loan terms'),
   ]
 }
 
 function contract(contractId: number, type: string, title: string) {
   return {
-    contractId,
-    type,
-    status: 'outstanding',
-    availability: 'personal',
-    role: type === 'auction' ? 'assigned' : 'issued',
-    title,
-    issuedAt: '2026-09-01T10:00:00.000Z',
-    expiredAt: '2026-09-08T10:00:00.000Z',
     acceptedAt: null,
+    availability: 'personal',
+    buyout: type === 'auction' ? 200 : null,
+    collateral: type === 'courier' ? 500 : null,
     completedAt: null,
+    contractId,
     daysToComplete: null,
-    startLocationId: 60_000_001,
     endLocationId: null,
+    expiredAt: '2026-09-08T10:00:00.000Z',
+    issuedAt: '2026-09-01T10:00:00.000Z',
     price: 100,
     reward: null,
-    collateral: type === 'courier' ? 500 : null,
-    buyout: type === 'auction' ? 200 : null,
+    role: type === 'auction' ? 'assigned' : 'issued',
+    startLocationId: 60_000_001,
+    status: 'outstanding',
+    title,
+    type,
     volume: 5,
   }
 }
 
 function ownedCharacter(characterId: number) {
   return {
-    characterId,
-    name: 'Finance Pilot',
-    corporationId: 98_000_001,
-    allianceId: null,
-    isMain: true,
-    birthday: '2020-01-01T00:00:00.000Z',
-    securityStatus: 1.2,
-    raceFactionId: 500_001,
-    location: { solarSystemId: 30_000_142, solarSystemName: 'Jita', locationType: 'space' },
-    ship: { typeId: 670, typeName: 'Capsule', groupId: 29, name: 'Ledger' },
-    walletBalance: 1_234_567.89,
-    totalSp: 5_000_000,
-    corporation: { id: 98_000_001, name: 'Finance Corporation' },
     alliance: null,
+    allianceId: null,
+    birthday: '2020-01-01T00:00:00.000Z',
+    characterId,
+    corporation: { id: 98_000_001, name: 'Finance Corporation' },
+    corporationId: 98_000_001,
+    isMain: true,
+    location: { locationType: 'space', solarSystemId: 30_000_142, solarSystemName: 'Jita' },
+    name: 'Finance Pilot',
+    raceFactionId: 500_001,
+    securityStatus: 1.2,
+    ship: { groupId: 29, name: 'Ledger', typeId: 670, typeName: 'Capsule' },
+    totalSp: 5_000_000,
+    walletBalance: 1_234_567.89,
   }
 }

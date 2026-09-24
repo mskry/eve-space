@@ -49,7 +49,7 @@ export function loadPublishedTypeGroupsProduct(
         uniqueTypeIds.length === 0
           ? []
           : await selectPublishedTypeGroups(transaction, signal, uniqueTypeIds)
-      return { rows, revision, complete: true }
+      return { complete: true, revision, rows }
     },
   )
 }
@@ -77,9 +77,9 @@ async function selectPublishedTypeGroups(
     signal,
   )
   return rows.map((row) => ({
-    typeId: positiveSafeInteger(row.type_id, 'type ID'),
-    typeName: nonemptyString(row.type_name, 'type name'),
     groupId: positiveSafeInteger(row.group_id, 'group ID'),
     groupName: nonemptyString(row.group_name, 'group name'),
+    typeId: positiveSafeInteger(row.type_id, 'type ID'),
+    typeName: nonemptyString(row.type_name, 'type name'),
   }))
 }

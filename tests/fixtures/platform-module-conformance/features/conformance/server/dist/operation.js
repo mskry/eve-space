@@ -1,22 +1,22 @@
 import { definePlatformExecutableEsiOperation } from '@eve-space/platform-module-server';
 export const conformanceStatusOperation = definePlatformExecutableEsiOperation({
-    sdkOperationId: 'GetStatus',
     policy: {
         audit: { reviewedDate: '2026-09-06' },
-        representationVersion: 'v1',
         authorization: { kind: 'public' },
-        identity: { kind: 'ordered', fields: [] },
-        freshness: { kind: 'relative', seconds: 60 },
         cache: {
-            kind: 'shared',
             collapse: true,
+            kind: 'shared',
+            retentionMilliseconds: 300_000,
             revalidate: true,
             stale: { kind: 'none' },
-            retentionMilliseconds: 300_000,
         },
-        rateGroup: { kind: 'legacy-only' },
-        retry: { kind: 'none' },
         compatibility: { minimumDate: '2026-09-01' },
+        freshness: { kind: 'relative', seconds: 60 },
+        identity: { fields: [], kind: 'ordered' },
+        rateGroup: { kind: 'legacy-only' },
+        representationVersion: 'v1',
         responseValidation: { kind: 'enabled' },
+        retry: { kind: 'none' },
     },
+    sdkOperationId: 'GetStatus',
 });

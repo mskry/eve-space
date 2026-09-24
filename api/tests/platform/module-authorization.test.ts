@@ -12,8 +12,11 @@ const mocks = vi.hoisted(() => {
     CharacterOwnershipConflictError,
     CharacterTokenNotFoundError,
     TokenRefreshLockUnavailableError,
-    enabled: true,
     authorizeOrganizationContribution: vi.fn(),
+    collectionStatus: { read: vi.fn() },
+    createOwnedCharacterCoreReads: vi.fn(),
+    createPlatformModuleCollectionStatusReads: vi.fn(),
+    enabled: true,
     events: [] as string[],
     findAdminSession: vi.fn(),
     findOwnedCharacter: vi.fn(),
@@ -21,21 +24,18 @@ const mocks = vi.hoisted(() => {
     hasOrganizationContext: true,
     isInstalledModuleContributionEnabled: vi.fn(),
     loadModuleRuntimeState: vi.fn(),
+    organizationContext: {
+      accessValidUntil: new Date(Date.now() + 60_000) as Date | null,
+      blocked: false,
+      evidenceFreshness: 'fresh' as 'fresh' | 'stale' | 'unavailable',
+      organizationVersion: 7,
+      reviewDeadline: null as Date | null,
+      state: 'compliant' as 'pending' | 'compliant' | 'review_required' | 'suspended',
+    },
+    ownedHandler: vi.fn(),
     saveInstalledShellNavigationOrder: vi.fn(),
     sessionHandler: vi.fn(),
     unexpectedError: new Error('refresh-token private-host'),
-    ownedHandler: vi.fn(),
-    createOwnedCharacterCoreReads: vi.fn(),
-    createPlatformModuleCollectionStatusReads: vi.fn(),
-    collectionStatus: { read: vi.fn() },
-    organizationContext: {
-      organizationVersion: 7,
-      state: 'compliant' as 'pending' | 'compliant' | 'review_required' | 'suspended',
-      evidenceFreshness: 'fresh' as 'fresh' | 'stale' | 'unavailable',
-      reviewDeadline: null as Date | null,
-      accessValidUntil: new Date(Date.now() + 60_000) as Date | null,
-      blocked: false,
-    },
   }
 })
 
@@ -50,8 +50,8 @@ vi.mock('../../src/env.js', () => ({
 }))
 
 vi.mock('../../src/auth/character-lifecycle.js', () => ({
-  attachCharacter: vi.fn(),
   CharacterOwnershipConflictError: mocks.CharacterOwnershipConflictError,
+  attachCharacter: vi.fn(),
   deleteCharacter: vi.fn(),
   findOwnedCharacter: mocks.findOwnedCharacter,
   listUserCharacters: vi.fn(),
@@ -69,17 +69,17 @@ vi.mock('../../src/auth/session-store.js', () => ({
 }))
 vi.mock('../../src/auth/character-token-store.js', () => ({
   CharacterTokenNotFoundError: mocks.CharacterTokenNotFoundError,
-  findCharacterToken: vi.fn(),
   TokenRefreshLockUnavailableError: mocks.TokenRefreshLockUnavailableError,
+  findCharacterToken: vi.fn(),
   updateCharacterToken: vi.fn(),
   withCharacterTokenRefreshLock: vi.fn(),
 }))
 
 vi.mock('../../src/admin/store.js', () => ({
+  DeploymentAlreadyConfiguredError: class extends Error {},
   createAdminSession: vi.fn(),
   createDeployment: vi.fn(),
   deleteAdminSession: vi.fn(),
-  DeploymentAlreadyConfiguredError: class extends Error {},
   findAdminCredentials: vi.fn(),
   findAdminSession: mocks.findAdminSession,
   isDeploymentConfigured: vi.fn(),
@@ -113,7 +113,9 @@ vi.mock('../../src/middleware/organization-session.js', () => ({
     next: () => Promise<void>,
   ) => {
     mocks.events.push('organization')
-    if (mocks.hasOrganizationContext) context.set('organization', mocks.organizationContext)
+    if (mocks.hasOrganizationContext) {
+      context.set('organization', mocks.organizationContext)
+    }
     await next()
   },
 }))
@@ -131,9 +133,9 @@ vi.mock('../../src/generated/platform/installed-module-routes.js', async () => {
   const { platformModuleRouteComposers } =
     await import('../../src/platform/module-route-composition.js')
   const organization = {
-    publisherPackage: '@example/alpha-manifest',
-    moduleId: 'alpha',
     audience: 'member',
+    moduleId: 'alpha',
+    publisherPackage: '@example/alpha-manifest',
     requiredPermission: 'alpha.view',
   } as const
 
@@ -202,14 +204,14 @@ import { app } from '../../src/index.js'
 import { apiLogger } from '../../src/logging.js'
 
 const session = {
-  userId: 'user-1',
   mainCharacter: {
-    characterId: 90_000_001,
-    name: 'Main Character',
-    corporationId: 98_000_001,
     allianceId: null,
+    characterId: 90_000_001,
+    corporationId: 98_000_001,
     isMain: true,
+    name: 'Main Character',
   },
+  userId: 'user-1',
 }
 const ownedCharacter = {
   ...session.mainCharacter,
@@ -240,22 +242,22 @@ beforeEach(() => {
   mocks.createOwnedCharacterCoreReads.mockReturnValue({ loadAffiliation: vi.fn() })
   mocks.createPlatformModuleCollectionStatusReads.mockReturnValue(mocks.collectionStatus)
   mocks.organizationContext = {
-    organizationVersion: 7,
-    state: 'compliant',
-    evidenceFreshness: 'fresh',
-    reviewDeadline: null,
     accessValidUntil: new Date(Date.now() + 60_000),
     blocked: false,
+    evidenceFreshness: 'fresh',
+    organizationVersion: 7,
+    reviewDeadline: null,
+    state: 'compliant',
   }
   mocks.authorizeOrganizationContribution.mockImplementation(async () => {
     mocks.events.push('authorization')
     return {
       authorized: true,
       context: {
-        organizationVersion: 7,
         audience: 'member',
-        requiredPermission: 'alpha.view',
         entitlementScope: 'all',
+        organizationVersion: 7,
+        requiredPermission: 'alpha.view',
       },
     }
   })
@@ -268,8 +270,8 @@ describe('full-root platform module authorization', () => {
     const response = await app.request('/api/modules/alpha/characters/not-an-id')
 
     expect(response.status).toBe(404)
-    await expect(response.json()).resolves.toEqual({ message: 'Route not found' })
-    expect(mocks.events).toEqual(['enablement'])
+    await expect(response.json()).resolves.toStrictEqual({ message: 'Route not found' })
+    expect(mocks.events).toStrictEqual(['enablement'])
   })
 
   test('authenticates before validating an owned-character path', async () => {
@@ -280,7 +282,7 @@ describe('full-root platform module authorization', () => {
       headers: sessionCookie,
     })
     expect(authenticated.status).toBe(400)
-    await expect(authenticated.json()).resolves.toEqual({
+    await expect(authenticated.json()).resolves.toStrictEqual({
       message: 'Character ID must be a positive integer.',
     })
     expect(mocks.findOwnedCharacter).not.toHaveBeenCalled()
@@ -294,8 +296,8 @@ describe('full-root platform module authorization', () => {
       ),
     )
 
-    expect(responses.map(({ status }) => status)).toEqual([404, 404])
-    expect(await Promise.all(responses.map((response) => response.json()))).toEqual([
+    expect(responses.map(({ status }) => status)).toStrictEqual([404, 404])
+    expect(await Promise.all(responses.map((response) => response.json()))).toStrictEqual([
       { code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' },
       { code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' },
     ])
@@ -309,16 +311,16 @@ describe('full-root platform module authorization', () => {
     )
 
     expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       authorization: {
-        strategy: 'owned-character',
-        userId: session.userId,
         characterId: ownedCharacter.characterId,
+        strategy: 'owned-character',
         subjectLifecycleId: ownedCharacter.subjectLifecycleId,
+        userId: session.userId,
       },
       hasCoreReads: true,
     })
-    expect(mocks.events).toEqual([
+    expect(mocks.events).toStrictEqual([
       'enablement',
       'session',
       'organization',
@@ -327,11 +329,11 @@ describe('full-root platform module authorization', () => {
       'owned-handler',
     ])
     expect(mocks.createOwnedCharacterCoreReads).toHaveBeenCalledWith({
-      userId: session.userId,
       characterId: ownedCharacter.characterId,
       subjectLifecycleId: ownedCharacter.subjectLifecycleId,
+      userId: session.userId,
     })
-    expect(Object.keys(mocks.ownedHandler.mock.calls[0]?.[0] ?? {})).toEqual([
+    expect(Object.keys(mocks.ownedHandler.mock.calls[0]?.[0] ?? {})).toStrictEqual([
       'authorization',
       'collectionStatus',
       'organization',
@@ -343,18 +345,18 @@ describe('full-root platform module authorization', () => {
     const response = await app.request('/api/modules/alpha/profile', { headers: sessionCookie })
 
     expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       platform: {
         authorization: { strategy: 'authenticated-session', userId: session.userId },
         organization: {
-          organizationVersion: 7,
           audience: 'member',
-          requiredPermission: 'alpha.view',
           entitlementScope: 'all',
+          organizationVersion: 7,
+          requiredPermission: 'alpha.view',
         },
       },
     })
-    expect(Object.keys(mocks.sessionHandler.mock.calls[0]?.[0] ?? {})).toEqual([
+    expect(Object.keys(mocks.sessionHandler.mock.calls[0]?.[0] ?? {})).toStrictEqual([
       'authorization',
       'collectionStatus',
       'organization',
@@ -363,12 +365,12 @@ describe('full-root platform module authorization', () => {
 
   test('uses public canonical validation and safe module error contracts', async () => {
     const invalid = await app.request('/api/modules/alpha/profile/validated', {
-      method: 'POST',
-      headers: { ...sessionCookie, 'content-type': 'application/json' },
       body: JSON.stringify({ name: '' }),
+      headers: { ...sessionCookie, 'content-type': 'application/json' },
+      method: 'POST',
     })
     expect(invalid.status).toBe(400)
-    await expect(invalid.json()).resolves.toEqual({ message: 'Name is required.' })
+    await expect(invalid.json()).resolves.toStrictEqual({ message: 'Name is required.' })
     expect(invalid.headers.get('cache-control')).toBe('private, no-store')
     expect(invalid.headers.get('vary')).toContain('Cookie')
     expect(mocks.sessionHandler).not.toHaveBeenCalled()
@@ -377,7 +379,7 @@ describe('full-root platform module authorization', () => {
       headers: sessionCookie,
     })
     expect(expected.status).toBe(409)
-    await expect(expected.json()).resolves.toEqual({
+    await expect(expected.json()).resolves.toStrictEqual({
       code: 'ACTIVITY_ALREADY_EXISTS',
       message: 'The activity already exists.',
     })
@@ -396,11 +398,11 @@ describe('full-root platform module authorization', () => {
       })
 
       expect(response.status).toBe(500)
-      await expect(response.json()).resolves.toEqual({ message: 'Internal server error' })
+      await expect(response.json()).resolves.toStrictEqual({ message: 'Internal server error' })
       expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(/refresh-token|private-host/)
       expect(consoleError).toHaveBeenCalledOnce()
       const completionEvent = JSON.parse(String(consoleInfo.mock.calls[0]?.[0]))
-      expect(JSON.parse(String(consoleError.mock.calls[0]?.[0]))).toEqual(
+      expect(JSON.parse(String(consoleError.mock.calls[0]?.[0]))).toStrictEqual(
         expect.objectContaining({
           correlationId: completionEvent.requestId,
           event: 'api.request.failed',
@@ -444,13 +446,15 @@ describe('full-root platform module authorization', () => {
       })
 
       expect(response.status).toBe(500)
-      await expect(response.json()).resolves.toEqual({ message: 'Internal server error' })
+      await expect(response.json()).resolves.toStrictEqual({ message: 'Internal server error' })
       const serialized = JSON.stringify(consoleError.mock.calls)
-      for (const sentinel of Object.values(sentinels)) expect(serialized).not.toContain(sentinel)
+      for (const sentinel of Object.values(sentinels)) {
+        expect(serialized).not.toContain(sentinel)
+      }
       expect(consoleError).toHaveBeenCalledOnce()
       const loggedEvent = JSON.parse(String(consoleError.mock.calls[0]?.[0]))
       const completionEvent = JSON.parse(String(consoleInfo.mock.calls[0]?.[0]))
-      expect(loggedEvent).toEqual(
+      expect(loggedEvent).toStrictEqual(
         expect.objectContaining({
           correlationId: completionEvent.requestId,
           event: 'api.request.failed',
@@ -516,17 +520,17 @@ describe('full-root platform shell boundaries', () => {
       typeof import('../../src/platform/module-navigation.js')
     >('../../src/platform/module-navigation.js')
     const defaults = [
-      { ownerId: 'core', navigationId: 'overview', placement: 'dashboard', order: 10 },
-      { ownerId: 'alpha', navigationId: 'saved', placement: 'dashboard', order: 20 },
-      { ownerId: 'alpha', navigationId: 'new', placement: 'dashboard', order: 30 },
-      { ownerId: 'beta', navigationId: 'disabled', placement: 'dashboard', order: 40 },
+      { navigationId: 'overview', order: 10, ownerId: 'core', placement: 'dashboard' },
+      { navigationId: 'saved', order: 20, ownerId: 'alpha', placement: 'dashboard' },
+      { navigationId: 'new', order: 30, ownerId: 'alpha', placement: 'dashboard' },
+      { navigationId: 'disabled', order: 40, ownerId: 'beta', placement: 'dashboard' },
     ] as const
     const shellNavigationOrder = resolveShellNavigationOrder(
       defaults,
       [
-        { owner_id: 'alpha', navigation_id: 'saved', position: 0 },
-        { owner_id: 'core', navigation_id: 'overview', position: 1 },
-        { owner_id: 'removed', navigation_id: 'retained', position: 0 },
+        { navigation_id: 'saved', owner_id: 'alpha', position: 0 },
+        { navigation_id: 'overview', owner_id: 'core', position: 1 },
+        { navigation_id: 'retained', owner_id: 'removed', position: 0 },
       ],
       new Set(['core', 'alpha']),
     )
@@ -539,34 +543,34 @@ describe('full-root platform shell boundaries', () => {
     const response = await app.request('/api/modules', { headers: sessionCookie })
 
     expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       enabledModuleIds: ['alpha'],
       enabledSections: [],
       shellNavigationOrder: {
+        character: [],
         dashboard: [
           { ownerId: 'alpha', navigationId: 'saved' },
           { ownerId: 'core', navigationId: 'overview' },
           { ownerId: 'alpha', navigationId: 'new' },
         ],
-        character: [],
       },
     })
   })
 
   test('allows only the deployment administrator to rearrange shared navigation', async () => {
     const shellNavigationOrder = {
-      dashboard: [{ ownerId: 'core', navigationId: 'overview' }],
       character: [],
+      dashboard: [{ ownerId: 'core', navigationId: 'overview' }],
     }
     mocks.saveInstalledShellNavigationOrder.mockResolvedValue(shellNavigationOrder)
     const request = {
-      method: 'PUT',
+      body: JSON.stringify({ shellNavigationOrder }),
       headers: {
         ...sessionCookie,
         'Content-Type': 'application/json',
         Origin: 'http://localhost:3000',
       },
-      body: JSON.stringify({ shellNavigationOrder }),
+      method: 'PUT',
     }
 
     const ordinaryResponse = await app.request('/api/admin/shell-navigation-order', request)
@@ -576,8 +580,8 @@ describe('full-root platform shell boundaries', () => {
     mocks.findAdminSession.mockResolvedValue({
       adminId: 'admin-1',
       email: 'owner@example.com',
-      role: 'owner',
       organization: null,
+      role: 'owner',
     })
     const administratorResponse = await app.request('/api/admin/shell-navigation-order', {
       ...request,
@@ -589,7 +593,7 @@ describe('full-root platform shell boundaries', () => {
     })
 
     expect(administratorResponse.status).toBe(200)
-    await expect(administratorResponse.json()).resolves.toEqual({ shellNavigationOrder })
+    await expect(administratorResponse.json()).resolves.toStrictEqual({ shellNavigationOrder })
     expect(mocks.saveInstalledShellNavigationOrder).toHaveBeenCalledWith(shellNavigationOrder)
   })
 })

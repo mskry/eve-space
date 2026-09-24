@@ -78,10 +78,15 @@ export async function compareGeneratedOutputs(
   for (const path of [...allPaths].toSorted(compareText)) {
     const stagedEntry = staged.get(path);
     const committedEntry = committed.get(path);
-    if (stagedEntry === undefined) drift.push(`unexpected committed path ${path}`);
-    else if (committedEntry === undefined) drift.push(`missing committed path ${path}`);
-    else if (stagedEntry.kind !== committedEntry.kind) drift.push(`path kind changed ${path}`);
-    else if (stagedEntry.content !== committedEntry.content) drift.push(`content changed ${path}`);
+    if (stagedEntry === undefined) {
+      drift.push(`unexpected committed path ${path}`);
+    } else if (committedEntry === undefined) {
+      drift.push(`missing committed path ${path}`);
+    } else if (stagedEntry.kind !== committedEntry.kind) {
+      drift.push(`path kind changed ${path}`);
+    } else if (stagedEntry.content !== committedEntry.content) {
+      drift.push(`content changed ${path}`);
+    }
   }
 
   if (drift.length > 0) {
@@ -115,7 +120,9 @@ async function snapshotPaths(
   targets: readonly string[],
 ): Promise<Map<string, PathSnapshotEntry>> {
   const snapshot = new Map<string, PathSnapshotEntry>();
-  for (const target of targets) await snapshotPath(root, target, snapshot);
+  for (const target of targets) {
+    await snapshotPath(root, target, snapshot);
+  }
   return snapshot;
 }
 
@@ -129,21 +136,23 @@ async function snapshotPath(
   try {
     status = await lstat(path);
   } catch (error) {
-    if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') return;
+    if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return;
+    }
     throw error;
   }
   if (status.isSymbolicLink()) {
     throw new Error(`Generated output must not contain symbolic links: ${repositoryPath}`);
   }
   if (status.isFile()) {
-    snapshot.set(repositoryPath, { kind: 'file', content: await readFile(path, 'base64') });
+    snapshot.set(repositoryPath, { content: await readFile(path, 'base64'), kind: 'file' });
     return;
   }
   if (!status.isDirectory()) {
     throw new Error(`Generated output must be a file or directory: ${repositoryPath}`);
   }
 
-  snapshot.set(repositoryPath, { kind: 'directory', content: '' });
+  snapshot.set(repositoryPath, { content: '', kind: 'directory' });
   const entries = await readdir(path, { withFileTypes: true });
   for (const entry of entries.toSorted((left, right) => compareText(left.name, right.name))) {
     await snapshotPath(root, `${repositoryPath}/${entry.name}`, snapshot);

@@ -44,7 +44,7 @@ const migrationNames = ['organization-activity-001-baseline.sql'] as const
 const lifecycleId = randomUUID()
 const activityId = randomUUID()
 const snapshot = summarySnapshot(
-  { id: activityId, name: 'Supplies', state: 'Active', progress: { current: 1, desired: 10 } },
+  { id: activityId, name: 'Supplies', progress: { current: 1, desired: 10 }, state: 'Active' },
   'job',
   9801,
 )
@@ -54,8 +54,8 @@ beforeAll(async () => {
   container = await new GenericContainer('postgres:17-alpine')
     .withEnvironment({
       POSTGRES_DB: 'eve_space',
-      POSTGRES_USER: 'eve_space',
       POSTGRES_PASSWORD: password,
+      POSTGRES_USER: 'eve_space',
     })
     .withExposedPorts(5432)
     .withWaitStrategy(Wait.forLogMessage(/database system is ready to accept connections/, 2))
@@ -71,8 +71,8 @@ beforeAll(async () => {
     })),
   )
   const migrationSet = {
-    moduleId,
     migrations,
+    moduleId,
     persistenceOperations: modulePersistenceOperations,
   }
   await runModuleMigrationSets(connection, [migrationSet])
@@ -93,10 +93,10 @@ afterAll(async () => {
 
 function observation(resourceId: string, revision = 0): ActivityObservation {
   return {
-    resourceId,
-    organizationVersion: 7,
+    checkpoint: { cursors: { root: { after: 'opaque' } }, initialized: true, requests: [] },
     expectedRevision: revision,
-    checkpoint: { initialized: true, requests: [], cursors: { root: { after: 'opaque' } } },
+    organizationVersion: 7,
+    resourceId,
     snapshots: [{ snapshot, replace: true, validatedAt: new Date().toISOString() }],
   }
 }
@@ -113,15 +113,17 @@ function write(
     )
     try {
       const result = await materializeActivityResource({
-        data,
-        subject: { kind: 'character', characterId: 9001, lifecycleId },
         authorizationGeneration: generation,
-        validatedAt: new Date().toISOString(),
         capabilities: { persistence: materializationFactory(scoped.invoke) },
+        data,
+        subject: { characterId: 9001, kind: 'character', lifecycleId },
+        validatedAt: new Date().toISOString(),
       } as never)
       await afterOperation?.()
       const suppressedFailure = scoped.suppressedFailure()
-      if (suppressedFailure) throw suppressedFailure.error
+      if (suppressedFailure) {
+        throw suppressedFailure.error
+      }
       return result
     } finally {
       scoped.close()
@@ -131,35 +133,35 @@ function write(
 function read(resourceId: string, version = 7, generation = 4, lifecycle = lifecycleId) {
   const collectionStatus = {
     read: vi.fn().mockResolvedValue({
+      authorizationGeneration: generation,
+      lastFailureClass: null,
       status: 'current',
       subjectLifecycleId: lifecycle,
-      authorizationGeneration: generation,
       validatedAt: new Date().toISOString(),
-      lastFailureClass: null,
     }),
   }
   return readActivitySnapshots(
-    { persistence: snapshotPersistence, collectionStatus },
+    { collectionStatus, persistence: snapshotPersistence },
     version,
     resourceId,
-    { kind: 'character', characterId: 9001 },
+    { characterId: 9001, kind: 'character' },
     activityId,
   )
 }
 
 function readCheckpoint(resourceId: string, generation = 4) {
   return readActivityCheckpoint(resourceId, {
-    capabilities: { persistence: checkpointPersistence },
-    subject: { lifecycleId },
-    organizationVersion: 7,
     authorizationGeneration: generation,
+    capabilities: { persistence: checkpointPersistence },
+    organizationVersion: 7,
+    subject: { lifecycleId },
   } as never)
 }
 
 test('migration is idempotent and the runtime role has only generated routine access', async () => {
   const rows =
     await connection`select name from public.schema_migrations where module = ${moduleId} order by name`
-  expect(rows).toEqual(migrationNames.map((name) => ({ name })))
+  expect(rows).toStrictEqual(migrationNames.map((name) => ({ name })))
   const [privileges] = await connection<
     {
       canReadCore: boolean
@@ -190,14 +192,14 @@ test('migration is idempotent and the runtime role has only generated routine ac
         'execute'
       ) as "canExecuteWrite"
   `
-  expect(privileges).toEqual({
-    canReadCore: false,
-    canReadModuleTables: false,
+  expect(privileges).toStrictEqual({
     canExecuteRead: true,
     canExecuteWrite: true,
+    canReadCore: false,
+    canReadModuleTables: false,
   })
-  expect(Object.keys(checkpointPersistence)).toEqual(['readActivityCheckpoint'])
-  expect(Object.keys(snapshotPersistence)).toEqual(['readActivitySnapshots'])
+  expect(Object.keys(checkpointPersistence)).toStrictEqual(['readActivityCheckpoint'])
+  expect(Object.keys(snapshotPersistence)).toStrictEqual(['readActivitySnapshots'])
 })
 
 test.each([
@@ -212,13 +214,13 @@ test.each([
   '%s persists through the real module capability and isolates organization, generation and lifecycle',
   async (resourceId) => {
     expect(await write(observation(resourceId))).toBeUndefined()
-    expect((await read(resourceId)).snapshots).toEqual([snapshot])
-    expect((await read(resourceId, 8)).snapshots).toEqual([])
-    expect((await read(resourceId, 7, 5)).snapshots).toEqual([])
-    expect((await read(resourceId, 7, 4, randomUUID())).snapshots).toEqual([])
+    expect((await read(resourceId)).snapshots).toStrictEqual([snapshot])
+    expect((await read(resourceId, 8)).snapshots).toStrictEqual([])
+    expect((await read(resourceId, 7, 5)).snapshots).toStrictEqual([])
+    expect((await read(resourceId, 7, 4, randomUUID())).snapshots).toStrictEqual([])
     const checkpoint = await readCheckpoint(resourceId)
     expect(checkpoint?.revision).toBe(1)
-    expect(checkpoint?.checkpoint.cursors.root).toEqual({ after: 'opaque' })
+    expect(checkpoint?.checkpoint.cursors.root).toStrictEqual({ after: 'opaque' })
   },
 )
 
@@ -229,13 +231,13 @@ test('before pages retain existing data, after pages replace it, and obsolete wr
   const replacement = { ...snapshot, title: 'New title' }
   await write({
     ...before,
-    snapshots: [{ snapshot: replacement, replace: false, validatedAt: new Date().toISOString() }],
+    snapshots: [{ replace: false, snapshot: replacement, validatedAt: new Date().toISOString() }],
   })
   expect((await read(resourceId)).snapshots[0]?.title).toBe('Supplies')
-  expect(await write(before)).toEqual({ outcome: 'obsolete' })
+  expect(await write(before)).toStrictEqual({ outcome: 'obsolete' })
   await write({
     ...observation(resourceId, 2),
-    snapshots: [{ snapshot: replacement, replace: true, validatedAt: new Date().toISOString() }],
+    snapshots: [{ replace: true, snapshot: replacement, validatedAt: new Date().toISOString() }],
   })
   expect((await read(resourceId)).snapshots[0]?.title).toBe('New title')
   expect((await readCheckpoint(resourceId))?.revision).toBe(3)
@@ -247,11 +249,11 @@ test('complete membership lists prune absent entries only in their own identity'
   await write(observation(resourceId), 5)
   await write({
     ...observation(resourceId, 1),
+    checkpoint: { cursors: {}, initialized: true, requests: [], retainedIds: [] },
     snapshots: [],
-    checkpoint: { initialized: true, requests: [], cursors: {}, retainedIds: [] },
   })
-  expect((await read(resourceId)).snapshots).toEqual([])
-  expect((await read(resourceId, 7, 5)).snapshots).toEqual([snapshot])
+  expect((await read(resourceId)).snapshots).toStrictEqual([])
+  expect((await read(resourceId, 7, 5)).snapshots).toStrictEqual([snapshot])
 })
 
 test('incremental completion does not renew untouched snapshots', async () => {
@@ -260,11 +262,11 @@ test('incremental completion does not renew untouched snapshots', async () => {
   await write({
     ...observation(resourceId),
     checkpoint: {
+      cursors: { root: { after: 'opaque' } },
       initialized: true,
       requests: [{ operation: 'job-detail', path: { job_id: activityId }, replace: true }],
-      cursors: { root: { after: 'opaque' } },
     },
-    snapshots: [{ snapshot, replace: true, validatedAt: originalValidatedAt }],
+    snapshots: [{ replace: true, snapshot, validatedAt: originalValidatedAt }],
   })
   await write({ ...observation(resourceId, 1), snapshots: [] })
   const rows = await connection<{ unchanged: boolean }[]>`
@@ -276,7 +278,7 @@ test('incremental completion does not renew untouched snapshots', async () => {
       and authorization_generation = 4
       and activity_id = ${activityId}
   `
-  expect(rows).toEqual([{ unchanged: true }])
+  expect(rows).toStrictEqual([{ unchanged: true }])
 })
 
 test('campaign retention prunes objectives whose campaigns are no longer active', async () => {
@@ -287,9 +289,9 @@ test('campaign retention prunes objectives whose campaigns are no longer active'
   const inactiveObjectiveId = randomUUID()
   const activeCampaign = {
     ...snapshot,
+    campaignId: null,
     id: activeCampaignId,
     kind: 'campaign',
-    campaignId: null,
   } satisfies ActivitySnapshot
   const inactiveCampaign = {
     ...activeCampaign,
@@ -297,42 +299,42 @@ test('campaign retention prunes objectives whose campaigns are no longer active'
   } satisfies ActivitySnapshot
   const activeObjective = {
     ...activeCampaign,
+    campaignId: activeCampaignId,
     id: activeObjectiveId,
     kind: 'objective',
-    campaignId: activeCampaignId,
   } satisfies ActivitySnapshot
   const inactiveObjective = {
     ...activeObjective,
-    id: inactiveObjectiveId,
     campaignId: inactiveCampaignId,
+    id: inactiveObjectiveId,
   } satisfies ActivitySnapshot
   await write({
     ...observation(resourceId),
     checkpoint: {
+      cursors: {},
       initialized: true,
       requests: [],
-      cursors: {},
-      retainedIds: [activeCampaignId, inactiveCampaignId],
       retainedCampaignIds: [activeCampaignId, inactiveCampaignId],
+      retainedIds: [activeCampaignId, inactiveCampaignId],
     },
     snapshots: [activeCampaign, inactiveCampaign, activeObjective, inactiveObjective].map(
-      (item) => ({ snapshot: item, replace: true, validatedAt: new Date().toISOString() }),
+      (item) => ({ replace: true, snapshot: item, validatedAt: new Date().toISOString() }),
     ),
   })
   await write({
     ...observation(resourceId, 1),
     checkpoint: {
+      cursors: {},
       initialized: true,
       requests: [],
-      cursors: {},
-      retainedIds: [activeCampaignId, inactiveCampaignId],
       retainedCampaignIds: [activeCampaignId],
+      retainedIds: [activeCampaignId, inactiveCampaignId],
     },
     snapshots: [
-      { snapshot: activeCampaign, replace: true, validatedAt: new Date().toISOString() },
+      { replace: true, snapshot: activeCampaign, validatedAt: new Date().toISOString() },
       {
-        snapshot: { ...inactiveCampaign, state: 'Completed' },
         replace: true,
+        snapshot: { ...inactiveCampaign, state: 'Completed' },
         validatedAt: new Date().toISOString(),
       },
     ],
@@ -346,7 +348,7 @@ test('campaign retention prunes objectives whose campaigns are no longer active'
       and authorization_generation = 4
     order by activity_id
   `
-  expect(rows.map(({ id }) => id).toSorted()).toEqual(
+  expect(rows.map(({ id }) => id).toSorted()).toStrictEqual(
     [activeCampaignId, inactiveCampaignId, activeObjectiveId].toSorted(),
   )
 })
@@ -358,7 +360,7 @@ test('a failed materialization rolls back snapshots and checkpoint together', as
       throw new Error('rollback')
     }),
   ).rejects.toThrow('rollback')
-  expect((await read('rollback-test')).snapshots).toEqual([])
+  expect((await read('rollback-test')).snapshots).toStrictEqual([])
   const checkpoint = await readCheckpoint('rollback-test')
   expect(checkpoint).toBeUndefined()
 })

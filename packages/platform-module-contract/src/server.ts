@@ -4,20 +4,28 @@ const reviewerAccountSearchMaximumQueryLength = 80
 const reviewerAccountSearchMaximumCursorLength = 512
 
 export function isPlatformReviewerAccountSearchQuery(value: string) {
-  if (value.length === 0 || value.length > reviewerAccountSearchMaximumQueryLength) return false
-  for (const character of value) if (character.codePointAt(0)! < 32) return false
+  if (value.length === 0 || value.length > reviewerAccountSearchMaximumQueryLength) {
+    return false
+  }
+  for (const character of value) {
+    if (character.codePointAt(0)! < 32) return false
+  }
   return true
 }
 
 export function isPlatformReviewerAccountSearchCursor(value: string) {
-  if (value.length === 0 || value.length > reviewerAccountSearchMaximumCursorLength) return false
+  if (value.length === 0 || value.length > reviewerAccountSearchMaximumCursorLength) {
+    return false
+  }
   for (const character of value) {
     const codePoint = character.codePointAt(0)!
     const alphanumeric =
       (codePoint >= 48 && codePoint <= 57) ||
       (codePoint >= 65 && codePoint <= 90) ||
       (codePoint >= 97 && codePoint <= 122)
-    if (!alphanumeric && character !== '_' && character !== '-') return false
+    if (!alphanumeric && character !== '_' && character !== '-') {
+      return false
+    }
   }
   return true
 }

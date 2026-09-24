@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  deleteResults: [] as unknown[][],
   delete: vi.fn(),
+  deleteResults: [] as unknown[][],
   insert: vi.fn(),
   insertValues: [] as unknown[],
   select: vi.fn(),
@@ -24,7 +24,7 @@ import {
 } from '../../src/auth/oauth-state-store.js'
 
 const reviewerUseDisclosures = [
-  { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 3 },
+  { disclosureVersion: 3, moduleId: 'member-audit', sectionId: 'wallet' },
 ] as const
 
 describe('OAuth state store', () => {
@@ -48,101 +48,101 @@ describe('OAuth state store', () => {
     {
       context: { intent: 'login', returnPath: '/dashboard', reviewerUseDisclosures } as const,
       expected: {
-        intent: 'login',
-        userId: null,
         characterId: null,
-        returnPath: '/dashboard',
+        intent: 'login',
         organizationDeploymentId: null,
         organizationId: null,
         organizationVersion: null,
-        transferApprovalId: null,
-        transferSourceUserId: null,
-        transferSourceSubjectLifecycleId: null,
+        returnPath: '/dashboard',
         reviewerUseDisclosures,
+        transferApprovalId: null,
+        transferSourceSubjectLifecycleId: null,
+        transferSourceUserId: null,
+        userId: null,
       },
     },
     {
-      context: { intent: 'attach', userId: 'user-1', reviewerUseDisclosures } as const,
+      context: { intent: 'attach', reviewerUseDisclosures, userId: 'user-1' } as const,
       expected: {
-        intent: 'attach',
-        userId: 'user-1',
         characterId: null,
-        returnPath: null,
+        intent: 'attach',
         organizationDeploymentId: null,
         organizationId: null,
         organizationVersion: null,
-        transferApprovalId: null,
-        transferSourceUserId: null,
-        transferSourceSubjectLifecycleId: null,
+        returnPath: null,
         reviewerUseDisclosures,
+        transferApprovalId: null,
+        transferSourceSubjectLifecycleId: null,
+        transferSourceUserId: null,
+        userId: 'user-1',
       },
     },
     {
       context: {
-        intent: 'reauthorize',
-        userId: 'user-1',
         characterId: 90_000_001,
+        intent: 'reauthorize',
         reviewerUseDisclosures,
+        userId: 'user-1',
       } as const,
       expected: {
-        intent: 'reauthorize',
-        userId: 'user-1',
         characterId: 90_000_001,
-        returnPath: null,
+        intent: 'reauthorize',
         organizationDeploymentId: null,
         organizationId: null,
         organizationVersion: null,
-        transferApprovalId: null,
-        transferSourceUserId: null,
-        transferSourceSubjectLifecycleId: null,
+        returnPath: null,
         reviewerUseDisclosures,
+        transferApprovalId: null,
+        transferSourceSubjectLifecycleId: null,
+        transferSourceUserId: null,
+        userId: 'user-1',
       },
     },
     {
       context: {
-        intent: 'claim-organization-owner',
-        userId: 'user-1',
         characterId: 90_000_001,
+        intent: 'claim-organization-owner',
         organizationId: 98_000_001,
         organizationVersion: 8,
         reviewerUseDisclosures,
+        userId: 'user-1',
       } as const,
       expected: {
-        intent: 'claim-organization-owner',
-        userId: 'user-1',
         characterId: 90_000_001,
-        returnPath: null,
+        intent: 'claim-organization-owner',
         organizationDeploymentId: 1,
         organizationId: 98_000_001,
         organizationVersion: 8,
-        transferApprovalId: null,
-        transferSourceUserId: null,
-        transferSourceSubjectLifecycleId: null,
+        returnPath: null,
         reviewerUseDisclosures,
+        transferApprovalId: null,
+        transferSourceSubjectLifecycleId: null,
+        transferSourceUserId: null,
+        userId: 'user-1',
       },
     },
     {
       context: {
-        intent: 'transfer',
         approvalId: 'approval-1',
-        sourceUserId: 'source-user-1',
-        sourceSubjectLifecycleId: 'lifecycle-1',
-        userId: 'user-1',
         characterId: 90_000_001,
+        intent: 'transfer',
         reviewerUseDisclosures,
+        sourceSubjectLifecycleId: 'lifecycle-1',
+        sourceUserId: 'source-user-1',
+        userId: 'user-1',
       } as const,
       expected: {
-        intent: 'transfer',
-        userId: 'user-1',
         characterId: 90_000_001,
-        returnPath: null,
+        intent: 'transfer',
         organizationDeploymentId: null,
         organizationId: null,
         organizationVersion: null,
-        transferApprovalId: 'approval-1',
-        transferSourceUserId: 'source-user-1',
-        transferSourceSubjectLifecycleId: 'lifecycle-1',
+        returnPath: null,
         reviewerUseDisclosures,
+        transferApprovalId: 'approval-1',
+        transferSourceSubjectLifecycleId: 'lifecycle-1',
+        transferSourceUserId: 'source-user-1',
+        userId: 'user-1',
       },
     },
   ])(
@@ -152,7 +152,7 @@ describe('OAuth state store', () => {
 
       expect(mocks.delete).toHaveBeenCalledOnce()
       expect(mocks.insert).toHaveBeenCalledOnce()
-      expect(mocks.insertValues).toEqual([
+      expect(mocks.insertValues).toStrictEqual([
         expect.objectContaining({
           ...expected,
           expiresAt: new Date('2026-09-11T12:10:00.000Z'),
@@ -163,22 +163,29 @@ describe('OAuth state store', () => {
 
   test.each([
     {
+      expected: { intent: 'login', returnPath: '/dashboard', reviewerUseDisclosures },
       record: record({
         intent: 'login',
         returnPath: '/dashboard',
         reviewerUseDisclosures,
       }),
-      expected: { intent: 'login', returnPath: '/dashboard', reviewerUseDisclosures },
     },
     {
-      record: record({ intent: 'login', returnPath: null }),
       expected: { intent: 'login', reviewerUseDisclosures: [] },
+      record: record({ intent: 'login', returnPath: null }),
     },
     {
+      expected: { intent: 'attach', reviewerUseDisclosures: [], userId: 'user-1' },
       record: record({ intent: 'attach', userId: 'user-1' }),
-      expected: { intent: 'attach', userId: 'user-1', reviewerUseDisclosures: [] },
     },
     {
+      expected: {
+        characterId: 90_000_001,
+        intent: 'reauthorize',
+        returnPath: '/characters/90000001',
+        reviewerUseDisclosures: [],
+        userId: 'user-1',
+      },
       record: record({
         intent: 'reauthorize',
         userId: 'user-1',
@@ -186,28 +193,29 @@ describe('OAuth state store', () => {
         returnPath: '/characters/90000001',
         reviewerUseDisclosures: [],
       }),
-      expected: {
-        intent: 'reauthorize',
-        userId: 'user-1',
-        characterId: 90_000_001,
-        reviewerUseDisclosures: [],
-        returnPath: '/characters/90000001',
-      },
     },
     {
+      expected: {
+        characterId: 90_000_001,
+        intent: 'reauthorize',
+        reviewerUseDisclosures: [],
+        userId: 'user-1',
+      },
       record: record({
         intent: 'reauthorize',
         userId: 'user-1',
         characterId: 90_000_001,
       }),
-      expected: {
-        intent: 'reauthorize',
-        userId: 'user-1',
-        characterId: 90_000_001,
-        reviewerUseDisclosures: [],
-      },
     },
     {
+      expected: {
+        characterId: 90_000_001,
+        intent: 'claim-organization-owner',
+        organizationId: 98_000_001,
+        organizationVersion: 8,
+        reviewerUseDisclosures: [],
+        userId: 'user-1',
+      },
       record: record({
         intent: 'claim-organization-owner',
         userId: 'user-1',
@@ -216,16 +224,17 @@ describe('OAuth state store', () => {
         organizationVersion: 8,
         reviewerUseDisclosures: [],
       }),
-      expected: {
-        intent: 'claim-organization-owner',
-        userId: 'user-1',
-        characterId: 90_000_001,
-        reviewerUseDisclosures: [],
-        organizationId: 98_000_001,
-        organizationVersion: 8,
-      },
     },
     {
+      expected: {
+        approvalId: 'approval-1',
+        characterId: 90_000_001,
+        intent: 'transfer',
+        reviewerUseDisclosures: [],
+        sourceSubjectLifecycleId: 'lifecycle-1',
+        sourceUserId: 'source-user-1',
+        userId: 'user-1',
+      },
       record: record({
         intent: 'transfer',
         transferApprovalId: 'approval-1',
@@ -234,22 +243,13 @@ describe('OAuth state store', () => {
         userId: 'user-1',
         characterId: 90_000_001,
       }),
-      expected: {
-        intent: 'transfer',
-        approvalId: 'approval-1',
-        sourceUserId: 'source-user-1',
-        sourceSubjectLifecycleId: 'lifecycle-1',
-        userId: 'user-1',
-        characterId: 90_000_001,
-        reviewerUseDisclosures: [],
-      },
     },
   ])(
     'consumes a valid $expected.intent state context',
     async ({ record: storedRecord, expected }) => {
       mocks.deleteResults.push([storedRecord])
 
-      await expect(consumeOAuthState('state-1')).resolves.toEqual(expected)
+      await expect(consumeOAuthState('state-1')).resolves.toStrictEqual(expected)
     },
   )
 
@@ -262,12 +262,12 @@ describe('OAuth state store', () => {
   test.each([
     null,
     {},
-    [{ moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 0 }],
+    [{ disclosureVersion: 0, moduleId: 'member-audit', sectionId: 'wallet' }],
     [
-      { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 1 },
-      { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 2 },
+      { disclosureVersion: 1, moduleId: 'member-audit', sectionId: 'wallet' },
+      { disclosureVersion: 2, moduleId: 'member-audit', sectionId: 'wallet' },
     ],
-    [{ moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 1, extra: true }],
+    [{ disclosureVersion: 1, extra: true, moduleId: 'member-audit', sectionId: 'wallet' }],
   ])('rejects malformed or duplicate reviewer-use disclosures', async (value) => {
     mocks.deleteResults.push([record({ reviewerUseDisclosures: value })])
 
@@ -276,75 +276,75 @@ describe('OAuth state store', () => {
 
   test.each([
     record({ intent: 'attach', userId: null }),
-    record({ intent: 'reauthorize', userId: null, characterId: 90_000_001 }),
-    record({ intent: 'reauthorize', userId: 'user-1', characterId: null }),
+    record({ characterId: 90_000_001, intent: 'reauthorize', userId: null }),
+    record({ characterId: null, intent: 'reauthorize', userId: 'user-1' }),
     record({
+      characterId: 90_000_001,
       intent: 'claim-organization-owner',
+      organizationId: 98_000_001,
+      organizationVersion: 8,
       userId: null,
-      characterId: 90_000_001,
-      organizationId: 98_000_001,
-      organizationVersion: 8,
     }),
     record({
-      intent: 'claim-organization-owner',
-      userId: 'user-1',
       characterId: null,
+      intent: 'claim-organization-owner',
       organizationId: 98_000_001,
       organizationVersion: 8,
+      userId: 'user-1',
     }),
     record({
-      intent: 'claim-organization-owner',
-      userId: 'user-1',
       characterId: 90_000_001,
+      intent: 'claim-organization-owner',
       organizationId: null,
       organizationVersion: 8,
+      userId: 'user-1',
     }),
     record({
-      intent: 'claim-organization-owner',
-      userId: 'user-1',
       characterId: 90_000_001,
+      intent: 'claim-organization-owner',
       organizationId: 98_000_001,
       organizationVersion: null,
+      userId: 'user-1',
     }),
     record({
+      characterId: 90_000_001,
       intent: 'transfer',
       transferApprovalId: null,
-      transferSourceUserId: 'source-user-1',
       transferSourceSubjectLifecycleId: 'lifecycle-1',
+      transferSourceUserId: 'source-user-1',
       userId: 'user-1',
-      characterId: 90_000_001,
     }),
     record({
+      characterId: 90_000_001,
       intent: 'transfer',
       transferApprovalId: 'approval-1',
+      transferSourceSubjectLifecycleId: 'lifecycle-1',
       transferSourceUserId: null,
-      transferSourceSubjectLifecycleId: 'lifecycle-1',
       userId: 'user-1',
-      characterId: 90_000_001,
     }),
     record({
+      characterId: 90_000_001,
       intent: 'transfer',
       transferApprovalId: 'approval-1',
-      transferSourceUserId: 'source-user-1',
       transferSourceSubjectLifecycleId: null,
+      transferSourceUserId: 'source-user-1',
       userId: 'user-1',
-      characterId: 90_000_001,
     }),
     record({
+      characterId: 90_000_001,
       intent: 'transfer',
       transferApprovalId: 'approval-1',
-      transferSourceUserId: 'source-user-1',
       transferSourceSubjectLifecycleId: 'lifecycle-1',
+      transferSourceUserId: 'source-user-1',
       userId: null,
-      characterId: 90_000_001,
     }),
     record({
+      characterId: null,
       intent: 'transfer',
       transferApprovalId: 'approval-1',
-      transferSourceUserId: 'source-user-1',
       transferSourceSubjectLifecycleId: 'lifecycle-1',
+      transferSourceUserId: 'source-user-1',
       userId: 'user-1',
-      characterId: null,
     }),
   ])('rejects an incomplete stored authorization context', async (storedRecord) => {
     mocks.deleteResults.push([storedRecord])
@@ -359,7 +359,7 @@ describe('OAuth state store', () => {
       record({ intent: 'login', returnPath: '/dashboard', reviewerUseDisclosures }),
     ])
 
-    await expect(findOAuthState('state-1')).resolves.toEqual({
+    await expect(findOAuthState('state-1')).resolves.toStrictEqual({
       intent: 'login',
       returnPath: '/dashboard',
       reviewerUseDisclosures,
@@ -401,16 +401,16 @@ function query(result: unknown[]) {
 
 function record(overrides: Record<string, unknown>) {
   return {
-    intent: 'login',
-    userId: null,
     characterId: null,
-    returnPath: null,
+    intent: 'login',
     organizationId: null,
     organizationVersion: null,
-    transferApprovalId: null,
-    transferSourceUserId: null,
-    transferSourceSubjectLifecycleId: null,
+    returnPath: null,
     reviewerUseDisclosures: [],
+    transferApprovalId: null,
+    transferSourceSubjectLifecycleId: null,
+    transferSourceUserId: null,
+    userId: null,
     ...overrides,
   }
 }

@@ -21,7 +21,7 @@ export async function probeDomainEventStatus(
   try {
     const aggregate = await aggregateProbe()
     const oldestPendingAgeSeconds = aggregate.oldestPendingAt
-      ? Math.max(0, Math.floor((now - aggregate.oldestPendingAt.getTime()) / 1_000))
+      ? Math.max(0, Math.floor((now - aggregate.oldestPendingAt.getTime()) / 1000))
       : null
     const lagged = (oldestPendingAgeSeconds ?? 0) > env.OUTBOX_LAG_DEGRADED_SECONDS
     const failedOutcome =
@@ -29,22 +29,25 @@ export async function probeDomainEventStatus(
       relayFacts.latestOutboxRelayOutcome?.outcome === 'partial-failure'
 
     let status: DomainEventStatus['status'] = 'operational'
-    if (relayFacts.status === 'unavailable') status = 'unavailable'
-    else if (lagged || relayFacts.outboxRelayPaused || failedOutcome) status = 'degraded'
+    if (relayFacts.status === 'unavailable') {
+      status = 'unavailable'
+    } else if (lagged || relayFacts.outboxRelayPaused || failedOutcome) {
+      status = 'degraded'
+    }
     return {
-      status,
-      pendingCount: aggregate.pendingCount,
-      oldestPendingAgeSeconds,
-      relayPaused: relayFacts.outboxRelayPaused,
       latestRelayOutcome: relayFacts.latestOutboxRelayOutcome,
+      oldestPendingAgeSeconds,
+      pendingCount: aggregate.pendingCount,
+      relayPaused: relayFacts.outboxRelayPaused,
+      status,
     }
   } catch {
     return {
-      status: 'unavailable',
-      pendingCount: null,
-      oldestPendingAgeSeconds: null,
-      relayPaused: relayFacts.outboxRelayPaused,
       latestRelayOutcome: relayFacts.latestOutboxRelayOutcome,
+      oldestPendingAgeSeconds: null,
+      pendingCount: null,
+      relayPaused: relayFacts.outboxRelayPaused,
+      status: 'unavailable',
     }
   }
 }

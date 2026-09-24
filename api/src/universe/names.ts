@@ -41,7 +41,7 @@ export interface UniverseId {
 }
 
 const universeResolutionCacheSchema = z.array(
-  z.object({ id: z.number(), name: z.string(), category: z.string() }),
+  z.object({ category: z.string(), id: z.number(), name: z.string() }),
 )
 
 interface ResolutionSplitState {
@@ -58,21 +58,21 @@ class UniverseNameResolutionLimitError extends Error {
 }
 
 const universeNamesRead = createPublicEsiRead({
-  operation: 'universe-resolve-names',
-  name: 'universe-names-core',
-  descriptor: operationRegistry.PostUniverseNames.transport,
   cacheSchema: universeResolutionCacheSchema,
+  descriptor: operationRegistry.PostUniverseNames.transport,
   encodeRequest: (input: { body: number[]; signal?: AbortSignal }) => ({ body: input.body }),
   map: ({ data }): UniverseName[] => data.map(({ id, name, category }) => ({ id, name, category })),
+  name: 'universe-names-core',
+  operation: 'universe-resolve-names',
 })
 
 const universeIdsRead = createPublicEsiRead({
-  operation: 'universe-resolve-ids',
-  name: 'universe-ids-core',
-  descriptor: operationRegistry.PostUniverseIds.transport,
   cacheSchema: universeResolutionCacheSchema,
+  descriptor: operationRegistry.PostUniverseIds.transport,
   encodeRequest: (input: { body: string[] }) => input,
   map: ({ data }) => mapUniverseIds(data),
+  name: 'universe-ids-core',
+  operation: 'universe-resolve-ids',
 })
 
 export async function resolveUniverseNames(
@@ -80,7 +80,9 @@ export async function resolveUniverseNames(
   options: { readonly signal?: AbortSignal } = {},
 ) {
   const result = await resolveUniverseNameResults(ids, options.signal)
-  if (result.failure !== undefined) throw result.failure
+  if (result.failure !== undefined) {
+    throw result.failure
+  }
   return result.names
 }
 
@@ -89,18 +91,22 @@ export async function resolveUniverseNamesBestEffort(
   options: { readonly signal?: AbortSignal } = {},
 ) {
   const result = await resolveUniverseNameResults(ids, options.signal)
-  return { names: result.names, complete: result.failure === undefined }
+  return { complete: result.failure === undefined, names: result.names }
 }
 
 async function resolveUniverseNameResults(ids: readonly number[], signal?: AbortSignal) {
   const names = new Map<number, UniverseName>()
   const uniqueIds = [...new Set(ids)]
   const cached = await readUniverseNames(uniqueIds)
-  for (const [id, entry] of [...cached.stale, ...cached.fresh]) names.set(id, entry)
+  for (const [id, entry] of [...cached.stale, ...cached.fresh]) {
+    names.set(id, entry)
+  }
   const unresolvedIds = uniqueIds.filter(
     (id) => !cached.fresh.has(id) && !cached.suppressed.has(id),
   )
-  if (unresolvedIds.length === 0) return { names, failure: undefined }
+  if (unresolvedIds.length === 0) {
+    return { failure: undefined, names }
+  }
   const splitState: ResolutionSplitState = { count: 0 }
   const missingIds: number[] = []
 
@@ -116,19 +122,22 @@ async function resolveUniverseNameResults(ids: readonly number[], signal?: Abort
   )
   await suppressUniverseNameIds(missingIds)
   const failure = results.find((result) => result.status === 'rejected')
-  return { names, failure: failure?.reason }
+  return { failure: failure?.reason, names }
 }
 
 export async function resolveUniverseIds(inputNames: readonly string[]) {
   const resolved = new Map<string, UniverseId>()
   const uniqueNames = [...new Set(inputNames)]
   const cached = await readUniverseIds(uniqueNames)
-  for (const entries of [...cached.stale.values(), ...cached.fresh.values()])
+  for (const entries of [...cached.stale.values(), ...cached.fresh.values()]) {
     for (const entry of entries) resolved.set(`${entry.category}:${entry.id}`, entry)
+  }
   const unresolvedNames = uniqueNames.filter(
     (name) => !cached.fresh.has(name) && !cached.suppressed.has(name),
   )
-  if (unresolvedNames.length === 0) return [...resolved.values()]
+  if (unresolvedNames.length === 0) {
+    return [...resolved.values()]
+  }
   const splitState: ResolutionSplitState = { count: 0 }
   const missingNames: string[] = []
 
@@ -144,7 +153,9 @@ export async function resolveUniverseIds(inputNames: readonly string[]) {
   )
   await suppressUniverseIdNames(missingNames)
   const failure = results.find((result) => result.status === 'rejected')
-  if (failure) throw failure.reason
+  if (failure) {
+    throw failure.reason
+  }
   return [...resolved.values()]
 }
 
@@ -155,8 +166,12 @@ async function loadUniverseNameChunk(
   signal?: AbortSignal,
 ) {
   const response = await universeNamesRead.execute({ body: chunk, ...(signal ? { signal } : {}) })
-  for (const entry of response.data) names.set(entry.id, entry)
-  if (response.stale) return
+  for (const entry of response.data) {
+    names.set(entry.id, entry)
+  }
+  if (response.stale) {
+    return
+  }
   const returnedIds = new Set(response.data.map((entry) => entry.id))
   missingIds.push(...chunk.filter((id) => !returnedIds.has(id)))
   await writeUniverseNames(response.data)
@@ -170,9 +185,13 @@ async function loadUniverseIdChunk(
   const response = await universeIdsRead.execute({ body: chunk })
   const chunkEntries = collectUniverseIds(response.data, resolved)
   const byName = groupUniverseIdsByInputName(chunk, chunkEntries)
-  if (response.stale) return
+  if (response.stale) {
+    return
+  }
   missingNames.push(...chunk.filter((name) => !byName.has(name)))
-  if (byName.size > 0) await writeUniverseIds(byName)
+  if (byName.size > 0) {
+    await writeUniverseIds(byName)
+  }
 }
 
 async function resolveChunkWithSplitting<Item>(
@@ -184,13 +203,16 @@ async function resolveChunkWithSplitting<Item>(
   try {
     await load(chunk)
   } catch (error) {
-    if (errorStatus(error) !== 404) throw error
+    if (errorStatus(error) !== 404) {
+      throw error
+    }
     if (chunk.length === 1) {
       missingItems.push(chunk[0]!)
       return
     }
-    if (splitState.count >= maximumNameResolutionSplits)
+    if (splitState.count >= maximumNameResolutionSplits) {
       throw new UniverseNameResolutionLimitError()
+    }
     splitState.count += 1
     const midpoint = Math.ceil(chunk.length / 2)
     const results = await Promise.allSettled([
@@ -198,7 +220,9 @@ async function resolveChunkWithSplitting<Item>(
       resolveChunkWithSplitting(chunk.slice(midpoint), splitState, missingItems, load),
     ])
     const failure = results.find((result) => result.status === 'rejected')
-    if (failure) throw failure.reason
+    if (failure) {
+      throw failure.reason
+    }
   }
 }
 
@@ -207,13 +231,15 @@ function mapUniverseIds(data: PostUniverseIdsResponse) {
     (data[group as keyof typeof universeIdCategories] ?? []).flatMap((entry) =>
       entry.id === undefined || entry.name === undefined
         ? []
-        : [{ id: entry.id, name: entry.name, category }],
+        : [{ category, id: entry.id, name: entry.name }],
     ),
   )
 }
 
 function collectUniverseIds(data: readonly UniverseId[], resolved: Map<string, UniverseId>) {
-  for (const entry of data) resolved.set(`${entry.category}:${entry.id}`, entry)
+  for (const entry of data) {
+    resolved.set(`${entry.category}:${entry.id}`, entry)
+  }
   return [...data]
 }
 
@@ -221,7 +247,9 @@ function groupUniverseIdsByInputName(chunk: string[], chunkEntries: UniverseId[]
   const byName = new Map<string, UniverseId[]>()
   for (const entry of chunkEntries) {
     const input = chunk.find((name) => normalizeName(name) === normalizeName(entry.name))
-    if (!input) continue
+    if (!input) {
+      continue
+    }
     const entries = byName.get(input) ?? []
     entries.push(entry)
     byName.set(input, entries)
@@ -255,7 +283,7 @@ async function mapBoundedSettled<Item>(
           // oxlint-disable-next-line no-await-in-loop
           results[index] = { status: 'fulfilled', value: await load(items[index]!) }
         } catch (reason) {
-          results[index] = { status: 'rejected', reason }
+          results[index] = { reason, status: 'rejected' }
         }
       }
     },

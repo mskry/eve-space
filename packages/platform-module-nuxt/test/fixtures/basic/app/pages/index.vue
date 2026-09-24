@@ -6,22 +6,22 @@ import type {
 
 const reviewerPanel = shallowRef<PlatformReviewerPanelComponent | null>(null)
 const selectedPanel = ref({
-  moduleId: 'alpha',
   contributionId: 'overview',
+  moduleId: 'alpha',
   routeId: 'alpha-summary',
 })
 const reviewerPanelProps = computed<PlatformReviewerPanelProps>(() => ({
   ...selectedPanel.value,
   organizationVersion: 7,
-  target: {
-    kind: 'managed-organization-account',
-    managedMemberLifecycleId: 'member-lifecycle-1',
-    userId: 'user-1',
-  },
   queryAccess: {
     authenticated: true,
     authorized: true,
     moduleEnabled: true,
+  },
+  target: {
+    kind: 'managed-organization-account',
+    managedMemberLifecycleId: 'member-lifecycle-1',
+    userId: 'user-1',
   },
 }))
 
@@ -30,7 +30,7 @@ async function loadReviewerPanel(
   contributionId = 'overview',
   routeId = 'alpha-summary',
 ) {
-  selectedPanel.value = { moduleId, contributionId, routeId }
+  selectedPanel.value = { contributionId, moduleId, routeId }
   reviewerPanel.value = (await usePlatformReviewerPanels().load(moduleId, contributionId)).default
 }
 </script>

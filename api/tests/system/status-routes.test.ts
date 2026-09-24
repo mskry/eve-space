@@ -14,89 +14,89 @@ import { statusRoutes } from '../../src/system/status-routes.js'
 const client = testClient(statusRoutes)
 const checkedAt = '2026-08-20T12:00:00.000Z'
 const esiResilience = {
+  cache: { checkedAt, status: 'operational' },
   checkedAt,
-  cache: { status: 'operational', checkedAt },
-  coordination: { status: 'operational', checkedAt },
   cooldown: {
-    status: 'inactive',
+    activeOperations: [],
     checkedAt,
     globalRetryAt: null,
-    activeOperations: [],
+    status: 'inactive',
   },
+  coordination: { checkedAt, status: 'operational' },
   upstream: {
-    status: 'operational',
     checkedAt,
     operations: [{ operation: 'status' }],
+    status: 'operational',
   },
 }
 
 describe('system status route', () => {
   test('returns replica-local private telemetry', async () => {
     mocks.getSystemStatus.mockResolvedValue({
-      status: 'operational',
-      checkedAt: '2026-08-20T12:00:00.000Z',
       cachedUntil: '2026-08-20T12:00:30.000Z',
+      checkedAt: '2026-08-20T12:00:00.000Z',
       services: {
         api: { status: 'operational', uptimeSeconds: 120 },
-        database: { status: 'operational', latencyMs: 3 },
-        sde: {
-          status: 'operational',
-          latencyMs: 5,
-          checkedAt: '2026-08-20T12:00:00.000Z',
-          buildNumber: 3_503_375,
-          ingestVersion: 4,
-          ingestedAt: '2026-08-20T11:30:00.000Z',
-        },
+        database: { latencyMs: 3, status: 'operational' },
         esi: {
-          status: 'operational',
-          latencyMs: 80,
           checkedAt: '2026-08-20T12:00:00.000Z',
+          errorBudgetRemaining: 99,
+          errorBudgetResetSeconds: 10,
+          latencyMs: 80,
           players: 31_337,
           serverVersion: '2.5.7',
           startedAt: '2026-08-20T11:00:00Z',
-          vip: false,
-          errorBudgetRemaining: 99,
-          errorBudgetResetSeconds: 10,
-        },
-        queue: {
           status: 'operational',
-          workerHeartbeatAt: '2026-08-20T12:00:00.000Z',
-          workers: 1,
-          depth: 0,
-          oldestWaitingAgeSeconds: null,
-          active: 0,
-          retrying: 0,
-          failed: 0,
-          memoryUsedBytes: 53_687_091,
-          memoryMaxBytes: 536_870_912,
-          memoryUsedPercent: 10,
-          plannerPaused: false,
-          outboxRelayPaused: false,
-          latestOutboxRelayOutcome: {
-            outcome: 'published',
+          vip: false,
+        },
+        esiResilience,
+        eventRelay: {
+          latestRelayOutcome: {
             category: null,
+            outcome: 'published',
             recordedAt: '2026-08-20T11:59:58.000Z',
           },
-          latestSchedulerOutcome: 'registered',
+          oldestPendingAgeSeconds: null,
+          pendingCount: 0,
+          relayPaused: false,
+          status: 'operational',
+        },
+        queue: {
+          active: 0,
+          depth: 0,
+          failed: 0,
           latestAffiliationPlannerOutcome: {
             outcome: 'scheduled',
             planned: 2,
             recordedAt: '2026-08-20T12:00:00.000Z',
           },
-        },
-        eventRelay: {
-          status: 'operational',
-          pendingCount: 0,
-          oldestPendingAgeSeconds: null,
-          relayPaused: false,
-          latestRelayOutcome: {
-            outcome: 'published',
+          latestOutboxRelayOutcome: {
             category: null,
+            outcome: 'published',
             recordedAt: '2026-08-20T11:59:58.000Z',
           },
+          latestSchedulerOutcome: 'registered',
+          memoryMaxBytes: 536_870_912,
+          memoryUsedBytes: 53_687_091,
+          memoryUsedPercent: 10,
+          oldestWaitingAgeSeconds: null,
+          outboxRelayPaused: false,
+          plannerPaused: false,
+          retrying: 0,
+          status: 'operational',
+          workerHeartbeatAt: '2026-08-20T12:00:00.000Z',
+          workers: 1,
         },
-        esiResilience,
+        sde: {
+          buildNumber: 3_503_375,
+          checkedAt: '2026-08-20T12:00:00.000Z',
+          ingestVersion: 4,
+          ingestedAt: '2026-08-20T11:30:00.000Z',
+          latencyMs: 5,
+          status: 'operational',
+        },
       },
+      status: 'operational',
     })
 
     const response = await client.index.$get()
@@ -105,144 +105,144 @@ describe('system status route', () => {
     expect(response.headers.get('cache-control')).toBe(
       'private, max-age=15, stale-while-revalidate=30',
     )
-    expect(await response.json()).toEqual({
-      status: 'operational',
-      checkedAt: '2026-08-20T12:00:00.000Z',
+    expect(await response.json()).toStrictEqual({
       cachedUntil: '2026-08-20T12:00:30.000Z',
+      checkedAt: '2026-08-20T12:00:00.000Z',
       services: {
         api: { status: 'operational', uptimeSeconds: 120 },
-        database: { status: 'operational', latencyMs: 3 },
-        sde: {
-          status: 'operational',
-          latencyMs: 5,
-          checkedAt: '2026-08-20T12:00:00.000Z',
-          buildNumber: 3_503_375,
-          ingestVersion: 4,
-          ingestedAt: '2026-08-20T11:30:00.000Z',
-        },
+        database: { latencyMs: 3, status: 'operational' },
         esi: {
-          status: 'operational',
-          latencyMs: 80,
           checkedAt: '2026-08-20T12:00:00.000Z',
+          errorBudgetRemaining: 99,
+          errorBudgetResetSeconds: 10,
+          latencyMs: 80,
           players: 31_337,
           serverVersion: '2.5.7',
           startedAt: '2026-08-20T11:00:00Z',
-          vip: false,
-          errorBudgetRemaining: 99,
-          errorBudgetResetSeconds: 10,
-        },
-        queue: {
           status: 'operational',
-          workerHeartbeatAt: '2026-08-20T12:00:00.000Z',
-          workers: 1,
-          depth: 0,
-          oldestWaitingAgeSeconds: null,
-          active: 0,
-          retrying: 0,
-          failed: 0,
-          memoryUsedBytes: 53_687_091,
-          memoryMaxBytes: 536_870_912,
-          memoryUsedPercent: 10,
-          plannerPaused: false,
-          outboxRelayPaused: false,
-          latestOutboxRelayOutcome: {
-            outcome: 'published',
+          vip: false,
+        },
+        esiResilience: {
+          cache: { checkedAt: '2026-08-20T12:00:00.000Z', status: 'operational' },
+          checkedAt: '2026-08-20T12:00:00.000Z',
+          cooldown: {
+            activeOperations: [],
+            checkedAt: '2026-08-20T12:00:00.000Z',
+            globalRetryAt: null,
+            status: 'inactive',
+          },
+          coordination: { checkedAt: '2026-08-20T12:00:00.000Z', status: 'operational' },
+          upstream: {
+            checkedAt: '2026-08-20T12:00:00.000Z',
+            status: 'operational',
+          },
+        },
+        eventRelay: {
+          latestRelayOutcome: {
             category: null,
+            outcome: 'published',
             recordedAt: '2026-08-20T11:59:58.000Z',
           },
-          latestSchedulerOutcome: 'registered',
+          oldestPendingAgeSeconds: null,
+          pendingCount: 0,
+          relayPaused: false,
+          status: 'operational',
+        },
+        queue: {
+          active: 0,
+          depth: 0,
+          failed: 0,
           latestAffiliationPlannerOutcome: {
             outcome: 'scheduled',
             planned: 2,
             recordedAt: '2026-08-20T12:00:00.000Z',
           },
-        },
-        eventRelay: {
-          status: 'operational',
-          pendingCount: 0,
-          oldestPendingAgeSeconds: null,
-          relayPaused: false,
-          latestRelayOutcome: {
-            outcome: 'published',
+          latestOutboxRelayOutcome: {
             category: null,
+            outcome: 'published',
             recordedAt: '2026-08-20T11:59:58.000Z',
           },
+          latestSchedulerOutcome: 'registered',
+          memoryMaxBytes: 536_870_912,
+          memoryUsedBytes: 53_687_091,
+          memoryUsedPercent: 10,
+          oldestWaitingAgeSeconds: null,
+          outboxRelayPaused: false,
+          plannerPaused: false,
+          retrying: 0,
+          status: 'operational',
+          workerHeartbeatAt: '2026-08-20T12:00:00.000Z',
+          workers: 1,
         },
-        esiResilience: {
+        sde: {
+          buildNumber: 3_503_375,
           checkedAt: '2026-08-20T12:00:00.000Z',
-          cache: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
-          coordination: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
-          cooldown: {
-            status: 'inactive',
-            checkedAt: '2026-08-20T12:00:00.000Z',
-            globalRetryAt: null,
-            activeOperations: [],
-          },
-          upstream: {
-            status: 'operational',
-            checkedAt: '2026-08-20T12:00:00.000Z',
-          },
+          ingestVersion: 4,
+          ingestedAt: '2026-08-20T11:30:00.000Z',
+          latencyMs: 5,
+          status: 'operational',
         },
       },
+      status: 'operational',
     })
   })
 
   test.each([
     {
-      name: 'lagged',
       eventRelay: {
-        status: 'degraded',
-        pendingCount: 4,
-        oldestPendingAgeSeconds: 301,
-        relayPaused: false,
         latestRelayOutcome: null,
+        oldestPendingAgeSeconds: 301,
+        pendingCount: 4,
+        relayPaused: false,
+        status: 'degraded',
       },
+      name: 'lagged',
     },
     {
-      name: 'paused',
       eventRelay: {
-        status: 'degraded',
-        pendingCount: 1,
-        oldestPendingAgeSeconds: 2,
-        relayPaused: true,
         latestRelayOutcome: {
-          outcome: 'paused',
           category: null,
+          outcome: 'paused',
           recordedAt: '2026-08-20T12:00:00.000Z',
         },
+        oldestPendingAgeSeconds: 2,
+        pendingCount: 1,
+        relayPaused: true,
+        status: 'degraded',
       },
+      name: 'paused',
     },
     {
-      name: 'unavailable',
       eventRelay: {
-        status: 'unavailable',
-        pendingCount: 7,
-        oldestPendingAgeSeconds: 20,
-        relayPaused: false,
         latestRelayOutcome: null,
+        oldestPendingAgeSeconds: 20,
+        pendingCount: 7,
+        relayPaused: false,
+        status: 'unavailable',
       },
+      name: 'unavailable',
     },
   ])('preserves the $name event relay DTO', async ({ eventRelay }) => {
     mocks.getSystemStatus.mockResolvedValue({
-      status: 'degraded',
-      checkedAt: '2026-08-20T12:00:00.000Z',
       cachedUntil: '2026-08-20T12:00:30.000Z',
+      checkedAt: '2026-08-20T12:00:00.000Z',
       services: {
         api: { status: 'operational', uptimeSeconds: 120 },
-        database: { status: 'operational', latencyMs: 3 },
+        database: { latencyMs: 3, status: 'operational' },
         esi: { status: 'operational' },
-        queue: { status: 'operational' },
-        eventRelay,
         esiResilience,
+        eventRelay,
+        queue: { status: 'operational' },
       },
+      status: 'degraded',
     })
 
     const response = await client.index.$get()
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toMatchObject({
-      status: 'degraded',
       services: { eventRelay },
+      status: 'degraded',
     })
   })
 })

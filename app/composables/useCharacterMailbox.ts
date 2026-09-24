@@ -131,8 +131,8 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     deriveDisplayedMailCounts({
       deletedMailIds: options.deletePendingIds.value,
       headers: loadedHeaders.value,
-      labels: mergedLabels.value,
       labelOverrides: options.labelOverrides.value,
+      labels: mergedLabels.value,
       readStateOverrides: options.readStateOverrides.value,
       totalUnreadCount: labelsQuery.data.value?.totalUnreadCount ?? null,
     }),
@@ -140,7 +140,9 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
   const labels = computed(() => displayedCounts.value.labels)
   const displayedDetail = computed(() => {
     const detail = detailQuery.data.value
-    if (!detail) return undefined
+    if (!detail) {
+      return
+    }
     const labelIds = options.labelOverrides.value.get(detail.mailId)
     return removeMailLabelIds(
       labelIds === undefined ? detail : { ...detail, labelIds: [...labelIds] },
@@ -229,9 +231,12 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     () => Boolean(search.value.trim()) || unreadOnly.value || selectedMailingListId.value !== null,
   )
   const headerEmptyMessage = computed(() => {
-    if (selectedLabelEmpty.value) return 'There are no messages in this folder.'
-    if (localFiltersActive.value)
+    if (selectedLabelEmpty.value) {
+      return 'There are no messages in this folder.'
+    }
+    if (localFiltersActive.value) {
       return 'No matches in loaded messages. Load older messages to search further.'
+    }
     return 'No messages are loaded.'
   })
 
@@ -252,7 +257,9 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
   }
 
   function selectLabel(labelId: number | null) {
-    if (activeLabelId.value === labelId) return
+    if (activeLabelId.value === labelId) {
+      return
+    }
     resetMailboxView()
     activeLabelId.value = labelId
   }
@@ -262,7 +269,9 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
   }
 
   function loadOlder() {
-    if (nextLastMailId.value === null) return
+    if (nextLastMailId.value === null) {
+      return
+    }
     if (requestedCursor.value === nextLastMailId.value) {
       void cursorQuery.refetch()
       return
@@ -299,7 +308,9 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
         : replaceLatestMailHeaders(page.messages)
       options.reconcileReadState(page.messages)
       options.reconcileLabelState(page.messages)
-      if (!hasPaginated.value) nextLastMailId.value = page.nextLastMailId
+      if (!hasPaginated.value) {
+        nextLastMailId.value = page.nextLastMailId
+      }
     },
     { immediate: true },
   )
@@ -307,7 +318,9 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
   watch(
     () => cursorQuery.data.value,
     (page) => {
-      if (!page || requestedCursor.value === null) return
+      if (!page || requestedCursor.value === null) {
+        return
+      }
       loadedHeaders.value = appendUniqueMailHeaders(loadedHeaders.value, page.messages)
       options.reconcileReadState(page.messages)
       options.reconcileLabelState(page.messages)
@@ -320,14 +333,18 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
   watch(
     () => detailQuery.data.value,
     (detail) => {
-      if (detail) options.reconcileLabelState([detail])
+      if (detail) {
+        options.reconcileLabelState([detail])
+      }
     },
   )
 
   watch(
     () => labelsQuery.data.value,
     (retrieved) => {
-      if (retrieved) options.reconcileCreatedLabels(retrieved.labels)
+      if (retrieved) {
+        options.reconcileCreatedLabels(retrieved.labels)
+      }
     },
     { immediate: true },
   )
@@ -339,8 +356,8 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     cursorQuery,
     detailError,
     detailQuery,
-    displayedDetail,
     displayedCounts,
+    displayedDetail,
     displayedHeaders,
     filteredHeaders,
     headerEmptyMessage,
@@ -359,12 +376,12 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     retryAfterSeconds,
     retryMailbox,
     search,
+    selectLabel,
+    selectMail,
     selectedHeader,
     selectedMailId,
     selectedMailingListId,
     selectedReadState,
-    selectLabel,
-    selectMail,
     showMailboxSkeleton,
     unreadOnly,
   }

@@ -16,7 +16,9 @@ export async function hasCurrentOrganizationManagerAuthority(
     .select({ organizationVersion: deploymentSettings.organizationVersion })
     .from(deploymentSettings)
     .where(eq(deploymentSettings.id, 1))
-  if (!organization) return false
+  if (!organization) {
+    return false
+  }
   return Boolean(
     await loadManagementAuthority(
       db,
@@ -42,7 +44,11 @@ export async function loadManagementAuthority(
     operation,
     now,
   )
-  if (authority.organizationOwner) return 'organization_owner'
-  if (authority.director) return 'director'
+  if (authority.organizationOwner) {
+    return 'organization_owner'
+  }
+  if (authority.director) {
+    return 'director'
+  }
   return null
 }

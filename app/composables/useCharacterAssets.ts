@@ -36,16 +36,16 @@ export function useCharacterAssets(options: CharacterAssetsOptions) {
   const isClient = options.isClient ?? import.meta.client
   const ownsCharacter = useCharacterOwnership(options.characterId, options.characters)
   const access = computed<ProtectedCharacterQueryAccess>(() => ({
-    isClient,
     authenticated: options.authenticated.value,
     authenticationReady: options.authenticationReady.value,
+    isClient,
     ownsCharacter: ownsCharacter.value,
   }))
   const assetsQuery = useQuery(() =>
     characterAssetsQuery({
+      access: access.value,
       apiClient: options.apiClient,
       characterId: options.characterId.value ?? 0,
-      access: access.value,
     }),
   )
   const refreshError = shallowRef<unknown>(null)
@@ -69,11 +69,11 @@ export function useCharacterAssets(options: CharacterAssetsOptions) {
   )
   const routesQuery = useQuery(() =>
     characterAssetRoutesQuery({
+      access: access.value,
       apiClient: options.apiClient,
       characterId: options.characterId.value ?? 0,
-      originSystemId: originSystemId.value,
       destinationSystemIds: destinationSystemIds.value,
-      access: access.value,
+      originSystemId: originSystemId.value,
     }),
   )
   const routeJumpsBySystemId = computed<ReadonlyMap<number, number>>(

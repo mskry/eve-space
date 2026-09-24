@@ -180,17 +180,17 @@ interface EsiMailParties {
 
 const mailPartyCacheSchema = z.object({
   id: z.number(),
-  type: z.enum(['alliance', 'character', 'corporation', 'mailing_list', 'unknown']),
   name: z.string().nullable(),
+  type: z.enum(['alliance', 'character', 'corporation', 'mailing_list', 'unknown']),
 })
 const mailHeaderCacheSchema = z.object({
-  mailId: z.number(),
-  sender: mailPartyCacheSchema.nullable(),
-  recipients: z.array(mailPartyCacheSchema),
-  subject: z.string().nullable(),
-  sentAt: z.string().nullable(),
-  labelIds: z.array(z.number()),
   isRead: z.boolean().nullable(),
+  labelIds: z.array(z.number()),
+  mailId: z.number(),
+  recipients: z.array(mailPartyCacheSchema),
+  sender: mailPartyCacheSchema.nullable(),
+  sentAt: z.string().nullable(),
+  subject: z.string().nullable(),
 })
 const mailHeadersCacheSchema = z.object({
   messages: z.array(mailHeaderCacheSchema),
@@ -200,9 +200,9 @@ const mailDetailCacheSchema = mailHeaderCacheSchema.extend({ body: z.string().nu
 const mailLabelsCacheSchema = z.object({
   labels: z.array(
     z.object({
+      color: z.enum(mailLabelColors).nullable(),
       labelId: z.number().nullable(),
       name: z.string().nullable(),
-      color: z.enum(mailLabelColors).nullable(),
       unreadCount: z.number().nullable(),
     }),
   ),
@@ -212,8 +212,8 @@ const mailingListsCacheSchema = z.array(z.object({ mailingListId: z.number(), na
 const mailRecipientSearchCacheSchema = z.array(
   z.object({
     id: z.number(),
-    type: z.enum(['alliance', 'character', 'corporation']),
     name: z.string(),
+    type: z.enum(['alliance', 'character', 'corporation']),
   }),
 )
 
@@ -225,10 +225,8 @@ interface MailHeadersRepresentationInput {
 }
 
 const mailHeadersRead = createCharacterEsiRead({
-  operation: 'mail-headers',
-  name: 'mail-headers-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdMail.transport,
   cacheSchema: mailHeadersCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdMail.transport,
   encodeRequest: (input: MailHeadersRepresentationInput) => ({
     path: { character_id: input.characterId },
     ...(input.labels === null && input.lastMailId === null
@@ -242,6 +240,8 @@ const mailHeadersRead = createCharacterEsiRead({
   }),
   map: (response, input) =>
     mapMailHeaders(input.characterId, input.subjectLifecycleId, response.data),
+  name: 'mail-headers-core',
+  operation: 'mail-headers',
 })
 
 interface MailDetailRepresentationInput {
@@ -251,15 +251,15 @@ interface MailDetailRepresentationInput {
 }
 
 const mailDetailRead = createCharacterEsiRead({
-  operation: 'mail-message',
-  name: 'mail-message-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdMailMailId.transport,
   cacheSchema: mailDetailCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdMailMailId.transport,
   encodeRequest: (input: MailDetailRepresentationInput) => ({
     path: { character_id: input.characterId, mail_id: input.mailId },
   }),
   map: (response, input) =>
     mapMailDetail(input.characterId, input.subjectLifecycleId, input.mailId, response.data),
+  name: 'mail-message-core',
+  operation: 'mail-message',
 })
 
 interface CharacterRepresentationInput {
@@ -268,10 +268,8 @@ interface CharacterRepresentationInput {
 }
 
 const mailLabelsRead = createCharacterEsiRead({
-  operation: 'mail-labels',
-  name: 'mail-labels-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdMailLabels.transport,
   cacheSchema: mailLabelsCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdMailLabels.transport,
   encodeRequest: (input: CharacterRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
@@ -284,13 +282,13 @@ const mailLabelsRead = createCharacterEsiRead({
     })),
     totalUnreadCount: response.data.total_unread_count ?? null,
   }),
+  name: 'mail-labels-core',
+  operation: 'mail-labels',
 })
 
 const mailListsRead = createCharacterEsiRead({
-  operation: 'mail-lists',
-  name: 'mail-lists-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdMailLists.transport,
   cacheSchema: mailingListsCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdMailLists.transport,
   encodeRequest: (input: CharacterRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
@@ -299,6 +297,8 @@ const mailListsRead = createCharacterEsiRead({
       mailingListId: list.mailing_list_id,
       name: list.name,
     })),
+  name: 'mail-lists-core',
+  operation: 'mail-lists',
 })
 
 interface CharacterSearchRepresentationInput {
@@ -308,10 +308,8 @@ interface CharacterSearchRepresentationInput {
 }
 
 const characterSearchRead = createCharacterEsiRead({
-  operation: 'character-search',
-  name: 'character-search-mail',
-  descriptor: operationRegistry.GetCharactersCharacterIdSearch.transport,
   cacheSchema: mailRecipientSearchCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdSearch.transport,
   encodeRequest: (input: CharacterSearchRepresentationInput) => ({
     path: { character_id: input.characterId },
     query: {
@@ -320,6 +318,8 @@ const characterSearchRead = createCharacterEsiRead({
     },
   }),
   map: (response) => mapMailRecipientSearch(response.data),
+  name: 'character-search-mail',
+  operation: 'character-search',
 })
 
 interface CharacterCspaChargeRepresentationInput {
@@ -329,20 +329,18 @@ interface CharacterCspaChargeRepresentationInput {
 }
 
 const characterCspaChargeRead = createCharacterEsiRead({
-  operation: 'character-cspa-charge',
-  name: 'character-cspa-charge-mail',
-  descriptor: operationRegistry.PostCharactersCharacterIdCspa.transport,
   cacheSchema: operationRegistry.PostCharactersCharacterIdCspa.responseSchema,
+  descriptor: operationRegistry.PostCharactersCharacterIdCspa.transport,
   encodeRequest: (input: CharacterCspaChargeRepresentationInput) => ({
     path: { character_id: input.characterId },
     body: [...input.characterIds],
   }),
   map: (response): number => response.data,
+  name: 'character-cspa-charge-mail',
+  operation: 'character-cspa-charge',
 })
 
 const mailSendMutation = createCharacterEsiMutation({
-  operation: 'mail-send',
-  name: 'mail-send-core',
   descriptor: operationRegistry.PostCharactersCharacterIdMail.transport,
   encodeRequest: ({
     characterId,
@@ -364,6 +362,8 @@ const mailSendMutation = createCharacterEsiMutation({
     },
   }),
   map: ({ data }, { characterId }): SentMailResult => ({ characterId, mailId: data }),
+  name: 'mail-send-core',
+  operation: 'mail-send',
 })
 
 interface MailCreateLabelRepresentationInput {
@@ -373,8 +373,6 @@ interface MailCreateLabelRepresentationInput {
 }
 
 const mailCreateLabelMutation = createCharacterEsiMutation({
-  operation: 'mail-create-label',
-  name: 'mail-create-label-core',
   descriptor: operationRegistry.PostCharactersCharacterIdMailLabels.transport,
   encodeRequest: ({ characterId, input }: MailCreateLabelRepresentationInput) => ({
     path: { character_id: characterId },
@@ -384,6 +382,8 @@ const mailCreateLabelMutation = createCharacterEsiMutation({
     characterId,
     labelId: data,
   }),
+  name: 'mail-create-label-core',
+  operation: 'mail-create-label',
 })
 
 interface MailUpdateRepresentationInput {
@@ -394,8 +394,6 @@ interface MailUpdateRepresentationInput {
 }
 
 const mailUpdateMutation = createCharacterEsiMutation({
-  operation: 'mail-update',
-  name: 'mail-update-core',
   descriptor: operationRegistry.PutCharactersCharacterIdMailMailId.transport,
   encodeRequest: ({ characterId, mailId, input }: MailUpdateRepresentationInput) => ({
     path: { character_id: characterId, mail_id: mailId },
@@ -405,6 +403,8 @@ const mailUpdateMutation = createCharacterEsiMutation({
     },
   }),
   map: (_response, { characterId, mailId }): UpdatedMailResult => ({ characterId, mailId }),
+  name: 'mail-update-core',
+  operation: 'mail-update',
 })
 
 interface MailDeleteRepresentationInput {
@@ -414,13 +414,13 @@ interface MailDeleteRepresentationInput {
 }
 
 const mailDeleteMutation = createCharacterEsiMutation({
-  operation: 'mail-delete',
-  name: 'mail-delete-core',
   descriptor: operationRegistry.DeleteCharactersCharacterIdMailMailId.transport,
   encodeRequest: (input: MailDeleteRepresentationInput) => ({
     path: { character_id: input.characterId, mail_id: input.mailId },
   }),
   map: (_response, { characterId, mailId }): DeletedMailResult => ({ characterId, mailId }),
+  name: 'mail-delete-core',
+  operation: 'mail-delete',
 })
 
 interface MailDeleteLabelRepresentationInput {
@@ -430,13 +430,13 @@ interface MailDeleteLabelRepresentationInput {
 }
 
 const mailDeleteLabelMutation = createCharacterEsiMutation({
-  operation: 'mail-delete-label',
-  name: 'mail-delete-label-core',
   descriptor: operationRegistry.DeleteCharactersCharacterIdMailLabelsLabelId.transport,
   encodeRequest: (input: MailDeleteLabelRepresentationInput) => ({
     path: { character_id: input.characterId, label_id: input.labelId },
   }),
   map: (_response, { characterId, labelId }): DeletedMailLabelResult => ({ characterId, labelId }),
+  name: 'mail-delete-label-core',
+  operation: 'mail-delete-label',
 })
 
 export const mailReadScope = mailHeadersRead.requiredScope
@@ -506,9 +506,9 @@ export async function listMailHeaders(
   try {
     const { data, ...metadata } = await mailHeadersRead.execute({
       characterId,
-      subjectLifecycleId,
       labels,
       lastMailId,
+      subjectLifecycleId,
     })
     return { characterId, ...data, ...metadata }
   } catch (error) {
@@ -524,8 +524,8 @@ export async function getMailDetail(
   try {
     const { data, ...metadata } = await mailDetailRead.execute({
       characterId,
-      subjectLifecycleId,
       mailId,
+      subjectLifecycleId,
     })
     return { characterId, ...data, ...metadata }
   } catch (error) {
@@ -564,7 +564,7 @@ export async function resolveMailRecipients(
   return {
     recipients: resolved.flatMap((entry) =>
       isUniversePartyType(entry.category)
-        ? [{ id: entry.id, type: entry.category, name: entry.name }]
+        ? [{ id: entry.id, name: entry.name, type: entry.category }]
         : [],
     ),
   }
@@ -635,7 +635,7 @@ export async function updateMail(
   subjectLifecycleId: string,
 ): Promise<UpdatedMailResult> {
   try {
-    return await mailUpdateMutation.execute({ characterId, mailId, input, subjectLifecycleId })
+    return await mailUpdateMutation.execute({ characterId, input, mailId, subjectLifecycleId })
   } catch (error) {
     throwMailMutationError(error, 'organize')
   }
@@ -649,7 +649,9 @@ export async function deleteMail(
   try {
     return await mailDeleteMutation.execute({ characterId, mailId, subjectLifecycleId })
   } catch (error) {
-    if (getEsiFailureStatus(error) === 404) return { characterId, mailId }
+    if (getEsiFailureStatus(error) === 404) {
+      return { characterId, mailId }
+    }
     throwMailMutationError(error, 'organize')
   }
 }
@@ -662,7 +664,9 @@ export async function deleteMailLabel(
   try {
     return await mailDeleteLabelMutation.execute({ characterId, labelId, subjectLifecycleId })
   } catch (error) {
-    if (getEsiFailureStatus(error) === 404) return { characterId, labelId }
+    if (getEsiFailureStatus(error) === 404) {
+      return { characterId, labelId }
+    }
     throwMailMutationError(error, 'organize')
   }
 }
@@ -673,19 +677,21 @@ async function mapMailHeaders(
   response: GetCharactersCharacterIdMailResponse,
 ) {
   const headers = response.map((header) => {
-    if (header.mail_id === undefined) throw new InvalidMailHeaderError()
+    if (header.mail_id === undefined) {
+      throw new InvalidMailHeaderError()
+    }
     return header as typeof header & { mail_id: number }
   })
   const parties = await enrichParties(characterId, subjectLifecycleId, headers)
   return {
     messages: headers.map((header) => ({
-      mailId: header.mail_id,
-      sender: senderParty(header.from, parties),
-      recipients: recipientParties(header.recipients, parties),
-      subject: header.subject ?? null,
-      sentAt: header.timestamp ?? null,
-      labelIds: header.labels ?? [],
       isRead: header.is_read ?? null,
+      labelIds: header.labels ?? [],
+      mailId: header.mail_id,
+      recipients: recipientParties(header.recipients, parties),
+      sender: senderParty(header.from, parties),
+      sentAt: header.timestamp ?? null,
+      subject: header.subject ?? null,
     })),
     nextLastMailId: headers.length === 50 ? headers.at(-1)!.mail_id : null,
   }
@@ -699,14 +705,14 @@ async function mapMailDetail(
 ) {
   const parties = await enrichParties(characterId, subjectLifecycleId, [response])
   return {
-    mailId,
-    sender: senderParty(response.from, parties),
-    recipients: recipientParties(response.recipients, parties),
-    subject: response.subject ?? null,
-    sentAt: response.timestamp ?? null,
-    labelIds: response.labels ?? [],
-    isRead: response.read ?? null,
     body: sanitizeMailBody(response.body),
+    isRead: response.read ?? null,
+    labelIds: response.labels ?? [],
+    mailId,
+    recipients: recipientParties(response.recipients, parties),
+    sender: senderParty(response.from, parties),
+    sentAt: response.timestamp ?? null,
+    subject: response.subject ?? null,
   }
 }
 
@@ -722,26 +728,36 @@ async function mapMailRecipientSearch(response: GetCharactersCharacterIdSearchRe
   for (let index = 0; index < maximumGroupLength; index += 1) {
     for (const group of matchGroups) {
       const id = group.ids[index]
-      if (id === undefined) continue
+      if (id === undefined) {
+        continue
+      }
       const key = `${group.type}:${id}`
-      if (seen.has(key)) continue
+      if (seen.has(key)) {
+        continue
+      }
       seen.add(key)
       matches.push({ id, type: group.type })
-      if (matches.length === maximumMailRecipientSearchResults) break
+      if (matches.length === maximumMailRecipientSearchResults) {
+        break
+      }
     }
-    if (matches.length === maximumMailRecipientSearchResults) break
+    if (matches.length === maximumMailRecipientSearchResults) {
+      break
+    }
   }
   const names = await resolveUniverseNames(matches.map((match) => match.id))
   return matches.flatMap((match) => {
     const resolved = names.get(match.id)
     return resolved?.category === match.type
-      ? [{ id: match.id, type: match.type, name: resolved.name }]
+      ? [{ id: match.id, name: resolved.name, type: match.type }]
       : []
   })
 }
 
 function normalizeLabelFilter(labels: readonly number[] | null | undefined) {
-  if (!labels?.length) return null
+  if (!labels?.length) {
+    return null
+  }
   return [...new Set(labels)].toSorted((left, right) => left - right)
 }
 
@@ -757,10 +773,15 @@ async function enrichParties(
   const universeIds = new Set<number>()
   const mailingListIds = new Set<number>()
   for (const record of records) {
-    if (record.from !== undefined) universeIds.add(record.from)
+    if (record.from !== undefined) {
+      universeIds.add(record.from)
+    }
     for (const recipient of record.recipients ?? []) {
-      if (recipient.recipient_type === 'mailing_list') mailingListIds.add(recipient.recipient_id)
-      else universeIds.add(recipient.recipient_id)
+      if (recipient.recipient_type === 'mailing_list') {
+        mailingListIds.add(recipient.recipient_id)
+      } else {
+        universeIds.add(recipient.recipient_id)
+      }
     }
   }
 
@@ -768,11 +789,13 @@ async function enrichParties(
     resolveNamesBestEffort([...universeIds]),
     resolveMailingListNamesBestEffort(characterId, subjectLifecycleId, mailingListIds.size > 0),
   ])
-  return { universeNames, mailingListNames }
+  return { mailingListNames, universeNames }
 }
 
 async function resolveNamesBestEffort(ids: number[]) {
-  if (ids.length === 0) return new Map<number, UniverseName>()
+  if (ids.length === 0) {
+    return new Map<number, UniverseName>()
+  }
   try {
     return await resolveUniverseNames(ids)
   } catch {
@@ -785,7 +808,9 @@ async function resolveMailingListNamesBestEffort(
   subjectLifecycleId: string,
   needed: boolean,
 ) {
-  if (!needed) return new Map<number, string>()
+  if (!needed) {
+    return new Map<number, string>()
+  }
   try {
     const result = await loadMailingLists(characterId, subjectLifecycleId)
     return new Map(result.data.map((list) => [list.mailingListId, list.name]))
@@ -797,19 +822,31 @@ async function resolveMailingListNamesBestEffort(
 function throwMailReadError(error: unknown, detail = false): never {
   preserveSharedError(error)
   const status = getEsiFailureStatus(error)
-  if (status === 401 || status === 403) throw new MailAuthorizationError(status)
-  if (detail && status === 404) throw new MailNotFoundError()
+  if (status === 401 || status === 403) {
+    throw new MailAuthorizationError(status)
+  }
+  if (detail && status === 404) {
+    throw new MailNotFoundError()
+  }
   throw new MailUnavailableError()
 }
 
 function throwMailMutationError(error: unknown, kind: 'cspa' | 'send' | 'organize'): never {
   preserveSharedError(error)
   const status = getEsiFailureStatus(error)
-  if (status === 401 || status === 403) throw new MailAuthorizationError(status)
-  if (kind === 'send' && isAmbiguousSendFailure(error)) throw new MailDeliveryUnknownError()
+  if (status === 401 || status === 403) {
+    throw new MailAuthorizationError(status)
+  }
+  if (kind === 'send' && isAmbiguousSendFailure(error)) {
+    throw new MailDeliveryUnknownError()
+  }
   if (status !== undefined && status >= 400 && status < 500) {
-    if (kind === 'send') throw new MailRejectedError()
-    if (kind === 'cspa') throw new MailCspaRejectedError()
+    if (kind === 'send') {
+      throw new MailRejectedError()
+    }
+    if (kind === 'cspa') {
+      throw new MailCspaRejectedError()
+    }
     throw new MailMutationRejectedError()
   }
   throw new MailUnavailableError()
@@ -820,8 +857,9 @@ function preserveSharedError(error: unknown): void {
     error instanceof ScopeRequiredError ||
     error instanceof TokenRefreshUnavailableError ||
     error instanceof EsiQuotaError
-  )
+  ) {
     throw error
+  }
 }
 
 function isAmbiguousSendFailure(error: unknown) {

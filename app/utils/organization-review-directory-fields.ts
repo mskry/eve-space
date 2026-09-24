@@ -64,12 +64,12 @@ export interface OrganizationReviewDirectoryFieldDefinition {
 
 export const organizationReviewDirectoryFields = [
   field('member', 'Member', true, 'leading', 'member', (member) => ({
-    kind: 'member',
-    identity: member.portraitCharacter,
     detail:
       member.portraitCharacter.source === 'main-character'
         ? `Managed via ${member.managedAffiliation.name}`
         : 'Managed affiliation',
+    identity: member.portraitCharacter,
+    kind: 'member',
   })),
   field('corporation', 'Corporation', true, null, 'corporation', (member) => ({
     kind: 'text',
@@ -80,24 +80,24 @@ export const organizationReviewDirectoryFields = [
     timestamp: member.managedSince,
   })),
   field('audit_data', 'Audit data', true, null, 'audit_data', (member) => ({
-    kind: 'audit',
-    state: member.auditData.state,
-    label: organizationReviewDirectoryAuditStateLabel(member.auditData.state),
+    asOf: member.auditData.asOf,
     covered: member.auditData.covered,
     expected: member.auditData.expected,
-    asOf: member.auditData.asOf,
+    kind: 'audit',
+    label: organizationReviewDirectoryAuditStateLabel(member.auditData.state),
+    state: member.auditData.state,
   })),
   field('groups', 'Groups', true, null, null, (member) => ({
-    kind: 'groups',
     groups: member.groups,
+    kind: 'groups',
   })),
   field('access_status', 'Access status', true, null, 'access_status', (member) => {
     const access = organizationReviewDirectoryAccess(member.compliance.state, member.block)
     return {
-      kind: 'access',
-      state: access.state,
-      label: access.label,
       evidenceFreshness: member.compliance.evidenceFreshness,
+      kind: 'access',
+      label: access.label,
+      state: access.state,
     }
   }),
   field(
@@ -151,9 +151,12 @@ export interface OrganizationReviewDirectoryPreference {
 export function normalizeOrganizationReviewDirectoryPreference(
   value: unknown,
 ): readonly OrganizationReviewDirectoryFieldId[] {
-  if (!isRecord(value) || value.version !== organizationReviewDirectoryPreferenceVersion)
+  if (!isRecord(value) || value.version !== organizationReviewDirectoryPreferenceVersion) {
     return organizationReviewDirectoryDefaultFieldIds
-  if (!Array.isArray(value.fieldIds)) return organizationReviewDirectoryDefaultFieldIds
+  }
+  if (!Array.isArray(value.fieldIds)) {
+    return organizationReviewDirectoryDefaultFieldIds
+  }
   return normalizeOrganizationReviewDirectoryFieldIds(value.fieldIds)
 }
 
@@ -163,9 +166,12 @@ export function normalizeOrganizationReviewDirectoryFieldIds(
   const optionalFields: OrganizationReviewDirectoryFieldId[] = []
   const seen = new Set<OrganizationReviewDirectoryFieldId>()
   for (const value of values) {
-    if (!isOrganizationReviewDirectoryFieldId(value) || value === 'member' || value === 'actions')
+    if (!isOrganizationReviewDirectoryFieldId(value) || value === 'member' || value === 'actions') {
       continue
-    if (seen.has(value)) continue
+    }
+    if (seen.has(value)) {
+      continue
+    }
     seen.add(value)
     optionalFields.push(value)
   }
@@ -180,7 +186,7 @@ function field(
   sort: PlatformReviewerDirectorySortField | null,
   present: OrganizationReviewDirectoryFieldDefinition['present'],
 ): OrganizationReviewDirectoryFieldDefinition {
-  return { id, label, defaultVisible, locked, sort, present }
+  return { defaultVisible, id, label, locked, present, sort }
 }
 
 function isOrganizationReviewDirectoryFieldId(

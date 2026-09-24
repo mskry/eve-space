@@ -11,7 +11,9 @@ mockNuxtImport('useAnnouncer', () => () => announcements)
 const wrappers: { unmount(): void }[] = []
 
 afterEach(() => {
-  for (const wrapper of wrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of wrappers.splice(0)) {
+    wrapper.unmount()
+  }
   vi.clearAllMocks()
 })
 
@@ -188,7 +190,7 @@ describe('OrganizationReviewContributionNavigation', () => {
 
     await choices[0]!.trigger('click')
 
-    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['alpha/summary'])
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toStrictEqual(['alpha/summary'])
   })
 
   it('exposes labeled tabs with Reka keyboard semantics', async () => {
@@ -201,8 +203,8 @@ describe('OrganizationReviewContributionNavigation', () => {
         modelValue: 'alpha/summary',
         'onUpdate:modelValue': (value: string) => wrapper.setProps({ modelValue: value }),
       },
-      slots: { default: '<p>Selected panel region</p>' },
       route: false,
+      slots: { default: '<p>Selected panel region</p>' },
     })
     wrappers.push(wrapper)
     const tabs = wrapper.findAll('[role="tab"]')
@@ -212,13 +214,13 @@ describe('OrganizationReviewContributionNavigation', () => {
     ;(tabs[0]!.element as HTMLElement).focus()
     await tabs[0]!.trigger('keydown', { code: 'ArrowRight', key: 'ArrowRight' })
     await flushPromises()
-    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['beta/details'])
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toStrictEqual(['beta/details'])
     await tabs[1]!.trigger('keydown', { code: 'Home', key: 'Home' })
     await flushPromises()
-    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['alpha/summary'])
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toStrictEqual(['alpha/summary'])
     await tabs[0]!.trigger('keydown', { code: 'End', key: 'End' })
     await flushPromises()
-    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['beta/details'])
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toStrictEqual(['beta/details'])
   })
 })
 
@@ -254,19 +256,19 @@ function deferred<T>() {
 
 function panel(moduleId: string, contributionId: string, load: ReturnType<typeof vi.fn>) {
   return {
-    moduleId,
-    contributionId,
-    routeId: `${moduleId}-${contributionId}`,
-    routePath: `/api/modules/${moduleId}/${contributionId}`,
     audience: 'hr' as const,
-    requiredPermission: `${moduleId}.review`,
-    target: 'managed-organization-account' as const,
-    panelExport: `./reviewer/${contributionId}`,
-    label: `${moduleId} ${contributionId}`,
+    contributionId,
     description: `Review ${moduleId}.`,
     icon: 'overview' as const,
-    order: moduleId === 'alpha' ? 10 : 20,
+    label: `${moduleId} ${contributionId}`,
     load,
+    moduleId,
+    order: moduleId === 'alpha' ? 10 : 20,
+    panelExport: `./reviewer/${contributionId}`,
+    requiredPermission: `${moduleId}.review`,
+    routeId: `${moduleId}-${contributionId}`,
+    routePath: `/api/modules/${moduleId}/${contributionId}`,
+    target: 'managed-organization-account' as const,
   }
 }
 

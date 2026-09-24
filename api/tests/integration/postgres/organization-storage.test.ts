@@ -173,14 +173,16 @@ beforeEach(async () => {
     from platform_subject_lifecycles
     where character_id = ${characterId}
   `
-  if (!lifecycle) throw new Error('Seeded character lifecycle is missing')
+  if (!lifecycle) {
+    throw new Error('Seeded character lifecycle is missing')
+  }
   subjectLifecycleId = lifecycle.subject_lifecycle_id
   ownerEvidenceMocks.observeAndPersistCharacterAffiliation.mockResolvedValue({
+    affiliationCheckedAt: await loadAffiliationCheckedAt(),
+    affiliationFreshUntil: new Date(Date.now() + 60 * 60 * 1000),
+    allianceId: null,
     characterId,
     corporationId: 98_000_001,
-    allianceId: null,
-    affiliationCheckedAt: await loadAffiliationCheckedAt(),
-    affiliationFreshUntil: new Date(Date.now() + 60 * 60 * 1_000),
     stale: false,
   })
   ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(roleEvidence())
@@ -205,31 +207,31 @@ describe('organization storage invariants', () => {
       createOrganizationPermissionBundle({
         actorUserId: userId,
         name: 'Typo',
-        reason: 'Attempt an invalid permission.',
         permissions: [{ ...organizationActivityPermission(), key: 'organization-activity.typo' }],
+        reason: 'Attempt an invalid permission.',
       }),
     ).rejects.toMatchObject({ code: 'permission-unavailable' })
 
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Organization activity',
-      reason: 'Create organization activity access.',
       permissions: [organizationActivityPermission()],
+      reason: 'Create organization activity access.',
     })
     const group = await createOrganizationGroup({
       actorUserId: userId,
+      bundleIds: [bundle.bundleId],
+      complianceSource: null,
+      managementMode: 'manual',
       name: 'Activity viewers',
       restricted: false,
-      managementMode: 'manual',
-      complianceSource: null,
-      bundleIds: [bundle.bundleId],
     })
     await assignOrganizationGroup({
       actorUserId: userId,
-      groupId: group.groupId,
-      targetUserId,
-      reason: 'Grant activity access.',
       expiresAt: null,
+      groupId: group.groupId,
+      reason: 'Grant activity access.',
+      targetUserId,
     })
 
     const [stored] = await connection<
@@ -239,9 +241,9 @@ describe('organization storage invariants', () => {
       from organization_permission_bundle_entries
       where bundle_id = ${bundle.bundleId}
     `
-    expect(stored).toEqual({
-      publisher_package: '@eve-space/organization-activity-manifest',
+    expect(stored).toStrictEqual({
       module_id: 'organization-activity',
+      publisher_package: '@eve-space/organization-activity-manifest',
       review_allowed: false,
     })
     await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toMatchObject({
@@ -274,11 +276,11 @@ describe('organization storage invariants', () => {
         {
           permissions: [
             {
-              type: 'module',
-              publisherPackage: '@replacement/organization-activity-manifest',
-              moduleId: 'organization-activity',
-              key: 'organization-activity.view',
               available: false,
+              key: 'organization-activity.view',
+              moduleId: 'organization-activity',
+              publisherPackage: '@replacement/organization-activity-manifest',
+              type: 'module',
             },
           ],
         },
@@ -287,7 +289,9 @@ describe('organization storage invariants', () => {
 
     const retainedBundles = await listCurrentOrganizationPermissionBundles(userId)
     const retainedEntry = retainedBundles.bundles[0]?.permissions[0]
-    if (!retainedEntry) throw new Error('Retained permission entry is missing')
+    if (!retainedEntry) {
+      throw new Error('Retained permission entry is missing')
+    }
     const [beforeRetention] = await connection<
       {
         entry_id: string
@@ -307,8 +311,8 @@ describe('organization storage invariants', () => {
       actorUserId: userId,
       bundleId: bundle.bundleId,
       name: bundle.name,
-      reason: 'Keep the unavailable permission.',
       permissions: [],
+      reason: 'Keep the unavailable permission.',
       retainedUnavailableEntryIds: [retainedEntry.entryId],
     })
     const [afterRetention] = await connection<
@@ -325,14 +329,14 @@ describe('organization storage invariants', () => {
       from organization_permission_bundle_entries
       where bundle_id = ${bundle.bundleId}
     `
-    expect(afterRetention).toEqual(beforeRetention)
+    expect(afterRetention).toStrictEqual(beforeRetention)
 
     await updateOrganizationPermissionBundle({
       actorUserId: userId,
       bundleId: bundle.bundleId,
       name: bundle.name,
-      reason: 'Remove the unavailable permission.',
       permissions: [],
+      reason: 'Remove the unavailable permission.',
       retainedUnavailableEntryIds: [],
     })
     const [counts] = await connection<{ entries: number; audits: number }[]>`
@@ -342,7 +346,7 @@ describe('organization storage invariants', () => {
         (select count(*)::integer from organization_audit_events
           where subject_type = 'permission_bundle' and subject_id = ${bundle.bundleId}) as audits
     `
-    expect(counts).toEqual({ entries: 0, audits: 3 })
+    expect(counts).toStrictEqual({ audits: 3, entries: 0 })
   })
 
   test('rejects retained IDs that are foreign, missing, service, available, or duplicated', async () => {
@@ -352,17 +356,17 @@ describe('organization storage invariants', () => {
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Mixed permissions',
-      reason: 'Create permissions for retention validation.',
       permissions: [
         organizationActivityPermission(),
         { type: 'service', key: 'discord.operations', reviewAllowed: true },
       ],
+      reason: 'Create permissions for retention validation.',
     })
     const foreignBundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Foreign permissions',
-      reason: 'Create a foreign permission entry.',
       permissions: [{ type: 'service', key: 'discord.foreign' }],
+      reason: 'Create a foreign permission entry.',
     })
     const listed = await listCurrentOrganizationPermissionBundles(userId)
     const targetEntries = listed.bundles.find(
@@ -378,8 +382,8 @@ describe('organization storage invariants', () => {
         actorUserId: userId,
         bundleId: bundle.bundleId,
         name: bundle.name,
-        reason: 'Validate retained permission IDs.',
         permissions: [],
+        reason: 'Validate retained permission IDs.',
         retainedUnavailableEntryIds,
       })
 
@@ -412,7 +416,7 @@ describe('organization storage invariants', () => {
       where bundles.bundle_id = ${bundle.bundleId}
       group by bundles.name
     `
-    expect(unchanged).toEqual({ name: bundle.name, entries: 2 })
+    expect(unchanged).toStrictEqual({ entries: 2, name: bundle.name })
   })
 
   test('searches only current managed accounts with bounded opaque pagination', async () => {
@@ -432,28 +436,28 @@ describe('organization storage invariants', () => {
     `
 
     const firstPage = await searchManagedOrganizationAccounts({
-      organizationVersion: 1,
       filters: { limit: 1 },
+      organizationVersion: 1,
     })
     expect(firstPage.status).toBe('available')
     expect(firstPage.items).toHaveLength(1)
-    expect(firstPage.nextCursor).toEqual(expect.any(String))
+    expect(firstPage.nextCursor).toStrictEqual(expect.any(String))
     const decodedCursor = Buffer.from(firstPage.nextCursor!, 'base64url').toString('utf8')
     expect(decodedCursor).not.toContain(firstPage.items[0]!.account.userId)
     expect(decodedCursor).not.toContain(secondUserId)
-    expect(firstPage.items[0]).toEqual(
+    expect(firstPage.items[0]).toStrictEqual(
       expect.objectContaining({
         account: expect.objectContaining({ mainCharacter: expect.any(Object) }),
-        managedAffiliation: expect.objectContaining({ corporationId: 98_000_001 }),
         compliance: expect.objectContaining({ state: 'pending' }),
+        managedAffiliation: expect.objectContaining({ corporationId: 98_000_001 }),
       }),
     )
     expect(firstPage.items[0]).not.toHaveProperty('groups')
     expect(firstPage.items[0]).not.toHaveProperty('evidence')
 
     const secondPage = await searchManagedOrganizationAccounts({
+      filters: { cursor: firstPage.nextCursor!, limit: 1 },
       organizationVersion: 1,
-      filters: { limit: 1, cursor: firstPage.nextCursor! },
     })
     expect(secondPage.items).toHaveLength(1)
     expect(secondPage.items[0]!.account.userId).not.toBe(firstPage.items[0]!.account.userId)
@@ -461,23 +465,23 @@ describe('organization storage invariants', () => {
 
     await expect(
       searchManagedOrganizationAccounts({
+        filters: { cursor: firstPage.nextCursor!, query: 'different filter' },
         organizationVersion: 1,
-        filters: { query: 'different filter', cursor: firstPage.nextCursor! },
       }),
     ).rejects.toThrow('Invalid reviewer account search input')
     const tamperedCursor = `${firstPage.nextCursor!.startsWith('A') ? 'B' : 'A'}${firstPage.nextCursor!.slice(1)}`
     await expect(
       searchManagedOrganizationAccounts({
-        organizationVersion: 1,
         filters: { cursor: tamperedCursor },
+        organizationVersion: 1,
       }),
     ).rejects.toThrow('Invalid reviewer account search input')
 
     const blocked = await searchManagedOrganizationAccounts({
-      organizationVersion: 1,
       filters: { blocked: true },
+      organizationVersion: 1,
     })
-    expect(blocked.items.map(({ account }) => account.userId)).toEqual([secondUserId])
+    expect(blocked.items.map(({ account }) => account.userId)).toStrictEqual([secondUserId])
 
     await connection`
       update characters
@@ -486,68 +490,69 @@ describe('organization storage invariants', () => {
     `
     await expect(
       searchManagedOrganizationAccounts({
-        organizationVersion: 1,
         filters: { query: String(secondCharacterId) },
+        organizationVersion: 1,
       }),
-    ).resolves.toEqual({
-      organizationVersion: 1,
-      status: 'available',
+    ).resolves.toStrictEqual({
       items: [],
       nextCursor: null,
+      organizationVersion: 1,
+      status: 'available',
     })
-    for (const query of ['%', '_', '\\'])
+    for (const query of ['%', '_', '\\']) {
       await expect(
-        searchManagedOrganizationAccounts({ organizationVersion: 1, filters: { query } }),
-      ).resolves.toEqual({
-        organizationVersion: 1,
-        status: 'available',
+        searchManagedOrganizationAccounts({ filters: { query }, organizationVersion: 1 }),
+      ).resolves.toStrictEqual({
         items: [],
         nextCursor: null,
+        organizationVersion: 1,
+        status: 'available',
       })
+    }
   })
 
   test('projects the canonical core reviewer directory without module evidence', async () => {
     const page = await searchManagedOrganizationDirectory({
-      organizationVersion: 1,
       filters: { query: 'Organization Pilot' },
+      organizationVersion: 1,
     })
 
     expect(page.status).toBe('available')
     expect(page.items).toHaveLength(1)
     expect(page.items[0]).toMatchObject({
+      account: {
+        mainCharacter: { characterId, name: 'Organization Pilot' },
+        userId,
+      },
+      auditData: { asOf: null, covered: 0, expected: 0, state: 'not-enabled' },
+      block: { blocked: false },
+      compliance: { state: 'pending' },
+      disclosedCharacterCount: 1,
+      groups: [],
+      managedAffiliation: {
+        characterId,
+        corporationId: 98_000_001,
+        name: 'Organization Pilot',
+      },
       managedMemberLifecycleId: expect.any(String),
       managedSince: expect.any(String),
-      siteRegisteredAt: expect.any(String),
-      account: {
-        userId,
-        mainCharacter: { characterId, name: 'Organization Pilot' },
-      },
       portraitCharacter: {
         characterId,
         name: 'Organization Pilot',
         source: 'main-character',
       },
-      managedAffiliation: {
-        characterId,
-        name: 'Organization Pilot',
-        corporationId: 98_000_001,
-      },
-      disclosedCharacterCount: 1,
-      groups: [],
-      compliance: { state: 'pending' },
-      block: { blocked: false },
-      auditData: { state: 'not-enabled', expected: 0, covered: 0, asOf: null },
+      siteRegisteredAt: expect.any(String),
     })
     expect(page.items[0]).not.toHaveProperty('evidenceSections')
     expect(page.items[0]).not.toHaveProperty('resources')
     await expect(
-      searchManagedOrganizationDirectory({ organizationVersion: 2, filters: {} }),
-    ).resolves.toEqual({
+      searchManagedOrganizationDirectory({ filters: {}, organizationVersion: 2 }),
+    ).resolves.toStrictEqual({
+      groupFacets: [],
+      items: [],
+      nextCursor: null,
       organizationVersion: 2,
       status: 'unavailable',
-      items: [],
-      groupFacets: [],
-      nextCursor: null,
     })
   })
 
@@ -575,22 +580,14 @@ describe('organization storage invariants', () => {
     const groups = await seedDirectoryGroups()
 
     const page = await searchManagedOrganizationDirectory({
-      organizationVersion: 1,
       filters: {},
       now: directoryNow,
+      organizationVersion: 1,
     })
 
     expect(page.items).toHaveLength(1)
     expect(page.items[0]).toMatchObject({
-      managedSince: '2026-02-04T09:30:00.000Z',
-      siteRegisteredAt: '2025-04-03T10:00:00.000Z',
-      account: { userId, mainCharacter: null },
-      portraitCharacter: {
-        characterId: 90_000_102,
-        name: 'Alpha Managed',
-        source: 'managed-affiliation',
-      },
-      managedAffiliation: { characterId: 90_000_102, name: 'Alpha Managed' },
+      account: { mainCharacter: null, userId },
       disclosedCharacterCount: 2,
       groups: [
         { groupId: groups.alpha, name: 'Alpha current' },
@@ -598,8 +595,16 @@ describe('organization storage invariants', () => {
         { groupId: groups.restricted, name: 'Restricted current' },
         { groupId: groups.zulu, name: 'Zulu current' },
       ],
+      managedAffiliation: { characterId: 90_000_102, name: 'Alpha Managed' },
+      managedSince: '2026-02-04T09:30:00.000Z',
+      portraitCharacter: {
+        characterId: 90_000_102,
+        name: 'Alpha Managed',
+        source: 'managed-affiliation',
+      },
+      siteRegisteredAt: '2025-04-03T10:00:00.000Z',
     })
-    expect(page.groupFacets).toEqual([
+    expect(page.groupFacets).toStrictEqual([
       { groupId: groups.alpha, name: 'Alpha current' },
       { groupId: groups.compliance, name: 'Compliance current' },
       { groupId: groups.expired, name: 'Expired assignment' },
@@ -610,23 +615,23 @@ describe('organization storage invariants', () => {
 
     await expect(
       searchManagedOrganizationDirectory({
-        organizationVersion: 1,
         filters: { groupId: groups.restricted },
         now: directoryNow,
+        organizationVersion: 1,
       }),
     ).resolves.toMatchObject({ items: [{ account: { userId } }] })
     await expect(
       searchManagedOrganizationDirectory({
-        organizationVersion: 1,
         filters: { groupId: groups.expired },
         now: directoryNow,
+        organizationVersion: 1,
       }),
     ).resolves.toMatchObject({ items: [] })
     await expect(
       searchManagedOrganizationDirectory({
-        organizationVersion: 1,
         filters: { groupId: groups.revoked },
         now: directoryNow,
+        organizationVersion: 1,
       }),
     ).resolves.toMatchObject({ items: [] })
   })
@@ -634,46 +639,46 @@ describe('organization storage invariants', () => {
   test('derives every aggregate audit state with conservative mixed-resource precedence', async () => {
     await enableDirectoryAuditSections(['skills', 'assets'])
 
-    await expect(loadDirectoryAuditData()).resolves.toEqual({
-      state: 'authorization-required',
-      expected: 2,
-      covered: 0,
+    await expect(loadDirectoryAuditData()).resolves.toStrictEqual({
       asOf: null,
+      covered: 0,
+      expected: 2,
+      state: 'authorization-required',
     })
 
     await authorizeDirectoryAuditSections(['skills', 'assets'])
-    await expect(loadDirectoryAuditData()).resolves.toEqual({
-      state: 'never-collected',
-      expected: 2,
-      covered: 0,
+    await expect(loadDirectoryAuditData()).resolves.toStrictEqual({
       asOf: null,
+      covered: 0,
+      expected: 2,
+      state: 'never-collected',
     })
 
     await seedDirectoryAuditState({
+      nextEligibleAt: '2026-09-18T13:00:00Z',
       resourceId: 'trained-skills',
       sectionId: 'skills',
       validatedAt: '2026-09-18T10:00:00Z',
-      nextEligibleAt: '2026-09-18T13:00:00Z',
     })
-    await expect(loadDirectoryAuditData()).resolves.toEqual({
-      state: 'never-collected',
-      expected: 2,
-      covered: 1,
+    await expect(loadDirectoryAuditData()).resolves.toStrictEqual({
       asOf: null,
+      covered: 1,
+      expected: 2,
+      state: 'never-collected',
     })
 
     await seedDirectoryAuditState({
+      lastFailureClass: 'esi-unavailable',
+      nextEligibleAt: '2026-09-18T13:00:00Z',
       resourceId: 'assets',
       sectionId: 'assets',
       validatedAt: null,
-      nextEligibleAt: '2026-09-18T13:00:00Z',
-      lastFailureClass: 'esi-unavailable',
     })
-    await expect(loadDirectoryAuditData()).resolves.toEqual({
-      state: 'unavailable',
-      expected: 2,
-      covered: 1,
+    await expect(loadDirectoryAuditData()).resolves.toStrictEqual({
       asOf: null,
+      covered: 1,
+      expected: 2,
+      state: 'unavailable',
     })
 
     await connection`
@@ -681,11 +686,11 @@ describe('organization storage invariants', () => {
       set validated_at = '2026-09-18T09:00:00Z', next_eligible_at = '2026-09-18T13:00:00Z'
       where module_id = 'member-audit' and resource_id = 'assets'
     `
-    await expect(loadDirectoryAuditData()).resolves.toEqual({
-      state: 'stale',
-      expected: 2,
-      covered: 2,
+    await expect(loadDirectoryAuditData()).resolves.toStrictEqual({
       asOf: '2026-09-18T09:00:00.000Z',
+      covered: 2,
+      expected: 2,
+      state: 'stale',
     })
 
     await connection`
@@ -694,11 +699,11 @@ describe('organization storage invariants', () => {
         next_eligible_at = '2026-09-18T11:00:00Z'
       where module_id = 'member-audit' and resource_id = 'assets'
     `
-    await expect(loadDirectoryAuditData()).resolves.toEqual({
-      state: 'stale',
-      expected: 2,
-      covered: 2,
+    await expect(loadDirectoryAuditData()).resolves.toStrictEqual({
       asOf: '2026-09-18T09:00:00.000Z',
+      covered: 2,
+      expected: 2,
+      state: 'stale',
     })
 
     await connection`
@@ -706,11 +711,11 @@ describe('organization storage invariants', () => {
       set next_eligible_at = '2026-09-18T13:00:00Z'
       where module_id = 'member-audit' and resource_id = 'assets'
     `
-    await expect(loadDirectoryAuditData()).resolves.toEqual({
-      state: 'current',
-      expected: 2,
-      covered: 2,
+    await expect(loadDirectoryAuditData()).resolves.toStrictEqual({
       asOf: '2026-09-18T09:00:00.000Z',
+      covered: 2,
+      expected: 2,
+      state: 'current',
     })
 
     await connection`
@@ -718,18 +723,18 @@ describe('organization storage invariants', () => {
       where character_id = ${characterId} and module_id = 'member-audit' and section_id = 'skills'
     `
     await expect(loadDirectoryAuditData()).resolves.toMatchObject({
-      state: 'authorization-required',
       expected: 2,
+      state: 'authorization-required',
     })
 
     await connection`
       update deployment_module_sections set enabled = false where module_id = 'member-audit'
     `
-    await expect(loadDirectoryAuditData()).resolves.toEqual({
-      state: 'not-enabled',
-      expected: 0,
-      covered: 0,
+    await expect(loadDirectoryAuditData()).resolves.toStrictEqual({
       asOf: null,
+      covered: 0,
+      expected: 0,
+      state: 'not-enabled',
     })
   })
 
@@ -760,76 +765,76 @@ describe('organization storage invariants', () => {
         and ended_at is null
     `
     await seedDirectoryAccount({
-      targetUserId: alphaUserId,
-      targetCharacterId: 90_000_201,
-      name: 'Alpha Pilot',
-      corporationId: 98_000_002,
-      siteRegisteredAt: '2025-04-01T00:00:00Z',
-      managedSince: '2026-01-01T00:00:00Z',
       affiliationCheckedAt: '2026-09-18T10:01:00Z',
+      corporationId: 98_000_002,
+      managedSince: '2026-01-01T00:00:00Z',
+      name: 'Alpha Pilot',
+      siteRegisteredAt: '2025-04-01T00:00:00Z',
+      targetCharacterId: 90_000_201,
+      targetUserId: alphaUserId,
     })
     await seedAdditionalDirectoryCharacter(alphaUserId, 90_000_211, 'Alpha Alt', false)
     await seedDirectoryAccount({
-      targetUserId: bravoUserId,
-      targetCharacterId: 90_000_202,
-      name: 'Bravo Pilot',
-      corporationId: 98_000_001,
-      siteRegisteredAt: '2025-04-02T00:00:00Z',
-      managedSince: '2026-01-02T00:00:00Z',
       affiliationCheckedAt: '2026-09-18T10:02:00Z',
-    })
-    await seedDirectoryAccount({
-      targetUserId: charlieUserId,
-      targetCharacterId: 90_000_203,
-      name: 'Charlie Pilot',
-      corporationId: 98_000_003,
-      siteRegisteredAt: '2025-04-03T00:00:00Z',
-      managedSince: '2026-01-03T00:00:00Z',
-      affiliationCheckedAt: '2026-09-18T10:03:00Z',
-    })
-    await seedDirectoryAccount({
-      targetUserId: echoUserId,
-      targetCharacterId: 90_000_205,
-      name: 'Echo Pilot',
-      corporationId: 98_000_005,
-      siteRegisteredAt: '2025-04-05T00:00:00Z',
-      managedSince: '2026-01-05T00:00:00Z',
-      affiliationCheckedAt: '2026-09-18T10:05:00Z',
-    })
-    await seedDirectoryCompliance({
-      targetUserId: userId,
-      state: 'compliant',
-      evidenceFreshness: 'fresh',
-      evidenceAt: '2026-09-18T10:00:00Z',
-      accessValidUntil: '2026-09-24T00:00:00Z',
-    })
-    await seedDirectoryCompliance({
-      targetUserId: alphaUserId,
-      state: 'pending',
-      evidenceFreshness: 'unavailable',
-    })
-    await seedDirectoryCompliance({
+      corporationId: 98_000_001,
+      managedSince: '2026-01-02T00:00:00Z',
+      name: 'Bravo Pilot',
+      siteRegisteredAt: '2025-04-02T00:00:00Z',
+      targetCharacterId: 90_000_202,
       targetUserId: bravoUserId,
-      state: 'review_required',
-      evidenceFreshness: 'stale',
-      evidenceAt: '2026-09-18T09:00:00Z',
-      reviewDeadline: '2026-09-21T00:00:00Z',
+    })
+    await seedDirectoryAccount({
+      affiliationCheckedAt: '2026-09-18T10:03:00Z',
+      corporationId: 98_000_003,
+      managedSince: '2026-01-03T00:00:00Z',
+      name: 'Charlie Pilot',
+      siteRegisteredAt: '2025-04-03T00:00:00Z',
+      targetCharacterId: 90_000_203,
+      targetUserId: charlieUserId,
+    })
+    await seedDirectoryAccount({
+      affiliationCheckedAt: '2026-09-18T10:05:00Z',
+      corporationId: 98_000_005,
+      managedSince: '2026-01-05T00:00:00Z',
+      name: 'Echo Pilot',
+      siteRegisteredAt: '2025-04-05T00:00:00Z',
+      targetCharacterId: 90_000_205,
+      targetUserId: echoUserId,
+    })
+    await seedDirectoryCompliance({
+      accessValidUntil: '2026-09-24T00:00:00Z',
+      evidenceAt: '2026-09-18T10:00:00Z',
+      evidenceFreshness: 'fresh',
+      state: 'compliant',
+      targetUserId: userId,
+    })
+    await seedDirectoryCompliance({
+      evidenceFreshness: 'unavailable',
+      state: 'pending',
+      targetUserId: alphaUserId,
+    })
+    await seedDirectoryCompliance({
       accessValidUntil: '2026-09-20T00:00:00Z',
       establishedCompliantAt: '2026-09-01T00:00:00Z',
-    })
-    await seedDirectoryCompliance({
-      targetUserId: charlieUserId,
-      state: 'suspended',
+      evidenceAt: '2026-09-18T09:00:00Z',
       evidenceFreshness: 'stale',
-      evidenceAt: '2026-09-18T08:00:00Z',
-      reviewDeadline: '2026-09-22T00:00:00Z',
+      reviewDeadline: '2026-09-21T00:00:00Z',
+      state: 'review_required',
+      targetUserId: bravoUserId,
     })
     await seedDirectoryCompliance({
-      targetUserId: echoUserId,
-      state: 'compliant',
-      evidenceFreshness: 'fresh',
-      evidenceAt: '2026-09-18T07:00:00Z',
+      evidenceAt: '2026-09-18T08:00:00Z',
+      evidenceFreshness: 'stale',
+      reviewDeadline: '2026-09-22T00:00:00Z',
+      state: 'suspended',
+      targetUserId: charlieUserId,
+    })
+    await seedDirectoryCompliance({
       accessValidUntil: '2026-09-25T00:00:00Z',
+      evidenceAt: '2026-09-18T07:00:00Z',
+      evidenceFreshness: 'fresh',
+      state: 'compliant',
+      targetUserId: echoUserId,
     })
     await seedDirectoryBlock(echoUserId, '2026-09-15T00:00:00Z')
     await enableDirectoryAuditSections(['skills', 'assets'])
@@ -837,64 +842,65 @@ describe('organization storage invariants', () => {
     await authorizeDirectoryAuditSections(['skills', 'assets'], 90_000_202)
     for (const state of [
       {
-        targetUserId: userId,
-        targetCharacterId: characterId,
         resourceId: 'trained-skills',
         sectionId: 'skills',
+        targetCharacterId: characterId,
+        targetUserId: userId,
         validatedAt: '2026-09-18T10:00:00Z',
       },
       {
-        targetUserId: userId,
-        targetCharacterId: characterId,
         resourceId: 'assets',
         sectionId: 'assets',
+        targetCharacterId: characterId,
+        targetUserId: userId,
         validatedAt: '2026-09-18T09:00:00Z',
       },
       {
-        targetUserId: bravoUserId,
-        targetCharacterId: 90_000_202,
         resourceId: 'trained-skills',
         sectionId: 'skills',
+        targetCharacterId: 90_000_202,
+        targetUserId: bravoUserId,
         validatedAt: '2026-09-18T09:00:00Z',
       },
       {
-        targetUserId: bravoUserId,
-        targetCharacterId: 90_000_202,
         resourceId: 'assets',
         sectionId: 'assets',
+        targetCharacterId: 90_000_202,
+        targetUserId: bravoUserId,
         validatedAt: '2026-09-18T08:00:00Z',
       },
-    ])
+    ]) {
       await seedDirectoryAuditState({
         ...state,
         nextEligibleAt: '2026-09-18T13:00:00Z',
       })
+    }
 
-    await expect(directoryUserIds({ query: 'Alpha' })).resolves.toEqual([alphaUserId])
-    await expect(directoryUserIds({ query: '90000201' })).resolves.toEqual([alphaUserId])
-    await expect(directoryUserIds({ query: alphaUserId })).resolves.toEqual([alphaUserId])
-    await expect(directoryUserIds({ query: '%' })).resolves.toEqual([])
-    await expect(directoryUserIds({ corporationId: 98_000_004 })).resolves.toEqual([userId])
-    await expect(directoryUserIds({ complianceState: 'pending' })).resolves.toEqual([alphaUserId])
-    await expect(directoryUserIds({ complianceState: 'review_required' })).resolves.toEqual([
+    await expect(directoryUserIds({ query: 'Alpha' })).resolves.toStrictEqual([alphaUserId])
+    await expect(directoryUserIds({ query: '90000201' })).resolves.toStrictEqual([alphaUserId])
+    await expect(directoryUserIds({ query: alphaUserId })).resolves.toStrictEqual([alphaUserId])
+    await expect(directoryUserIds({ query: '%' })).resolves.toStrictEqual([])
+    await expect(directoryUserIds({ corporationId: 98_000_004 })).resolves.toStrictEqual([userId])
+    await expect(directoryUserIds({ complianceState: 'pending' })).resolves.toStrictEqual([
+      alphaUserId,
+    ])
+    await expect(directoryUserIds({ complianceState: 'review_required' })).resolves.toStrictEqual([
       bravoUserId,
     ])
-    await expect(directoryUserIds({ blocked: true })).resolves.toEqual([echoUserId])
-    await expect(directoryUserIds({ blocked: false })).resolves.toEqual([
+    await expect(directoryUserIds({ blocked: true })).resolves.toStrictEqual([echoUserId])
+    await expect(directoryUserIds({ blocked: false })).resolves.toStrictEqual([
       alphaUserId,
       bravoUserId,
       charlieUserId,
       userId,
     ])
-    await expect(directoryUserIds({ auditState: 'current' })).resolves.toEqual([
+    await expect(directoryUserIds({ auditState: 'current' })).resolves.toStrictEqual([
       bravoUserId,
       userId,
     ])
-    await expect(directoryUserIds({ auditState: 'authorization-required' })).resolves.toEqual([
-      alphaUserId,
-      charlieUserId,
-      echoUserId,
-    ])
+    await expect(directoryUserIds({ auditState: 'authorization-required' })).resolves.toStrictEqual(
+      [alphaUserId, charlieUserId, echoUserId],
+    )
 
     const nullAuditIds = [alphaUserId, charlieUserId, echoUserId].toSorted((left, right) =>
       left.localeCompare(right),
@@ -913,94 +919,97 @@ describe('organization storage invariants', () => {
     )
     const sortCases = [
       {
-        sort: 'member' as const,
         asc: [alphaUserId, bravoUserId, charlieUserId, userId, echoUserId],
         desc: [echoUserId, userId, charlieUserId, bravoUserId, alphaUserId],
+        sort: 'member' as const,
       },
       {
-        sort: 'corporation' as const,
         asc: [bravoUserId, alphaUserId, charlieUserId, userId, echoUserId],
         desc: [echoUserId, userId, charlieUserId, alphaUserId, bravoUserId],
+        sort: 'corporation' as const,
       },
       {
-        sort: 'managed_since' as const,
         asc: [alphaUserId, bravoUserId, charlieUserId, userId, echoUserId],
         desc: [echoUserId, userId, charlieUserId, bravoUserId, alphaUserId],
+        sort: 'managed_since' as const,
       },
       {
-        sort: 'audit_data' as const,
         asc: [bravoUserId, userId, ...nullAuditIds],
         desc: [userId, bravoUserId, ...nullAuditIds],
+        sort: 'audit_data' as const,
       },
       {
-        sort: 'access_status' as const,
         asc: [userId, alphaUserId, bravoUserId, charlieUserId, echoUserId],
         desc: [echoUserId, charlieUserId, bravoUserId, alphaUserId, userId],
+        sort: 'access_status' as const,
       },
       {
-        sort: 'disclosed_characters' as const,
         asc: [...singleCharacterIds, alphaUserId],
         desc: [alphaUserId, ...singleCharacterIds],
+        sort: 'disclosed_characters' as const,
       },
       {
+        asc: [alphaUserId, bravoUserId, charlieUserId, userId, echoUserId],
+        desc: [echoUserId, userId, charlieUserId, bravoUserId, alphaUserId],
         sort: 'affiliation_checked_at' as const,
-        asc: [alphaUserId, bravoUserId, charlieUserId, userId, echoUserId],
-        desc: [echoUserId, userId, charlieUserId, bravoUserId, alphaUserId],
       },
       {
+        asc: [alphaUserId, bravoUserId, charlieUserId, userId, echoUserId],
+        desc: [echoUserId, userId, charlieUserId, bravoUserId, alphaUserId],
         sort: 'site_registered_at' as const,
-        asc: [alphaUserId, bravoUserId, charlieUserId, userId, echoUserId],
-        desc: [echoUserId, userId, charlieUserId, bravoUserId, alphaUserId],
       },
       {
-        sort: 'review_deadline' as const,
         asc: [bravoUserId, charlieUserId, ...nullDeadlineIds],
         desc: [charlieUserId, bravoUserId, ...nullDeadlineIds],
+        sort: 'review_deadline' as const,
       },
       {
-        sort: 'access_valid_until' as const,
         asc: [bravoUserId, userId, echoUserId, ...nullAccessIds],
         desc: [echoUserId, userId, bravoUserId, ...nullAccessIds],
+        sort: 'access_valid_until' as const,
       },
       {
-        sort: 'blocked_since' as const,
         asc: [echoUserId, ...unblockedIds],
         desc: [echoUserId, ...unblockedIds],
+        sort: 'blocked_since' as const,
       },
     ]
     for (const { sort, asc: ascending, desc: descending } of sortCases) {
-      await expect(directoryUserIds({ sort, direction: 'asc' })).resolves.toEqual(ascending)
-      await expect(directoryUserIds({ sort, direction: 'desc' })).resolves.toEqual(descending)
+      await expect(directoryUserIds({ direction: 'asc', sort })).resolves.toStrictEqual(ascending)
+      await expect(directoryUserIds({ direction: 'desc', sort })).resolves.toStrictEqual(descending)
     }
 
     const firstPage = await searchManagedOrganizationDirectory({
-      organizationVersion: 1,
-      filters: { sort: 'member', direction: 'asc', limit: 2 },
+      filters: { direction: 'asc', limit: 2, sort: 'member' },
       now: directoryNow,
+      organizationVersion: 1,
     })
-    expect(firstPage.items.map(({ account }) => account.userId)).toEqual([alphaUserId, bravoUserId])
+    expect(firstPage.items.map(({ account }) => account.userId)).toStrictEqual([
+      alphaUserId,
+      bravoUserId,
+    ])
     const lateUserId = '05000000-0000-4000-8000-000000000005'
     await seedDirectoryAccount({
-      targetUserId: lateUserId,
-      targetCharacterId: 90_000_206,
-      name: 'Aardvark Pilot',
-      corporationId: 98_000_001,
-      siteRegisteredAt: '2025-03-01T00:00:00Z',
-      managedSince: '2025-12-01T00:00:00Z',
       affiliationCheckedAt: '2026-09-18T10:00:00Z',
+      corporationId: 98_000_001,
+      managedSince: '2025-12-01T00:00:00Z',
+      name: 'Aardvark Pilot',
+      siteRegisteredAt: '2025-03-01T00:00:00Z',
+      targetCharacterId: 90_000_206,
+      targetUserId: lateUserId,
     })
     const remainingIds: string[] = []
     let cursor = firstPage.nextCursor
     while (cursor) {
       const page = await searchManagedOrganizationDirectory({
-        organizationVersion: 1,
-        filters: { sort: 'member', direction: 'asc', limit: 2, cursor },
+        filters: { cursor, direction: 'asc', limit: 2, sort: 'member' },
         now: directoryNow,
+        organizationVersion: 1,
       })
       remainingIds.push(...page.items.map(({ account }) => account.userId))
       cursor = page.nextCursor
     }
-    expect(remainingIds).toEqual([charlieUserId, userId, echoUserId])
+    expect(remainingIds).toStrictEqual([charlieUserId, userId, echoUserId])
     expect(
       new Set([...firstPage.items.map(({ account }) => account.userId), ...remainingIds]).size,
     ).toBe(5)
@@ -1009,52 +1018,52 @@ describe('organization storage invariants', () => {
   test('preserves every compliance and active-block combination', async () => {
     const complianceCases = [
       {
-        state: 'pending' as const,
         evidenceFreshness: 'unavailable' as const,
+        state: 'pending' as const,
       },
       {
-        state: 'compliant' as const,
-        evidenceFreshness: 'fresh' as const,
-        evidenceAt: '2026-09-18T10:00:00Z',
         accessValidUntil: '2026-09-24T00:00:00Z',
+        evidenceAt: '2026-09-18T10:00:00Z',
+        evidenceFreshness: 'fresh' as const,
+        state: 'compliant' as const,
       },
       {
+        evidenceAt: '2026-09-18T10:00:00Z',
+        evidenceFreshness: 'stale' as const,
+        reviewDeadline: '2026-09-21T00:00:00Z',
         state: 'review_required' as const,
-        evidenceFreshness: 'stale' as const,
-        evidenceAt: '2026-09-18T10:00:00Z',
-        reviewDeadline: '2026-09-21T00:00:00Z',
       },
       {
-        state: 'suspended' as const,
-        evidenceFreshness: 'stale' as const,
         evidenceAt: '2026-09-18T10:00:00Z',
+        evidenceFreshness: 'stale' as const,
         reviewDeadline: '2026-09-21T00:00:00Z',
+        state: 'suspended' as const,
       },
     ]
 
     for (const compliance of complianceCases) {
       await seedDirectoryCompliance({ targetUserId: userId, ...compliance })
       const unblocked = await searchManagedOrganizationDirectory({
-        organizationVersion: 1,
-        filters: { complianceState: compliance.state, blocked: false },
+        filters: { blocked: false, complianceState: compliance.state },
         now: directoryNow,
+        organizationVersion: 1,
       })
       expect(unblocked.items[0]).toMatchObject({
         account: { userId },
-        compliance: { state: compliance.state },
         block: { blocked: false },
+        compliance: { state: compliance.state },
       })
 
       await seedDirectoryBlock(userId, '2026-09-17T00:00:00Z')
       const blocked = await searchManagedOrganizationDirectory({
-        organizationVersion: 1,
-        filters: { complianceState: compliance.state, blocked: true },
+        filters: { blocked: true, complianceState: compliance.state },
         now: directoryNow,
+        organizationVersion: 1,
       })
       expect(blocked.items[0]).toMatchObject({
         account: { userId },
-        compliance: { state: compliance.state },
         block: { blocked: true, blockedAt: '2026-09-17T00:00:00.000Z' },
+        compliance: { state: compliance.state },
       })
       await connection`delete from organization_member_blocks where user_id = ${userId}`
       await connection`delete from organization_account_compliance where user_id = ${userId}`
@@ -1108,23 +1117,26 @@ describe('organization storage invariants', () => {
     const options = dbClient.sql.options
     const previousDebug = options.debug
     options.debug = (_connection, query, parameters) => {
-      if (query.includes('with resource_classification'))
-        capture.value = { query, parameters: parameters as UnsafeParameters }
+      if (query.includes('with resource_classification')) {
+        capture.value = { parameters: parameters as UnsafeParameters, query }
+      }
     }
     let page
     try {
       page = await searchManagedOrganizationDirectory({
-        organizationVersion: 1,
-        filters: { limit: 50, sort: 'managed_since', direction: 'desc' },
+        filters: { direction: 'desc', limit: 50, sort: 'managed_since' },
         now: directoryNow,
+        organizationVersion: 1,
       })
     } finally {
       options.debug = previousDebug
     }
     expect(page.items).toHaveLength(50)
-    expect(page.nextCursor).toEqual(expect.any(String))
+    expect(page.nextCursor).toStrictEqual(expect.any(String))
     const captured = capture.value
-    if (!captured) throw new Error('Directory query was not captured for plan inspection')
+    if (!captured) {
+      throw new Error('Directory query was not captured for plan inspection')
+    }
     const [explained] = await connection.unsafe<{ 'QUERY PLAN': unknown }[]>(
       `explain (analyze, buffers, format json) ${captured.query}`,
       captured.parameters,
@@ -1153,22 +1165,22 @@ describe('organization storage invariants', () => {
     `
 
     const visible = await searchManagedOrganizationAccounts({
-      organizationVersion: 1,
       filters: { query: 'Managed Alt' },
+      organizationVersion: 1,
     })
     expect(visible.items).toHaveLength(1)
     expect(visible.items[0]!.account.mainCharacter).toBeNull()
 
     await expect(
       searchManagedOrganizationAccounts({
-        organizationVersion: 1,
         filters: { query: 'Organization Pilot' },
+        organizationVersion: 1,
       }),
-    ).resolves.toEqual({
-      organizationVersion: 1,
-      status: 'available',
+    ).resolves.toStrictEqual({
       items: [],
       nextCursor: null,
+      organizationVersion: 1,
+      status: 'available',
     })
 
     await connection`
@@ -1177,10 +1189,10 @@ describe('organization storage invariants', () => {
       ) values (1, 1, ${userId}, ${characterId}, ${userId}, 'Approved external main')
     `
     const withApprovedMain = await searchManagedOrganizationAccounts({
-      organizationVersion: 1,
       filters: { query: 'Managed Alt' },
+      organizationVersion: 1,
     })
-    expect(withApprovedMain.items[0]!.account.mainCharacter).toEqual({
+    expect(withApprovedMain.items[0]!.account.mainCharacter).toStrictEqual({
       characterId,
       name: 'Organization Pilot',
     })
@@ -1199,27 +1211,27 @@ describe('organization storage invariants', () => {
     `
 
     await expect(
-      searchManagedOrganizationAccounts({ organizationVersion: 1, filters: {} }),
-    ).resolves.toEqual({
-      organizationVersion: 1,
-      status: 'unavailable',
+      searchManagedOrganizationAccounts({ filters: {}, organizationVersion: 1 }),
+    ).resolves.toStrictEqual({
       items: [],
       nextCursor: null,
+      organizationVersion: 1,
+      status: 'unavailable',
     })
   })
 
   test('rejects malformed reviewer account search filters before querying', async () => {
     await expect(
-      searchManagedOrganizationAccounts({ organizationVersion: 1, filters: { limit: 51 } }),
+      searchManagedOrganizationAccounts({ filters: { limit: 51 }, organizationVersion: 1 }),
     ).rejects.toThrow('Invalid reviewer account search input')
     await expect(
       searchManagedOrganizationAccounts({
-        organizationVersion: 1,
         filters: { query: 'bad\nquery' },
+        organizationVersion: 1,
       }),
     ).rejects.toThrow('Invalid reviewer account search input')
     await expect(
-      searchManagedOrganizationAccounts({ organizationVersion: 1, filters: { corporationId: -1 } }),
+      searchManagedOrganizationAccounts({ filters: { corporationId: -1 }, organizationVersion: 1 }),
     ).rejects.toThrow('Invalid reviewer account search input')
   })
 
@@ -1227,11 +1239,9 @@ describe('organization storage invariants', () => {
     await expect(
       resolveOrganizationReviewerTarget({ organizationVersion: 1, targetUserId: userId }),
     ).resolves.toMatchObject({
-      organizationVersion: 1,
-      selection: { kind: 'account' },
       account: {
-        userId,
         mainCharacter: { characterId, name: 'Organization Pilot' },
+        userId,
       },
       characters: [
         {
@@ -1240,6 +1250,8 @@ describe('organization storage invariants', () => {
           affiliation: { membership: 'managed', freshness: 'fresh' },
         },
       ],
+      organizationVersion: 1,
+      selection: { kind: 'account' },
     })
   })
 
@@ -1275,12 +1287,17 @@ describe('organization storage invariants', () => {
       from organization_corporation_sources
       where source_id = ${sourceId}
     `
-    expect(historical).toEqual({ character_id: null, evidence_character_id: String(characterId) })
-    await expect(connection<{ ended_at: Date | null }[]>`
+    expect(historical).toStrictEqual({
+      character_id: null,
+      evidence_character_id: String(characterId),
+    })
+    await expect(
+      connection<{ ended_at: Date | null }[]>`
       select ended_at
       from organization_managed_member_lifecycles
       where deployment_id = 1 and organization_version = 1 and user_id = ${userId}
-    `).resolves.toEqual([{ ended_at: expect.any(Date) }])
+    `.then((rows) => [...rows]),
+    ).resolves.toStrictEqual([{ ended_at: expect.any(Date) }])
   })
 
   test('persists compliance changes idempotently with normalized issues and stable events', async () => {
@@ -1289,19 +1306,19 @@ describe('organization storage invariants', () => {
     await expect(
       recomputeOrganizationAccountCompliance({
         deploymentId: 1,
+        now: evaluatedAt,
         organizationVersion: 1,
         userId,
-        now: evaluatedAt,
       }),
-    ).resolves.toMatchObject({ outcome: 'changed', evaluation: { state: 'compliant' } })
+    ).resolves.toMatchObject({ evaluation: { state: 'compliant' }, outcome: 'changed' })
     await expect(
       recomputeOrganizationAccountCompliance({
         deploymentId: 1,
+        now: new Date('2026-09-01T12:05:00.000Z'),
         organizationVersion: 1,
         userId,
-        now: new Date('2026-09-01T12:05:00.000Z'),
       }),
-    ).resolves.toMatchObject({ outcome: 'unchanged', evaluation: { state: 'compliant' } })
+    ).resolves.toMatchObject({ evaluation: { state: 'compliant' }, outcome: 'unchanged' })
 
     const [counts] = await connection<
       { projections: number; issues: number; audits: number; events: number }[]
@@ -1314,7 +1331,7 @@ describe('organization storage invariants', () => {
         (select count(*)::integer from domain_events
           where event_type = 'organization.compliance-transitioned') as events
     `
-    expect(counts).toEqual({ projections: 1, issues: 0, audits: 1, events: 1 })
+    expect(counts).toStrictEqual({ audits: 1, events: 1, issues: 0, projections: 1 })
   })
 
   test('suspends an account when an attached character authorization is removed', async () => {
@@ -1336,7 +1353,6 @@ describe('organization storage invariants', () => {
       }),
     ).resolves.toMatchObject({
       evaluation: {
-        state: 'suspended',
         accessValidUntil: null,
         issues: [
           {
@@ -1346,6 +1362,7 @@ describe('organization storage invariants', () => {
             requiredScope: null,
           },
         ],
+        state: 'suspended',
       },
     })
   })
@@ -1364,12 +1381,12 @@ describe('organization storage invariants', () => {
     await expect(
       updateOrganizationRegistrationPolicy({
         actorUserId: userId,
-        requiredScopes: ['esi-wallet.read_character_wallet.v1'],
-        strictRemediationDurationSeconds: 0,
-        staleEvidenceGraceDurationSeconds: 3600,
-        derivedDirectorAuthorityEnabled: true,
         authorityEvidenceFreshDurationSeconds: 3600,
+        derivedDirectorAuthorityEnabled: true,
         reason: 'Require current wallet authorization.',
+        requiredScopes: ['esi-wallet.read_character_wallet.v1'],
+        staleEvidenceGraceDurationSeconds: 3600,
+        strictRemediationDurationSeconds: 0,
       }),
     ).rejects.toMatchObject({ code: 'owner-policy-noncompliant' })
     const [unchanged] = await connection<
@@ -1387,11 +1404,11 @@ describe('organization storage invariants', () => {
         and projection.user_id = ${userId}
       where settings.id = 1
     `
-    expect(unchanged).toEqual({
+    expect(unchanged).toStrictEqual({
+      audits: 0,
       policy_version: '1',
       required_scopes: [],
       state: 'compliant',
-      audits: 0,
     })
 
     await connection`
@@ -1408,18 +1425,18 @@ describe('organization storage invariants', () => {
     await expect(
       updateOrganizationRegistrationPolicy({
         actorUserId: userId,
-        requiredScopes: [],
-        strictRemediationDurationSeconds: 0,
-        staleEvidenceGraceDurationSeconds: 3600,
-        derivedDirectorAuthorityEnabled: true,
         authorityEvidenceFreshDurationSeconds: 3600,
+        derivedDirectorAuthorityEnabled: true,
         reason: 'Restore a policy the verified owner satisfies.',
+        requiredScopes: [],
+        staleEvidenceGraceDurationSeconds: 3600,
+        strictRemediationDurationSeconds: 0,
       }),
     ).resolves.toMatchObject({ policyVersion: 3, requiredScopes: [] })
     const [recovered] = await connection<{ state: string }[]>`
       select state from organization_account_compliance where user_id = ${userId}
     `
-    expect(recovered).toEqual({ state: 'compliant' })
+    expect(recovered).toStrictEqual({ state: 'compliant' })
   })
 
   test('rolls back policy and compliance together when transition persistence fails', async () => {
@@ -1441,12 +1458,12 @@ describe('organization storage invariants', () => {
       await expect(
         updateOrganizationRegistrationPolicy({
           actorUserId: userId,
-          requiredScopes: ['esi-wallet.read_character_wallet.v1'],
-          strictRemediationDurationSeconds: 0,
-          staleEvidenceGraceDurationSeconds: 3600,
-          derivedDirectorAuthorityEnabled: true,
           authorityEvidenceFreshDurationSeconds: 3600,
+          derivedDirectorAuthorityEnabled: true,
           reason: 'This mutation must roll back.',
+          requiredScopes: ['esi-wallet.read_character_wallet.v1'],
+          staleEvidenceGraceDurationSeconds: 3600,
+          strictRemediationDurationSeconds: 0,
         }),
       ).rejects.toMatchObject({ cause: { code: '23514' } })
     } finally {
@@ -1476,11 +1493,11 @@ describe('organization storage invariants', () => {
         and projection.user_id = ${userId}
       where settings.id = 1
     `
-    expect(state).toEqual({
+    expect(state).toStrictEqual({
+      audits: 0,
+      compliance_state: 'compliant',
       policy_version: '1',
       required_scopes: [],
-      compliance_state: 'compliant',
-      audits: 0,
     })
   })
 
@@ -1492,36 +1509,36 @@ describe('organization storage invariants', () => {
     await establishCompliantAccount(targetUserId, 90_000_001)
     await updateOrganizationRegistrationPolicy({
       actorUserId: userId,
-      requiredScopes: [],
-      strictRemediationDurationSeconds: 3600,
-      staleEvidenceGraceDurationSeconds: 3600,
-      derivedDirectorAuthorityEnabled: true,
       authorityEvidenceFreshDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
       reason: 'Allow one hour for established member remediation.',
+      requiredScopes: [],
+      staleEvidenceGraceDurationSeconds: 3600,
+      strictRemediationDurationSeconds: 3600,
     })
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Review-period access',
-      reason: 'Create review-period access.',
       permissions: [
         { type: 'service', key: 'discord.review-member', reviewAllowed: true },
         { type: 'service', key: 'discord.review-denied', reviewAllowed: false },
       ],
+      reason: 'Create review-period access.',
     })
     const group = await createOrganizationGroup({
       actorUserId: userId,
+      bundleIds: [bundle.bundleId],
+      complianceSource: null,
+      managementMode: 'manual',
       name: 'Review-period members',
       restricted: false,
-      managementMode: 'manual',
-      complianceSource: null,
-      bundleIds: [bundle.bundleId],
     })
     await assignOrganizationGroup({
       actorUserId: userId,
-      groupId: group.groupId,
-      targetUserId,
-      reason: 'Established member access.',
       expiresAt: null,
+      groupId: group.groupId,
+      reason: 'Established member access.',
+      targetUserId,
     })
     await connection`
       update characters
@@ -1543,8 +1560,8 @@ describe('organization storage invariants', () => {
       where deployment_id = 1 and organization_version = 1 and user_id = ${targetUserId}
     `
     expect(review).toMatchObject({ state: 'review_required' })
-    expect(review!.access_valid_until).toEqual(review!.review_deadline)
-    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+    expect(review!.access_valid_until).toStrictEqual(review!.review_deadline)
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toStrictEqual({
       modules: [],
       services: ['discord.review-member'],
     })
@@ -1552,11 +1569,13 @@ describe('organization storage invariants', () => {
     const afterDeadline = new Date(review!.review_deadline.getTime() + 1)
     await recomputeOrganizationAccountCompliance({
       deploymentId: 1,
+      now: afterDeadline,
       organizationVersion: 1,
       userId: targetUserId,
-      now: afterDeadline,
     })
-    await expect(getOrganizationGroupPermissions(targetUserId, afterDeadline)).resolves.toEqual({
+    await expect(
+      getOrganizationGroupPermissions(targetUserId, afterDeadline),
+    ).resolves.toStrictEqual({
       modules: [],
       services: [],
     })
@@ -1569,12 +1588,12 @@ describe('organization storage invariants', () => {
     )
     await updateOrganizationRegistrationPolicy({
       actorUserId: userId,
-      requiredScopes: [],
-      strictRemediationDurationSeconds: 3600,
-      staleEvidenceGraceDurationSeconds: 3600,
-      derivedDirectorAuthorityEnabled: true,
       authorityEvidenceFreshDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
       reason: 'Allow a bounded first-time review.',
+      requiredScopes: [],
+      staleEvidenceGraceDurationSeconds: 3600,
+      strictRemediationDurationSeconds: 3600,
     })
     const targetUserId = randomUUID()
     await seedCharacter(targetUserId, 90_000_001)
@@ -1588,7 +1607,7 @@ describe('organization storage invariants', () => {
         userId: targetUserId,
       }),
     ).resolves.toMatchObject({
-      evaluation: { state: 'review_required', accessValidUntil: null },
+      evaluation: { accessValidUntil: null, state: 'review_required' },
     })
     await connection`
       update characters
@@ -1605,7 +1624,7 @@ describe('organization storage invariants', () => {
         userId: targetUserId,
       }),
     ).resolves.toMatchObject({
-      evaluation: { state: 'pending', reviewDeadline: null, accessValidUntil: null },
+      evaluation: { accessValidUntil: null, reviewDeadline: null, state: 'pending' },
     })
   })
 
@@ -1616,9 +1635,9 @@ describe('organization storage invariants', () => {
     )
     await grantOrganizationRole({
       actorUserId: userId,
-      targetUserId: userId,
-      role: 'hr_auditor',
       reason: 'Registration review duty.',
+      role: 'hr_auditor',
+      targetUserId: userId,
     })
     const targetUserId = randomUUID()
     const managedCharacterId = 90_000_001
@@ -1646,10 +1665,10 @@ describe('organization storage invariants', () => {
     const expiresAt = new Date(Date.now() + 60_000)
     const first = await approveOrganizationCharacterException({
       actorUserId: userId,
-      userId: targetUserId,
       characterId: externalCharacterId,
-      reason: 'Approved disclosed external character.',
       expiresAt,
+      reason: 'Approved disclosed external character.',
+      userId: targetUserId,
     })
     await expect(loadComplianceState(targetUserId)).resolves.toBe('compliant')
 
@@ -1658,10 +1677,10 @@ describe('organization storage invariants', () => {
 
     const second = await approveOrganizationCharacterException({
       actorUserId: userId,
-      userId: targetUserId,
       characterId: externalCharacterId,
-      reason: 'Renewed external-character approval.',
       expiresAt: null,
+      reason: 'Renewed external-character approval.',
+      userId: targetUserId,
     })
     await expect(loadComplianceState(targetUserId)).resolves.toBe('compliant')
     await expireOrganizationCharacterException({
@@ -1673,10 +1692,10 @@ describe('organization storage invariants', () => {
 
     const third = await approveOrganizationCharacterException({
       actorUserId: userId,
-      userId: targetUserId,
       characterId: externalCharacterId,
-      reason: 'Final external-character approval.',
       expiresAt: null,
+      reason: 'Final external-character approval.',
+      userId: targetUserId,
     })
     await expect(loadComplianceState(targetUserId)).resolves.toBe('compliant')
     await revokeOrganizationCharacterException({
@@ -1692,7 +1711,7 @@ describe('organization storage invariants', () => {
       where event_type in ('exception.approved', 'exception.expired', 'exception.revoked')
       order by audit_sequence
     `
-    expect(decisions).toEqual([
+    expect([...decisions]).toStrictEqual([
       { event_type: 'exception.approved', subject_id: first.exceptionId },
       { event_type: 'exception.expired', subject_id: first.exceptionId },
       { event_type: 'exception.approved', subject_id: second.exceptionId },
@@ -1704,7 +1723,7 @@ describe('organization storage invariants', () => {
 
   test('refuses new alliance exceptions while managed-corporation evidence is stale', async () => {
     await updateDeploymentOrganization(
-      { type: 'alliance', id: 99_000_001, name: 'Test Alliance', ticker: 'ALLY' },
+      { id: 99_000_001, name: 'Test Alliance', ticker: 'ALLY', type: 'alliance' },
       adminId,
     )
     await connection`
@@ -1726,10 +1745,10 @@ describe('organization storage invariants', () => {
     await expect(
       approveOrganizationCharacterException({
         actorUserId: userId,
-        userId: targetUserId,
         characterId: targetCharacterId,
-        reason: 'Cannot be approved from stale alliance evidence.',
         expiresAt: null,
+        reason: 'Cannot be approved from stale alliance evidence.',
+        userId: targetUserId,
       }),
     ).rejects.toMatchObject({ code: 'managed-corporation-evidence-stale' })
   })
@@ -1754,13 +1773,13 @@ describe('organization storage invariants', () => {
     await connection`insert into users (id) values (${pendingUserId})`
 
     await expect(getOrganizationAccountComplianceDetails(pendingUserId)).resolves.toMatchObject({
-      organizationVersion: 1,
-      state: 'pending',
-      evidenceFreshness: 'unavailable',
       accountReasons: [{ code: 'no-attached-characters' }],
-      remediationActions: [{ type: 'attach-character', path: '/auth/eve/attach' }],
       characters: [],
       disclosureNotice: expect.stringContaining('member disclosure'),
+      evidenceFreshness: 'unavailable',
+      organizationVersion: 1,
+      remediationActions: [{ type: 'attach-character', path: '/auth/eve/attach' }],
+      state: 'pending',
     })
 
     await ensureManagedCorporation()
@@ -1770,7 +1789,6 @@ describe('organization storage invariants', () => {
       userId,
     })
     await expect(getOrganizationAccountComplianceDetails(userId)).resolves.toMatchObject({
-      state: 'compliant',
       characters: [
         {
           characterId,
@@ -1781,6 +1799,7 @@ describe('organization storage invariants', () => {
           remediationActions: [],
         },
       ],
+      state: 'compliant',
     })
   })
 
@@ -1798,11 +1817,11 @@ describe('organization storage invariants', () => {
     `
 
     await expect(loadOrganizationSessionContext(userId)).resolves.toMatchObject({
-      organizationVersion: 1,
-      state: 'compliant',
-      evidenceFreshness: 'fresh',
       accessValidUntil: expect.any(Date),
       blocked: false,
+      evidenceFreshness: 'fresh',
+      organizationVersion: 1,
+      state: 'compliant',
     })
     const context = await loadOrganizationSessionContext(userId)
     expect(context.accessValidUntil!.getTime()).toBeGreaterThan(Date.now())
@@ -1812,9 +1831,9 @@ describe('organization storage invariants', () => {
     const observedAt = new Date()
     await recomputeOrganizationAccountCompliance({
       deploymentId: 1,
+      now: observedAt,
       organizationVersion: 1,
       userId,
-      now: observedAt,
     })
     const [initialLifecycle] = await connection<{ managed_member_lifecycle_id: string }[]>`
       select managed_member_lifecycle_id
@@ -1831,9 +1850,9 @@ describe('organization storage invariants', () => {
     `
 
     await recomputeComplianceForManagedCorporation({
+      corporationId: 98_000_001,
       deploymentId: 1,
       organizationVersion: 1,
-      corporationId: 98000001,
     })
 
     const projections = await connection<
@@ -1846,23 +1865,25 @@ describe('organization storage invariants', () => {
       where projection.user_id = ${userId}
       order by issue.issue_key
     `
-    expect(projections).toEqual([
+    expect([...projections]).toStrictEqual([
       {
-        state: 'suspended',
-        issue_code: 'no-managed-organization-character',
         character_id: null,
+        issue_code: 'no-managed-organization-character',
+        state: 'suspended',
       },
       {
-        state: 'suspended',
-        issue_code: 'character-outside-managed-organization',
         character_id: String(characterId),
+        issue_code: 'character-outside-managed-organization',
+        state: 'suspended',
       },
     ])
-    await expect(connection<{ ended_at: Date | null }[]>`
+    await expect(
+      connection<{ ended_at: Date | null }[]>`
       select ended_at
       from organization_managed_member_lifecycles
       where managed_member_lifecycle_id = ${initialLifecycle!.managed_member_lifecycle_id}
-    `).resolves.toEqual([{ ended_at: expect.any(Date) }])
+    `.then((rows) => [...rows]),
+    ).resolves.toStrictEqual([{ ended_at: expect.any(Date) }])
 
     await connection`
       update organization_managed_corporations
@@ -1884,14 +1905,14 @@ describe('organization storage invariants', () => {
     `
     expect(lifecycles).toHaveLength(2)
     expect(lifecycles).toContainEqual({
-      managed_member_lifecycle_id: initialLifecycle!.managed_member_lifecycle_id,
       ended_at: expect.any(Date),
+      managed_member_lifecycle_id: initialLifecycle!.managed_member_lifecycle_id,
     })
     expect(lifecycles).toContainEqual({
+      ended_at: null,
       managed_member_lifecycle_id: expect.not.stringMatching(
         initialLifecycle!.managed_member_lifecycle_id,
       ),
-      ended_at: null,
     })
   })
 
@@ -1911,12 +1932,12 @@ describe('organization storage invariants', () => {
     await expect(
       registerOrganizationCorporationSource({
         actorUserId: userId,
-        corporationId: 98_000_001,
         characterId,
+        corporationId: 98_000_001,
       }),
     ).resolves.toMatchObject({
       replaced: false,
-      source: { organizationVersion: 1, corporationId: 98_000_001, characterId },
+      source: { characterId, corporationId: 98_000_001, organizationVersion: 1 },
     })
     const [stored] = await connection<
       {
@@ -1937,8 +1958,8 @@ describe('organization storage invariants', () => {
       where source.revoked_at is null
     `
     expect(stored).toMatchObject({
-      lifecycle_source_id: stored?.source_id,
       audit_type: 'corporation-source.registered',
+      lifecycle_source_id: stored?.source_id,
     })
   })
 
@@ -1963,8 +1984,8 @@ describe('organization storage invariants', () => {
     await expect(
       registerOrganizationCorporationSource({
         actorUserId: userId,
-        corporationId: 98_000_001,
         characterId,
+        corporationId: 98_000_001,
       }),
     ).rejects.toMatchObject({ code: 'source-character-affiliation-stale' })
 
@@ -2025,8 +2046,8 @@ describe('organization storage invariants', () => {
     await expect(
       registerOrganizationCorporationSource({
         actorUserId: userId,
-        corporationId: 98_000_001,
         characterId: replacementCharacterId,
+        corporationId: 98_000_001,
       }),
     ).resolves.toMatchObject({ replaced: true })
 
@@ -2069,16 +2090,18 @@ describe('organization storage invariants', () => {
     await expect(
       registerOrganizationCorporationSource({
         actorUserId: userId,
-        corporationId: 98_000_001,
         characterId: replacementCharacterId,
+        corporationId: 98_000_001,
       }),
     ).rejects.toMatchObject({ code: 'manager-authority-degraded' })
 
-    await expect(connection<{ character_id: string }[]>`
+    await expect(
+      connection<{ character_id: string }[]>`
       select character_id
       from organization_corporation_sources
       where revoked_at is null
-    `).resolves.toEqual([{ character_id: String(characterId) }])
+    `.then((rows) => [...rows]),
+    ).resolves.toStrictEqual([{ character_id: String(characterId) }])
   })
 
   test('derives Director authority from a non-main source and keeps main selection authority-neutral', async () => {
@@ -2091,11 +2114,11 @@ describe('organization storage invariants', () => {
     })
     const affiliationCheckedAt = await loadAffiliationCheckedAt(sourceCharacterId)
     ownerEvidenceMocks.observeAndPersistCharacterAffiliation.mockResolvedValue({
+      affiliationCheckedAt,
+      affiliationFreshUntil: new Date(Date.now() + 60 * 60 * 1000),
+      allianceId: null,
       characterId: sourceCharacterId,
       corporationId: 98_000_001,
-      allianceId: null,
-      affiliationCheckedAt,
-      affiliationFreshUntil: new Date(Date.now() + 60 * 60 * 1_000),
       stale: false,
     })
     ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
@@ -2104,13 +2127,13 @@ describe('organization storage invariants', () => {
 
     await expect(
       refreshDerivedDirectorAuthority({
-        organizationVersion: 1,
-        userId,
-        characterId: sourceCharacterId,
-        subjectLifecycleId: sourceLifecycleId,
         authorizationGeneration: 0,
-        sourceId: null,
+        characterId: sourceCharacterId,
+        organizationVersion: 1,
         roleEvidenceRevision: null,
+        sourceId: null,
+        subjectLifecycleId: sourceLifecycleId,
+        userId,
       }),
     ).resolves.toBe('fresh')
     await expect(hasCurrentOrganizationManagerAuthority(userId, 'mutate')).resolves.toBe(true)
@@ -2131,23 +2154,25 @@ describe('organization storage invariants', () => {
       from organization_derived_authority_sources
       where character_id = ${sourceCharacterId} and invalidated_at is null
     `
-    if (!source) throw new Error('Derived authority source is missing')
+    if (!source) {
+      throw new Error('Derived authority source is missing')
+    }
     ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
       roleEvidence({
-        roles: [],
         roleEvidenceRevision: 'derived-role-v2',
+        roles: [],
       }),
     )
 
     await expect(
       refreshDerivedDirectorAuthority({
-        organizationVersion: 1,
-        userId,
-        characterId: sourceCharacterId,
-        subjectLifecycleId: sourceLifecycleId,
         authorizationGeneration: 0,
-        sourceId: source.source_id,
+        characterId: sourceCharacterId,
+        organizationVersion: 1,
         roleEvidenceRevision: source.role_evidence_revision,
+        sourceId: source.source_id,
+        subjectLifecycleId: sourceLifecycleId,
+        userId,
       }),
     ).resolves.toBe('invalid')
     await expect(hasCurrentOrganizationManagerAuthority(userId, 'mutate')).resolves.toBe(false)
@@ -2158,10 +2183,10 @@ describe('organization storage invariants', () => {
       from organization_derived_authority_sources
       where source_id = ${source.source_id}
     `
-    expect(invalidated).toEqual({
-      status: 'invalid',
+    expect(invalidated).toStrictEqual({
       director_role_present: false,
       invalidation_outcome: 'not-director',
+      status: 'invalid',
     })
   })
 
@@ -2192,13 +2217,13 @@ describe('organization storage invariants', () => {
       join organization_audit_events audit on audit.subject_id = grants.grant_id::text
     `
 
-    expect(stored).toEqual({
-      grant_id: grant.grantId,
-      role: 'organization_owner',
-      evidence_status: 'fresh',
+    expect(stored).toStrictEqual({
       director_role_present: true,
       event_type: 'role.granted',
+      evidence_status: 'fresh',
+      grant_id: grant.grantId,
       outcome: 'granted',
+      role: 'organization_owner',
     })
   })
 
@@ -2213,10 +2238,10 @@ describe('organization storage invariants', () => {
       ),
       claimOrganizationOwnership(
         ownerClaimInput({
-          userId: secondUserId,
+          affiliationCheckedAt: await loadAffiliationCheckedAt(secondCharacterId),
           characterId: secondCharacterId,
           subjectLifecycleId: secondSubjectLifecycleId,
-          affiliationCheckedAt: await loadAffiliationCheckedAt(secondCharacterId),
+          userId: secondUserId,
         }),
       ),
     ])
@@ -2227,7 +2252,7 @@ describe('organization storage invariants', () => {
     `
 
     expect(results.filter(({ status }) => status === 'fulfilled')).toHaveLength(1)
-    expect(results.filter(({ status }) => status === 'rejected')).toEqual([
+    expect(results.filter(({ status }) => status === 'rejected')).toStrictEqual([
       expect.objectContaining({
         reason: expect.objectContaining({ code: 'owner-already-claimed' }),
       }),
@@ -2247,10 +2272,10 @@ describe('organization storage invariants', () => {
       await expect(
         claimOrganizationOwnership(ownerClaimInput({ affiliationCheckedAt, ...override })),
       ).rejects.toMatchObject({ code })
-      await expect(loadOwnerClaimRowCounts()).resolves.toEqual({
-        grants: 0,
-        evidence: 0,
+      await expect(loadOwnerClaimRowCounts()).resolves.toStrictEqual({
         audits: 0,
+        evidence: 0,
+        grants: 0,
       })
     },
   )
@@ -2263,7 +2288,11 @@ describe('organization storage invariants', () => {
         ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
       ),
     ).rejects.toMatchObject({ code: 'missing-scope' })
-    await expect(loadOwnerClaimRowCounts()).resolves.toEqual({ grants: 0, evidence: 0, audits: 0 })
+    await expect(loadOwnerClaimRowCounts()).resolves.toStrictEqual({
+      audits: 0,
+      evidence: 0,
+      grants: 0,
+    })
   })
 
   test('reconstructs due owner evidence and refreshes it from current authority', async () => {
@@ -2277,13 +2306,13 @@ describe('organization storage invariants', () => {
     `
 
     const due = await selectDueOrganizationOwnerEvidence()
-    expect(due).toEqual([
+    expect(due).toStrictEqual([
       expect.objectContaining({
+        authorizationGeneration: 0,
         grantId: grant.grantId,
         organizationVersion: 1,
-        sourceSubjectLifecycleId: subjectLifecycleId,
-        authorizationGeneration: 0,
         roleEvidenceRevision: 'roles-0',
+        sourceSubjectLifecycleId: subjectLifecycleId,
       }),
     ])
     await expect(refreshOrganizationOwnerEvidence(due[0]!)).resolves.toBe('fresh')
@@ -2292,7 +2321,7 @@ describe('organization storage invariants', () => {
       undefined,
       expect.any(Function),
     )
-    await expect(selectDueOrganizationOwnerEvidence()).resolves.toEqual([])
+    await expect(selectDueOrganizationOwnerEvidence()).resolves.toStrictEqual([])
   })
 
   test('revokes and audits owner authority immediately after fresh Director loss by default', async () => {
@@ -2318,10 +2347,10 @@ describe('organization storage invariants', () => {
       where grants.grant_id = ${grant.grantId}
     `
     expect(stored).toMatchObject({
+      audit_count: 1,
+      failure_class: 'strict:not-director',
       revoked_at: null,
       status: 'invalid',
-      failure_class: 'strict:not-director',
-      audit_count: 1,
     })
   })
 
@@ -2336,18 +2365,18 @@ describe('organization storage invariants', () => {
     `
     await registerOrganizationCorporationSource({
       actorUserId: userId,
-      corporationId: 98_000_001,
       characterId,
+      corporationId: 98_000_001,
     })
     await expect(
       refreshDerivedDirectorAuthority({
-        organizationVersion: 1,
-        userId,
-        characterId,
-        subjectLifecycleId,
         authorizationGeneration: 0,
-        sourceId: null,
+        characterId,
+        organizationVersion: 1,
         roleEvidenceRevision: null,
+        sourceId: null,
+        subjectLifecycleId,
+        userId,
       }),
     ).resolves.toBe('fresh')
     await connection`
@@ -2361,7 +2390,7 @@ describe('organization storage invariants', () => {
       where character_id = ${characterId} and invalidated_at is null
     `
     ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
-      roleEvidence({ roles: [], roleEvidenceRevision: 'negative-revision' }),
+      roleEvidence({ roleEvidenceRevision: 'negative-revision', roles: [] }),
     )
 
     await expect(refreshOwnerEvidence(grant.grantId)).resolves.toBe('revoked')
@@ -2382,10 +2411,10 @@ describe('organization storage invariants', () => {
       where evidence_character_id = ${characterId}
       order by source_type
     `
-    expect(bindings).toEqual([
-      { source_type: 'corporation', status: 'invalid', director_role_present: false },
-      { source_type: 'derived', status: 'invalid', director_role_present: false },
-      { source_type: 'owner', status: 'invalid', director_role_present: false },
+    expect([...bindings]).toStrictEqual([
+      { director_role_present: false, source_type: 'corporation', status: 'invalid' },
+      { director_role_present: false, source_type: 'derived', status: 'invalid' },
+      { director_role_present: false, source_type: 'owner', status: 'invalid' },
     ])
   })
 
@@ -2402,19 +2431,19 @@ describe('organization storage invariants', () => {
       where grant_id = ${grant.grantId}
     `
     await expect(getOrganizationAccessContext(userId)).resolves.toMatchObject({
+      claimAvailable: true,
       isOrganizationOwner: false,
       ownerStatus: 'invalid',
-      claimAvailable: true,
     })
     await expect(listCurrentOrganizationRoles()).resolves.toMatchObject({
       ownerSources: [expect.objectContaining({ status: 'invalid' })],
     })
     ownerEvidenceMocks.observeAndPersistCharacterAffiliation.mockResolvedValue({
+      affiliationCheckedAt: new Date(),
+      affiliationFreshUntil: new Date(Date.now() + 60 * 60 * 1000),
+      allianceId: null,
       characterId,
       corporationId: 98_000_001,
-      allianceId: null,
-      affiliationCheckedAt: new Date(),
-      affiliationFreshUntil: new Date(Date.now() + 60 * 60 * 1_000),
       stale: true,
     })
 
@@ -2430,7 +2459,7 @@ describe('organization storage invariants', () => {
       from organization_authority_evidence
       where grant_id = ${grant.grantId}
     `
-    expect(second?.grace_until).toEqual(first?.grace_until)
+    expect(second?.grace_until).toStrictEqual(first?.grace_until)
     expect(first?.grace_until.getTime()).toBeGreaterThan(Date.now())
   })
 
@@ -2453,11 +2482,11 @@ describe('organization storage invariants', () => {
     `
 
     ownerEvidenceMocks.observeAndPersistCharacterAffiliation.mockResolvedValue({
+      affiliationCheckedAt: new Date(),
+      affiliationFreshUntil: new Date(Date.now() + 60 * 60 * 1000),
+      allianceId: null,
       characterId,
       corporationId: 98_000_001,
-      allianceId: null,
-      affiliationCheckedAt: new Date(),
-      affiliationFreshUntil: new Date(Date.now() + 60 * 60 * 1_000),
       stale: true,
     })
     await expect(refreshOwnerEvidence(grant.grantId)).resolves.toBe('ineligible')
@@ -2465,7 +2494,7 @@ describe('organization storage invariants', () => {
       select invalidated_at from organization_authority_evidence where grant_id = ${grant.grantId}
     `
 
-    expect(afterRetry?.invalidated_at).toEqual(strictFailure?.invalidated_at)
+    expect(afterRetry?.invalidated_at).toStrictEqual(strictFailure?.invalidated_at)
   })
 
   test('treats a successful owner refresh superseded by newer affiliation as obsolete', async () => {
@@ -2479,7 +2508,7 @@ describe('organization storage invariants', () => {
     `
 
     await expect(refreshOwnerEvidence(grant.grantId)).resolves.toBe('superseded')
-    await expect(selectDueOrganizationOwnerEvidence()).resolves.toEqual([])
+    await expect(selectDueOrganizationOwnerEvidence()).resolves.toStrictEqual([])
   })
 
   test('atomically replaces an owner whose strict authority source is invalid', async () => {
@@ -2508,10 +2537,10 @@ describe('organization storage invariants', () => {
 
     const replacement = await claimOrganizationOwnership(
       ownerClaimInput({
-        userId: replacementUserId,
+        affiliationCheckedAt: await loadAffiliationCheckedAt(replacementCharacterId),
         characterId: replacementCharacterId,
         subjectLifecycleId: replacementSubjectLifecycleId,
-        affiliationCheckedAt: await loadAffiliationCheckedAt(replacementCharacterId),
+        userId: replacementUserId,
       }),
     )
     const grants = await connection<
@@ -2527,7 +2556,7 @@ describe('organization storage invariants', () => {
       where event_type in ('role.granted', 'role.revoked')
     `
 
-    expect(grants).toEqual([
+    expect([...grants]).toStrictEqual([
       { grant_id: original.grantId, revoked_at: expect.any(Date), status: 'invalid' },
       { grant_id: replacement.grantId, revoked_at: null, status: 'fresh' },
     ])
@@ -2556,10 +2585,10 @@ describe('organization storage invariants', () => {
     await expect(
       claimOrganizationOwnership(
         ownerClaimInput({
-          userId: claimantUserId,
+          affiliationCheckedAt: await loadAffiliationCheckedAt(claimantCharacterId),
           characterId: claimantCharacterId,
           subjectLifecycleId: claimantSubjectLifecycleId,
-          affiliationCheckedAt: await loadAffiliationCheckedAt(claimantCharacterId),
+          userId: claimantUserId,
         }),
       ),
     ).rejects.toMatchObject({ code: 'owner-already-claimed' })
@@ -2576,17 +2605,17 @@ describe('organization storage invariants', () => {
     await expect(
       claimOrganizationOwnership(
         ownerClaimInput({
-          userId: claimantUserId,
+          affiliationCheckedAt: await loadAffiliationCheckedAt(claimantCharacterId),
           characterId: claimantCharacterId,
           subjectLifecycleId: claimantSubjectLifecycleId,
-          affiliationCheckedAt: await loadAffiliationCheckedAt(claimantCharacterId),
+          userId: claimantUserId,
         }),
       ),
     ).rejects.toMatchObject({ code: 'owner-already-claimed' })
     const active = await connection<{ grant_id: string }[]>`
       select grant_id from organization_role_grants where revoked_at is null
     `
-    expect(active).toEqual([{ grant_id: original.grantId }])
+    expect([...active]).toStrictEqual([{ grant_id: original.grantId }])
   })
 
   test('does not let a blocked user occupy a vacant organization-owner grant', async () => {
@@ -2598,26 +2627,26 @@ describe('organization storage invariants', () => {
     const claimantSubjectLifecycleId = await seedCharacter(claimantUserId, claimantCharacterId)
     await blockOrganizationMember({
       actorUserId: userId,
-      targetUserId: claimantUserId,
       reason: 'Member access remains under review.',
+      targetUserId: claimantUserId,
     })
     ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
       roleEvidence({ roles: ['Accountant'] }),
     )
     await expect(refreshOwnerEvidence(ownerGrant.grantId)).resolves.toBe('revoked')
     await expect(getOrganizationAccessContext(claimantUserId)).resolves.toMatchObject({
+      claimAvailable: false,
       isBlocked: true,
       isOrganizationOwner: false,
-      claimAvailable: false,
     })
 
     await expect(
       claimOrganizationOwnership(
         ownerClaimInput({
-          userId: claimantUserId,
+          affiliationCheckedAt: await loadAffiliationCheckedAt(claimantCharacterId),
           characterId: claimantCharacterId,
           subjectLifecycleId: claimantSubjectLifecycleId,
-          affiliationCheckedAt: await loadAffiliationCheckedAt(claimantCharacterId),
+          userId: claimantUserId,
         }),
       ),
     ).rejects.toMatchObject({ code: 'member-blocked' })
@@ -2626,7 +2655,7 @@ describe('organization storage invariants', () => {
       from organization_role_grants
       where role = 'organization_owner' and user_id = ${claimantUserId} and revoked_at is null
     `
-    expect(activeOwners).toEqual({ count: 0 })
+    expect(activeOwners).toStrictEqual({ count: 0 })
   })
 
   test('retains historical authority evidence without pinning a revoked character row', async () => {
@@ -2655,9 +2684,9 @@ describe('organization storage invariants', () => {
 
     await expect(
       claimOrganizationOwnership(
-        ownerClaimInput({ affiliationCheckedAt: new Date(checkedAt.getTime() - 1_000) }),
+        ownerClaimInput({ affiliationCheckedAt: new Date(checkedAt.getTime() - 1000) }),
       ),
-    ).resolves.toEqual({ grantId: expect.any(String) })
+    ).resolves.toStrictEqual({ grantId: expect.any(String) })
   })
 
   test('grants and revokes HR roles with complete immutable current-version audit entries', async () => {
@@ -2669,9 +2698,9 @@ describe('organization storage invariants', () => {
 
     const grant = await grantOrganizationRole({
       actorUserId: userId,
-      targetUserId,
-      role: 'hr_auditor',
       reason: 'Delegated registration review.',
+      role: 'hr_auditor',
+      targetUserId,
     })
     const context = await getOrganizationAccessContext(userId)
     const activeRoles = await listCurrentOrganizationRoles()
@@ -2708,49 +2737,49 @@ describe('organization storage invariants', () => {
 
     expect(revoked).toMatchObject({
       grantId: grant.grantId,
-      role: 'hr_auditor',
+      revocationReason: 'Delegation ended.',
       revokedAt: expect.any(String),
       revokedByUserId: userId,
-      revocationReason: 'Delegation ended.',
+      role: 'hr_auditor',
     })
     expect(context).toMatchObject({
-      isOrganizationOwner: true,
-      claimAvailable: false,
-      ownerStatus: 'fresh',
       authorityCharacter: {
         characterId,
-        name: 'Organization Pilot',
         corporationId: 98_000_001,
+        name: 'Organization Pilot',
       },
+      claimAvailable: false,
+      isOrganizationOwner: true,
+      ownerStatus: 'fresh',
     })
-    expect(activeRoles.grants).toEqual([
+    expect(activeRoles.grants).toStrictEqual([
       expect.objectContaining({
         grantId: grant.grantId,
-        userId: targetUserId,
-        role: 'hr_auditor',
         mainCharacterId: null,
         mainCharacterName: null,
+        role: 'hr_auditor',
+        userId: targetUserId,
       }),
     ])
     await expect(listCurrentOrganizationRoles()).resolves.toMatchObject({ grants: [] })
-    expect(audits).toEqual([
+    expect([...audits]).toStrictEqual([
       {
-        event_type: 'role.granted',
         actor_id: userId,
-        subject_user_id: targetUserId,
-        role: 'hr_auditor',
-        reason: 'Delegated registration review.',
-        outcome: 'granted',
+        event_type: 'role.granted',
         occurred_at: expect.any(Date),
+        outcome: 'granted',
+        reason: 'Delegated registration review.',
+        role: 'hr_auditor',
+        subject_user_id: targetUserId,
       },
       {
-        event_type: 'role.revoked',
         actor_id: userId,
-        subject_user_id: targetUserId,
-        role: 'hr_auditor',
-        reason: 'Delegation ended.',
-        outcome: 'revoked',
+        event_type: 'role.revoked',
         occurred_at: expect.any(Date),
+        outcome: 'revoked',
+        reason: 'Delegation ended.',
+        role: 'hr_auditor',
+        subject_user_id: targetUserId,
       },
     ])
   })
@@ -2763,9 +2792,9 @@ describe('organization storage invariants', () => {
     await establishCompliantAccount(targetUserId, 90_000_001)
     await grantOrganizationRole({
       actorUserId: userId,
-      targetUserId,
-      role: 'hr_auditor',
       reason: 'Registration review duty.',
+      role: 'hr_auditor',
+      targetUserId,
     })
 
     await expect(getOrganizationAccessContext(targetUserId)).resolves.toMatchObject({
@@ -2790,9 +2819,9 @@ describe('organization storage invariants', () => {
     await expect(
       grantOrganizationRole({
         actorUserId: userId,
-        targetUserId,
-        role: 'hr_auditor',
         reason: 'Unauthorized attempt.',
+        role: 'hr_auditor',
+        targetUserId,
       }),
     ).rejects.toMatchObject({ code: 'owner-authority-required' })
   })
@@ -2805,36 +2834,36 @@ describe('organization storage invariants', () => {
     await connection`insert into users (id) values (${targetUserId})`
     await grantOrganizationRole({
       actorUserId: userId,
-      targetUserId,
-      role: 'hr_auditor',
       reason: 'Current organization HR duty.',
+      role: 'hr_auditor',
+      targetUserId,
     })
 
     await updateDeploymentOrganization(
-      { type: 'corporation', id: 98_000_002, name: 'Second Corporation', ticker: 'TWO' },
+      { id: 98_000_002, name: 'Second Corporation', ticker: 'TWO', type: 'corporation' },
       adminId,
     )
 
     await expect(getOrganizationAccessContext(userId)).resolves.toMatchObject({
-      isOrganizationOwner: false,
-      claimAvailable: true,
-      ownerStatus: null,
       authorityCharacter: null,
+      claimAvailable: true,
+      isOrganizationOwner: false,
+      ownerStatus: null,
     })
-    await expect(listCurrentOrganizationRoles()).resolves.toEqual({
+    await expect(listCurrentOrganizationRoles()).resolves.toStrictEqual({
+      corporationSources: [],
+      derivedSources: [],
       grants: [],
       ownerSources: [],
-      derivedSources: [],
-      corporationSources: [],
     })
     const [evidence] = await connection<{ status: string; failure_class: string }[]>`
       select status, failure_class
       from organization_authority_evidence
       where grant_id = ${ownerGrant.grantId}
     `
-    expect(evidence).toEqual({
-      status: 'invalid',
+    expect(evidence).toStrictEqual({
       failure_class: 'strict:organization-replaced',
+      status: 'invalid',
     })
     const [sourceAudit] = await connection<{ count: number }[]>`
       select count(*)::integer as count
@@ -2850,9 +2879,9 @@ describe('organization storage invariants', () => {
     await expect(
       grantOrganizationRole({
         actorUserId: userId,
-        targetUserId,
-        role: 'director',
         reason: 'Stale owner attempt.',
+        role: 'director',
+        targetUserId,
       }),
     ).rejects.toMatchObject({ code: 'owner-authority-required' })
   })
@@ -2863,16 +2892,16 @@ describe('organization storage invariants', () => {
       values (${userId}, 'dual-authority@example.com', 'test-password-hash')
     `
     await expect(getOrganizationAccessContext(userId)).resolves.toMatchObject({
-      isOrganizationOwner: false,
       claimAvailable: true,
+      isOrganizationOwner: false,
     })
 
     const grant = await claimOrganizationOwnership(
       ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
     )
     await expect(getOrganizationAccessContext(userId)).resolves.toMatchObject({
-      isOrganizationOwner: true,
       authorityCharacter: { characterId },
+      isOrganizationOwner: true,
     })
 
     ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
@@ -2884,8 +2913,8 @@ describe('organization storage invariants', () => {
     `
     expect(deploymentAdmin?.id).toBe(userId)
     await expect(getOrganizationAccessContext(userId)).resolves.toMatchObject({
-      isOrganizationOwner: false,
       claimAvailable: true,
+      isOrganizationOwner: false,
     })
   })
 
@@ -2898,31 +2927,31 @@ describe('organization storage invariants', () => {
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Operations access',
-      reason: 'Create operations access.',
       permissions: [
         organizationActivityPermission(),
         { type: 'service', key: 'discord.operations' },
         { type: 'service', key: 'discord.operations' },
       ],
+      reason: 'Create operations access.',
     })
     const group = await createOrganizationGroup({
       actorUserId: userId,
+      bundleIds: [bundle.bundleId],
+      complianceSource: null,
+      managementMode: 'manual',
       name: 'Operations',
       restricted: false,
-      managementMode: 'manual',
-      complianceSource: null,
-      bundleIds: [bundle.bundleId],
     })
     const expiresAt = new Date(Date.now() + 60_000)
     const assignment = await assignOrganizationGroup({
       actorUserId: userId,
-      groupId: group.groupId,
-      targetUserId,
-      reason: 'Temporary operations duty.',
       expiresAt,
+      groupId: group.groupId,
+      reason: 'Temporary operations duty.',
+      targetUserId,
     })
 
-    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toStrictEqual({
       modules: ['organization-activity.view'],
       services: ['discord.operations'],
     })
@@ -2937,7 +2966,7 @@ describe('organization storage invariants', () => {
       organizationVersion: 1,
       userId: targetUserId,
     })
-    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toStrictEqual({
       modules: [],
       services: [],
     })
@@ -2951,10 +2980,10 @@ describe('organization storage invariants', () => {
         on causation.audit_id = entitlement.causation_audit_id
       where entitlement.event_type = 'entitlement.revoked'
     `
-    expect(revocation).toEqual({
+    expect(revocation).toStrictEqual({
+      causation_type: 'compliance.transitioned',
       event_type: 'entitlement.revoked',
       subject_id: 'discord.operations',
-      causation_type: 'compliance.transitioned',
     })
     await connection`
       update characters
@@ -2967,7 +2996,7 @@ describe('organization storage invariants', () => {
       organizationVersion: 1,
       userId: targetUserId,
     })
-    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toStrictEqual({
       modules: ['organization-activity.view'],
       services: ['discord.operations'],
     })
@@ -2981,24 +3010,24 @@ describe('organization storage invariants', () => {
         on causation.audit_id = entitlement.causation_audit_id
       where entitlement.event_type = 'entitlement.granted'
     `
-    expect(grant).toEqual({
+    expect(grant).toStrictEqual({
+      causation_type: 'compliance.transitioned',
       event_type: 'entitlement.granted',
       subject_id: 'discord.operations',
-      causation_type: 'compliance.transitioned',
     })
     await expect(
       getOrganizationGroupPermissions(targetUserId, new Date(expiresAt.getTime() + 1)),
-    ).resolves.toEqual({ modules: [], services: [] })
+    ).resolves.toStrictEqual({ modules: [], services: [] })
 
     await expect(
       revokeOrganizationGroupAssignment({
         actorUserId: userId,
-        groupId: group.groupId,
         assignmentId: assignment.assignmentId,
+        groupId: group.groupId,
         reason: 'Operations duty ended.',
       }),
     ).rejects.toMatchObject({ code: 'assignment-not-found' })
-    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toStrictEqual({
       modules: [],
       services: [],
     })
@@ -3029,28 +3058,28 @@ describe('organization storage invariants', () => {
       where assignment_id = ${assignment.assignmentId}
       order by audit_sequence
     `
-    expect(audits).toEqual([
+    expect([...audits]).toStrictEqual([
       {
-        event_type: 'group.assigned',
-        actor_type: 'user',
         actor_id: userId,
-        subject_id: group.groupId,
+        actor_type: 'user',
         assignment_id: assignment.assignmentId,
-        target_user_id: targetUserId,
         assignment_source: 'manual',
         entitlement_expires_at: expiresAt,
+        event_type: 'group.assigned',
         occurred_at: expect.any(Date),
+        subject_id: group.groupId,
+        target_user_id: targetUserId,
       },
       {
-        event_type: 'group.revoked',
-        actor_type: 'system',
         actor_id: null,
-        subject_id: group.groupId,
+        actor_type: 'system',
         assignment_id: assignment.assignmentId,
-        target_user_id: targetUserId,
         assignment_source: 'manual',
         entitlement_expires_at: expiresAt,
+        event_type: 'group.revoked',
         occurred_at: expiresAt,
+        subject_id: group.groupId,
+        target_user_id: targetUserId,
       },
     ])
   })
@@ -3065,59 +3094,59 @@ describe('organization storage invariants', () => {
     await connection`insert into users (id) values (${targetUserId})`
     await grantOrganizationRole({
       actorUserId: userId,
-      targetUserId: directorUserId,
-      role: 'director',
       reason: 'Delegated group management.',
+      role: 'director',
+      targetUserId: directorUserId,
     })
     await expect(
       createOrganizationPermissionBundle({
         actorUserId: directorUserId,
         name: 'Unauthorized definition',
-        reason: 'Attempt an unauthorized definition.',
         permissions: [{ type: 'service', key: 'discord.leadership' }],
+        reason: 'Attempt an unauthorized definition.',
       }),
     ).rejects.toMatchObject({ code: 'owner-authority-required' })
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Restricted services',
-      reason: 'Create restricted services.',
       permissions: [{ type: 'service', key: 'discord.leadership' }],
+      reason: 'Create restricted services.',
     })
     const restricted = await createOrganizationGroup({
       actorUserId: userId,
+      bundleIds: [bundle.bundleId],
+      complianceSource: null,
+      managementMode: 'manual',
       name: 'Leadership',
       restricted: true,
-      managementMode: 'manual',
-      complianceSource: null,
-      bundleIds: [bundle.bundleId],
     })
 
     await expect(
       assignOrganizationGroup({
         actorUserId: directorUserId,
-        groupId: restricted.groupId,
-        targetUserId,
-        reason: 'Unauthorized restricted assignment.',
         expiresAt: null,
+        groupId: restricted.groupId,
+        reason: 'Unauthorized restricted assignment.',
+        targetUserId,
       }),
     ).rejects.toMatchObject({ code: 'owner-authority-required' })
     const ordinary = await createOrganizationGroup({
       actorUserId: userId,
+      bundleIds: [bundle.bundleId],
+      complianceSource: null,
+      managementMode: 'manual',
       name: 'Fleet operations',
       restricted: false,
-      managementMode: 'manual',
-      complianceSource: null,
-      bundleIds: [bundle.bundleId],
     })
     await expect(
       assignOrganizationGroup({
         actorUserId: directorUserId,
-        groupId: ordinary.groupId,
-        targetUserId,
-        reason: 'Delegated ordinary assignment.',
         expiresAt: null,
+        groupId: ordinary.groupId,
+        reason: 'Delegated ordinary assignment.',
+        targetUserId,
       }),
-    ).resolves.toMatchObject({ userId: targetUserId, assignmentSource: 'manual' })
+    ).resolves.toMatchObject({ assignmentSource: 'manual', userId: targetUserId })
   })
 
   test('converges compliance-managed groups only from their declared source', async () => {
@@ -3128,12 +3157,12 @@ describe('organization storage invariants', () => {
     await establishCompliantAccount(targetUserId, 90_000_001)
     await updateOrganizationRegistrationPolicy({
       actorUserId: userId,
-      requiredScopes: [],
-      strictRemediationDurationSeconds: 3600,
-      staleEvidenceGraceDurationSeconds: 3600,
-      derivedDirectorAuthorityEnabled: true,
       authorityEvidenceFreshDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
       reason: 'Allow established members time to remediate.',
+      requiredScopes: [],
+      staleEvidenceGraceDurationSeconds: 3600,
+      strictRemediationDurationSeconds: 3600,
     })
     const reviewUserId = randomUUID()
     await establishCompliantAccount(reviewUserId, 90_000_002)
@@ -3153,25 +3182,25 @@ describe('organization storage invariants', () => {
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Compliant member services',
-      reason: 'Create compliant member services.',
       permissions: [{ type: 'service', key: 'discord.member' }],
+      reason: 'Create compliant member services.',
     })
     const group = await createOrganizationGroup({
       actorUserId: userId,
+      bundleIds: [bundle.bundleId],
+      complianceSource: 'core.registration',
+      managementMode: 'compliance',
       name: 'Compliant members',
       restricted: false,
-      managementMode: 'compliance',
-      complianceSource: 'core.registration',
-      bundleIds: [bundle.bundleId],
     })
 
     await expect(
       assignOrganizationGroup({
         actorUserId: userId,
-        groupId: group.groupId,
-        targetUserId,
-        reason: 'Manual override.',
         expiresAt: null,
+        groupId: group.groupId,
+        reason: 'Manual override.',
+        targetUserId,
       }),
     ).rejects.toMatchObject({ code: 'compliance-group-manual-change' })
     const [automaticAssignment] = await connection<
@@ -3186,16 +3215,16 @@ describe('organization storage invariants', () => {
       select assignment_source from organization_group_assignments
       where group_id = ${group.groupId} and user_id = ${reviewUserId} and revoked_at is null
     `
-    expect(reviewAssignment).toEqual({ assignment_source: 'compliance' })
+    expect(reviewAssignment).toStrictEqual({ assignment_source: 'compliance' })
     await expect(
       convergeRegistrationComplianceGroupAssignment({
-        groupId: group.groupId,
-        targetUserId,
         eligible: true,
+        groupId: group.groupId,
         reason: 'Repeated compliance result.',
+        targetUserId,
       }),
     ).resolves.toMatchObject({ changed: false })
-    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toStrictEqual({
       modules: [],
       services: ['discord.member'],
     })
@@ -3210,7 +3239,7 @@ describe('organization storage invariants', () => {
       organizationVersion: 1,
       userId: targetUserId,
     })
-    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toStrictEqual({
       modules: [],
       services: [],
     })
@@ -3222,16 +3251,16 @@ describe('organization storage invariants', () => {
       where entitlement.event_type = 'entitlement.revoked'
         and entitlement.subject_id = 'discord.member'
     `
-    expect(serviceRevocation).toEqual({
-      subject_id: 'discord.member',
+    expect(serviceRevocation).toStrictEqual({
       causation_type: 'compliance.transitioned',
+      subject_id: 'discord.member',
     })
 
     await updateDeploymentOrganization(
-      { type: 'corporation', id: 98_000_002, name: 'Second Corporation', ticker: 'TWO' },
+      { id: 98_000_002, name: 'Second Corporation', ticker: 'TWO', type: 'corporation' },
       adminId,
     )
-    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toStrictEqual({
       modules: [],
       services: [],
     })
@@ -3243,7 +3272,11 @@ describe('organization storage invariants', () => {
       where assignment_id = ${automaticAssignment!.assignment_id}
         and event_type = 'group.assigned'
     `
-    expect(audit).toEqual({ actor_type: 'system', actor_id: null, event_type: 'group.assigned' })
+    expect(audit).toStrictEqual({
+      actor_id: null,
+      actor_type: 'system',
+      event_type: 'group.assigned',
+    })
   })
 
   test('executes reviewer ordinary-group commands against the exact managed-member binding', async () => {
@@ -3251,17 +3284,17 @@ describe('organization storage invariants', () => {
     const expiresAt = new Date(Date.now() + 60_000)
     const assigned = await assignOrganizationReviewerOrdinaryGroup({
       ...reviewerCommandBinding(fixture, 'member-audit.groups.manage'),
+      expiresAt,
       groupId: fixture.ordinaryGroupId,
       reason: '  Temporary access after review.  ',
-      expiresAt,
     })
-    expect(assigned).toEqual({
+    expect(assigned).toStrictEqual({
+      assignmentId: expect.any(String),
       decision: 'assigned',
+      expiresAt: expiresAt.toISOString(),
+      groupId: fixture.ordinaryGroupId,
       organizationVersion: 1,
       targetUserId: fixture.targetUserId,
-      groupId: fixture.ordinaryGroupId,
-      assignmentId: expect.any(String),
-      expiresAt: expiresAt.toISOString(),
     })
 
     const otherTargetUserId = randomUUID()
@@ -3271,14 +3304,14 @@ describe('organization storage invariants', () => {
         ...reviewerCommandBinding(
           {
             ...fixture,
-            targetUserId: otherTargetUserId,
             targetManagedMemberLifecycleId:
               await loadActiveManagedMemberLifecycleId(otherTargetUserId),
+            targetUserId: otherTargetUserId,
           },
           'member-audit.groups.manage',
         ),
-        groupId: fixture.ordinaryGroupId,
         assignmentId: assigned.assignmentId,
+        groupId: fixture.ordinaryGroupId,
         reason: 'Attempt to substitute the selected target.',
       }),
     ).rejects.toMatchObject({ code: 'assignment-binding-invalid' })
@@ -3286,15 +3319,15 @@ describe('organization storage invariants', () => {
     await expect(
       revokeOrganizationReviewerOrdinaryGroup({
         ...reviewerCommandBinding(fixture, 'member-audit.groups.manage'),
-        groupId: fixture.ordinaryGroupId,
         assignmentId: assigned.assignmentId,
+        groupId: fixture.ordinaryGroupId,
         reason: 'Review access ended.',
       }),
     ).resolves.toMatchObject({
-      decision: 'revoked',
-      targetUserId: fixture.targetUserId,
       assignmentId: assigned.assignmentId,
+      decision: 'revoked',
       revokedAt: expect.any(String),
+      targetUserId: fixture.targetUserId,
     })
     const audits = await connection<
       { event_type: string; actor_id: string; target_user_id: string; reason: string }[]
@@ -3304,18 +3337,18 @@ describe('organization storage invariants', () => {
       where assignment_id = ${assigned.assignmentId}
       order by audit_sequence
     `
-    expect(audits).toEqual([
+    expect([...audits]).toStrictEqual([
       {
-        event_type: 'group.assigned',
         actor_id: userId,
-        target_user_id: fixture.targetUserId,
+        event_type: 'group.assigned',
         reason: 'Temporary access after review.',
+        target_user_id: fixture.targetUserId,
       },
       {
-        event_type: 'group.revoked',
         actor_id: userId,
-        target_user_id: fixture.targetUserId,
+        event_type: 'group.revoked',
         reason: 'Review access ended.',
+        target_user_id: fixture.targetUserId,
       },
     ])
   })
@@ -3340,11 +3373,11 @@ describe('organization storage invariants', () => {
 
     const complianceGroup = await createOrganizationGroup({
       actorUserId: userId,
+      bundleIds: [fixture.ordinaryBundleId],
+      complianceSource: 'core.registration',
+      managementMode: 'compliance',
       name: 'Reviewer command compliance group',
       restricted: false,
-      managementMode: 'compliance',
-      complianceSource: 'core.registration',
-      bundleIds: [fixture.ordinaryBundleId],
     })
     await expect(
       assignOrganizationReviewerOrdinaryGroup({
@@ -3356,11 +3389,11 @@ describe('organization storage invariants', () => {
 
     const unsafeGroup = await createOrganizationGroup({
       actorUserId: userId,
+      bundleIds: [fixture.reviewerBundleId],
+      complianceSource: null,
+      managementMode: 'manual',
       name: 'Unsafe ordinary reviewer group',
       restricted: false,
-      managementMode: 'manual',
-      complianceSource: null,
-      bundleIds: [fixture.reviewerBundleId],
     })
     await expect(
       assignOrganizationReviewerOrdinaryGroup({
@@ -3371,10 +3404,10 @@ describe('organization storage invariants', () => {
     ).rejects.toMatchObject({ code: 'reviewer-permission-group-not-allowed' })
     await assignOrganizationGroup({
       actorUserId: userId,
-      targetUserId: fixture.targetUserId,
+      expiresAt: null,
       groupId: unsafeGroup.groupId,
       reason: 'Existing reviewer access.',
-      expiresAt: null,
+      targetUserId: fixture.targetUserId,
     })
     const reviewerTarget = await resolveOrganizationReviewerTarget({
       organizationVersion: 1,
@@ -3384,9 +3417,9 @@ describe('organization storage invariants', () => {
       ({ groupId }) => groupId === unsafeGroup.groupId,
     )
     expect(projectedUnsafeGroup).toMatchObject({
-      restricted: false,
       managementMode: 'manual',
       readOnly: true,
+      restricted: false,
     })
     expect(projectedUnsafeGroup).not.toHaveProperty('hasReviewerPermission')
 
@@ -3395,8 +3428,8 @@ describe('organization storage invariants', () => {
         ...reviewerCommandBinding(
           {
             ...fixture,
-            targetUserId: userId,
             targetManagedMemberLifecycleId: await loadActiveManagedMemberLifecycleId(userId),
+            targetUserId: userId,
           },
           'member-audit.groups.manage',
         ),
@@ -3409,13 +3442,13 @@ describe('organization storage invariants', () => {
         ...reviewerCommandBinding(
           {
             ...fixture,
-            targetUserId: userId,
             targetManagedMemberLifecycleId: await loadActiveManagedMemberLifecycleId(userId),
+            targetUserId: userId,
           },
           'member-audit.groups.manage',
         ),
-        groupId: fixture.reviewerGroupId,
         assignmentId: fixture.reviewerAssignmentId,
+        groupId: fixture.reviewerGroupId,
         reason: 'Own reviewer grant revocation attempt.',
       }),
     ).rejects.toMatchObject({ code: 'self-target-not-allowed' })
@@ -3452,14 +3485,14 @@ describe('organization storage invariants', () => {
 
     await grantOrganizationRole({
       actorUserId: userId,
-      targetUserId: userId,
-      role: 'director',
       reason: 'Reviewer role restored for permission check.',
+      role: 'director',
+      targetUserId: userId,
     })
     await revokeOrganizationGroupAssignment({
       actorUserId: userId,
-      groupId: fixture.reviewerGroupId,
       assignmentId: fixture.reviewerAssignmentId,
+      groupId: fixture.reviewerGroupId,
       reason: 'Reviewer action permission removed.',
     })
     await expect(assignOrganizationReviewerOrdinaryGroup(command)).rejects.toMatchObject({
@@ -3467,7 +3500,7 @@ describe('organization storage invariants', () => {
     })
 
     await updateDeploymentOrganization(
-      { type: 'corporation', id: 98_000_002, name: 'Second Corporation', ticker: 'TWO' },
+      { id: 98_000_002, name: 'Second Corporation', ticker: 'TWO', type: 'corporation' },
       adminId,
     )
     await expect(assignOrganizationReviewerOrdinaryGroup(command)).rejects.toMatchObject({
@@ -3488,11 +3521,11 @@ describe('organization storage invariants', () => {
         reason: 'Immediate review hold.',
       }),
     ).resolves.toMatchObject({
+      blockId: expect.any(String),
       decision: 'blocked',
       targetUserId: fixture.targetUserId,
-      blockId: expect.any(String),
     })
-    await expect(getOrganizationGroupPermissions(fixture.targetUserId)).resolves.toEqual({
+    await expect(getOrganizationGroupPermissions(fixture.targetUserId)).resolves.toStrictEqual({
       modules: [],
       services: [],
     })
@@ -3506,16 +3539,16 @@ describe('organization storage invariants', () => {
       targetUserId: fixture.targetUserId,
       unblockedAt: expect.any(String),
     })
-    await expect(getOrganizationGroupPermissions(fixture.targetUserId)).resolves.toEqual({
+    await expect(getOrganizationGroupPermissions(fixture.targetUserId)).resolves.toStrictEqual({
       modules: [],
       services: ['discord.reviewer-command'],
     })
 
     await grantOrganizationRole({
       actorUserId: userId,
-      targetUserId: fixture.targetUserId,
-      role: 'hr_auditor',
       reason: 'Peer reviewer assignment.',
+      role: 'hr_auditor',
+      targetUserId: fixture.targetUserId,
     })
     await expect(
       blockOrganizationReviewerMember({
@@ -3536,7 +3569,7 @@ describe('organization storage invariants', () => {
           where event_type in ('entitlement.granted', 'entitlement.revoked')
             and subject_id = 'discord.reviewer-command') as transitions
     `
-    expect(counts).toEqual({ decisions: 2, events: 2, transitions: 2 })
+    expect(counts).toStrictEqual({ decisions: 2, events: 2, transitions: 2 })
   })
 
   test('gives director-issued member blocks precedence and reevaluates only current grants on unblock', async () => {
@@ -3549,85 +3582,85 @@ describe('organization storage invariants', () => {
     await establishCompliantAccount(targetUserId, 90_000_001)
     await grantOrganizationRole({
       actorUserId: userId,
-      targetUserId: directorUserId,
-      role: 'director',
       reason: 'Member policy management.',
+      role: 'director',
+      targetUserId: directorUserId,
     })
     const targetDirectorGrant = await grantOrganizationRole({
       actorUserId: userId,
-      targetUserId,
-      role: 'director',
       reason: 'Operational leadership.',
+      role: 'director',
+      targetUserId,
     })
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Block precedence access',
-      reason: 'Create block precedence access.',
       permissions: [
         organizationActivityPermission(),
         { type: 'service', key: 'discord.operations' },
       ],
+      reason: 'Create block precedence access.',
     })
     const group = await createOrganizationGroup({
       actorUserId: userId,
+      bundleIds: [bundle.bundleId],
+      complianceSource: null,
+      managementMode: 'manual',
       name: 'Block precedence group',
       restricted: false,
-      managementMode: 'manual',
-      complianceSource: null,
-      bundleIds: [bundle.bundleId],
     })
     const assignment = await assignOrganizationGroup({
       actorUserId: userId,
-      groupId: group.groupId,
-      targetUserId,
-      reason: 'Current operations assignment.',
       expiresAt: new Date(Date.now() + 60_000),
+      groupId: group.groupId,
+      reason: 'Current operations assignment.',
+      targetUserId,
     })
 
     await expect(
       blockOrganizationMember({
         actorUserId: directorUserId,
-        targetUserId: userId,
         reason: 'Attempted governance lockout.',
+        targetUserId: userId,
       }),
     ).rejects.toMatchObject({ code: 'owner-block-not-allowed' })
     await expect(hasCurrentOrganizationManagerAuthority(targetUserId)).resolves.toBe(true)
-    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toStrictEqual({
       modules: ['organization-activity.view'],
       services: ['discord.operations'],
     })
     const firstBlock = await blockOrganizationMember({
       actorUserId: directorUserId,
-      targetUserId,
       reason: 'Investigating a policy violation.',
+      targetUserId,
     })
     await expect(hasCurrentOrganizationMemberBlock(targetUserId)).resolves.toBe(true)
     await expect(hasCurrentOrganizationManagerAuthority(targetUserId)).resolves.toBe(false)
-    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toStrictEqual({
       modules: [],
       services: [],
     })
 
     await unblockOrganizationMember({
       actorUserId: directorUserId,
-      targetUserId,
       reason: 'Initial review cleared.',
+      targetUserId,
     })
     await expect(hasCurrentOrganizationManagerAuthority(targetUserId)).resolves.toBe(true)
-    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toStrictEqual({
       modules: ['organization-activity.view'],
       services: ['discord.operations'],
     })
 
     await blockOrganizationMember({
       actorUserId: directorUserId,
-      targetUserId,
       reason: 'New evidence requires a second review.',
+      targetUserId,
     })
     await revokeOrganizationGroupAssignment({
       actorUserId: userId,
-      groupId: group.groupId,
       assignmentId: assignment.assignmentId,
+      groupId: group.groupId,
       reason: 'Operations assignment independently ended.',
     })
     await revokeOrganizationRole({
@@ -3637,13 +3670,13 @@ describe('organization storage invariants', () => {
     })
     await unblockOrganizationMember({
       actorUserId: directorUserId,
-      targetUserId,
       reason: 'Second review completed against current grants.',
+      targetUserId,
     })
 
     await expect(hasCurrentOrganizationMemberBlock(targetUserId)).resolves.toBe(false)
     await expect(hasCurrentOrganizationManagerAuthority(targetUserId)).resolves.toBe(false)
-    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toStrictEqual({
       modules: [],
       services: [],
     })
@@ -3662,44 +3695,44 @@ describe('organization storage invariants', () => {
       where event_type in ('member.blocked', 'member.unblocked')
       order by audit_sequence
     `
-    expect(decisions).toEqual([
+    expect([...decisions]).toStrictEqual([
       {
-        event_type: 'member.blocked',
         actor_id: directorUserId,
-        subject_id: targetUserId,
+        event_type: 'member.blocked',
+        organization_version: '1',
+        outcome: 'denied',
         reason: 'Investigating a policy violation.',
-        outcome: 'denied',
-        organization_version: '1',
+        subject_id: targetUserId,
       },
       {
-        event_type: 'member.unblocked',
         actor_id: directorUserId,
-        subject_id: targetUserId,
+        event_type: 'member.unblocked',
+        organization_version: '1',
+        outcome: 'transitioned',
         reason: 'Initial review cleared.',
-        outcome: 'transitioned',
-        organization_version: '1',
+        subject_id: targetUserId,
       },
       {
+        actor_id: directorUserId,
         event_type: 'member.blocked',
-        actor_id: directorUserId,
-        subject_id: targetUserId,
-        reason: 'New evidence requires a second review.',
-        outcome: 'denied',
         organization_version: '1',
+        outcome: 'denied',
+        reason: 'New evidence requires a second review.',
+        subject_id: targetUserId,
       },
       {
-        event_type: 'member.unblocked',
         actor_id: directorUserId,
-        subject_id: targetUserId,
-        reason: 'Second review completed against current grants.',
-        outcome: 'transitioned',
+        event_type: 'member.unblocked',
         organization_version: '1',
+        outcome: 'transitioned',
+        reason: 'Second review completed against current grants.',
+        subject_id: targetUserId,
       },
     ])
     expect(firstBlock).toMatchObject({
-      userId: targetUserId,
       blockedByUserId: directorUserId,
       unblockedAt: null,
+      userId: targetUserId,
     })
     const entitlementDecisions = await connection<
       { event_type: string; subject_id: string; causation_type: string }[]
@@ -3712,21 +3745,21 @@ describe('organization storage invariants', () => {
       where entitlement.event_type in ('entitlement.granted', 'entitlement.revoked')
       order by entitlement.audit_sequence
     `
-    expect(entitlementDecisions).toEqual([
+    expect([...entitlementDecisions]).toStrictEqual([
       {
+        causation_type: 'member.blocked',
         event_type: 'entitlement.revoked',
         subject_id: 'discord.operations',
-        causation_type: 'member.blocked',
       },
       {
+        causation_type: 'member.unblocked',
         event_type: 'entitlement.granted',
         subject_id: 'discord.operations',
-        causation_type: 'member.unblocked',
       },
       {
+        causation_type: 'member.blocked',
         event_type: 'entitlement.revoked',
         subject_id: 'discord.operations',
-        causation_type: 'member.blocked',
       },
     ])
   })
@@ -3741,24 +3774,24 @@ describe('organization storage invariants', () => {
     const results = await Promise.allSettled([
       blockOrganizationMember({
         actorUserId: userId,
-        targetUserId,
         reason: 'First concurrent decision.',
+        targetUserId,
       }),
       blockOrganizationMember({
         actorUserId: userId,
-        targetUserId,
         reason: 'Second concurrent decision.',
+        targetUserId,
       }),
     ])
     expect(results.filter(({ status }) => status === 'fulfilled')).toHaveLength(1)
-    expect(results.filter(({ status }) => status === 'rejected')).toEqual([
+    expect(results.filter(({ status }) => status === 'rejected')).toStrictEqual([
       expect.objectContaining({
         reason: expect.objectContaining({ code: 'block-already-active' }),
       }),
     ])
 
     await updateDeploymentOrganization(
-      { type: 'corporation', id: 98_000_002, name: 'Second Corporation', ticker: 'TWO' },
+      { id: 98_000_002, name: 'Second Corporation', ticker: 'TWO', type: 'corporation' },
       adminId,
     )
     await expect(hasCurrentOrganizationMemberBlock(targetUserId)).resolves.toBe(false)
@@ -3778,16 +3811,16 @@ describe('organization storage invariants', () => {
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Bulk lock order bundle',
-      reason: 'Create the bulk lock order bundle.',
       permissions: [{ type: 'service', key: 'discord.bulk-lock' }],
+      reason: 'Create the bulk lock order bundle.',
     })
     await createOrganizationGroup({
       actorUserId: userId,
+      bundleIds: [bundle.bundleId],
+      complianceSource: 'core.registration',
+      managementMode: 'compliance',
       name: 'Bulk lock order group',
       restricted: false,
-      managementMode: 'compliance',
-      complianceSource: 'core.registration',
-      bundleIds: [bundle.bundleId],
     })
     let userLocked!: () => void
     let allowGroupLock!: () => void
@@ -3851,16 +3884,16 @@ describe('organization storage invariants', () => {
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Concurrent assignment bundle',
-      reason: 'Create the concurrent assignment bundle.',
       permissions: [organizationActivityPermission()],
+      reason: 'Create the concurrent assignment bundle.',
     })
     const group = await createOrganizationGroup({
       actorUserId: userId,
+      bundleIds: [bundle.bundleId],
+      complianceSource: null,
+      managementMode: 'manual',
       name: 'Concurrent assignment group',
       restricted: false,
-      managementMode: 'manual',
-      complianceSource: null,
-      bundleIds: [bundle.bundleId],
     })
     let releaseAssignment!: () => void
     let assignmentInserted!: () => void
@@ -3925,11 +3958,11 @@ describe('organization storage invariants', () => {
   test('serializes concurrent organization changes into consecutive isolated epochs', async () => {
     await Promise.all([
       updateDeploymentOrganization(
-        { type: 'corporation', id: 98_000_002, name: 'Second Corporation', ticker: 'TWO' },
+        { id: 98_000_002, name: 'Second Corporation', ticker: 'TWO', type: 'corporation' },
         adminId,
       ),
       updateDeploymentOrganization(
-        { type: 'alliance', id: 99_000_003, name: 'Third Alliance', ticker: 'THREE' },
+        { id: 99_000_003, name: 'Third Alliance', ticker: 'THREE', type: 'alliance' },
         adminId,
       ),
     ])
@@ -3959,14 +3992,18 @@ describe('organization storage invariants', () => {
 
     expect(settings?.organization_version).toBe('3')
     expect(['98000002', '99000003']).toContain(settings?.organization_id)
-    expect(epochs.map(({ organization_version }) => organization_version)).toEqual(['1', '2', '3'])
+    expect(epochs.map(({ organization_version }) => organization_version)).toStrictEqual([
+      '1',
+      '2',
+      '3',
+    ])
     expect(epochs.slice(0, 2).every(({ superseded_at }) => superseded_at instanceof Date)).toBe(
       true,
     )
     expect(epochs[2]?.superseded_at).toBeNull()
-    expect(events.map(({ payload }) => payload)).toEqual([
-      expect.objectContaining({ previousOrganizationVersion: 1, organizationVersion: 2 }),
-      expect.objectContaining({ previousOrganizationVersion: 2, organizationVersion: 3 }),
+    expect(events.map(({ payload }) => payload)).toStrictEqual([
+      expect.objectContaining({ organizationVersion: 2, previousOrganizationVersion: 1 }),
+      expect.objectContaining({ organizationVersion: 3, previousOrganizationVersion: 2 }),
     ])
     expect(auditCount?.count).toBe(2)
   })
@@ -3979,7 +4016,7 @@ describe('organization storage invariants', () => {
     await establishRosterObservation()
 
     await updateDeploymentOrganization(
-      { type: 'corporation', id: 98_000_002, name: 'Second Corporation', ticker: 'TWO' },
+      { id: 98_000_002, name: 'Second Corporation', ticker: 'TWO', type: 'corporation' },
       adminId,
     )
 
@@ -4022,18 +4059,18 @@ describe('organization storage invariants', () => {
       order by user_id
     `
 
-    expect(oldState).toEqual({
-      current_corporations: 0,
-      authoritative_compliance: 0,
-      roster_observations: 1,
+    expect(oldState).toStrictEqual({
       active_managed_members: 0,
+      authoritative_compliance: 0,
+      current_corporations: 0,
+      roster_observations: 1,
     })
     expect(newProjections).toHaveLength(2)
     expect(newProjections.every(({ authoritative }) => authoritative)).toBe(true)
     await expect(loadOrganizationSessionContext(firstUserId)).resolves.toMatchObject({
+      accessValidUntil: null,
       organizationVersion: 2,
       state: 'suspended',
-      accessValidUntil: null,
     })
   })
 
@@ -4046,15 +4083,15 @@ describe('organization storage invariants', () => {
     await dbClient.db.transaction((transaction) =>
       appendOrganizationSensitiveAccessDecision(transaction, {
         actorUserId: userId,
-        targetUserId,
-        targetCharacterId: 90_000_001,
-        sectionId: 'wallet',
         decision: 'allowed',
-        reason: 'authorized',
-        organizationVersion: 1,
-        policyVersion: 1,
         disclosureVersion: 3,
         occurredAt,
+        organizationVersion: 1,
+        policyVersion: 1,
+        reason: 'authorized',
+        sectionId: 'wallet',
+        targetCharacterId: 90_000_001,
+        targetUserId,
       }),
     )
 
@@ -4078,33 +4115,33 @@ describe('organization storage invariants', () => {
       from organization_audit_events
       where event_type = 'sensitive-access.decided'
     `
-    expect(stored).toEqual({
-      event_type: 'sensitive-access.decided',
+    expect(stored).toStrictEqual({
       actor_id: userId,
-      subject_id: targetUserId,
-      target_user_id: targetUserId,
-      target_character_id: '90000001',
-      section_id: 'wallet',
-      reason: 'authorized',
+      disclosure_version: '3',
+      event_type: 'sensitive-access.decided',
+      occurred_at: occurredAt,
       outcome: 'granted',
       policy_version: '1',
-      disclosure_version: '3',
-      occurred_at: occurredAt,
+      reason: 'authorized',
+      section_id: 'wallet',
+      subject_id: targetUserId,
+      target_character_id: '90000001',
+      target_user_id: targetUserId,
     })
     const revisionsAfter = await loadOrganizationRevisionFacts(userId, 1, occurredAt)
     expect(revisionsAfter.latestAuditSequence).toBe(revisionsBefore.latestAuditSequence)
     await dbClient.db.transaction((transaction) =>
       appendOrganizationSensitiveAccessDecision(transaction, {
         actorUserId: userId,
-        targetUserId: null,
-        targetCharacterId: null,
-        sectionId: 'skills',
         decision: 'denied',
-        reason: 'target-not-authorized',
-        organizationVersion: 1,
-        policyVersion: 2,
         disclosureVersion: 4,
         occurredAt: new Date('2026-09-18T12:01:00.000Z'),
+        organizationVersion: 1,
+        policyVersion: 2,
+        reason: 'target-not-authorized',
+        sectionId: 'skills',
+        targetCharacterId: null,
+        targetUserId: null,
       }),
     )
     const [denied] = await connection<
@@ -4123,14 +4160,14 @@ describe('organization storage invariants', () => {
       from organization_audit_events
       where event_type = 'sensitive-access.decided' and reason = 'target-not-authorized'
     `
-    expect(denied).toEqual({
-      subject_type: 'deployment',
-      subject_id: '1',
-      target_user_id: null,
-      target_character_id: null,
-      reason: 'target-not-authorized',
+    expect(denied).toStrictEqual({
       outcome: 'denied',
       policy_version: '2',
+      reason: 'target-not-authorized',
+      subject_id: '1',
+      subject_type: 'deployment',
+      target_character_id: null,
+      target_user_id: null,
     })
     await connection`delete from users where id = ${targetUserId}`
     await expect(
@@ -4279,8 +4316,8 @@ async function establishRosterObservation() {
   )
   const registration = await registerOrganizationCorporationSource({
     actorUserId: userId,
-    corporationId: 98_000_001,
     characterId,
+    corporationId: 98_000_001,
   })
   const [identity] = await connection<
     { subject_lifecycle_id: string; authorization_generation: number }[]
@@ -4290,7 +4327,9 @@ async function establishRosterObservation() {
     join eve_tokens token on token.character_id = ${characterId}
     where lifecycle.corporation_source_id = ${registration.source.sourceId}
   `
-  if (!identity) throw new Error('Corporation source lifecycle is missing')
+  if (!identity) {
+    throw new Error('Corporation source lifecycle is missing')
+  }
   const observedAt = new Date()
   const observedCharacterId = characterId + 100
   await connection`
@@ -4349,11 +4388,11 @@ async function prepareCorporationSourceReplacementCharacter() {
   `
   const affiliationCheckedAt = await loadAffiliationCheckedAt(replacementCharacterId)
   ownerEvidenceMocks.observeAndPersistCharacterAffiliation.mockResolvedValue({
+    affiliationCheckedAt,
+    affiliationFreshUntil: new Date(Date.now() + 60 * 60 * 1000),
+    allianceId: null,
     characterId: replacementCharacterId,
     corporationId: 98_000_001,
-    allianceId: null,
-    affiliationCheckedAt,
-    affiliationFreshUntil: new Date(Date.now() + 60 * 60 * 1_000),
     stale: false,
   })
   ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
@@ -4433,7 +4472,7 @@ async function seedDirectoryGroups() {
 }
 
 async function enableDirectoryAuditSections(sections: readonly string[]) {
-  for (const sectionId of sections)
+  for (const sectionId of sections) {
     await connection`
       insert into deployment_module_sections (
         module_id, section_id, kind, enabled, declaration_revision,
@@ -4446,6 +4485,7 @@ async function enableDirectoryAuditSections(sections: readonly string[]) {
         disclosure_version = excluded.disclosure_version,
         activation_version = excluded.activation_version
     `
+  }
 }
 
 async function authorizeDirectoryAuditSections(
@@ -4461,12 +4501,13 @@ async function authorizeDirectoryAuditSections(
     ])}
     where character_id = ${targetCharacterId}
   `
-  for (const sectionId of sections)
+  for (const sectionId of sections) {
     await connection`
       insert into character_reviewer_disclosure_acceptances (
         character_id, module_id, section_id, disclosure_version, authorization_generation
       ) values (${targetCharacterId}, 'member-audit', ${sectionId}, 1, 0)
     `
+  }
 }
 
 async function seedDirectoryAuditState(input: {
@@ -4486,7 +4527,9 @@ async function seedDirectoryAuditState(input: {
     from platform_subject_lifecycles
     where character_id = ${targetCharacterId}
   `
-  if (!lifecycle) throw new Error('Directory audit character lifecycle is missing')
+  if (!lifecycle) {
+    throw new Error('Directory audit character lifecycle is missing')
+  }
   await connection`
     insert into platform_collection_state (
       module_id, resource_id, subject_kind, subject_lifecycle_id, subject_id,
@@ -4506,12 +4549,14 @@ async function seedDirectoryAuditState(input: {
 
 async function loadDirectoryAuditData(targetUserId = userId) {
   const page = await searchManagedOrganizationDirectory({
-    organizationVersion: 1,
     filters: {},
     now: directoryNow,
+    organizationVersion: 1,
   })
   const item = page.items.find(({ account }) => account.userId === targetUserId)
-  if (!item) throw new Error('Seeded directory member is missing')
+  if (!item) {
+    throw new Error('Seeded directory member is missing')
+  }
   return item.auditData
 }
 
@@ -4519,9 +4564,9 @@ async function directoryUserIds(
   filters: Parameters<typeof searchManagedOrganizationDirectory>[0]['filters'],
 ) {
   const page = await searchManagedOrganizationDirectory({
-    organizationVersion: 1,
     filters,
     now: directoryNow,
+    organizationVersion: 1,
   })
   return page.items.map(({ account }) => account.userId)
 }
@@ -4691,59 +4736,59 @@ async function establishReviewerCommandFixture() {
   )
   const reviewerRoleGrant = await grantOrganizationRole({
     actorUserId: userId,
-    targetUserId: userId,
-    role: 'director',
     reason: 'Independent reviewer grant.',
+    role: 'director',
+    targetUserId: userId,
   })
   const reviewerBundle = await createOrganizationPermissionBundle({
     actorUserId: userId,
     name: 'Reviewer command permissions',
-    reason: 'Create reviewer command permissions.',
     permissions: [
       memberAuditPermission('member-audit.groups.manage'),
       memberAuditPermission('member-audit.members.block'),
     ],
+    reason: 'Create reviewer command permissions.',
   })
   const reviewerGroup = await createOrganizationGroup({
     actorUserId: userId,
+    bundleIds: [reviewerBundle.bundleId],
+    complianceSource: null,
+    managementMode: 'manual',
     name: 'Reviewer command grants',
     restricted: true,
-    managementMode: 'manual',
-    complianceSource: null,
-    bundleIds: [reviewerBundle.bundleId],
   })
   const reviewerAssignment = await assignOrganizationGroup({
     actorUserId: userId,
-    targetUserId: userId,
+    expiresAt: null,
     groupId: reviewerGroup.groupId,
     reason: 'Grant reviewer command permissions.',
-    expiresAt: null,
+    targetUserId: userId,
   })
   const ordinaryBundle = await createOrganizationPermissionBundle({
     actorUserId: userId,
     name: 'Reviewer command ordinary access',
-    reason: 'Create reviewer command ordinary access.',
     permissions: [{ type: 'service', key: 'discord.reviewer-command' }],
+    reason: 'Create reviewer command ordinary access.',
   })
   const ordinaryGroup = await createOrganizationGroup({
     actorUserId: userId,
+    bundleIds: [ordinaryBundle.bundleId],
+    complianceSource: null,
+    managementMode: 'manual',
     name: 'Reviewer command ordinary group',
     restricted: false,
-    managementMode: 'manual',
-    complianceSource: null,
-    bundleIds: [ordinaryBundle.bundleId],
   })
   const targetUserId = randomUUID()
   await establishCompliantAccount(targetUserId, 90_000_020)
   return {
-    targetUserId,
-    targetManagedMemberLifecycleId: await loadActiveManagedMemberLifecycleId(targetUserId),
-    reviewerRoleGrantId: reviewerRoleGrant.grantId,
-    reviewerBundleId: reviewerBundle.bundleId,
-    reviewerGroupId: reviewerGroup.groupId,
-    reviewerAssignmentId: reviewerAssignment.assignmentId,
     ordinaryBundleId: ordinaryBundle.bundleId,
     ordinaryGroupId: ordinaryGroup.groupId,
+    reviewerAssignmentId: reviewerAssignment.assignmentId,
+    reviewerBundleId: reviewerBundle.bundleId,
+    reviewerGroupId: reviewerGroup.groupId,
+    reviewerRoleGrantId: reviewerRoleGrant.grantId,
+    targetManagedMemberLifecycleId: await loadActiveManagedMemberLifecycleId(targetUserId),
+    targetUserId,
   }
 }
 
@@ -4757,33 +4802,33 @@ function reviewerCommandBinding<
   requiredPermission: Permission,
 ) {
   return {
-    organizationDeploymentId: 1 as const,
-    publisherPackage: '@eve-space/member-audit-manifest',
-    moduleId: 'member-audit',
-    organizationVersion: 1,
     actorUserId: userId,
-    targetUserId: fixture.targetUserId,
     managedMemberLifecycleId: fixture.targetManagedMemberLifecycleId,
-    requiredPermission,
+    moduleId: 'member-audit',
+    organizationDeploymentId: 1 as const,
+    organizationVersion: 1,
+    publisherPackage: '@eve-space/member-audit-manifest',
     reason: '',
+    requiredPermission,
+    targetUserId: fixture.targetUserId,
   }
 }
 
 function organizationActivityPermission() {
   return {
-    type: 'module' as const,
-    publisherPackage: '@eve-space/organization-activity-manifest',
-    moduleId: 'organization-activity',
     key: 'organization-activity.view',
+    moduleId: 'organization-activity',
+    publisherPackage: '@eve-space/organization-activity-manifest',
+    type: 'module' as const,
   }
 }
 
 function memberAuditPermission(key: 'member-audit.groups.manage' | 'member-audit.members.block') {
   return {
-    type: 'module' as const,
-    publisherPackage: '@eve-space/member-audit-manifest',
-    moduleId: 'member-audit',
     key,
+    moduleId: 'member-audit',
+    publisherPackage: '@eve-space/member-audit-manifest',
+    type: 'module' as const,
   }
 }
 
@@ -4794,7 +4839,9 @@ async function loadActiveManagedMemberLifecycleId(targetUserId: string) {
     where deployment_id = 1 and organization_version = 1 and user_id = ${targetUserId}
       and ended_at is null
   `
-  if (!lifecycle) throw new Error('Active managed-member lifecycle is missing')
+  if (!lifecycle) {
+    throw new Error('Active managed-member lifecycle is missing')
+  }
   return lifecycle.managed_member_lifecycle_id
 }
 
@@ -4862,7 +4909,9 @@ async function attachCharacterToExistingAccount(targetUserId: string, targetChar
     values ('character', ${String(targetCharacterId)}, ${targetCharacterId})
     returning subject_lifecycle_id
   `
-  if (!lifecycle) throw new Error('Attached character lifecycle is missing')
+  if (!lifecycle) {
+    throw new Error('Attached character lifecycle is missing')
+  }
   return lifecycle.subject_lifecycle_id
 }
 
@@ -4872,19 +4921,19 @@ function ownerClaimInput(
   },
 ) {
   return {
-    userId,
-    characterId,
-    subjectLifecycleId,
+    authorityCorporationId: 98_000_001,
     authorizationGeneration: 0,
-    roleEvidenceRevision: 'roles-0',
+    characterId,
     evidenceAuthorizationGeneration: 0,
-    evidenceFreshUntil: new Date(Date.now() + 60 * 60 * 1_000),
+    evidenceFreshUntil: new Date(Date.now() + 60 * 60 * 1000),
+    observedAllianceId: null,
+    observedCorporationId: 98_000_001,
     organizationId: 98_000_001,
     organizationVersion: 1,
-    authorityCorporationId: 98_000_001,
-    observedCorporationId: 98_000_001,
-    observedAllianceId: null,
     requiredScope: 'esi-characters.read_corporation_roles.v1',
+    roleEvidenceRevision: 'roles-0',
+    subjectLifecycleId,
+    userId,
     ...override,
   }
 }
@@ -4904,13 +4953,15 @@ async function refreshOwnerEvidence(grantId: string) {
     from organization_authority_evidence
     where grant_id = ${grantId}
   `
-  if (!candidate) throw new Error('Owner evidence candidate is missing')
+  if (!candidate) {
+    throw new Error('Owner evidence candidate is missing')
+  }
   return refreshOrganizationOwnerEvidence({
+    authorizationGeneration: candidate.authorization_generation,
     grantId: candidate.grant_id,
     organizationVersion: Number(candidate.organization_version),
-    sourceSubjectLifecycleId: candidate.source_subject_lifecycle_id,
-    authorizationGeneration: candidate.authorization_generation,
     roleEvidenceRevision: candidate.role_evidence_revision,
+    sourceSubjectLifecycleId: candidate.source_subject_lifecycle_id,
   })
 }
 
@@ -4927,7 +4978,9 @@ async function insertCorporationSourceFixture(
     join eve_tokens token on token.character_id = lifecycle.character_id
     where lifecycle.character_id = ${sourceCharacterId}
   `
-  if (!binding) throw new Error('Corporation-source character binding is missing')
+  if (!binding) {
+    throw new Error('Corporation-source character binding is missing')
+  }
   await connection`
     insert into organization_corporation_sources (
       source_id, deployment_id, organization_version, corporation_id,
@@ -4948,14 +5001,14 @@ async function insertCorporationSourceFixture(
 function roleEvidence(overrides: Record<string, unknown> = {}) {
   const observedAt = new Date()
   return {
+    authorizationGeneration: 0,
+    freshUntil: new Date(observedAt.getTime() + 60 * 60 * 1000),
+    observedAt,
+    roleEvidenceRevision: observedAt.toISOString(),
     roles: ['Director'],
     rolesAtBase: [],
     rolesAtHeadquarters: [],
     rolesAtOther: [],
-    authorizationGeneration: 0,
-    roleEvidenceRevision: observedAt.toISOString(),
-    observedAt,
-    freshUntil: new Date(observedAt.getTime() + 60 * 60 * 1_000),
     stale: false,
     ...overrides,
   }
@@ -4965,7 +5018,9 @@ async function loadAffiliationCheckedAt(targetCharacterId = characterId) {
   const [character] = await connection<{ affiliation_checked_at: Date }[]>`
     select affiliation_checked_at from characters where character_id = ${targetCharacterId}
   `
-  if (!character) throw new Error('Seeded character is missing')
+  if (!character) {
+    throw new Error('Seeded character is missing')
+  }
   return character.affiliation_checked_at
 }
 

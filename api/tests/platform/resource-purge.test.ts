@@ -2,14 +2,14 @@ import { beforeEach, expect, test, vi } from 'vitest'
 
 const resources = vi.hoisted(() => [
   {
+    implementation: { maintain: vi.fn() },
     moduleId: 'member-audit',
     resourceId: 'trained-skills',
-    implementation: { maintain: vi.fn() },
   },
   {
+    implementation: {},
     moduleId: 'other-module',
     resourceId: 'unmaintained',
-    implementation: {},
   },
 ])
 
@@ -27,6 +27,7 @@ beforeEach(() => vi.clearAllMocks())
 test('retains authority purge work before a lifecycle state can cascade', async () => {
   const values = vi.fn().mockResolvedValue(undefined)
   const transaction = {
+    insert: vi.fn(() => ({ values })),
     select: vi.fn(() => ({
       from: vi.fn(() => ({
         where: vi.fn().mockResolvedValue([
@@ -45,7 +46,6 @@ test('retains authority purge work before a lifecycle state can cascade', async 
         ]),
       })),
     })),
-    insert: vi.fn(() => ({ values })),
   }
 
   await enqueueInstalledResourceLifecyclePurges(
@@ -55,10 +55,10 @@ test('retains authority purge work before a lifecycle state can cascade', async 
 
   expect(values).toHaveBeenCalledWith([
     expect.objectContaining({
+      characterId: 90_000_001,
       mode: 'authority',
       moduleId: 'member-audit',
       resourceId: 'trained-skills',
-      characterId: 90_000_001,
     }),
   ])
 })
@@ -66,12 +66,12 @@ test('retains authority purge work before a lifecycle state can cascade', async 
 test('retains account purge work for every installed maintainable resource', async () => {
   const values = vi.fn().mockResolvedValue(undefined)
   const transaction = {
+    insert: vi.fn(() => ({ values })),
     select: vi.fn(() => ({
       from: vi.fn(() => ({
         where: vi.fn().mockResolvedValue([{ moduleId: 'member-audit' }]),
       })),
     })),
-    insert: vi.fn(() => ({ values })),
   }
 
   await enqueueInstalledResourceAccountPurges(
@@ -81,9 +81,9 @@ test('retains account purge work for every installed maintainable resource', asy
 
   expect(values).toHaveBeenCalledWith([
     {
+      mode: 'account',
       moduleId: 'member-audit',
       resourceId: 'trained-skills',
-      mode: 'account',
       targetUserId: '11111111-1111-4111-8111-111111111111',
     },
   ])

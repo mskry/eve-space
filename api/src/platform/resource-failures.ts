@@ -22,7 +22,7 @@ import {
 import { findInstalledResource } from './resource-identity.js'
 import { platformResources } from './resources.js'
 
-const transientFailureBackoffMilliseconds = 5 * 60 * 1_000
+const transientFailureBackoffMilliseconds = 5 * 60 * 1000
 
 export class PlatformResourceMappingError extends Error {
   constructor(cause: unknown) {
@@ -61,18 +61,22 @@ class PlatformResourceEsiUnavailableError extends Error {
 
 export function assertPlatformResourceRefreshSucceeded(result: PlatformEsiExecution<unknown>) {
   if (result.refreshFailureClass === 'esi-cooldown') {
-    const retryAt = result.retryAt ? new Date(result.retryAt) : new Date(Date.now() + 1_000)
+    const retryAt = result.retryAt ? new Date(result.retryAt) : new Date(Date.now() + 1000)
     throw new EsiQuotaError(
-      Math.max(1, Math.ceil((retryAt.getTime() - Date.now()) / 1_000)),
+      Math.max(1, Math.ceil((retryAt.getTime() - Date.now()) / 1000)),
       Date.now(),
       retryAt,
     )
   }
-  if (result.refreshFailureClass === 'esi-unavailable')
+  if (result.refreshFailureClass === 'esi-unavailable') {
     throw new PlatformResourceEsiUnavailableError()
-  if (result.refreshFailureClass === 'response-invalid')
+  }
+  if (result.refreshFailureClass === 'response-invalid') {
     throw new PlatformResourceResponseInvalidError()
-  if (result.refreshFailureClass === 'unknown') throw new Error('ESI refresh failed permanently')
+  }
+  if (result.refreshFailureClass === 'unknown') {
+    throw new Error('ESI refresh failed permanently')
+  }
 }
 
 interface ResourceFailureOptions {
@@ -91,21 +95,24 @@ export async function recordInstalledResourceCollectionFailure(
 ) {
   const resources = options.resources ?? platformResources
   const resource = findInstalledResource(identity, resources)
-  if (!resource) return null
+  if (!resource) {
+    return null
+  }
   const now = options.now ?? new Date()
   const transition = classifyPlatformResourceFailure(error, now)
-  if (options.resolveEligibility || options.upsertState)
+  if (options.resolveEligibility || options.upsertState) {
     return persistFailureTransition(
       identity,
       transition,
       options,
       () =>
         (options.resolveEligibility ?? resolveInstalledResourceEligibility)(identity, {
-          resources: [resource],
           now,
+          resources: [resource],
         }),
       options.upsertState ?? upsertPlatformCollectionState,
     )
+  }
 
   return sql.begin(async (transaction) => {
     await transaction`
@@ -121,8 +128,8 @@ export async function recordInstalledResourceCollectionFailure(
       () =>
         resolveInstalledResourceEligibility(identity, {
           connection: transaction,
-          resources: [resource],
           now,
+          resources: [resource],
         }),
       (input) => upsertPlatformCollectionStateInTransaction(input, transaction),
     )
@@ -137,7 +144,9 @@ async function persistFailureTransition(
   upsertState: (input: PlatformCollectionStateWrite) => Promise<unknown>,
 ) {
   const eligibility = await resolveEligibility()
-  if (eligibility.status !== 'eligible' || !eligibility.due) return transition
+  if (eligibility.status !== 'eligible' || !eligibility.due) {
+    return transition
+  }
   if (
     ((eligibility.managedAuthority !== null || options.expectedManagedAuthority != null) &&
       (!('expectedManagedAuthority' in options) ||
@@ -147,8 +156,9 @@ async function persistFailureTransition(
         ))) ||
     ('expectedAuthorizationGeneration' in options &&
       eligibility.authorizationGeneration !== options.expectedAuthorizationGeneration)
-  )
+  ) {
     return transition
+  }
 
   await upsertState({
     ...identity,
@@ -165,25 +175,32 @@ export function classifyPlatformResourceFailure(error: unknown, now = new Date()
   if (
     error instanceof PlatformResourceAuthorizationError ||
     (error instanceof EveSsoTokenRefreshError && error.authorizationRevoked)
-  )
+  ) {
     return { failureClass: 'authorization-required', nextEligibleAt: null } as const
-  if (error instanceof EsiQuotaError)
+  }
+  if (error instanceof EsiQuotaError) {
     return { failureClass: 'esi-cooldown', nextEligibleAt: error.retryAt } as const
+  }
   const esiFailure = classifyEsiRefreshFailure(error)
   if (
     error instanceof PlatformResourceEsiUnavailableError ||
     error instanceof TokenRefreshUnavailableError ||
     esiFailure === 'esi-unavailable'
-  )
+  ) {
     return {
       failureClass: 'esi-unavailable',
       nextEligibleAt: new Date(now.getTime() + transientFailureBackoffMilliseconds),
     } as const
-  if (esiFailure === 'response-invalid' || error instanceof PlatformResourceResponseInvalidError)
+  }
+  if (esiFailure === 'response-invalid' || error instanceof PlatformResourceResponseInvalidError) {
     return permanentFailure('response-invalid')
-  if (error instanceof PlatformResourceMappingError) return permanentFailure('mapping-failed')
-  if (error instanceof PlatformResourcePersistenceError)
+  }
+  if (error instanceof PlatformResourceMappingError) {
+    return permanentFailure('mapping-failed')
+  }
+  if (error instanceof PlatformResourcePersistenceError) {
     return permanentFailure('persistence-failed')
+  }
   return permanentFailure('unknown')
 }
 

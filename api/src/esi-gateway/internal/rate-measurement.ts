@@ -50,9 +50,13 @@ export async function recordEsiRateMeasurement(
 ) {
   const contract = esiOperationCatalog[options.operation]
   const rateLimit = getDeclaredEsiRateLimit(contract)
-  if (!rateLimit) return
+  if (!rateLimit) {
+    return
+  }
   const scope = contract.authorization.kind === 'character' ? 'character' : 'public'
-  if (scope === 'character' && !options.principal) return
+  if (scope === 'character' && !options.principal) {
+    return
+  }
 
   const now = options.now ?? Date.now()
   const bucketStart = toBucketStart(now)
@@ -85,14 +89,17 @@ export async function readEsiRateMeasurement(
 ): Promise<EsiRateMeasurement> {
   const now = options.now ?? Date.now()
   const windowOffset = options.windowOffset ?? 1
-  if (!isNonnegativeSafeInteger(windowOffset))
+  if (!isNonnegativeSafeInteger(windowOffset)) {
     throw new Error('ESI rate measurement window offset must be a non-negative integer')
+  }
 
   const bucketStart = toBucketStart(now) - windowOffset * esiRateMeasurementWindowMs
   const operationContracts = esiOperations.flatMap((operation) => {
     const contract = esiOperationCatalog[operation]
     const rateLimit = getDeclaredEsiRateLimit(contract)
-    if (!rateLimit) return []
+    if (!rateLimit) {
+      return []
+    }
     return [
       {
         operation,
@@ -120,18 +127,18 @@ export async function readEsiRateMeasurement(
         counts.distinctCharacters,
       )
       return {
-        operation,
-        group: rateLimit.group,
-        scope,
-        requests: counts.requests,
-        weightedTokens: counts.weightedTokens,
-        distinctCharacters: counts.distinctCharacters,
         averageRequestsPerCharacter,
         averageWeightedTokensPerCharacter,
         capacityUsedPercent: percentage(
           scope === 'character' ? (averageWeightedTokensPerCharacter ?? 0) : counts.weightedTokens,
           rateLimit.maximumTokens,
         ),
+        distinctCharacters: counts.distinctCharacters,
+        group: rateLimit.group,
+        operation,
+        requests: counts.requests,
+        scope,
+        weightedTokens: counts.weightedTokens,
       }
     }),
   )
@@ -146,8 +153,9 @@ export async function readEsiRateMeasurement(
       (current.maximumTokens !== rateLimit.maximumTokens ||
         current.window !== rateLimit.window ||
         current.scope !== scope)
-    )
+    ) {
       throw new Error(`Inconsistent ESI rate-limit metadata for group: ${rateLimit.group}`)
+    }
     groupContracts.set(rateLimit.group, { ...rateLimit, scope })
   }
   const groups = await Promise.all(
@@ -162,13 +170,6 @@ export async function readEsiRateMeasurement(
         counts.distinctCharacters,
       )
       return {
-        group,
-        scope: contract.scope,
-        maximumTokens: contract.maximumTokens,
-        window: contract.window,
-        requests: counts.requests,
-        weightedTokens: counts.weightedTokens,
-        distinctCharacters: counts.distinctCharacters,
         averageWeightedTokensPerCharacter,
         capacityUsedPercent: percentage(
           contract.scope === 'character'
@@ -176,16 +177,23 @@ export async function readEsiRateMeasurement(
             : counts.weightedTokens,
           contract.maximumTokens,
         ),
+        distinctCharacters: counts.distinctCharacters,
+        group,
+        maximumTokens: contract.maximumTokens,
+        requests: counts.requests,
+        scope: contract.scope,
+        weightedTokens: counts.weightedTokens,
+        window: contract.window,
       }
     }),
   )
 
   return {
-    bucketStartedAt: new Date(bucketStart).toISOString(),
     bucketEndedAt: new Date(bucketStart + esiRateMeasurementWindowMs).toISOString(),
+    bucketStartedAt: new Date(bucketStart).toISOString(),
     complete: bucketStart + esiRateMeasurementWindowMs <= now,
-    operations,
     groups,
+    operations,
   }
 }
 
@@ -199,9 +207,9 @@ async function readCounts(connection: Redis, key: string, scope: EsiRateMeasurem
     scope === 'character' ? connection.pfcount(`${key}:characters`) : Promise.resolve(null),
   ])
   return {
+    distinctCharacters,
     requests: parseCount(value.requests),
     weightedTokens: parseCount(value.weightedTokens),
-    distinctCharacters,
   }
 }
 
@@ -210,7 +218,9 @@ function toBucketStart(now: number) {
 }
 
 function characterAverage(value: number, count: number | null) {
-  if (count === null) return null
+  if (count === null) {
+    return null
+  }
   return count > 0 ? round(value / count) : 0
 }
 

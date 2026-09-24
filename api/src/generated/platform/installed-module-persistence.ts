@@ -43,10 +43,10 @@ export const installedModulePersistenceOperations = [
       'write'
     >,
     grants: {
-      routes: [],
       activityProviders: [],
-      resourceProjections: [],
       resourceMaterializations: [],
+      resourceProjections: [],
+      routes: [],
     },
   },
   {
@@ -66,10 +66,10 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
-      routes: ['skills-detail'],
       activityProviders: [],
-      resourceProjections: [],
       resourceMaterializations: [],
+      resourceProjections: [],
+      routes: ['skills-detail'],
     },
   },
   {
@@ -89,10 +89,10 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
-      routes: ['assets-detail'],
       activityProviders: [],
-      resourceProjections: [],
       resourceMaterializations: [],
+      resourceProjections: [],
+      routes: ['assets-detail'],
     },
   },
   {
@@ -112,10 +112,10 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
-      routes: ['wallet-detail'],
       activityProviders: [],
-      resourceProjections: [],
       resourceMaterializations: [],
+      resourceProjections: [],
+      routes: ['wallet-detail'],
     },
   },
   {
@@ -135,10 +135,10 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
-      routes: ['mail-detail'],
       activityProviders: [],
-      resourceProjections: [],
       resourceMaterializations: [],
+      resourceProjections: [],
+      routes: ['mail-detail'],
     },
   },
   {
@@ -158,10 +158,10 @@ export const installedModulePersistenceOperations = [
       'write'
     >,
     grants: {
-      routes: [],
       activityProviders: [],
-      resourceProjections: [],
       resourceMaterializations: ['trained-skills', 'wallet-balance'],
+      resourceProjections: [],
+      routes: [],
     },
   },
   {
@@ -181,8 +181,8 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
-      routes: [],
       activityProviders: [],
+      resourceMaterializations: [],
       resourceProjections: [
         'assets',
         'wallet-journal',
@@ -190,7 +190,7 @@ export const installedModulePersistenceOperations = [
         'mail-headers',
         'mail-details',
       ],
-      resourceMaterializations: [],
+      routes: [],
     },
   },
   {
@@ -210,10 +210,10 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
-      routes: [],
       activityProviders: [],
-      resourceProjections: [],
       resourceMaterializations: [],
+      resourceProjections: [],
+      routes: [],
     },
   },
   {
@@ -233,9 +233,7 @@ export const installedModulePersistenceOperations = [
       'write'
     >,
     grants: {
-      routes: [],
       activityProviders: [],
-      resourceProjections: [],
       resourceMaterializations: [
         'assets',
         'wallet-journal',
@@ -243,6 +241,8 @@ export const installedModulePersistenceOperations = [
         'mail-headers',
         'mail-details',
       ],
+      resourceProjections: [],
+      routes: [],
     },
   },
   {
@@ -262,9 +262,7 @@ export const installedModulePersistenceOperations = [
       'write'
     >,
     grants: {
-      routes: [],
       activityProviders: [],
-      resourceProjections: [],
       resourceMaterializations: [
         'assets',
         'wallet-journal',
@@ -272,6 +270,8 @@ export const installedModulePersistenceOperations = [
         'mail-headers',
         'mail-details',
       ],
+      resourceProjections: [],
+      routes: [],
     },
   },
   {
@@ -291,9 +291,7 @@ export const installedModulePersistenceOperations = [
       'write'
     >,
     grants: {
-      routes: [],
       activityProviders: [],
-      resourceProjections: [],
       resourceMaterializations: [
         'trained-skills',
         'assets',
@@ -303,6 +301,8 @@ export const installedModulePersistenceOperations = [
         'mail-headers',
         'mail-details',
       ],
+      resourceProjections: [],
+      routes: [],
     },
   },
   {
@@ -322,8 +322,8 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
-      routes: [],
       activityProviders: [],
+      resourceMaterializations: [],
       resourceProjections: [
         'campaigns',
         'public-jobs',
@@ -333,7 +333,7 @@ export const installedModulePersistenceOperations = [
         'character-campaigns',
         'character-projects',
       ],
-      resourceMaterializations: [],
+      routes: [],
     },
   },
   {
@@ -353,10 +353,10 @@ export const installedModulePersistenceOperations = [
       'read'
     >,
     grants: {
-      routes: ['activity-details', 'activity-participation'],
       activityProviders: ['organization-activity'],
-      resourceProjections: [],
       resourceMaterializations: [],
+      resourceProjections: [],
+      routes: ['activity-details', 'activity-participation'],
     },
   },
   {
@@ -376,9 +376,7 @@ export const installedModulePersistenceOperations = [
       'write'
     >,
     grants: {
-      routes: [],
       activityProviders: [],
-      resourceProjections: [],
       resourceMaterializations: [
         'campaigns',
         'public-jobs',
@@ -388,6 +386,8 @@ export const installedModulePersistenceOperations = [
         'character-campaigns',
         'character-projects',
       ],
+      resourceProjections: [],
+      routes: [],
     },
   },
 ] as const satisfies readonly PlatformInstalledPersistenceOperationDescriptor[]

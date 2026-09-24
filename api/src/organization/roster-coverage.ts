@@ -22,13 +22,13 @@ export async function listOrganizationRosterCoverage() {
   const now = new Date()
   const corporations = await db
     .select({
-      organizationVersion: organizationManagedCorporations.organizationVersion,
+      attemptedAt: platformCollectionState.updatedAt,
       corporationId: organizationManagedCorporations.corporationId,
       managedLastObservedAt: organizationManagedCorporations.lastObservedAt,
-      sourceId: organizationCorporationSources.sourceId,
+      organizationVersion: organizationManagedCorporations.organizationVersion,
       sourceCharacterId: organizationCorporationSources.characterId,
+      sourceId: organizationCorporationSources.sourceId,
       subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
-      attemptedAt: platformCollectionState.updatedAt,
     })
     .from(deploymentSettings)
     .innerJoin(
@@ -81,8 +81,8 @@ export async function listOrganizationRosterCoverage() {
 
   const unregistered = await db
     .select({
-      corporationId: organizationCorporationRosterObservations.corporationId,
       characterId: organizationCorporationRosterObservations.characterId,
+      corporationId: organizationCorporationRosterObservations.corporationId,
       observedAt: organizationCorporationRosterObservations.observedAt,
     })
     .from(deploymentSettings)
@@ -200,11 +200,11 @@ export async function listOrganizationRosterCoverage() {
 
   const [managedSet] = await db
     .select({
-      organizationType: deploymentSettings.organizationType,
+      configuredAt: deploymentSettings.updatedAt,
       organizationId: deploymentSettings.organizationId,
+      organizationType: deploymentSettings.organizationType,
       organizationVersion: deploymentSettings.organizationVersion,
       subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
-      configuredAt: deploymentSettings.updatedAt,
     })
     .from(deploymentSettings)
     .leftJoin(
@@ -219,23 +219,25 @@ export async function listOrganizationRosterCoverage() {
 
   const corporationStatuses = await Promise.all(
     corporations.map(async (corporation) => {
-      if (!corporation.sourceId || !corporation.subjectLifecycleId) return null
+      if (!corporation.sourceId || !corporation.subjectLifecycleId) {
+        return null
+      }
       return getInstalledResourceCollectionStatus({
         moduleId: 'core',
         resourceId: 'corporation-roster',
+        subjectId: String(corporation.corporationId),
         subjectKind: 'corporation',
         subjectLifecycleId: corporation.subjectLifecycleId,
-        subjectId: String(corporation.corporationId),
       })
     }),
   )
   const configuredManagedStatus =
     managedSet?.organizationType === 'corporation'
       ? {
-          status: 'current' as const,
-          validatedAt: managedSet.configuredAt.toISOString(),
           attemptedAt: managedSet.configuredAt.toISOString(),
           lastFailureClass: null,
+          status: 'current' as const,
+          validatedAt: managedSet.configuredAt.toISOString(),
         }
       : null
   const collectedManagedStatus =
@@ -243,44 +245,44 @@ export async function listOrganizationRosterCoverage() {
       ? await getInstalledResourceCollectionStatus({
           moduleId: 'core',
           resourceId: 'managed-corporations',
+          subjectId: String(managedSet.organizationId),
           subjectKind: 'alliance',
           subjectLifecycleId: managedSet.subjectLifecycleId,
-          subjectId: String(managedSet.organizationId),
         })
       : null
   const managedStatus = configuredManagedStatus ?? collectedManagedStatus
 
   const managedCorporations = {
-    status: managedStatus?.status ?? 'unavailable',
-    validatedAt: managedStatus?.validatedAt ?? null,
     attemptedAt: managedStatus && 'attemptedAt' in managedStatus ? managedStatus.attemptedAt : null,
     lastFailureClass: managedStatus?.lastFailureClass ?? null,
+    status: managedStatus?.status ?? 'unavailable',
+    validatedAt: managedStatus?.validatedAt ?? null,
   }
   const projectedCorporations = corporations.map((corporation, index) => {
     const collection = corporationStatuses[index]
     return {
-      organizationVersion: corporation.organizationVersion,
+      attemptedAt: corporation.attemptedAt?.toISOString() ?? null,
       corporationId: corporation.corporationId,
+      lastFailureClass: collection?.lastFailureClass ?? null,
       managedLastObservedAt: corporation.managedLastObservedAt.toISOString(),
+      organizationVersion: corporation.organizationVersion,
       source:
         corporation.sourceId && corporation.sourceCharacterId
           ? { sourceId: corporation.sourceId, characterId: corporation.sourceCharacterId }
           : null,
       status: projectRosterStatus(collection),
-      validatedAt: collection?.validatedAt ?? null,
-      attemptedAt: corporation.attemptedAt?.toISOString() ?? null,
-      lastFailureClass: collection?.lastFailureClass ?? null,
       unregisteredCharacters: unregistered
         .filter(({ corporationId }) => corporationId === corporation.corporationId)
         .map(({ characterId, observedAt }) => ({
           characterId,
           observedAt: observedAt.toISOString(),
         })),
+      validatedAt: collection?.validatedAt ?? null,
     }
   })
   return {
-    managedCorporations,
     corporations: projectedCorporations,
+    managedCorporations,
     ...aggregateRosterFreshness([managedCorporations, ...projectedCorporations]),
   }
 }
@@ -317,8 +319,14 @@ function aggregateRosterFreshness(
 function projectRosterStatus(
   collection: Awaited<ReturnType<typeof getInstalledResourceCollectionStatus>> | null | undefined,
 ) {
-  if (!collection) return 'never-configured' as const
-  if (collection.status === 'authorization-required') return 'unauthorized' as const
-  if (collection.status === 'never-collected') return 'pending' as const
+  if (!collection) {
+    return 'never-configured' as const
+  }
+  if (collection.status === 'authorization-required') {
+    return 'unauthorized' as const
+  }
+  if (collection.status === 'never-collected') {
+    return 'pending' as const
+  }
   return collection.status
 }

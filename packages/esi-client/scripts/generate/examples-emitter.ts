@@ -54,10 +54,9 @@ const examplesTarget = generatedTargetFor('examples').path;
 
 const standaloneExamples: readonly StandaloneExampleDefinition[] = Object.freeze([
   {
+    description: 'Call a public typed domain method without credentials.',
     fileName: 'public.ts',
     operationId: 'GetStatus',
-    title: 'Public operation',
-    description: 'Call a public typed domain method without credentials.',
     source: `import { EsiClient } from '@evespace/esi-client';
 
 const client = new EsiClient();
@@ -65,12 +64,12 @@ const client = new EsiClient();
 export async function getPublicStatus() {
   return client.status.get();
 }`,
+    title: 'Public operation',
   },
   {
+    description: 'Read a token from the environment and call an authenticated typed method.',
     fileName: 'authenticated.ts',
     operationId: 'GetCharactersCharacterIdLocation',
-    title: 'Authenticated operation',
-    description: 'Read a token from the environment and call an authenticated typed method.',
     source: `import { EsiClient } from '@evespace/esi-client';
 
 const characterId = 90000001;
@@ -85,12 +84,12 @@ function requiredAccessToken(): string {
   if (!token) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
   return token;
 }`,
+    title: 'Authenticated operation',
   },
   {
+    description: 'Request one page explicitly and inspect metadata before choosing another page.',
     fileName: 'paginated.ts',
     operationId: 'GetUniverseGroups',
-    title: 'Single-page pagination',
-    description: 'Request one page explicitly and inspect metadata before choosing another page.',
     source: `import { EsiClient } from '@evespace/esi-client';
 
 const client = new EsiClient();
@@ -103,12 +102,12 @@ export async function getUniverseGroupPage(page = 1) {
     pages: response.meta.pagination?.pages,
   };
 }`,
+    title: 'Single-page pagination',
   },
   {
+    description: 'Use a metadata-enabled domain view while preserving typed response data.',
     fileName: 'metadata.ts',
     operationId: 'GetMarketsPrices',
-    title: 'Response metadata',
-    description: 'Use a metadata-enabled domain view while preserving typed response data.',
     source: `import { EsiClient } from '@evespace/esi-client';
 
 const client = new EsiClient();
@@ -123,13 +122,13 @@ export async function getMarketPricesWithMetadata() {
     errorLimit: response.meta.errorLimit,
   };
 }`,
+    title: 'Response metadata',
   },
   {
-    fileName: 'operation-protocol.ts',
-    operationId: 'GetStatus',
-    title: 'Operation protocol facts',
     description:
       'Inspect generated conditional-validator, cache, route-limit, and request-array declarations without performing a request.',
+    fileName: 'operation-protocol.ts',
+    operationId: 'GetStatus',
     source: `import { describeOperation } from '@evespace/esi-client/operations';
 
 export function getStatusProtocolFacts() {
@@ -143,13 +142,13 @@ export function getStatusProtocolFacts() {
     maximumBatchSize: operation.maximumBatchSize,
   };
 }`,
+    title: 'Operation protocol facts',
   },
   {
-    fileName: 'custom-fetch.ts',
-    operationId: 'GetStatus',
-    title: 'Custom fetch composition',
     description:
       'Compose application transport behavior while forwarding the SDK deadline and caller cancellation signal.',
+    fileName: 'custom-fetch.ts',
+    operationId: 'GetStatus',
     source: `import { EsiClient } from '@evespace/esi-client';
 
 const coordinatedFetch: typeof fetch = async (input, init) => {
@@ -170,13 +169,13 @@ const client = new EsiClient({
 export async function getStatusThroughCustomFetch() {
   return client.status.withMetadata().get();
 }`,
+    title: 'Custom fetch composition',
   },
   {
-    fileName: 'transport-errors.ts',
-    operationId: 'GetStatus',
-    title: 'Transport and conditional outcomes',
     description:
       'Classify transport failures and handle conditional not-modified responses without embedding retry policy.',
+    fileName: 'transport-errors.ts',
+    operationId: 'GetStatus',
     source: `import {
   EsiClient,
   EsiNotModifiedError,
@@ -194,24 +193,24 @@ export async function getConditionalStatus(etag: string) {
     throw error;
   }
 }`,
+    title: 'Transport and conditional outcomes',
   },
   {
+    description: 'Validate unknown data with a natural Zod export and its matching response type.',
     fileName: 'schema-validation.ts',
     operationId: 'GetStatus',
-    title: 'Natural generated schemas',
-    description: 'Validate unknown data with a natural Zod export and its matching response type.',
     source: `import type { GetStatusResponse } from '@evespace/esi-client/types';
 import { zGetStatusResponse } from '@evespace/esi-client/zod';
 
 export function parseStatus(value: unknown): GetStatusResponse {
   return zGetStatusResponse.parse(value);
 }`,
+    title: 'Natural generated schemas',
   },
   {
+    description: 'Handle structured validation failures for untrusted generic arguments.',
     fileName: 'validation-error.ts',
     operationId: 'GetUniverseTypesTypeId',
-    title: 'Validation-error handling',
-    description: 'Handle structured validation failures for untrusted generic arguments.',
     source: `import { EsiClient, EsiRequestValidationError } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
 
@@ -231,13 +230,13 @@ export async function validateUntrustedOperationArguments(serializedArguments: s
     throw error;
   }
 }`,
+    title: 'Validation-error handling',
   },
   {
-    fileName: 'mutation-safety.ts',
-    operationId: 'DeleteCharactersCharacterIdFittingsFittingId',
-    title: 'Mutation safety',
     description:
       'Require authorization for a typed mutation and both safety gates for generic execution.',
+    fileName: 'mutation-safety.ts',
+    operationId: 'DeleteCharactersCharacterIdFittingsFittingId',
     source: `import { EsiClient } from '@evespace/esi-client';
 
 const characterId = 90000001;
@@ -275,6 +274,7 @@ function requiredAccessToken(): string {
   if (!token) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
   return token;
 }`,
+    title: 'Mutation safety',
   },
 ]);
 
@@ -296,8 +296,8 @@ export function renderOperationSnippets(
       operation.operationId,
       Object.freeze({
         domainMethod: renderDomainMethodSnippet(operation, shape),
-        standaloneDomainMethod: renderStandaloneDomainMethodSnippet(operation, shape),
         genericExecution: renderGenericExecutionSnippet(operation, shape),
+        standaloneDomainMethod: renderStandaloneDomainMethodSnippet(operation, shape),
         standaloneExamples: relatedStandaloneExamples(operation),
       }),
     );
@@ -410,8 +410,8 @@ export async function emitStandaloneExamples(
 }
 
 export const standaloneExamplesComponent: GeneratedExamplesComponent = Object.freeze({
-  name: 'standalone-examples',
   emit: emitStandaloneExamples,
+  name: 'standalone-examples',
 });
 
 export const generatedExamplesEmitter: GeneratedOutputEmitter = createGeneratedExamplesEmitter([
@@ -519,7 +519,9 @@ function renderGenericExecutionSnippet(
       `declare const requestBody: NonNullable<${operation.requestType.export}['body']>;`,
     );
   }
-  if (declarations.length > 0) lines.push('', ...declarations);
+  if (declarations.length > 0) {
+    lines.push('', ...declarations);
+  }
   const argumentsValue = renderGenericArguments(operation, shape);
   lines.push(
     '',
@@ -558,8 +560,12 @@ function renderClientSetup(
     );
   }
   const options: string[] = [];
-  if (operation.authentication.required) options.push('token: accessToken');
-  if (allowGenericMutations) options.push('allowGenericMutations: true');
+  if (operation.authentication.required) {
+    options.push('token: accessToken');
+  }
+  if (allowGenericMutations) {
+    options.push('allowGenericMutations: true');
+  }
   lines.push(`const client = new EsiClient({ ${options.join(', ')} });`);
   return lines;
 }
@@ -568,7 +574,9 @@ function renderStandaloneClientSetup(
   operation: SerializableOperationManifestEntry,
   factoryName: string,
 ): string[] {
-  if (!operation.authentication.required) return [`const client = ${factoryName}();`];
+  if (!operation.authentication.required) {
+    return [`const client = ${factoryName}();`];
+  }
   return [
     'const accessToken = process.env.ESI_ACCESS_TOKEN;',
     "if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');",
@@ -606,7 +614,9 @@ function createFacadeShape(operation: SerializableOperationManifestEntry): Facad
       name: facadeParameterName(parameter.name),
       parameter,
     }));
-  if (operation.requestBody?.required === true) requiredOptions.push({ name: 'body' });
+  if (operation.requestBody?.required === true) {
+    requiredOptions.push({ name: 'body' });
+  }
   return { pathParameters, requiredOptions };
 }
 
@@ -621,7 +631,9 @@ function renderDomainRequiredOptions(
   requiredOptions: readonly FacadeRequiredOption[],
   bodyName: string | undefined,
 ): string | null {
-  if (requiredOptions.length === 0) return null;
+  if (requiredOptions.length === 0) {
+    return null;
+  }
   return `{ ${requiredOptions
     .map(({ name, parameter }) =>
       name === 'body' || parameter === undefined
@@ -647,7 +659,9 @@ function renderGenericArguments(
     const parameters = operation.parameters.filter(
       (parameter) => parameter.placement === placement && parameter.required,
     );
-    if (parameters.length === 0) continue;
+    if (parameters.length === 0) {
+      continue;
+    }
     groups.push(
       `${placement}: { ${parameters
         .map(
@@ -657,7 +671,9 @@ function renderGenericArguments(
         .join(', ')} }`,
     );
   }
-  if (operation.requestBody?.required === true) groups.push('body: requestBody');
+  if (operation.requestBody?.required === true) {
+    groups.push('body: requestBody');
+  }
   return groups.length === 0 ? '{}' : `{ ${groups.join(', ')} }`;
 }
 
@@ -666,12 +682,20 @@ function renderParameterPlaceholder(parameter: SerializableOperationParameter): 
 }
 
 function renderSchemaPlaceholder(schema: unknown, name: string): string {
-  if (schema === null || typeof schema !== 'object' || Array.isArray(schema)) return 'null';
+  if (schema === null || typeof schema !== 'object' || Array.isArray(schema)) {
+    return 'null';
+  }
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- typeof narrows to object, not an indexable record
   const record = schema as Record<string, unknown>;
-  if (Array.isArray(record.enum) && record.enum.length > 0) return JSON.stringify(record.enum[0]);
-  if (record.const !== undefined) return JSON.stringify(record.const);
-  if (typeof record.$ref === 'string') return renderReferencePlaceholder(record.$ref, name);
+  if (Array.isArray(record.enum) && record.enum.length > 0) {
+    return JSON.stringify(record.enum[0]);
+  }
+  if (record.const !== undefined) {
+    return JSON.stringify(record.const);
+  }
+  if (typeof record.$ref === 'string') {
+    return renderReferencePlaceholder(record.$ref, name);
+  }
   if (Array.isArray(record.type)) {
     const nonNull = (record.type as readonly string[]).find((entry) => entry !== 'null');
     return renderSchemaPlaceholder({ ...record, type: nonNull }, name);
@@ -694,31 +718,61 @@ function renderSchemaPlaceholder(schema: unknown, name: string): string {
 
 function renderReferencePlaceholder(reference: string, name: string): string {
   const referenceName = reference.split('/').at(-1) ?? '';
-  if (referenceName === 'UUID') return JSON.stringify('00000000-0000-4000-8000-000000000000');
+  if (referenceName === 'UUID') {
+    return JSON.stringify('00000000-0000-4000-8000-000000000000');
+  }
   return String(identifierNumber(name, referenceName));
 }
 
 function renderStringPlaceholder(format: string | undefined, name: string): string {
-  if (format === 'date') return JSON.stringify('2026-08-18');
-  if (format === 'date-time') return JSON.stringify('2026-08-18T12:30:00Z');
-  if (format === 'uuid') return JSON.stringify('00000000-0000-4000-8000-000000000000');
-  if (/hash/iu.test(name)) return JSON.stringify('0000000000000000000000000000000000000000');
+  if (format === 'date') {
+    return JSON.stringify('2026-08-18');
+  }
+  if (format === 'date-time') {
+    return JSON.stringify('2026-08-18T12:30:00Z');
+  }
+  if (format === 'uuid') {
+    return JSON.stringify('00000000-0000-4000-8000-000000000000');
+  }
+  if (/hash/iu.test(name)) {
+    return JSON.stringify('0000000000000000000000000000000000000000');
+  }
   return JSON.stringify(`example-${name.replaceAll('_', '-')}`);
 }
 
 function identifierNumber(name: string, referenceName = ''): number {
   const key = `${name} ${referenceName}`.toLowerCase();
-  if (key.includes('character')) return 90000001;
-  if (key.includes('corporation')) return 98000001;
-  if (key.includes('alliance')) return 99000001;
-  if (key.includes('solar') || key.includes('system')) return 30000142;
-  if (key.includes('constellation')) return 20000020;
-  if (key.includes('region')) return 10000002;
-  if (key.includes('station')) return 60003760;
-  if (key.includes('structure')) return 1020000000000;
-  if (key.includes('item')) return 1000000000001;
-  if (key.includes('type')) return 34;
-  return 12345;
+  if (key.includes('character')) {
+    return 90_000_001;
+  }
+  if (key.includes('corporation')) {
+    return 98_000_001;
+  }
+  if (key.includes('alliance')) {
+    return 99_000_001;
+  }
+  if (key.includes('solar') || key.includes('system')) {
+    return 30_000_142;
+  }
+  if (key.includes('constellation')) {
+    return 20_000_020;
+  }
+  if (key.includes('region')) {
+    return 10_000_002;
+  }
+  if (key.includes('station')) {
+    return 60_003_760;
+  }
+  if (key.includes('structure')) {
+    return 1_020_000_000_000;
+  }
+  if (key.includes('item')) {
+    return 1_000_000_000_001;
+  }
+  if (key.includes('type')) {
+    return 34;
+  }
+  return 12_345;
 }
 
 function relatedStandaloneExamples(operation: SerializableOperationManifestEntry): string[] {
@@ -729,8 +783,12 @@ function relatedStandaloneExamples(operation: SerializableOperationManifestEntry
     'schema-validation.md',
     'validation-error.md',
   ]);
-  if (operation.pagination.kind !== 'none') fileNames.add('paginated.md');
-  if (operation.classification === 'mutation') fileNames.add('mutation-safety.md');
+  if (operation.pagination.kind !== 'none') {
+    fileNames.add('paginated.md');
+  }
+  if (operation.classification === 'mutation') {
+    fileNames.add('mutation-safety.md');
+  }
   return [...fileNames].toSorted(compareText);
 }
 

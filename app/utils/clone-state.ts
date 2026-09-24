@@ -12,7 +12,9 @@ interface SkillArchive {
 export function inferCloneState(skills: SkillArchive | undefined): InferredCloneState | undefined {
   for (const group of skills?.groups ?? []) {
     for (const skill of group.skills) {
-      if (skill.activeLevel < skill.trainedLevel) return 'alpha'
+      if (skill.activeLevel < skill.trainedLevel) {
+        return 'alpha'
+      }
     }
   }
   return undefined

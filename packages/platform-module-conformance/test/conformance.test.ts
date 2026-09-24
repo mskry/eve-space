@@ -24,7 +24,7 @@ const readFixture = async () => ({ value: 'public-contract' })
 
 afterEach(async () => {
   await Promise.all(
-    temporaryRoots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
+    temporaryRoots.splice(0).map((root) => rm(root, { force: true, recursive: true })),
   )
 })
 
@@ -34,19 +34,19 @@ describe('public conformance fixtures', () => {
     const response = await route.request('/')
     const provider = fixtureProvider()
 
-    expect(await response.json()).toEqual({ value: 'public-contract' })
+    expect(await response.json()).toStrictEqual({ value: 'public-contract' })
     expect(fixtureResource.operation).toBe('fixture-status')
     expect(readFixtureOperation.id).toBe('read-fixture')
     expect(fixturePanel.contributionId).toBe('fixture-review')
-    expect(fixturePanelModule.default).toEqual(expect.any(Function))
-    expect(fixtureNuxtModule).toEqual(expect.any(Function))
+    expect(fixturePanelModule.default).toStrictEqual(expect.any(Function))
+    expect(fixtureNuxtModule).toStrictEqual(expect.any(Function))
     await expect(
       provider({
-        userId: 'user',
+        characters: [],
         organizationVersion: 1,
         requestedAt: '2026-09-18T00:00:00Z',
         signal: new AbortController().signal,
-        characters: [],
+        userId: 'user',
       }),
     ).resolves.toMatchObject({ activities: [] })
   })
@@ -55,13 +55,13 @@ describe('public conformance fixtures', () => {
     const report = await runPlatformModuleConformance(
       {
         manifest: { path: 'manifest/manifest.json' },
-        server: { sourceRoot: 'server/dist' },
         nuxt: { sourceRoot: 'nuxt/dist' },
+        server: { sourceRoot: 'server/dist' },
       },
       { baseDirectory: fixtureRoot },
     )
 
-    expect(report.checks).toEqual({ source: true, artifact: false })
+    expect(report.checks).toStrictEqual({ artifact: false, source: true })
     expect(report.issues.every(({ scope }) => scope === 'source')).toBe(true)
     expect(JSON.stringify(report)).not.toContain(fixtureRoot)
   })
@@ -73,7 +73,7 @@ describe('installed and packed artifact verification', () => {
       baseDirectory: fixtureRoot,
     })
 
-    expect(report).toMatchObject({ ok: true, checks: { source: false, artifact: true } })
+    expect(report).toMatchObject({ checks: { artifact: true, source: false }, ok: true })
 
     const root = await copyFixture()
     await writeFile(
@@ -82,7 +82,7 @@ describe('installed and packed artifact verification', () => {
     )
     const invalid = await verifyInstalledModuleArtifacts(directoryInput(), { baseDirectory: root })
 
-    expect(invalid.issues).toEqual(
+    expect(invalid.issues).toStrictEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 'IMPORT_NOT_ALLOWED', path: 'server/dist/orphan.js' }),
         expect.objectContaining({
@@ -112,7 +112,7 @@ describe('installed and packed artifact verification', () => {
 
     const report = await verifyInstalledModuleArtifacts(directoryInput(), { baseDirectory: root })
 
-    expect(report.issues).toEqual(
+    expect(report.issues).toStrictEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 'DEPENDENCY_NOT_ALLOWED' }),
         expect.objectContaining({ code: 'PACKAGE_EXPORT_TARGET_MISSING' }),
@@ -129,7 +129,7 @@ describe('installed and packed artifact verification', () => {
     const root = await copyFixture()
     const manifestPath = join(root, 'manifest/manifest.json')
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
-    manifest.server.esiOperations = [{ id: 'skills', exportName: 'fixtureSkills' }]
+    manifest.server.esiOperations = [{ exportName: 'fixtureSkills', id: 'skills' }]
     await writeFile(manifestPath, JSON.stringify(manifest, null, 2))
 
     const report = await verifyInstalledModuleArtifacts(directoryInput(), { baseDirectory: root })
@@ -161,7 +161,9 @@ describe('installed and packed artifact verification', () => {
     expect(
       report.issues.filter(({ code }) => code === 'PACKAGE_ROLE_DEPENDENCY_CONTAMINATION'),
     ).toHaveLength(2)
-    expect(report.issues.filter(({ code }) => code === 'PACKAGE_ROLE_FILE_CONTAMINATION')).toEqual([
+    expect(
+      report.issues.filter(({ code }) => code === 'PACKAGE_ROLE_FILE_CONTAMINATION'),
+    ).toStrictEqual([
       expect.objectContaining({ path: 'nuxt/migrations/contaminated.sql' }),
       expect.objectContaining({ path: 'nuxt/server/handler.js' }),
       expect.objectContaining({ path: 'server/dist/Contaminated.vue' }),
@@ -196,7 +198,7 @@ describe('installed and packed artifact verification', () => {
     const second = await verifyInstalledModuleArtifacts(input)
 
     expect(first.ok).toBe(true)
-    expect(first).toEqual(second)
+    expect(first).toStrictEqual(second)
     expect(formatPlatformModuleConformanceReport(first)).toBe(
       'Platform module conformance passed.\nChecks: source=not-run, artifact=run',
     )
@@ -222,13 +224,17 @@ describe('installed and packed artifact verification', () => {
     const archives = await packFixture(root)
     const pipePath = join(root, 'staging-server/package/dist/unsafe-pipe')
     const fifo = spawnSync('mkfifo', [pipePath], { encoding: 'utf8' })
-    if (fifo.status !== 0) throw new Error('Could not create archive FIFO fixture')
+    if (fifo.status !== 0) {
+      throw new Error('Could not create archive FIFO fixture')
+    }
     const packed = spawnSync(
       'tar',
       ['-czf', archives.server, '-C', join(root, 'staging-server'), 'package'],
       { encoding: 'utf8' },
     )
-    if (packed.status !== 0) throw new Error('Could not repack archive FIFO fixture')
+    if (packed.status !== 0) {
+      throw new Error('Could not repack archive FIFO fixture')
+    }
 
     const report = await verifyInstalledModuleArtifacts(archiveInput(archives))
 
@@ -244,7 +250,7 @@ describe('installed and packed artifact verification', () => {
     const report = await verifyInstalledModuleArtifacts(archiveInput(archives))
     const serialized = JSON.stringify(report)
 
-    expect(report.issues).toEqual(
+    expect(report.issues).toStrictEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 'PACKED_FILE_UNDECLARED', path: 'server/.npmrc' }),
         expect.objectContaining({ code: 'SENSITIVE_FILE_PACKED', path: 'server/.npmrc' }),
@@ -264,16 +270,16 @@ describe('conformance CLI', () => {
       validConfig,
       JSON.stringify({
         manifest: { path: join(fixtureRoot, 'manifest/manifest.json') },
-        server: { sourceRoot: join(fixtureRoot, 'server/dist') },
         nuxt: { sourceRoot: join(fixtureRoot, 'nuxt/dist') },
+        server: { sourceRoot: join(fixtureRoot, 'server/dist') },
       }),
     )
     await writeFile(
       invalidConfig,
       JSON.stringify({
         manifest: { path: join(root, 'missing.json') },
-        server: { sourceRoot: join(fixtureRoot, 'server/dist') },
         nuxt: { sourceRoot: join(fixtureRoot, 'nuxt/dist') },
+        server: { sourceRoot: join(fixtureRoot, 'server/dist') },
       }),
     )
 
@@ -292,8 +298,8 @@ describe('conformance CLI', () => {
 function directoryInput(): PlatformModuleConformanceInput {
   return {
     manifest: { packageRoot: 'manifest' },
-    server: { packageRoot: 'server' },
     nuxt: { packageRoot: 'nuxt' },
+    server: { packageRoot: 'server' },
   }
 }
 
@@ -302,8 +308,8 @@ function archiveInput(
 ): PlatformModuleConformanceInput {
   return {
     manifest: { archivePath: archives.manifest },
-    server: { archivePath: archives.server },
     nuxt: { archivePath: archives.nuxt },
+    server: { archivePath: archives.server },
   }
 }
 
@@ -326,14 +332,16 @@ async function packFixture(root: string) {
     const result = spawnSync('tar', ['-czf', archive, '-C', staging, 'package'], {
       encoding: 'utf8',
     })
-    if (result.status !== 0) throw new Error(`Could not create ${kind} fixture archive`)
+    if (result.status !== 0) {
+      throw new Error(`Could not create ${kind} fixture archive`)
+    }
     archives[kind] = archive
   }
   return archives
 }
 
 function logger() {
-  return { info() {}, warn() {}, error() {} }
+  return { error() {}, info() {}, warn() {} }
 }
 
 function runCli(arguments_: readonly string[]) {

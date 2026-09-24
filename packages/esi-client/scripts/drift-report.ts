@@ -98,7 +98,9 @@ export async function reportSpecificationDrift(
     options.correctionManifestPath ?? join(root, 'openapi/corrections/manifest.json');
   const outputPath =
     options.outputPath === undefined ? undefined : resolve(root, options.outputPath);
-  if (outputPath !== undefined) assertSafeOutputPath(root, outputPath);
+  if (outputPath !== undefined) {
+    assertSafeOutputPath(root, outputPath);
+  }
   const [pinnedSource, pinnedModelSource, pinnedProvenance, pinnedDate] = await Promise.all([
     readFile(join(generatedDirectory, 'esi-openapi.json'), 'utf8'),
     readFile(join(generatedDirectory, 'normalized-model.json'), 'utf8'),
@@ -123,9 +125,9 @@ export async function reportSpecificationDrift(
   const staged = await stageOpenApiSnapshot({
     fetchImplementation: options.fetchImplementation,
     requestedDate: latestCompatibilityDate,
+    signal: options.signal,
     specificationUrl: options.specificationUrl ?? defaultSpecificationUrl,
     temporaryRoot: options.temporaryRoot,
-    signal: options.signal,
   });
 
   try {
@@ -194,10 +196,14 @@ async function resolveLatestCompatibilityDate(
     throw new Error('Failed to parse ESI compatibility dates as JSON', { cause: error });
   }
   const dates = isObject(payload) ? payload.compatibility_dates : undefined;
-  if (!Array.isArray(dates)) throw new Error('Invalid ESI compatibility dates response');
+  if (!Array.isArray(dates)) {
+    throw new Error('Invalid ESI compatibility dates response');
+  }
   const validDates = dates.filter(isCompatibilityDate).toSorted(compareText);
   const latestDate = validDates.at(-1);
-  if (latestDate === undefined) throw new Error('ESI returned no valid compatibility dates');
+  if (latestDate === undefined) {
+    throw new Error('ESI returned no valid compatibility dates');
+  }
   return latestDate;
 }
 
@@ -232,11 +238,11 @@ export function compareSpecificationDrift(
   const summary = summarizeChanges(changes);
 
   return deepFreeze({
-    schemaVersion: 1 as const,
-    pinned: versionDescription(input.pinned, 'committed-corrected'),
-    latest: versionDescription(input.latest, 'upstream-staged'),
-    summary,
     changes,
+    latest: versionDescription(input.latest, 'upstream-staged'),
+    pinned: versionDescription(input.pinned, 'committed-corrected'),
+    schemaVersion: 1 as const,
+    summary,
   });
 }
 
@@ -252,20 +258,24 @@ function compareOperation(before: any, after: any): OperationChange | undefined 
     responses: DriftCollection;
     [key: string]: unknown;
   } = {
-    operationId: before.operationId,
     categories: [],
+    operationId: before.operationId,
     parameters: compareParameters(before.parameters, after.parameters),
     responses: compareResponses(before.successResponses, after.successResponses),
   };
   recordScalarChange(change, 'path', before.path, after.path);
   recordScalarChange(change, 'method', before.method, after.method);
-  if (hasDiff(change.parameters)) change.categories.push('parameters');
+  if (hasDiff(change.parameters)) {
+    change.categories.push('parameters');
+  }
   const requestBody = compareRequestBody(before.requestBody, after.requestBody);
   if (requestBody !== undefined) {
     change.categories.push('requestBody');
     change.requestBody = requestBody;
   }
-  if (hasDiff(change.responses)) change.categories.push('responses');
+  if (hasDiff(change.responses)) {
+    change.categories.push('responses');
+  }
   recordObjectChange(change, 'pagination', before.pagination, after.pagination);
   recordObjectChange(change, 'cache', before.cache, after.cache);
   recordObjectChange(
@@ -302,13 +312,17 @@ function compareParameters(before: any[], after: any[]): DriftCollection {
   const changed: (ReturnType<typeof compareParameter> | undefined)[] = [];
 
   for (const key of [...unmatchedBefore.keys()].toSorted(compareText)) {
-    if (!unmatchedAfter.has(key)) continue;
+    if (!unmatchedAfter.has(key)) {
+      continue;
+    }
     const previous = unmatchedBefore.get(key);
     const next = unmatchedAfter.get(key);
     unmatchedBefore.delete(key);
     unmatchedAfter.delete(key);
     const parameterChange = compareParameter(previous, next);
-    if (parameterChange !== undefined) changed.push(parameterChange);
+    if (parameterChange !== undefined) {
+      changed.push(parameterChange);
+    }
   }
 
   const beforeByName = groupBy(unmatchedBefore.values(), ({ name }) => name.toLowerCase());
@@ -316,7 +330,9 @@ function compareParameters(before: any[], after: any[]): DriftCollection {
   for (const name of [...beforeByName.keys()].toSorted(compareText)) {
     const previous = beforeByName.get(name);
     const next = afterByName.get(name);
-    if (previous?.length !== 1 || next?.length !== 1) continue;
+    if (previous?.length !== 1 || next?.length !== 1) {
+      continue;
+    }
     unmatchedBefore.delete(parameterKey(previous[0]));
     unmatchedAfter.delete(parameterKey(next[0]));
     changed.push(compareParameter(previous[0], next[0]));
@@ -324,10 +340,10 @@ function compareParameters(before: any[], after: any[]): DriftCollection {
 
   return {
     added: [...unmatchedAfter.values()].map(parameterContract).toSorted(compareNamedPlacement),
-    removed: [...unmatchedBefore.values()].map(parameterContract).toSorted(compareNamedPlacement),
     changed: changed
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
       .toSorted(compareNamedPlacement),
+    removed: [...unmatchedBefore.values()].map(parameterContract).toSorted(compareNamedPlacement),
   };
 }
 
@@ -336,25 +352,39 @@ function compareParameter(
   after: any,
 ): { name: string; changes: string[]; before: unknown; after: unknown } | undefined {
   const changes: string[] = [];
-  if (before.name !== after.name) changes.push('name');
-  if (before.placement !== after.placement) changes.push('placement');
-  if (before.required !== after.required) changes.push('required');
-  if (!sameJson(before.schema, after.schema)) changes.push('schema');
-  if (changes.length === 0) return undefined;
+  if (before.name !== after.name) {
+    changes.push('name');
+  }
+  if (before.placement !== after.placement) {
+    changes.push('placement');
+  }
+  if (before.required !== after.required) {
+    changes.push('required');
+  }
+  if (!sameJson(before.schema, after.schema)) {
+    changes.push('schema');
+  }
+  if (changes.length === 0) {
+    return undefined;
+  }
   return {
-    name: after.name,
-    changes: changes.toSorted(compareText),
-    before: parameterContract(before),
     after: parameterContract(after),
+    before: parameterContract(before),
+    changes: changes.toSorted(compareText),
+    name: after.name,
   };
 }
 
 function compareRequestBody(before: any, after: any): unknown {
-  if (sameJson(before, after)) return undefined;
-  if (before === null || after === null) return { before, after };
+  if (sameJson(before, after)) {
+    return undefined;
+  }
+  if (before === null || after === null) {
+    return { after, before };
+  }
   return {
-    before: { required: before.required },
     after: { required: after.required },
+    before: { required: before.required },
     content: compareContent(before.content, after.content),
   };
 }
@@ -370,12 +400,12 @@ function compareResponses(before: any[], after: any[]): DriftCollection {
 
 function compareResponse(before: any, after: any): unknown {
   const change: { status: string; categories: string[]; [key: string]: unknown } = {
-    status: before.status,
     categories: [],
+    status: before.status,
   };
   if (before.noContent !== after.noContent) {
     change.categories.push('noContent');
-    change.noContent = { before: before.noContent, after: after.noContent };
+    change.noContent = { after: after.noContent, before: before.noContent };
   }
   const content = compareContent(before.content, after.content);
   if (hasDiff(content)) {
@@ -397,11 +427,13 @@ function compareContent(before: any[], after: any[]): DriftCollection {
     indexBy(after, ({ mediaType }) => mediaType),
     mediaContract,
     (previous: any, next: any) => {
-      if (sameJson(previous.schema, next.schema)) return undefined;
+      if (sameJson(previous.schema, next.schema)) {
+        return undefined;
+      }
       return {
-        mediaType: previous.mediaType,
-        schema: { before: previous.schema, after: next.schema },
         fields: compareSchemaFields(previous.schema, next.schema),
+        mediaType: previous.mediaType,
+        schema: { after: next.schema, before: previous.schema },
       };
     },
   );
@@ -413,22 +445,26 @@ function compareResponseHeaders(before: any[], after: any[]): DriftCollection {
     indexBy(after, ({ name }) => name.toLowerCase()),
     ({ name, schema }: any) => ({ name, schema }),
     (previous: any, next: any) => {
-      if (sameJson(previous.schema, next.schema) && previous.name === next.name) return undefined;
+      if (sameJson(previous.schema, next.schema) && previous.name === next.name) {
+        return undefined;
+      }
       return {
-        name: next.name,
-        before: { name: previous.name, schema: previous.schema },
         after: { name: next.name, schema: next.schema },
+        before: { name: previous.name, schema: previous.schema },
+        name: next.name,
       };
     },
   );
 }
 
 function compareComponent(before: any, after: any): unknown {
-  if (sameJson(before.schema, after.schema)) return undefined;
+  if (sameJson(before.schema, after.schema)) {
+    return undefined;
+  }
   return {
-    name: before.name,
-    schema: { before: before.schema, after: after.schema },
     fields: compareSchemaFields(before.schema, after.schema),
+    name: before.name,
+    schema: { after: after.schema, before: before.schema },
   };
 }
 
@@ -440,11 +476,17 @@ function compareSchemaFields(before: unknown, after: unknown): DriftCollection {
     afterFields,
     (field) => field,
     (previous: any, next: any) => {
-      if (sameJson(previous, next)) return undefined;
+      if (sameJson(previous, next)) {
+        return undefined;
+      }
       const changes: string[] = [];
-      if (previous.required !== next.required) changes.push('required');
-      if (!sameJson(previous.schema, next.schema)) changes.push('schema');
-      return { path: next.path, changes, before: previous, after: next };
+      if (previous.required !== next.required) {
+        changes.push('required');
+      }
+      if (!sameJson(previous.schema, next.schema)) {
+        changes.push('schema');
+      }
+      return { after: next, before: previous, changes, path: next.path };
     },
   );
 }
@@ -461,7 +503,9 @@ function visitSchemaFields(
   fields: Map<string, unknown>,
   ancestors: Set<unknown>,
 ): void {
-  if (!isObject(schema) || ancestors.has(schema)) return;
+  if (!isObject(schema) || ancestors.has(schema)) {
+    return;
+  }
   const nextAncestors = new Set(ancestors).add(schema);
   const required = new Set(Array.isArray(schema.required) ? schema.required : []);
   if (isObject(schema.properties)) {
@@ -472,20 +516,27 @@ function visitSchemaFields(
       visitSchemaFields(fieldSchema, path, fields, nextAncestors);
     }
   }
-  if (isObject(schema.items))
+  if (isObject(schema.items)) {
     visitSchemaFields(schema.items, `${parentPath}/*`, fields, nextAncestors);
+  }
   for (const keyword of ['allOf', 'anyOf', 'oneOf']) {
     const branches = schema[keyword];
-    if (!Array.isArray(branches)) continue;
-    for (const nested of branches) visitSchemaFields(nested, parentPath, fields, nextAncestors);
+    if (!Array.isArray(branches)) {
+      continue;
+    }
+    for (const nested of branches) {
+      visitSchemaFields(nested, parentPath, fields, nextAncestors);
+    }
   }
 }
 
 function compareOperationAuthentication(before: unknown, after: unknown): unknown {
-  if (sameJson(before, after)) return undefined;
+  if (sameJson(before, after)) {
+    return undefined;
+  }
   return {
-    before,
     after,
+    before,
     schemes: compareScopeSets(flattenOperationSecurity(before), flattenOperationSecurity(after)),
   };
 }
@@ -497,7 +548,9 @@ function flattenOperationSecurity(
   for (const requirement of requirements) {
     for (const scheme of requirement.schemes) {
       const current = scopes.get(scheme.name) ?? new Set<string>();
-      for (const scope of scheme.scopes) current.add(scope);
+      for (const scope of scheme.scopes) {
+        current.add(scope);
+      }
       scopes.set(scheme.name, current);
     }
   }
@@ -517,10 +570,12 @@ function compareAuthenticationSchemes(
     extractAuthenticationSchemes(afterDocument),
     (entry) => entry,
     (before: any, after: any) => {
-      if (sameJson(before, after)) return undefined;
+      if (sameJson(before, after)) {
+        return undefined;
+      }
       return {
+        definition: { after: after.definition, before: before.definition },
         name: before.name,
-        definition: { before: before.definition, after: after.definition },
         scopes: diffScopeDescriptions(before.scopes, after.scopes),
       };
     },
@@ -541,17 +596,19 @@ function extractAuthenticationSchemes(document: Record<string, unknown>): Map<st
         if (isObject(definition) && isObject(definition.flows)) {
           for (const flowName of Object.keys(definition.flows).toSorted(compareText)) {
             const flow = definition.flows[flowName];
-            if (!isObject(flow) || !isObject(flow.scopes)) continue;
+            if (!isObject(flow) || !isObject(flow.scopes)) {
+              continue;
+            }
             for (const scope of Object.keys(flow.scopes).toSorted(compareText)) {
               scopes.push({
+                description: flow.scopes[scope],
                 flow: flowName,
                 name: scope,
-                description: flow.scopes[scope],
               });
             }
           }
         }
-        return [name, { name, definition, scopes }] as const;
+        return [name, { definition, name, scopes }] as const;
       }),
   );
 }
@@ -565,7 +622,9 @@ function compareScopeSets(
     after,
     (entry) => entry,
     (previous, next) => {
-      if (sameJson(previous.scopes, next.scopes)) return undefined;
+      if (sameJson(previous.scopes, next.scopes)) {
+        return undefined;
+      }
       return {
         name: previous.name,
         scopes: diffStrings(previous.scopes, next.scopes),
@@ -585,9 +644,9 @@ function diffScopeDescriptions(before: any[], after: any[]): DriftCollection {
       previous.description === next.description
         ? undefined
         : {
+            description: { after: next.description, before: previous.description },
             flow: next.flow,
             name: next.name,
-            description: { before: previous.description, after: next.description },
           },
   );
 }
@@ -617,14 +676,19 @@ function diffIndexed<T, P, R>(
     const previous = before.get(key);
     const next = after.get(key);
     if (previous === undefined) {
-      if (next !== undefined) added.push(project(next));
-    } else if (next === undefined) removed.push(project(previous));
-    else {
+      if (next !== undefined) {
+        added.push(project(next));
+      }
+    } else if (next === undefined) {
+      removed.push(project(previous));
+    } else {
       const difference = compare(previous, next);
-      if (difference !== undefined) changed.push(difference);
+      if (difference !== undefined) {
+        changed.push(difference);
+      }
     }
   }
-  return { added, removed, changed };
+  return { added, changed, removed };
 }
 
 function summarizeChanges(changes: {
@@ -649,23 +713,20 @@ function summarizeChanges(changes: {
     authenticationSchemesChanged: changes.authenticationSchemes.changed.length,
     authenticationSchemesRemoved: changes.authenticationSchemes.removed.length,
     cacheChanged: changedOperations.filter(({ categories }) => categories.includes('cache')).length,
-    conditionalRequestValidatorsChanged: changedOperations.filter(({ categories }) =>
-      categories.includes('conditionalRequestValidators'),
-    ).length,
     componentFieldsAdded: countChanges(componentFieldChanges, 'added'),
     componentFieldsChanged: countChanges(componentFieldChanges, 'changed'),
     componentFieldsRemoved: countChanges(componentFieldChanges, 'removed'),
     componentSchemasAdded: changes.componentSchemas.added.length,
     componentSchemasChanged: changes.componentSchemas.changed.length,
     componentSchemasRemoved: changes.componentSchemas.removed.length,
+    conditionalRequestValidatorsChanged: changedOperations.filter(({ categories }) =>
+      categories.includes('conditionalRequestValidators'),
+    ).length,
     operationsAdded: changes.operations.added.length,
     operationsChanged: changedOperations.length,
     operationsRemoved: changes.operations.removed.length,
     paginationChanged: changedOperations.filter(({ categories }) =>
       categories.includes('pagination'),
-    ).length,
-    rateLimitsChanged: changedOperations.filter(({ categories }) =>
-      categories.includes('rateLimit'),
     ).length,
     parametersAdded: countChanges(
       changedOperations.map(({ parameters }) => parameters),
@@ -679,6 +740,12 @@ function summarizeChanges(changes: {
       changedOperations.map(({ parameters }) => parameters),
       'removed',
     ),
+    rateLimitsChanged: changedOperations.filter(({ categories }) =>
+      categories.includes('rateLimit'),
+    ).length,
+    requestLimitsChanged: changedOperations.filter(({ categories }) =>
+      categories.includes('requestLimits'),
+    ).length,
     responseFieldsAdded: countChanges(responseFieldChanges, 'added'),
     responseFieldsChanged: countChanges(responseFieldChanges, 'changed'),
     responseFieldsRemoved: countChanges(responseFieldChanges, 'removed'),
@@ -691,9 +758,6 @@ function summarizeChanges(changes: {
       changedOperations.map(({ responses }) => responses),
       'removed',
     ),
-    requestLimitsChanged: changedOperations.filter(({ categories }) =>
-      categories.includes('requestLimits'),
-    ).length,
   };
   const totalChanges = Object.values(summary).reduce((total: number, value) => total + value, 0);
   return { hasChanges: totalChanges > 0, totalChanges, ...summary };
@@ -712,18 +776,18 @@ function versionDescription(
 ): SpecificationVersionDescription {
   const appliedIds = [...version.corrections].toSorted(compareText);
   return {
-    compatibilityDate: version.compatibilityDate,
-    sha256: version.sha256,
-    sourceSha256: version.sourceSha256,
-    specificationUrl: version.specificationUrl,
-    source,
     comparison:
       source === 'upstream-staged' ? 'upstream-with-applicable-corrections' : 'committed-corrected',
+    compatibilityDate: version.compatibilityDate,
     corrections: {
-      policy: correctionPolicy,
       applied: appliedIds.length > 0,
       appliedIds,
+      policy: correctionPolicy,
     },
+    sha256: version.sha256,
+    source,
+    sourceSha256: version.sourceSha256,
+    specificationUrl: version.specificationUrl,
   };
 }
 
@@ -748,18 +812,18 @@ function isPathInside(path: string, parent: string): boolean {
 
 function responseContract(response: any): unknown {
   return {
-    status: response.status,
-    noContent: response.noContent,
     content: response.content.map(mediaContract),
     headers: response.headers.map(({ name, schema }: any) => ({ name, schema })),
+    noContent: response.noContent,
+    status: response.status,
   };
 }
 
 function mediaContract(media: any): unknown {
   return {
+    fields: [...collectSchemaFields(media.schema).values()],
     mediaType: media.mediaType,
     schema: media.schema,
-    fields: [...collectSchemaFields(media.schema).values()],
   };
 }
 
@@ -782,7 +846,7 @@ function operationIdentity(operation: {
   readonly path: string;
   readonly method: string;
 }): OperationIdentity {
-  return { operationId: operation.operationId, path: operation.path, method: operation.method };
+  return { method: operation.method, operationId: operation.operationId, path: operation.path };
 }
 
 function parameterKey(parameter: { placement: string; name: string }): string {
@@ -796,9 +860,11 @@ function recordScalarChange(
   before: unknown,
   after: unknown,
 ): void {
-  if (before === after) return;
+  if (before === after) {
+    return;
+  }
   target.categories.push(category);
-  target[category] = { before, after };
+  target[category] = { after, before };
 }
 
 function recordObjectChange(
@@ -807,9 +873,11 @@ function recordObjectChange(
   before: unknown,
   after: unknown,
 ): void {
-  if (sameJson(before, after)) return;
+  if (sameJson(before, after)) {
+    return;
+  }
   target.categories.push(category);
-  target[category] = { before, after };
+  target[category] = { after, before };
 }
 
 function hasDiff(value: DriftCollection): boolean {
@@ -841,8 +909,12 @@ function compareNamedPlacement(
 }
 
 function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
+  if (left < right) {
+    return -1;
+  }
+  if (left > right) {
+    return 1;
+  }
   return 0;
 }
 
@@ -859,8 +931,12 @@ function serializeJson(value: unknown): string {
 }
 
 function sortJsonValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortJsonValue);
-  if (!isObject(value)) return value;
+  if (Array.isArray(value)) {
+    return value.map(sortJsonValue);
+  }
+  if (!isObject(value)) {
+    return value;
+  }
   return Object.fromEntries(
     Object.entries(value)
       .toSorted(([left], [right]) => compareText(left, right))
@@ -906,7 +982,9 @@ function assertPinnedInput(
 function deepFreeze<T>(value: T): T {
   if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
     Object.freeze(value);
-    for (const entry of Object.values(value)) deepFreeze(entry);
+    for (const entry of Object.values(value)) {
+      deepFreeze(entry);
+    }
   }
   return value;
 }
@@ -916,7 +994,9 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 function isCompatibilityDate(value: unknown): value is string {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
   const date = new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value;
 }
@@ -933,9 +1013,13 @@ function parseArguments(arguments_: readonly string[]): SpecificationDriftReport
     if (!['--date', '--output', '--url'].includes(argument) || value === undefined) {
       throw new Error(`Usage: pnpm drift:report [--date YYYY-MM-DD] [--output path] [--url URL]`);
     }
-    if (argument === '--date') options.latestCompatibilityDate = value;
-    else if (argument === '--output') options.outputPath = value;
-    else options.specificationUrl = value;
+    if (argument === '--date') {
+      options.latestCompatibilityDate = value;
+    } else if (argument === '--output') {
+      options.outputPath = value;
+    } else {
+      options.specificationUrl = value;
+    }
     index += 1;
   }
   return options;
@@ -945,6 +1029,7 @@ const entryPath = process.argv[1];
 if (entryPath !== undefined && import.meta.url === pathToFileURL(resolve(entryPath)).href) {
   const options = parseArguments(process.argv.slice(2));
   const report = await reportSpecificationDrift(options);
-  if (options.outputPath === undefined)
+  if (options.outputPath === undefined) {
     process.stdout.write(renderSpecificationDriftReport(report));
+  }
 }

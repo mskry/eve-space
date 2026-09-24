@@ -15,13 +15,13 @@ describe('ESI request permit cancellation', () => {
   test('does not enter local fallback when distributed permit waiting is aborted', async () => {
     const controller = new AbortController()
     const connection = {
-      get: vi.fn().mockResolvedValue(null),
       eval: vi.fn().mockResolvedValue(0),
+      get: vi.fn().mockResolvedValue(null),
     }
     const pending = acquireEsiRequestPermit({
+      concurrency: 1,
       connection: connection as never,
       operation: 'status',
-      concurrency: 1,
       queueTimeoutMs: 30_000,
       signal: controller.signal,
     })

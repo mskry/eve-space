@@ -14,16 +14,20 @@ export function createCoreDataCapability<const ProductIds extends readonly CoreD
   assertCoreDataProductDeclarations(productIds, context)
   const methods: Partial<CoreDataMethods> = {}
   for (const productId of productIds) {
-    if (productId === 'published-type-groups')
+    if (productId === 'published-type-groups') {
       methods.publishedTypeGroups = getCoreDataProductDefinition('published-type-groups').adapter
-    if (productId === 'published-skill-catalogue')
+    }
+    if (productId === 'published-skill-catalogue') {
       methods.publishedSkillCatalogue = getCoreDataProductDefinition(
         'published-skill-catalogue',
       ).adapter
-    if (productId === 'published-type-details')
+    }
+    if (productId === 'published-type-details') {
       methods.publishedTypeDetails = getCoreDataProductDefinition('published-type-details').adapter
-    if (productId === 'static-location-labels')
+    }
+    if (productId === 'static-location-labels') {
       methods.staticLocationLabels = getCoreDataProductDefinition('static-location-labels').adapter
+    }
   }
   return methods as CoreDataMethodsFor<ProductIds>
 }
@@ -32,20 +36,29 @@ export function assertCoreDataProductDeclarations(
   productIds: unknown,
   context: CoreDataContributionContext,
 ): asserts productIds is readonly CoreDataProductId[] {
-  if (!Array.isArray(productIds)) throw new Error('Core-data product declarations must be an array')
+  if (!Array.isArray(productIds)) {
+    throw new TypeError('Core-data product declarations must be an array')
+  }
   const seen = new Set<string>()
   for (const productId of productIds) {
     if (
       typeof productId !== 'string' ||
       !(CORE_DATA_PRODUCT_IDS as readonly string[]).includes(productId)
-    )
+    ) {
       throw new Error(`Unknown core-data product identity: ${String(productId)}`)
-    if (seen.has(productId)) throw new Error(`Duplicate core-data product identity: ${productId}`)
+    }
+    if (seen.has(productId)) {
+      throw new Error(`Duplicate core-data product identity: ${productId}`)
+    }
     seen.add(productId)
     const definition = getCoreDataProductDefinition(productId as CoreDataProductId)
-    if (!(definition.permittedContexts as readonly CoreDataContributionContext[]).includes(context))
+    if (
+      !(definition.permittedContexts as readonly CoreDataContributionContext[]).includes(context)
+    ) {
       throw new Error(`Core-data product ${productId} is not permitted in ${context}`)
-    if (context === 'resource-projection' && definition.networkAllowed !== false)
+    }
+    if (context === 'resource-projection' && definition.networkAllowed !== false) {
       throw new Error(`Core-data product ${productId} is not safe for resource projection`)
+    }
   }
 }

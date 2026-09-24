@@ -26,9 +26,7 @@ if (!configArgument) {
     process.exitCode = report.ok ? 0 : 1
   } catch {
     const report = {
-      version: 1,
-      ok: false,
-      checks: { source: false, artifact: false },
+      checks: { artifact: false, source: false },
       issues: [
         {
           code: 'CONFORMANCE_CONFIG_INVALID',
@@ -37,6 +35,8 @@ if (!configArgument) {
           message: 'Configuration could not be read or parsed.',
         },
       ],
+      ok: false,
+      version: 1,
     }
     process.stdout.write(
       json

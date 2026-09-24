@@ -24,7 +24,7 @@ const temporaryRoots: string[] = []
 
 afterEach(async () => {
   await Promise.all(
-    temporaryRoots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
+    temporaryRoots.splice(0).map((root) => rm(root, { force: true, recursive: true })),
   )
 })
 
@@ -41,7 +41,7 @@ describe('feature package dependency allowlists', () => {
         },
         devDependencies: { typescript: 'catalog:', vitest: 'catalog:' },
       }),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it('accepts only reviewed Nuxt dependencies and package-local exports', () => {
@@ -57,7 +57,7 @@ describe('feature package dependency allowlists', () => {
         },
         devDependencies: { '@nuxt/test-utils': 'catalog:', nuxt: 'catalog:' },
       }),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it('requires Nuxt packages to retain SFC style side effects', () => {
@@ -79,7 +79,7 @@ describe('feature package dependency allowlists', () => {
       {
         ...packageManifest('alpha', 'server'),
         exports: {
-          '.': { types: './dist/index.d.ts', import: './dist/alternate.js' },
+          '.': { import: './dist/alternate.js', types: './dist/index.d.ts' },
           './migrations/*': './migrations/*',
         },
       },
@@ -148,7 +148,7 @@ describe('feature package dependency allowlists', () => {
       },
     )
 
-    expect(violations).toEqual(
+    expect(violations).toStrictEqual(
       expect.arrayContaining([
         expect.stringContaining('dependency vue must use catalog:'),
         expect.stringContaining('escapes the feature package root'),
@@ -167,17 +167,17 @@ describe('feature package dependency allowlists', () => {
     await expect(loadFeatureNuxtSources(valid.root, [valid.release])).resolves.toHaveLength(2)
 
     const invalid = await createExternalPackageBoundaryFixture({
-      serverDependencies: {
-        postgres: '^3.4.0',
-        '@eve-space/bravo-server': '^1.0.0',
-      },
-      serverSource: "import 'postgres'\nimport '@eve-space/bravo-server'\n",
       nuxtDependencies: {
-        '@example/alpha-server': '^1.2.3',
         '@eve-space/bravo-nuxt': '^1.0.0',
+        '@example/alpha-server': '^1.2.3',
       },
       nuxtSource:
         "import '@example/alpha-server'\nimport '@eve-space/bravo-nuxt'\nexport default {}\n",
+      serverDependencies: {
+        '@eve-space/bravo-server': '^1.0.0',
+        postgres: '^3.4.0',
+      },
+      serverSource: "import 'postgres'\nimport '@eve-space/bravo-server'\n",
     })
     temporaryRoots.push(invalid.root)
 
@@ -196,8 +196,9 @@ describe('feature package dependency allowlists', () => {
       'dependency @eve-space/bravo-nuxt is not allowed',
       'import @example/alpha-server is not allowed',
       'import @eve-space/bravo-nuxt is not allowed',
-    ])
+    ]) {
       expect(message).toContain(fragment)
+    }
   })
 })
 
@@ -214,7 +215,7 @@ describe('feature source import allowlists', () => {
           }
         `),
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it('allows reviewer panels to import the focused public props contract', () => {
@@ -229,7 +230,7 @@ describe('feature source import allowlists', () => {
           'reviewer/OverviewPanel.vue',
         ),
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it.each([
@@ -248,7 +249,7 @@ describe('feature source import allowlists', () => {
       serverSource(`import { value } from '${specifier}'`),
     )
 
-    expect(violations).not.toEqual([])
+    expect(violations).not.toStrictEqual([])
   })
 
   it.each([
@@ -261,7 +262,9 @@ describe('feature source import allowlists', () => {
     'hono/client',
     'zod/v4/core',
   ])('rejects unreviewed server package subpath %s', (specifier) => {
-    expect(serverSourceBoundaryViolations(serverSource(`import '${specifier}'`))).not.toEqual([])
+    expect(serverSourceBoundaryViolations(serverSource(`import '${specifier}'`))).not.toStrictEqual(
+      [],
+    )
   })
 
   it('rejects TypeScript import-equals declarations before resolving their target', () => {
@@ -271,7 +274,7 @@ describe('feature source import allowlists', () => {
           'import platformApi = require("../../../../../../../packages/platform-module-nuxt/src/runtime/platform-api")',
         ),
       ),
-    ).toEqual(
+    ).toStrictEqual(
       expect.arrayContaining([
         expect.stringContaining('escapes the feature package root'),
         expect.stringContaining('import-equals declarations are not allowed'),
@@ -313,7 +316,7 @@ describe('feature source import allowlists', () => {
   ])('rejects server module-loader bypass %s', (expression) => {
     expect(
       serverSourceBoundaryViolations(serverSource(`export const bypass = ${expression}`)),
-    ).not.toEqual([])
+    ).not.toStrictEqual([])
   })
 
   it.each([
@@ -358,7 +361,7 @@ describe('feature source import allowlists', () => {
       nuxtRuntimeSource(`import { value } from '${specifier}'`),
     )
 
-    expect(violations).not.toEqual([])
+    expect(violations).not.toStrictEqual([])
   })
 
   it('allows only named reviewed #imports symbols', () => {
@@ -366,7 +369,7 @@ describe('feature source import allowlists', () => {
       nuxtSourceBoundaryViolations(
         nuxtRuntimeSource("import { computed, useRoute } from '#imports'"),
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
     expect(
       nuxtSourceBoundaryViolations(
         nuxtRuntimeSource("import { $fetch, useCharacterQuery } from '#imports'"),
@@ -384,7 +387,7 @@ describe('feature source import allowlists', () => {
           }
         `),
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
     expect(
       nuxtSourceBoundaryViolations(
         nuxtRuntimeSource(`
@@ -437,7 +440,7 @@ describe('feature source import allowlists', () => {
     'new globalThis.WebSocket("wss://example.test")',
     'navigator.sendBeacon("https://example.test", "private")',
   ])('rejects Nuxt client bypass %s', (statement) => {
-    expect(nuxtSourceBoundaryViolations(nuxtRuntimeSource(statement))).not.toEqual([])
+    expect(nuxtSourceBoundaryViolations(nuxtRuntimeSource(statement))).not.toStrictEqual([])
   })
 
   it('extracts and checks both Vue script blocks', () => {
@@ -464,7 +467,7 @@ describe('feature source import allowlists', () => {
       nuxtSourceBoundaryViolations(
         nuxtRuntimeSource('fetch("/api/private")\naddServerHandler({})'),
       ),
-    ).toEqual(
+    ).toStrictEqual(
       expect.arrayContaining([
         expect.stringContaining('platform client surface'),
         expect.stringContaining('must not call addServerHandler'),
@@ -481,7 +484,7 @@ describe('feature source import allowlists', () => {
       `),
     )
 
-    expect(violations).toEqual(
+    expect(violations).toStrictEqual(
       expect.arrayContaining([
         expect.stringContaining('must not reference unrestricted SDE datasets'),
         expect.stringContaining('instead of alternate adapters or caches'),
@@ -518,7 +521,7 @@ describe('feature source import allowlists', () => {
           export function run() { return deferred.run() }
         `),
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it('allows transient function-local collections', () => {
@@ -532,7 +535,7 @@ describe('feature source import allowlists', () => {
           }
         `),
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it('ignores commented-out Vue scripts', () => {
@@ -544,7 +547,7 @@ describe('feature source import allowlists', () => {
           'FeaturePage.vue',
         ),
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it('parses Vue script attributes and TSX with the compiler grammar', () => {
@@ -558,7 +561,7 @@ describe('feature source import allowlists', () => {
           'FeaturePage.vue',
         ),
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it.each([
@@ -567,9 +570,9 @@ describe('feature source import allowlists', () => {
     '<script src="../../../../../../app/private.js"></script><template><div></div></template>',
     '<script lang="coffee">value = 1</script>',
   ])('rejects Vue scripts that cannot be fully checked: %s', (source) => {
-    expect(nuxtSourceBoundaryViolations(nuxtRuntimeSource(source, 'FeaturePage.vue'))).not.toEqual(
-      [],
-    )
+    expect(
+      nuxtSourceBoundaryViolations(nuxtRuntimeSource(source, 'FeaturePage.vue')),
+    ).not.toStrictEqual([])
   })
 })
 
@@ -595,7 +598,7 @@ describe('descriptor and composition purity', () => {
           ${exports}
         `,
         }),
-      ).toEqual(
+      ).toStrictEqual(
         [
           'module descriptor may only type-import @eve-space/platform-module-contract/manifest',
           'module descriptor declarations must be const',
@@ -614,7 +617,7 @@ describe('descriptor and composition purity', () => {
       export default connect()
       connect()
     `)
-    expect(serverSourceBoundaryViolations(source)).toEqual(
+    expect(serverSourceBoundaryViolations(source)).toStrictEqual(
       [
         'feature package entry or definition first has an executable initializer',
         'feature package entry or definition second has an executable initializer',
@@ -636,7 +639,7 @@ describe('descriptor and composition purity', () => {
       })
     `)
 
-    expect(serverSourceBoundaryViolations(source)).toEqual([])
+    expect(serverSourceBoundaryViolations(source)).toStrictEqual([])
   })
 
   it('rejects runtime SQL and generic persistence dispatch while allowing named methods', () => {
@@ -649,7 +652,7 @@ describe('descriptor and composition purity', () => {
       }
     `)
 
-    expect(serverSourceBoundaryViolations(source)).toEqual(
+    expect(serverSourceBoundaryViolations(source)).toStrictEqual(
       [
         'feature server code must not contain runtime SQL statements',
         'feature server code must not use generic persistence dispatch',
@@ -734,7 +737,7 @@ describe('descriptor and composition purity', () => {
     declaration.server.esiOperations = [{ exportName: 'alphaOperation' }]
 
     const violations = await manifestCompositionBoundaryViolations(root, declaration as never)
-    expect(violations).toEqual(
+    expect(violations).toStrictEqual(
       expect.arrayContaining([
         expect.stringContaining(
           'definition export alphaResource must be exported from the package root',
@@ -762,7 +765,7 @@ describe('descriptor and composition purity', () => {
           export default manifest
         `,
       }),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it.each([
@@ -778,7 +781,7 @@ describe('descriptor and composition purity', () => {
         path: 'features/alpha/module.config.ts',
         source,
       }),
-    ).not.toEqual([])
+    ).not.toStrictEqual([])
   })
 
   it.each([
@@ -789,7 +792,7 @@ describe('descriptor and composition purity', () => {
     ['environment', 'const enabled = process.env.ALPHA'],
     ['runtime client', "const socket = new WebSocket('wss://example.test')"],
   ])('rejects server entry %s work', (_category, statement) => {
-    expect(serverSourceBoundaryViolations(serverSource(statement))).not.toEqual([])
+    expect(serverSourceBoundaryViolations(serverSource(statement))).not.toStrictEqual([])
   })
 
   it.each([
@@ -835,7 +838,7 @@ describe('descriptor and composition purity', () => {
       export async function run(url) { ${statement} }
     `),
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it('resolves forbidden globals independently of nested shadowing', () => {
@@ -872,8 +875,10 @@ describe('descriptor and composition purity', () => {
         }
       `),
     ]
-    expect(serverFactoryBoundaryViolations(cleanSources, 'alphaRoutes', 'route')).toEqual([])
-    expect(serverFactoryBoundaryViolations(cleanSources, 'alphaProvider', 'provider')).toEqual([])
+    expect(serverFactoryBoundaryViolations(cleanSources, 'alphaRoutes', 'route')).toStrictEqual([])
+    expect(
+      serverFactoryBoundaryViolations(cleanSources, 'alphaProvider', 'provider'),
+    ).toStrictEqual([])
 
     const eager = [
       serverSource(`
@@ -887,8 +892,10 @@ describe('descriptor and composition purity', () => {
         }
       `),
     ]
-    expect(serverFactoryBoundaryViolations(eager, 'alphaRoutes', 'route')).not.toEqual([])
-    expect(serverFactoryBoundaryViolations(eager, 'alphaProvider', 'provider')).not.toEqual([])
+    expect(serverFactoryBoundaryViolations(eager, 'alphaRoutes', 'route')).not.toStrictEqual([])
+    expect(serverFactoryBoundaryViolations(eager, 'alphaProvider', 'provider')).not.toStrictEqual(
+      [],
+    )
   })
 
   it('rejects spoofed route-composition method receivers', () => {
@@ -928,7 +935,7 @@ describe('descriptor and composition purity', () => {
       },
     ]
 
-    expect(serverFactoryBoundaryViolations(shadowed, 'alphaRoutes', 'route')).not.toEqual([])
+    expect(serverFactoryBoundaryViolations(shadowed, 'alphaRoutes', 'route')).not.toStrictEqual([])
     expect(serverFactoryBoundaryViolations(decoy, 'alphaRoutes', 'route')).toContainEqual(
       expect.stringContaining('must be exported from the package root'),
     )
@@ -942,14 +949,14 @@ describe('descriptor and composition purity', () => {
           export default defineNuxtModule({})
         `),
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
 
     for (const setup of [
       'extendPages(() => {})',
       'addPlugin("./runtime/plugin")',
       'addRouteMiddleware({ name: "bypass", path: "./middleware" })',
       'addComponentsDir({ path: "./runtime/components" })',
-    ])
+    ]) {
       expect(
         nuxtSourceBoundaryViolations(
           nuxtModuleSource(`
@@ -958,6 +965,7 @@ describe('descriptor and composition purity', () => {
           `),
         ),
       ).toContainEqual(expect.stringContaining('must not define setup'))
+    }
   })
 
   it('rejects Nuxt deployment hooks and indirect module entries', () => {
@@ -969,7 +977,7 @@ describe('descriptor and composition purity', () => {
           export default feature
         `),
       ),
-    ).not.toEqual([])
+    ).not.toStrictEqual([])
   })
 
   it('rejects an executable descriptor before registry generation imports it', async () => {
@@ -997,7 +1005,7 @@ describe('host feature package composition', () => {
           source: "import alpha from '@eve-space/alpha-nuxt'",
         },
       ]),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it('rejects fabricated generated registry entry points and normalized path escapes', () => {
@@ -1051,7 +1059,7 @@ describe('host feature package composition', () => {
       platformFeatureImportViolations([
         { path, source: path.endsWith('.vue') ? `<script setup>${source}</script>` : source },
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       `${path}: feature ${specifier.includes('nuxt') ? 'nuxt' : 'server'} packages may only enter the host through generated registries: ${specifier}`,
     ])
   })
@@ -1063,9 +1071,6 @@ declare global {
 
 function packageManifest(moduleId: string, environment: 'server' | 'nuxt') {
   return {
-    name: `@eve-space/${moduleId}-${environment}`,
-    type: 'module',
-    sideEffects: environment === 'server' ? false : ['**/*.vue'],
     exports:
       environment === 'server'
         ? {
@@ -1073,18 +1078,27 @@ function packageManifest(moduleId: string, environment: 'server' | 'nuxt') {
             './migrations/*': './migrations/*',
           }
         : { '.': { types: './dist/module.d.ts', import: './dist/module.js' } },
+    name: `@eve-space/${moduleId}-${environment}`,
+    sideEffects: environment === 'server' ? false : ['**/*.vue'],
+    type: 'module',
   }
 }
 
 function persistenceManifest(exportName: string) {
   return {
-    id: 'alpha',
-    icon: 'character',
     defaultEnabled: false,
+    icon: 'character',
+    id: 'alpha',
+    nuxt: {
+      navigation: [],
+      package: '@eve-space/alpha-nuxt',
+      pages: [],
+    },
     server: {
-      package: '@eve-space/alpha-server',
-      routes: [],
+      activityProviders: [],
+      esiOperations: [],
       migrations: [{ name: 'alpha-001-persistence.sql' }],
+      package: '@eve-space/alpha-server',
       persistenceOperations: [
         {
           id: 'alpha-read',
@@ -1096,13 +1110,7 @@ function persistenceManifest(exportName: string) {
         },
       ],
       resources: [],
-      esiOperations: [],
-      activityProviders: [],
-    },
-    nuxt: {
-      package: '@eve-space/alpha-nuxt',
-      pages: [],
-      navigation: [],
+      routes: [],
     },
   } as const
 }
@@ -1134,16 +1142,10 @@ function nuxtModuleSource(source: string) {
 async function createUnsafeInstalledFixture() {
   const root = await mkdtemp(join(tmpdir(), 'eve-space-feature-boundaries-'))
   const files: Record<string, string> = {
-    'features/installed-modules.json': JSON.stringify({ modules: ['alpha'] }),
     'features/alpha/module.config.ts': `
       globalThis.unsafeDescriptorImported = true
       export default {}
     `,
-    'features/alpha/server/package.json': JSON.stringify({
-      ...packageManifest('alpha', 'server'),
-      files: ['dist', 'migrations'],
-    }),
-    'features/alpha/server/src/index.ts': 'export function alphaRoutes() { return {} }',
     'features/alpha/nuxt/package.json': JSON.stringify({
       ...packageManifest('alpha', 'nuxt'),
       files: ['dist'],
@@ -1154,6 +1156,12 @@ async function createUnsafeInstalledFixture() {
       export default defineNuxtModule({ setup() {} })
     `,
     'features/alpha/nuxt/src/runtime/app/.keep': '',
+    'features/alpha/server/package.json': JSON.stringify({
+      ...packageManifest('alpha', 'server'),
+      files: ['dist', 'migrations'],
+    }),
+    'features/alpha/server/src/index.ts': 'export function alphaRoutes() { return {} }',
+    'features/installed-modules.json': JSON.stringify({ modules: ['alpha'] }),
   }
   await Promise.all(
     Object.entries(files).map(async ([path, source]) => {
@@ -1180,40 +1188,40 @@ async function createExternalPackageBoundaryFixture(
   const nuxtRoot = join(root, 'installed/alpha-nuxt')
   const manifestRoot = join(root, 'installed/alpha-manifest')
   const serverPackage = {
-    name: '@example/alpha-server',
-    type: 'module',
-    sideEffects: false,
-    exports: {
-      '.': { types: './dist/index.d.ts', import: './dist/index.js' },
-      './migrations/*': './migrations/*',
-    },
-    files: ['dist', 'migrations'],
     dependencies: {
       '@eve-space/platform-module-contract': '^1.0.0',
       ...options.serverDependencies,
     },
+    exports: {
+      '.': { import: './dist/index.js', types: './dist/index.d.ts' },
+      './migrations/*': './migrations/*',
+    },
+    files: ['dist', 'migrations'],
+    name: '@example/alpha-server',
+    sideEffects: false,
+    type: 'module',
   }
   const nuxtPackage = {
-    name: '@example/alpha-nuxt',
-    type: 'module',
-    sideEffects: ['**/*.vue'],
-    exports: { '.': { types: './dist/module.d.ts', import: './dist/module.js' } },
-    files: ['dist'],
     dependencies: { '@nuxt/kit': '^4.0.0', ...options.nuxtDependencies },
+    exports: { '.': { import: './dist/module.js', types: './dist/module.d.ts' } },
+    files: ['dist'],
+    name: '@example/alpha-nuxt',
+    sideEffects: ['**/*.vue'],
+    type: 'module',
   }
   const files: Record<string, string> = {
-    'installed/alpha-server/package.json': JSON.stringify(serverPackage),
-    'installed/alpha-server/dist/index.js':
-      options.serverSource ??
-      "import {} from '@eve-space/platform-module-contract/server'\nexport function alphaRoutes() {}\n",
-    'installed/alpha-server/dist/index.d.ts':
-      "import type { PlatformModuleRouteCapabilities } from '@eve-space/platform-module-contract/server'\nexport declare function alphaRoutes(capabilities: PlatformModuleRouteCapabilities): void\n",
-    'installed/alpha-nuxt/package.json': JSON.stringify(nuxtPackage),
+    'installed/alpha-nuxt/dist/module.d.ts':
+      'declare const feature: unknown\nexport default feature\n',
     'installed/alpha-nuxt/dist/module.js':
       options.nuxtSource ??
       "import { defineNuxtModule } from '@nuxt/kit'\nexport default defineNuxtModule({})\n",
-    'installed/alpha-nuxt/dist/module.d.ts':
-      'declare const feature: unknown\nexport default feature\n',
+    'installed/alpha-nuxt/package.json': JSON.stringify(nuxtPackage),
+    'installed/alpha-server/dist/index.d.ts':
+      "import type { PlatformModuleRouteCapabilities } from '@eve-space/platform-module-contract/server'\nexport declare function alphaRoutes(capabilities: PlatformModuleRouteCapabilities): void\n",
+    'installed/alpha-server/dist/index.js':
+      options.serverSource ??
+      "import {} from '@eve-space/platform-module-contract/server'\nexport function alphaRoutes() {}\n",
+    'installed/alpha-server/package.json': JSON.stringify(serverPackage),
   }
   await Promise.all(
     Object.entries(files).map(async ([path, source]) => {
@@ -1224,39 +1232,39 @@ async function createExternalPackageBoundaryFixture(
   )
 
   const manifest = {
+    defaultEnabled: false,
+    icon: 'character',
     id: 'alpha',
+    nuxt: { navigation: [], package: '@example/alpha-nuxt', pages: [] },
     release: {
+      hostContractRange: '^1.0.0',
       publisherPackage: '@example/alpha-manifest',
       version: '1.2.3',
-      hostContractRange: '^1.0.0',
     },
-    icon: 'character',
-    defaultEnabled: false,
     server: {
-      package: '@example/alpha-server',
-      routes: [],
+      activityProviders: [],
+      esiOperations: [],
       migrations: [],
+      package: '@example/alpha-server',
       persistenceOperations: [],
       resources: [],
-      esiOperations: [],
-      activityProviders: [],
+      routes: [],
     },
-    nuxt: { package: '@example/alpha-nuxt', pages: [], navigation: [] },
   } as const
   const release = {
-    moduleId: 'alpha',
-    publisherPackage: '@example/alpha-manifest',
-    version: '1.2.3',
     manifest,
+    migrations: [],
+    moduleId: 'alpha',
+    nuxtPages: {},
     packages: {
       manifest: externalPackageArtifact('@example/alpha-manifest', manifestRoot, 'manifest.json'),
-      server: externalPackageArtifact('@example/alpha-server', serverRoot, 'dist/index.js'),
       nuxt: externalPackageArtifact('@example/alpha-nuxt', nuxtRoot, 'dist/module.js'),
+      server: externalPackageArtifact('@example/alpha-server', serverRoot, 'dist/index.js'),
     },
-    migrations: [],
-    nuxtPages: {},
+    publisherPackage: '@example/alpha-manifest',
+    version: '1.2.3',
   } satisfies ResolvedInstalledModuleRelease
-  return { root, release }
+  return { release, root }
 }
 
 function externalPackageArtifact(
@@ -1265,11 +1273,11 @@ function externalPackageArtifact(
   entry: string,
 ): ResolvedInstalledModuleRelease['packages']['server'] {
   return {
-    name,
-    version: '1.2.3',
-    integrity: 'sha512-fixture',
-    root: packageRoot,
     entryPath: join(packageRoot, entry),
+    integrity: 'sha512-fixture',
+    name,
+    root: packageRoot,
+    version: '1.2.3',
     workspace: false,
   }
 }

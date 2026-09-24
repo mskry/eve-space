@@ -17,28 +17,36 @@ export function classifyCharacterResourceFailure(
   error: unknown,
   options: CharacterResourceFailureOptions,
 ): CharacterResourceFailure {
-  if (error instanceof EsiQuotaError)
+  if (error instanceof EsiQuotaError) {
     return { kind: 'cooldown', retryAfterSeconds: error.retryAfterSeconds }
-  if (error instanceof TokenRefreshUnavailableError) return { kind: 'token-refresh-unavailable' }
+  }
+  if (error instanceof TokenRefreshUnavailableError) {
+    return { kind: 'token-refresh-unavailable' }
+  }
   if (error instanceof ScopeRequiredError) {
     return {
       kind: 'scope-required',
       requiredScope: options.preferConfiguredScope ? options.configuredScope : error.scope,
     }
   }
-  if (isRejectedAuthorization(error))
+  if (isRejectedAuthorization(error)) {
     return { kind: 'authorization-rejected', requiredScope: options.configuredScope }
+  }
   return { kind: 'unavailable' }
 }
 
 function isRejectedAuthorization(error: unknown) {
-  if (typeof error !== 'object' || error === null || !('status' in error)) return false
+  if (typeof error !== 'object' || error === null || !('status' in error)) {
+    return false
+  }
   const status = httpStatus(error.status)
   return status === 401 || status === 403
 }
 
 function httpStatus(value: unknown) {
-  if (typeof value !== 'number' && typeof value !== 'string') return undefined
+  if (typeof value !== 'number' && typeof value !== 'string') {
+    return
+  }
   const status = Number(value)
   return Number.isFinite(status) ? status : undefined
 }

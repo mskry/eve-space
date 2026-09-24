@@ -73,18 +73,24 @@ export async function guardInstalledResourceExecution(
     await resolveEligibility(identity, { resources, signal: options.signal }),
   )
   options.signal?.throwIfAborted()
-  if (initialEligibility.outcome === 'noop') return initialEligibility
+  if (initialEligibility.outcome === 'noop') {
+    return initialEligibility
+  }
   const eligibility = initialEligibility.eligibility
 
   const resource = findInstalledResource(identity, resources)
-  if (!resource) return { outcome: 'noop', reason: 'resource-unavailable' }
+  if (!resource) {
+    return { outcome: 'noop', reason: 'resource-unavailable' }
+  }
   const subject = toPlatformResourceSubject(
     identity as Parameters<typeof toPlatformResourceSubject>[0],
   )
-  if (!subject) return { outcome: 'noop', reason: 'obsolete' }
+  if (!subject) {
+    return { outcome: 'noop', reason: 'obsolete' }
+  }
 
   const operation = getEsiOperationAuthorization(resource.operationId as EsiOperation)
-  if (operation.kind === 'public')
+  if (operation.kind === 'public') {
     return createReadyResourceExecution(
       resource,
       subject,
@@ -93,56 +99,48 @@ export async function guardInstalledResourceExecution(
       null,
       eligibility.managedAuthority,
     )
+  }
 
   const { authorizationCharacterId, authorizationCharacterLifecycleId } =
     resolveAuthorizationIdentity(eligibility, subject)
-  if (!authorizationCharacterId || !authorizationCharacterLifecycleId)
+  if (!authorizationCharacterId || !authorizationCharacterLifecycleId) {
     return { outcome: 'noop', reason: 'authorization-required' }
+  }
   if (
-    subject.kind === 'corporation' &&
-    !(await isCorporationAuthorizationCurrent(options, {
+    !(await isExecutionSourceCurrent(
+      options,
       subject,
-      characterId: authorizationCharacterId,
-      characterLifecycleId: authorizationCharacterLifecycleId,
-      authorizationGeneration: eligibility.authorizationGeneration ?? -1,
-    }))
-  )
+      authorizationCharacterId,
+      authorizationCharacterLifecycleId,
+      eligibility.authorizationGeneration ?? -1,
+    ))
+  ) {
     return { outcome: 'noop', reason: 'obsolete' }
-
-  let authorization: CharacterAuthorization
-  try {
-    const loadAuthorization =
-      options.loadCharacterCacheAuthorization ??
-      options.loadCharacterAuthorization ??
-      getCharacterCacheAuthorizationForLifecycle
-    authorization = options.signal
-      ? await loadAuthorization(
-          authorizationCharacterId,
-          authorizationCharacterLifecycleId,
-          operation.requiredScope,
-          options.signal,
-        )
-      : await loadAuthorization(
-          authorizationCharacterId,
-          authorizationCharacterLifecycleId,
-          operation.requiredScope,
-        )
-    options.signal?.throwIfAborted()
-  } catch (error) {
-    options.signal?.throwIfAborted()
-    return mapCharacterAuthorizationError(error, subject.kind)
   }
 
-  if (
-    subject.kind === 'corporation' &&
-    !(await isCorporationAuthorizationCurrent(options, {
-      subject,
-      characterId: authorizationCharacterId,
-      characterLifecycleId: authorizationCharacterLifecycleId,
-      authorizationGeneration: authorization.tokenVersion,
-    }))
+  const authorizationResult = await loadExecutionAuthorization(
+    options,
+    authorizationCharacterId,
+    authorizationCharacterLifecycleId,
+    operation.requiredScope,
+    subject.kind,
   )
+  if ('outcome' in authorizationResult) {
+    return authorizationResult
+  }
+  const authorization = authorizationResult
+
+  if (
+    !(await isExecutionSourceCurrent(
+      options,
+      subject,
+      authorizationCharacterId,
+      authorizationCharacterLifecycleId,
+      authorization.tokenVersion,
+    ))
+  ) {
     return { outcome: 'noop', reason: 'obsolete' }
+  }
 
   const ready = createReadyResourceExecution(
     resource,
@@ -152,25 +150,90 @@ export async function guardInstalledResourceExecution(
     authorizationCharacterLifecycleId,
     eligibility.managedAuthority,
   )
-  if (authorization.tokenVersion === eligibility.authorizationGeneration) return ready
+  if (authorization.tokenVersion === eligibility.authorizationGeneration) {
+    return ready
+  }
 
   const refreshedEligibility = classifyExecutionEligibility(
     await resolveEligibility(identity, { resources, signal: options.signal }),
   )
   options.signal?.throwIfAborted()
-  if (refreshedEligibility.outcome === 'noop') return refreshedEligibility
+  if (refreshedEligibility.outcome === 'noop') {
+    return refreshedEligibility
+  }
   const refreshed = refreshedEligibility.eligibility
   const refreshedAuthorization = resolveAuthorizationIdentity(refreshed, subject)
   if (
-    authorization.tokenVersion !== refreshed.authorizationGeneration ||
-    authorizationCharacterId !== refreshedAuthorization.authorizationCharacterId ||
-    authorizationCharacterLifecycleId !==
-      refreshedAuthorization.authorizationCharacterLifecycleId ||
-    !managedCollectionAuthorityEquals(eligibility.managedAuthority, refreshed.managedAuthority)
-  )
+    !matchesRefreshedEligibility(
+      authorization,
+      authorizationCharacterId,
+      authorizationCharacterLifecycleId,
+      eligibility,
+      refreshed,
+      refreshedAuthorization,
+    )
+  ) {
     return { outcome: 'noop', reason: 'obsolete' }
+  }
 
   return ready
+}
+
+function matchesRefreshedEligibility(
+  authorization: CharacterAuthorization,
+  characterId: number,
+  lifecycleId: string,
+  original: EligibleResource,
+  refreshed: EligibleResource,
+  refreshedAuthorization: ReturnType<typeof resolveAuthorizationIdentity>,
+) {
+  return (
+    authorization.tokenVersion === refreshed.authorizationGeneration &&
+    characterId === refreshedAuthorization.authorizationCharacterId &&
+    lifecycleId === refreshedAuthorization.authorizationCharacterLifecycleId &&
+    managedCollectionAuthorityEquals(original.managedAuthority, refreshed.managedAuthority)
+  )
+}
+
+async function isExecutionSourceCurrent(
+  options: ResourceExecutionGuardOptions,
+  subject: PlatformResourceSubject,
+  characterId: number,
+  characterLifecycleId: string,
+  authorizationGeneration: number,
+) {
+  if (subject.kind !== 'corporation') {
+    return true
+  }
+  return isCorporationAuthorizationCurrent(options, {
+    authorizationGeneration,
+    characterId,
+    characterLifecycleId,
+    subject,
+  })
+}
+
+async function loadExecutionAuthorization(
+  options: ResourceExecutionGuardOptions,
+  characterId: number,
+  lifecycleId: string,
+  requiredScope: Parameters<typeof getCharacterCacheAuthorizationForLifecycle>[2],
+  subjectKind: PlatformResourceSubject['kind'],
+): Promise<CharacterAuthorization | PlatformResourceExecutionNoop> {
+  try {
+    const loadAuthorization =
+      options.loadCharacterCacheAuthorization ??
+      options.loadCharacterAuthorization ??
+      getCharacterCacheAuthorizationForLifecycle
+    const authorization = options.signal
+      ? await loadAuthorization(characterId, lifecycleId, requiredScope, options.signal)
+      : await loadAuthorization(characterId, lifecycleId, requiredScope)
+    options.signal?.throwIfAborted()
+    return authorization
+  } catch (error) {
+    options.signal?.throwIfAborted()
+    return mapCharacterAuthorizationError(error, subjectKind)
+  }
 }
 
 async function isCorporationAuthorizationCurrent(
@@ -182,21 +245,27 @@ async function isCorporationAuthorizationCurrent(
     authorizationGeneration: number
   },
 ) {
-  if (!options.isCorporationSourceCurrent) return false
+  if (!options.isCorporationSourceCurrent) {
+    return false
+  }
   return options.isCorporationSourceCurrent({
-    corporationSubjectLifecycleId: input.subject.lifecycleId,
+    authorizationGeneration: input.authorizationGeneration,
     characterId: input.characterId,
     characterSubjectLifecycleId: input.characterLifecycleId,
-    authorizationGeneration: input.authorizationGeneration,
+    corporationSubjectLifecycleId: input.subject.lifecycleId,
   })
 }
 
 function classifyExecutionEligibility(
   eligibility: PlatformResourceEligibility,
 ): ResourceExecutionEligibility {
-  if (eligibility.status !== 'eligible') return { outcome: 'noop', reason: eligibility.status }
-  if (!eligibility.due) return { outcome: 'noop', reason: 'already-current' }
-  return { outcome: 'eligible', eligibility }
+  if (eligibility.status !== 'eligible') {
+    return { outcome: 'noop', reason: eligibility.status }
+  }
+  if (!eligibility.due) {
+    return { outcome: 'noop', reason: 'already-current' }
+  }
+  return { eligibility, outcome: 'eligible' }
 }
 
 function resolveAuthorizationIdentity(
@@ -243,12 +312,14 @@ function mapCharacterAuthorizationError(
   error: unknown,
   subjectKind: PlatformResourceSubject['kind'],
 ): PlatformResourceExecutionNoop {
-  if (error instanceof ScopeRequiredError)
+  if (error instanceof ScopeRequiredError) {
     return { outcome: 'noop', reason: 'authorization-required' }
-  if (error instanceof CharacterTokenNotFoundError)
+  }
+  if (error instanceof CharacterTokenNotFoundError) {
     return {
       outcome: 'noop',
       reason: subjectKind === 'corporation' ? 'authorization-required' : 'obsolete',
     }
+  }
   throw error
 }

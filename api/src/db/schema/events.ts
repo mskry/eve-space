@@ -21,29 +21,29 @@ import type {
 export const domainEvents = pgTable(
   'domain_events',
   {
+    aggregateId: text('aggregate_id').notNull(),
+    aggregateType: text('aggregate_type').$type<DomainEventAggregateType>().notNull(),
+    claimExpiresAt: timestamp('claim_expires_at', { withTimezone: true, mode: 'date' }),
+    claimToken: uuid('claim_token'),
     eventId: uuid('event_id').defaultRandom().primaryKey().notNull(),
     eventSequence: bigint('event_sequence', { mode: 'bigint' })
       .generatedAlwaysAsIdentity()
       .notNull(),
     eventType: text('event_type').$type<DomainEventType>().notNull(),
-    payloadVersion: integer('payload_version').notNull(),
-    aggregateType: text('aggregate_type').$type<DomainEventAggregateType>().notNull(),
-    aggregateId: text('aggregate_id').notNull(),
-    payload: jsonb().$type<DomainEventPayload>().notNull(),
-    occurredAt: timestamp('occurred_at', { withTimezone: true, mode: 'date' })
-      .defaultNow()
-      .notNull(),
-    pendingSince: timestamp('pending_since', { withTimezone: true, mode: 'date' })
-      .defaultNow()
-      .notNull(),
+    lastFailureAt: timestamp('last_failure_at', { withTimezone: true, mode: 'date' }),
+    lastFailureCategory: text('last_failure_category').$type<RelayFailureCategory>(),
     nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true, mode: 'date' })
       .defaultNow()
       .notNull(),
-    claimToken: uuid('claim_token'),
-    claimExpiresAt: timestamp('claim_expires_at', { withTimezone: true, mode: 'date' }),
+    occurredAt: timestamp('occurred_at', { withTimezone: true, mode: 'date' })
+      .defaultNow()
+      .notNull(),
+    payload: jsonb().$type<DomainEventPayload>().notNull(),
+    payloadVersion: integer('payload_version').notNull(),
+    pendingSince: timestamp('pending_since', { withTimezone: true, mode: 'date' })
+      .defaultNow()
+      .notNull(),
     publishAttempts: integer('publish_attempts').default(0).notNull(),
-    lastFailureCategory: text('last_failure_category').$type<RelayFailureCategory>(),
-    lastFailureAt: timestamp('last_failure_at', { withTimezone: true, mode: 'date' }),
     publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }),
   },
   (table) => [

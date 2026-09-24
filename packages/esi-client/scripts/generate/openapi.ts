@@ -111,8 +111,8 @@ export async function stageOpenApiSnapshot(
     const provenance = `${JSON.stringify(
       {
         compatibilityDate,
-        specificationUrl,
         sha256,
+        specificationUrl,
       },
       null,
       2,
@@ -123,15 +123,15 @@ export async function stageOpenApiSnapshot(
     await writeFile(provenancePath, provenance);
 
     return Object.freeze({
+      async cleanup() {
+        await rm(stageDirectory, { force: true, recursive: true });
+      },
       compatibilityDate,
       directory: stageDirectory,
       document: normalizedDocument,
       provenancePath,
       sha256,
       snapshotPath,
-      async cleanup() {
-        await rm(stageDirectory, { force: true, recursive: true });
-      },
     });
   } catch (error) {
     await rm(stageDirectory, { force: true, recursive: true });

@@ -41,9 +41,15 @@ function volumeDigits(value: number | null) {
 }
 
 function issueLabel(issue: (typeof props.visibleRow.row.issues)[number]) {
-  if (issue === 'missing-parent') return 'No structure access'
-  if (issue === 'self-link') return 'Self-linked container'
-  if (issue === 'cycle') return 'Broken container cycle'
+  if (issue === 'missing-parent') {
+    return 'No structure access'
+  }
+  if (issue === 'self-link') {
+    return 'Self-linked container'
+  }
+  if (issue === 'cycle') {
+    return 'Broken container cycle'
+  }
   return 'Duplicate item identity'
 }
 </script>

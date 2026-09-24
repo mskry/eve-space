@@ -22,7 +22,9 @@ for (const target of generatedReplacementTargets) {
   try {
     siblings = await readdir(parent);
   } catch (error) {
-    if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') continue;
+    if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      continue;
+    }
     throw error;
   }
 
@@ -46,7 +48,9 @@ async function exists(path: string): Promise<boolean> {
     await lstat(path);
     return true;
   } catch (error) {
-    if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return false;
+    }
     throw error;
   }
 }

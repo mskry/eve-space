@@ -13,10 +13,6 @@ const oneOfMarker = 'x-eve-one-of'
 const uniqueItemsMarker = 'x-eve-unique-items'
 
 const typeScriptResolvers = {
-  string(context) {
-    if (context.schema[noContentMarker] === true) return $.type('undefined')
-    return undefined
-  },
   object(context) {
     const path = context.path['~ref']
     const isOperationContainer =
@@ -33,6 +29,12 @@ const typeScriptResolvers = {
     }
     return context.nodes.base(context)
   },
+  string(context) {
+    if (context.schema[noContentMarker] === true) {
+      return $.type('undefined')
+    }
+    return
+  },
 } satisfies Plugins.HeyApiTypeScript.Resolvers
 
 const zodResolvers = {
@@ -43,9 +45,13 @@ const zodResolvers = {
       context.chain.current = length
     } else {
       const minimum = context.nodes.minLength(context)
-      if (minimum) context.chain.current = minimum
+      if (minimum) {
+        context.chain.current = minimum
+      }
       const maximum = context.nodes.maxLength(context)
-      if (maximum) context.chain.current = maximum
+      if (maximum) {
+        context.chain.current = maximum
+      }
     }
     if (context.schema[uniqueItemsMarker] === true) {
       const canonicalize = createCanonicalJsonFunction()
@@ -66,7 +72,7 @@ const zodResolvers = {
   },
   number(context) {
     if (context.schema.type !== 'integer' || context.schema[int64NumberMarker] !== true) {
-      return undefined
+      return
     }
     const { schema } = context
     const { z } = context.plugin.imports
@@ -83,17 +89,21 @@ const zodResolvers = {
     }
     return chain
   },
-  string(context) {
-    if (context.schema[noContentMarker] !== true) return undefined
-    const { z } = context.plugin.imports
-    return $(z).attr('undefined').call()
-  },
   object(context) {
     const { z } = context.plugin.imports
     const additional = context.nodes.additionalProperties(context)
     let chain = $(z).attr('looseObject').call(context.nodes.shape(context))
-    if (additional) chain = chain.attr('catchall').call(additional)
+    if (additional) {
+      chain = chain.attr('catchall').call(additional)
+    }
     return chain
+  },
+  string(context) {
+    if (context.schema[noContentMarker] !== true) {
+      return
+    }
+    const { z } = context.plugin.imports
+    return $(z).attr('undefined').call()
   },
   union(context) {
     if (context.schemas.some((schema) => schema[noContentMarker] === true)) {
@@ -106,8 +116,12 @@ const zodResolvers = {
             .elements(...context.childResults.map(({ chain }) => chain)),
         )
     }
-    if (context.parentSchema[oneOfMarker] !== true) return undefined
-    if (context.childResults.length === 1) return context.childResults[0]?.chain
+    if (context.parentSchema[oneOfMarker] !== true) {
+      return
+    }
+    if (context.childResults.length === 1) {
+      return context.childResults[0]?.chain
+    }
     const { z } = context.plugin.imports
     return $(z)
       .attr('xor')
@@ -127,7 +141,6 @@ export function createHeyApiGenerationConfig({
     input: typeof input === 'string' ? input : cloneDocument(input),
     interactive: false,
     logs: { file: false, level: 'silent' },
-    parser: { patch: { input: preserveResolverSemantics } },
     output: {
       clean: true,
       entryFile: true,
@@ -137,6 +150,7 @@ export function createHeyApiGenerationConfig({
       source: false,
       tsConfigPath: null,
     },
+    parser: { patch: { input: preserveResolverSemantics } },
     plugins: [
       {
         name: '@hey-api/typescript',
@@ -180,23 +194,33 @@ function preserveResolverSemantics(
 }
 
 function projectOperationParameters(document: unknown): void {
-  if (!isRecord(document)) return
+  if (!isRecord(document)) {
+    return
+  }
   const componentParameters = isRecord(document.components)
     ? document.components.parameters
     : undefined
-  if (!isRecord(document.paths)) return
+  if (!isRecord(document.paths)) {
+    return
+  }
   for (const pathItem of Object.values(document.paths)) {
-    if (!isRecord(pathItem)) continue
+    if (!isRecord(pathItem)) {
+      continue
+    }
     projectParameterList(pathItem, componentParameters)
     for (const method of ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace']) {
       const operation = pathItem[method]
-      if (isRecord(operation)) projectParameterList(operation, componentParameters)
+      if (isRecord(operation)) {
+        projectParameterList(operation, componentParameters)
+      }
     }
   }
 }
 
 function projectParameterList(owner: Record<string, unknown>, componentParameters: unknown): void {
-  if (!Array.isArray(owner.parameters)) return
+  if (!Array.isArray(owner.parameters)) {
+    return
+  }
   owner.parameters = owner.parameters.filter((parameter) => {
     const resolved = resolveParameter(parameter, componentParameters)
     return !(
@@ -208,22 +232,34 @@ function projectParameterList(owner: Record<string, unknown>, componentParameter
 }
 
 function resolveParameter(parameter: unknown, componentParameters: unknown): unknown {
-  if (!isRecord(parameter) || typeof parameter.$ref !== 'string') return parameter
+  if (!isRecord(parameter) || typeof parameter.$ref !== 'string') {
+    return parameter
+  }
   const match = /^#\/components\/parameters\/([^/]+)$/u.exec(parameter.$ref)
-  if (match === null || !isRecord(componentParameters)) return parameter
+  if (match === null || !isRecord(componentParameters)) {
+    return parameter
+  }
   return componentParameters[match[1] ?? '']
 }
 
 function markNoContentResponses(document: unknown): void {
-  if (!isRecord(document) || !isRecord(document.paths)) return
+  if (!isRecord(document) || !isRecord(document.paths)) {
+    return
+  }
   for (const pathItem of Object.values(document.paths)) {
-    if (!isRecord(pathItem)) continue
+    if (!isRecord(pathItem)) {
+      continue
+    }
     for (const method of ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace']) {
       const operation = pathItem[method]
-      if (!isRecord(operation) || !isRecord(operation.responses)) continue
+      if (!isRecord(operation) || !isRecord(operation.responses)) {
+        continue
+      }
       for (const status of ['204', '205']) {
         const response = operation.responses[status]
-        if (!isRecord(response) || response.content !== undefined) continue
+        if (!isRecord(response) || response.content !== undefined) {
+          continue
+        }
         // A non-null sentinel avoids Hey's nullable-union optimization; both resolvers emit undefined.
         response.content = {
           'application/json': { schema: { [noContentMarker]: true, type: 'string' } },
@@ -235,17 +271,27 @@ function markNoContentResponses(document: unknown): void {
 
 function visitOpenApiValue(value: unknown): void {
   if (Array.isArray(value)) {
-    for (const item of value) visitOpenApiValue(item)
+    for (const item of value) {
+      visitOpenApiValue(item)
+    }
     return
   }
-  if (!isRecord(value)) return
+  if (!isRecord(value)) {
+    return
+  }
   if (value.type === 'integer' && value.format === 'int64') {
     value[int64NumberMarker] = true
     delete value.format
   }
-  if (value.uniqueItems === true) value[uniqueItemsMarker] = true
-  if (Array.isArray(value.oneOf)) value[oneOfMarker] = true
-  for (const child of Object.values(value)) visitOpenApiValue(child)
+  if (value.uniqueItems === true) {
+    value[uniqueItemsMarker] = true
+  }
+  if (Array.isArray(value.oneOf)) {
+    value[oneOfMarker] = true
+  }
+  for (const child of Object.values(value)) {
+    visitOpenApiValue(child)
+  }
 }
 
 function createCanonicalJsonFunction() {
@@ -293,7 +339,9 @@ function createCanonicalJsonFunction() {
 
 function cloneDocument(document: Readonly<Record<string, unknown>>): Record<string, unknown> {
   const clone: unknown = structuredClone(document)
-  if (!isRecord(clone)) throw new TypeError('Hey API input must be an in-memory document object')
+  if (!isRecord(clone)) {
+    throw new TypeError('Hey API input must be an in-memory document object')
+  }
   return clone
 }
 

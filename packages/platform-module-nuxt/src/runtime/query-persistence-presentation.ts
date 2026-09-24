@@ -48,7 +48,7 @@ export function providePlatformQueryPersistence(reader: PlatformQueryPersistence
 export function usePlatformQueryPersistence(
   key: MaybeRefOrGetter<EntryKey>,
 ): Readonly<Ref<EsiQueryPersistencePresentation>> {
-  const reader = hasInjectionContext() ? inject(platformQueryPersistenceKey, undefined) : undefined
+  const reader = hasInjectionContext() ? inject(platformQueryPersistenceKey) : undefined
   return reader?.(key) ?? computed(() => ({ kind: 'fresh' as const }))
 }
 
@@ -63,8 +63,14 @@ export function selectEsiQueryPersistencePresentation(
 }
 
 function presentationPriority(presentation: EsiQueryPersistencePresentation) {
-  if (presentation.kind === 'restored-refresh-failed') return 3
-  if (presentation.kind === 'server-stale') return 2
-  if (presentation.kind === 'restored') return 1
+  if (presentation.kind === 'restored-refresh-failed') {
+    return 3
+  }
+  if (presentation.kind === 'server-stale') {
+    return 2
+  }
+  if (presentation.kind === 'restored') {
+    return 1
+  }
   return 0
 }

@@ -47,9 +47,7 @@ export async function probeEsiStatus(
 ): Promise<EsiStatusTelemetry> {
   const telemetry = await probeEsiResilienceTelemetry(upstreamObservation)
   return {
-    checkedAt: telemetry.checkedAt,
     cache: {
-      status: telemetry.cache.status,
       checkedAt: telemetry.cache.checkedAt,
       connectionErrors: { ...telemetry.cache.connectionErrors },
       envelopeRejections: { ...telemetry.cache.envelopeRejections },
@@ -58,25 +56,26 @@ export async function probeEsiStatus(
         found: { ...telemetry.cache.envelopeVersionMismatches.found },
         overflow: telemetry.cache.envelopeVersionMismatches.overflow,
       },
+      status: telemetry.cache.status,
     },
-    coordination: {
-      status: telemetry.coordination.status,
-      checkedAt: telemetry.coordination.checkedAt,
-      ...(telemetry.coordination.operationFailures === undefined
-        ? {}
-        : { operationFailures: telemetry.coordination.operationFailures }),
-    },
+    checkedAt: telemetry.checkedAt,
     cooldown: {
-      status: telemetry.cooldown.status,
-      checkedAt: telemetry.cooldown.checkedAt,
-      globalRetryAt: telemetry.cooldown.globalRetryAt,
       activeOperations: telemetry.cooldown.activeOperations.map(({ operation, retryAt }) => ({
         operation,
         retryAt,
       })),
+      checkedAt: telemetry.cooldown.checkedAt,
+      globalRetryAt: telemetry.cooldown.globalRetryAt,
+      status: telemetry.cooldown.status,
+    },
+    coordination: {
+      checkedAt: telemetry.coordination.checkedAt,
+      status: telemetry.coordination.status,
+      ...(telemetry.coordination.operationFailures === undefined
+        ? {}
+        : { operationFailures: telemetry.coordination.operationFailures }),
     },
     upstream: {
-      status: telemetry.upstream.status,
       checkedAt: telemetry.upstream.checkedAt,
       operations: telemetry.upstream.operations.map((operation) => ({
         operation: operation.operation,
@@ -87,6 +86,7 @@ export async function probeEsiStatus(
         outcomes: { ...operation.outcomes },
         checkedAt: operation.checkedAt,
       })),
+      status: telemetry.upstream.status,
     },
   }
 }
@@ -97,20 +97,9 @@ export async function readEsiCallRateReport(windowOffset = 1): Promise<EsiCallRa
     await waitForCacheRedisConnection(connection)
     const measurement = await readEsiRateMeasurement(connection, { windowOffset })
     return {
-      bucketStartedAt: measurement.bucketStartedAt,
       bucketEndedAt: measurement.bucketEndedAt,
+      bucketStartedAt: measurement.bucketStartedAt,
       complete: measurement.complete,
-      operations: measurement.operations.map((operation) => ({
-        operation: operation.operation,
-        group: operation.group,
-        scope: operation.scope,
-        requests: operation.requests,
-        weightedTokens: operation.weightedTokens,
-        distinctCharacters: operation.distinctCharacters,
-        averageRequestsPerCharacter: operation.averageRequestsPerCharacter,
-        averageWeightedTokensPerCharacter: operation.averageWeightedTokensPerCharacter,
-        capacityUsedPercent: operation.capacityUsedPercent,
-      })),
       groups: measurement.groups.map((group) => ({
         group: group.group,
         scope: group.scope,
@@ -121,6 +110,17 @@ export async function readEsiCallRateReport(windowOffset = 1): Promise<EsiCallRa
         distinctCharacters: group.distinctCharacters,
         averageWeightedTokensPerCharacter: group.averageWeightedTokensPerCharacter,
         capacityUsedPercent: group.capacityUsedPercent,
+      })),
+      operations: measurement.operations.map((operation) => ({
+        operation: operation.operation,
+        group: operation.group,
+        scope: operation.scope,
+        requests: operation.requests,
+        weightedTokens: operation.weightedTokens,
+        distinctCharacters: operation.distinctCharacters,
+        averageRequestsPerCharacter: operation.averageRequestsPerCharacter,
+        averageWeightedTokensPerCharacter: operation.averageWeightedTokensPerCharacter,
+        capacityUsedPercent: operation.capacityUsedPercent,
       })),
     }
   } finally {

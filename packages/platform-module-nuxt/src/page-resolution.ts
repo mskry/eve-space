@@ -7,10 +7,16 @@ export async function resolveFeaturePage(packageRoot: string, pageFile: string, 
   const pagesRoot = resolve(packageRoot, 'src/runtime/app/pages')
   const candidate = resolve(packageRoot, pageFile)
   const boundaryError = `Nuxt page ${identity} must remain under src/runtime/app/pages`
-  if (!isPathInside(pagesRoot, candidate)) throw new Error(boundaryError)
+  if (!isPathInside(pagesRoot, candidate)) {
+    throw new Error(boundaryError)
+  }
   const resolvedFile = await findPath(candidate, { alias: {}, extensions: [] })
-  if (!resolvedFile) throw new Error(`Nuxt page ${identity} is missing ${pageFile}`)
+  if (!resolvedFile) {
+    throw new Error(`Nuxt page ${identity} is missing ${pageFile}`)
+  }
   const file = await realpath(resolvedFile)
-  if (!isPathInside(await realpath(pagesRoot), file)) throw new Error(boundaryError)
+  if (!isPathInside(await realpath(pagesRoot), file)) {
+    throw new Error(boundaryError)
+  }
   return file
 }

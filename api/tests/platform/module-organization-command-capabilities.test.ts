@@ -15,9 +15,9 @@ vi.mock('../../src/organization/reviewer-commands.js', () => {
     }
   }
   return {
+    OrganizationReviewerCommandError,
     assignOrganizationReviewerOrdinaryGroup: mocks.assignGroup,
     blockOrganizationReviewerMember: mocks.blockMember,
-    OrganizationReviewerCommandError,
     revokeOrganizationReviewerOrdinaryGroup: mocks.revokeGroup,
     unblockOrganizationReviewerMember: mocks.unblockMember,
   }
@@ -29,24 +29,24 @@ import { OrganizationGroupMutationError } from '../../src/organization/group-mut
 import { createPlatformOrganizationCommandCapabilities } from '../../src/platform/module-organization-command-capabilities.js'
 
 const target = {
-  organizationVersion: 7,
-  managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
-  selection: { kind: 'account' as const },
   account: {
-    userId: '00000000-0000-4000-8000-000000000002',
     mainCharacter: null,
+    userId: '00000000-0000-4000-8000-000000000002',
   },
+  block: { blocked: false as const },
   characters: [],
   compliance: {
-    state: 'compliant' as const,
-    evidenceFreshness: 'fresh' as const,
-    evidenceAt: null,
-    reviewDeadline: null,
     accessValidUntil: null,
     evaluatedAt: null,
+    evidenceAt: null,
+    evidenceFreshness: 'fresh' as const,
+    reviewDeadline: null,
+    state: 'compliant' as const,
   },
   groups: [],
-  block: { blocked: false as const },
+  managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+  organizationVersion: 7,
+  selection: { kind: 'account' as const },
 }
 
 describe('platform organization command capabilities', () => {
@@ -54,12 +54,12 @@ describe('platform organization command capabilities', () => {
 
   test('exposes only declared named methods and binds protected identities internally', async () => {
     mocks.assignGroup.mockResolvedValue({
+      assignmentId: 'assignment-1',
       decision: 'assigned',
+      expiresAt: '2026-10-01T12:00:00.000Z',
+      groupId: 'group-1',
       organizationVersion: 7,
       targetUserId: target.account.userId,
-      groupId: 'group-1',
-      assignmentId: 'assignment-1',
-      expiresAt: '2026-10-01T12:00:00.000Z',
     })
     const commands = createPlatformOrganizationCommandCapabilities(
       ['assign-ordinary-group'] as const,
@@ -68,30 +68,30 @@ describe('platform organization command capabilities', () => {
 
     await expect(
       commands.assignOrdinaryGroup({
+        expiresAt: '2026-10-01T12:00:00.000Z',
         groupId: 'group-1',
         reason: 'Approved access',
-        expiresAt: '2026-10-01T12:00:00.000Z',
       }),
-    ).resolves.toEqual({
-      decision: 'assigned',
-      groupId: 'group-1',
+    ).resolves.toStrictEqual({
       assignmentId: 'assignment-1',
+      decision: 'assigned',
       expiresAt: '2026-10-01T12:00:00.000Z',
+      groupId: 'group-1',
     })
-    expect(Object.keys(commands)).toEqual(['assignOrdinaryGroup'])
+    expect(Object.keys(commands)).toStrictEqual(['assignOrdinaryGroup'])
     expect(Object.isFrozen(commands)).toBe(true)
     expect(mocks.assignGroup).toHaveBeenCalledWith({
+      actorUserId: '00000000-0000-4000-8000-000000000001',
+      expiresAt: new Date('2026-10-01T12:00:00.000Z'),
+      groupId: 'group-1',
+      managedMemberLifecycleId: target.managedMemberLifecycleId,
+      moduleId: 'member-audit',
       organizationDeploymentId: 1,
       organizationVersion: 7,
       publisherPackage: '@eve-space/member-audit-manifest',
-      moduleId: 'member-audit',
-      actorUserId: '00000000-0000-4000-8000-000000000001',
-      targetUserId: target.account.userId,
-      managedMemberLifecycleId: target.managedMemberLifecycleId,
-      requiredPermission: 'member-audit.groups.manage',
-      groupId: 'group-1',
       reason: 'Approved access',
-      expiresAt: new Date('2026-10-01T12:00:00.000Z'),
+      requiredPermission: 'member-audit.groups.manage',
+      targetUserId: target.account.userId,
     })
   })
 
@@ -102,24 +102,24 @@ describe('platform organization command capabilities', () => {
     )
 
     await expect(
-      commands.assignOrdinaryGroup({ groupId: 'group-1', reason: 'Approved', expiresAt: 'never' }),
+      commands.assignOrdinaryGroup({ expiresAt: 'never', groupId: 'group-1', reason: 'Approved' }),
     ).rejects.toMatchObject({
-      status: 422,
       body: { code: 'INVALID_GROUP_EXPIRY' },
+      status: 422,
     })
     expect(mocks.assignGroup).not.toHaveBeenCalled()
   })
 
   test('binds the remaining declared commands and preserves their safe results', async () => {
     mocks.revokeGroup.mockResolvedValue({
+      assignmentId: 'assignment-1',
       decision: 'revoked',
       groupId: 'group-1',
-      assignmentId: 'assignment-1',
       revokedAt: '2026-09-18T12:00:00.000Z',
     })
     mocks.unblockMember.mockResolvedValue({
-      decision: 'unblocked',
       blockId: 'block-1',
+      decision: 'unblocked',
       unblockedAt: '2026-09-18T12:01:00.000Z',
     })
 
@@ -134,29 +134,31 @@ describe('platform organization command capabilities', () => {
 
     await expect(
       groupCommands.revokeOrdinaryGroup({
-        groupId: 'group-1',
         assignmentId: 'assignment-1',
+        groupId: 'group-1',
         reason: 'Access no longer required',
       }),
-    ).resolves.toEqual({
+    ).resolves.toStrictEqual({
+      assignmentId: 'assignment-1',
       decision: 'revoked',
       groupId: 'group-1',
-      assignmentId: 'assignment-1',
       revokedAt: '2026-09-18T12:00:00.000Z',
     })
-    await expect(memberCommands.unblockMember({ reason: 'Review completed' })).resolves.toEqual({
-      decision: 'unblocked',
+    await expect(
+      memberCommands.unblockMember({ reason: 'Review completed' }),
+    ).resolves.toStrictEqual({
       blockId: 'block-1',
+      decision: 'unblocked',
       unblockedAt: '2026-09-18T12:01:00.000Z',
     })
   })
 
   test('passes an explicit null assignment expiry through unchanged', async () => {
     mocks.assignGroup.mockResolvedValue({
-      decision: 'assigned',
-      groupId: 'group-1',
       assignmentId: 'assignment-1',
+      decision: 'assigned',
       expiresAt: null,
+      groupId: 'group-1',
     })
     const commands = createPlatformOrganizationCommandCapabilities(
       ['assign-ordinary-group'] as const,
@@ -164,9 +166,9 @@ describe('platform organization command capabilities', () => {
     )
 
     await commands.assignOrdinaryGroup({
+      expiresAt: null,
       groupId: 'group-1',
       reason: 'Permanent access',
-      expiresAt: null,
     })
 
     expect(mocks.assignGroup).toHaveBeenCalledWith(expect.objectContaining({ expiresAt: null }))
@@ -175,9 +177,9 @@ describe('platform organization command capabilities', () => {
   test('snapshots the authorized target before feature code can mutate its context', async () => {
     const mutableTarget = { ...target, account: { ...target.account } }
     mocks.blockMember.mockResolvedValue({
-      decision: 'blocked',
       blockId: 'block-1',
       blockedAt: '2026-09-18T12:00:00.000Z',
+      decision: 'blocked',
     })
     const commands = createPlatformOrganizationCommandCapabilities(['block-member'] as const, {
       ...binding('member-audit.members.block'),
@@ -190,8 +192,8 @@ describe('platform organization command capabilities', () => {
 
     expect(mocks.blockMember).toHaveBeenCalledWith(
       expect.objectContaining({
-        targetUserId: target.account.userId,
         managedMemberLifecycleId: target.managedMemberLifecycleId,
+        targetUserId: target.account.userId,
       }),
     )
   })
@@ -206,8 +208,8 @@ describe('platform organization command capabilities', () => {
     await expect(
       commands.assignOrdinaryGroup({ groupId: 'group-1', reason: 'password=hunter2' }),
     ).rejects.toMatchObject({
-      status: 422,
       body: { code: 'INVALID_ACTION_REASON' },
+      status: 422,
     })
     expect(mocks.assignGroup).toHaveBeenCalledOnce()
   })
@@ -224,11 +226,11 @@ describe('platform organization command capabilities', () => {
     const error = await commands.blockMember({ reason: 'Immediate deny' }).catch((caught) => caught)
     expect(error).toBeInstanceOf(PlatformModuleHttpError)
     expect(error).toMatchObject({
-      status: 403,
       body: {
         code: 'ORGANIZATION_COMMAND_AUTHORITY_REQUIRED',
         message: 'Current organization reviewer authority is required.',
       },
+      status: 403,
     })
     expect(JSON.stringify(error)).not.toContain(target.account.userId)
   })
@@ -249,7 +251,7 @@ describe('platform organization command capabilities', () => {
 
     await expect(
       commands.assignOrdinaryGroup({ groupId: 'group-1', reason: 'Reviewed change' }),
-    ).rejects.toMatchObject({ status, body: { code: publicCode } })
+    ).rejects.toMatchObject({ body: { code: publicCode }, status })
   })
 
   test.each([
@@ -268,7 +270,7 @@ describe('platform organization command capabilities', () => {
 
     await expect(
       commands.assignOrdinaryGroup({ groupId: 'group-1', reason: 'Reviewed change' }),
-    ).rejects.toMatchObject({ status, body: { code: publicCode } })
+    ).rejects.toMatchObject({ body: { code: publicCode }, status })
   })
 
   test.each([
@@ -284,8 +286,8 @@ describe('platform organization command capabilities', () => {
     )
 
     await expect(commands.blockMember({ reason: 'Reviewed change' })).rejects.toMatchObject({
-      status,
       body: { code: publicCode },
+      status,
     })
   })
 
@@ -302,22 +304,22 @@ describe('platform organization command capabilities', () => {
 
   test('binds an external module command to its exact route permission', async () => {
     mocks.unblockMember.mockResolvedValue({
-      decision: 'unblocked',
       blockId: 'block-1',
+      decision: 'unblocked',
       unblockedAt: '2026-09-18T12:01:00.000Z',
     })
     const commands = createPlatformOrganizationCommandCapabilities(['unblock-member'] as const, {
       ...binding('alpha.members.manage'),
-      publisherPackage: '@example/alpha-manifest',
       moduleId: 'alpha',
+      publisherPackage: '@example/alpha-manifest',
     })
 
     await commands.unblockMember({ reason: 'External review completed' })
 
     expect(mocks.unblockMember).toHaveBeenCalledWith(
       expect.objectContaining({
-        publisherPackage: '@example/alpha-manifest',
         moduleId: 'alpha',
+        publisherPackage: '@example/alpha-manifest',
         requiredPermission: 'alpha.members.manage',
       }),
     )
@@ -327,14 +329,14 @@ describe('platform organization command capabilities', () => {
 function binding(requiredPermission: string) {
   return {
     actorUserId: '00000000-0000-4000-8000-000000000001',
-    publisherPackage: '@eve-space/member-audit-manifest',
     moduleId: 'member-audit',
     organization: {
-      organizationVersion: 7,
       audience: 'hr' as const,
-      requiredPermission,
       entitlementScope: 'all' as const,
+      organizationVersion: 7,
+      requiredPermission,
     },
+    publisherPackage: '@eve-space/member-audit-manifest',
     target,
   }
 }

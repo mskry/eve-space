@@ -34,7 +34,9 @@ const props = withDefaults(
 const open = defineModel<boolean>('open', { default: false })
 
 function handleCloseAutoFocus(event: Event) {
-  if (!props.restoreFocus) event.preventDefault()
+  if (!props.restoreFocus) {
+    event.preventDefault()
+  }
 }
 </script>
 

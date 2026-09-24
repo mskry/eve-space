@@ -11,7 +11,7 @@ function implant(
   name: string,
   bonuses: { attribute: string; value: number }[] = [],
 ) {
-  return { typeId: slot ?? 999, name, slot, bonuses }
+  return { bonuses, name, slot, typeId: slot ?? 999 }
 }
 
 describe('jump clone capacity', () => {
@@ -19,28 +19,28 @@ describe('jump clone capacity', () => {
     groups: [
       {
         skills: [
-          { typeId: 24_242, trainedLevel: 5, activeLevel: 5 },
-          { typeId: 33_407, trainedLevel: 3, activeLevel: 3 },
-          { typeId: 3_327, trainedLevel: 5, activeLevel: 5 },
+          { activeLevel: 5, trainedLevel: 5, typeId: 24_242 },
+          { activeLevel: 3, trainedLevel: 3, typeId: 33_407 },
+          { activeLevel: 5, trainedLevel: 5, typeId: 3327 },
         ],
       },
     ],
   }
 
   it('sums both infomorph skills into the maximum', () => {
-    expect(deriveJumpCloneCapacity(4, skills)).toEqual({ installed: 4, maximum: 8 })
+    expect(deriveJumpCloneCapacity(4, skills)).toStrictEqual({ installed: 4, maximum: 8 })
   })
 
   it('leaves the maximum unknown when the skills resource is unavailable', () => {
-    expect(deriveJumpCloneCapacity(4, undefined)).toEqual({ installed: 4, maximum: null })
+    expect(deriveJumpCloneCapacity(4, undefined)).toStrictEqual({ installed: 4, maximum: null })
   })
 
   it('reports no capacity when neither infomorph skill is trained', () => {
     expect(
       deriveJumpCloneCapacity(0, {
-        groups: [{ skills: [{ typeId: 3_327, trainedLevel: 5, activeLevel: 5 }] }],
+        groups: [{ skills: [{ activeLevel: 5, trainedLevel: 5, typeId: 3327 }] }],
       }),
-    ).toEqual({ installed: 0, maximum: 0 })
+    ).toStrictEqual({ installed: 0, maximum: 0 })
   })
 
   it('uses the trained level so an alpha-capped character keeps its real capacity', () => {
@@ -48,22 +48,22 @@ describe('jump clone capacity', () => {
       groups: [
         {
           skills: [
-            { typeId: 24_242, trainedLevel: 5, activeLevel: 1 },
-            { typeId: 33_407, trainedLevel: 3, activeLevel: 0 },
+            { activeLevel: 1, trainedLevel: 5, typeId: 24_242 },
+            { activeLevel: 0, trainedLevel: 3, typeId: 33_407 },
           ],
         },
       ],
     }
 
-    expect(deriveJumpCloneCapacity(6, lapsedToAlpha)).toEqual({ installed: 6, maximum: 8 })
+    expect(deriveJumpCloneCapacity(6, lapsedToAlpha)).toStrictEqual({ installed: 6, maximum: 8 })
   })
 
   it('withholds a maximum that contradicts the number of installed clones', () => {
     const understated = {
-      groups: [{ skills: [{ typeId: 24_242, trainedLevel: 1, activeLevel: 1 }] }],
+      groups: [{ skills: [{ activeLevel: 1, trainedLevel: 1, typeId: 24_242 }] }],
     }
 
-    expect(deriveJumpCloneCapacity(6, understated)).toEqual({ installed: 6, maximum: null })
+    expect(deriveJumpCloneCapacity(6, understated)).toStrictEqual({ installed: 6, maximum: null })
   })
 })
 
@@ -71,8 +71,8 @@ describe('implant rack', () => {
   it('splits attribute slots from hardwirings and keeps empty slots addressable', () => {
     const rack = toImplantRack([implant(1, 'Ocular Filter'), implant(7, 'Zainou Gnome')])
 
-    expect(rack.attributes.map((entry) => entry.slot)).toEqual([1, 2, 3, 4, 5])
-    expect(rack.hardwirings.map((entry) => entry.slot)).toEqual([6, 7, 8, 9, 10])
+    expect(rack.attributes.map((entry) => entry.slot)).toStrictEqual([1, 2, 3, 4, 5])
+    expect(rack.hardwirings.map((entry) => entry.slot)).toStrictEqual([6, 7, 8, 9, 10])
     expect(rack.attributes[0]?.implant?.name).toBe('Ocular Filter')
     expect(rack.attributes[1]?.implant).toBeNull()
     expect(rack.hardwirings[1]?.implant?.name).toBe('Zainou Gnome')
@@ -83,7 +83,7 @@ describe('implant rack', () => {
   it('keeps implants with an unusable slot visible instead of dropping them', () => {
     const rack = toImplantRack([implant(null, 'Unknown implant 999'), implant(11, 'Out of range')])
 
-    expect(rack.unslotted.map((entry) => entry.name)).toEqual([
+    expect(rack.unslotted.map((entry) => entry.name)).toStrictEqual([
       'Unknown implant 999',
       'Out of range',
     ])
@@ -92,8 +92,8 @@ describe('implant rack', () => {
 
   it('degrades instead of throwing when a payload predates the slot and bonus fields', () => {
     const legacy = [
-      { typeId: 1, name: 'Ocular Filter' },
-      { typeId: 2, name: 'Memory Aug' },
+      { name: 'Ocular Filter', typeId: 1 },
+      { name: 'Memory Aug', typeId: 2 },
     ]
 
     const rack = toImplantRack(legacy)
@@ -116,10 +116,10 @@ describe('implant rack', () => {
 
 function stationClone(jumpCloneId: number, locationId: number, name: string | null) {
   return {
-    jumpCloneId,
-    name,
-    location: { locationId, locationType: 'station' as const, name },
     implants: [],
+    jumpCloneId,
+    location: { locationId, locationType: 'station' as const, name },
+    name,
   }
 }
 
@@ -132,21 +132,21 @@ describe('jump clone grouping', () => {
       stationClone(14, 60_000_003, 'Dodixie IX'),
     ])
 
-    expect(groups.map((group) => group.label)).toEqual([
+    expect(groups.map((group) => group.label)).toStrictEqual([
       'Jita IV - Moon 4',
       'Amarr VIII',
       'Dodixie IX',
     ])
-    expect(groups[0]?.clones.map((entry) => entry.jumpCloneId)).toEqual([11, 13])
+    expect(groups[0]?.clones.map((entry) => entry.jumpCloneId)).toStrictEqual([11, 13])
   })
 
   it('labels an unresolved location by type and identifier', () => {
     const groups = groupJumpClonesByLocation([
       {
-        jumpCloneId: 14,
-        name: null,
-        location: { locationId: 1_035_466_617_946, locationType: 'structure', name: null },
         implants: [],
+        jumpCloneId: 14,
+        location: { locationId: 1_035_466_617_946, locationType: 'structure', name: null },
+        name: null,
       },
     ])
 
@@ -158,10 +158,10 @@ describe('jump clone grouping', () => {
     const groups = groupJumpClonesByLocation([
       stationClone(15, 60_000_001, 'Station'),
       {
-        jumpCloneId: 16,
-        name: null,
-        location: { locationId: 60_000_001, locationType: 'structure', name: null },
         implants: [],
+        jumpCloneId: 16,
+        location: { locationId: 60_000_001, locationType: 'structure', name: null },
+        name: null,
       },
     ])
 

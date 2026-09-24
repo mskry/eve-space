@@ -38,8 +38,8 @@ export const loadRootMountTable = async (root: URL): Promise<RootMountTable> => 
       source: routerSources.get(router) ?? ROOT_MOUNT_SOURCE,
     })),
     prefixMiddleware: [...source.matchAll(USE_PATTERN)].map(([, pattern, argumentList]) => ({
-      pattern,
       middleware: identifiersIn(argumentList),
+      pattern,
     })),
   }
 }
@@ -49,8 +49,6 @@ export const resolveMount = (requestPath: string, table: RootMountTable): Resolv
   const prefix = mounts[0]?.prefix ?? ''
 
   return {
-    mounts,
-    remainder: prefix ? requestPath.slice(prefix.length) || '/' : requestPath,
     middleware: [
       ...new Set(
         table.prefixMiddleware
@@ -58,14 +56,17 @@ export const resolveMount = (requestPath: string, table: RootMountTable): Resolv
           .flatMap((entry) => entry.middleware),
       ),
     ],
+    mounts,
+    remainder: prefix ? requestPath.slice(prefix.length) || '/' : requestPath,
   }
 }
 
 const collectRouterSources = (source: string) => {
   const sources = new Map<string, string>()
 
-  for (const [, identifier, specifier] of source.matchAll(ROUTER_IMPORT_PATTERN))
+  for (const [, identifier, specifier] of source.matchAll(ROUTER_IMPORT_PATTERN)) {
     sources.set(identifier, `api/src/${specifier.replace(/^\.\//, '').replace(/\.js$/, '.ts')}`)
+  }
 
   return sources
 }

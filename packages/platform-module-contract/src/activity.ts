@@ -41,7 +41,7 @@ export type PlatformActivityParticipationState =
   (typeof platformActivityParticipationStates)[number]
 
 export const platformActivityProviderMaximumActivities = 100
-export const platformActivityProviderTimeoutMilliseconds = 2_000
+export const platformActivityProviderTimeoutMilliseconds = 2000
 
 export interface PlatformActivityFreshness {
   readonly state: PlatformActivityFreshnessState

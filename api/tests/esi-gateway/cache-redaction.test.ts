@@ -4,7 +4,7 @@ import { assertCacheValueSafe } from '../../src/esi-gateway/internal/cache-redac
 describe('ESI cache redaction', () => {
   it('accepts nested values without sensitive field names', () => {
     expect(() =>
-      assertCacheValueSafe({ character: { id: 1, corporation: { name: 'Safe' } } }),
+      assertCacheValueSafe({ character: { corporation: { name: 'Safe' }, id: 1 } }),
     ).not.toThrow()
   })
 

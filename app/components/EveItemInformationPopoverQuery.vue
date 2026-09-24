@@ -24,15 +24,21 @@ const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const itemQuery = useQuery(() => publicTypeDetailQuery({ apiClient, typeId: props.typeId }))
 const item = computed(() => {
-  if (itemQuery.data.value) return itemQuery.data.value
+  if (itemQuery.data.value) {
+    return itemQuery.data.value
+  }
   const error = itemQuery.error.value
   return error instanceof ApiQueryError && error.code === 'TYPE_NOT_FOUND'
     ? props.fallbackItem
     : undefined
 })
 const contentStatus = computed<'loaded' | 'loading' | 'unavailable'>(() => {
-  if (item.value) return 'loaded'
-  if (itemQuery.status.value === 'error') return 'unavailable'
+  if (item.value) {
+    return 'loaded'
+  }
+  if (itemQuery.status.value === 'error') {
+    return 'unavailable'
+  }
   return 'loading'
 })
 </script>

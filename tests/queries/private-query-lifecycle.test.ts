@@ -24,7 +24,9 @@ beforeEach(() => {
   vi.stubGlobal('useNuxtApp', () => ({ isHydrating: false, payload: { serverRendered: false } }))
   vi.stubGlobal('useState', (key: string, initialize: () => unknown) => {
     const existing = nuxtState.get(key)
-    if (existing) return existing
+    if (existing) {
+      return existing
+    }
     const state = ref(initialize())
     nuxtState.set(key, state)
     return state
@@ -32,14 +34,14 @@ beforeEach(() => {
   vi.stubGlobal('watch', watch)
   vi.stubGlobal('useRoute', () => ({ query: {} }))
   vi.stubGlobal('useAuthSession', () => ({
-    authConfig: ref({ configured: false, loginUrl: '', attachUrl: '' }),
+    authConfig: ref({ attachUrl: '', configured: false, loginUrl: '' }),
     authLoading: ref(false),
     authSession: ref({ authenticated: false }),
     initializeAuth: vi.fn(),
   }))
   queryServer.use(
     http.get('http://localhost/auth/config', () =>
-      HttpResponse.json({ configured: false, loginUrl: '', attachUrl: '' }),
+      HttpResponse.json({ attachUrl: '', configured: false, loginUrl: '' }),
     ),
     http.get('http://localhost/auth/session', () => HttpResponse.json(authenticatedSession())),
     http.get('http://localhost/api/me/cache-admission', () => HttpResponse.json(cacheAdmission())),
@@ -76,13 +78,16 @@ describe('private query lifecycle', () => {
     response.resolve(
       HttpResponse.json({ ...authenticatedSession(), cacheAdmission: cacheAdmission() }),
     )
-    await expect(middlewareVerification).resolves.toEqual(authenticatedSession())
-    await expect(concurrentNavigation).resolves.toEqual(authenticatedSession())
+    await expect(middlewareVerification).resolves.toStrictEqual(authenticatedSession())
+    await expect(concurrentNavigation).resolves.toStrictEqual(authenticatedSession())
     await componentVerification
-    await expect(initialization.initialize()).resolves.toEqual(authenticatedSession())
+    await expect(initialization.initialize()).resolves.toStrictEqual(authenticatedSession())
     expect(sessionRequest).toHaveBeenCalledOnce()
-    expect(initialization.verification.state.value).toEqual({ generation: 1, status: 'verified' })
-    expect(authState.authSession.value).toEqual(authenticatedSession())
+    expect(initialization.verification.state.value).toStrictEqual({
+      generation: 1,
+      status: 'verified',
+    })
+    expect(authState.authSession.value).toStrictEqual(authenticatedSession())
     wrapper.unmount()
   })
 
@@ -114,9 +119,11 @@ describe('private query lifecycle', () => {
 
       expect(sessionRequest).toHaveBeenCalledOnce()
       expect(admissionRequest).not.toHaveBeenCalled()
-      expect(authState.authSession.value).toEqual(authenticatedSession())
+      expect(authState.authSession.value).toStrictEqual(authenticatedSession())
       expect(authState.authLoading.value).toBe(false)
-      expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(authenticatedSession())
+      expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
+        authenticatedSession(),
+      )
       wrapper.unmount()
     },
   )
@@ -146,14 +153,14 @@ describe('private query lifecycle', () => {
     await flushPromises()
 
     expect(authState.authLoading.value).toBe(true)
-    expect(authState.authSession.value).toEqual(unauthenticatedSession)
+    expect(authState.authSession.value).toStrictEqual(unauthenticatedSession)
 
     releaseAdmission()
     await verification
     await flushPromises()
 
     expect(authState.authLoading.value).toBe(false)
-    expect(authState.authSession.value).toEqual(authenticatedSession())
+    expect(authState.authSession.value).toStrictEqual(authenticatedSession())
     wrapper.unmount()
   })
 
@@ -184,14 +191,14 @@ describe('private query lifecycle', () => {
     await flushPromises()
 
     expect(wrapper.text()).toBe('Verified pilot')
-    expect(authState.authSession.value).toEqual(authenticatedSession())
+    expect(authState.authSession.value).toStrictEqual(authenticatedSession())
 
     sessionRefresh.resolve(HttpResponse.json(authenticatedSession()))
     await vi.waitFor(() => expect(admissionRequest).toHaveBeenCalledTimes(2))
     await flushPromises()
 
     expect(wrapper.text()).toBe('Verified pilot')
-    expect(authState.authSession.value).toEqual(authenticatedSession())
+    expect(authState.authSession.value).toStrictEqual(authenticatedSession())
 
     admissionRefresh.resolve(HttpResponse.json(cacheAdmission()))
     await refreshing
@@ -232,7 +239,7 @@ describe('private query lifecycle', () => {
     expect(authState.authVerificationStatus.value).toBe('unavailable')
     expect(authState.authVerificationInFlight.value).toBe(false)
     expect(authState.authLoading.value).toBe(false)
-    expect(authState.authSession.value).toEqual(unauthenticatedSession)
+    expect(authState.authSession.value).toStrictEqual(unauthenticatedSession)
     wrapper.unmount()
   })
 
@@ -268,7 +275,7 @@ describe('private query lifecycle', () => {
 
     expect(authState.authVerificationStatus.value).toBe('verified')
     expect(authState.authVerificationInFlight.value).toBe(false)
-    expect(authState.authSession.value).toEqual(authenticatedSession())
+    expect(authState.authSession.value).toStrictEqual(authenticatedSession())
     wrapper.unmount()
   })
 
@@ -299,7 +306,7 @@ describe('private query lifecycle', () => {
     await vi.waitFor(() => expect(authState.authLoading.value).toBe(true))
 
     expect(authState.authLoading.value).toBe(true)
-    expect(authState.authSession.value).toEqual(unauthenticatedSession)
+    expect(authState.authSession.value).toStrictEqual(unauthenticatedSession)
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationActivities())).toBeUndefined()
 
@@ -308,7 +315,7 @@ describe('private query lifecycle', () => {
     await flushPromises()
 
     expect(authState.authLoading.value).toBe(false)
-    expect(authState.authSession.value).toEqual(nextSession)
+    expect(authState.authSession.value).toStrictEqual(nextSession)
     wrapper.unmount()
   })
 
@@ -334,17 +341,17 @@ describe('private query lifecycle', () => {
     await flushPromises()
 
     expect(authState.authUnavailable.value).toBe(false)
-    expect(authState.authSession.value).toEqual(authenticatedSession())
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toEqual({
+    expect(authState.authSession.value).toStrictEqual(authenticatedSession())
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toStrictEqual({
       characterId: 7,
     })
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationActivities())).toEqual({
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationActivities())).toStrictEqual({
       activities: [],
     })
 
     const liveCharacterEntry = queryCache.get(PRIVATE_QUERY_KEYS.characterAssets(7))
     await queryCache.fetch(liveCharacterEntry!)
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toEqual({
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toStrictEqual({
       characterId: 7,
     })
     wrapper.unmount()
@@ -409,7 +416,9 @@ describe('private query lifecycle', () => {
 
     await authState.logout()
 
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(unauthenticatedSession)
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
+      unauthenticatedSession,
+    )
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationActivities())).toBeUndefined()
     expect(cancelQueries).toHaveBeenCalledWith(
@@ -440,19 +449,21 @@ describe('private query lifecycle', () => {
     const sessionEntry = queryCache.get(PRIVATE_QUERY_KEYS.session())
     await queryCache.fetch(sessionEntry!)
     await flushPromises()
-    expect(authState.authSession.value).toEqual(authenticatedSession())
+    expect(authState.authSession.value).toStrictEqual(authenticatedSession())
 
     const staleVerification = queryCache.fetch(sessionEntry!)
     await vi.waitFor(() => expect(sessionRequest).toHaveBeenCalledTimes(2))
     await authState.logout()
-    expect(authState.authSession.value).toEqual(unauthenticatedSession)
+    expect(authState.authSession.value).toStrictEqual(unauthenticatedSession)
 
     releaseSession(HttpResponse.json(authenticatedSession()))
     await Promise.allSettled([staleVerification])
     await flushPromises()
 
-    expect(authState.authSession.value).toEqual(unauthenticatedSession)
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(unauthenticatedSession)
+    expect(authState.authSession.value).toStrictEqual(unauthenticatedSession)
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
+      unauthenticatedSession,
+    )
     wrapper.unmount()
   })
 
@@ -483,7 +494,9 @@ describe('private query lifecycle', () => {
     await flushPromises()
     await nextTick()
 
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(unauthenticatedSession)
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
+      unauthenticatedSession,
+    )
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationCompliance())).toBeUndefined()
     wrapper.unmount()
@@ -515,17 +528,17 @@ describe('private query lifecycle', () => {
     queryCache.ensure({
       key: PRIVATE_QUERY_KEYS.organizationRoles(),
       query: async () => ({
+        corporationSources: [],
+        derivedSources: [],
         grants: [],
         ownerSources: [],
-        derivedSources: [],
-        corporationSources: [],
       }),
     })
     queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationRoles(), {
+      corporationSources: [],
+      derivedSources: [],
       grants: [],
       ownerSources: [],
-      derivedSources: [],
-      corporationSources: [],
     })
 
     const nextSession = authenticatedSession('user-2', 8)
@@ -539,7 +552,7 @@ describe('private query lifecycle', () => {
     await flushPromises()
     await nextTick()
 
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(nextSession)
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(nextSession)
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationRoles())).toBeUndefined()
     expect(renderedStates).not.toContainEqual({ hasPriorPrivateData: true, userId: 'user-2' })
@@ -575,8 +588,10 @@ describe('private query lifecycle', () => {
     await nextTick()
 
     expect(authState.authUnavailable.value).toBe(true)
-    expect(authState.authSession.value).toEqual(unauthenticatedSession)
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(unauthenticatedSession)
+    expect(authState.authSession.value).toStrictEqual(unauthenticatedSession)
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
+      unauthenticatedSession,
+    )
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationCompliance())).toBeUndefined()
     wrapper.unmount()
@@ -605,8 +620,8 @@ describe('private query lifecycle', () => {
     await nextTick()
 
     expect(authState.authUnavailable.value).toBe(true)
-    expect(authState.authSession.value).toEqual(unauthenticatedSession)
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toEqual({
+    expect(authState.authSession.value).toStrictEqual(unauthenticatedSession)
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toStrictEqual({
       characterId: 7,
     })
 
@@ -617,8 +632,8 @@ describe('private query lifecycle', () => {
     await flushPromises()
 
     expect(authState.authUnavailable.value).toBe(false)
-    expect(authState.authSession.value).toEqual(authenticatedSession())
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toEqual({
+    expect(authState.authSession.value).toStrictEqual(authenticatedSession())
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toStrictEqual({
       characterId: 7,
     })
     wrapper.unmount()
@@ -662,29 +677,29 @@ function seedAdmissionBoundQueries(
   const characterKey = PRIVATE_QUERY_KEYS.characterAssets(7)
   queryCache.ensure({
     key: characterKey,
+    meta: { esiPersistence: { characterId: 7, kind: 'character-esi' } },
     query: async () => ({ characterId: 7 }),
-    meta: { esiPersistence: { kind: 'character-esi', characterId: 7 } },
   })
   queryCache.setQueryData(characterKey, { characterId: 7 })
 
   const organizationKey = PRIVATE_QUERY_KEYS.organizationActivities()
   queryCache.ensure({
     key: organizationKey,
-    query: async () => ({ activities: [] }),
     meta: {
-      esiPersistence: { kind: 'organization-esi', admissionScope: ORGANIZATION_SCOPE },
+      esiPersistence: { admissionScope: ORGANIZATION_SCOPE, kind: 'organization-esi' },
     },
+    query: async () => ({ activities: [] }),
   })
   queryCache.setQueryData(organizationKey, { activities: [] })
 }
 
 function authenticatedSession(userId = 'user-1', characterId = 7) {
   return {
-    authenticated: true as const,
     account: {
-      userId,
       mainCharacter: { characterId, name: String(characterId) },
+      userId,
     },
+    authenticated: true as const,
   }
 }
 
@@ -699,17 +714,17 @@ function sessionApiClient(
   ) => Promise<Response> = async () => HttpResponse.json(cacheAdmission()),
 ) {
   return {
+    api: {
+      me: {
+        'cache-admission': { $get: admissionRequest },
+      },
+    },
     auth: {
       config: {
         $get: async () => HttpResponse.json({ configured: false, loginUrl: '', attachUrl: '' }),
       },
       logout: { $post: async () => new Response(null, { status: 204 }) },
       session: { $get: sessionRequest },
-    },
-    api: {
-      me: {
-        'cache-admission': { $get: admissionRequest },
-      },
     },
   } as unknown as ApiClient
 }
@@ -725,7 +740,6 @@ function cacheAdmission(
   } = {},
 ) {
   return {
-    userId: overrides.userId ?? 'user-1',
     characters: [
       {
         characterId: 7,
@@ -744,24 +758,25 @@ function cacheAdmission(
             validUntil: null,
             admissionScopes: overrides.admissionScopes ?? [ORGANIZATION_SCOPE],
           },
+    userId: overrides.userId ?? 'user-1',
   }
 }
 
 function character(characterId: number) {
   return {
-    characterId,
-    name: String(characterId),
-    corporationId: 98_000_001,
-    allianceId: null,
-    isMain: characterId === 7,
-    birthday: '2020-01-01T00:00:00.000Z',
-    gender: 'Female',
-    race: 'Caldari',
-    bloodline: 'Deteis',
-    securityStatus: 1,
-    corporation: { id: 98_000_001, name: 'Corporation', ticker: 'CORP', memberCount: 1 },
     alliance: null,
+    allianceId: null,
+    birthday: '2020-01-01T00:00:00.000Z',
+    bloodline: 'Deteis',
+    characterId,
+    corporation: { id: 98_000_001, memberCount: 1, name: 'Corporation', ticker: 'CORP' },
+    corporationId: 98_000_001,
+    gender: 'Female',
+    isMain: characterId === 7,
     location: null,
+    name: String(characterId),
+    race: 'Caldari',
+    securityStatus: 1,
     ship: null,
     skills: null,
   }

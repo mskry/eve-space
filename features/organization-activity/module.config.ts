@@ -1,14 +1,39 @@
 import type { PlatformModuleManifest } from '@eve-space/platform-module-contract/manifest'
 
 const manifest = {
-  id: 'organization-activity',
-  release: {
-    publisherPackage: '@eve-space/organization-activity-manifest',
-    version: '0.1.0',
-    hostContractRange: '^1.0.0',
-  },
-  icon: 'corporation',
   defaultEnabled: true,
+  icon: 'corporation',
+  id: 'organization-activity',
+  nuxt: {
+    navigation: [],
+    package: '@eve-space/organization-activity-nuxt',
+    pages: [
+      {
+        id: 'organization-activity-projects',
+        name: 'eve-organization-activity-projects',
+        path: '/organization-activity/projects',
+        file: 'src/runtime/app/pages/OrganizationActivityProjectPage.vue',
+        extensionPoint: 'root',
+        audience: 'authenticated',
+      },
+      {
+        id: 'organization-activity-jobs',
+        name: 'eve-organization-activity-jobs',
+        path: '/organization-activity/jobs',
+        file: 'src/runtime/app/pages/OrganizationActivityJobPage.vue',
+        extensionPoint: 'root',
+        audience: 'authenticated',
+      },
+      {
+        id: 'organization-activity-campaigns',
+        name: 'eve-organization-activity-campaigns',
+        path: '/organization-activity/campaigns',
+        file: 'src/runtime/app/pages/OrganizationActivityCampaignPage.vue',
+        extensionPoint: 'root',
+        audience: 'authenticated',
+      },
+    ],
+  },
   permissions: [
     {
       key: 'organization-activity.view',
@@ -19,26 +44,80 @@ const manifest = {
       reviewAllowed: false,
     },
   ],
+  release: {
+    hostContractRange: '^1.0.0',
+    publisherPackage: '@eve-space/organization-activity-manifest',
+    version: '0.1.0',
+  },
   server: {
-    package: '@eve-space/organization-activity-server',
-    routes: [
+    activityProviders: [
       {
-        id: 'activity-details',
-        namespace: '/organization-activity/details',
-        exportName: 'activityRoutes',
-        authorization: 'authenticated-session',
+        id: 'organization-activity',
+        exportName: 'organizationActivityProvider',
         audience: 'member',
         requiredPermission: 'organization-activity.view',
         persistenceOperations: [{ operationId: 'read-activity-snapshots' }],
+        freshness: {
+          staleAfterSeconds: 3600,
+        },
+      },
+    ],
+    esiOperations: [
+      {
+        id: 'organization-activity-campaign-list',
+        exportName: 'campaignListOperation',
       },
       {
-        id: 'activity-participation',
-        namespace: '/organization-activity/characters/:characterId',
-        exportName: 'participationRoutes',
-        authorization: 'owned-character',
-        audience: 'member',
-        requiredPermission: 'organization-activity.view',
-        persistenceOperations: [{ operationId: 'read-activity-snapshots' }],
+        id: 'organization-activity-campaign-detail',
+        exportName: 'campaignDetailOperation',
+      },
+      {
+        id: 'organization-activity-objective-list',
+        exportName: 'objectiveListOperation',
+      },
+      {
+        id: 'organization-activity-objective-detail',
+        exportName: 'objectiveDetailOperation',
+      },
+      {
+        id: 'organization-activity-job-list',
+        exportName: 'jobListOperation',
+      },
+      {
+        id: 'organization-activity-job-detail',
+        exportName: 'jobDetailOperation',
+      },
+      {
+        id: 'organization-activity-corporation-jobs',
+        exportName: 'corporationJobsOperation',
+      },
+      {
+        id: 'organization-activity-project-list',
+        exportName: 'projectListOperation',
+      },
+      {
+        id: 'organization-activity-project-detail',
+        exportName: 'projectDetailOperation',
+      },
+      {
+        id: 'organization-activity-project-contribution',
+        exportName: 'projectContributionOperation',
+      },
+      {
+        id: 'organization-activity-character-jobs',
+        exportName: 'characterJobsOperation',
+      },
+      {
+        id: 'organization-activity-job-participation',
+        exportName: 'jobParticipationOperation',
+      },
+      {
+        id: 'organization-activity-character-objectives',
+        exportName: 'characterObjectivesOperation',
+      },
+      {
+        id: 'organization-activity-objective-participation',
+        exportName: 'objectiveParticipationOperation',
       },
     ],
     migrations: [
@@ -46,6 +125,7 @@ const manifest = {
         name: 'organization-activity-001-baseline.sql',
       },
     ],
+    package: '@eve-space/organization-activity-server',
     persistenceOperations: [
       {
         id: 'read-activity-checkpoint',
@@ -183,106 +263,26 @@ const manifest = {
         exportName: 'characterProjectsResource',
       },
     ],
-    esiOperations: [
+    routes: [
       {
-        id: 'organization-activity-campaign-list',
-        exportName: 'campaignListOperation',
-      },
-      {
-        id: 'organization-activity-campaign-detail',
-        exportName: 'campaignDetailOperation',
-      },
-      {
-        id: 'organization-activity-objective-list',
-        exportName: 'objectiveListOperation',
-      },
-      {
-        id: 'organization-activity-objective-detail',
-        exportName: 'objectiveDetailOperation',
-      },
-      {
-        id: 'organization-activity-job-list',
-        exportName: 'jobListOperation',
-      },
-      {
-        id: 'organization-activity-job-detail',
-        exportName: 'jobDetailOperation',
-      },
-      {
-        id: 'organization-activity-corporation-jobs',
-        exportName: 'corporationJobsOperation',
-      },
-      {
-        id: 'organization-activity-project-list',
-        exportName: 'projectListOperation',
-      },
-      {
-        id: 'organization-activity-project-detail',
-        exportName: 'projectDetailOperation',
-      },
-      {
-        id: 'organization-activity-project-contribution',
-        exportName: 'projectContributionOperation',
-      },
-      {
-        id: 'organization-activity-character-jobs',
-        exportName: 'characterJobsOperation',
-      },
-      {
-        id: 'organization-activity-job-participation',
-        exportName: 'jobParticipationOperation',
-      },
-      {
-        id: 'organization-activity-character-objectives',
-        exportName: 'characterObjectivesOperation',
-      },
-      {
-        id: 'organization-activity-objective-participation',
-        exportName: 'objectiveParticipationOperation',
-      },
-    ],
-    activityProviders: [
-      {
-        id: 'organization-activity',
-        exportName: 'organizationActivityProvider',
+        id: 'activity-details',
+        namespace: '/organization-activity/details',
+        exportName: 'activityRoutes',
+        authorization: 'authenticated-session',
         audience: 'member',
         requiredPermission: 'organization-activity.view',
         persistenceOperations: [{ operationId: 'read-activity-snapshots' }],
-        freshness: {
-          staleAfterSeconds: 3600,
-        },
+      },
+      {
+        id: 'activity-participation',
+        namespace: '/organization-activity/characters/:characterId',
+        exportName: 'participationRoutes',
+        authorization: 'owned-character',
+        audience: 'member',
+        requiredPermission: 'organization-activity.view',
+        persistenceOperations: [{ operationId: 'read-activity-snapshots' }],
       },
     ],
-  },
-  nuxt: {
-    package: '@eve-space/organization-activity-nuxt',
-    pages: [
-      {
-        id: 'organization-activity-projects',
-        name: 'eve-organization-activity-projects',
-        path: '/organization-activity/projects',
-        file: 'src/runtime/app/pages/OrganizationActivityProjectPage.vue',
-        extensionPoint: 'root',
-        audience: 'authenticated',
-      },
-      {
-        id: 'organization-activity-jobs',
-        name: 'eve-organization-activity-jobs',
-        path: '/organization-activity/jobs',
-        file: 'src/runtime/app/pages/OrganizationActivityJobPage.vue',
-        extensionPoint: 'root',
-        audience: 'authenticated',
-      },
-      {
-        id: 'organization-activity-campaigns',
-        name: 'eve-organization-activity-campaigns',
-        path: '/organization-activity/campaigns',
-        file: 'src/runtime/app/pages/OrganizationActivityCampaignPage.vue',
-        extensionPoint: 'root',
-        audience: 'authenticated',
-      },
-    ],
-    navigation: [],
   },
 } satisfies PlatformModuleManifest
 

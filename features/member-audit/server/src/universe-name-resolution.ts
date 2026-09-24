@@ -2,12 +2,12 @@ import type { PlatformResourceOperationMethods } from '@eve-space/platform-modul
 import type { PlatformCoreEsiOperationProtocol } from '@eve-space/platform-module-server'
 import { z } from 'zod'
 
-const maximumUniverseNameIds = 1_000
+const maximumUniverseNameIds = 1000
 const universeNamesSchema = z.array(
   z.strictObject({
+    category: z.string().min(1).max(100),
     id: z.number().int().positive(),
     name: z.string().min(1).max(500),
-    category: z.string().min(1).max(100),
   }),
 )
 
@@ -45,7 +45,7 @@ export async function resolveUniverseNamesBestEffort(
     results.flatMap((result) =>
       universeNamesSchema
         .parse(result.data)
-        .map((entry) => [entry.id, { name: entry.name, category: entry.category }] as const),
+        .map((entry) => [entry.id, { category: entry.category, name: entry.name }] as const),
     ),
   )
 }

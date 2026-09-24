@@ -53,19 +53,37 @@ const isLogo = computed(() => props.kind === 'alliance' || props.kind === 'corpo
 
 function imageUrl(size: EveImageSize) {
   const kind = props.kind
-  if (kind === 'alliance') return allianceLogo(props.id, size)
-  if (kind === 'character') return characterPortrait(props.id, size)
-  if (kind === 'corporation') return corporationLogo(props.id, size)
-  if (kind === 'faction') return factionLogo(props.id, size)
+  if (kind === 'alliance') {
+    return allianceLogo(props.id, size)
+  }
+  if (kind === 'character') {
+    return characterPortrait(props.id, size)
+  }
+  if (kind === 'corporation') {
+    return corporationLogo(props.id, size)
+  }
+  if (kind === 'faction') {
+    return factionLogo(props.id, size)
+  }
   return typeImage(props.id, typeVariations[kind], size)
 }
 
 function sourceSize(minimum: number): EveImageSize {
-  if (minimum <= 32) return 32
-  if (minimum <= 64) return 64
-  if (minimum <= 128) return 128
-  if (minimum <= 256) return 256
-  if (minimum <= 512) return 512
+  if (minimum <= 32) {
+    return 32
+  }
+  if (minimum <= 64) {
+    return 64
+  }
+  if (minimum <= 128) {
+    return 128
+  }
+  if (minimum <= 256) {
+    return 256
+  }
+  if (minimum <= 512) {
+    return 512
+  }
   return 1024
 }
 </script>

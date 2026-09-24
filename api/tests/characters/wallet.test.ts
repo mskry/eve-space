@@ -12,18 +12,21 @@ const characterId = 90_000_001
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const freshness = {
   cachedUntil: '2026-08-20T12:01:00.000Z',
-  validatedAt: '2026-08-20T12:00:00.000Z',
   quota: {},
   source: 'esi' as const,
   stale: false,
+  validatedAt: '2026-08-20T12:00:00.000Z',
 }
 
 beforeEach(() => {
   mocks.executeRepresentation.mockImplementation((definition) => {
-    if (definition.operation === 'wallet-balance') return Promise.resolve(result(123.45))
-    if (definition.operation === 'wallet-journal')
+    if (definition.operation === 'wallet-balance') {
+      return Promise.resolve(result(123.45))
+    }
+    if (definition.operation === 'wallet-journal') {
       return Promise.resolve(result({ entries: [], page: 1, totalPages: 1 }))
-    return Promise.resolve(result({ transactions: [], fromId: null, nextFromId: null }))
+    }
+    return Promise.resolve(result({ fromId: null, nextFromId: null, transactions: [] }))
   })
 })
 
@@ -48,11 +51,11 @@ describe('wallet service', () => {
     const { getWalletBalance } = await import('../../src/characters/wallet.js')
 
     const balance = await getWalletBalance(90_000_002, subjectLifecycleId)
-    expect(balance).toEqual({
+    expect(balance).toStrictEqual({
       balance: 500,
       cachedUntil: freshness.cachedUntil,
-      validatedAt: freshness.validatedAt,
       stale: false,
+      validatedAt: freshness.validatedAt,
     })
     expect(balance).not.toHaveProperty('source')
     expect(balance).not.toHaveProperty('quota')
@@ -64,15 +67,15 @@ describe('wallet service', () => {
         result({
           entries: [
             {
-              journalId: 501,
-              date: '2026-08-20T12:00:00Z',
               amount: -50,
               balance: 950,
-              referenceType: 'market_transaction',
-              description: 'Market transaction',
-              reason: 'purchase',
-              taxAmount: 3.5,
               context: { id: 60_000_001, type: 'station_id' },
+              date: '2026-08-20T12:00:00Z',
+              description: 'Market transaction',
+              journalId: 501,
+              reason: 'purchase',
+              referenceType: 'market_transaction',
+              taxAmount: 3.5,
             },
           ],
           page: 2,
@@ -81,6 +84,8 @@ describe('wallet service', () => {
       )
       .mockResolvedValueOnce(
         result({
+          fromId: null,
+          nextFromId: null,
           transactions: [
             {
               transactionId: 1,
@@ -96,22 +101,20 @@ describe('wallet service', () => {
               locationName: 'Jita IV - Moon 4',
             },
           ],
-          fromId: null,
-          nextFromId: null,
         }),
       )
     const { getWalletJournal, getWalletTransactions } =
       await import('../../src/characters/wallet.js')
 
     await expect(getWalletJournal(characterId, 2, subjectLifecycleId)).resolves.toMatchObject({
-      entries: [{ journalId: 501, context: { type: 'station_id' } }],
+      entries: [{ context: { type: 'station_id' }, journalId: 501 }],
       page: 2,
     })
     await expect(
       getWalletTransactions(characterId, undefined, subjectLifecycleId),
     ).resolves.toMatchObject({
-      transactions: [{ transactionId: 1, typeName: 'Pyerite' }],
       fromId: null,
+      transactions: [{ transactionId: 1, typeName: 'Pyerite' }],
     })
   })
 

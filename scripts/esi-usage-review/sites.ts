@@ -38,14 +38,14 @@ export async function collectEsiUsageSites(
       const current = await readSource(root, file)
       const previous = sitesInSource(file, previousSources.get(file) ?? '')
       return sitesInSource(file, current).map((site) => ({
-        id: site.id,
-        file: site.file,
-        line: site.line,
-        factory: site.factory,
-        operation: site.operation,
-        name: site.name,
-        definition: site.definition,
         context: site.context,
+        definition: site.definition,
+        factory: site.factory,
+        file: site.file,
+        id: site.id,
+        line: site.line,
+        name: site.name,
+        operation: site.operation,
         previousDefinition: previousDefinitionFor(site, previous),
       }))
     }),
@@ -59,31 +59,41 @@ export function isEsiUsageSource(file: string) {
 }
 
 function sitesInSource(file: string, source: string): ParsedSite[] {
-  if (!source) return []
+  if (!source) {
+    return []
+  }
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true)
   const factoryBindings = importedFactoryBindings(sourceFile)
   const lines = source.split('\n')
   const sites: ParsedSite[] = []
 
   visit(sourceFile, (node) => {
-    if (!ts.isCallExpression(node) || !ts.isIdentifier(node.expression)) return
+    if (!ts.isCallExpression(node) || !ts.isIdentifier(node.expression)) {
+      return
+    }
     const factory = factoryBindings.get(node.expression.text)
-    if (!factory) return
+    if (!factory) {
+      return
+    }
     const definition = unwrapExpression(node.arguments[0])
-    if (!definition || !ts.isObjectLiteralExpression(definition)) return
+    if (!definition || !ts.isObjectLiteralExpression(definition)) {
+      return
+    }
     const operation = stringProperty(definition, 'operation')
     const name = stringProperty(definition, 'name')
-    if (!operation || !name) return
+    if (!operation || !name) {
+      return
+    }
     const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line
     sites.push({
-      id: `${file}:${line + 1}:${name}`,
-      file,
-      line: line + 1,
-      factory,
-      operation,
-      name,
-      definition: node.getText(sourceFile),
       context: excerptAround(lines, line),
+      definition: node.getText(sourceFile),
+      factory,
+      file,
+      id: `${file}:${line + 1}:${name}`,
+      line: line + 1,
+      name,
+      operation,
     })
   })
 
@@ -97,13 +107,18 @@ function importedFactoryBindings(sourceFile: ts.SourceFile) {
       !ts.isImportDeclaration(statement) ||
       !ts.isStringLiteralLike(statement.moduleSpecifier) ||
       !statement.moduleSpecifier.text.endsWith('/esi-gateway/feature-execution.js')
-    )
+    ) {
       continue
+    }
     const namedBindings = statement.importClause?.namedBindings
-    if (!namedBindings || !ts.isNamedImports(namedBindings)) continue
+    if (!namedBindings || !ts.isNamedImports(namedBindings)) {
+      continue
+    }
     for (const element of namedBindings.elements) {
       const imported = element.propertyName?.text ?? element.name.text
-      if (isEsiUsageFactory(imported)) bindings.set(element.name.text, imported)
+      if (isEsiUsageFactory(imported)) {
+        bindings.set(element.name.text, imported)
+      }
     }
   }
   return bindings
@@ -115,7 +130,9 @@ function isEsiUsageFactory(value: string): value is EsiUsageFactory {
 
 function stringProperty(object: ts.ObjectLiteralExpression, propertyName: string) {
   for (const property of object.properties) {
-    if (!ts.isPropertyAssignment(property) || nameOf(property.name) !== propertyName) continue
+    if (!ts.isPropertyAssignment(property) || nameOf(property.name) !== propertyName) {
+      continue
+    }
     const value = unwrapExpression(property.initializer)
     return value && ts.isStringLiteralLike(value) ? value.text : null
   }
@@ -135,8 +152,9 @@ function unwrapExpression(expression: ts.Expression | undefined): ts.Expression 
       ts.isTypeAssertionExpression(current) ||
       ts.isSatisfiesExpression(current) ||
       ts.isNonNullExpression(current))
-  )
+  ) {
     current = current.expression
+  }
   return current
 }
 

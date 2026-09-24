@@ -5,15 +5,15 @@ import { buildAssetHierarchy } from '../../app/utils/assets-hierarchy'
 import { readWorkspaceFile } from '../support/read-workspace-file'
 
 const noFilters: AssetFilterState = {
-  search: '',
-  typeIds: [],
-  groupIds: [],
+  blueprint: 'all',
   categoryIds: [],
+  flags: [],
+  groupIds: [],
   locationKeys: [],
   locationTypes: [],
-  flags: [],
+  search: '',
   singleton: 'all',
-  blueprint: 'all',
+  typeIds: [],
 }
 
 describe('asset workspace controller', () => {
@@ -21,8 +21,8 @@ describe('asset workspace controller', () => {
     const first = buildAssetHierarchy([asset(1), child(2, 1), child(3, 1)])
     const refreshed = buildAssetHierarchy([asset(1), child(2, 1), child(3, 1), child(4, 1)])
     const controller = createAssetWorkspaceController({
-      revealIncrement: 10,
       initiallyExpandedLocations: 0,
+      revealIncrement: 10,
     })
     controller.sync(first)
     controller.toggleLocation(first[0]!.key)
@@ -64,19 +64,19 @@ describe('asset workspace controller', () => {
   it('caps mounted rows per location and reveals fixed increments', () => {
     const group = buildAssetHierarchy(Array.from({ length: 9 }, (_, index) => asset(index + 1)))[0]!
     const controller = createAssetWorkspaceController({
-      revealIncrement: 3,
       initiallyExpandedLocations: 1,
+      revealIncrement: 3,
     })
     controller.sync([group])
 
     expect(controller.visibleLocation(group).rows).toHaveLength(3)
-    expect(controller.visibleLocation(group)).toMatchObject({ totalVisibleRows: 9, hasMore: true })
+    expect(controller.visibleLocation(group)).toMatchObject({ hasMore: true, totalVisibleRows: 9 })
     controller.showMore(group)
     expect(controller.revealLimit(group.key)).toBe(6)
     expect(controller.visibleLocation(group).rows).toHaveLength(6)
     controller.showMore(group)
     expect(controller.visibleLocation(group).rows).toHaveLength(9)
-    expect(controller.visibleLocation(group)).toMatchObject({ totalVisibleRows: 9, hasMore: false })
+    expect(controller.visibleLocation(group)).toMatchObject({ hasMore: false, totalVisibleRows: 9 })
   })
 
   it('resets reveal cursors, but not expansion, only when normalized criteria change', () => {
@@ -102,17 +102,17 @@ describe('asset workspace controller', () => {
   it('reveals retained contextual rows during active criteria without changing saved expansion', () => {
     const group = buildAssetHierarchy([asset(1), child(2, 1), child(3, 2)])[0]!
     const controller = createAssetWorkspaceController({
-      revealIncrement: 10,
       initiallyExpandedLocations: 0,
+      revealIncrement: 10,
     })
     controller.sync([group])
     controller.setCriteria({ ...noFilters, search: 'nested' })
 
     expect(controller.isLocationExpanded(group.key)).toBe(false)
     expect(controller.isContainerExpanded(1)).toBe(false)
-    expect(controller.visibleLocation(group).rows.map(({ row }) => row.asset.itemId)).toEqual([
-      1, 2, 3,
-    ])
+    expect(controller.visibleLocation(group).rows.map(({ row }) => row.asset.itemId)).toStrictEqual(
+      [1, 2, 3],
+    )
   })
 
   it('keeps shared presentation modules independent from source adapters', () => {
@@ -130,37 +130,37 @@ describe('asset workspace controller', () => {
 
 function child(itemId: number, parentItemId: number) {
   return asset(itemId, {
-    typeName: itemId === 3 ? 'Nested laser' : 'Nested container',
     locationId: parentItemId,
-    locationType: 'item',
     locationName: null,
-    solarSystemId: null,
+    locationType: 'item',
     parentItemId,
+    solarSystemId: null,
+    typeName: itemId === 3 ? 'Nested laser' : 'Nested container',
   })
 }
 
 function asset(itemId: number, overrides: Partial<AssetRecord> = {}): AssetRecord {
   return {
-    itemId,
-    typeId: 100,
-    typeName: 'Container',
-    groupId: 12,
-    groupName: 'Cargo Container',
     categoryId: 65,
     categoryName: 'Structure',
-    unitVolume: 1,
-    totalVolume: 1,
-    quantity: 1,
-    isSingleton: true,
-    isBlueprintCopy: null,
     customName: null,
-    locationId: 60003760,
-    locationType: 'station',
+    groupId: 12,
+    groupName: 'Cargo Container',
+    isBlueprintCopy: null,
+    isSingleton: true,
+    itemId,
+    locationFlag: 'Hangar',
+    locationId: 60_003_760,
     locationName: 'Jita IV - Moon 4',
+    locationType: 'station',
+    parentItemId: null,
+    quantity: 1,
     solarSystemId: 30_000_142,
     solarSystemSecurityStatus: 0.9,
-    locationFlag: 'Hangar',
-    parentItemId: null,
+    totalVolume: 1,
+    typeId: 100,
+    typeName: 'Container',
+    unitVolume: 1,
     ...overrides,
   }
 }

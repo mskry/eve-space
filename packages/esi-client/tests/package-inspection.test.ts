@@ -16,11 +16,11 @@ import {
 
 const packageJson = {
   exports: {
-    './package.json': './package.json',
     './operations': {
-      types: './dist/operations/index.d.ts',
       import: './dist/operations/index.js',
+      types: './dist/operations/index.d.ts',
     },
+    './package.json': './package.json',
   },
 };
 const runtimeFiles = [
@@ -30,19 +30,17 @@ const runtimeFiles = [
 ];
 
 const budgetPackageJson = {
-  version: '2.0.0',
   exports: {
-    './package.json': './package.json',
-    '.': { types: './dist/root.d.ts', import: './dist/root.js' },
+    '.': { import: './dist/root.js', types: './dist/root.d.ts' },
     './operations': {
-      types: './dist/operations/index.d.ts',
       import: './dist/operations/index.js',
+      types: './dist/operations/index.d.ts',
     },
+    './package.json': './package.json',
   },
+  version: '2.0.0',
 };
 const packedPackage = {
-  size: 500,
-  unpackedSize: 2_000,
   entryCount: 8,
   files: [
     { path: 'LICENSE', size: 100 },
@@ -54,11 +52,13 @@ const packedPackage = {
     { path: 'dist/operations/index.d.ts', size: 700, source: '' },
     { path: 'dist/shared.js', size: 100 },
   ],
+  size: 500,
+  unpackedSize: 2000,
 };
 
 function budgetFixture() {
   const measurements = measurePackedPackage(structuredClone(packedPackage), budgetPackageJson);
-  return { measurements, baseline: createPackageBudgetBaseline(measurements) };
+  return { baseline: createPackageBudgetBaseline(measurements), measurements };
 }
 
 describe('npm package documentation boundary', () => {
@@ -72,14 +72,14 @@ describe('npm package documentation boundary', () => {
       { path: 'openapi/config/naming-overrides.json' },
     ];
 
-    expect(forbiddenPackagePaths).toEqual([
+    expect(forbiddenPackagePaths).toStrictEqual([
       'llms.txt',
       'docs/llms.txt',
       'docs/generated/',
       'examples/generated/',
       'openapi/config/',
     ]);
-    expect(findForbiddenPackedPaths(files)).toEqual([
+    expect(findForbiddenPackedPaths(files)).toStrictEqual([
       'docs/generated/operations/GetStatus.md',
       'docs/llms.txt',
       'examples/generated/public.ts',
@@ -92,7 +92,7 @@ describe('npm package documentation boundary', () => {
   });
 
   it('requires packed runtime operation metadata export targets', () => {
-    expect(validatePackedPackageBoundary(runtimeFiles, packageJson)).toEqual({
+    expect(validatePackedPackageBoundary(runtimeFiles, packageJson)).toStrictEqual({
       forbiddenPaths: [],
       operationExportTargets: ['dist/operations/index.d.ts', 'dist/operations/index.js'],
     });
@@ -114,29 +114,29 @@ describe('npm package budgets', () => {
   it('records tight aggregate and per-public-entry budgets with explicit packed files', () => {
     const { measurements, baseline } = budgetFixture();
 
-    expect(measurements.totals).toEqual({
+    expect(measurements.totals).toStrictEqual({
       compressedBytes: 500,
-      unpackedBytes: 2_000,
-      javascriptBytes: 1_100,
-      declarationBytes: 1_200,
+      declarationBytes: 1200,
       fileCount: 8,
+      javascriptBytes: 1100,
+      unpackedBytes: 2000,
     });
     expect(packageBudgetSchemaVersion).toBe(2);
     expect(baseline.schemaVersion).toBe(2);
-    expect(baseline.policy).toEqual({
+    expect(baseline.policy).toStrictEqual({
       byteHeadroomPercent: 2,
-      fileCountHeadroom: 0,
       description:
         'Byte maxima are accepted unique transitive measurements plus 2%; reachable files, external edges, file count, and packed paths have no headroom, so every graph or artifact change requires review.',
+      fileCountHeadroom: 0,
     });
-    expect(baseline.totals.compressedBytes).toEqual({ measured: 500, maximum: 510 });
-    expect(baseline.totals.fileCount).toEqual({ measured: 8, maximum: 8 });
-    expect(baseline.publicEntries['.'].runtime).toEqual({
-      target: 'dist/root.js',
-      files: ['dist/root.js'],
+    expect(baseline.totals.compressedBytes).toStrictEqual({ maximum: 510, measured: 500 });
+    expect(baseline.totals.fileCount).toStrictEqual({ maximum: 8, measured: 8 });
+    expect(baseline.publicEntries['.'].runtime).toStrictEqual({
       externalEdges: [],
-      measuredUniqueBytes: 400,
+      files: ['dist/root.js'],
       maximumUniqueBytes: 408,
+      measuredUniqueBytes: 400,
+      target: 'dist/root.js',
     });
     expect(() => validatePackageBudgets(measurements, baseline)).not.toThrow();
     const nextVersion = structuredClone(measurements);
@@ -274,60 +274,66 @@ describe('packed artifact graph tracing', () => {
 
   it('validates imports in orphaned packed artifacts', () => {
     const files = graphFiles({
-      'dist/root.js': '',
       'dist/orphan.js': "import 'left-pad';",
+      'dist/root.js': '',
     });
 
     expect(() => validatePackedArtifactIntegrity(files, {})).toThrow(
       'undeclared external edge from dist/orphan.js: left-pad',
     );
-    files[1].source = "import 'zod';";
-    expect(validatePackedArtifactIntegrity(files, { peerDependencies: { zod: '^4.0.0' } })).toEqual(
-      {
-        analyzedArtifactCount: 2,
-      },
-    );
+    const orphan = files.find(({ path }) => path === 'dist/orphan.js');
+    if (!orphan) {
+      throw new Error('Orphan artifact was not created');
+    }
+    orphan.source = "import 'zod';";
+    expect(
+      validatePackedArtifactIntegrity(files, { peerDependencies: { zod: '^4.0.0' } }),
+    ).toStrictEqual({
+      analyzedArtifactCount: 2,
+    });
   });
 
   it('traces cycles, normalized duplicate paths, re-exports, and literal dynamic imports once', () => {
     const files = graphFiles({
+      'dist/a.js': 'import "./b.js";',
+      'dist/b.js': 'export * from "./a.js";',
+      'dist/lazy.js': 'import "./b.js";',
       'dist/root.js': [
         'import "./a.js";',
         'import "./nested/../a.js";',
         'export * from "./b.js";',
         'void import("./lazy.js");',
       ].join('\n'),
-      'dist/a.js': 'import "./b.js";',
-      'dist/b.js': 'export * from "./a.js";',
-      'dist/lazy.js': 'import "./b.js";',
     });
 
-    expect(tracePackedArtifactGraph(files, './dist/root.js', 'runtime')).toEqual({
-      target: 'dist/root.js',
-      files: ['dist/a.js', 'dist/b.js', 'dist/lazy.js', 'dist/root.js'],
+    expect(tracePackedArtifactGraph(files, './dist/root.js', 'runtime')).toStrictEqual({
       externalEdges: [],
+      files: ['dist/a.js', 'dist/b.js', 'dist/lazy.js', 'dist/root.js'],
+      target: 'dist/root.js',
       uniqueBytes: files.reduce((total, file) => total + file.size, 0),
     });
   });
 
   it('traces declaration imports, type re-exports, inline import types, and approved peers', () => {
     const files = graphFiles({
+      'dist/dynamic.d.ts': 'export interface C { readonly value: string }',
+      'dist/re-export.d.ts': 'export type { A as B } from "./types.js";',
       'dist/root.d.ts': [
         'import type { A } from "./types.js";',
         'export type { B } from "./re-export.js";',
         'export type C = import("./dynamic.js").C;',
       ].join('\n'),
       'dist/types.d.ts': 'import type { z } from "zod"; export type A = z.ZodType;',
-      'dist/re-export.d.ts': 'export type { A as B } from "./types.js";',
-      'dist/dynamic.d.ts': 'export interface C { readonly value: string }',
     });
 
-    expect(tracePackedArtifactGraph(files, 'dist/root.d.ts', 'declaration', ['zod'])).toEqual({
-      target: 'dist/root.d.ts',
-      files: ['dist/dynamic.d.ts', 'dist/re-export.d.ts', 'dist/root.d.ts', 'dist/types.d.ts'],
-      externalEdges: [{ from: 'dist/types.d.ts', specifier: 'zod' }],
-      uniqueBytes: files.reduce((total, file) => total + file.size, 0),
-    });
+    expect(tracePackedArtifactGraph(files, 'dist/root.d.ts', 'declaration', ['zod'])).toStrictEqual(
+      {
+        externalEdges: [{ from: 'dist/types.d.ts', specifier: 'zod' }],
+        files: ['dist/dynamic.d.ts', 'dist/re-export.d.ts', 'dist/root.d.ts', 'dist/types.d.ts'],
+        target: 'dist/root.d.ts',
+        uniqueBytes: files.reduce((total, file) => total + file.size, 0),
+      },
+    );
   });
 
   it('rejects duplicate packed paths and missing relative targets', () => {
@@ -386,15 +392,15 @@ describe('packed artifact graph tracing', () => {
 
   it('rejects root, operation-discovery, and unrelated domain artifacts', () => {
     const isolated = {
-      packageVersion: '2.0.0',
-      totals: {},
       files: [],
+      packageVersion: '2.0.0',
       publicEntries: {
         './domains/status': graphMeasurement('status'),
         './domains/wars': graphMeasurement('wars'),
       },
+      totals: {},
     };
-    expect(validateDomainEntryIsolation(isolated, 2)).toEqual({ domainEntryCount: 2 });
+    expect(validateDomainEntryIsolation(isolated, 2)).toStrictEqual({ domainEntryCount: 2 });
 
     isolated.publicEntries['./domains/status'].runtime.files.push(
       'dist/root.js',
@@ -414,12 +420,12 @@ describe('packed artifact graph tracing', () => {
 
   it('rejects internal configuration types from every domain declaration closure', () => {
     const measurements = {
-      packageVersion: '2.0.0',
-      totals: {},
       files: [],
+      packageVersion: '2.0.0',
       publicEntries: {
         './domains/status': graphMeasurement('status'),
       },
+      totals: {},
     };
     const files = graphFiles({
       'dist/domains/status.d.ts': 'export { StatusDomainClient } from "../status.js";',
@@ -430,7 +436,7 @@ describe('packed artifact graph tracing', () => {
       Object.fromEntries(files.map((file) => [file.path, true])),
     );
 
-    expect(validateDomainDeclarationSurface(measurements, files, 1)).toEqual({
+    expect(validateDomainDeclarationSurface(measurements, files, 1)).toStrictEqual({
       domainEntryCount: 1,
     });
     files[2].source = 'export declare class EsiClientConfiguration {}';
@@ -443,24 +449,24 @@ describe('packed artifact graph tracing', () => {
 function graphFiles(sources: Record<string, string>) {
   return Object.entries(sources).map(([path, source]) => ({
     path,
-    source,
     size: Buffer.byteLength(source),
+    source,
   }));
 }
 
 function graphMeasurement(domain: string) {
   const runtime = {
-    target: `dist/domains/${domain}.js`,
-    files: [`dist/domains/${domain}.js`, `dist/${domain}.js`, `dist/${domain}2.js`],
     externalEdges: [],
+    files: [`dist/domains/${domain}.js`, `dist/${domain}.js`, `dist/${domain}2.js`],
+    target: `dist/domains/${domain}.js`,
     uniqueBytes: 1,
   };
   return {
-    runtime,
     declaration: {
       ...structuredClone(runtime),
-      target: `dist/domains/${domain}.d.ts`,
       files: [`dist/domains/${domain}.d.ts`, `dist/${domain}.d.ts`, `dist/${domain}2.d.ts`],
+      target: `dist/domains/${domain}.d.ts`,
     },
+    runtime,
   };
 }

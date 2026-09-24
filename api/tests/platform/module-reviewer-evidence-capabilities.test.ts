@@ -5,8 +5,8 @@ import type {
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  invoke: vi.fn(),
   createInvoker: vi.fn(),
+  invoke: vi.fn(),
 }))
 
 vi.mock('../../src/db/client.js', () => ({ sql: {} }))
@@ -18,33 +18,33 @@ import { createPlatformReviewerEvidenceReads } from '../../src/platform/module-r
 
 const characterId = 90_000_001
 const target = {
-  organizationVersion: 7,
-  managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
-  selection: { kind: 'character', characterId },
   account: {
-    userId: '00000000-0000-4000-8000-000000000002',
     mainCharacter: { characterId, name: 'Target Main' },
+    userId: '00000000-0000-4000-8000-000000000002',
   },
+  block: { blocked: false },
   characters: [],
   compliance: {},
   groups: [],
-  block: { blocked: false },
+  managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+  organizationVersion: 7,
+  selection: { characterId, kind: 'character' },
 } as unknown as PlatformReviewerTargetContext
 const currentStatus = {
-  status: 'current' as const,
-  moduleId: 'member-audit',
-  sectionId: 'assets',
-  resourceId: 'assets',
-  organizationVersion: 7,
-  targetUserId: '00000000-0000-4000-8000-000000000002',
-  managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+  authorizationGeneration: 3,
   characterId,
   characterLifecycleId: '00000000-0000-4000-8000-000000000021',
-  authorizationGeneration: 3,
   disclosureVersion: 4,
-  sectionActivationVersion: 5,
-  validatedAt: '2026-09-17T12:00:00.000Z',
   lastFailureClass: null,
+  managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+  moduleId: 'member-audit',
+  organizationVersion: 7,
+  resourceId: 'assets',
+  sectionActivationVersion: 5,
+  sectionId: 'assets',
+  status: 'current' as const,
+  targetUserId: '00000000-0000-4000-8000-000000000002',
+  validatedAt: '2026-09-17T12:00:00.000Z',
 }
 const readStatus = vi.fn()
 const collectionStatus = {
@@ -63,27 +63,27 @@ describe('platform reviewer evidence capabilities', () => {
     const reads = createPlatformReviewerEvidenceReads(
       {
         moduleId: 'member-audit',
-        routeId: 'assets-detail',
-        resourceId: 'assets',
         operationId: 'read-asset-evidence',
+        resourceId: 'assets',
+        routeId: 'assets-detail',
         target,
       },
       collectionStatus,
     )
 
-    await expect(reads.read()).resolves.toEqual({ observationId: 'snapshot' })
+    await expect(reads.read()).resolves.toStrictEqual({ observationId: 'snapshot' })
     expect(readStatus).toHaveBeenCalledWith('assets', characterId)
     expect(mocks.invoke).toHaveBeenCalledWith(
-      expect.objectContaining({ operationId: 'read-asset-evidence', mode: 'read' }),
+      expect.objectContaining({ mode: 'read', operationId: 'read-asset-evidence' }),
       {
-        organizationVersion: 7,
-        targetUserId: '00000000-0000-4000-8000-000000000002',
-        managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+        authorizationGeneration: 3,
         characterId,
         characterLifecycleId: '00000000-0000-4000-8000-000000000021',
-        authorizationGeneration: 3,
         disclosureVersion: 4,
+        managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+        organizationVersion: 7,
         sectionActivationVersion: 5,
+        targetUserId: '00000000-0000-4000-8000-000000000002',
       },
     )
   })
@@ -91,15 +91,15 @@ describe('platform reviewer evidence capabilities', () => {
   test('returns no evidence unless current authority admits a readable snapshot', async () => {
     readStatus.mockResolvedValue({
       ...currentStatus,
-      status: 'authorization-required',
       authorizationGeneration: null,
+      status: 'authorization-required',
     })
     const reads = createPlatformReviewerEvidenceReads(
       {
         moduleId: 'member-audit',
-        routeId: 'assets-detail',
-        resourceId: 'assets',
         operationId: 'read-asset-evidence',
+        resourceId: 'assets',
+        routeId: 'assets-detail',
         target,
       },
       collectionStatus,
@@ -114,9 +114,9 @@ describe('platform reviewer evidence capabilities', () => {
       createPlatformReviewerEvidenceReads(
         {
           moduleId: 'member-audit',
-          routeId: 'skills-detail',
-          resourceId: 'assets',
           operationId: 'read-asset-evidence',
+          resourceId: 'assets',
+          routeId: 'skills-detail',
           target,
         },
         collectionStatus,

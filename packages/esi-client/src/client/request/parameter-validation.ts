@@ -64,11 +64,11 @@ export function validateParameter(
   }
   const schema = validateParameterSchema(value.schema, operationId, name);
   return {
+    explode: value.explode ?? placement === 'query',
     name,
     placement,
     required: value.required,
     schema,
-    explode: value.explode ?? placement === 'query',
   };
 }
 
@@ -126,12 +126,14 @@ export function validateParameterSchema(
   if (!isRecord(value) || typeof value.type !== 'string') {
     throw new TypeError(`Invalid parameter schema for ${operationId}:${parameterName}`);
   }
-  if (isScalarSchemaType(value.type)) return { type: value.type };
+  if (isScalarSchemaType(value.type)) {
+    return { type: value.type };
+  }
   if (value.type === 'array') {
     if (!isRecord(value.items) || !isScalarSchemaType(value.items.type)) {
       throw new TypeError(`Unsupported array item schema for ${operationId}:${parameterName}`);
     }
-    return { type: 'array', items: { type: value.items.type } };
+    return { items: { type: value.items.type }, type: 'array' };
   }
   throw new TypeError(
     `Unsupported parameter schema type ${value.type} for ${operationId}:${parameterName}`,

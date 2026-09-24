@@ -1,7 +1,9 @@
 import { isNonnegativeSafeInteger } from '../../type-guards.js'
 
 export function parseFiniteNumber(value: string | null | undefined) {
-  if (value === null || value === undefined) return undefined
+  if (value === null || value === undefined) {
+    return
+  }
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : undefined
 }

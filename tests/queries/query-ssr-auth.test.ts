@@ -78,7 +78,7 @@ describe('SSR and authentication query boundaries', () => {
   })
 
   it.each([
-    new ApiQueryError('Status unavailable.', { status: 503, code: 'STATUS_UNAVAILABLE' }),
+    new ApiQueryError('Status unavailable.', { code: 'STATUS_UNAVAILABLE', status: 503 }),
     new TypeError('fetch failed'),
   ])('serializes and revives a caught SSR query error', async (queryError) => {
     const Root = defineComponent({
@@ -112,7 +112,7 @@ describe('SSR and authentication query boundaries', () => {
     const revivedError = Object.values(revived)[0]?.[1]
 
     expect(revivedError).toBeInstanceOf(queryError.constructor)
-    expect(revivedError).toMatchObject({ name: queryError.name, message: queryError.message })
+    expect(revivedError).toMatchObject({ message: queryError.message, name: queryError.name })
   })
 
   it('classifies session-protected record lookups as private and non-persistent', () => {
@@ -123,8 +123,8 @@ describe('SSR and authentication query boundaries', () => {
       corporationAllianceHistoryQuery({ apiClient, corporationId: 8 }),
     ]
 
-    expect(options.map((option) => option.key[0])).toEqual(['private', 'private', 'private'])
-    expect(options.map((option) => option.meta?.esiPersistence)).toEqual([
+    expect(options.map((option) => option.key[0])).toStrictEqual(['private', 'private', 'private'])
+    expect(options.map((option) => option.meta?.esiPersistence)).toStrictEqual([
       { kind: 'none' },
       { kind: 'none' },
       { kind: 'none' },
@@ -198,16 +198,16 @@ describe('SSR and authentication query boundaries', () => {
     queryServer.use(
       http.get('http://localhost/api/organization/review', () => {
         requests('entry')
-        return HttpResponse.json({ organizationVersion: 7, contributions: [] })
+        return HttpResponse.json({ contributions: [], organizationVersion: 7 })
       }),
       http.get('http://localhost/api/organization/review/members', () => {
         requests('directory')
         return HttpResponse.json({
+          groupFacets: [],
+          items: [],
+          nextCursor: null,
           organizationVersion: 7,
           status: 'available',
-          items: [],
-          groupFacets: [],
-          nextCursor: null,
         })
       }),
     )
@@ -220,7 +220,7 @@ describe('SSR and authentication query boundaries', () => {
           organizationReviewDirectoryQuery({
             apiClient,
             enabled: true,
-            input: { organizationVersion: 7, limit: 25 },
+            input: { limit: 25, organizationVersion: 7 },
           }),
         )
         useQuery(
@@ -234,8 +234,8 @@ describe('SSR and authentication query boundaries', () => {
           }),
         )
         useQuery({
-          key: ['private', 'organization', 7, 'modules', 'alpha', 'reviewer'],
           enabled: import.meta.client,
+          key: ['private', 'organization', 7, 'modules', 'alpha', 'reviewer'],
           query: panelQuery,
         })
         return () => h('span', 'Reviewer shell')
@@ -276,12 +276,12 @@ describe('SSR and authentication query boundaries', () => {
     })
     queryCache.ensure({
       key: PRIVATE_QUERY_KEYS.organizationReviewerEntry(),
-      query: async () => ({ organizationVersion: 7, contributions: [] }),
+      query: async () => ({ contributions: [], organizationVersion: 7 }),
     })
     const reviewerTargetKey = platformReviewerContributionTargetQueryKey({
-      organizationVersion: 7,
-      moduleId: 'alpha',
       contributionId: 'summary',
+      moduleId: 'alpha',
+      organizationVersion: 7,
       target: {
         kind: 'managed-organization-account',
         managedMemberLifecycleId: 'member-lifecycle-1',
@@ -294,8 +294,8 @@ describe('SSR and authentication query boundaries', () => {
       query: async () => ({ privateRecord: true }),
     })
     queryCache.setQueryData(PRIVATE_QUERY_KEYS.session(), {
+      account: { mainCharacter: { characterId: 7 }, userId: 'user' },
       authenticated: true,
-      account: { userId: 'user', mainCharacter: { characterId: 7 } },
     })
     queryCache.setQueryData(PRIVATE_QUERY_KEYS.roster(), { characters: [{ characterId: 7 }] })
     queryCache.setQueryData(PRIVATE_QUERY_KEYS.characterFinanceBalance(7), { balance: 123 })
@@ -305,14 +305,14 @@ describe('SSR and authentication query boundaries', () => {
     )
     queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationCompliance(), { state: 'compliant' })
     queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationReviewerEntry(), {
-      organizationVersion: 7,
       contributions: [],
+      organizationVersion: 7,
     })
     queryCache.setQueryData(reviewerTargetKey, { privateRecord: true })
 
     clearAuthenticatedQueries(queryCache, unauthenticatedSession)
 
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual({
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual({
       authenticated: false,
     })
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.roster())).toBeUndefined()
@@ -332,51 +332,51 @@ describe('SSR and authentication query boundaries', () => {
 
 function systemStatusResponse() {
   return {
-    status: 'operational',
-    checkedAt: '2026-08-20T00:00:00.000Z',
     cachedUntil: '2026-08-20T00:00:15.000Z',
+    checkedAt: '2026-08-20T00:00:00.000Z',
     services: {
       api: { status: 'operational', uptimeSeconds: 100 },
-      database: { status: 'operational', latencyMs: 1 },
-      sde: {
-        status: 'operational',
-        latencyMs: 1,
-        checkedAt: '2026-08-20T00:00:00.000Z',
-        buildNumber: 3_503_375,
-        ingestVersion: 4,
-        ingestedAt: '2026-08-19T23:00:00.000Z',
-      },
+      database: { latencyMs: 1, status: 'operational' },
       esi: {
-        status: 'operational',
-        latencyMs: 2,
         checkedAt: '2026-08-20T00:00:00.000Z',
+        errorBudgetRemaining: 100,
+        errorBudgetResetSeconds: 10,
+        latencyMs: 2,
         players: 20_000,
         serverVersion: 'test',
         startedAt: null,
+        status: 'operational',
         vip: false,
-        errorBudgetRemaining: 100,
-        errorBudgetResetSeconds: 10,
+      },
+      sde: {
+        buildNumber: 3_503_375,
+        checkedAt: '2026-08-20T00:00:00.000Z',
+        ingestVersion: 4,
+        ingestedAt: '2026-08-19T23:00:00.000Z',
+        latencyMs: 1,
+        status: 'operational',
       },
     },
+    status: 'operational',
   }
 }
 
 function characterOverviewResponse() {
   return {
+    location: { message: 'Unavailable', status: 'unavailable' },
     profile: {
+      achievementScore: 0,
+      alliance: null,
+      birthday: '2020-01-01T00:00:00.000Z',
+      bloodline: 'Deteis',
+      corporation: { id: 1, memberCount: 1, name: 'Corp', ticker: 'CORP' },
+      gender: 'Female',
       id: 7,
       name: 'Capsuleer',
-      birthday: '2020-01-01T00:00:00.000Z',
-      gender: 'Female',
       race: 'Caldari',
-      bloodline: 'Deteis',
       securityStatus: 1,
-      achievementScore: 0,
-      corporation: { id: 1, name: 'Corp', ticker: 'CORP', memberCount: 1 },
-      alliance: null,
     },
-    location: { status: 'unavailable', message: 'Unavailable' },
-    ship: { status: 'unavailable', message: 'Unavailable' },
-    skills: { status: 'unavailable', message: 'Unavailable' },
+    ship: { message: 'Unavailable', status: 'unavailable' },
+    skills: { message: 'Unavailable', status: 'unavailable' },
   }
 }

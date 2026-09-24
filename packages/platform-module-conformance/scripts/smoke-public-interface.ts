@@ -50,11 +50,11 @@ try {
     join(consumerRoot, 'package.json'),
     `${JSON.stringify(
       {
+        dependencies: { ...tarballDependencies, ...registryDependencies },
         name: 'eve-space-public-interface-smoke',
+        packageManager: rootPackageJson.packageManager,
         private: true,
         type: 'module',
-        packageManager: rootPackageJson.packageManager,
-        dependencies: { ...tarballDependencies, ...registryDependencies },
       },
       null,
       2,
@@ -83,7 +83,7 @@ try {
   await runCommand(process.execPath, ['runtime-smoke.mjs'], consumerRoot)
   await runInstalledConformance(consumerRoot)
 } finally {
-  await rm(temporaryRoot, { recursive: true, force: true })
+  await rm(temporaryRoot, { force: true, recursive: true })
 }
 
 interface PackageJson {
@@ -102,19 +102,24 @@ async function readPackageJson(path: string): Promise<PackageJson> {
 }
 
 function requirePublicPackage(packageJson: PackageJson, packagePath: string, packed: boolean) {
-  if (packageJson.private === true)
+  if (packageJson.private === true) {
     throw new Error(`${packagePath} remains private and cannot be published`)
-  if (packageJson.publishConfig?.access !== 'public')
+  }
+  if (packageJson.publishConfig?.access !== 'public') {
     throw new Error(`${packagePath} must publish with public access`)
-  if (!packed) return
+  }
+  if (!packed) {
+    return
+  }
   for (const dependencies of [
     packageJson.dependencies,
     packageJson.optionalDependencies,
     packageJson.peerDependencies,
-  ])
+  ]) {
     for (const [name, specifier] of Object.entries(dependencies ?? {}))
       if (/^(?:catalog:|file:|link:|workspace:)/u.test(specifier))
         throw new Error(`${packagePath} packs non-publishable dependency ${name}@${specifier}`)
+  }
 }
 
 async function packPackage(packageRoot: string, archiveRoot: string) {
@@ -126,8 +131,9 @@ async function packPackage(packageRoot: string, archiveRoot: string) {
   const created = (await readdir(archiveRoot)).filter(
     (path) => path.endsWith('.tgz') && !before.has(path),
   )
-  if (created.length !== 1)
+  if (created.length !== 1) {
     throw new Error(`Expected one package archive from ${packageRoot}, received ${created.length}`)
+  }
   return join(archiveRoot, created[0]!)
 }
 
@@ -174,8 +180,9 @@ async function verifyInstalledPackages(consumerRoot: string, packageNames: Itera
       const installedRoot = await realpath(
         join(consumerRoot, 'node_modules', ...packageName.split('/')),
       )
-      if (!`${installedRoot}${sep}`.startsWith(consumerPrefix))
+      if (!`${installedRoot}${sep}`.startsWith(consumerPrefix)) {
         throw new Error(`${packageName} resolved outside the clean consumer project`)
+      }
     }),
   )
 }
@@ -388,12 +395,12 @@ export default defineNuxtModule({ meta: { name: '@example/smoke-nuxt' } })
     `${JSON.stringify(
       {
         compilerOptions: {
-          target: 'ES2023',
           module: 'NodeNext',
           moduleResolution: 'NodeNext',
-          strict: true,
           noEmit: true,
           skipLibCheck: true,
+          strict: true,
+          target: 'ES2023',
         },
         include: ['src/**/*.ts'],
       },
@@ -448,8 +455,8 @@ async function runInstalledConformance(consumerRoot: string) {
     `${JSON.stringify(
       {
         manifest: { path: 'release/manifest/manifest.json' },
-        server: { sourceRoot: 'release/server/dist' },
         nuxt: { sourceRoot: 'release/nuxt/dist' },
+        server: { sourceRoot: 'release/server/dist' },
       },
       null,
       2,
@@ -464,8 +471,9 @@ async function runInstalledConformance(consumerRoot: string) {
   )
   const { stdout } = await runCommand(binary, ['--json', 'conformance.json'], consumerRoot)
   const report = JSON.parse(stdout) as { readonly ok?: boolean; readonly version?: number }
-  if (report.ok !== true || report.version !== 1)
+  if (report.ok !== true || report.version !== 1) {
     throw new Error('Installed conformance CLI did not accept the clean-project fixture')
+  }
 }
 
 async function runPackageManager(arguments_: readonly string[], cwd: string) {
@@ -484,7 +492,9 @@ async function runCommand(command: string, arguments_: readonly string[], cwd: s
       shell: process.platform === 'win32' && /\.(?:cmd|bat)$/iu.test(command),
     })
   } catch (error) {
-    if (!(error instanceof Error)) throw error
+    if (!(error instanceof Error)) {
+      throw error
+    }
     const details = error as Error & { readonly stdout?: string; readonly stderr?: string }
     throw new Error(
       `${command} ${arguments_.join(' ')} failed in ${cwd}\n${details.stdout ?? ''}${details.stderr ?? ''}`,

@@ -28,25 +28,25 @@ export const platformCollectionStateIdentitySchema = z
   .object({
     moduleId: resourceOwnerIdSchema,
     resourceId: z.string().refine(isPlatformContributionId),
+    subjectId: z.string().trim().min(1),
     subjectKind: z.enum(platformSubjectKinds),
     subjectLifecycleId: z.uuid(),
-    subjectId: z.string().trim().min(1),
   })
   .strict()
 
 export const platformCollectionStateWriteSchema = platformCollectionStateIdentitySchema
   .extend({
-    nextEligibleAt: z.date().nullable(),
     authorizationGeneration: z.number().int().nonnegative().max(2_147_483_647).nullable(),
-    validatedAt: z.date().nullable(),
+    disclosureVersion: z.number().int().positive().optional(),
     lastFailureClass: z.enum(platformCollectionFailureClasses).nullable(),
+    managedMemberLifecycleId: z.uuid().optional(),
+    nextEligibleAt: z.date().nullable(),
     organizationDeploymentId: z.literal(1).optional(),
     organizationVersion: z.number().int().positive().optional(),
-    targetUserId: z.uuid().optional(),
-    managedMemberLifecycleId: z.uuid().optional(),
-    sectionId: z.string().refine(isPlatformContributionId).optional(),
-    disclosureVersion: z.number().int().positive().optional(),
     sectionActivationVersion: z.number().int().positive().optional(),
+    sectionId: z.string().refine(isPlatformContributionId).optional(),
+    targetUserId: z.uuid().optional(),
+    validatedAt: z.date().nullable(),
   })
   .strict()
   .superRefine((value, context) => {
@@ -60,13 +60,15 @@ export const platformCollectionStateWriteSchema = platformCollectionStateIdentit
       value.sectionActivationVersion,
     ]
     const defined = authority.filter((entry) => entry !== undefined).length
-    if (defined !== 0 && defined !== authority.length)
+    if (defined !== 0 && defined !== authority.length) {
       context.addIssue({ code: 'custom', message: 'Managed collection authority is incomplete' })
-    if (defined === authority.length && value.authorizationGeneration === null)
+    }
+    if (defined === authority.length && value.authorizationGeneration === null) {
       context.addIssue({
         code: 'custom',
         message: 'Managed collection authority requires an authorization generation',
       })
+    }
   })
 
 export type PlatformCollectionStateIdentity = z.infer<typeof platformCollectionStateIdentitySchema>

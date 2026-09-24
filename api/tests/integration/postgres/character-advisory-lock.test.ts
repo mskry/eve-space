@@ -54,8 +54,9 @@ describe('character advisory lock', () => {
       2_147_483_648,
       4_294_967_295,
       Number.MAX_SAFE_INTEGER,
-    ])
+    ]) {
       await expect(takeCharacterLock(characterId)).resolves.toBeDefined()
+    }
   })
 
   test('rejects the raw ID it used to pass, proving the boundary is real', async () => {

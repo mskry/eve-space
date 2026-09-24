@@ -24,11 +24,16 @@ export async function authorizeOrganizationContribution(
   declaration: PlatformInstalledOrganizationContributionAuthorization,
   now = new Date(),
 ): Promise<OrganizationContributionAuthorizationResult> {
-  if (organization.blocked) return { authorized: false, reason: 'blocked' }
-  if (!currentCatalogPermission({ ...declaration, key: declaration.requiredPermission }))
+  if (organization.blocked) {
+    return { authorized: false, reason: 'blocked' }
+  }
+  if (!currentCatalogPermission({ ...declaration, key: declaration.requiredPermission })) {
     return { authorized: false, reason: 'permission' }
+  }
   const entitlementScope = resolveOrganizationEntitlementScope(organization, now)
-  if (entitlementScope === 'none') return { authorized: false, reason: 'compliance' }
+  if (entitlementScope === 'none') {
+    return { authorized: false, reason: 'compliance' }
+  }
   if (
     declaration.audience !== 'member' &&
     !(await hasOrganizationAudienceAuthority(
@@ -37,16 +42,18 @@ export async function authorizeOrganizationContribution(
       declaration.audience,
       now,
     ))
-  )
+  ) {
     return { authorized: false, reason: 'audience' }
+  }
 
   const permissions = await getOrganizationGroupPermissions(
     userId,
     now,
     organization.organizationVersion,
   )
-  if (!hasRequiredPermissions(permissions.modules, declaration))
+  if (!hasRequiredPermissions(permissions.modules, declaration)) {
     return { authorized: false, reason: 'permission' }
+  }
 
   return {
     authorized: true,
@@ -68,11 +75,15 @@ export async function authorizeOrganizationReviewerContribution(
   declaration: PlatformInstalledOrganizationContributionAuthorization,
   now = new Date(),
 ): Promise<OrganizationContributionAuthorizationResult> {
-  if (organization.blocked) return { authorized: false, reason: 'blocked' }
-  if (!currentCatalogPermission({ ...declaration, key: declaration.requiredPermission }))
+  if (organization.blocked) {
+    return { authorized: false, reason: 'blocked' }
+  }
+  if (!currentCatalogPermission({ ...declaration, key: declaration.requiredPermission })) {
     return { authorized: false, reason: 'permission' }
-  if (resolveOrganizationEntitlementScope(organization, now) !== 'all')
+  }
+  if (resolveOrganizationEntitlementScope(organization, now) !== 'all') {
     return { authorized: false, reason: 'compliance' }
+  }
   if (
     declaration.audience === 'member' ||
     !(await hasOrganizationReviewerAuthority(
@@ -81,16 +92,18 @@ export async function authorizeOrganizationReviewerContribution(
       declaration.audience,
       now,
     ))
-  )
+  ) {
     return { authorized: false, reason: 'audience' }
+  }
 
   const permissions = await getOrganizationGroupPermissions(
     userId,
     now,
     organization.organizationVersion,
   )
-  if (!hasRequiredPermissions(permissions.modules, declaration))
+  if (!hasRequiredPermissions(permissions.modules, declaration)) {
     return { authorized: false, reason: 'permission' }
+  }
 
   return {
     authorized: true,
@@ -122,7 +135,9 @@ async function hasOrganizationAudienceAuthority(
   audience: 'hr' | 'director',
   now: Date,
 ) {
-  if (audience === 'hr') return hasExplicitHrAuthority(userId, organizationVersion)
+  if (audience === 'hr') {
+    return hasExplicitHrAuthority(userId, organizationVersion)
+  }
   const authority = await loadEffectiveOrganizationAuthority(
     db,
     organizationVersion,
@@ -146,7 +161,9 @@ async function hasOrganizationReviewerAuthority(
     'read-continuity',
     now,
   )
-  if (audience === 'director') return authority.director
+  if (audience === 'director') {
+    return authority.director
+  }
   return authority.director || (await hasExplicitHrAuthority(userId, organizationVersion))
 }
 

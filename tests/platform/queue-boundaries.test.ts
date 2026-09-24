@@ -30,7 +30,7 @@ describe('queue module boundaries', () => {
   it.each(forbiddenTierImports)(
     'rejects %s (%s) importing %s (%s)',
     (sourceModule, sourceTier, importedModule, importedTier) => {
-      expect(sourcesWithImport(sourceModule, `./${importedModule}.js`)).toEqual([
+      expect(sourcesWithImport(sourceModule, `./${importedModule}.js`)).toStrictEqual([
         `api/src/queue/${sourceModule}.ts: ${sourceTier} module ${sourceModule} cannot import ${importedTier} module ${importedModule}`,
       ])
     },
@@ -43,7 +43,7 @@ describe('queue module boundaries', () => {
     '../organization/owner-evidence.js',
     './job-handlers.js',
   ])('rejects the job contract importing non-contract dependency %s', (specifier) => {
-    expect(sourcesWithImport('job-contracts', specifier)).toEqual([
+    expect(sourcesWithImport('job-contracts', specifier)).toStrictEqual([
       `api/src/queue/job-contracts.ts: Job contract module cannot import non-contract dependency ${specifier}`,
     ])
   })
@@ -55,23 +55,29 @@ describe('queue module boundaries', () => {
     '../platform/collection-state.js',
     '../platform/resource-batch-contract.js',
   ])('allows reviewed job contract dependency %s', (specifier) => {
-    expect(sourcesWithImport('job-contracts', specifier)).toEqual([])
+    expect(sourcesWithImport('job-contracts', specifier)).toStrictEqual([])
   })
 
   it('rejects direct queue dependencies on the ESI gateway', () => {
-    expect(sourcesWithImport('planner', '../esi-gateway/internal/execution-runtime.js')).toEqual([
+    expect(
+      sourcesWithImport('planner', '../esi-gateway/internal/execution-runtime.js'),
+    ).toStrictEqual([
       'api/src/queue/planner.ts: Queue module planner cannot import ESI gateway module ../esi-gateway/internal/execution-runtime.js',
     ])
   })
 
   it('rejects dependency cycles', () => {
     const sources = declaredQueueModules.map((module) => {
-      if (module === 'namespaces') return source(module, "import './outcomes.js'")
-      if (module === 'outcomes') return source(module, "import './namespaces.js'")
+      if (module === 'namespaces') {
+        return source(module, "import './outcomes.js'")
+      }
+      if (module === 'outcomes') {
+        return source(module, "import './namespaces.js'")
+      }
       return source(module, '')
     })
 
-    expect(queueBoundaryViolations(sources)).toEqual([
+    expect(queueBoundaryViolations(sources)).toStrictEqual([
       'Queue dependency cycle: namespaces -> outcomes -> namespaces',
     ])
   })
@@ -79,7 +85,7 @@ describe('queue module boundaries', () => {
   it('requires every source module to have one declared tier', () => {
     expect(
       queueBoundaryViolations([...declaredSources(), source('nested/new-module', '')]),
-    ).toEqual([
+    ).toStrictEqual([
       'api/src/queue/nested/new-module.ts: Queue module nested/new-module has no declared tier',
     ])
   })
@@ -87,8 +93,8 @@ describe('queue module boundaries', () => {
   it('requires every declared module to have one source file', () => {
     expect(
       queueBoundaryViolations(declaredSources().filter(({ path }) => !path.endsWith('/status.ts'))),
-    ).toEqual(['Declared queue module status has no source file'])
-    expect(queueBoundaryViolations([...declaredSources(), source('status', '')])).toEqual([
+    ).toStrictEqual(['Declared queue module status has no source file'])
+    expect(queueBoundaryViolations([...declaredSources(), source('status', '')])).toStrictEqual([
       'Queue module status has 2 source files',
     ])
   })
@@ -100,14 +106,14 @@ describe('queue module boundaries', () => {
       await mkdir(nested, { recursive: true })
       await writeFile(join(nested, 'example.ts'), 'export const example = true\n')
 
-      await expect(loadQueueSources(root)).resolves.toEqual([
+      await expect(loadQueueSources(root)).resolves.toStrictEqual([
         {
           path: join('api', 'src', 'queue', 'nested', 'example.ts'),
           source: 'export const example = true\n',
         },
       ])
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 })

@@ -34,11 +34,11 @@ type ExpectedCollectionProtocol = {
 async function materialize() {}
 
 const single = definePlatformSingleRequestResource<'fixture-root', RootProtocol, number>({
+  map: ({ data }) => data.items.length,
+  materialize,
   mode: 'single-request',
   operation: 'fixture-root',
   request: (subject) => ({ path: { character_id: subject.characterId } }),
-  map: ({ data }) => data.items.length,
-  materialize,
 })
 
 const collection = definePlatformBoundedCollectionResource<
@@ -46,8 +46,6 @@ const collection = definePlatformBoundedCollectionResource<
   CollectionProtocol,
   number
 >({
-  mode: 'bounded-collection',
-  operation: 'fixture-root',
   async collect(context) {
     const root = await context.operations['fixture-root']({
       path: { character_id: context.subject.characterId },
@@ -60,6 +58,8 @@ const collection = definePlatformBoundedCollectionResource<
     return { complete: true, data: names.data.length }
   },
   materialize,
+  mode: 'bounded-collection',
+  operation: 'fixture-root',
 })
 
 void (single satisfies PlatformResourceImplementationForContract<
@@ -183,11 +183,11 @@ const crossModeSingle: PlatformSingleRequestResourceImplementation<'fixture-root
 }
 
 const collectionMethods = {
-  operation: 'fixture-root',
-  mode: 'bounded-collection',
   collect: async () => ({ complete: true, data: undefined }),
-  request: () => ({ path: { character_id: 1 } }),
   materialize,
+  mode: 'bounded-collection',
+  operation: 'fixture-root',
+  request: () => ({ path: { character_id: 1 } }),
 } as const
 // @ts-expect-error bounded collections cannot retain unreachable single-request methods
 const crossModeCollection: PlatformBoundedCollectionResourceImplementation<
@@ -197,9 +197,9 @@ const crossModeCollection: PlatformBoundedCollectionResourceImplementation<
 
 // @ts-expect-error every implementation must declare its execution mode
 const missingMode: PlatformBoundedCollectionResourceImplementation<'fixture-root', RootProtocol> = {
-  operation: 'fixture-root',
   collect: async () => ({ complete: true, data: undefined }),
   materialize,
+  operation: 'fixture-root',
 }
 
 declare const missingRoot: PlatformBoundedCollectionResourceImplementation<
@@ -211,8 +211,6 @@ declare const missingRoot: PlatformBoundedCollectionResourceImplementation<
 >
 
 definePlatformBoundedCollectionResource<'fixture-root', RootProtocol, number>({
-  mode: 'bounded-collection',
-  operation: 'fixture-root',
   async collect(context) {
     // @ts-expect-error undeclared operations have no callable member
     await context.operations['fixture-dependent']({ path: { character_id: 1 }, body: [] })
@@ -227,6 +225,8 @@ definePlatformBoundedCollectionResource<'fixture-root', RootProtocol, number>({
     return { complete: true, data: result.data.items.length }
   },
   materialize,
+  mode: 'bounded-collection',
+  operation: 'fixture-root',
 })
 
 void [crossModeSingle, crossModeCollection, missingMode, missingRoot]

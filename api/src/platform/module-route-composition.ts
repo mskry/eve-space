@@ -53,8 +53,9 @@ function composeAuthenticatedSessionModuleRoute<
     PlatformRouteSecurityClassification,
   route: Hono<PlatformAuthenticatedSessionRouteEnv, RouteSchema, RouteBasePath>,
 ) {
-  if (isManagedOrganizationTarget(organization.target))
+  if (isManagedOrganizationTarget(organization.target)) {
     throw new Error('Reviewer target route requires the target-aware composer')
+  }
   return new Hono()
     .use('*', privateNoStore)
     .use('*', requireInstalledModuleEnabled(moduleId, organization.sectionId))
@@ -77,8 +78,9 @@ function composeReviewerSearchModuleRoute<RouteSchema extends Schema, RouteBaseP
     PlatformRouteSecurityClassification,
   route: Hono<PlatformReviewerSearchRouteEnv, RouteSchema, RouteBasePath>,
 ) {
-  if (organization.target !== 'managed-organization-account-search')
+  if (organization.target !== 'managed-organization-account-search') {
     throw new Error('Reviewer search route requires the account-search target')
+  }
   return new Hono()
     .use('*', privateNoStore)
     .use('*', requireInstalledModuleEnabled(moduleId, organization.sectionId))
@@ -151,7 +153,9 @@ function composeReviewerTargetModuleRoute<
   contribution?: PlatformInstalledReviewerContributionDescriptor,
 ) {
   const reviewerTargetKind = resolveReviewerTargetKind(organization.target)
-  if (!reviewerTargetKind) throw new Error('Reviewer target route requires an account target')
+  if (!reviewerTargetKind) {
+    throw new Error('Reviewer target route requires an account target')
+  }
   const sensitiveAccessAudit = organization.reviewerEvidence
     ? createReviewerEvidenceAccessAudit(moduleId, organization.sectionId)
     : undefined
@@ -185,7 +189,9 @@ function composeReviewerTargetModuleRoute<
       ),
     )
     .route('/', route)
-  if (!contribution) return composed
+  if (!contribution) {
+    return composed
+  }
   return composed.onError((error, context) =>
     reviewerContributionFailureResponse(error, contribution, context),
   )
@@ -205,8 +211,9 @@ function assertReviewerContributionRouteBinding(
     route.requiredPermission !== contribution.requiredPermission ||
     route.target !== contribution.target ||
     (route.additionalRequiredPermissions?.length ?? 0) > 0
-  )
+  ) {
     throw new Error('Reviewer contribution route binding does not match its installed descriptor')
+  }
 }
 
 function reviewerContributionFailureResponse(
@@ -214,15 +221,17 @@ function reviewerContributionFailureResponse(
   contribution: PlatformInstalledReviewerContributionDescriptor,
   context: Context,
 ) {
-  if (error instanceof PlatformModuleHttpError) return context.json(error.body, error.status)
+  if (error instanceof PlatformModuleHttpError) {
+    return context.json(error.body, error.status)
+  }
   if (error instanceof HTTPException) {
     const message = error.message || (error.status === 403 ? 'Forbidden' : 'Request failed.')
     return context.json({ message }, error.status)
   }
   recordDiagnostic('platform.module.error', {
     context: {
-      moduleId: contribution.moduleId,
       moduleEvent: `reviewer.${contribution.contributionId}.failed`,
+      moduleId: contribution.moduleId,
     },
     error,
   })
@@ -256,8 +265,8 @@ function composeOwnedCharacterModuleRoute<RouteSchema extends Schema, RouteBaseP
 
 export const platformModuleRouteComposers = {
   'authenticated-session': composeAuthenticatedSessionModuleRoute,
-  'managed-organization-account-search': composeReviewerSearchModuleRoute,
   'managed-organization-account': composeReviewerTargetModuleRoute,
+  'managed-organization-account-search': composeReviewerSearchModuleRoute,
   'managed-organization-character': composeReviewerTargetModuleRoute,
   'owned-character': composeOwnedCharacterModuleRoute,
 } as const
@@ -269,26 +278,51 @@ function isManagedOrganizationTarget(target: PlatformRouteSecurityClassification
 function resolveReviewerTargetKind(
   target: PlatformRouteSecurityClassification['target'],
 ): 'account' | 'character' | null {
-  if (target === 'managed-organization-account') return 'account'
-  if (target === 'managed-organization-character') return 'character'
+  if (target === 'managed-organization-account') {
+    return 'account'
+  }
+  if (target === 'managed-organization-character') {
+    return 'character'
+  }
   return null
 }
 
 function reviewerTargetParamsValidator(targetKind: 'account' | 'character'): MiddlewareHandler {
-  if (targetKind === 'account') return zValidator('param', reviewerAccountParams)
+  if (targetKind === 'account') {
+    return zValidator('param', reviewerAccountParams)
+  }
   return zValidator('param', reviewerCharacterParams)
 }
 
 const passThrough = createMiddleware(async (_context, next) => next())
 
 function createReviewerEvidenceAccessAudit(moduleId: string, sectionId: string | undefined) {
-  if (!isSensitiveAccessSection(sectionId))
+  if (!isSensitiveAccessSection(sectionId)) {
     throw new Error('Reviewer evidence route requires an auditable sensitive section')
+  }
   return {
+    allowed: createMiddleware(async (context, next) => {
+      const target = context.var.organizationReviewerTarget
+      if (!target) {
+        throw new Error('Sensitive access target is unavailable')
+      }
+      await recordReviewerEvidenceAccess(context, {
+        moduleId,
+        sectionId,
+        decision: 'allowed',
+        reason: 'authorized',
+        targetUserId: target.account.userId,
+        targetCharacterId:
+          target.selection.kind === 'character' ? target.selection.characterId : null,
+      })
+      await next()
+    }),
     denials: createMiddleware(async (context, next) => {
       await next()
       const target = context.var.organizationReviewerTarget
-      if (target) return
+      if (target) {
+        return
+      }
       const authorizationDenial = context.var.moduleOrganizationAuthorizationDenialReason
       await recordReviewerEvidenceAccess(context, {
         moduleId,
@@ -300,20 +334,6 @@ function createReviewerEvidenceAccessAudit(moduleId: string, sectionId: string |
         targetUserId: null,
         targetCharacterId: null,
       })
-    }),
-    allowed: createMiddleware(async (context, next) => {
-      const target = context.var.organizationReviewerTarget
-      if (!target) throw new Error('Sensitive access target is unavailable')
-      await recordReviewerEvidenceAccess(context, {
-        moduleId,
-        sectionId,
-        decision: 'allowed',
-        reason: 'authorized',
-        targetUserId: target.account.userId,
-        targetCharacterId:
-          target.selection.kind === 'character' ? target.selection.characterId : null,
-      })
-      await next()
     }),
   }
 }
@@ -330,7 +350,9 @@ async function recordReviewerEvidenceAccess(
 ) {
   const session = context.var.session
   const organization = context.var.organization
-  if (!session || !organization) throw new Error('Sensitive access audit context is unavailable')
+  if (!session || !organization) {
+    throw new Error('Sensitive access audit context is unavailable')
+  }
   await recordModuleSensitiveAccessDecision({
     ...decision,
     actorUserId: session.userId,
@@ -347,8 +369,14 @@ function isSensitiveAccessSection(
 function sensitiveAccessDenialReason(
   reason: 'blocked' | 'compliance' | 'audience' | 'permission',
 ): OrganizationSensitiveAccessReason {
-  if (reason === 'blocked') return 'reviewer-blocked'
-  if (reason === 'compliance') return 'reviewer-compliance-required'
-  if (reason === 'audience') return 'reviewer-authority-required'
+  if (reason === 'blocked') {
+    return 'reviewer-blocked'
+  }
+  if (reason === 'compliance') {
+    return 'reviewer-compliance-required'
+  }
+  if (reason === 'audience') {
+    return 'reviewer-authority-required'
+  }
   return 'reviewer-permission-required'
 }

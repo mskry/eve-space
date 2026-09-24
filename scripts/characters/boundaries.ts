@@ -3,6 +3,7 @@ import { findDependencyCycles } from '../dependency-cycles.js'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
+  'affiliation-use-case': ['affiliation-planning', 'affiliation-sync'],
   'pure-leaf': ['finance-pagination', 'resource-failure'],
   'read-projection': [
     'assets',
@@ -21,7 +22,6 @@ const modulesByTier = {
     'skills',
     'wallet',
   ],
-  'affiliation-use-case': ['affiliation-planning', 'affiliation-sync'],
   'route-adapter': [
     'assets-routes',
     'clones-routes',
@@ -55,13 +55,14 @@ export const declaredCharacterModules = Object.freeze(
 )
 
 const allowedImportTiersBySourceTier: Record<CharacterTier, readonly CharacterTier[]> = {
+  'affiliation-use-case': ['pure-leaf', 'read-projection', 'affiliation-use-case'],
   'pure-leaf': ['pure-leaf'],
   'read-projection': ['pure-leaf', 'read-projection'],
-  'affiliation-use-case': ['pure-leaf', 'read-projection', 'affiliation-use-case'],
   'route-adapter': ['pure-leaf', 'read-projection', 'affiliation-use-case', 'route-adapter'],
 }
 
 const allowedPackagesByTier: Record<CharacterTier, ReadonlySet<string>> = {
+  'affiliation-use-case': new Set(['drizzle-orm', 'zod']),
   'pure-leaf': new Set(),
   'read-projection': new Set([
     '@eve-space/core-eve-projections/assets',
@@ -71,7 +72,6 @@ const allowedPackagesByTier: Record<CharacterTier, ReadonlySet<string>> = {
     'drizzle-orm',
     'zod',
   ]),
-  'affiliation-use-case': new Set(['drizzle-orm', 'zod']),
   'route-adapter': new Set(['hono', 'zod']),
 }
 
@@ -214,20 +214,24 @@ function createBoundaryModel(
 function membershipViolations(model: CharacterBoundaryModel) {
   const violations: string[] = []
   for (const [module, declarations] of model.declarationsByModule) {
-    if (!model.sourcesByModule.has(module))
+    if (!model.sourcesByModule.has(module)) {
       violations.push(`Declared character module ${module} has no source file`)
-    if (declarations.length > 1)
+    }
+    if (declarations.length > 1) {
       violations.push(
         `Character module ${module} has duplicate tier declarations: ${declarations.map(({ tier }) => tier).join(', ')}`,
       )
+    }
   }
   for (const [module, sources] of model.sourcesByModule) {
-    if (!model.declarationsByModule.has(module))
+    if (!model.declarationsByModule.has(module)) {
       violations.push(`${sources[0]!.path}: Character module ${module} has no declared tier`)
-    if (sources.length > 1)
+    }
+    if (sources.length > 1) {
       violations.push(
         `Character module ${module} has duplicate source ownership: ${sources.map(({ path }) => path).join(', ')}`,
       )
+    }
   }
   return violations
 }
@@ -235,7 +239,9 @@ function membershipViolations(model: CharacterBoundaryModel) {
 function violationsForSource(source: CharacterSource, model: CharacterBoundaryModel) {
   const module = moduleName(source.path)
   const sourceTier = declaredTier(model, module)
-  if (!sourceTier || model.sourcesByModule.get(module)?.length !== 1) return []
+  if (!sourceTier || model.sourcesByModule.get(module)?.length !== 1) {
+    return []
+  }
 
   return typescriptModuleSpecifiers(source.path, source.source).flatMap((specifier) =>
     violationsForImport(source.path, module, sourceTier, specifier, model),
@@ -251,24 +257,30 @@ function violationsForImport(
 ) {
   const dependency = dependencyIdentity(path, specifier)
   const importedModule = characterModuleName(dependency)
-  if (importedModule)
+  if (importedModule) {
     return violationsForCharacterModuleImport(path, module, sourceTier, importedModule, model)
+  }
 
-  if (isPackageOrSubpath(dependency, 'hono') && sourceTier !== 'route-adapter')
+  if (isPackageOrSubpath(dependency, 'hono') && sourceTier !== 'route-adapter') {
     return [`${path}: ${sourceTier} module ${module} cannot import Hono`]
-  if (isPackageOrSubpath(dependency, 'bullmq'))
+  }
+  if (isPackageOrSubpath(dependency, 'bullmq')) {
     return [`${path}: Character module ${module} cannot import BullMQ`]
-  if (dependency.startsWith('api/src/queue/'))
+  }
+  if (dependency.startsWith('api/src/queue/')) {
     return [`${path}: Character module ${module} cannot import queue module ${specifier}`]
-  if (dependency.startsWith(`${esiGatewayPrefix}internal/`))
+  }
+  if (dependency.startsWith(`${esiGatewayPrefix}internal/`)) {
     return [`${path}: Character module ${module} cannot import ESI gateway internals`]
+  }
   if (isPackageOrSubpath(dependency, '@evespace/esi-client')) {
     if (
       (sourceTier === 'read-projection' || sourceTier === 'affiliation-use-case') &&
       (dependency === '@evespace/esi-client/operations' ||
         dependency === '@evespace/esi-client/types')
-    )
+    ) {
       return []
+    }
     return [
       `${path}: Character module ${module} cannot import ESI SDK runtime surface ${specifier}`,
     ]
@@ -276,11 +288,14 @@ function violationsForImport(
 
   const allowedImports = new Set(allowedCrossSubsystemImportsByModule[module] ?? [])
   const isRestrictedRead = restrictedReadPrefixes.some((prefix) => dependency.startsWith(prefix))
-  if (isRestrictedRead && !allowedImports.has(dependency))
+  if (isRestrictedRead && !allowedImports.has(dependency)) {
     return [
       `${path}: Character module ${module} cannot import unapproved cross-subsystem read ${specifier}`,
     ]
-  if (allowedImports.has(dependency) || allowedPackagesByTier[sourceTier].has(dependency)) return []
+  }
+  if (allowedImports.has(dependency) || allowedPackagesByTier[sourceTier].has(dependency)) {
+    return []
+  }
   return [
     `${path}: ${sourceTier} module ${module} cannot import unapproved dependency ${specifier}`,
   ]
@@ -294,14 +309,16 @@ function violationsForCharacterModuleImport(
   model: CharacterBoundaryModel,
 ) {
   const importedTier = declaredTier(model, importedModule)
-  if (!importedTier)
+  if (!importedTier) {
     return [
       `${path}: ${sourceTier} module ${module} cannot import undeclared character module ${importedModule}`,
     ]
-  if (!allowedImportTiersBySourceTier[sourceTier].includes(importedTier))
+  }
+  if (!allowedImportTiersBySourceTier[sourceTier].includes(importedTier)) {
     return [
       `${path}: ${sourceTier} module ${module} cannot import ${importedTier} module ${importedModule}`,
     ]
+  }
   return []
 }
 
@@ -347,7 +364,9 @@ function characterRelativePath(path: string) {
 }
 
 function dependencyIdentity(sourcePath: string, specifier: string) {
-  if (!specifier.startsWith('.')) return specifier
+  if (!specifier.startsWith('.')) {
+    return specifier
+  }
   const normalizedSource = sourcePath.replaceAll('\\', '/')
   const marker = 'api/src/characters/'
   const markerIndex = normalizedSource.lastIndexOf(marker)
@@ -367,8 +386,11 @@ function groupBy<Value>(values: readonly Value[], keyForValue: (value: Value) =>
   for (const value of values) {
     const key = keyForValue(value)
     const group = grouped.get(key)
-    if (group) group.push(value)
-    else grouped.set(key, [value])
+    if (group) {
+      group.push(value)
+    } else {
+      grouped.set(key, [value])
+    }
   }
   return grouped
 }

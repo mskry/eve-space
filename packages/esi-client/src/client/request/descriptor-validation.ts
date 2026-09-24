@@ -13,7 +13,9 @@ import type {
 } from './types.js';
 
 export function validateDescriptor(value: unknown): ValidatedDescriptor {
-  if (!isRecord(value)) throw new TypeError('Operation descriptor must be an object');
+  if (!isRecord(value)) {
+    throw new TypeError('Operation descriptor must be an object');
+  }
   const operationId = value.operationId;
   if (
     typeof operationId !== 'string' ||
@@ -60,10 +62,10 @@ export function validateDescriptor(value: unknown): ValidatedDescriptor {
     );
   }
   return {
-    operationId,
     method,
-    path,
+    operationId,
     parameters,
+    path,
     requestBody,
   };
 }
@@ -103,7 +105,9 @@ function validateParameterIdentities(
       throw new TypeError(`Duplicate parameter ${identity} in operation descriptor ${operationId}`);
     }
     identities.add(identity);
-    if (parameter.placement !== 'header') continue;
+    if (parameter.placement !== 'header') {
+      continue;
+    }
     const lowerName = parameter.name.toLowerCase();
     if (headerNames.has(lowerName)) {
       throw new TypeError(
@@ -151,7 +155,9 @@ function validateRequestBody(
   value: unknown,
   operationId: string,
 ): JsonRequestBodyDescriptor | null {
-  if (value === null) return null;
+  if (value === null) {
+    return null;
+  }
   if (!isRecord(value) || typeof value.required !== 'boolean') {
     throw new TypeError(`Invalid request body descriptor for operation ${operationId}`);
   }
@@ -160,5 +166,5 @@ function validateRequestBody(
       `Unsupported request body media type ${String(value.mediaType)} for operation ${operationId}`,
     );
   }
-  return { required: value.required, mediaType: 'application/json' };
+  return { mediaType: 'application/json', required: value.required };
 }

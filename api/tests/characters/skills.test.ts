@@ -9,27 +9,27 @@ interface StaticRow {
 }
 
 const mocks = vi.hoisted(() => ({
+  acquire: vi.fn(),
+  cacheDel: vi.fn(),
+  cacheGet: vi.fn(),
+  cacheSet: vi.fn(),
+  commit: vi.fn(),
   createEsiClient: vi.fn(),
-  getSkills: vi.fn(),
-  leftJoin: vi.fn(),
   from: vi.fn(),
-  select: vi.fn(),
-  staticRows: [] as StaticRow[],
-  where: vi.fn(),
   getCharacterAuthorization: vi.fn(),
   getCharacterCacheAuthorization: vi.fn(),
-  acquire: vi.fn(),
-  commit: vi.fn(),
   getCommitted: vi.fn(),
   getLeaseTtl: vi.fn(),
   getRevision: vi.fn(),
+  getSkills: vi.fn(),
   incrementRevision: vi.fn(),
   initialize: vi.fn(),
+  leftJoin: vi.fn(),
   release: vi.fn(),
   renew: vi.fn(),
-  cacheGet: vi.fn(),
-  cacheSet: vi.fn(),
-  cacheDel: vi.fn(),
+  select: vi.fn(),
+  staticRows: [] as StaticRow[],
+  where: vi.fn(),
 }))
 
 vi.mock('../../src/db/client.js', () => ({ db: { select: mocks.select } }))
@@ -39,10 +39,10 @@ vi.mock('../../src/auth/tokens.js', () => ({
 }))
 vi.mock('../../src/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => ({
-    get: mocks.cacheGet,
-    set: mocks.cacheSet,
     del: mocks.cacheDel,
+    get: mocks.cacheGet,
     ping: vi.fn().mockResolvedValue('PONG'),
+    set: mocks.cacheSet,
   }),
   observeCacheRedisConnectionErrors: vi.fn(),
 }))
@@ -50,22 +50,22 @@ vi.mock('../../src/esi-gateway/feature-execution.js', () =>
   createFeatureExecutionMock((_definition, input) => mocks.getSkills(input)),
 )
 
-const characterId = 1404328063
+const characterId = 1_404_328_063
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const scope = 'esi-skills.read_skills.v1'
 const now = Date.parse('2026-09-01T11:00:00.000Z')
-const lease = { key: 'lease', ownerToken: 'owner', fence: 7, ttlMs: 15_000 }
+const lease = { fence: 7, key: 'lease', ownerToken: 'owner', ttlMs: 15_000 }
 const esiMetadata = {
   cachedUntil: '2026-09-01T11:01:00.000Z',
-  validatedAt: '2026-09-01T11:00:00.000Z',
   quota: {},
   source: 'esi' as const,
   stale: false,
+  validatedAt: '2026-09-01T11:00:00.000Z',
 }
 const publicMetadata = {
   cachedUntil: esiMetadata.cachedUntil,
-  validatedAt: esiMetadata.validatedAt,
   stale: false,
+  validatedAt: esiMetadata.validatedAt,
 }
 
 beforeEach(() => {
@@ -129,18 +129,20 @@ describe('character skills snapshot', () => {
   test('exposes the canonical scope and summary without loading static data', async () => {
     mocks.getSkills.mockResolvedValue(
       response({
-        total_sp: 19_000,
         skills: [skill(4, 4000, 4, 5), skill(2, 2000, 2, 2)],
+        total_sp: 19_000,
       }),
     )
     const { characterSkillsScope, getCharacterSkillsSummary } =
       await import('../../src/characters/skills.js')
 
-    await expect(getCharacterSkillsSummary(characterId, subjectLifecycleId)).resolves.toEqual({
-      totalSp: 19_000,
-      unallocatedSp: 0,
-      ...publicMetadata,
-    })
+    await expect(getCharacterSkillsSummary(characterId, subjectLifecycleId)).resolves.toStrictEqual(
+      {
+        totalSp: 19_000,
+        unallocatedSp: 0,
+        ...publicMetadata,
+      },
+    )
     expect(characterSkillsScope).toBe(scope)
     expect(mocks.getSkills).toHaveBeenCalledWith({ characterId, subjectLifecycleId })
     expect(mocks.getSkills).toHaveBeenCalledOnce()
@@ -149,41 +151,43 @@ describe('character skills snapshot', () => {
 
   test('preserves stale snapshot freshness metadata in the summary', async () => {
     mocks.getSkills.mockResolvedValue(
-      response({ total_sp: 2500, unallocated_sp: 125, skills: [skill(2, 2000, 2, 2)] }, 'cache', {
+      response({ skills: [skill(2, 2000, 2, 2)], total_sp: 2500, unallocated_sp: 125 }, 'cache', {
         cachedUntil: '2026-09-01T10:59:00.000Z',
-        validatedAt: '2026-09-01T10:58:00.000Z',
-        stale: true,
         refreshFailureClass: 'esi-unavailable',
+        stale: true,
+        validatedAt: '2026-09-01T10:58:00.000Z',
       }),
     )
     const { getCharacterSkillsSummary } = await import('../../src/characters/skills.js')
 
-    await expect(getCharacterSkillsSummary(characterId, subjectLifecycleId)).resolves.toEqual({
-      totalSp: 2500,
-      unallocatedSp: 125,
-      cachedUntil: '2026-09-01T10:59:00.000Z',
-      validatedAt: '2026-09-01T10:58:00.000Z',
-      stale: true,
-      refreshFailureClass: 'esi-unavailable',
-    })
+    await expect(getCharacterSkillsSummary(characterId, subjectLifecycleId)).resolves.toStrictEqual(
+      {
+        cachedUntil: '2026-09-01T10:59:00.000Z',
+        refreshFailureClass: 'esi-unavailable',
+        stale: true,
+        totalSp: 2500,
+        unallocatedSp: 125,
+        validatedAt: '2026-09-01T10:58:00.000Z',
+      },
+    )
     expect(mocks.select).not.toHaveBeenCalled()
   })
 
   test('reads a repeated summary from the cached private snapshot', async () => {
     mocks.getSkills
       .mockResolvedValueOnce(
-        response({ total_sp: 19_000, unallocated_sp: 25, skills: [skill(2, 2000, 2, 2)] }),
+        response({ skills: [skill(2, 2000, 2, 2)], total_sp: 19_000, unallocated_sp: 25 }),
       )
       .mockResolvedValueOnce(
-        response({ total_sp: 19_000, unallocated_sp: 25, skills: [skill(2, 2000, 2, 2)] }, 'cache'),
+        response({ skills: [skill(2, 2000, 2, 2)], total_sp: 19_000, unallocated_sp: 25 }, 'cache'),
       )
     const { getCharacterSkillsSummary } = await import('../../src/characters/skills.js')
 
     const first = await getCharacterSkillsSummary(characterId, subjectLifecycleId)
     const second = await getCharacterSkillsSummary(characterId, subjectLifecycleId)
 
-    expect(first).toEqual({ totalSp: 19_000, unallocatedSp: 25, ...publicMetadata })
-    expect(second).toEqual(first)
+    expect(first).toStrictEqual({ totalSp: 19_000, unallocatedSp: 25, ...publicMetadata })
+    expect(second).toStrictEqual(first)
     expect(mocks.getSkills).toHaveBeenCalledTimes(2)
     expect(mocks.select).not.toHaveBeenCalled()
   })
@@ -193,9 +197,9 @@ describe('detailed character skills catalogue', () => {
   test('overlays progress onto complete groups and preserves unmatched ESI records', async () => {
     mocks.getSkills.mockResolvedValue(
       response({
+        skills: [skill(4, 4000, 4, 5), skill(99, 900, 1, 2)],
         total_sp: 19_000,
         unallocated_sp: 125,
-        skills: [skill(4, 4000, 4, 5), skill(99, 900, 1, 2)],
       }),
     )
     mocks.staticRows.push(
@@ -208,10 +212,7 @@ describe('detailed character skills catalogue', () => {
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
     const result = await getCharacterSkills(characterId, subjectLifecycleId)
-    expect(result).toEqual({
-      totalSp: 19_000,
-      unallocatedSp: 125,
-      injectedSkillCount: 2,
+    expect(result).toStrictEqual({
       groups: [
         {
           groupId: 10,
@@ -268,11 +269,14 @@ describe('detailed character skills catalogue', () => {
           ],
         },
       ],
+      injectedSkillCount: 2,
+      totalSp: 19_000,
+      unallocatedSp: 125,
       ...publicMetadata,
     })
     expect(mocks.getSkills).toHaveBeenCalledOnce()
     expect(mocks.select).toHaveBeenCalledOnce()
-    expect(Object.keys(mocks.select.mock.calls[0]![0])).toEqual([
+    expect(Object.keys(mocks.select.mock.calls[0]![0])).toStrictEqual([
       'groupId',
       'groupName',
       'typeId',
@@ -287,14 +291,11 @@ describe('detailed character skills catalogue', () => {
   })
 
   test('returns the full zero-progress catalogue for an empty ESI skill list', async () => {
-    mocks.getSkills.mockResolvedValue(response({ total_sp: 0, skills: [] }))
+    mocks.getSkills.mockResolvedValue(response({ skills: [], total_sp: 0 }))
     mocks.staticRows.push(staticSkill(10, 'Engineering', 2, 'Capacitor Management'))
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
-    await expect(getCharacterSkills(characterId, subjectLifecycleId)).resolves.toEqual({
-      totalSp: 0,
-      unallocatedSp: 0,
-      injectedSkillCount: 0,
+    await expect(getCharacterSkills(characterId, subjectLifecycleId)).resolves.toStrictEqual({
       groups: [
         {
           groupId: 10,
@@ -312,6 +313,9 @@ describe('detailed character skills catalogue', () => {
           ],
         },
       ],
+      injectedSkillCount: 0,
+      totalSp: 0,
+      unallocatedSp: 0,
       ...publicMetadata,
     })
   })
@@ -320,17 +324,17 @@ describe('detailed character skills catalogue', () => {
     mocks.getSkills
       .mockResolvedValueOnce(
         response({
+          skills: [skill(2, 2000, 2, 2)],
           total_sp: 19_000,
           unallocated_sp: 25,
-          skills: [skill(2, 2000, 2, 2)],
         }),
       )
       .mockResolvedValueOnce(
         response(
           {
+            skills: [skill(2, 2000, 2, 2)],
             total_sp: 19_000,
             unallocated_sp: 25,
-            skills: [skill(2, 2000, 2, 2)],
           },
           'cache',
         ),
@@ -342,17 +346,17 @@ describe('detailed character skills catalogue', () => {
     const cached = await getCharacterSkills(characterId, subjectLifecycleId)
 
     expect(cached).toMatchObject({
+      groups: [{ groupId: 10, trainedSp: 2000 }],
+      injectedSkillCount: 1,
       totalSp: 19_000,
       unallocatedSp: 25,
-      injectedSkillCount: 1,
-      groups: [{ groupId: 10, trainedSp: 2000 }],
     })
     expect(mocks.getSkills).toHaveBeenCalledTimes(2)
     expect(mocks.select).toHaveBeenCalledOnce()
   })
 
   test('reuses one process-local catalogue across repeated character requests', async () => {
-    mocks.getSkills.mockResolvedValue(response({ total_sp: 0, skills: [] }))
+    mocks.getSkills.mockResolvedValue(response({ skills: [], total_sp: 0 }))
     mocks.staticRows.push(staticSkill(10, 'Engineering', 2, 'Capacitor Management'))
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
@@ -364,7 +368,7 @@ describe('detailed character skills catalogue', () => {
   })
 
   test('collapses concurrent catalogue initialization', async () => {
-    mocks.getSkills.mockResolvedValue(response({ total_sp: 0, skills: [] }))
+    mocks.getSkills.mockResolvedValue(response({ skills: [], total_sp: 0 }))
     const catalogue = deferred<StaticRow[]>()
     mocks.where.mockReturnValue(catalogue.promise)
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
@@ -379,7 +383,7 @@ describe('detailed character skills catalogue', () => {
   })
 
   test('retries an empty catalogue on a later request', async () => {
-    mocks.getSkills.mockResolvedValue(response({ total_sp: 0, skills: [] }))
+    mocks.getSkills.mockResolvedValue(response({ skills: [], total_sp: 0 }))
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
     await expect(getCharacterSkills(characterId, subjectLifecycleId)).resolves.toMatchObject({
@@ -388,13 +392,13 @@ describe('detailed character skills catalogue', () => {
     mocks.staticRows.push(staticSkill(10, 'Engineering', 2, 'Capacitor Management'))
 
     await expect(getCharacterSkills(characterId + 1, subjectLifecycleId)).resolves.toMatchObject({
-      groups: [{ groupId: 10, skills: [{ typeId: 2, injected: false }] }],
+      groups: [{ groupId: 10, skills: [{ injected: false, typeId: 2 }] }],
     })
     expect(mocks.select).toHaveBeenCalledTimes(2)
   })
 
   test('clears a rejected catalogue initialization so a later request retries', async () => {
-    mocks.getSkills.mockResolvedValue(response({ total_sp: 0, skills: [] }))
+    mocks.getSkills.mockResolvedValue(response({ skills: [], total_sp: 0 }))
     mocks.where.mockRejectedValueOnce(new Error('temporary PostgreSQL failure'))
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
@@ -404,8 +408,8 @@ describe('detailed character skills catalogue', () => {
     mocks.where.mockResolvedValueOnce([staticSkill(10, 'Engineering', 2, 'Capacitor Management')])
 
     await expect(getCharacterSkills(characterId, subjectLifecycleId)).resolves.toMatchObject({
-      injectedSkillCount: 0,
       groups: [{ groupId: 10 }],
+      injectedSkillCount: 0,
     })
     expect(mocks.select).toHaveBeenCalledTimes(2)
   })
@@ -434,14 +438,14 @@ function response<Data>(
   }
   return {
     data: {
-      totalSp: value.total_sp,
-      unallocatedSp: value.unallocated_sp ?? 0,
       skills: value.skills.map((esiSkill) => ({
         typeId: esiSkill.skill_id,
         activeLevel: esiSkill.active_skill_level,
         trainedLevel: esiSkill.trained_skill_level,
         skillpoints: esiSkill.skillpoints_in_skill,
       })),
+      totalSp: value.total_sp,
+      unallocatedSp: value.unallocated_sp ?? 0,
     },
     ...esiMetadata,
     ...metadata,
@@ -451,9 +455,9 @@ function response<Data>(
 
 function skill(typeId: number, skillpoints: number, activeLevel: number, trainedLevel: number) {
   return {
+    active_skill_level: activeLevel,
     skill_id: typeId,
     skillpoints_in_skill: skillpoints,
-    active_skill_level: activeLevel,
     trained_skill_level: trainedLevel,
   }
 }

@@ -16,69 +16,75 @@ export const organizationAuditReasonSchema = safeAuditText(2000)
 
 export const organizationAuditInputSchema = z
   .object({
-    deploymentId: z.literal(1).default(1),
-    organizationVersion: z.number().int().positive(),
-    policyVersion: z.number().int().positive(),
-    eventType: z.enum(organizationAuditEventTypes),
-    actorType: z.enum(organizationAuditActorTypes),
     actorId: z.uuid().nullable(),
-    subjectType: z.enum(organizationAuditSubjectTypes),
-    subjectId: safeAuditText(255),
-    reason: organizationAuditReasonSchema,
-    outcome: z.enum(organizationAuditOutcomes),
-    groupId: z.uuid().nullable().optional(),
+    actorType: z.enum(organizationAuditActorTypes),
     assignmentId: z.uuid().nullable().optional(),
-    targetUserId: z.uuid().nullable().optional(),
-    sectionId: z.enum(organizationSensitiveAccessSections).nullable().optional(),
-    targetCharacterId: z.number().int().positive().nullable().optional(),
-    disclosureVersion: z.number().int().positive().nullable().optional(),
     assignmentSource: z.enum(['manual', 'compliance']).nullable().optional(),
-    complianceSource: safeAuditText(200).nullable().optional(),
-    entitlementExpiresAt: z.date().nullable().optional(),
     causationAuditId: z.uuid().nullable().optional(),
+    complianceSource: safeAuditText(200).nullable().optional(),
+    deploymentId: z.literal(1).default(1),
+    disclosureVersion: z.number().int().positive().nullable().optional(),
+    entitlementExpiresAt: z.date().nullable().optional(),
+    eventType: z.enum(organizationAuditEventTypes),
+    groupId: z.uuid().nullable().optional(),
     occurredAt: z.date().optional(),
+    organizationVersion: z.number().int().positive(),
+    outcome: z.enum(organizationAuditOutcomes),
+    policyVersion: z.number().int().positive(),
+    reason: organizationAuditReasonSchema,
+    sectionId: z.enum(organizationSensitiveAccessSections).nullable().optional(),
+    subjectId: safeAuditText(255),
+    subjectType: z.enum(organizationAuditSubjectTypes),
+    targetCharacterId: z.number().int().positive().nullable().optional(),
+    targetUserId: z.uuid().nullable().optional(),
   })
   .strict()
   .superRefine((event, context) => {
-    if (event.actorType === 'system' && event.actorId !== null)
-      context.addIssue({ code: 'custom', path: ['actorId'], message: 'System actor has no ID' })
-    if (event.actorType !== 'system' && event.actorId === null)
-      context.addIssue({ code: 'custom', path: ['actorId'], message: 'Actor ID is required' })
+    validateAuditActor(event, context)
     const groupAssignmentEvent =
       event.eventType === 'group.assigned' || event.eventType === 'group.revoked'
     if (
       groupAssignmentEvent &&
       (!event.groupId || !event.assignmentId || !event.targetUserId || !event.assignmentSource)
-    )
+    ) {
       context.addIssue({
         code: 'custom',
-        path: ['assignmentId'],
         message: 'Group assignment audit context is required',
+        path: ['assignmentId'],
       })
-    if (groupAssignmentEvent && event.assignmentSource === 'compliance' && !event.complianceSource)
+    }
+    if (
+      groupAssignmentEvent &&
+      event.assignmentSource === 'compliance' &&
+      !event.complianceSource
+    ) {
       context.addIssue({
         code: 'custom',
-        path: ['complianceSource'],
         message: 'Compliance source is required',
+        path: ['complianceSource'],
       })
-    if (groupAssignmentEvent && event.assignmentSource === 'manual' && event.complianceSource)
+    }
+    if (groupAssignmentEvent && event.assignmentSource === 'manual' && event.complianceSource) {
       context.addIssue({
         code: 'custom',
-        path: ['complianceSource'],
         message: 'Manual assignment has no compliance source',
+        path: ['complianceSource'],
       })
+    }
     const sensitiveAccessEvent = event.eventType === 'sensitive-access.decided'
     if (
       groupAssignmentEvent &&
       hasValue(event.sectionId, event.targetCharacterId, event.disclosureVersion)
-    )
+    ) {
       context.addIssue({
         code: 'custom',
-        path: ['sectionId'],
         message: 'Sensitive access context is not allowed for group events',
+        path: ['sectionId'],
       })
-    if (sensitiveAccessEvent) validateSensitiveAccessEvent(event, context)
-    else if (
+    }
+    if (sensitiveAccessEvent) {
+      validateSensitiveAccessEvent(event, context)
+    } else if (
       !groupAssignmentEvent &&
       hasValue(
         event.groupId,
@@ -91,39 +97,52 @@ export const organizationAuditInputSchema = z
         event.targetCharacterId,
         event.disclosureVersion,
       )
-    )
+    ) {
       context.addIssue({
         code: 'custom',
-        path: ['eventType'],
         message: 'Event-specific audit context is not allowed for this event',
+        path: ['eventType'],
       })
+    }
   })
+
+function validateAuditActor(
+  event: z.infer<typeof organizationAuditInputSchema>,
+  context: z.RefinementCtx,
+) {
+  if (event.actorType === 'system' && event.actorId !== null) {
+    context.addIssue({ code: 'custom', message: 'System actor has no ID', path: ['actorId'] })
+  }
+  if (event.actorType !== 'system' && event.actorId === null) {
+    context.addIssue({ code: 'custom', message: 'Actor ID is required', path: ['actorId'] })
+  }
+}
 
 const organizationAuditEventSchema = z
   .object({
+    actorId: z.uuid().nullable(),
+    actorType: z.enum(organizationAuditActorTypes),
+    assignmentId: z.uuid().nullable(),
+    assignmentSource: z.enum(['manual', 'compliance']).nullable(),
     auditId: z.uuid(),
     auditSequence: z.bigint().positive(),
-    deploymentId: z.literal(1),
-    organizationVersion: z.number().int().positive(),
-    policyVersion: z.number().int().positive(),
-    eventType: z.enum(organizationAuditEventTypes),
-    actorType: z.enum(organizationAuditActorTypes),
-    actorId: z.uuid().nullable(),
-    subjectType: z.enum(organizationAuditSubjectTypes),
-    subjectId: safeAuditText(255),
-    reason: organizationAuditReasonSchema,
-    outcome: z.enum(organizationAuditOutcomes),
-    groupId: z.uuid().nullable(),
-    assignmentId: z.uuid().nullable(),
-    targetUserId: z.uuid().nullable(),
-    sectionId: z.enum(organizationSensitiveAccessSections).nullable(),
-    targetCharacterId: z.number().int().positive().nullable(),
-    disclosureVersion: z.number().int().positive().nullable(),
-    assignmentSource: z.enum(['manual', 'compliance']).nullable(),
-    complianceSource: safeAuditText(200).nullable(),
-    entitlementExpiresAt: z.date().nullable(),
     causationAuditId: z.uuid().nullable(),
+    complianceSource: safeAuditText(200).nullable(),
+    deploymentId: z.literal(1),
+    disclosureVersion: z.number().int().positive().nullable(),
+    entitlementExpiresAt: z.date().nullable(),
+    eventType: z.enum(organizationAuditEventTypes),
+    groupId: z.uuid().nullable(),
     occurredAt: z.date(),
+    organizationVersion: z.number().int().positive(),
+    outcome: z.enum(organizationAuditOutcomes),
+    policyVersion: z.number().int().positive(),
+    reason: organizationAuditReasonSchema,
+    sectionId: z.enum(organizationSensitiveAccessSections).nullable(),
+    subjectId: safeAuditText(255),
+    subjectType: z.enum(organizationAuditSubjectTypes),
+    targetCharacterId: z.number().int().positive().nullable(),
+    targetUserId: z.uuid().nullable(),
   })
   .strict()
 
@@ -133,21 +152,7 @@ function validateSensitiveAccessEvent(
   event: z.infer<typeof organizationAuditInputSchema>,
   context: z.RefinementCtx,
 ) {
-  const accessContextInvalid =
-    event.actorType !== 'user' ||
-    !event.sectionId ||
-    !event.disclosureVersion ||
-    hasValue(
-      event.groupId,
-      event.assignmentId,
-      event.assignmentSource,
-      event.complianceSource,
-      event.entitlementExpiresAt,
-      event.causationAuditId,
-    ) ||
-    (event.targetCharacterId !== null &&
-      event.targetCharacterId !== undefined &&
-      !event.targetUserId)
+  const accessContextInvalid = hasInvalidSensitiveAccessContext(event)
   const targetMatches = event.targetUserId
     ? event.subjectType === 'user' && event.subjectId === event.targetUserId
     : event.subjectType === 'deployment' && event.subjectId === '1' && !event.targetCharacterId
@@ -162,12 +167,32 @@ function validateSensitiveAccessEvent(
   const retainsUnauthorizedTarget =
     event.reason === 'target-not-authorized' &&
     (event.targetUserId !== null || event.targetCharacterId !== null)
-  if (accessContextInvalid || !targetMatches || !decisionMatches || retainsUnauthorizedTarget)
+  if (accessContextInvalid || !targetMatches || !decisionMatches || retainsUnauthorizedTarget) {
     context.addIssue({
       code: 'custom',
-      path: ['eventType'],
       message: 'Sensitive access audit context is invalid',
+      path: ['eventType'],
     })
+  }
+}
+
+function hasInvalidSensitiveAccessContext(event: z.infer<typeof organizationAuditInputSchema>) {
+  return (
+    event.actorType !== 'user' ||
+    !event.sectionId ||
+    !event.disclosureVersion ||
+    hasValue(
+      event.groupId,
+      event.assignmentId,
+      event.assignmentSource,
+      event.complianceSource,
+      event.entitlementExpiresAt,
+      event.causationAuditId,
+    ) ||
+    (event.targetCharacterId !== null &&
+      event.targetCharacterId !== undefined &&
+      !event.targetUserId)
+  )
 }
 
 function hasValue(...values: unknown[]) {
@@ -179,7 +204,9 @@ export async function appendOrganizationAuditEvent(
   input: OrganizationAuditInput,
 ) {
   const [stored] = await appendOrganizationAuditEvents(transaction, [input])
-  if (!stored) throw new Error('Failed to append organization audit event')
+  if (!stored) {
+    throw new Error('Failed to append organization audit event')
+  }
   return stored
 }
 
@@ -187,10 +214,14 @@ export async function appendOrganizationAuditEvents(
   transaction: DatabaseTransaction,
   inputs: OrganizationAuditInput[],
 ) {
-  if (inputs.length === 0) return []
+  if (inputs.length === 0) {
+    return []
+  }
   const events = inputs.map((input) => organizationAuditInputSchema.parse(input))
   const stored = await transaction.insert(organizationAuditEvents).values(events).returning()
-  if (stored.length !== events.length) throw new Error('Failed to append organization audit events')
+  if (stored.length !== events.length) {
+    throw new Error('Failed to append organization audit events')
+  }
   return stored.map(toOrganizationAuditEvent)
 }
 

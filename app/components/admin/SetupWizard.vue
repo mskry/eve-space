@@ -41,7 +41,9 @@ const organizationId = ref('')
 const organizationTypeSelection = computed<string>({
   get: () => organizationType.value,
   set: (value) => {
-    if (value === 'corporation' || value === 'alliance') organizationType.value = value
+    if (value === 'corporation' || value === 'alliance') {
+      organizationType.value = value
+    }
   },
 })
 const fieldErrors = computed(() => ({
@@ -59,12 +61,22 @@ const invalid = computed(() => ({
 }))
 const passwordScore = computed(() => {
   const value = password.value
-  if (!value) return 0
+  if (!value) {
+    return 0
+  }
   let score = 0
-  if (value.length >= 12) score += 1
-  if (value.length >= 16) score += 1
-  if (/[^A-Za-z0-9]/.test(value)) score += 1
-  if (/[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value)) score += 1
+  if (value.length >= 12) {
+    score += 1
+  }
+  if (value.length >= 16) {
+    score += 1
+  }
+  if (/[^A-Za-z0-9]/.test(value)) {
+    score += 1
+  }
+  if (/[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value)) {
+    score += 1
+  }
   return Math.min(score, 4)
 })
 const passwordStrengthLabel = computed(() => passwordStrengthLabels[passwordScore.value] ?? 'NONE')
@@ -110,12 +122,18 @@ const summaryRows = computed(() => [
   { label: `${organizationLabel.value} ID`, value: organizationId.value.trim() },
 ])
 const footerNote = computed(() => {
-  if (attempted.value && !ownerStepValid.value) return 'Fix the highlighted fields to continue.'
-  if (step.value === 1) return 'Setup runs once. The secret is destroyed when the owner is created.'
+  if (attempted.value && !ownerStepValid.value) {
+    return 'Fix the highlighted fields to continue.'
+  }
+  if (step.value === 1) {
+    return 'Setup runs once. The secret is destroyed when the owner is created.'
+  }
   return 'Launching creates the owner account and locks this deployment to it.'
 })
 const submitLabel = computed(() => {
-  if (step.value === 1) return 'CONTINUE'
+  if (step.value === 1) {
+    return 'CONTINUE'
+  }
   return submitting ? 'LAUNCHING...' : 'LAUNCH DEPLOYMENT'
 })
 

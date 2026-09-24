@@ -78,25 +78,25 @@ const canManage = computed(
 const organizationVersion = computed(() => props.context.organization.organizationVersion)
 const catalogQuery = useQuery(() =>
   organizationPermissionCatalogQuery({
+    access: access.value,
     apiClient,
     organizationVersion: organizationVersion.value,
-    access: access.value,
   }),
 )
 const bundlesQuery = useQuery(() =>
   organizationPermissionBundlesQuery({
+    access: access.value,
     apiClient,
     organizationVersion: organizationVersion.value,
-    access: access.value,
   }),
 )
 const previewMutation = useMutation({
   mutation: async (profile: CatalogProfile) => {
     const response = await apiClient.api.organization['permission-profile-preview'].$post({
       json: {
-        publisherPackage: profile.publisherPackage,
         moduleId: profile.moduleId,
         profileId: profile.id,
+        publisherPackage: profile.publisherPackage,
       },
     })
     if (response.status !== 200) {
@@ -115,13 +115,13 @@ const saveMutation = useMutation({
   }) => {
     if (input.bundleId) {
       const response = await apiClient.api.organization['permission-bundles'][':bundleId'].$put({
-        param: { bundleId: input.bundleId },
         json: {
           name: input.name,
-          reason: input.reason,
           permissions: input.permissions,
+          reason: input.reason,
           retainedUnavailableEntryIds: input.retainedUnavailableEntryIds,
         },
+        param: { bundleId: input.bundleId },
       })
       if (response.status !== 200) {
         throw await toApiQueryError(response, 'Permission bundle could not be updated.')
@@ -129,7 +129,7 @@ const saveMutation = useMutation({
       return { created: false, result: await response.json() }
     }
     const response = await apiClient.api.organization['permission-bundles'].$post({
-      json: { name: input.name, reason: input.reason, permissions: input.permissions },
+      json: { name: input.name, permissions: input.permissions, reason: input.reason },
     })
     if (response.status !== 201) {
       throw await toApiQueryError(response, 'Permission bundle could not be created.')
@@ -193,14 +193,18 @@ const profileDialogTitle = computed(() => selectedProfile.value?.label ?? 'Permi
 watch(
   [() => catalogQuery.data.value, () => catalogQuery.asyncStatus.value],
   ([value, status]) => {
-    if (status !== 'loading' && canManage.value) catalog.value = value
+    if (status !== 'loading' && canManage.value) {
+      catalog.value = value
+    }
   },
   { immediate: true },
 )
 watch(
   [() => bundlesQuery.data.value, () => bundlesQuery.asyncStatus.value],
   ([value, status]) => {
-    if (status !== 'loading' && canManage.value) bundles.value = value
+    if (status !== 'loading' && canManage.value) {
+      bundles.value = value
+    }
   },
   { immediate: true },
 )
@@ -209,7 +213,9 @@ watch(organizationVersion, resetSensitiveState, { flush: 'sync' })
 watch(
   canManage,
   (allowed) => {
-    if (!allowed) resetSensitiveState()
+    if (!allowed) {
+      resetSensitiveState()
+    }
   },
   { flush: 'sync' },
 )
@@ -224,15 +230,17 @@ function catalogGroup(
 ) {
   const identity = `${publisherPackage}\u0000${moduleId}`
   const existing = groups.get(identity)
-  if (existing) return existing
-  const group = { publisherPackage, moduleId, permissions: [], profiles: [] }
+  if (existing) {
+    return existing
+  }
+  const group = { moduleId, permissions: [], profiles: [], publisherPackage }
   groups.set(identity, group)
   return group
 }
 
 function startCreate() {
   clearActionState()
-  draft.value = { bundleId: null, name: '', reason: '', permissions: [] }
+  draft.value = { bundleId: null, name: '', permissions: [], reason: '' }
 }
 
 function startEdit(bundle: PermissionBundle) {
@@ -240,26 +248,26 @@ function startEdit(bundle: PermissionBundle) {
   draft.value = {
     bundleId: bundle.bundleId,
     name: bundle.name,
-    reason: '',
     permissions: bundle.permissions.map(copyBundlePermission),
+    reason: '',
   }
 }
 
 function copyBundlePermission(permission: BundlePermission): DraftPermission {
   if (permission.type === 'service') {
     return {
-      type: 'service',
       key: permission.key,
       reviewAllowed: permission.reviewAllowed,
+      type: 'service',
     }
   }
   return {
-    type: 'module',
-    entryId: permission.entryId,
-    publisherPackage: permission.publisherPackage,
-    moduleId: permission.moduleId,
-    key: permission.key,
     available: permission.available,
+    entryId: permission.entryId,
+    key: permission.key,
+    moduleId: permission.moduleId,
+    publisherPackage: permission.publisherPackage,
+    type: 'module',
     ...('label' in permission ? { label: permission.label, purpose: permission.purpose } : {}),
   }
 }
@@ -278,12 +286,16 @@ function permissionSelected(permission: CatalogPermission) {
 }
 
 function togglePermission(permission: CatalogPermission, selected: boolean) {
-  if (!draft.value) return
+  if (!draft.value) {
+    return
+  }
   clearActionState()
   draft.value.permissions = draft.value.permissions.filter(
     (entry) => entry.type !== 'module' || !sameModulePermission(entry, permission),
   )
-  if (selected) draft.value.permissions.push(catalogDraftPermission(permission))
+  if (selected) {
+    draft.value.permissions.push(catalogDraftPermission(permission))
+  }
 }
 
 async function previewProfile(profile: CatalogProfile) {
@@ -294,20 +306,30 @@ async function previewProfile(profile: CatalogProfile) {
   const revision = operationRevision.value
   try {
     const result = await previewMutation.mutateAsync(profile)
-    if (revision !== operationRevision.value || !canManage.value) return
+    if (revision !== operationRevision.value || !canManage.value) {
+      return
+    }
     profilePreview.value = result
   } catch (error) {
-    if (revision !== operationRevision.value) return
+    if (revision !== operationRevision.value) {
+      return
+    }
     reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)
     actionError.value = error
   }
 }
 
 function copyProfileToDraft() {
-  if (!profilePreview.value) return
-  if (!draft.value) startCreate()
+  if (!profilePreview.value) {
+    return
+  }
+  if (!draft.value) {
+    startCreate()
+  }
   const currentDraft = draft.value
-  if (!currentDraft) return
+  if (!currentDraft) {
+    return
+  }
   const { publisherPackage, moduleId } = profilePreview.value.profile
   currentDraft.permissions = currentDraft.permissions.filter(
     (permission) =>
@@ -329,7 +351,9 @@ function requestUnavailableRemoval(permission: DraftPermission) {
 }
 
 function confirmUnavailableRemoval() {
-  if (!draft.value || !pendingUnavailableRemoval.value) return
+  if (!draft.value || !pendingUnavailableRemoval.value) {
+    return
+  }
   draft.value.permissions = draft.value.permissions.filter(
     (permission) => draftPermissionIdentity(permission) !== pendingUnavailableRemoval.value,
   )
@@ -338,7 +362,9 @@ function confirmUnavailableRemoval() {
 }
 
 function removeServicePermission(permission: DraftPermission) {
-  if (!draft.value) return
+  if (!draft.value) {
+    return
+  }
   draft.value.permissions = draft.value.permissions.filter(
     (entry) => draftPermissionIdentity(entry) !== draftPermissionIdentity(permission),
   )
@@ -354,7 +380,9 @@ function requestSave() {
 
 async function saveDraft() {
   const currentDraft = draft.value
-  if (!currentDraft || saving.value) return
+  if (!currentDraft || saving.value) {
+    return
+  }
   const name = currentDraft.name.trim()
   const reason = currentDraft.reason.trim()
   actionError.value = undefined
@@ -390,19 +418,25 @@ async function saveDraft() {
     const saved = await saveMutation.mutateAsync({
       bundleId: currentDraft.bundleId,
       name,
-      reason,
       permissions,
+      reason,
       retainedUnavailableEntryIds,
     })
-    if (revision !== operationRevision.value || !canManage.value) return
+    if (revision !== operationRevision.value || !canManage.value) {
+      return
+    }
     draft.value = null
     cleanupConfirmationOpen.value = false
     await refreshPrivateAuthorization(queryCache, { kind: 'organization' })
-    if (!canManage.value) return
+    if (!canManage.value) {
+      return
+    }
     const savedStatus = saved.created ? 'Permission bundle created.' : 'Permission bundle updated.'
     statusMessage.value = cleanup ? 'Permission bundle cleanup saved.' : savedStatus
   } catch (error) {
-    if (revision !== operationRevision.value) return
+    if (revision !== operationRevision.value) {
+      return
+    }
     reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)
     actionError.value = error
   }
@@ -413,18 +447,20 @@ function permissionSelections(permissions: DraftPermission[]): PermissionSelecti
   for (const permission of permissions) {
     if (permission.type === 'service') {
       selections.push({
-        type: 'service',
         key: permission.key,
         reviewAllowed: permission.reviewAllowed,
+        type: 'service',
       })
       continue
     }
-    if (!permission.available || !permission.publisherPackage || !permission.moduleId) continue
+    if (!permission.available || !permission.publisherPackage || !permission.moduleId) {
+      continue
+    }
     selections.push({
-      type: 'module',
-      publisherPackage: permission.publisherPackage,
-      moduleId: permission.moduleId,
       key: permission.key,
+      moduleId: permission.moduleId,
+      publisherPackage: permission.publisherPackage,
+      type: 'module',
     })
   }
   return selections
@@ -440,13 +476,13 @@ function sameProfile(left: CatalogProfile | undefined, right: CatalogProfile) {
 
 function catalogDraftPermission(permission: CatalogPermission): DraftPermission {
   return {
-    type: 'module',
-    publisherPackage: permission.publisherPackage,
-    moduleId: permission.moduleId,
-    key: permission.key,
     available: true,
+    key: permission.key,
     label: permission.label,
+    moduleId: permission.moduleId,
+    publisherPackage: permission.publisherPackage,
     purpose: permission.purpose,
+    type: 'module',
   }
 }
 
@@ -476,8 +512,12 @@ function reviewPolicyLabel(reviewAllowed: boolean) {
 }
 
 function originalOwnerLabel(permission: DraftPermission) {
-  if (permission.type !== 'module') return ''
-  if (!permission.publisherPackage || !permission.moduleId) return 'Unknown legacy owner'
+  if (permission.type !== 'module') {
+    return ''
+  }
+  if (!permission.publisherPackage || !permission.moduleId) {
+    return 'Unknown legacy owner'
+  }
   return `${permission.publisherPackage} / ${permission.moduleId}`
 }
 

@@ -106,8 +106,9 @@ export async function assertInstalledModulePersistenceContract(
     contract.length !== 1 ||
     contract[0]!.contract_fingerprint !== contractFingerprint ||
     contract[0]!.operation_count !== operations.length
-  )
+  ) {
     throw attestationError('platform', 'catalog', 'contract')
+  }
   await assertInstalledModulePersistenceState(connection, operations, moduleIds)
 }
 
@@ -122,8 +123,9 @@ export async function assertInstalledModulePersistenceContractWhenCurrent(
     contract.length !== 1 ||
     contract[0]!.contract_fingerprint !== contractFingerprint ||
     contract[0]!.operation_count !== operations.length
-  )
+  ) {
     return false
+  }
   await assertInstalledModulePersistenceState(connection, operations, moduleIds)
   return true
 }
@@ -179,8 +181,9 @@ function assertExpectedInventory(
 ) {
   const identities = new Set<string>()
   const expectedModuleIds = new Set(moduleIds)
-  if (expectedModuleIds.size !== moduleIds.length)
+  if (expectedModuleIds.size !== moduleIds.length) {
     throw attestationError('platform', 'catalog', 'inventory')
+  }
   for (const operation of operations) {
     const names = modulePersistenceNames(operation.moduleId)
     const identity = operationIdentity(operation)
@@ -189,8 +192,9 @@ function assertExpectedInventory(
       !expectedModuleIds.has(operation.moduleId) ||
       operation.schemaName !== names.schemaName ||
       operation.routineName !== modulePersistenceRoutineName(operation.operationId)
-    )
+    ) {
       throw attestationError(operation.moduleId, operation.operationId, 'inventory')
+    }
     identities.add(identity)
   }
 }
@@ -200,10 +204,14 @@ function assertOperationAttestations(
   rows: readonly OperationAttestationRow[],
 ) {
   const expected = new Map(operations.map((operation) => [operationIdentity(operation), operation]))
-  if (rows.length !== expected.size) throw attestationError('platform', 'catalog', 'inventory')
+  if (rows.length !== expected.size) {
+    throw attestationError('platform', 'catalog', 'inventory')
+  }
   for (const row of rows) {
     const operation = expected.get(`${row.module_id}/${row.operation_id}`)
-    if (!operation) throw attestationError(row.module_id, row.operation_id, 'inventory')
+    if (!operation) {
+      throw attestationError(row.module_id, row.operation_id, 'inventory')
+    }
     if (
       row.revision !== operation.revision ||
       row.mode !== operation.mode ||
@@ -211,8 +219,9 @@ function assertOperationAttestations(
       row.schema_name !== operation.schemaName ||
       row.routine_name !== operation.routineName ||
       row.definition_fingerprint !== operation.definitionFingerprint
-    )
+    ) {
       throw attestationError(operation.moduleId, operation.operationId, 'metadata')
+    }
   }
 }
 
@@ -227,11 +236,15 @@ async function assertRoutines(
       operation,
     ]),
   )
-  if (rows.length !== expected.size) throw attestationError('platform', 'catalog', 'inventory')
+  if (rows.length !== expected.size) {
+    throw attestationError('platform', 'catalog', 'inventory')
+  }
   await Promise.all(
     rows.map(async (routine) => {
       const operation = expected.get(routineIdentity(routine.schema_name, routine.routine_name))
-      if (!operation) throw attestationError('platform', 'catalog', 'inventory')
+      if (!operation) {
+        throw attestationError('platform', 'catalog', 'inventory')
+      }
       assertRoutineMetadata(operation, routine)
       await assertRoutineDefinition(operation, routine.definition)
       assertRoutineGrants(operation, routine.oid, grants)
@@ -242,8 +255,9 @@ async function assertRoutines(
 function assertRoutineMetadata(operation: ModulePersistenceRoutineDescriptor, routine: RoutineRow) {
   const names = modulePersistenceNames(operation.moduleId)
   const expectedSettings = `search_path=pg_catalog, ${names.schemaName}, pg_temp`
-  if (!routine.signature_valid)
+  if (!routine.signature_valid) {
     throw attestationError(operation.moduleId, operation.operationId, 'signature')
+  }
   if (
     routine.owner !== names.migrationRoleName ||
     !routine.security_definer ||
@@ -251,8 +265,9 @@ function assertRoutineMetadata(operation: ModulePersistenceRoutineDescriptor, ro
     routine.parallel !== 'u' ||
     routine.settings?.length !== 1 ||
     routine.settings[0] !== expectedSettings
-  )
+  ) {
     throw attestationError(operation.moduleId, operation.operationId, 'metadata')
+  }
 }
 
 async function assertRoutineDefinition(
@@ -261,16 +276,19 @@ async function assertRoutineDefinition(
 ) {
   try {
     const canonical = await canonicalizePersistenceRoutineSql({
+      mode: operation.mode,
       moduleId: operation.moduleId,
       operationId: operation.operationId,
       revision: operation.revision,
-      mode: operation.mode,
       sql: definition,
     })
-    if (canonical.definitionFingerprint !== operation.definitionFingerprint)
+    if (canonical.definitionFingerprint !== operation.definitionFingerprint) {
       throw attestationError(operation.moduleId, operation.operationId, 'definition')
+    }
   } catch (error) {
-    if (error instanceof ModulePersistenceAttestationError) throw error
+    if (error instanceof ModulePersistenceAttestationError) {
+      throw error
+    }
     throw attestationError(operation.moduleId, operation.operationId, 'definition')
   }
 }
@@ -293,12 +311,15 @@ function assertRoutineGrants(
     migrationGrant.length !== 1 ||
     runtimeGrant.length !== 1 ||
     runtimeGrant[0]!.grantable
-  )
+  ) {
     throw attestationError(operation.moduleId, operation.operationId, 'grants')
+  }
 }
 
 async function assertRoleAuthority(connection: postgres.Sql, moduleIds: readonly string[]) {
-  if (moduleIds.length === 0) return
+  if (moduleIds.length === 0) {
+    return
+  }
   const expectedRoles = moduleIds.flatMap((moduleId) => {
     const { migrationRoleName, runtimeRoleName } = modulePersistenceNames(moduleId)
     return [migrationRoleName, runtimeRoleName]
@@ -309,14 +330,17 @@ async function assertRoleAuthority(connection: postgres.Sql, moduleIds: readonly
     loadSchemaAccess(connection, expectedRoles),
     loadRelationAccess(connection, expectedRoles),
   ])
-  if (roles.length !== expectedRoles.length)
+  if (roles.length !== expectedRoles.length) {
     throw attestationError('platform', 'catalog', 'authority')
+  }
   const platformRole = roles[0]!.platform_role
   for (const moduleId of moduleIds) {
     const names = modulePersistenceNames(moduleId)
     for (const roleName of [names.migrationRoleName, names.runtimeRoleName]) {
       const role = roles.find(({ rolname }) => rolname === roleName)
-      if (!role || !isRestrictedRole(role)) throw attestationError(moduleId, 'catalog', 'authority')
+      if (!role || !isRestrictedRole(role)) {
+        throw attestationError(moduleId, 'catalog', 'authority')
+      }
       const roleMemberships = memberships.filter(
         ({ member, parent }) => member === roleName || parent === roleName,
       )
@@ -327,8 +351,9 @@ async function assertRoleAuthority(connection: postgres.Sql, moduleIds: readonly
         roleMemberships[0]!.admin_option ||
         roleMemberships[0]!.inherit_option ||
         !roleMemberships[0]!.set_option
-      )
+      ) {
         throw attestationError(moduleId, 'catalog', 'authority')
+      }
     }
     assertSchemaAuthority(moduleId, names, schemaAccess)
     if (
@@ -337,8 +362,9 @@ async function assertRoleAuthority(connection: postgres.Sql, moduleIds: readonly
           role_name === names.runtimeRoleName ||
           (role_name === names.migrationRoleName && schema_name !== names.schemaName),
       )
-    )
+    ) {
       throw attestationError(moduleId, 'catalog', 'authority')
+    }
   }
 }
 
@@ -368,8 +394,9 @@ function assertSchemaAuthority(
       ({ schema_name, usage_access, create_access }) =>
         schema_name !== names.schemaName && (usage_access || create_access),
     )
-  )
+  ) {
     throw attestationError(moduleId, 'catalog', 'authority')
+  }
 }
 
 function isRestrictedRole(role: RoleRow) {

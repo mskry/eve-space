@@ -14,12 +14,14 @@ const client = createJevClient()
 const changedFiles = await changedRepositoryFiles(root, base)
 const states = await collectPlatformContractEvidence(repository, root, changedFiles)
 const review = await runJevReview({
+  classify: classifyPlatformContract,
   findingName: 'platform contract',
+  judge: (state) => judgePlatformContract(client, state),
   reviewedName: 'route contract(s)',
   states,
-  judge: (state) => judgePlatformContract(client, state),
-  classify: classifyPlatformContract,
 })
 
 process.stdout.write(`${review.output}\n`)
-if (review.failed) process.exitCode = 1
+if (review.failed) {
+  process.exitCode = 1
+}

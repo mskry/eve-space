@@ -4,7 +4,7 @@ import { getSharedCacheRedisConnection } from '../cache-redis.js'
 import type { UniverseId, UniverseName } from './names.js'
 
 const freshMilliseconds = 3_600_000
-const retainedSeconds = 7_200
+const retainedSeconds = 7200
 const negativeSeconds = 120
 const cachePrefix = `eve-space:universe-resolution:v1:${env.ESI_COMPATIBILITY_DATE}`
 
@@ -63,7 +63,9 @@ async function readCache<Key, Value>(
     stale: new Map(),
     suppressed: new Set(),
   }
-  if (keys.length === 0) return result
+  if (keys.length === 0) {
+    return result
+  }
   try {
     const connection = getSharedCacheRedisConnection()
     const positiveKeys = keys.map((key) => positiveKey(kind, cacheId(key)))
@@ -75,8 +77,12 @@ async function readCache<Key, Value>(
     const now = Date.now()
     for (const [index, key] of keys.entries()) {
       const cached = parseCachedValue(positiveValues[index], validate)
-      if (cached) (cached.freshUntil > now ? result.fresh : result.stale).set(key, cached.value)
-      if (negativeValues[index] !== null) result.suppressed.add(key)
+      if (cached) {
+        ;(cached.freshUntil > now ? result.fresh : result.stale).set(key, cached.value)
+      }
+      if (negativeValues[index] !== null) {
+        result.suppressed.add(key)
+      }
     }
   } catch {}
   return result
@@ -88,7 +94,9 @@ async function writeCache<Entry, Value = Entry>(
   kind: 'id' | 'name',
   selectValue: (entry: Entry) => Value = (entry) => entry as unknown as Value,
 ) {
-  if (entries.length === 0) return
+  if (entries.length === 0) {
+    return
+  }
   try {
     const connection = getSharedCacheRedisConnection()
     const transaction = connection.multi()
@@ -112,11 +120,14 @@ async function suppressCache<Key>(
   cacheId: (key: Key) => string,
   kind: 'id' | 'name',
 ) {
-  if (keys.length === 0) return
+  if (keys.length === 0) {
+    return
+  }
   try {
     const transaction = getSharedCacheRedisConnection().multi()
-    for (const key of keys)
+    for (const key of keys) {
       transaction.set(negativeKey(kind, cacheId(key)), '1', 'EX', negativeSeconds)
+    }
     await transaction.exec()
   } catch {}
 }
@@ -137,7 +148,9 @@ function parseCachedValue<Value>(
   serialized: string | null | undefined,
   validate: (value: unknown) => value is Value,
 ): CachedValue<Value> | undefined {
-  if (!serialized) return undefined
+  if (!serialized) {
+    return undefined
+  }
   try {
     const parsed: unknown = JSON.parse(serialized)
     if (
@@ -147,8 +160,9 @@ function parseCachedValue<Value>(
       !('value' in parsed) ||
       typeof parsed.freshUntil !== 'number' ||
       !validate(parsed.value)
-    )
+    ) {
       return undefined
+    }
     return { freshUntil: parsed.freshUntil, value: parsed.value }
   } catch {
     return undefined

@@ -10,16 +10,13 @@ const api = usePlatformApi()
 const { enabledModuleIds } = usePlatformModuleRuntime()
 const page = ref(1)
 const resourceQuery = usePlatformProtectedQuery(() => ({
-  esiPersistence: { kind: 'none' },
   access: {
     authenticated: true,
     moduleEnabled: enabledModuleIds.value.has('alpha'),
     ownsCharacter: true,
   },
+  esiPersistence: { kind: 'none' },
   moduleId: 'alpha',
-  routeId: 'alpha-record',
-  resource: ['record'],
-  subject: { kind: 'character', characterId: Number(route.params.characterId) },
   query: async ({ signal }) =>
     readPlatformApiResponse(
       await api.api.alpha[':characterId'].$get(
@@ -28,62 +25,72 @@ const resourceQuery = usePlatformProtectedQuery(() => ({
       ),
       'Alpha record is unavailable.',
     ),
+  resource: ['record'],
+  routeId: 'alpha-record',
+  subject: { characterId: Number(route.params.characterId), kind: 'character' },
 }))
 const persistedSummaryQuery = usePlatformProtectedQuery(() => ({
-  esiPersistence: { kind: 'organization-esi' },
   access: {
     authenticated: true,
     authorized: true,
     moduleEnabled: enabledModuleIds.value.has('alpha'),
   },
+  esiPersistence: { kind: 'organization-esi' },
   moduleId: 'alpha',
-  routeId: 'alpha-summary',
-  resource: ['summary'],
-  subject: { kind: 'organization', organizationVersion: 1 },
   query: async () => ({ available: true }),
+  resource: ['summary'],
+  routeId: 'alpha-summary',
+  subject: { kind: 'organization', organizationVersion: 1 },
 }))
 const resourceState = computed<PlatformResourceState>(() => {
-  if (route.query.state === 'authorization')
+  if (route.query.state === 'authorization') {
     return {
+      action: { href: '/authorize-alpha', label: 'Authorize alpha' },
+      message: 'Grant access to load this record.',
       status: 'authorization-required',
       title: 'Alpha authorization required',
-      message: 'Grant access to load this record.',
-      action: { href: '/authorize-alpha', label: 'Authorize alpha' },
     }
-  if (route.query.state === 'stale')
+  }
+  if (route.query.state === 'stale') {
     return {
-      status: 'stale',
-      title: 'Alpha record is stale',
       message: 'Showing the last available record.',
       retryLabel: 'Refresh alpha',
+      status: 'stale',
+      title: 'Alpha record is stale',
     }
-  if (resourceQuery.status.value === 'pending')
+  }
+  if (resourceQuery.status.value === 'pending') {
     return { status: 'loading', title: 'Loading alpha record' }
-  if (resourceQuery.error.value)
+  }
+  if (resourceQuery.error.value) {
     return {
-      status: 'unavailable',
-      title: 'Alpha record unavailable',
       message: resourceQuery.error.value.message,
       retryLabel: 'Retry',
+      status: 'unavailable',
+      title: 'Alpha record unavailable',
     }
+  }
   return { status: 'ready' }
 })
 const persistencePresentation = computed<EsiQueryPersistencePresentation>(() => {
-  if (route.query.presentation === 'restored')
+  if (route.query.presentation === 'restored') {
     return { kind: 'restored', originalSuccessAt: '2026-09-15T01:00:00.000Z' }
-  if (route.query.presentation === 'refresh-failed')
+  }
+  if (route.query.presentation === 'refresh-failed') {
     return {
       kind: 'restored-refresh-failed',
       originalSuccessAt: '2026-09-15T01:00:00.000Z',
-      retryAt: '2026-09-15T01:05:00.000Z',
       refreshFailureStatus: 503,
+      retryAt: '2026-09-15T01:05:00.000Z',
     }
-  if (route.query.presentation === 'server-stale')
+  }
+  if (route.query.presentation === 'server-stale') {
     return {
       kind: 'server-stale',
-      validatedAt: '2026-09-15T01:02:00.000Z',
       refreshFailureClass: 'esi-cooldown',
+      validatedAt: '2026-09-15T01:02:00.000Z',
     }
+  }
   return persistedSummaryQuery.persistencePresentation.value
 })
 const { openConfirmDialog } = usePlatformConfirmDialog()
@@ -91,9 +98,9 @@ const { announceSuccess } = usePlatformMutationAnnouncement()
 
 function confirmRecord() {
   openConfirmDialog({
-    title: 'Confirm alpha record',
     description: 'Confirm the loaded alpha record.',
     onConfirm: () => announceSuccess('Alpha record confirmed.'),
+    title: 'Confirm alpha record',
   })
 }
 </script>

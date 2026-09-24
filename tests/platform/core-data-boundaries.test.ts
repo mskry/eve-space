@@ -6,7 +6,7 @@ describe('core-data boundaries', () => {
   it('accepts the repository dependency graph', async () => {
     const sources = await loadCoreDataBoundarySources(process.cwd())
 
-    expect(coreDataBoundaryViolations(sources)).toEqual([])
+    expect(coreDataBoundaryViolations(sources)).toStrictEqual([])
   }, 60_000)
 
   it('keeps the contract package dependency-free', () => {
@@ -14,7 +14,7 @@ describe('core-data boundaries', () => {
       coreDataBoundaryViolations([
         source('packages/core-data-contract/src/index.ts', "import type { Sql } from 'postgres'"),
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'packages/core-data-contract/src/index.ts: pure core-data contract cannot import postgres',
     ])
   })
@@ -35,7 +35,7 @@ describe('core-data boundaries', () => {
           "const source = '../core-data/capabilities.js'\nexport const load = () => import(source)",
         ),
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'api/src/characters/service.ts: core-data dynamic imports must use string literals',
       'api/src/core-data/published-type-groups-adapter.ts: core-data dynamic imports must use string literals',
       'packages/core-data-contract/src/index.ts: core-data dynamic imports must use string literals',
@@ -50,7 +50,7 @@ describe('core-data boundaries', () => {
           'export const load = () => import(`./capabilities.js`)',
         ),
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'api/src/core-data/product-catalog.ts: catalog module product-catalog cannot import capability module capabilities',
     ])
   })
@@ -63,14 +63,16 @@ describe('core-data boundaries', () => {
           "import './capabilities.js'\nimport '../platform/routes.js'",
         ),
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'api/src/core-data/product-catalog.ts: catalog module product-catalog cannot import capability module capabilities',
       'api/src/core-data/product-catalog.ts: catalog module product-catalog cannot import source implementation ../platform/routes.js',
     ])
   })
 
   it('requires every implementation module to have a declared tier', () => {
-    expect(coreDataBoundaryViolations([source('api/src/core-data/new-product.ts', '')])).toEqual([
+    expect(
+      coreDataBoundaryViolations([source('api/src/core-data/new-product.ts', '')]),
+    ).toStrictEqual([
       'api/src/core-data/new-product.ts: core-data module new-product has no declared tier',
     ])
   })
@@ -83,7 +85,7 @@ describe('core-data boundaries', () => {
           "import { createCoreDataCapability } from '../core-data/capabilities.js'",
         ),
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'api/src/characters/service.ts: only approved startup and platform capability integration may import core-data module capabilities',
     ])
   })
@@ -100,7 +102,7 @@ describe('core-data boundaries', () => {
           "import '../core-data/capabilities.js'",
         ),
       ]),
-    ).toEqual([])
+    ).toStrictEqual([])
   })
 
   it('rejects generic product dispatchers and method maps', () => {
@@ -111,7 +113,7 @@ describe('core-data boundaries', () => {
           'export interface CoreDataMethods { [product: string]: unknown }\nexport function executeCoreDataProduct() {}',
         ),
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'packages/core-data-contract/src/index.ts: core-data must not expose generic dispatcher executeCoreDataProduct',
       'packages/core-data-contract/src/index.ts: CoreDataMethods must declare exact product methods',
     ])

@@ -1,4 +1,5 @@
 export const ownedCharacterQuery = defineEsiQueryOptions(({ apiClient, characterId }) => ({
+  enabled: import.meta.client,
   key: ['owned-character', characterId],
   query: async ({ signal }) => {
     const response = await apiClient.api.me.characters[':characterId'].$get(
@@ -7,7 +8,6 @@ export const ownedCharacterQuery = defineEsiQueryOptions(({ apiClient, character
     )
     return response.json()
   },
-  enabled: import.meta.client,
 }))
 
 export const mailHeadersQuery = defineEsiQueryOptions(({ apiClient, characterId }) => ({

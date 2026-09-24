@@ -33,7 +33,9 @@ beforeEach(() => {
 })
 
 afterEach(async () => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   clearQueryCache()
   queryServer.resetHandlers()
   document.body.replaceChildren()
@@ -110,10 +112,9 @@ describe('SettingsOrganizationAccess', () => {
     await wrapper.get('.organization-access__draft').trigger('submit')
     await vi.waitFor(() => expect(bundleRequests).toHaveLength(1))
 
-    expect(bundleRequests).toEqual([
+    expect(bundleRequests).toStrictEqual([
       {
         name: 'Operations',
-        reason: 'Adopt reviewed profile',
         permissions: [
           { type: 'service', key: 'discord.operations', reviewAllowed: true },
           {
@@ -129,6 +130,7 @@ describe('SettingsOrganizationAccess', () => {
             key: 'alpha.read',
           },
         ],
+        reason: 'Adopt reviewed profile',
         retainedUnavailableEntryIds: [],
       },
     ])
@@ -150,9 +152,8 @@ describe('SettingsOrganizationAccess', () => {
     await wrapper.get('.organization-access__draft').trigger('submit')
     await vi.waitFor(() => expect(bundleRequests).toHaveLength(1))
 
-    expect(bundleRequests[0]).toEqual({
+    expect(bundleRequests[0]).toStrictEqual({
       name: 'New reviewer access',
-      reason: 'Create reviewed access',
       permissions: [
         {
           type: 'module',
@@ -161,6 +162,7 @@ describe('SettingsOrganizationAccess', () => {
           key: 'alpha.read',
         },
       ],
+      reason: 'Create reviewed access',
     })
     expect(wrapper.get('[aria-live="polite"]').text()).toBe('Permission bundle created.')
   })
@@ -177,7 +179,9 @@ describe('SettingsOrganizationAccess', () => {
     const removeButton = wrapper
       .findAll('.organization-access__unavailable button')
       .find((candidate) => candidate.text().includes('REMOVE FROM DRAFT'))
-    if (!removeButton) throw new Error('Unavailable permission removal button was not found.')
+    if (!removeButton) {
+      throw new Error('Unavailable permission removal button was not found.')
+    }
     await removeButton.trigger('click')
     expect(wrapper.text()).toContain('Remove this retained permission from the local draft?')
     await button(wrapper, 'CONFIRM REMOVAL').trigger('click')
@@ -192,10 +196,10 @@ describe('SettingsOrganizationAccess', () => {
     await wrapper.get('.organization-access__draft').trigger('submit')
     await vi.waitFor(() => expect(bundleRequests).toHaveLength(1))
 
-    expect(bundleRequests[0]).toEqual({
+    expect(bundleRequests[0]).toStrictEqual({
       name: 'Retained permissions',
-      reason: 'Keep retained history',
       permissions: [],
+      reason: 'Keep retained history',
       retainedUnavailableEntryIds: [
         '00000000-0000-4000-8000-000000000005',
         '00000000-0000-4000-8000-000000000006',
@@ -216,8 +220,8 @@ describe('SettingsOrganizationAccess', () => {
     await button(cleanupWrapper, 'CONFIRM EMPTY BUNDLE').trigger('click')
     await vi.waitFor(() => expect(bundleRequests).toHaveLength(1))
     expect(bundleRequests[0]).toMatchObject({
-      reason: 'Remove stale access',
       permissions: [],
+      reason: 'Remove stale access',
       retainedUnavailableEntryIds: [],
     })
     expect(cleanupWrapper.get('[aria-live="polite"]').text()).toBe(
@@ -307,9 +311,9 @@ async function mountAccess(
 ) {
   const Host = defineComponent({
     props: {
-      authenticated: { type: Boolean, default: overrides.authenticated ?? true },
-      context: { type: Object, default: () => overrides.context ?? ownerContext() },
-      invalidationRevision: { type: Number, default: 0 },
+      authenticated: { default: overrides.authenticated ?? true, type: Boolean },
+      context: { default: () => overrides.context ?? ownerContext(), type: Object },
+      invalidationRevision: { default: 0, type: Number },
     },
     async setup(hostProps) {
       await useAuthSession(createApiClient('http://localhost:8788')).initializeAuth(true)
@@ -347,18 +351,18 @@ function installHandlers() {
   queryServer.use(
     http.get('http://localhost:8788/auth/config', () =>
       HttpResponse.json({
+        attachUrl: '/auth/eve/attach',
         configured: true,
         loginUrl: '/auth/eve/login',
-        attachUrl: '/auth/eve/attach',
       }),
     ),
     http.get('http://localhost:8788/auth/session', () =>
       HttpResponse.json({
-        authenticated: true,
         account: {
-          userId: 'owner-user',
           mainCharacter: { characterId: 1_404_328_063, name: 'Owner Pilot' },
+          userId: 'owner-user',
         },
+        authenticated: true,
       }),
     ),
     http.get('http://localhost:8788/api/me/cache-admission', () =>
@@ -412,22 +416,22 @@ function permissionCatalog() {
     ],
     profiles: [
       {
-        publisherPackage: '@example/alpha-manifest',
-        moduleId: 'alpha',
+        audiences: ['hr'],
+        description: 'Alpha profile.',
         id: 'reviewer',
         label: 'Alpha reviewer',
-        description: 'Alpha profile.',
-        audiences: ['hr'],
+        moduleId: 'alpha',
         permissions: ['alpha.read'],
+        publisherPackage: '@example/alpha-manifest',
       },
       {
-        publisherPackage: '@example/beta-manifest',
-        moduleId: 'beta',
+        audiences: ['member'],
+        description: 'Beta profile.',
         id: 'reviewer',
         label: 'Beta reviewer',
-        description: 'Beta profile.',
-        audiences: ['member'],
+        moduleId: 'beta',
         permissions: ['beta.keep'],
+        publisherPackage: '@example/beta-manifest',
       },
     ],
   }
@@ -440,29 +444,20 @@ function permission(
   sensitivity: 'standard' | 'sensitive',
 ) {
   return {
-    publisherPackage: `@example/${moduleId}-manifest`,
-    moduleId,
+    audiences: moduleId === 'alpha' ? ['hr'] : ['member'],
     key,
     label: key === 'alpha.read' ? 'Read alpha' : key,
+    moduleId,
+    publisherPackage: `@example/${moduleId}-manifest`,
     purpose,
-    audiences: moduleId === 'alpha' ? ['hr'] : ['member'],
-    sensitivity,
     reviewAllowed: false,
+    sensitivity,
   }
 }
 
 function profilePreview(key: string) {
   const declaration = permission('alpha', key, `${key} purpose.`, 'sensitive')
   return {
-    profile: {
-      publisherPackage: '@example/alpha-manifest',
-      moduleId: 'alpha',
-      id: 'reviewer',
-      label: 'Alpha reviewer',
-      description: 'Alpha profile.',
-      audiences: ['hr'],
-      permissions: [key],
-    },
     permissions: [
       {
         input: {
@@ -474,6 +469,15 @@ function profilePreview(key: string) {
         ...declaration,
       },
     ],
+    profile: {
+      audiences: ['hr'],
+      description: 'Alpha profile.',
+      id: 'reviewer',
+      label: 'Alpha reviewer',
+      moduleId: 'alpha',
+      permissions: [key],
+      publisherPackage: '@example/alpha-manifest',
+    },
   }
 }
 
@@ -482,8 +486,8 @@ function permissionBundles() {
     bundles: [
       {
         bundleId: '345697a4-df0b-44e7-bf19-f10912c53a27',
-        organizationVersion: 1,
         name: 'Operations',
+        organizationVersion: 1,
         permissions: [
           {
             entryId: '00000000-0000-4000-8000-000000000001',
@@ -514,8 +518,8 @@ function unavailableBundles() {
     bundles: [
       {
         bundleId: '345697a4-df0b-44e7-bf19-f10912c53a27',
-        organizationVersion: 1,
         name: 'Retained permissions',
+        organizationVersion: 1,
         permissions: [
           {
             entryId: '00000000-0000-4000-8000-000000000005',
@@ -546,8 +550,8 @@ function cleanupBundles() {
     bundles: [
       {
         bundleId: '345697a4-df0b-44e7-bf19-f10912c53a27',
-        organizationVersion: 1,
         name: 'Cleanup',
+        organizationVersion: 1,
         permissions: [availablePermission('alpha', 'alpha.read')],
       },
     ],
@@ -556,52 +560,54 @@ function cleanupBundles() {
 
 function availablePermission(moduleId: 'alpha' | 'beta', key: string) {
   return {
+    audiences: moduleId === 'alpha' ? ['hr'] : ['member'],
+    available: true,
+    currentReviewAllowed: false,
     entryId:
       key === 'alpha.read'
         ? '00000000-0000-4000-8000-000000000002'
         : key === 'alpha.old'
           ? '00000000-0000-4000-8000-000000000003'
           : '00000000-0000-4000-8000-000000000007',
-    type: 'module',
-    publisherPackage: `@example/${moduleId}-manifest`,
-    moduleId,
     key,
-    reviewAllowed: false,
-    available: true,
     label: key,
+    moduleId,
+    publisherPackage: `@example/${moduleId}-manifest`,
     purpose: `${key} purpose.`,
-    audiences: moduleId === 'alpha' ? ['hr'] : ['member'],
+    reviewAllowed: false,
     sensitivity: 'standard',
-    currentReviewAllowed: false,
+    type: 'module',
   }
 }
 
 function ownerContext(): OrganizationContext {
   return {
+    authorityCharacter: null,
+    capabilities: { reviewRegistration: true, viewRosterCoverage: true },
+    claimAvailable: false,
+    freshUntil: '2026-09-10T13:00:00.000Z',
+    graceUntil: null,
+    isBlocked: false,
+    isOrganizationOwner: true,
+    memberAccess: true,
     organization: {
-      organizationType: 'corporation',
       organizationId: 98_000_001,
       organizationName: 'Example Corporation',
       organizationTicker: 'EX',
+      organizationType: 'corporation',
       organizationVersion: 1,
     },
-    isOrganizationOwner: true,
-    isBlocked: false,
-    memberAccess: true,
-    capabilities: { reviewRegistration: true, viewRosterCoverage: true },
-    claimAvailable: false,
-    ownerStatus: 'fresh',
     ownerFailureClass: null,
-    freshUntil: '2026-09-10T13:00:00.000Z',
-    graceUntil: null,
+    ownerStatus: 'fresh',
     reviewDeadline: null,
-    authorityCharacter: null,
   }
 }
 
 function button(wrapper: VueWrapper, label: string) {
   const result = wrapper.findAll('button').find((candidate) => candidate.text().includes(label))
-  if (!result) throw new Error(`Button not found: ${label}`)
+  if (!result) {
+    throw new Error(`Button not found: ${label}`)
+  }
   return result
 }
 
@@ -609,7 +615,9 @@ function checkboxForKey(wrapper: VueWrapper, key: string) {
   const label = wrapper
     .findAll('.organization-access__permission')
     .find((candidate) => candidate.text().includes(key))
-  if (!label) throw new Error(`Permission not found: ${key}`)
+  if (!label) {
+    throw new Error(`Permission not found: ${key}`)
+  }
   return label.get('input')
 }
 
@@ -617,6 +625,8 @@ function clickDialogButton(label: string) {
   const result = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(
     (candidate) => candidate.textContent?.includes(label),
   )
-  if (!result) throw new Error(`Dialog button not found: ${label}`)
+  if (!result) {
+    throw new Error(`Dialog button not found: ${label}`)
+  }
   result.click()
 }

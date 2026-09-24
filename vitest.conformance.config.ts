@@ -17,8 +17,8 @@ export default defineConfig({
   },
   test: {
     clearMocks: true,
-    environment: 'node',
     env: { DATABASE_URL: 'postgres://localhost:5432/eve_space' },
+    environment: 'node',
     hookTimeout: 120_000,
     include: [
       'tests/platform/module-composition-side-effects.test.ts',

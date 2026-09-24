@@ -96,7 +96,7 @@ describe('transactional domain event producers', () => {
     await saveLogin({ ...authorizationInput(mainCharacterId, []), characterName }, 'marker-session')
     const userId = await findCharacterUserId(mainCharacterId)
 
-    expect(await readEvents()).toEqual([
+    expect(await readEvents()).toMatchObject([
       expect.objectContaining({
         event_type: 'character.attached',
         payload: characterLifecyclePayload(userId, mainCharacterId),
@@ -109,10 +109,10 @@ describe('transactional domain event producers', () => {
     await saveLogin(input, 'first-session')
     const userId = await findCharacterUserId(mainCharacterId)
 
-    expect(await readEvents()).toEqual([
+    expect(await readEvents()).toMatchObject([
       expect.objectContaining({
-        event_type: 'character.attached',
         aggregate_id: String(mainCharacterId),
+        event_type: 'character.attached',
         payload: characterLifecyclePayload(userId, mainCharacterId),
       }),
     ])
@@ -124,15 +124,15 @@ describe('transactional domain event producers', () => {
     await expect(sessionCount()).resolves.toBe(2)
 
     await saveLogin({ ...input, scopes: ['z.scope', 'new.scope'] }, 'third-session')
-    expect(await readEvents()).toEqual([
+    expect(await readEvents()).toMatchObject([
       expect.objectContaining({ event_type: 'character.attached' }),
       expect.objectContaining({
         event_type: 'character.scopes-changed',
         payload: {
-          userId,
-          characterId: mainCharacterId,
           addedScopes: ['new.scope'],
+          characterId: mainCharacterId,
           removedScopes: ['a.scope'],
+          userId,
         },
       }),
     ])
@@ -160,17 +160,19 @@ describe('transactional domain event producers', () => {
     await saveLogin(authorizationInput(mainCharacterId, scopes), 'main-session')
     const userId = await findCharacterUserId(mainCharacterId)
     const character = await characterLifecycle.findOwnedCharacter(userId, mainCharacterId)
-    if (!character) throw new Error('Expected owned character')
+    if (!character) {
+      throw new Error('Expected owned character')
+    }
 
     await expect(characterTokenStore.findCharacterToken(mainCharacterId)).resolves.toMatchObject({
-      userId,
       scopes,
       tokenVersion: 0,
+      userId,
     })
     await expect(characterTokenStore.findCharacterToken(otherCharacterId)).resolves.toBeNull()
     await expect(
       characterTokenStore.findCharacterCacheAuthorization(mainCharacterId),
-    ).resolves.toEqual({
+    ).resolves.toStrictEqual({
       scopes,
       tokenVersion: 0,
     })
@@ -188,7 +190,7 @@ describe('transactional domain event producers', () => {
         mainCharacterId,
         character.subjectLifecycleId,
       ),
-    ).resolves.toEqual({ scopes, tokenVersion: 0 })
+    ).resolves.toStrictEqual({ scopes, tokenVersion: 0 })
   })
 
   test('attachment emits once, compares existing scopes, and rejects cross-user conflicts', async () => {
@@ -198,25 +200,25 @@ describe('transactional domain event producers', () => {
 
     const alt = authorizationInput(altCharacterId, ['z.scope', 'a.scope'])
     await characterLifecycle.attachCharacter({ ...alt, userId })
-    expect(await readEvents()).toEqual([
+    expect(await readEvents()).toMatchObject([
       expect.objectContaining({
         event_type: 'character.attached',
         payload: characterLifecyclePayload(userId, altCharacterId),
       }),
     ])
 
-    await characterLifecycle.attachCharacter({ ...alt, userId, scopes: ['a.scope', 'z.scope'] })
+    await characterLifecycle.attachCharacter({ ...alt, scopes: ['a.scope', 'z.scope'], userId })
     expect(await readEvents()).toHaveLength(1)
-    await characterLifecycle.attachCharacter({ ...alt, userId, scopes: ['z.scope', 'new.scope'] })
-    expect(await readEvents()).toEqual([
+    await characterLifecycle.attachCharacter({ ...alt, scopes: ['z.scope', 'new.scope'], userId })
+    expect(await readEvents()).toMatchObject([
       expect.objectContaining({ event_type: 'character.attached' }),
       expect.objectContaining({
         event_type: 'character.scopes-changed',
         payload: {
-          userId,
-          characterId: altCharacterId,
           addedScopes: ['new.scope'],
+          characterId: altCharacterId,
           removedScopes: ['a.scope'],
+          userId,
         },
       }),
     ])
@@ -227,7 +229,7 @@ describe('transactional domain event producers', () => {
     await expect(
       characterLifecycle.attachCharacter({ ...alt, userId: otherUserId }),
     ).rejects.toBeInstanceOf(characterLifecycle.CharacterTransferApprovalRequiredError)
-    await expect(readEvents()).resolves.toEqual([])
+    await expect(readEvents()).resolves.toStrictEqual([])
     await expect(findCharacterUserId(altCharacterId)).resolves.toBe(userId)
   })
 
@@ -256,18 +258,18 @@ describe('transactional domain event producers', () => {
 
     const reauthorization = {
       ...authorizationInput(mainCharacterId, ['new.scope', 'z.scope', 'new.scope']),
-      userId,
       expectedCharacterId: mainCharacterId,
+      userId,
     }
     await characterLifecycle.reauthorizeCharacter(reauthorization)
-    expect(await readEvents()).toEqual([
+    expect(await readEvents()).toMatchObject([
       expect.objectContaining({
         event_type: 'character.scopes-changed',
         payload: {
-          userId,
-          characterId: mainCharacterId,
           addedScopes: ['new.scope'],
+          characterId: mainCharacterId,
           removedScopes: ['old.scope'],
+          userId,
         },
       }),
     ])
@@ -296,9 +298,9 @@ describe('transactional domain event producers', () => {
     await expect(
       characterLifecycle.reauthorizeCharacter({
         ...input,
+        expectedCharacterId: mainCharacterId,
         ownerHash: 'changed-owner',
         userId,
-        expectedCharacterId: mainCharacterId,
       }),
     ).rejects.toThrow('Character is not owned by this user')
 
@@ -317,14 +319,14 @@ describe('transactional domain event producers', () => {
       characterId: altCharacterId,
       isMain: true,
     })
-    expect(await readEvents()).toEqual([
+    expect(await readEvents()).toMatchObject([
       expect.objectContaining({
-        event_type: 'character.main-changed',
         aggregate_id: userId,
+        event_type: 'character.main-changed',
         payload: {
-          userId,
-          previousMainCharacterId: mainCharacterId,
           newMainCharacterId: altCharacterId,
+          previousMainCharacterId: mainCharacterId,
+          userId,
         },
       }),
     ])
@@ -350,8 +352,8 @@ describe('transactional domain event producers', () => {
     const mains = await dbClient.sql<{ character_id: string }[]>`
       select character_id from characters where user_id = ${userId} and is_main
     `
-    expect(mains).toEqual([{ character_id: String(altCharacterId) }])
-    await expect(readEvents()).resolves.toEqual([])
+    expect([...mains]).toStrictEqual([{ character_id: String(altCharacterId) }])
+    await expect(readEvents()).resolves.toStrictEqual([])
   })
 
   test('successful non-main deletion emits stable convergence identity', async () => {
@@ -371,19 +373,19 @@ describe('transactional domain event producers', () => {
     await expect(
       characterLifecycle.deleteCharacter(userId, mainCharacterId, main!.subjectLifecycleId),
     ).resolves.toBe('main-character')
-    await expect(readEvents()).resolves.toEqual([])
+    await expect(readEvents()).resolves.toStrictEqual([])
 
     await expect(
       characterLifecycle.deleteCharacter(userId, altCharacterId, alt!.subjectLifecycleId),
     ).resolves.toBe('deleted')
-    expect(await readEvents()).toEqual([
+    expect(await readEvents()).toMatchObject([
       expect.objectContaining({
-        event_type: 'character.detached',
         aggregate_id: String(altCharacterId),
+        event_type: 'character.detached',
         payload: characterLifecyclePayload(userId, altCharacterId),
       }),
     ])
-    await expect(characterAndTokenCounts(altCharacterId)).resolves.toEqual({
+    await expect(characterAndTokenCounts(altCharacterId)).resolves.toStrictEqual({
       characters: 0,
       tokens: 0,
     })
@@ -406,11 +408,11 @@ describe('transactional domain event producers', () => {
       ).rejects.toMatchObject({
         cause: { constraint_name: 'reject_attached_event' },
       })
-      await expect(characterAndTokenCounts(altCharacterId)).resolves.toEqual({
+      await expect(characterAndTokenCounts(altCharacterId)).resolves.toStrictEqual({
         characters: 0,
         tokens: 0,
       })
-      await expect(readEvents()).resolves.toEqual([])
+      await expect(readEvents()).resolves.toStrictEqual([])
     } finally {
       await dbClient.sql.unsafe('alter table domain_events drop constraint reject_attached_event')
     }
@@ -428,8 +430,8 @@ describe('transactional domain event producers', () => {
     await expireToken(mainCharacterId)
     ssoMocks.refreshAccessToken.mockResolvedValue({
       access_token: 'rotated-access',
-      refresh_token: 'rotated-refresh',
       expires_in: 1200,
+      refresh_token: 'rotated-refresh',
       token_type: 'Bearer',
     })
     ssoMocks.verifyAccessToken.mockResolvedValue({
@@ -442,14 +444,14 @@ describe('transactional domain event producers', () => {
     await expect(
       tokenService.getCharacterAccessToken(mainCharacterId, subjectLifecycleId, requiredScope),
     ).resolves.toBe('rotated-access')
-    expect(await readEvents()).toEqual([
+    expect(await readEvents()).toMatchObject([
       expect.objectContaining({
         event_type: 'character.scopes-changed',
         payload: {
-          userId,
-          characterId: mainCharacterId,
           addedScopes: ['a.scope', 'z.scope'],
+          characterId: mainCharacterId,
           removedScopes: ['removed.scope'],
+          userId,
         },
       }),
     ])
@@ -464,8 +466,8 @@ describe('transactional domain event producers', () => {
     await expireToken(mainCharacterId)
     ssoMocks.refreshAccessToken.mockResolvedValue({
       access_token: 'routine-access',
-      refresh_token: 'routine-refresh',
       expires_in: 1200,
+      refresh_token: 'routine-refresh',
       token_type: 'Bearer',
     })
     ssoMocks.verifyAccessToken.mockResolvedValue({
@@ -475,7 +477,7 @@ describe('transactional domain event producers', () => {
       scopes: ['z.scope', 'a.scope', requiredScope],
     })
     await tokenService.getCharacterAccessToken(mainCharacterId, subjectLifecycleId, requiredScope)
-    await expect(readEvents()).resolves.toEqual([])
+    await expect(readEvents()).resolves.toStrictEqual([])
 
     await expireToken(mainCharacterId)
     const beforeFailure = await readTokenState(mainCharacterId)
@@ -483,8 +485,8 @@ describe('transactional domain event producers', () => {
     await expect(
       tokenService.getCharacterAccessToken(mainCharacterId, subjectLifecycleId, requiredScope),
     ).rejects.toThrow('temporary ESI SSO failure')
-    await expect(readTokenState(mainCharacterId)).resolves.toEqual(beforeFailure)
-    await expect(readEvents()).resolves.toEqual([])
+    await expect(readTokenState(mainCharacterId)).resolves.toStrictEqual(beforeFailure)
+    await expect(readEvents()).resolves.toStrictEqual([])
   })
 
   test('scope-event persistence failure rolls back the winning token refresh', async () => {
@@ -496,8 +498,8 @@ describe('transactional domain event producers', () => {
     const beforeRefresh = await readTokenState(mainCharacterId)
     ssoMocks.refreshAccessToken.mockResolvedValue({
       access_token: 'rolled-back-access',
-      refresh_token: 'rolled-back-refresh',
       expires_in: 1200,
+      refresh_token: 'rolled-back-refresh',
       token_type: 'Bearer',
     })
     ssoMocks.verifyAccessToken.mockResolvedValue({
@@ -516,8 +518,8 @@ describe('transactional domain event producers', () => {
       ).rejects.toMatchObject({
         cause: { constraint_name: 'reject_scope_change_event' },
       })
-      await expect(readTokenState(mainCharacterId)).resolves.toEqual(beforeRefresh)
-      await expect(readEvents()).resolves.toEqual([])
+      await expect(readTokenState(mainCharacterId)).resolves.toStrictEqual(beforeRefresh)
+      await expect(readEvents()).resolves.toStrictEqual([])
     } finally {
       await dbClient.sql.unsafe(
         'alter table domain_events drop constraint reject_scope_change_event',
@@ -534,62 +536,62 @@ describe('transactional domain event producers', () => {
     )
     const userId = await findCharacterUserId(mainCharacterId)
 
-    await expect(resolveDisclosure()).resolves.toEqual({
-      status: 'eligible',
+    await expect(resolveDisclosure()).resolves.toStrictEqual({
       authorizationGeneration: 0,
       disclosureVersion: 1,
+      status: 'eligible',
     })
 
     await setEvidenceDisclosureVersion(2)
-    await expect(resolveDisclosure()).resolves.toEqual({
-      status: 'authorization-required',
+    await expect(resolveDisclosure()).resolves.toStrictEqual({
       authorizationGeneration: 0,
       disclosureVersion: 2,
+      status: 'authorization-required',
     })
 
     await characterLifecycle.reauthorizeCharacter({
       ...authorizationInput(mainCharacterId, []),
-      userId,
       expectedCharacterId: mainCharacterId,
       reviewerUseDisclosures: [disclosure],
+      userId,
     })
-    await expect(readDisclosureAcceptances(mainCharacterId)).resolves.toEqual([
+    await expect(readDisclosureAcceptances(mainCharacterId)).resolves.toStrictEqual([
       {
+        authorization_generation: 1,
+        disclosure_version: 1,
         module_id: 'member-audit',
         section_id: 'wallet',
-        disclosure_version: 1,
-        authorization_generation: 1,
       },
     ])
     await expect(resolveDisclosure()).resolves.toMatchObject({
-      status: 'authorization-required',
       authorizationGeneration: 1,
       disclosureVersion: 2,
+      status: 'authorization-required',
     })
 
     await characterLifecycle.reauthorizeCharacter({
       ...authorizationInput(mainCharacterId, []),
-      userId,
       expectedCharacterId: mainCharacterId,
       reviewerUseDisclosures: [reviewerUseDisclosure(2)],
+      userId,
     })
-    await expect(resolveDisclosure()).resolves.toEqual({
-      status: 'eligible',
+    await expect(resolveDisclosure()).resolves.toStrictEqual({
       authorizationGeneration: 2,
       disclosureVersion: 2,
+      status: 'eligible',
     })
 
     await characterLifecycle.reauthorizeCharacter({
       ...authorizationInput(mainCharacterId, []),
-      userId,
       expectedCharacterId: mainCharacterId,
       reviewerUseDisclosures: [],
+      userId,
     })
-    await expect(readDisclosureAcceptances(mainCharacterId)).resolves.toEqual([])
+    await expect(readDisclosureAcceptances(mainCharacterId)).resolves.toStrictEqual([])
     await expect(resolveDisclosure()).resolves.toMatchObject({
-      status: 'authorization-required',
       authorizationGeneration: 3,
       disclosureVersion: 2,
+      status: 'authorization-required',
     })
   })
 
@@ -607,8 +609,8 @@ describe('transactional domain event producers', () => {
     await expireToken(mainCharacterId)
     ssoMocks.refreshAccessToken.mockResolvedValue({
       access_token: 'refreshed-access',
-      refresh_token: 'refreshed-refresh',
       expires_in: 1200,
+      refresh_token: 'refreshed-refresh',
       token_type: 'Bearer',
     })
     ssoMocks.verifyAccessToken.mockResolvedValue({
@@ -620,35 +622,35 @@ describe('transactional domain event producers', () => {
 
     await tokenService.getCharacterAccessToken(mainCharacterId, subjectLifecycleId, requiredScope)
 
-    await expect(resolveDisclosure()).resolves.toEqual({
-      status: 'eligible',
+    await expect(resolveDisclosure()).resolves.toStrictEqual({
       authorizationGeneration: 1,
       disclosureVersion: 1,
+      status: 'eligible',
     })
     await dbClient.sql`delete from eve_tokens where character_id = ${mainCharacterId}`
-    await expect(readDisclosureAcceptances(mainCharacterId)).resolves.toEqual([])
-    await expect(resolveDisclosure()).resolves.toEqual({
-      status: 'authorization-required',
+    await expect(readDisclosureAcceptances(mainCharacterId)).resolves.toStrictEqual([])
+    await expect(resolveDisclosure()).resolves.toStrictEqual({
       authorizationGeneration: null,
       disclosureVersion: 1,
+      status: 'authorization-required',
     })
   })
 })
 
-const mainCharacterId = 1404328063
-const altCharacterId = 2112625428
-const otherCharacterId = 2112625429
+const mainCharacterId = 1_404_328_063
+const altCharacterId = 2_112_625_428
+const otherCharacterId = 2_112_625_429
 
 function authorizationInput(characterId: number, scopes: string[]) {
   return {
+    accessToken: `access-token-${characterId}`,
+    allianceId: 99_000_001,
     characterId,
     characterName: `Character ${characterId}`,
-    ownerHash: `owner-${characterId}`,
-    corporationId: 1000166,
-    allianceId: 99000001,
-    accessToken: `access-token-${characterId}`,
-    refreshToken: `refresh-token-${characterId}`,
+    corporationId: 1_000_166,
     expiresIn: 1200,
+    ownerHash: `owner-${characterId}`,
+    refreshToken: `refresh-token-${characterId}`,
     scopes,
   }
 }
@@ -661,13 +663,13 @@ function saveLogin(
 ) {
   return characterLifecycle.saveLogin({
     ...input,
-    sessionToken,
     sessionExpiresAt: new Date(Date.now() + 60_000),
+    sessionToken,
   })
 }
 
 function reviewerUseDisclosure(disclosureVersion: number): ReviewerUseDisclosure {
-  return { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion }
+  return { disclosureVersion, moduleId: 'member-audit', sectionId: 'wallet' }
 }
 
 async function installEvidenceSection(disclosureVersion: number) {
@@ -722,18 +724,20 @@ function readDisclosureAcceptances(characterId: number) {
     from character_reviewer_disclosure_acceptances
     where character_id = ${characterId}
     order by module_id, section_id
-  `
+  `.then((rows) => [...rows])
 }
 
 function characterLifecyclePayload(userId: string, characterId: number) {
-  return { userId, characterId }
+  return { characterId, userId }
 }
 
 async function findCharacterUserId(characterId: number) {
   const [record] = await dbClient.sql<{ user_id: string }[]>`
     select user_id from characters where character_id = ${characterId}
   `
-  if (!record) throw new Error('Expected character')
+  if (!record) {
+    throw new Error('Expected character')
+  }
   return record.user_id
 }
 
@@ -743,18 +747,22 @@ async function findSubjectLifecycleId(characterId: number) {
     from platform_subject_lifecycles
     where character_id = ${characterId}
   `
-  if (!lifecycle) throw new Error('Character lifecycle is missing')
+  if (!lifecycle) {
+    throw new Error('Character lifecycle is missing')
+  }
   return lifecycle.subject_lifecycle_id
 }
 
-function readEvents() {
-  return dbClient.sql<
-    { event_type: string; aggregate_id: string; payload: Record<string, unknown> }[]
-  >`
+async function readEvents() {
+  return [
+    ...(await dbClient.sql<
+      { event_type: string; aggregate_id: string; payload: Record<string, unknown> }[]
+    >`
     select event_type, aggregate_id, payload
     from domain_events
     order by event_sequence
-  `
+  `),
+  ]
 }
 
 async function sessionCount() {
@@ -773,15 +781,15 @@ async function expectOwnerMismatchInvalidation(
   characterId: number,
   removedScopes: string[],
 ) {
-  await expect(characterAndTokenCounts(characterId)).resolves.toEqual({
+  await expect(characterAndTokenCounts(characterId)).resolves.toStrictEqual({
     characters: 1,
     tokens: 0,
   })
-  await expect(readEvents()).resolves.toEqual([
+  await expect(readEvents()).resolves.toMatchObject([
     expect.objectContaining({
-      event_type: 'character.scopes-changed',
       aggregate_id: String(characterId),
-      payload: { userId, characterId, addedScopes: [], removedScopes },
+      event_type: 'character.scopes-changed',
+      payload: { addedScopes: [], characterId, removedScopes, userId },
     }),
   ])
 }
@@ -792,7 +800,9 @@ async function characterAndTokenCounts(characterId: number) {
       (select count(*)::integer from characters where character_id = ${characterId}) as characters,
       (select count(*)::integer from eve_tokens where character_id = ${characterId}) as tokens
   `
-  if (!record) throw new Error('Expected counts')
+  if (!record) {
+    throw new Error('Expected counts')
+  }
   return record
 }
 
@@ -808,7 +818,9 @@ async function readTokenState(characterId: number) {
   const [record] = await dbClient.sql<{ scopes: string[]; token_version: number }[]>`
     select scopes, token_version from eve_tokens where character_id = ${characterId}
   `
-  if (!record) throw new Error('Expected token')
+  if (!record) {
+    throw new Error('Expected token')
+  }
   return record
 }
 

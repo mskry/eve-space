@@ -66,7 +66,9 @@ export function toCharacterEsiResponse<Data extends EsiReadResultMetadata>(resul
 
 export function characterReauthorizationUrl(characterId: number, returnTo?: string) {
   const url = new URL(`/auth/eve/reauthorize/${characterId}`, env.EVE_CALLBACK_URL)
-  if (returnTo) url.searchParams.set('returnTo', returnTo)
+  if (returnTo) {
+    url.searchParams.set('returnTo', returnTo)
+  }
   return url.toString()
 }
 
@@ -78,10 +80,10 @@ function scopeRequired(
 ) {
   return context.json(
     {
+      authorizeUrl: characterReauthorizationUrl(characterId, options.returnTo),
       code: 'EVE_SCOPE_REQUIRED',
       message,
       requiredScope: options.requiredScope,
-      authorizeUrl: characterReauthorizationUrl(characterId, options.returnTo),
     },
     403,
   )
@@ -106,10 +108,10 @@ function reauthorizationRequired(
 ) {
   return context.json(
     {
+      authorizeUrl: characterReauthorizationUrl(characterId, options.returnTo),
       code: 'EVE_REAUTH_REQUIRED',
       message: 'EVE authorization is no longer valid.',
       requiredScope: options.requiredScope,
-      authorizeUrl: characterReauthorizationUrl(characterId, options.returnTo),
     },
     403,
   )

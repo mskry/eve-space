@@ -23,15 +23,17 @@ const table = await loadRootMountTable(repository)
 const sites = await collectRequestSites(repository, await changedFrontendFiles(root, base))
 const states = await Promise.all(sites.map(toSiteState))
 const review = await runJevReview({
+  classify: classifySite,
   findingName: 'SSR boundary',
+  judge: (state) => judgeSite(client, state),
   reviewedName: 'request site(s)',
   states,
-  judge: (state) => judgeSite(client, state),
-  classify: classifySite,
 })
 
 process.stdout.write(`${review.output}\n`)
-if (review.failed) process.exitCode = 1
+if (review.failed) {
+  process.exitCode = 1
+}
 
 async function toSiteState(site: RequestSite): Promise<SiteState> {
   const resolved = site.requestPath ? resolveMount(site.requestPath, table) : null
@@ -46,8 +48,8 @@ async function toSiteState(site: RequestSite): Promise<SiteState> {
       : null
 
   return {
-    site,
     rootMiddleware: applicableRouteMiddleware(resolved?.middleware ?? [], route),
     route,
+    site,
   }
 }

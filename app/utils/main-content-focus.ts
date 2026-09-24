@@ -31,6 +31,17 @@ export function createMainContentFocusManager(
 
   return {
     cancelNavigation,
+    focusFinishedPage(finishedPath: string) {
+      if (pendingPath !== finishedPath) {
+        cancelNavigation()
+        return
+      }
+      if (replacedMain) {
+        waitForReplacement(finishedPath, replacedMain)
+        return
+      }
+      scheduled = schedule(() => focusCurrentMain(finishedPath), 0)
+    },
     recordNavigation(
       toPath: string,
       fromPath: string,
@@ -43,23 +54,12 @@ export function createMainContentFocusManager(
           ? (document.getElementById(MAIN_CONTENT_ID) ?? undefined)
           : undefined
     },
-    focusFinishedPage(finishedPath: string) {
-      if (pendingPath !== finishedPath) {
-        cancelNavigation()
-        return
-      }
-      if (replacedMain) {
-        waitForReplacement(finishedPath, replacedMain)
-        return
-      }
-      scheduled = schedule(() => focusCurrentMain(finishedPath), 0)
-    },
   }
 
   function waitForReplacement(completedPath: string, previousMain: HTMLElement) {
     observer = createObserver(() => focusReplacement())
     observer.observe(document.body, { childList: true, subtree: true })
-    scheduled = schedule(cancelNavigation, 5_000)
+    scheduled = schedule(cancelNavigation, 5000)
     focusReplacement()
 
     function focusReplacement() {
@@ -68,7 +68,9 @@ export function createMainContentFocusManager(
         return
       }
       const main = document.getElementById(MAIN_CONTENT_ID)
-      if (!main || main === previousMain) return
+      if (!main || main === previousMain) {
+        return
+      }
       focusCurrentMain(completedPath)
     }
   }
@@ -93,7 +95,9 @@ export function createMainContentFocusManager(
   function stopWaiting() {
     observer?.disconnect()
     observer = undefined
-    if (scheduled !== undefined) cancelScheduled(scheduled)
+    if (scheduled !== undefined) {
+      cancelScheduled(scheduled)
+    }
     scheduled = undefined
   }
 }

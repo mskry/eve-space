@@ -206,8 +206,8 @@ export async function emitOperationRegistrySource(
 }
 
 export const operationRegistrySourceComponent: GeneratedSourceComponent = Object.freeze({
-  name: 'operation-registry',
   emit: emitOperationRegistrySource,
+  name: 'operation-registry',
 });
 
 function indexOperations(
@@ -517,6 +517,8 @@ function createManifestEntry({
     parameters: operation.parameters
       .filter((parameter) => !isTransportManagedParameter(parameter))
       .map(({ extensions: _extensions, ...parameter }) => parameter),
+    rateLimit: operation.rateLimit,
+    requestArrayLimits: operation.requestArrayLimits,
     requestBody:
       operation.requestBody === null
         ? null
@@ -527,7 +529,6 @@ function createManifestEntry({
             description: operation.requestBody.description,
             required: operation.requestBody.required,
           },
-    requestArrayLimits: operation.requestArrayLimits,
     requestSchemas: requestSchemaReferences(operation),
     requestType: generatedReference(typesModule, `${operation.operationId}Data`),
     responseType: generatedReference(typesModule, `${operation.operationId}Response`),
@@ -538,7 +539,6 @@ function createManifestEntry({
       schema: generatedReference(zodModule, `z${operation.operationId}Response`),
       status: response.status,
     })),
-    rateLimit: operation.rateLimit,
     safety: {
       generic: {
         requiresClientMutationEnablement: mutation,
@@ -580,7 +580,9 @@ function requestSchemaReferences(
     });
   }
   for (const [group, placement, suffix] of groups) {
-    if (!parameters.some((parameter) => parameter.placement === placement)) continue;
+    if (!parameters.some((parameter) => parameter.placement === placement)) {
+      continue;
+    }
     references.push({
       group,
       schema: generatedReference(zodModule, `z${operation.operationId}${suffix}`),

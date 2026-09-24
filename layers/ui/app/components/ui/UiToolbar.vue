@@ -9,8 +9,8 @@ withDefaults(
     loop?: boolean
   }>(),
   {
-    orientation: 'horizontal',
     loop: true,
+    orientation: 'horizontal',
   },
 )
 </script>

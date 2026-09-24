@@ -35,30 +35,36 @@ export async function runResourcePlanner(
   const resources = (options.resources ?? platformResources).filter(
     ({ scheduled }) => scheduled !== false,
   )
-  if (resources.length === 0) return { selected: 0, planned: 0, reason: 'idle' as const }
+  if (resources.length === 0) {
+    return { planned: 0, reason: 'idle' as const, selected: 0 }
+  }
 
   const highWaterMark = options.highWaterMark ?? env.QUEUE_HIGH_WATER_MARK
   const admission = await producer.inspectCapacity({
-    source: 'planner',
     highWaterMark,
     preservePausedState: true,
+    source: 'planner',
   })
   signal?.throwIfAborted()
-  if (admission.status === 'rejected')
-    return { selected: 0, planned: 0, reason: 'capacity' as const, admission }
+  if (admission.status === 'rejected') {
+    return { admission, planned: 0, reason: 'capacity' as const, selected: 0 }
+  }
 
   const pageSize = options.pageSize ?? env.QUEUE_RESOURCE_PLANNER_PAGE_SIZE
   const limit = Math.min(
     pageSize,
     admission.remainingCapacity * getMaximumSubjectsPerResourceJob(resources),
   )
-  if (limit === 0) return { selected: 0, planned: 0, reason: 'capacity' as const, admission }
+  if (limit === 0) {
+    return { admission, planned: 0, reason: 'capacity' as const, selected: 0 }
+  }
 
   signal?.throwIfAborted()
   const candidates = await selectDueInstalledResources({ limit, resources, signal })
   signal?.throwIfAborted()
-  if (candidates.length === 0)
-    return { selected: 0, planned: 0, reason: 'idle' as const, admission }
+  if (candidates.length === 0) {
+    return { admission, planned: 0, reason: 'idle' as const, selected: 0 }
+  }
 
   const workItems = createResourceWorkItems(candidates, resources, signal)
   const capacityPrefix = workItems.slice(0, admission.remainingCapacity)
@@ -66,8 +72,9 @@ export async function runResourcePlanner(
     capacityPrefix.map(({ operation }) => operation),
   )
   signal?.throwIfAborted()
-  if (cooldowns.length !== capacityPrefix.length)
+  if (cooldowns.length !== capacityPrefix.length) {
     throw new Error('ESI cooldown batch did not correlate every planned resource')
+  }
   const firstCooldown = cooldowns.findIndex(({ active }) => active)
   const admittedPrefix = capacityPrefix.slice(
     0,
@@ -76,40 +83,43 @@ export async function runResourcePlanner(
   signal?.throwIfAborted()
   const results = await producer.enqueueMany(
     admittedPrefix.map(({ descriptor, work }) => createResourceQueueCommand(descriptor, work)),
-    { signal, preservePausedState: true },
+    { preservePausedState: true, signal },
   )
   const planned = results.filter(({ status }) => status === 'accepted').length
   const publicationPaused = results.some(
     (result) => result.status === 'rejected' && result.reason === 'planner-paused',
   )
 
-  if (publicationPaused)
+  if (publicationPaused) {
     return {
-      selected: candidates.length,
+      admission,
       planned,
       reason: 'capacity' as const,
-      admission,
-    }
-  if (firstCooldown !== -1)
-    return {
       selected: candidates.length,
+    }
+  }
+  if (firstCooldown !== -1) {
+    return {
+      admission,
       planned,
       reason: 'cooldown' as const,
-      admission,
-    }
-  if (workItems.length > capacityPrefix.length)
-    return {
       selected: candidates.length,
+    }
+  }
+  if (workItems.length > capacityPrefix.length) {
+    return {
+      admission,
       planned,
       reason: 'capacity' as const,
-      admission,
+      selected: candidates.length,
     }
+  }
 
   return {
-    selected: candidates.length,
+    admission,
     planned,
     reason: 'scheduled' as const,
-    admission,
+    selected: candidates.length,
   }
 }
 
@@ -117,18 +127,19 @@ function createResourceQueueCommand(
   descriptor: PlatformInstalledResourceDescriptor,
   work: ReturnType<typeof createBatchWork> | ReturnType<typeof createScalarWork>,
 ): QueueCommand {
-  if (work.name === 'resource-refresh')
+  if (work.name === 'resource-refresh') {
     return {
+      materializationIntervalSeconds: descriptor.materializationIntervalSeconds,
       name: 'resource-refresh',
       payload: work.payload,
       source: 'planner',
-      materializationIntervalSeconds: descriptor.materializationIntervalSeconds,
     }
+  }
   return {
+    materializationIntervalSeconds: descriptor.materializationIntervalSeconds,
     name: 'resource-batch',
     payload: work.payload,
     source: 'planner',
-    materializationIntervalSeconds: descriptor.materializationIntervalSeconds,
   }
 }
 
@@ -146,18 +157,23 @@ function createResourceWorkItems(
   for (const candidate of candidates) {
     signal?.throwIfAborted()
     const descriptor = findInstalledResource(candidate.identity, resources)
-    if (!descriptor)
+    if (!descriptor) {
       throw new Error(
         `Due resource ${candidate.identity.moduleId}/${candidate.identity.resourceId} is not installed`,
       )
+    }
     const batchKey = installedResourceIdentityKey(descriptor)
-    if (descriptor.batch && plannedBatchResources.has(batchKey)) continue
+    if (descriptor.batch && plannedBatchResources.has(batchKey)) {
+      continue
+    }
 
     const operation = createResourcePlanningCooldownRequest(candidate, descriptor)
     const work = descriptor.batch
       ? createBatchWork(descriptor, descriptor.batch, candidates, batchKey)
       : createScalarWork(candidate)
-    if (descriptor.batch) plannedBatchResources.add(batchKey)
+    if (descriptor.batch) {
+      plannedBatchResources.add(batchKey)
+    }
     workItems.push({ descriptor, operation, work })
   }
   return workItems
@@ -181,8 +197,8 @@ function createBatchWork(
     .filter(({ identity }) => installedResourceIdentityKey(identity) === batchKey)
     .slice(0, maximumItems)
     .map(({ identity }) => ({
-      subjectLifecycleId: identity.subjectLifecycleId,
       subjectId: identity.subjectId,
+      subjectLifecycleId: identity.subjectLifecycleId,
     }))
   const payload: JobPayloadByName['resource-batch'] = {
     moduleId: resource.moduleId,

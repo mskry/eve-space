@@ -31,7 +31,9 @@ export async function readPlatformApiResponse<Response extends PlatformApiRespon
   response: Response,
   fallbackMessage: string,
 ): Promise<PlatformApiSuccessBody<Response>> {
-  if (!response.ok) throw await toApiQueryError(response, fallbackMessage)
+  if (!response.ok) {
+    throw await toApiQueryError(response, fallbackMessage)
+  }
   return response.json() as Promise<PlatformApiSuccessBody<Response>>
 }
 

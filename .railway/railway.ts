@@ -15,29 +15,29 @@ export default defineRailway(() => {
   const eveSpace = github('mskry/eve-space', { checkSuites: true })
 
   const queueRedis = database('queue-redis', 'redis', {
+    defaultMountPath: '/data',
     image: 'redis:7.4.7-alpine',
     output: 'REDIS_URL',
-    defaultMountPath: '/data',
     region: deploymentRegion,
   })
   queueRedis.deploy = {
     ...queueRedis.deploy,
+    restartPolicyType: 'ALWAYS',
     startCommand:
       'redis-server --appendonly yes --appendfsync always --maxmemory 512mb --maxmemory-policy noeviction',
-    restartPolicyType: 'ALWAYS',
   }
   const postgresDatabase = postgres('Postgres', { region: deploymentRegion })
   const cacheRedis = database('cache-redis', 'redis', {
+    defaultMountPath: '/data',
     image: 'redis:7.4.7-alpine',
     output: 'REDIS_URL',
-    defaultMountPath: '/data',
     region: deploymentRegion,
   })
   cacheRedis.deploy = {
     ...cacheRedis.deploy,
+    restartPolicyType: 'ALWAYS',
     startCommand:
       'redis-server --appendonly no --save "" --maxmemory 256mb --maxmemory-policy allkeys-lfu',
-    restartPolicyType: 'ALWAYS',
   }
   const postgresVolume = volume('postgres-volume', {
     alerts: { usage: { '100': {}, '80': {}, '95': {} } },
@@ -52,7 +52,6 @@ export default defineRailway(() => {
     sizeMB: 5000,
   })
   const api = service('api', {
-    source: eveSpace,
     build: {
       buildEnvironment: 'V3',
       builder: 'DOCKERFILE',
@@ -84,9 +83,6 @@ export default defineRailway(() => {
         '!/**/*.spec.*',
       ],
     },
-    healthcheck: '/health',
-    healthcheckTimeout: 300,
-    replicas: { [deploymentRegion]: 1 },
     deploy: { restartPolicyType: 'ALWAYS' },
     domains: ['api.eve-space.com'],
     env: {
@@ -105,13 +101,16 @@ export default defineRailway(() => {
       TOKEN_ENCRYPTION_KEY: preserve(),
       WEB_ORIGIN: preserve(),
     },
+    healthcheck: '/health',
+    healthcheckTimeout: 300,
+    replicas: { [deploymentRegion]: 1 },
+    source: eveSpace,
   })
   const sdeIngest = service('sde-ingest', {
-    replicas: { [deploymentRegion]: 1 },
     env: { DATABASE_URL: preserve(), RAILWAY_DOCKERFILE_PATH: preserve() },
+    replicas: { [deploymentRegion]: 1 },
   })
   const web = service('web', {
-    source: eveSpace,
     build: {
       buildEnvironment: 'V3',
       builder: 'DOCKERFILE',
@@ -154,9 +153,6 @@ export default defineRailway(() => {
         '!/**/*.spec.*',
       ],
     },
-    healthcheck: '/health',
-    healthcheckTimeout: 300,
-    replicas: { [deploymentRegion]: 1 },
     deploy: { restartPolicyType: 'ALWAYS' },
     domains: ['eve-space.com'],
     env: {
@@ -164,9 +160,12 @@ export default defineRailway(() => {
       NUXT_PUBLIC_API_BASE: preserve(),
       NUXT_PUBLIC_EVE_IMAGE_BASE: preserve(),
     },
+    healthcheck: '/health',
+    healthcheckTimeout: 300,
+    replicas: { [deploymentRegion]: 1 },
+    source: eveSpace,
   })
   const worker = service('worker', {
-    source: eveSpace,
     build: {
       buildEnvironment: 'V3',
       builder: 'DOCKERFILE',
@@ -198,8 +197,6 @@ export default defineRailway(() => {
         '!/**/*.spec.*',
       ],
     },
-    start: 'node dist/worker.js',
-    replicas: { [deploymentRegion]: 1 },
     deploy: { drainingSeconds: 40, restartPolicyType: 'ALWAYS' },
     env: {
       CACHE_REDIS_URL: preserve(),
@@ -214,6 +211,9 @@ export default defineRailway(() => {
       RAILWAY_DEPLOYMENT_DRAINING_SECONDS: preserve(),
       TOKEN_ENCRYPTION_KEY: preserve(),
     },
+    replicas: { [deploymentRegion]: 1 },
+    source: eveSpace,
+    start: 'node dist/worker.js',
   })
 
   return project('eve-space', {

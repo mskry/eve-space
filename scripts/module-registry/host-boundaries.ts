@@ -40,7 +40,9 @@ export function platformFeatureImportViolations(sources: readonly PlatformHostSo
 }
 
 function hostModuleSpecifiers(source: PlatformHostSource) {
-  if (!source.path.endsWith('.vue')) return typescriptModuleSpecifiers(source.path, source.source)
+  if (!source.path.endsWith('.vue')) {
+    return typescriptModuleSpecifiers(source.path, source.source)
+  }
   const { descriptor } = parseVue(source.source, { filename: source.path })
   return [descriptor.script, descriptor.scriptSetup].flatMap((script, index) =>
     script
@@ -73,9 +75,15 @@ function featureImportViolation(path: string, specifier: string) {
   const featurePackage = featurePackageEnvironment(normalized)
   const featurePath = featurePathEnvironment(normalized)
   const environment = featurePackage ?? featurePath
-  if (!environment) return []
-  if (environment === 'server' && isGeneratedServerRegistry(path)) return []
-  if (environment === 'nuxt' && isGeneratedNuxtRegistry(path)) return []
+  if (!environment) {
+    return []
+  }
+  if (environment === 'server' && isGeneratedServerRegistry(path)) {
+    return []
+  }
+  if (environment === 'nuxt' && isGeneratedNuxtRegistry(path)) {
+    return []
+  }
   return [
     `${path}: feature ${environment} packages may only enter the host through generated registries: ${specifier}`,
   ]
@@ -88,11 +96,15 @@ function featurePackageEnvironment(specifier: string) {
     specifier.startsWith(`${platformServerPackage}/`) ||
     specifier === platformNuxtPackage ||
     specifier.startsWith(`${platformNuxtPackage}/`)
-  )
-    return undefined
-  if (/^@eve-space\/[a-z0-9]+(?:-[a-z0-9]+)*-server(?:\/|$)/.test(specifier)) return 'server'
-  if (/^@eve-space\/[a-z0-9]+(?:-[a-z0-9]+)*-nuxt(?:\/|$)/.test(specifier)) return 'nuxt'
-  return undefined
+  ) {
+    return
+  }
+  if (/^@eve-space\/[a-z0-9]+(?:-[a-z0-9]+)*-server(?:\/|$)/.test(specifier)) {
+    return 'server'
+  }
+  if (/^@eve-space\/[a-z0-9]+(?:-[a-z0-9]+)*-nuxt(?:\/|$)/.test(specifier)) {
+    return 'nuxt'
+  }
 }
 
 function featurePathEnvironment(specifier: string) {
@@ -109,7 +121,9 @@ function isGeneratedNuxtRegistry(path: string) {
 }
 
 async function loadSources(root: string, directory: string): Promise<PlatformHostSource[]> {
-  if (!(await directoryExists(directory))) return []
+  if (!(await directoryExists(directory))) {
+    return []
+  }
   const entries = await readdir(directory, { withFileTypes: true })
   const sources = await Promise.all(
     entries.map(async (entry): Promise<PlatformHostSource[]> => {
@@ -119,11 +133,14 @@ async function loadSources(root: string, directory: string): Promise<PlatformHos
           ['.nuxt', 'build', 'coverage', 'dist', 'node_modules', 'test', 'tests'].includes(
             entry.name,
           )
-        )
+        ) {
           return []
+        }
         return loadSources(root, path)
       }
-      if (!entry.isFile() || !sourceExtensions.has(extname(entry.name))) return []
+      if (!entry.isFile() || !sourceExtensions.has(extname(entry.name))) {
+        return []
+      }
       return [{ path: relative(root, path), source: await readFile(path, 'utf8') }]
     }),
   )

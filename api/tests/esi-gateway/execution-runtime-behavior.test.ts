@@ -27,55 +27,53 @@ vi.mock('../../src/esi-gateway/internal/production-runtime.js', () => ({
 const characterId = 7
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const ownerLease: EsiRequestLease = {
+  fence: 4,
   key: 'owner-lease',
   ownerToken: 'owner',
-  fence: 4,
   ttlMs: 30_000,
 }
 
 const statusRead = createPublicEsiRead({
-  operation: 'status',
-  name: 'runtime-behavior-status',
-  descriptor: operationRegistry.GetStatus.transport,
   cacheSchema: z.number(),
+  descriptor: operationRegistry.GetStatus.transport,
   encodeRequest: (_input: Record<string, never>) => ({}),
   map: ({ data }) => data.players,
+  name: 'runtime-behavior-status',
+  operation: 'status',
 })
 
 const walletRead = createCharacterEsiRead({
-  operation: 'wallet-balance',
-  name: 'runtime-behavior-wallet',
-  descriptor: operationRegistry.GetCharactersCharacterIdWallet.transport,
   cacheSchema: operationRegistry.GetCharactersCharacterIdWallet.responseSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdWallet.transport,
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },
   }),
   map: ({ data }) => data,
+  name: 'runtime-behavior-wallet',
+  operation: 'wallet-balance',
 })
 
 const mailLabelsRead = createCharacterEsiRead({
-  operation: 'mail-labels',
-  name: 'runtime-behavior-mail-labels',
-  descriptor: operationRegistry.GetCharactersCharacterIdMailLabels.transport,
   cacheSchema: z.number(),
+  descriptor: operationRegistry.GetCharactersCharacterIdMailLabels.transport,
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },
   }),
   map: ({ data }) => data.total_unread_count ?? 0,
+  name: 'runtime-behavior-mail-labels',
+  operation: 'mail-labels',
 })
 
 const mutableStatusRead = createPublicEsiRead({
-  operation: 'status',
-  name: 'runtime-behavior-mutable-status',
-  descriptor: operationRegistry.GetStatus.transport,
   cacheSchema: z.object({ players: z.number() }),
+  descriptor: operationRegistry.GetStatus.transport,
   encodeRequest: (_input: Record<string, never>) => ({}),
   map: ({ data }) => ({ players: data.players }),
+  name: 'runtime-behavior-mutable-status',
+  operation: 'status',
 })
 
 const deleteMail = createCharacterEsiMutation({
-  operation: 'mail-delete',
-  name: 'runtime-behavior-delete-mail',
   descriptor: operationRegistry.DeleteCharactersCharacterIdMailMailId.transport,
   encodeRequest: (input: {
     characterId: number
@@ -86,6 +84,8 @@ const deleteMail = createCharacterEsiMutation({
     path: { character_id: input.characterId, mail_id: input.mailId },
   }),
   map: (_response, input) => input.mailId,
+  name: 'runtime-behavior-delete-mail',
+  operation: 'mail-delete',
 })
 
 describe('ESI execution runtime behavior', () => {
@@ -97,10 +97,10 @@ describe('ESI execution runtime behavior', () => {
       throw new EsiQuotaError(30)
     })
     const ports = createRuntimeTestPorts({
-      response: statusResponse(10),
       fetch: vi.fn(),
       overrides: {
         coordination: {
+          acquireRequestPermit,
           getRequestCooldowns: vi.fn(async ({ requests, localState }) => {
             cooldownState = localState
             return requests.map(() => ({
@@ -109,14 +109,14 @@ describe('ESI execution runtime behavior', () => {
               coordinationAvailable: false,
             }))
           }),
-          acquireRequestPermit,
         },
       },
+      response: statusResponse(10),
     })
     const runtime = createRuntimeTestExecution(ports, { operationConcurrency: 2 })
 
-    await expect(runtime.getQuotaStatuses([{ operation: 'status' }])).resolves.toEqual([
-      { active: true, retryAfterSeconds: 30, coordinationAvailable: false },
+    await expect(runtime.getQuotaStatuses([{ operation: 'status' }])).resolves.toStrictEqual([
+      { active: true, coordinationAvailable: false, retryAfterSeconds: 30 },
     ])
     await expect(runtime.isOperationQuotaLimited('status')).resolves.toBe(true)
     expect(cooldownState).toBeDefined()
@@ -140,7 +140,6 @@ describe('ESI execution runtime behavior', () => {
       getCommittedFence: vi.fn(async () => committedFence),
     })
     const ports = createRuntimeTestPorts({
-      response: statusResponse(10),
       fetch,
       overrides: {
         cache: {
@@ -149,6 +148,7 @@ describe('ESI execution runtime behavior', () => {
         },
         coordination,
       },
+      response: statusResponse(10),
     })
     const runtime = createRuntimeTestExecution(ports)
     runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
@@ -177,9 +177,9 @@ describe('ESI execution runtime behavior', () => {
     const fetch = vi.fn()
     const runtime = createRuntimeTestExecution(
       createRuntimeTestPorts({
-        response: statusResponse(10),
         fetch,
         overrides: { coordination: { acquireRequestPermit } },
+        response: statusResponse(10),
       }),
     )
     runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
@@ -194,7 +194,7 @@ describe('ESI execution runtime behavior', () => {
   test('rejects a malformed L1 payload before it becomes a cache hit', async () => {
     const fetch = vi.fn()
     const runtime = createRuntimeTestExecution(
-      createRuntimeTestPorts({ response: statusResponse(10), fetch }),
+      createRuntimeTestPorts({ fetch, response: statusResponse(10) }),
     )
     runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
     const first = await mutableStatusRead.execute({})
@@ -216,7 +216,6 @@ describe('ESI execution runtime behavior', () => {
     })
     const fetch = vi.fn()
     const ports = createRuntimeTestPorts({
-      response: statusResponse(20),
       fetch,
       overrides: {
         cache: {
@@ -231,6 +230,7 @@ describe('ESI execution runtime behavior', () => {
           getCommittedFence: vi.fn(async () => ownerLease.fence),
         }),
       },
+      response: statusResponse(20),
     })
     const runtime = createRuntimeTestExecution(ports)
     runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
@@ -244,18 +244,17 @@ describe('ESI execution runtime behavior', () => {
 
   test('rejects a malformed private canonical L2 payload with current authorization state', async () => {
     let serialized = serializedEnvelope({
-      data: 'private-cache-value',
-      representationVersion: 'runtime-behavior-mail-labels@v1',
       authorization: {
+        generation: 1,
         kind: 'character',
         principal: `character-${characterId}-lifecycle-${subjectLifecycleId}`,
-        generation: 1,
       },
+      data: 'private-cache-value',
+      representationVersion: 'runtime-behavior-mail-labels@v1',
       resourceRevision: { namespace: 'mailbox', value: 0 },
     })
     const fetch = vi.fn()
     const ports = createRuntimeTestPorts({
-      response: { labels: [], total_unread_count: 6 },
       fetch,
       overrides: {
         cache: {
@@ -271,6 +270,7 @@ describe('ESI execution runtime behavior', () => {
           getResourceRevision: vi.fn(async () => 0),
         }),
       },
+      response: { labels: [], total_unread_count: 6 },
     })
     const runtime = createRuntimeTestExecution(ports)
     runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
@@ -293,7 +293,6 @@ describe('ESI execution runtime behavior', () => {
     })
     const fetch = vi.fn()
     const ports = createRuntimeTestPorts({
-      response: { campaigns: [] },
       fetch,
       overrides: {
         cache: {
@@ -308,12 +307,13 @@ describe('ESI execution runtime behavior', () => {
           getCommittedFence: vi.fn(async () => ownerLease.fence),
         }),
       },
+      response: { campaigns: [] },
     })
     const runtime = createRuntimeTestExecution(ports)
 
     await expect(
       runtime.executePlatformOperation(
-        { operation, authorization: { kind: 'public' } },
+        { authorization: { kind: 'public' }, operation },
         installedModuleEsiOperationDefinitions[operation],
         {},
       ),
@@ -336,9 +336,9 @@ describe('ESI execution runtime behavior', () => {
       .mockReturnValueOnce(jsonResponse(statusResponse(20)))
     const runtime = createRuntimeTestExecution(
       createRuntimeTestPorts({
-        response: statusResponse(0),
         fetch,
         overrides: { coordination: { acquireRequestPermit } },
+        response: statusResponse(0),
       }),
     )
     runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
@@ -347,7 +347,9 @@ describe('ESI execution runtime behavior', () => {
 
     expect(fetch).toHaveBeenCalledTimes(3)
     expect(acquireRequestPermit).toHaveBeenCalledTimes(3)
-    for (const release of releases) expect(release).toHaveBeenCalledOnce()
+    for (const release of releases) {
+      expect(release).toHaveBeenCalledOnce()
+    }
   })
 
   test('runs platform dispatch through one request permit per upstream attempt', async () => {
@@ -357,19 +359,19 @@ describe('ESI execution runtime behavior', () => {
     const fetch = vi.fn()
     const runtime = createRuntimeTestExecution(
       createRuntimeTestPorts({
-        response: { campaigns: [] },
         fetch,
         overrides: { coordination: { acquireRequestPermit } },
+        response: { campaigns: [] },
       }),
     )
 
     await expect(
       runtime.executePlatformOperation(
-        { operation, authorization: { kind: 'public' } },
+        { authorization: { kind: 'public' }, operation },
         installedModuleEsiOperationDefinitions[operation],
         {},
       ),
-    ).resolves.toMatchObject({ result: { source: 'esi' }, authorizationGeneration: 0 })
+    ).resolves.toMatchObject({ authorizationGeneration: 0, result: { source: 'esi' } })
 
     expect(fetch).toHaveBeenCalledOnce()
     expect(acquireRequestPermit).toHaveBeenCalledOnce()
@@ -397,34 +399,35 @@ describe('ESI execution runtime behavior', () => {
       },
       coordination: coordinatedOverrides({
         acquireRequestLease: vi.fn(async () => {
-          if (held) return undefined
+          if (held) {
+            return undefined
+          }
           held = true
           return ownerLease
-        }),
-        getRequestLeaseTtl: vi.fn(async () => (held ? ownerLease.ttlMs : 0)),
-        releaseRequestLease: vi.fn(async () => {
-          held = false
-          return true
         }),
         commitFence: vi.fn(async (_identity, lease) => {
           committedFence = lease.fence
           return true
         }),
         getCommittedFence: vi.fn(async () => committedFence),
+        getRequestLeaseTtl: vi.fn(async () => (held ? ownerLease.ttlMs : 0)),
+        releaseRequestLease: vi.fn(async () => {
+          held = false
+          return true
+        }),
       }),
     } satisfies NonNullable<Parameters<typeof createRuntimeTestPorts>[0]['overrides']>
     const owner = createRuntimeTestExecution(
       createRuntimeTestPorts({
-        response: statusResponse(20),
         fetch: ownerFetch,
         overrides: sharedOverrides,
+        response: statusResponse(20),
       }),
     )
     runtimeMocks.getProductionRuntime.mockResolvedValue(owner)
     const ownerExecution = statusRead.execute({})
     await vi.waitFor(() => expect(ownerFetch).toHaveBeenCalledOnce())
     const followerPorts = createRuntimeTestPorts({
-      response: statusResponse(30),
       fetch: followerFetch,
       overrides: {
         ...sharedOverrides,
@@ -435,6 +438,7 @@ describe('ESI execution runtime behavior', () => {
           },
         },
       },
+      response: statusResponse(30),
     })
     const follower = createRuntimeTestExecution(followerPorts)
     runtimeMocks.getProductionRuntime.mockResolvedValue(follower)
@@ -456,21 +460,21 @@ describe('ESI execution runtime behavior', () => {
     const fetch = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const request = new Request(input, init)
       requests.push(request)
-      if (requests.length === 1)
+      if (requests.length === 1) {
         return jsonResponse(statusResponse(40), {
           ETag: '"status-v1"',
-          Expires: new Date(now + 1_000).toUTCString(),
+          Expires: new Date(now + 1000).toUTCString(),
         })
+      }
       return new Response(null, {
-        status: 304,
         headers: {
           ETag: '"status-v2"',
-          Expires: new Date(now + 5_000).toUTCString(),
+          Expires: new Date(now + 5000).toUTCString(),
         },
+        status: 304,
       })
     })
     const ports = createRuntimeTestPorts({
-      response: statusResponse(0),
       fetch,
       overrides: {
         coordination: coordinatedOverrides({
@@ -479,11 +483,12 @@ describe('ESI execution runtime behavior', () => {
         }),
         timing: { now: () => now },
       },
+      response: statusResponse(0),
     })
     const runtime = createRuntimeTestExecution(ports)
     runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
     await statusRead.execute({})
-    now += 2_000
+    now += 2000
 
     await expect(statusRead.execute({})).resolves.toMatchObject({
       data: 40,
@@ -509,9 +514,9 @@ describe('ESI execution runtime behavior', () => {
     const fetch = vi.fn(() => jsonResponse(response++))
     const runtime = createRuntimeTestExecution(
       createRuntimeTestPorts({
-        response: 0,
         fetch,
         overrides: { authorization: { getAuthorization, getCacheAuthorization } },
+        response: 0,
       }),
     )
     runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
@@ -536,7 +541,9 @@ describe('ESI execution runtime behavior', () => {
     })
     let repairRevision = false
     const incrementResourceRevision = vi.fn(async () => {
-      if (!repairRevision) throw new Error('coordination unavailable')
+      if (!repairRevision) {
+        throw new Error('coordination unavailable')
+      }
       return 9
     })
     const fetch = vi
@@ -546,13 +553,12 @@ describe('ESI execution runtime behavior', () => {
     const mutationRelease = vi.fn()
     const acquireRequestPermit = vi.fn(async () => requestPermit(mutationRelease))
     const ports = createRuntimeTestPorts({
-      response: undefined,
       fetch,
       overrides: {
         cache: {
+          delete: cacheDelete,
           get: async (key) => cache.get(key) ?? null,
           set: cacheSet,
-          delete: cacheDelete,
         },
         coordination: coordinatedOverrides({
           acquireRequestLease: vi.fn(async () => ownerLease),
@@ -561,6 +567,7 @@ describe('ESI execution runtime behavior', () => {
           acquireRequestPermit,
         }),
       },
+      response: undefined,
     })
     const runtime = createRuntimeTestExecution(ports)
     runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
@@ -594,18 +601,18 @@ describe('ESI execution runtime behavior', () => {
     const incrementResourceRevision = vi.fn(async () => 2)
     const runtime = createRuntimeTestExecution(
       createRuntimeTestPorts({
-        response: undefined,
         fetch,
         overrides: {
           coordination: { acquireRequestPermit, incrementResourceRevision },
         },
+        response: undefined,
       }),
     )
     runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
 
     await expect(
       deleteMail.execute({ characterId, mailId: 50, subjectLifecycleId }),
-    ).rejects.toMatchObject({ code: 'ESI_TRANSPORT_ERROR', cause: failure })
+    ).rejects.toMatchObject({ cause: failure, code: 'ESI_TRANSPORT_ERROR' })
 
     expect(fetch).toHaveBeenCalledTimes(3)
     expect(acquireRequestPermit).toHaveBeenCalledTimes(3)
@@ -630,16 +637,16 @@ describe('ESI execution runtime behavior', () => {
     const incrementResourceRevision = vi.fn(async () => 2)
     const runtime = createRuntimeTestExecution(
       createRuntimeTestPorts({
-        response: undefined,
         fetch,
         overrides: {
           coordination: { acquireRequestPermit, incrementResourceRevision },
         },
+        response: undefined,
       }),
     )
     runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
     const caught = deleteMail
-      .execute({ characterId, mailId: 50, subjectLifecycleId, signal: controller.signal })
+      .execute({ characterId, mailId: 50, signal: controller.signal, subjectLifecycleId })
       .catch((error: unknown) => error)
     await vi.waitFor(() => expect(transportSignal).toBeDefined())
 
@@ -666,17 +673,17 @@ function coordinatedOverrides(
 
 function jsonResponse(data: unknown, headers: HeadersInit = {}, status = 200) {
   return new Response(JSON.stringify(data), {
-    status,
     headers: { 'Content-Type': 'application/json', ...headers },
+    status,
   })
 }
 
 function requestPermit(release = vi.fn()) {
   return {
     coordinationAvailable: false,
-    ttlMs: 30_000,
-    renew: vi.fn(async () => true),
     release,
+    renew: vi.fn(async () => true),
+    ttlMs: 30_000,
   }
 }
 
@@ -701,15 +708,15 @@ function serializedEnvelope(options: {
 }) {
   const freshUntil = Date.now() + 60_000
   return JSON.stringify({
-    version: 3,
-    representationVersion: options.representationVersion,
-    data: options.data,
-    freshUntil,
-    staleUntil: freshUntil,
-    retainUntil: freshUntil,
-    validatedAt: new Date().toISOString(),
-    fence: ownerLease.fence,
     authorization: options.authorization,
+    data: options.data,
+    fence: ownerLease.fence,
+    freshUntil,
+    representationVersion: options.representationVersion,
     resourceRevision: options.resourceRevision,
+    retainUntil: freshUntil,
+    staleUntil: freshUntil,
+    validatedAt: new Date().toISOString(),
+    version: 3,
   })
 }

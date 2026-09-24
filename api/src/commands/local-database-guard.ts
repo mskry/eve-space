@@ -13,11 +13,14 @@ export function parseLocalDatabaseGuard(
   args: readonly string[],
   environment: NodeJS.ProcessEnv,
 ): LocalDatabaseGuardResult {
-  if (environment.NODE_ENV !== 'development')
+  if (environment.NODE_ENV !== 'development') {
     throw new Error('Local organization fixtures require NODE_ENV=development')
+  }
 
   const databaseUrl = environment.DATABASE_URL
-  if (!databaseUrl) throw new Error('Local organization fixtures require DATABASE_URL')
+  if (!databaseUrl) {
+    throw new Error('Local organization fixtures require DATABASE_URL')
+  }
 
   let parsed: URL
   try {
@@ -25,14 +28,17 @@ export function parseLocalDatabaseGuard(
   } catch {
     throw new Error('Local organization fixtures require a valid PostgreSQL URL')
   }
-  if (!['postgres:', 'postgresql:'].includes(parsed.protocol))
+  if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) {
     throw new Error('Local organization fixtures require a PostgreSQL URL')
-  if (!localDatabaseHosts.has(parsed.hostname))
+  }
+  if (!localDatabaseHosts.has(parsed.hostname)) {
     throw new Error('Local organization fixtures require a loopback database host')
+  }
 
   const databaseName = decodeURIComponent(parsed.pathname.slice(1))
-  if (!fixtureDatabasePattern.test(databaseName))
+  if (!fixtureDatabasePattern.test(databaseName)) {
     throw new Error('Local organization fixtures require an eve_space_fixture database')
+  }
 
   const argumentsWithoutSeparator = args.filter((argument) => argument !== '--')
   const confirmationArguments = argumentsWithoutSeparator.filter((argument) =>
@@ -46,14 +52,16 @@ export function parseLocalDatabaseGuard(
     sessionHandoffArguments.length !== 1 ||
     argumentsWithoutSeparator.length !== 2 ||
     confirmationArguments[0] !== `--confirm-database=${databaseName}`
-  )
+  ) {
     throw new Error(
       'Local organization fixtures require exact database and session handoff arguments',
     )
+  }
 
   const sessionHandoffPath = sessionHandoffArguments[0]!.slice('--session-handoff='.length)
-  if (!isAbsolute(sessionHandoffPath))
+  if (!isAbsolute(sessionHandoffPath)) {
     throw new Error('Local organization fixture session handoff path must be absolute')
+  }
 
   return { databaseName, databaseUrl, sessionHandoffPath }
 }
@@ -62,6 +70,7 @@ export function assertConnectedFixtureDatabase(
   expectedDatabaseName: string,
   actualDatabaseName: string | undefined,
 ) {
-  if (actualDatabaseName !== expectedDatabaseName)
+  if (actualDatabaseName !== expectedDatabaseName) {
     throw new Error('Connected database does not match the confirmed fixture database')
+  }
 }

@@ -49,11 +49,11 @@ export function createEsiRepresentationIdentity(options: {
   const contract = getEsiOperationContract(options.operation)
   const normalizedInputs = normalizeInputs(options.operation, contract.identity, options.inputs)
   const canonicalBase = {
-    operation: options.operation,
-    inputs: normalizedInputs,
     compatibilityDate: options.compatibilityDate,
-    representationVersion: options.representationVersion,
+    inputs: normalizedInputs,
+    operation: options.operation,
     representationName: options.representationName,
+    representationVersion: options.representationVersion,
   }
   const canonical = JSON.stringify({
     ...canonicalBase,
@@ -64,13 +64,13 @@ export function createEsiRepresentationIdentity(options: {
     .update(JSON.stringify(canonicalBase))
     .digest('hex')
   return {
-    operation: options.operation,
-    digest,
-    value: `${options.operation}:${digest}`,
     coordinationDigest,
-    representationVersion: options.representationVersion,
+    digest,
+    operation: options.operation,
     representationName: options.representationName,
+    representationVersion: options.representationVersion,
     resourceRevision: options.resourceRevision,
+    value: `${options.operation}:${digest}`,
   }
 }
 
@@ -80,9 +80,13 @@ function normalizeInputs(
   inputs: Readonly<Record<string, unknown>>,
 ) {
   let allowedFields: readonly string[]
-  if (identity.kind === 'ordered') allowedFields = identity.fields
-  else if (identity.kind === 'set') allowedFields = [identity.field]
-  else allowedFields = identity.fields.map(({ field }) => field)
+  if (identity.kind === 'ordered') {
+    allowedFields = identity.fields
+  } else if (identity.kind === 'set') {
+    allowedFields = [identity.field]
+  } else {
+    allowedFields = identity.fields.map(({ field }) => field)
+  }
   const identityInputs = isSdkRequestEnvelope(inputs)
     ? projectSdkRequestIdentity(operation, inputs, allowedFields)
     : inputs
@@ -94,12 +98,13 @@ function normalizeInputs(
       : []
   assertIdentityInputFields(identityInputs, allowedFields, nullableFields)
 
-  if (identity.kind === 'ordered')
+  if (identity.kind === 'ordered') {
     return Object.fromEntries(
       identity.fields.map((field) => [field, normalizeScalar(identityInputs[field], field)]),
     )
+  }
 
-  if (identity.kind === 'mixed')
+  if (identity.kind === 'mixed') {
     return Object.fromEntries(
       identity.fields.map((definition) => {
         const value = identityInputs[definition.field]
@@ -121,6 +126,7 @@ function normalizeInputs(
         return [definition.field, normalizeSet(value, definition.field, definition.maximumItems)]
       }),
     )
+  }
 
   return {
     [identity.field]: normalizeSet(
@@ -133,17 +139,24 @@ function normalizeInputs(
 
 function normalizeSet(value: unknown, field: string, maximumItems: number) {
   const values = value
-  if (!Array.isArray(values)) throw new Error(`ESI identity input ${field} must be an array`)
-  if (values.length === 0 || values.length > maximumItems)
+  if (!Array.isArray(values)) {
+    throw new TypeError(`ESI identity input ${field} must be an array`)
+  }
+  if (values.length === 0 || values.length > maximumItems) {
     throw new Error(`ESI identity input ${field} must contain between 1 and ${maximumItems} items`)
+  }
   const normalized = values.map((item) => normalizeScalar(item, field))
   const unique = new Map(
     normalized.map((normalizedValue) => [JSON.stringify(normalizedValue), normalizedValue]),
   )
   return Array.from(unique.entries())
     .toSorted(([left], [right]) => {
-      if (left < right) return -1
-      if (left > right) return 1
+      if (left < right) {
+        return -1
+      }
+      if (left > right) {
+        return 1
+      }
       return 0
     })
     .map(([, item]) => item)
@@ -161,19 +174,26 @@ function projectSdkRequestIdentity(
   const unexpected = Object.keys(inputs).filter(
     (field) => !['path', 'query', 'header', 'headers', 'body'].includes(field),
   )
-  if (unexpected.length > 0)
+  if (unexpected.length > 0) {
     throw new Error(
       `Unexpected ESI request inputs: ${unexpected.toSorted((left, right) => left.localeCompare(right)).join(', ')}`,
     )
+  }
 
   const registeredProjection = projectRegisteredEsiRequestIdentity(operation, inputs)
-  if (registeredProjection) return registeredProjection
+  if (registeredProjection) {
+    return registeredProjection
+  }
 
   return Object.fromEntries(
     fields.flatMap((field) => {
       const values = findSdkRequestValues(inputs, field)
-      if (values.length === 0) return []
-      if (values.length > 1) throw new Error(`Ambiguous ESI identity input ${field}`)
+      if (values.length === 0) {
+        return []
+      }
+      if (values.length > 1) {
+        throw new Error(`Ambiguous ESI identity input ${field}`)
+      }
       return [[field, values[0]]]
     }),
   )
@@ -184,7 +204,9 @@ function findSdkRequestValues(inputs: Readonly<Record<string, unknown>>, field: 
   const values: unknown[] = []
   for (const section of ['path', 'query', 'header', 'headers', 'body'] as const) {
     const value = inputs[section]
-    if (!isRecord(value)) continue
+    if (!isRecord(value)) {
+      continue
+    }
     findValues(value, expectedFields, values)
   }
   return values
@@ -196,8 +218,11 @@ function findValues(
   values: unknown[],
 ) {
   for (const [key, nested] of Object.entries(value)) {
-    if (fields.has(key)) values.push(nested)
-    else if (isRecord(nested)) findValues(nested, fields, values)
+    if (fields.has(key)) {
+      values.push(nested)
+    } else if (isRecord(nested)) {
+      findValues(nested, fields, values)
+    }
   }
 }
 
@@ -208,17 +233,19 @@ function assertIdentityInputFields(
 ) {
   const suppliedFields = Object.keys(inputs)
   const unexpected = suppliedFields.filter((field) => !allowedFields.includes(field))
-  if (unexpected.length > 0)
+  if (unexpected.length > 0) {
     throw new Error(
       `Unexpected ESI identity inputs: ${unexpected.toSorted((left, right) => left.localeCompare(right)).join(', ')}`,
     )
+  }
   const missing = allowedFields.filter(
     (field) => !(field in inputs) && !optionalFields.includes(field),
   )
-  if (missing.length > 0)
+  if (missing.length > 0) {
     throw new Error(
       `Missing ESI identity inputs: ${missing.toSorted((left, right) => left.localeCompare(right)).join(', ')}`,
     )
+  }
 }
 
 function toSnakeCase(value: string) {
@@ -226,12 +253,17 @@ function toSnakeCase(value: string) {
 }
 
 function normalizeScalar(value: unknown, field: string): IdentityScalar {
-  if (value === null || typeof value === 'boolean') return value
-  if (typeof value === 'string') {
-    if (value.length > maximumStringLength)
-      throw new Error(`ESI identity input ${field} exceeds ${maximumStringLength} characters`)
+  if (value === null || typeof value === 'boolean') {
     return value
   }
-  if (typeof value === 'number' && Number.isSafeInteger(value)) return value
+  if (typeof value === 'string') {
+    if (value.length > maximumStringLength) {
+      throw new Error(`ESI identity input ${field} exceeds ${maximumStringLength} characters`)
+    }
+    return value
+  }
+  if (typeof value === 'number' && Number.isSafeInteger(value)) {
+    return value
+  }
   throw new Error(`ESI identity input ${field} must contain only bounded scalar values`)
 }

@@ -53,7 +53,9 @@ function preserveInput(schema: z.ZodType): z.ZodType {
   return z.unknown().superRefine((value, context) => {
     const result = schema.safeParse(value);
     if (!result.success) {
-      for (const issue of result.error.issues) context.addIssue({ ...issue });
+      for (const issue of result.error.issues) {
+        context.addIssue({ ...issue });
+      }
     }
   });
 }

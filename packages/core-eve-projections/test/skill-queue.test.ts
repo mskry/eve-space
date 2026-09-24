@@ -17,55 +17,55 @@ describe('skill-queue projection', () => {
       definitions,
     )
 
-    expect(definitions).toEqual([
+    expect(definitions).toStrictEqual([
       expect.objectContaining({
-        typeId: 3300,
         primaryAttribute: 'perception',
         secondaryAttribute: 'willpower',
+        typeId: 3300,
       }),
     ])
-    expect(entries).toEqual([
+    expect(entries).toStrictEqual([
       expect.objectContaining({
-        queuePosition: 1,
-        typeId: 3300,
         name: 'Gunnery',
         primaryAttribute: 'perception',
+        queuePosition: 1,
         secondaryAttribute: 'willpower',
+        typeId: 3300,
       }),
       expect.objectContaining({
-        queuePosition: 2,
-        typeId: 9999,
-        name: 'Unknown skill 9999',
         groupId: null,
         groupName: 'Unknown',
+        name: 'Unknown skill 9999',
+        queuePosition: 2,
+        typeId: 9999,
       }),
     ])
   })
 
   test.each([
-    [[], 0, { state: 'empty', activeQueuePosition: null }],
-    [[queueEntry(0, 1)], 0, { state: 'paused', activeQueuePosition: null }],
+    [[], 0, { activeQueuePosition: null, state: 'empty' }],
+    [[queueEntry(0, 1)], 0, { activeQueuePosition: null, state: 'paused' }],
     [
       [
         queueEntry(0, 1, '2026-09-17T10:00:00.000Z', '2026-09-17T11:00:00.000Z'),
         queueEntry(1, 2, '2026-09-17T11:00:00.000Z', '2026-09-17T12:00:00.000Z'),
       ],
       Date.parse('2026-09-17T11:30:00.000Z'),
-      { state: 'training', activeQueuePosition: 1 },
+      { activeQueuePosition: 1, state: 'training' },
     ],
     [
       [queueEntry(0, 1, '2026-09-17T10:00:00.000Z', '2026-09-17T11:00:00.000Z')],
       Date.parse('2026-09-17T12:00:00.000Z'),
-      { state: 'lapsed', activeQueuePosition: null },
+      { activeQueuePosition: null, state: 'lapsed' },
     ],
     [
       [queueEntry(0, 1, '2026-09-17T10:00:00.000Z', null)],
       Date.parse('2026-09-17T12:00:00.000Z'),
-      { state: 'paused', activeQueuePosition: null },
+      { activeQueuePosition: null, state: 'paused' },
     ],
   ] as const)('derives time-dependent queue state', (source, now, expected) => {
     const entries = projectSkillQueueEntries(source, [])
-    expect(resolveSkillQueueState(entries, now)).toEqual(expected)
+    expect(resolveSkillQueueState(entries, now)).toStrictEqual(expected)
   })
 })
 
@@ -76,24 +76,24 @@ function queueEntry(
   finishDate: string | null = null,
 ): SkillQueueSourceEntry {
   return {
-    queuePosition,
-    typeId,
-    finishedLevel: 5,
-    levelStartSp: null,
-    levelEndSp: null,
-    trainingStartSp: null,
-    startDate,
     finishDate,
+    finishedLevel: 5,
+    levelEndSp: null,
+    levelStartSp: null,
+    queuePosition,
+    startDate,
+    trainingStartSp: null,
+    typeId,
   }
 }
 
 function definitionRow(typeId: number, attributeId: number, attributeValue: number) {
   return {
-    typeId,
-    typeName: 'Gunnery',
-    groupId: 255,
-    groupName: 'Gunnery',
     attributeId,
     attributeValue,
+    groupId: 255,
+    groupName: 'Gunnery',
+    typeId,
+    typeName: 'Gunnery',
   }
 }

@@ -15,7 +15,7 @@ describe('ESI purpose interface secrecy', () => {
       import('../../src/esi-gateway/catalog-interface.js'),
     ])
 
-    expect(Object.keys(failures).toSorted()).toEqual([
+    expect(Object.keys(failures).toSorted()).toStrictEqual([
       'EsiQuotaError',
       'classifyEsiOperationFailure',
       'classifyEsiRefreshFailure',
@@ -25,13 +25,13 @@ describe('ESI purpose interface secrecy', () => {
       'isEsiMutationOutcomeUnknown',
       'isEsiOperationQuotaLimited',
     ])
-    expect(Object.keys(lifecycle).toSorted()).toEqual(['closeProductionEsiExecutionRuntime'])
-    expect(Object.keys(status).toSorted()).toEqual([
+    expect(Object.keys(lifecycle).toSorted()).toStrictEqual(['closeProductionEsiExecutionRuntime'])
+    expect(Object.keys(status).toSorted()).toStrictEqual([
       'isEsiErrorBudgetAtFloor',
       'probeEsiStatus',
       'readEsiCallRateReport',
     ])
-    expect(Object.keys(catalog).toSorted()).toEqual([
+    expect(Object.keys(catalog).toSorted()).toStrictEqual([
       'assertCoreEsiOperation',
       'assertEsiCatalogConfiguration',
       'assertEsiExecutableDefinition',
@@ -53,21 +53,21 @@ describe('ESI purpose interface secrecy', () => {
   test('projects failures and catalog facts without implementation representations', () => {
     const failure = classifyEsiOperationFailure(
       new EsiTransportError({
-        operationId: 'GetStatus',
-        reason: 'network',
-        phase: 'request',
         cause: new Error('redis://coordination.internal bearer-secret'),
+        operationId: 'GetStatus',
+        phase: 'request',
+        reason: 'network',
       }),
     )
 
-    expect(failure).toEqual({ kind: 'unavailable' })
-    expect(getEsiOperationAuthorization('wallet-balance')).toEqual({
+    expect(failure).toStrictEqual({ kind: 'unavailable' })
+    expect(getEsiOperationAuthorization('wallet-balance')).toStrictEqual({
       kind: 'character',
       requiredScope: 'esi-wallet.read_character_wallet.v1',
     })
-    expect(getEsiSetOperationConfiguration('bulk-affiliation')).toEqual({
+    expect(getEsiSetOperationConfiguration('bulk-affiliation')).toStrictEqual({
       field: 'characterIds',
-      maximumItems: 1_000,
+      maximumItems: 1000,
     })
 
     const serialized = JSON.stringify({ failure })
@@ -81,7 +81,8 @@ describe('ESI purpose interface secrecy', () => {
       'cache',
       'permit',
       'transport',
-    ])
+    ]) {
       expect(serialized).not.toContain(forbidden)
+    }
   })
 })

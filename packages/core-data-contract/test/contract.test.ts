@@ -17,7 +17,7 @@ import {
 describe('core-data contract', () => {
   it('has unique stable product identities and complete policies', () => {
     expect(new Set(CORE_DATA_PRODUCT_IDS).size).toBe(CORE_DATA_PRODUCT_IDS.length)
-    expect(Object.keys(CORE_DATA_PRODUCT_CONTRACTS).toSorted()).toEqual(
+    expect(Object.keys(CORE_DATA_PRODUCT_CONTRACTS).toSorted()).toStrictEqual(
       CORE_DATA_PRODUCT_IDS.toSorted(),
     )
 

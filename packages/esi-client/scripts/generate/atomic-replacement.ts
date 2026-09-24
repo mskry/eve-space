@@ -70,7 +70,9 @@ export async function replaceGeneratedPathsAtomically(
       cause: failure,
     });
   }
-  if (failure) throw failure;
+  if (failure) {
+    throw failure;
+  }
   if (cleanupFailures.length > 0) {
     throw new AggregateError(
       cleanupFailures,
@@ -94,8 +96,8 @@ async function materializeIncomingPaths(
     const parent = dirname(livePath);
     const name = basename(livePath);
     const entry: TransactionEntry = {
-      backupPath: join(parent, `.${name}.esi-client-backup-${transactionId}`),
       backedUp: false,
+      backupPath: join(parent, `.${name}.esi-client-backup-${transactionId}`),
       incomingPath: join(parent, `.${name}.esi-client-incoming-${transactionId}`),
       installed: false,
       livePath,
@@ -132,7 +134,9 @@ async function installReplacements(
 
   // Every target installed, so the transaction has committed and its backups are now ordinary
   // debris. Clearing the flag hands them to the cleanup phase instead of failing the install.
-  for (const entry of transaction) entry.backedUp = false;
+  for (const entry of transaction) {
+    entry.backedUp = false;
+  }
 }
 
 async function rollbackReplacements(
@@ -167,7 +171,9 @@ async function cleanupTransactionPaths(
     try {
       await removePath(entry.incomingPath);
       // A backup still flagged here is the only surviving copy of the prior output.
-      if (!entry.backedUp) await removePath(entry.backupPath);
+      if (!entry.backedUp) {
+        await removePath(entry.backupPath);
+      }
     } catch (error) {
       failures.push(error);
     }

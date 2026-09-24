@@ -49,13 +49,13 @@ const adminEmailSchema = z
   .trim()
   .pipe(z.email('Enter a valid administrator email address.'))
 const organizationSchema = z.object({
-  organizationType: z.enum(['corporation', 'alliance']),
   organizationId: z.coerce.number().int().positive('Enter a valid EVE organization ID.'),
+  organizationType: z.enum(['corporation', 'alliance']),
 })
 const setupSchema = organizationSchema.extend({
-  setupSecret: z.string().min(1, 'Enter the deployment setup secret.'),
   email: adminEmailSchema,
   password: z.string().min(12, 'Administrator password must be at least 12 characters.').max(256),
+  setupSecret: z.string().min(1, 'Enter the deployment setup secret.'),
 })
 const loginSchema = z.object({
   email: adminEmailSchema,
@@ -68,12 +68,12 @@ const moduleSectionParamsSchema = moduleParamsSchema.extend({
 })
 const moduleEnablementSchema = z.object({ enabled: z.boolean() }).strict()
 const navigationIdentitySchema = z
-  .object({ ownerId: z.string(), navigationId: z.string() })
+  .object({ navigationId: z.string(), ownerId: z.string() })
   .strict()
 const shellNavigationOrderSchema = z
   .object({
-    dashboard: z.array(navigationIdentitySchema),
     character: z.array(navigationIdentitySchema),
+    dashboard: z.array(navigationIdentitySchema),
   })
   .strict()
   .refine((order) => isCompleteShellNavigationOrder(order, platformNavigationDefaults), {
@@ -102,11 +102,12 @@ const loadAdminSession: MiddlewareHandler<AdminEnv> = async (context, next) => {
 }
 
 const requireAdminSession: MiddlewareHandler<AdminEnv> = async (context, next) => {
-  if (!context.var.adminSession)
+  if (!context.var.adminSession) {
     return context.json(
       { code: 'ADMIN_AUTH_REQUIRED', message: 'Administrator login is required.' },
       401,
     )
+  }
   return next()
 }
 
@@ -116,8 +117,8 @@ export const adminRoutes = new Hono<AdminEnv>()
   .get('/setup', async (context) => {
     setPrivateHeaders(context)
     return context.json({
-      required: !(await isDeploymentConfigured()),
       available: Boolean(env.ADMIN_SETUP_SECRET),
+      required: !(await isDeploymentConfigured()),
     })
   })
   .post('/setup', zValidator('json', setupSchema), async (context) => {
@@ -142,13 +143,13 @@ export const adminRoutes = new Hono<AdminEnv>()
       const sessionToken = createOpaqueToken()
       const account = await createDeployment({
         email: input.email.toLowerCase(),
-        passwordHash: await hashPassword(input.password),
-        sessionToken,
-        sessionExpiresAt: sessionExpiry(),
         organization,
+        passwordHash: await hashPassword(input.password),
+        sessionExpiresAt: sessionExpiry(),
+        sessionToken,
       })
       setAdminSessionCookie(context, sessionToken)
-      return context.json({ authenticated: true as const, account }, 201)
+      return context.json({ account, authenticated: true as const }, 201)
     } catch (error) {
       if (error instanceof DeploymentAlreadyConfiguredError) {
         return context.json(
@@ -164,8 +165,11 @@ export const adminRoutes = new Hono<AdminEnv>()
     const input = context.req.valid('json')
     const credentials = await findAdminCredentials(input.email.toLowerCase())
     let valid = false
-    if (credentials) valid = await verifyPassword(input.password, credentials.passwordHash)
-    else await hashPassword(input.password)
+    if (credentials) {
+      valid = await verifyPassword(input.password, credentials.passwordHash)
+    } else {
+      await hashPassword(input.password)
+    }
     if (!credentials || !valid) {
       return context.json(
         { code: 'ADMIN_AUTH_FAILED', message: 'Email or password is incorrect.' },
@@ -177,20 +181,24 @@ export const adminRoutes = new Hono<AdminEnv>()
     await createAdminSession(credentials.id, sessionToken, sessionExpiry())
     setAdminSessionCookie(context, sessionToken)
     const account = await findAdminSession(sessionToken)
-    if (!account) throw new Error('Failed to create administrator session')
-    return context.json({ authenticated: true as const, account })
+    if (!account) {
+      throw new Error('Failed to create administrator session')
+    }
+    return context.json({ account, authenticated: true as const })
   })
   .get('/session', loadAdminSession, (context) => {
     setPrivateHeaders(context)
     const account = context.var.adminSession
     return account
-      ? context.json({ authenticated: true as const, account })
+      ? context.json({ account, authenticated: true as const })
       : context.json({ authenticated: false as const })
   })
   .post('/logout', loadAdminSession, async (context) => {
     setPrivateHeaders(context)
     const token = readAuthCookie(context, adminSessionCookie)
-    if (token) await deleteAdminSession(token)
+    if (token) {
+      await deleteAdminSession(token)
+    }
     deleteAuthCookie(context, adminSessionCookie)
     return context.body(null, 204)
   })
@@ -227,11 +235,12 @@ export const adminRoutes = new Hono<AdminEnv>()
       const { moduleId } = context.req.valid('param')
       const { enabled } = context.req.valid('json')
       const module = await setInstalledModuleEnabled(moduleId, enabled)
-      if (!module)
+      if (!module) {
         return context.json(
           { code: 'MODULE_NOT_FOUND', message: 'Installed module not found.' },
           404,
         )
+      }
       return context.json({ module }, 200)
     },
   )
@@ -245,11 +254,12 @@ export const adminRoutes = new Hono<AdminEnv>()
       const { moduleId, sectionId } = context.req.valid('param')
       const { enabled } = context.req.valid('json')
       const section = await setInstalledModuleSectionEnabled(moduleId, sectionId, enabled)
-      if (!section)
+      if (!section) {
         return context.json(
           { code: 'MODULE_SECTION_NOT_FOUND', message: 'Installed module section not found.' },
           404,
         )
+      }
       return context.json({ section }, 200)
     },
   )
@@ -342,7 +352,7 @@ export const adminRoutes = new Hono<AdminEnv>()
   )
 
 function sessionExpiry() {
-  return new Date(Date.now() + adminSessionDurationSeconds * 1_000)
+  return new Date(Date.now() + adminSessionDurationSeconds * 1000)
 }
 
 function setAdminSessionCookie(context: Context, token: string) {
@@ -365,7 +375,9 @@ function organizationFailure(context: Context, error: unknown) {
 }
 
 function transferApprovalFailure(context: Context, error: unknown) {
-  if (!(error instanceof CharacterTransferApprovalError)) throw error
+  if (!(error instanceof CharacterTransferApprovalError)) {
+    throw error
+  }
   const unavailable = error.code === 'preview-unavailable' || error.code === 'approval-unavailable'
   return context.json(
     {

@@ -15,9 +15,15 @@ const emit = defineEmits<{
 }>()
 
 function locationLabel(location: CharacterRosterEntry['location']) {
-  if (!location) return '--'
-  if (location.stationName) return location.stationName
-  if (location.structureId) return `${location.solarSystemName} // Private structure`
+  if (!location) {
+    return '--'
+  }
+  if (location.stationName) {
+    return location.stationName
+  }
+  if (location.structureId) {
+    return `${location.solarSystemName} // Private structure`
+  }
   return `${location.solarSystemName} // In space`
 }
 </script>

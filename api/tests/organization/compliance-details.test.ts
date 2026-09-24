@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  selectResults: [] as unknown[][],
   recompute: vi.fn(),
+  selectResults: [] as unknown[][],
 }))
 
 vi.mock('../../src/db/client.js', () => ({
@@ -30,54 +30,50 @@ describe('organization compliance details', () => {
       [{ organizationVersion: 4 }],
       [
         {
-          state: 'suspended',
-          evidenceFreshness: 'stale',
-          evidenceAt: checkedAt,
-          reviewDeadline: new Date(Date.now() + 60_000),
           accessValidUntil: null,
           evaluatedAt: new Date('2026-09-01T12:00:00.000Z'),
+          evidenceAt: checkedAt,
+          evidenceFreshness: 'stale',
+          reviewDeadline: new Date(Date.now() + 60_000),
+          state: 'suspended',
         },
       ],
       [
         {
+          affiliationCheckedAt: checkedAt,
+          affiliationResolutionState: 'resolved',
           characterId: 90_000_001,
           characterName: 'External Pilot',
-          affiliationCheckedAt: checkedAt,
           nextAffiliationCheck: nextCheck,
-          affiliationResolutionState: 'resolved',
         },
       ],
       [
-        { issueCode: 'no-managed-organization-character', characterId: null, requiredScope: null },
+        { characterId: null, issueCode: 'no-managed-organization-character', requiredScope: null },
         {
-          issueCode: 'character-authorization-missing',
           characterId: 90_000_001,
+          issueCode: 'character-authorization-missing',
           requiredScope: null,
         },
         {
-          issueCode: 'required-scope-missing',
           characterId: 90_000_001,
+          issueCode: 'required-scope-missing',
           requiredScope: 'esi-wallet.read_character_wallet.v1',
         },
         {
-          issueCode: 'character-affiliation-stale',
           characterId: 90_000_001,
+          issueCode: 'character-affiliation-stale',
           requiredScope: null,
         },
         {
-          issueCode: 'character-outside-managed-organization',
           characterId: 90_000_001,
+          issueCode: 'character-outside-managed-organization',
           requiredScope: null,
         },
       ],
     )
 
     await expect(getOrganizationAccountComplianceDetails(userId)).resolves.toMatchObject({
-      organizationVersion: 4,
-      state: 'suspended',
-      evidenceFreshness: 'stale',
       accountReasons: [{ code: 'no-managed-organization-character' }],
-      remediationActions: [{ type: 'attach-managed-character', path: '/auth/eve/attach' }],
       characters: [
         {
           characterId: 90_000_001,
@@ -98,6 +94,10 @@ describe('organization compliance details', () => {
           ],
         },
       ],
+      evidenceFreshness: 'stale',
+      organizationVersion: 4,
+      remediationActions: [{ type: 'attach-managed-character', path: '/auth/eve/attach' }],
+      state: 'suspended',
     })
     expect(mocks.recompute).not.toHaveBeenCalled()
   })
@@ -106,16 +106,16 @@ describe('organization compliance details', () => {
     mocks.selectResults.push([{ organizationVersion: 4 }], [], [], [], [])
 
     await expect(getOrganizationAccountComplianceDetails(userId)).resolves.toMatchObject({
-      organizationVersion: 4,
-      state: 'pending',
-      evidenceFreshness: 'unavailable',
-      evidenceAt: null,
-      reviewDeadline: null,
       accessValidUntil: null,
-      evaluatedAt: null,
       accountReasons: [],
-      remediationActions: [],
       characters: [],
+      evaluatedAt: null,
+      evidenceAt: null,
+      evidenceFreshness: 'unavailable',
+      organizationVersion: 4,
+      remediationActions: [],
+      reviewDeadline: null,
+      state: 'pending',
     })
     expect(mocks.recompute).toHaveBeenCalledWith(userId)
   })
@@ -126,22 +126,22 @@ describe('organization compliance details', () => {
       [{ organizationVersion: 4 }],
       [
         {
-          state: 'review_required',
-          evidenceFreshness: 'stale',
-          evidenceAt: new Date('2026-09-01T10:00:00.000Z'),
-          reviewDeadline,
           accessValidUntil: new Date(0),
           evaluatedAt: new Date('2026-09-01T11:00:00.000Z'),
+          evidenceAt: new Date('2026-09-01T10:00:00.000Z'),
+          evidenceFreshness: 'stale',
+          reviewDeadline,
+          state: 'review_required',
         },
       ],
       [
         {
-          state: 'suspended',
-          evidenceFreshness: 'stale',
-          evidenceAt: new Date('2026-09-01T10:00:00.000Z'),
-          reviewDeadline,
           accessValidUntil: null,
           evaluatedAt: new Date('2026-09-01T12:00:00.000Z'),
+          evidenceAt: new Date('2026-09-01T10:00:00.000Z'),
+          evidenceFreshness: 'stale',
+          reviewDeadline,
+          state: 'suspended',
         },
       ],
       [],
@@ -149,8 +149,8 @@ describe('organization compliance details', () => {
     )
 
     await expect(getOrganizationAccountComplianceDetails(userId)).resolves.toMatchObject({
-      state: 'suspended',
       accessValidUntil: null,
+      state: 'suspended',
     })
     expect(mocks.recompute).toHaveBeenCalledOnce()
   })
@@ -166,7 +166,9 @@ describe('organization compliance details', () => {
 
 function query(result: unknown[]) {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'where', 'orderBy']) builder[method] = () => builder
+  for (const method of ['from', 'where', 'orderBy']) {
+    builder[method] = () => builder
+  }
   // oxlint-disable-next-line unicorn/no-thenable -- Drizzle query builders are awaitable.
   builder.then = (resolve: (value: unknown[]) => unknown, reject: (error: unknown) => unknown) =>
     Promise.resolve(result).then(resolve, reject)

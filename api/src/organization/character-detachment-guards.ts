@@ -28,7 +28,9 @@ export async function findCharacterDetachmentBlocker(
       ),
     )
     .limit(1)
-  if (retainedAuthorityEvidence) return 'authority-evidence'
+  if (retainedAuthorityEvidence) {
+    return 'authority-evidence'
+  }
 
   const [activeCorporationSource] = await transaction
     .select({ sourceId: organizationCorporationSources.sourceId })

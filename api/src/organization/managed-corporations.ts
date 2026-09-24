@@ -20,34 +20,34 @@ export async function initializeManagedOrganization(
   now: Date,
 ) {
   await transaction.insert(platformSubjectLifecycles).values({
-    subjectKind: 'deployment',
-    subjectId: String(organization.deploymentId),
+    createdAt: now,
     organizationDeploymentId: organization.deploymentId,
     organizationVersion: organization.organizationVersion,
-    createdAt: now,
+    subjectId: String(organization.deploymentId),
+    subjectKind: 'deployment',
   })
   if (organization.organizationType === 'alliance') {
     await transaction.insert(platformSubjectLifecycles).values({
-      subjectKind: 'alliance',
-      subjectId: String(organization.organizationId),
+      createdAt: now,
       organizationDeploymentId: organization.deploymentId,
       organizationVersion: organization.organizationVersion,
-      createdAt: now,
+      subjectId: String(organization.organizationId),
+      subjectKind: 'alliance',
     })
     return
   }
 
   await transaction.insert(organizationManagedCorporations).values({
-    deploymentId: organization.deploymentId,
-    organizationVersion: organization.organizationVersion,
     corporationId: organization.organizationId,
+    deploymentId: organization.deploymentId,
     firstObservedAt: now,
     lastObservedAt: now,
+    organizationVersion: organization.organizationVersion,
   })
   await appendManagedCorporationEvent(transaction, 'added', {
-    organizationVersion: organization.organizationVersion,
     corporationId: organization.organizationId,
     occurredAt: now,
+    organizationVersion: organization.organizationVersion,
   })
 }
 
@@ -65,7 +65,9 @@ export async function materializeManagedAllianceCorporations(
     input.organizationVersion,
     input.allianceId,
   )
-  if (!current) return { outcome: 'obsolete' as const }
+  if (!current) {
+    return { outcome: 'obsolete' as const }
+  }
   const existing = await transaction
     .select()
     .from(organizationManagedCorporations)
@@ -88,28 +90,28 @@ export async function materializeManagedAllianceCorporations(
       .insert(organizationManagedCorporations)
       .values(
         input.corporationIds.map((corporationId) => ({
-          deploymentId: 1,
-          organizationVersion: input.organizationVersion,
           corporationId,
+          deploymentId: 1,
           firstObservedAt: input.validatedAt,
           lastObservedAt: input.validatedAt,
+          organizationVersion: input.organizationVersion,
         })),
       )
       .onConflictDoUpdate({
-        target: [
-          organizationManagedCorporations.deploymentId,
-          organizationManagedCorporations.organizationVersion,
-          organizationManagedCorporations.corporationId,
-        ],
         set: {
           isCurrent: true,
           lastObservedAt: input.validatedAt,
           removedAt: null,
           updatedAt: input.validatedAt,
         },
+        target: [
+          organizationManagedCorporations.deploymentId,
+          organizationManagedCorporations.organizationVersion,
+          organizationManagedCorporations.corporationId,
+        ],
       })
   }
-  if (removedIds.length > 0)
+  if (removedIds.length > 0) {
     await transaction
       .update(organizationManagedCorporations)
       .set({
@@ -124,29 +126,30 @@ export async function materializeManagedAllianceCorporations(
           inArray(organizationManagedCorporations.corporationId, removedIds),
         ),
       )
+  }
   await Promise.all(
     addedIds.map((corporationId) =>
       appendManagedCorporationEvent(transaction, 'added', {
-        organizationVersion: input.organizationVersion,
         corporationId,
         occurredAt: input.validatedAt,
+        organizationVersion: input.organizationVersion,
       }),
     ),
   )
   await Promise.all(
     removedIds.map((corporationId) =>
       appendManagedCorporationEvent(transaction, 'removed', {
-        organizationVersion: input.organizationVersion,
         corporationId,
         occurredAt: input.validatedAt,
+        organizationVersion: input.organizationVersion,
       }),
     ),
   )
   return {
-    outcome: 'refreshed' as const,
     addedIds,
-    removedIds,
     corporationIds: input.corporationIds,
+    outcome: 'refreshed' as const,
+    removedIds,
   }
 }
 
@@ -176,14 +179,14 @@ function appendManagedCorporationEvent(
   input: { organizationVersion: number; corporationId: number; occurredAt: Date },
 ) {
   return appendDomainEvent(transaction, {
-    type: `organization.managed-corporation-${transition}`,
-    payloadVersion: 1,
     aggregateId: '1',
+    occurredAt: input.occurredAt,
     payload: {
+      corporationId: input.corporationId,
       deploymentId: 1,
       organizationVersion: input.organizationVersion,
-      corporationId: input.corporationId,
     },
-    occurredAt: input.occurredAt,
+    payloadVersion: 1,
+    type: `organization.managed-corporation-${transition}`,
   })
 }

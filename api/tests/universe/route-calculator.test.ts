@@ -27,14 +27,13 @@ describe('universe route calculation', () => {
   test('calculates same-system, direct, multi-hop, and disconnected routes in one traversal', async () => {
     await expect(
       calculateUniverseRoutes({
-        originSystemId: 1,
         destinationSystemIds: [99, 5, 3, 1, 6, 2],
+        originSystemId: 1,
         policy: { kind: 'shortest' },
       }),
-    ).resolves.toEqual({
+    ).resolves.toStrictEqual({
       originSystemId: 1,
       policy: { kind: 'shortest' },
-      sdeBuildNumber: 1234,
       routes: [
         { destinationSystemId: 1, jumps: 0 },
         { destinationSystemId: 2, jumps: 1 },
@@ -43,6 +42,7 @@ describe('universe route calculation', () => {
         { destinationSystemId: 6, jumps: null },
         { destinationSystemId: 99, jumps: null },
       ],
+      sdeBuildNumber: 1234,
     })
     expect(mocks.getUniverseTopology).toHaveBeenCalledTimes(1)
   })
@@ -50,8 +50,8 @@ describe('universe route calculation', () => {
   test('returns every destination as unavailable when the origin is absent', async () => {
     await expect(
       calculateUniverseRoutes({
-        originSystemId: 99,
         destinationSystemIds: [1, 2],
+        originSystemId: 99,
         policy: { kind: 'shortest' },
       }),
     ).resolves.toMatchObject({
@@ -65,8 +65,8 @@ describe('universe route calculation', () => {
   test('rejects unsupported policies before loading topology', async () => {
     await expect(
       calculateUniverseRoutes({
-        originSystemId: 1,
         destinationSystemIds: [2],
+        originSystemId: 1,
         policy: { kind: 'safer' },
       } as never),
     ).rejects.toThrow('Unsupported universe route policy')
@@ -84,7 +84,7 @@ function topology(
       ingestedAt: '2026-08-26 12:00:00.000001+00',
     },
     systems: new Map(
-      edges.map(([id, neighbors]) => [id, { id, securityStatus: id / 10, neighbors }]),
+      edges.map(([id, neighbors]) => [id, { id, neighbors, securityStatus: id / 10 }]),
     ),
   }
 }

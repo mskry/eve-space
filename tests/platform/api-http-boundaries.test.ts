@@ -11,7 +11,7 @@ describe('validation wrapper', () => {
       "import { zValidator } from '../http/validation.js'\n",
     )
 
-    expect(apiHttpBoundaryViolations(source)).toEqual([])
+    expect(apiHttpBoundaryViolations(source)).toStrictEqual([])
   })
 
   it('rejects zValidator imported straight from the Hono package', () => {
@@ -20,7 +20,7 @@ describe('validation wrapper', () => {
       "import { zValidator } from '@hono/zod-validator'\n",
     )
 
-    expect(apiHttpBoundaryViolations(source)).toEqual([
+    expect(apiHttpBoundaryViolations(source)).toStrictEqual([
       "api/src/characters/core-routes.ts:1: imports zValidator from '@hono/zod-validator'; use the wrapper in api/src/http/validation.ts so validation failures keep the API's JSON error contract",
     ])
   })
@@ -31,7 +31,7 @@ describe('validation wrapper', () => {
       "import { zValidator as validate } from '@hono/zod-validator'\n",
     )
 
-    expect(apiHttpBoundaryViolations(source)).toEqual([
+    expect(apiHttpBoundaryViolations(source)).toStrictEqual([
       "api/src/characters/core-routes.ts:1: imports zValidator from '@hono/zod-validator'; use the wrapper in api/src/http/validation.ts so validation failures keep the API's JSON error contract",
     ])
   })
@@ -51,7 +51,7 @@ describe('validation wrapper', () => {
       "import { zValidator } from '@eve-space/platform-module-server'\n",
     )
 
-    expect(apiHttpBoundaryViolations(source)).toEqual([])
+    expect(apiHttpBoundaryViolations(source)).toStrictEqual([])
   })
 
   it('ignores an unrelated import from the same package', () => {
@@ -60,7 +60,7 @@ describe('validation wrapper', () => {
       "import { definePlatformModule } from '@eve-space/platform-module-server'\n",
     )
 
-    expect(apiHttpBoundaryViolations(source)).toEqual([])
+    expect(apiHttpBoundaryViolations(source)).toStrictEqual([])
   })
 })
 
@@ -71,13 +71,13 @@ describe('cookie ownership', () => {
       "import { deleteCookie, getCookie, setCookie } from 'hono/cookie'\n",
     )
 
-    expect(apiHttpBoundaryViolations(source)).toEqual([])
+    expect(apiHttpBoundaryViolations(source)).toStrictEqual([])
   })
 
   it('rejects any other module reaching for hono/cookie', () => {
     const source = file('api/src/auth/routes.ts', "import { setCookie } from 'hono/cookie'\n")
 
-    expect(apiHttpBoundaryViolations(source)).toEqual([
+    expect(apiHttpBoundaryViolations(source)).toStrictEqual([
       'api/src/auth/routes.ts:1: imports hono/cookie directly; set, read, and delete cookies through api/src/http/auth-cookie.ts so HttpOnly, SameSite, Secure, and the __Host- prefix are preserved',
     ])
   })
@@ -85,7 +85,7 @@ describe('cookie ownership', () => {
   it('ignores the unrelated hono root import', () => {
     const source = file('api/src/auth/routes.ts', "import { Hono } from 'hono'\n")
 
-    expect(apiHttpBoundaryViolations(source)).toEqual([])
+    expect(apiHttpBoundaryViolations(source)).toStrictEqual([])
   })
 })
 
@@ -96,7 +96,7 @@ describe('typed route outcomes', () => {
       'app.notFound((context) => context.json(routeNotFoundBody, 404))\n',
     )
 
-    expect(apiHttpBoundaryViolations(source)).toEqual([])
+    expect(apiHttpBoundaryViolations(source)).toStrictEqual([])
   })
 
   it('rejects context.notFound() as a route outcome', () => {
@@ -105,7 +105,7 @@ describe('typed route outcomes', () => {
       'const handler = (context) => context.notFound()\n',
     )
 
-    expect(apiHttpBoundaryViolations(source)).toEqual([
+    expect(apiHttpBoundaryViolations(source)).toStrictEqual([
       'api/src/characters/core-routes.ts:1: returns context.notFound(); return an explicit JSON status so the outcome stays in the typed route contract',
     ])
   })
@@ -116,7 +116,7 @@ describe('typed route outcomes', () => {
       "const handler = (context) => context.json({ code: 'NOT_FOUND' }, 404)\n",
     )
 
-    expect(apiHttpBoundaryViolations(source)).toEqual([])
+    expect(apiHttpBoundaryViolations(source)).toStrictEqual([])
   })
 })
 
@@ -141,6 +141,8 @@ describe('reporting', () => {
     ]
     const violations = apiHttpBoundaryViolations(source)
 
-    expect(violations).toEqual([...violations].toSorted((left, right) => left.localeCompare(right)))
+    expect(violations).toStrictEqual(
+      [...violations].toSorted((left, right) => left.localeCompare(right)),
+    )
   })
 })

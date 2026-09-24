@@ -15,18 +15,19 @@ const managedCorporationsImplementation: PlatformSingleRequestResourceImplementa
   unknown,
   PlatformAllianceResourceSubject
 > = {
-  mode: 'single-request',
-  operation: 'alliance-corporations',
-  request(subject) {
-    if (subject.kind !== 'alliance')
-      throw new Error('Managed-corporation subject must be an alliance')
-    return { path: { alliance_id: subject.allianceId } }
-  },
   map({ data }) {
     return normalizePositiveSafeIntegerIds(data, 'Alliance corporation collection')
   },
   async materialize() {
     throw new Error('Core resource materialization must use the core transaction path')
+  },
+  mode: 'single-request',
+  operation: 'alliance-corporations',
+  request(subject) {
+    if (subject.kind !== 'alliance') {
+      throw new Error('Managed-corporation subject must be an alliance')
+    }
+    return { path: { alliance_id: subject.allianceId } }
   },
 }
 
@@ -38,38 +39,39 @@ const corporationRosterImplementation: PlatformSingleRequestResourceImplementati
   unknown,
   PlatformCorporationResourceSubject
 > = {
-  mode: 'single-request',
-  operation: 'corporation-members',
-  request(subject) {
-    if (subject.kind !== 'corporation')
-      throw new Error('Corporation-roster subject must be a corporation')
-    return { path: { corporation_id: subject.corporationId } }
-  },
   map({ data }) {
     return normalizePositiveSafeIntegerIds(data, 'Corporation roster')
   },
   async materialize() {
     throw new Error('Core resource materialization must use the core transaction path')
   },
+  mode: 'single-request',
+  operation: 'corporation-members',
+  request(subject) {
+    if (subject.kind !== 'corporation') {
+      throw new Error('Corporation-roster subject must be a corporation')
+    }
+    return { path: { corporation_id: subject.corporationId } }
+  },
 }
 
 export const coreResources = [
   {
-    moduleId: 'core',
-    resourceId: 'managed-corporations',
-    operationId: 'alliance-corporations',
-    subjectKind: 'alliance',
-    materializationIntervalSeconds: 3_600,
     eligibility: { kind: 'current-managed-alliance' },
     implementation: managedCorporationsImplementation,
+    materializationIntervalSeconds: 3600,
+    moduleId: 'core',
+    operationId: 'alliance-corporations',
+    resourceId: 'managed-corporations',
+    subjectKind: 'alliance',
   },
   {
-    moduleId: 'core',
-    resourceId: 'corporation-roster',
-    operationId: 'corporation-members',
-    subjectKind: 'corporation',
-    materializationIntervalSeconds: 3_600,
     eligibility: { kind: 'current-managed-corporation-source' },
     implementation: corporationRosterImplementation,
+    materializationIntervalSeconds: 3600,
+    moduleId: 'core',
+    operationId: 'corporation-members',
+    resourceId: 'corporation-roster',
+    subjectKind: 'corporation',
   },
 ] as const satisfies readonly PlatformInstalledResourceDescriptor[]

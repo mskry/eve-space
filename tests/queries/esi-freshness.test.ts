@@ -9,32 +9,34 @@ describe('ESI freshness metadata', () => {
   it('reads stale metadata from the response root', () => {
     expect(
       getStaleEsiResult({
+        refreshFailureClass: 'esi-unavailable',
+        retryAt: '2026-09-01T11:01:00.000Z',
         stale: true,
         validatedAt: '2026-09-01T10:58:00.000Z',
-        retryAt: '2026-09-01T11:01:00.000Z',
-        refreshFailureClass: 'esi-unavailable',
       }),
-    ).toEqual({
+    ).toStrictEqual({
+      refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-09-01T11:01:00.000Z',
       stale: true,
       validatedAt: '2026-09-01T10:58:00.000Z',
-      retryAt: '2026-09-01T11:01:00.000Z',
-      refreshFailureClass: 'esi-unavailable',
     })
   })
 
   it('normalizes successful stale metadata without requiring an original timestamp', () => {
     expect(
       getStaleEsiMetadata({
-        stale: true,
-        retryAt: '2026-09-01T11:01:00.000Z',
         refreshFailureClass: 'esi-cooldown',
+        retryAt: '2026-09-01T11:01:00.000Z',
+        stale: true,
       }),
-    ).toEqual({
-      stale: true,
-      retryAt: '2026-09-01T11:01:00.000Z',
+    ).toStrictEqual({
       refreshFailureClass: 'esi-cooldown',
+      retryAt: '2026-09-01T11:01:00.000Z',
+      stale: true,
     })
-    expect(getStaleEsiMetadata({ stale: true, validatedAt: 'unknown', retryAt: 'later' })).toEqual({
+    expect(
+      getStaleEsiMetadata({ retryAt: 'later', stale: true, validatedAt: 'unknown' }),
+    ).toStrictEqual({
       stale: true,
     })
   })
@@ -51,9 +53,9 @@ describe('ESI freshness metadata', () => {
   it('does not traverse a fresh response payload', () => {
     expect(
       getStaleEsiResult({
+        nested: { stale: true, validatedAt: '2026-09-01T10:58:00.000Z' },
         stale: false,
         validatedAt: '2026-09-01T11:00:00.000Z',
-        nested: { stale: true, validatedAt: '2026-09-01T10:58:00.000Z' },
       }),
     ).toBeUndefined()
   })
@@ -61,16 +63,16 @@ describe('ESI freshness metadata', () => {
   it('detects unavailable overview sections without treating authorization as an outage', () => {
     expect(
       hasUnavailableOverviewSection({
-        location: { status: 'ok', data: {} },
-        ship: { status: 'unavailable', message: 'ESI unavailable' },
+        location: { data: {}, status: 'ok' },
+        ship: { message: 'ESI unavailable', status: 'unavailable' },
         skills: { status: 'scope-required' },
       }),
     ).toBe(true)
     expect(
       hasUnavailableOverviewSection({
-        location: { status: 'ok', data: {} },
+        location: { data: {}, status: 'ok' },
         ship: { status: 'scope-required' },
-        skills: { status: 'ok', data: {} },
+        skills: { data: {}, status: 'ok' },
       }),
     ).toBe(false)
   })

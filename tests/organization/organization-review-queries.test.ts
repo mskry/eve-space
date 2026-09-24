@@ -17,21 +17,21 @@ describe('organization review queries', () => {
       apiClient: apiClient(),
       enabled: true,
       input: {
+        auditState: 'stale',
+        blocked: false,
+        complianceState: 'review_required',
+        corporationId: 98_000_001,
+        cursor: 'opaque_cursor',
+        direction: 'desc',
+        groupId: '00000000-0000-4000-8000-000000000099',
+        limit: 50,
         organizationVersion: 7,
         query: 'pilot',
-        corporationId: 98_000_001,
-        groupId: '00000000-0000-4000-8000-000000000099',
-        complianceState: 'review_required',
-        blocked: false,
-        auditState: 'stale',
         sort: 'managed_since',
-        direction: 'desc',
-        cursor: 'opaque_cursor',
-        limit: 50,
       },
     })
 
-    expect(options.key).toEqual([
+    expect(options.key).toStrictEqual([
       'private',
       'organization',
       'reviewer',
@@ -48,7 +48,7 @@ describe('organization review queries', () => {
       'opaque_cursor',
       50,
     ])
-    expect(options.meta?.esiPersistence).toEqual({ kind: 'none' })
+    expect(options.meta?.esiPersistence).toStrictEqual({ kind: 'none' })
     expect(options.enabled ?? false).toBe(false)
   })
 
@@ -61,11 +61,11 @@ describe('organization review queries', () => {
     const directory = organizationReviewDirectoryQuery({
       apiClient: client,
       enabled: true,
-      input: { organizationVersion: 7, limit: 25 },
+      input: { limit: 25, organizationVersion: 7 },
     })
 
-    await expect(entry.query({ signal } as never)).resolves.toEqual(entryResponse())
-    await expect(directory.query({ signal } as never)).resolves.toEqual(directoryResponse())
+    await expect(entry.query({ signal } as never)).resolves.toStrictEqual(entryResponse())
+    await expect(directory.query({ signal } as never)).resolves.toStrictEqual(directoryResponse())
     expect(entryGet).toHaveBeenCalledWith(undefined, { init: { signal } })
     expect(membersGet).toHaveBeenCalledWith({ query: { limit: '25' } }, { init: { signal } })
 
@@ -89,12 +89,12 @@ describe('organization review queries', () => {
       enabled: true,
       input: {
         organizationVersion: 7,
-        targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
         targetCharacterId: 90_000_001,
+        targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
       },
     })
 
-    expect(options.key).toEqual([
+    expect(options.key).toStrictEqual([
       'private',
       'organization',
       'reviewer',
@@ -104,7 +104,7 @@ describe('organization review queries', () => {
       90_000_001,
       null,
     ])
-    expect(options.meta?.esiPersistence).toEqual({ kind: 'none' })
+    expect(options.meta?.esiPersistence).toStrictEqual({ kind: 'none' })
     await expect(options.query({ signal } as never)).resolves.toMatchObject({
       member: targetResponse().member,
     })
@@ -121,8 +121,8 @@ describe('organization review queries', () => {
       enabled: true,
       input: {
         organizationVersion: 7,
-        targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
         targetCharacterId: 90_000_099,
+        targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
       },
     })
 
@@ -140,31 +140,31 @@ describe('organization review selection policy', () => {
 
     expect(
       availableOrganizationReviewerPanels([authorized(alpha), authorized(beta)], [alpha, mismatch]),
-    ).toEqual([alpha])
+    ).toStrictEqual([alpha])
   })
 
   it('validates untrusted deep links and never accepts an invented character identity', () => {
     expect(
       parseOrganizationReviewUrlState({
-        targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
-        targetCharacterId: '90000002',
         contribution: 'alpha/summary',
+        targetCharacterId: '90000002',
+        targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
       }),
-    ).toEqual({
-      targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
-      targetCharacterId: 90_000_002,
+    ).toStrictEqual({
       contribution: 'alpha/summary',
+      targetCharacterId: 90_000_002,
+      targetUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
     })
     expect(
       parseOrganizationReviewUrlState({
-        targetUserId: '../user',
-        targetCharacterId: '-1',
         contribution: '@bad/path/extra',
+        targetCharacterId: '-1',
+        targetUserId: '../user',
       }),
-    ).toEqual({})
+    ).toStrictEqual({})
 
     const member = targetResponse().member
-    const sectionAuthority = { disclosureVersion: 2, activationVersion: 3 }
+    const sectionAuthority = { activationVersion: 3, disclosureVersion: 2 }
     const accountTarget = selectedReviewerTarget(
       member,
       panel('alpha', 'summary', 'managed-organization-account'),
@@ -177,21 +177,21 @@ describe('organization review selection policy', () => {
       member.managedAffiliation.characterId,
       sectionAuthority,
     )
-    expect(accountTarget).toEqual({
+    expect(accountTarget).toStrictEqual({
       kind: 'managed-organization-account',
       managedMemberLifecycleId: 'member-lifecycle-1',
-      userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
       sectionActivationVersion: 3,
-    })
-    expect(characterTarget).toEqual({
-      kind: 'managed-organization-character',
-      managedMemberLifecycleId: 'member-lifecycle-1',
       userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+    })
+    expect(characterTarget).toStrictEqual({
+      authorizationGeneration: 4,
       characterId: 90_000_001,
       characterLifecycleId: 'character-lifecycle-1',
-      authorizationGeneration: 4,
       disclosureVersion: 2,
+      kind: 'managed-organization-character',
+      managedMemberLifecycleId: 'member-lifecycle-1',
       sectionActivationVersion: 3,
+      userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
     })
     expect(
       selectedReviewerTarget(
@@ -201,9 +201,9 @@ describe('organization review selection policy', () => {
         sectionAuthority,
       ),
     ).toMatchObject({
+      authorizationGeneration: 5,
       characterId: 90_000_002,
       characterLifecycleId: 'character-lifecycle-2',
-      authorizationGeneration: 5,
     })
     expect(
       selectedReviewerTarget(
@@ -229,13 +229,12 @@ function apiClient(entryGet = vi.fn(), membersGet = vi.fn(), targetGet = vi.fn()
 
 function entryResponse() {
   const alpha = panel('alpha', 'summary', 'managed-organization-account')
-  return { organizationVersion: 7, contributions: [authorized(alpha)] }
+  return { contributions: [authorized(alpha)], organizationVersion: 7 }
 }
 
 function directoryResponse() {
   return {
-    organizationVersion: 7,
-    status: 'available' as const,
+    groupFacets: [{ groupId: 'group-remote', name: 'Remote reviewers' }],
     items: [
       {
         managedMemberLifecycleId: 'member-lifecycle-1',
@@ -276,14 +275,14 @@ function directoryResponse() {
         },
       },
     ],
-    groupFacets: [{ groupId: 'group-remote', name: 'Remote reviewers' }],
     nextCursor: null,
+    organizationVersion: 7,
+    status: 'available' as const,
   }
 }
 
 function targetResponse() {
   return {
-    organizationVersion: 7,
     member: {
       ...directoryResponse().items[0]!,
       characters: [
@@ -317,6 +316,7 @@ function targetResponse() {
         },
       ],
     },
+    organizationVersion: 7,
   }
 }
 
@@ -326,20 +326,20 @@ function panel(
   target: 'managed-organization-account' | 'managed-organization-character',
 ) {
   return {
-    moduleId,
-    contributionId,
-    routeId: `${moduleId}-${contributionId}`,
-    routePath: `/api/modules/${moduleId}/${contributionId}`,
     audience: 'hr' as const,
-    requiredPermission: `${moduleId}.review`,
-    target,
-    panelExport: `./reviewer/${contributionId}`,
-    label: `${moduleId} ${contributionId}`,
+    contributionId,
     description: `Review ${moduleId}.`,
     icon: 'overview' as const,
-    order: moduleId === 'alpha' ? 10 : 20,
-    sectionId: undefined,
+    label: `${moduleId} ${contributionId}`,
     load: vi.fn(),
+    moduleId,
+    order: moduleId === 'alpha' ? 10 : 20,
+    panelExport: `./reviewer/${contributionId}`,
+    requiredPermission: `${moduleId}.review`,
+    routeId: `${moduleId}-${contributionId}`,
+    routePath: `/api/modules/${moduleId}/${contributionId}`,
+    sectionId: undefined,
+    target,
   }
 }
 
@@ -361,7 +361,7 @@ function authorized(panelEntry: ReturnType<typeof panel>) {
     contributionId,
     routeId,
     routePath,
-    sectionId,
+    ...(sectionId === undefined ? {} : { sectionId }),
     target,
     label,
     description,

@@ -54,8 +54,8 @@ export function mapCharacterFinanceBalance(
 ): FinanceBalance {
   return {
     balance: response.balance,
-    validatedAt: response.validatedAt,
     stale: response.stale,
+    validatedAt: response.validatedAt,
   }
 }
 
@@ -72,9 +72,9 @@ export function mapCharacterFinanceJournal(
       description: entry.description,
     })),
     page: response.page,
+    stale: response.stale,
     totalPages: response.totalPages,
     validatedAt: response.validatedAt,
-    stale: response.stale,
   }
 }
 
@@ -82,6 +82,9 @@ export function mapCharacterFinanceTransactions(
   response: CharacterFinanceTransactionsResponse,
 ): FinanceTransactions {
   return {
+    fromId: response.fromId,
+    nextFromId: response.nextFromId,
+    stale: response.stale,
     transactions: response.transactions.map((transaction) => ({
       transactionId: transaction.transactionId,
       date: transaction.date,
@@ -94,10 +97,7 @@ export function mapCharacterFinanceTransactions(
       locationId: transaction.locationId,
       locationName: transaction.locationName,
     })),
-    fromId: response.fromId,
-    nextFromId: response.nextFromId,
     validatedAt: response.validatedAt,
-    stale: response.stale,
   }
 }
 
@@ -121,8 +121,8 @@ export function mapCharacterFinanceOpenOrders(
       expiresAt: order.expiresAt,
       state: null,
     })),
-    validatedAt: response.validatedAt,
     stale: response.stale,
+    validatedAt: response.validatedAt,
   }
 }
 
@@ -147,9 +147,9 @@ export function mapCharacterFinanceOrderHistory(
       state: order.state,
     })),
     page: response.page,
+    stale: response.stale,
     totalPages: response.totalPages,
     validatedAt: response.validatedAt,
-    stale: response.stale,
   }
 }
 
@@ -173,9 +173,9 @@ export function mapCharacterFinanceContracts(
       volume: contract.volume,
     })),
     page: response.page,
+    stale: response.stale,
     totalPages: response.totalPages,
     validatedAt: response.validatedAt,
-    stale: response.stale,
   }
 }
 
@@ -191,8 +191,8 @@ export function mapCharacterFinanceContractItems(
       quantity: item.quantity,
       blueprint: item.blueprint,
     })),
-    validatedAt: response.validatedAt,
     stale: response.stale,
+    validatedAt: response.validatedAt,
   }
 }
 
@@ -205,8 +205,8 @@ export function mapCharacterFinanceContractBids(
       amount: bid.amount,
       bidAt: bid.bidAt,
     })),
-    validatedAt: response.validatedAt,
     stale: response.stale,
+    validatedAt: response.validatedAt,
   }
 }
 
@@ -236,18 +236,20 @@ export function mapCharacterFinanceResourceState({
   }
 
   return {
+    authorizationAction,
     authorizationRequired,
-    loading,
-    stale: data?.stale ?? false,
+    canRetry: normalizedError !== null && !authorizationRequired,
     errorCode,
     errorMessage: financeErrorMessage(normalizedError, apiError),
-    canRetry: normalizedError !== null && !authorizationRequired,
-    authorizationAction,
+    loading,
+    stale: data?.stale ?? false,
   }
 }
 
 function financeErrorMessage(error: Error | null, apiError: ApiQueryError | null) {
-  if (!error) return null
+  if (!error) {
+    return null
+  }
   const message = error.message.trim()
     ? error.message
     : 'This Finance resource is temporarily unavailable.'

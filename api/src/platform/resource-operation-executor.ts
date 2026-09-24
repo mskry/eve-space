@@ -126,7 +126,9 @@ export async function executeInstalledResourceOperation(
     signal: options.signal,
   })
   options.signal?.throwIfAborted()
-  if (guarded.outcome === 'noop') return guarded
+  if (guarded.outcome === 'noop') {
+    return guarded
+  }
   options.onAuthorityResolved?.({
     authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
     managedAuthority: guarded.managedAuthority,
@@ -135,12 +137,16 @@ export async function executeInstalledResourceOperation(
   const subject =
     guarded.subject ??
     toPlatformResourceSubject(identity as Parameters<typeof toPlatformResourceSubject>[0])
-  if (!subject) return { outcome: 'noop', reason: 'obsolete' }
-  if (options.request)
+  if (!subject) {
+    return { outcome: 'noop', reason: 'obsolete' }
+  }
+  if (options.request) {
     return executeResourceRequest(identity, options, guarded, subject, options.request)
+  }
   const implementation = guarded.resource.implementation as PlatformResourceImplementation
-  if (implementation.mode === 'bounded-collection')
+  if (implementation.mode === 'bounded-collection') {
     return executeCollectedResourceOperation(identity, options, guarded, subject, implementation)
+  }
   return executeSingleResourceOperation(identity, options, guarded, subject, implementation)
 }
 
@@ -158,35 +164,37 @@ async function executeCollectedResourceOperation(
   options.signal?.throwIfAborted()
   const state: ResourceCollectionExecutionState = { requests: 0 }
   const requestContext: ResourceCollectionRequestContext = {
+    collectionContext,
+    guarded,
     identity,
     options,
-    guarded,
-    subject,
-    collectionContext,
     state,
+    subject,
   }
   const collected = await implementation.collect({
     ...collectionContext,
-    subject,
     authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
-    managedAuthority: guarded.managedAuthority,
     capabilities: createResourceCollectionCapabilities(options, guarded.resource),
-    requestBudget: RESOURCE_COLLECTION_REQUEST_BUDGET,
+    managedAuthority: guarded.managedAuthority,
     operations: createResourceCollectionOperations(requestContext),
+    requestBudget: RESOURCE_COLLECTION_REQUEST_BUDGET,
+    subject,
   })
   options.signal?.throwIfAborted()
-  if (!state.latest) throw new Error('Resource collection must validate an observation')
+  if (!state.latest) {
+    throw new Error('Resource collection must validate an observation')
+  }
   return {
-    outcome: 'loaded',
-    resource: guarded.resource,
-    subject,
-    authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
     authorizationCharacterId: guarded.authorizationCharacterId,
     authorizationCharacterLifecycleId: guarded.authorizationCharacterLifecycleId,
+    authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
+    complete: collected.complete,
     managedAuthority: guarded.managedAuthority,
     organizationVersion: collectionContext.organizationVersion,
-    complete: collected.complete,
+    outcome: 'loaded',
+    resource: guarded.resource,
     result: { ...state.latest, data: collected.data },
+    subject,
   }
 }
 
@@ -195,8 +203,9 @@ function createResourceCollectionOperations(
   context: ResourceCollectionRequestContext,
 ): PlatformResourceOperationMethods<PlatformResourceOperationProtocol> {
   const operations: Record<string, ResourceCollectionOperationMethod> = Object.create(null)
-  for (const operationId of declaredCollectionOperations(context.guarded.resource))
+  for (const operationId of declaredCollectionOperations(context.guarded.resource)) {
     operations[operationId] = (inputs) => executeCollectionRequest(context, operationId, inputs)
+  }
   return Object.freeze(operations)
 }
 
@@ -207,8 +216,9 @@ async function executeCollectionRequest(
 ): Promise<PlatformResourceOperationResult<unknown>> {
   context.options.signal?.throwIfAborted()
   context.state.requests += 1
-  if (context.state.requests > RESOURCE_COLLECTION_REQUEST_BUDGET)
+  if (context.state.requests > RESOURCE_COLLECTION_REQUEST_BUDGET) {
     throw new Error('Resource collection request budget exceeded')
+  }
   assertDeclaredCollectionOperation(operationId, context.guarded.resource)
   assertCollectionSubject(inputs, context.subject, context.collectionContext.corporationId)
   if (operationId === 'universe-resolve-names' && !context.options.executeEsiOperation) {
@@ -218,7 +228,7 @@ async function executeCollectionRequest(
   }
   const result = await executeInstalledResourceOperation(context.identity, {
     ...context.options,
-    request: { operationId, inputs },
+    request: { inputs, operationId },
   })
   context.options.signal?.throwIfAborted()
   assertCollectionAuthority(result, context.guarded)
@@ -240,6 +250,8 @@ async function resolveCollectionUniverseNames(
     getPlatformEsiOperationDefinition('universe-resolve-names').descriptor.responseSchema
   const validatedAt = new Date().toISOString()
   return {
+    authorizationGeneration: null,
+    cachedUntil: validatedAt,
     data: narrowPlatformEsiOperationOutput(
       'universe-resolve-names',
       ids.flatMap((id) => {
@@ -247,12 +259,10 @@ async function resolveCollectionUniverseNames(
         return name && responseSchema.safeParse([name]).success ? [name] : []
       }),
     ),
-    authorizationGeneration: null,
-    cachedUntil: validatedAt,
-    validatedAt,
+    quota: {},
     source: 'cache',
     stale: false,
-    quota: {},
+    validatedAt,
   }
 }
 
@@ -270,8 +280,8 @@ async function executeSingleResourceOperation(
     throw new PlatformResourceMappingError(error)
   }
   const loaded = await executeResourceRequest(identity, options, guarded, subject, {
-    operationId: guarded.resource.operationId,
     inputs,
+    operationId: guarded.resource.operationId,
   })
   return {
     ...loaded,
@@ -304,13 +314,12 @@ async function executeResourceRequest(
   const authorizationCharacterLifecycleId =
     guarded.authorizationCharacterLifecycleId ??
     (subject.kind === 'character' ? subject.lifecycleId : null)
-  if (authorization && (!authorizationCharacterId || !authorizationCharacterLifecycleId))
+  if (authorization && (!authorizationCharacterId || !authorizationCharacterLifecycleId)) {
     throw new Error(
       `Character-authorized resource ${identity.moduleId}/${identity.resourceId} lacks an authorization source`,
     )
+  }
   const execution = await executeResourceEsiOperation(options, {
-    operation,
-    inputs,
     authorization:
       authorization && operationAuthorization.kind === 'character'
         ? {
@@ -320,22 +329,24 @@ async function executeResourceRequest(
             generation: authorization.tokenVersion,
           }
         : { kind: 'public' },
+    inputs,
+    operation,
     ...(options.signal ? { signal: options.signal } : {}),
   })
   options.signal?.throwIfAborted()
   assertPlatformResourceRefreshSucceeded(execution)
   return {
-    outcome: 'loaded',
-    resource: guarded.resource,
-    subject,
+    authorizationCharacterId,
+    authorizationCharacterLifecycleId,
     authorizationGeneration:
       operationAuthorization.kind === 'character'
         ? execution.authorizationGeneration
         : (guarded.authorization?.tokenVersion ?? execution.authorizationGeneration),
-    authorizationCharacterId,
-    authorizationCharacterLifecycleId,
     managedAuthority: guarded.managedAuthority,
+    outcome: 'loaded',
+    resource: guarded.resource,
     result: execution,
+    subject,
   }
 }
 
@@ -347,8 +358,12 @@ async function executeResourceEsiOperation(
     return await (options.executeEsiOperation ?? executePlatformEsiOperation)(request)
   } catch (error) {
     options.signal?.throwIfAborted()
-    if (error instanceof PlatformEsiRequestError) throw new PlatformResourceMappingError(error)
-    if (isEsiAuthorizationFailure(error)) throw new PlatformResourceAuthorizationError(error)
+    if (error instanceof PlatformEsiRequestError) {
+      throw new PlatformResourceMappingError(error)
+    }
+    if (isEsiAuthorizationFailure(error)) {
+      throw new PlatformResourceAuthorizationError(error)
+    }
     throw error
   }
 }
@@ -364,9 +379,9 @@ async function mapResourceResult(
     const createCapabilities =
       options.createMappingCapabilities ?? createPlatformResourceMappingCapabilities
     const data = await implementation.map({
-      subject,
-      data: result.data,
       capabilities: createCapabilities(resource),
+      data: result.data,
+      subject,
     })
     options.signal?.throwIfAborted()
     return { ...result, data }
@@ -407,8 +422,9 @@ function assertDeclaredCollectionOperation(
   operationId: string,
   resource: PlatformInstalledResourceDescriptor,
 ) {
-  if (!declaredCollectionOperations(resource).has(operationId))
+  if (!declaredCollectionOperations(resource).has(operationId)) {
     throw new Error('Resource collection operation is undeclared')
+  }
 }
 
 function assertCollectionSubject(
@@ -416,18 +432,22 @@ function assertCollectionSubject(
   subject: PlatformResourceSubject,
   corporationId: number | null,
 ) {
-  if (!isRecord(inputs) || !isRecord(inputs.path)) return
+  if (!isRecord(inputs) || !isRecord(inputs.path)) {
+    return
+  }
   if (
     'character_id' in inputs.path &&
     (subject.kind !== 'character' || inputs.path.character_id !== subject.characterId)
-  )
+  ) {
     throw new Error('Resource collection character is outside its subject')
+  }
   if (
     'corporation_id' in inputs.path &&
     subject.kind !== 'deployment' &&
     inputs.path.corporation_id !== corporationId
-  )
+  ) {
     throw new Error('Resource collection corporation is outside its subject')
+  }
 }
 
 function assertCollectionAuthority(
@@ -440,13 +460,16 @@ function assertCollectionAuthority(
     result.authorizationCharacterId !== guarded.authorizationCharacterId ||
     result.authorizationCharacterLifecycleId !== guarded.authorizationCharacterLifecycleId ||
     !managedCollectionAuthorityEquals(result.managedAuthority, guarded.managedAuthority)
-  )
+  ) {
     throw new Error('Resource collection authority changed')
+  }
 }
 
 function retainCollectionExecution(
   state: ResourceCollectionExecutionState,
   result: PlatformEsiExecution<unknown>,
 ) {
-  if (!state.latest || result.validatedAt < state.latest.validatedAt) state.latest = result
+  if (!state.latest || result.validatedAt < state.latest.validatedAt) {
+    state.latest = result
+  }
 }

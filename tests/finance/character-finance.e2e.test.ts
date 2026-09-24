@@ -21,33 +21,34 @@ const apiServer = await startCorsJsonApi((request) => {
   if (url.pathname === '/auth/config') {
     return {
       body: {
+        attachUrl: `${apiOrigin}/auth/eve/attach`,
         configured: true,
         loginUrl: `${apiOrigin}/auth/eve/login`,
-        attachUrl: `${apiOrigin}/auth/eve/attach`,
       },
     }
   }
   if (url.pathname === '/auth/session') {
     return {
       body: {
-        authenticated: true,
         account: {
-          userId: 'finance-e2e-user',
           mainCharacter: { characterId, name: 'Ledger Pilot' },
+          userId: 'finance-e2e-user',
         },
+        authenticated: true,
       },
     }
   }
   if (url.pathname === '/api/me/cache-admission') {
     return { body: cacheAdmissionForCharacter('finance-e2e-user', characterId) }
   }
-  if (url.pathname === '/api/admin/session') return { body: { authenticated: false } }
+  if (url.pathname === '/api/admin/session') {
+    return { body: { authenticated: false } }
+  }
   if (url.pathname === '/api/modules') {
     return {
       body: {
         enabledModuleIds: [],
         shellNavigationOrder: {
-          dashboard: [],
           character: [
             { ownerId: 'core', navigationId: 'core-character-overview' },
             { ownerId: 'core', navigationId: 'core-character-skills' },
@@ -55,6 +56,7 @@ const apiServer = await startCorsJsonApi((request) => {
             { ownerId: 'core', navigationId: 'core-character-history' },
             { ownerId: 'core', navigationId: 'core-character-mail' },
           ],
+          dashboard: [],
         },
       },
     }
@@ -63,96 +65,39 @@ const apiServer = await startCorsJsonApi((request) => {
     return { body: { characters: [ownedCharacter()] } }
   }
   if (url.pathname === `/api/me/characters/${characterId}/wallet`) {
-    return { body: { characterId, balance: 9_876_543.21, ...metadata() } }
+    return { body: { balance: 9_876_543.21, characterId, ...metadata() } }
   }
   if (url.pathname === `/api/me/characters/${characterId}/wallet/journal`) {
-    const page = Number(url.searchParams.get('page'))
-    return {
-      body: {
-        characterId,
-        entries:
-          apiMode === 'empty-failed'
-            ? []
-            : [journalEntry(page * 10 + 1, page === 1 ? 'Market escrow' : 'Mission reward')],
-        page,
-        totalPages: 3,
-        ...metadata(),
-      },
-    }
+    return journalApiResponse(url)
   }
   if (url.pathname === `/api/me/characters/${characterId}/wallet/transactions`) {
-    const fromId = url.searchParams.get('fromId')
-    return {
-      body: {
-        characterId,
-        transactions:
-          apiMode === 'empty-failed'
-            ? []
-            : fromId
-              ? [transaction(899, 34, 'Older Tritanium')]
-              : Array.from({ length: 28 }, (_, index) =>
-                  transaction(1_100 - index, index === 1 ? 999_999 : 34, transactionName(index)),
-                ),
-        fromId: fromId ? Number(fromId) : null,
-        nextFromId: fromId ? null : 900,
-        ...metadata(),
-      },
-    }
+    return transactionsApiResponse(url)
   }
   if (url.pathname === `/api/me/characters/${characterId}/market/orders`) {
-    if (apiMode === 'partial') return scopeRequired('market orders')
+    if (apiMode === 'partial') {
+      return scopeRequired('market orders')
+    }
     if (apiMode === 'empty-failed') {
       return {
-        status: 502,
         body: { code: 'ESI_UNAVAILABLE', message: 'Open orders are temporarily unavailable.' },
+        status: 502,
       }
     }
     return {
       body: {
         characterId,
         orders: Array.from({ length: 20 }, (_, index) =>
-          marketOrder(2_000 + index, index % 2 === 0 ? 35 : 34, index % 2 === 0),
+          marketOrder(2000 + index, index % 2 === 0 ? 35 : 34, index % 2 === 0),
         ),
         ...metadata(),
       },
     }
   }
   if (url.pathname === `/api/me/characters/${characterId}/market/orders/history`) {
-    if (apiMode === 'partial') return scopeRequired('order history')
-    const page = Number(url.searchParams.get('page'))
-    return {
-      body: {
-        characterId,
-        orders:
-          apiMode === 'empty-failed'
-            ? []
-            : Array.from({ length: 18 }, (_, index) => ({
-                ...marketOrder(page * 10_000 + index, 36, false),
-                state: index % 2 === 0 ? 'expired' : 'cancelled',
-              })),
-        page,
-        totalPages: 2,
-        ...metadata(),
-      },
-    }
+    return orderHistoryApiResponse(url)
   }
   if (url.pathname === `/api/me/characters/${characterId}/contracts`) {
-    if (apiMode === 'partial') return scopeRequired('contracts')
-    const page = Number(url.searchParams.get('page'))
-    return {
-      body: {
-        characterId,
-        contracts:
-          apiMode === 'empty-failed'
-            ? []
-            : Array.from({ length: 16 }, (_, index) =>
-                contract(page * 1_000 + index, index === 0 ? 'auction' : 'loan', index),
-              ),
-        page,
-        totalPages: 2,
-        ...metadata(),
-      },
-    }
+    return contractsApiResponse(url)
   }
   const itemMatch = url.pathname.match(
     new RegExp(`^/api/me/characters/${characterId}/contracts/(\\d+)/items$`),
@@ -164,13 +109,13 @@ const apiServer = await startCorsJsonApi((request) => {
         contractId: Number(itemMatch[1]),
         items: [
           {
+            blueprint: null,
+            direction: 'included',
+            isSingleton: false,
+            quantity: 2,
             recordId: 301,
             typeId: 37,
             typeName: 'Mexallon',
-            direction: 'included',
-            quantity: 2,
-            isSingleton: false,
-            blueprint: null,
           },
         ],
         ...metadata(),
@@ -183,33 +128,111 @@ const apiServer = await startCorsJsonApi((request) => {
   if (bidMatch) {
     return {
       body: {
+        bids: [{ bidId: 401, amount: 250_000, bidAt: '2026-09-02T11:30:00.000Z' }],
         characterId,
         contractId: Number(bidMatch[1]),
-        bids: [{ bidId: 401, amount: 250_000, bidAt: '2026-09-02T11:30:00.000Z' }],
         ...metadata(),
       },
     }
   }
   const typeMatch = url.pathname.match(/^\/api\/universe\/types\/(\d+)$/)
   if (typeMatch) {
-    const typeId = Number(typeMatch[1])
-    if (typeId === 999_999) {
-      return { status: 404, body: { code: 'TYPE_NOT_FOUND', message: 'Type not found.' } }
-    }
-    return {
-      body: {
-        typeId,
-        name: typeId === 34 ? 'Tritanium' : typeId === 35 ? 'Pyerite' : 'Mexallon',
-        description: 'Public static item detail.',
-        group: { id: 18, name: 'Mineral' },
-        category: { id: 4, name: 'Material' },
-        detail: null,
-      },
-    }
+    return universeTypeApiResponse(Number(typeMatch[1]))
   }
 
-  return { status: 404, body: { code: 'NOT_FOUND', message: 'Not found.' } }
+  return { body: { code: 'NOT_FOUND', message: 'Not found.' }, status: 404 }
 })
+
+function contractsApiResponse(url: URL) {
+  if (apiMode === 'partial') {
+    return scopeRequired('contracts')
+  }
+  const page = Number(url.searchParams.get('page'))
+  const contracts =
+    apiMode === 'empty-failed'
+      ? []
+      : Array.from({ length: 16 }, (_, index) =>
+          contract(page * 1000 + index, index === 0 ? 'auction' : 'loan', index),
+        )
+  return { body: { characterId, contracts, page, totalPages: 2, ...metadata() } }
+}
+
+function orderHistoryApiResponse(url: URL) {
+  if (apiMode === 'partial') {
+    return scopeRequired('order history')
+  }
+  const page = Number(url.searchParams.get('page'))
+  const orders =
+    apiMode === 'empty-failed'
+      ? []
+      : Array.from({ length: 18 }, (_, index) => ({
+          ...marketOrder(page * 10_000 + index, 36, false),
+          state: index % 2 === 0 ? 'expired' : 'cancelled',
+        }))
+  return { body: { characterId, orders, page, totalPages: 2, ...metadata() } }
+}
+
+function journalApiResponse(url: URL) {
+  const page = Number(url.searchParams.get('page'))
+  const description = page === 1 ? 'Market escrow' : 'Mission reward'
+  const entries = apiMode === 'empty-failed' ? [] : [journalEntry(page * 10 + 1, description)]
+  return {
+    body: {
+      characterId,
+      entries,
+      page,
+      totalPages: 3,
+      ...metadata(),
+    },
+  }
+}
+
+function transactionsApiResponse(url: URL) {
+  const fromId = url.searchParams.get('fromId')
+  return {
+    body: {
+      characterId,
+      fromId: fromId ? Number(fromId) : null,
+      nextFromId: fromId ? null : 900,
+      transactions: transactionsForRequest(fromId),
+      ...metadata(),
+    },
+  }
+}
+
+function transactionsForRequest(fromId: string | null) {
+  if (apiMode === 'empty-failed') {
+    return []
+  }
+  if (fromId) {
+    return [transaction(899, 34, 'Older Tritanium')]
+  }
+  return Array.from({ length: 28 }, (_, index) =>
+    transaction(1100 - index, index === 1 ? 999_999 : 34, transactionName(index)),
+  )
+}
+
+function universeTypeApiResponse(typeId: number) {
+  if (typeId === 999_999) {
+    return { body: { code: 'TYPE_NOT_FOUND', message: 'Type not found.' }, status: 404 }
+  }
+  let name = 'Mexallon'
+  if (typeId === 34) {
+    name = 'Tritanium'
+  } else if (typeId === 35) {
+    name = 'Pyerite'
+  }
+  return {
+    body: {
+      category: { id: 4, name: 'Material' },
+      description: 'Public static item detail.',
+      detail: null,
+      group: { id: 18, name: 'Mineral' },
+      name,
+      typeId,
+    },
+  }
+}
 
 apiOrigin = apiServer.origin
 process.env.NUXT_PUBLIC_API_BASE = apiOrigin
@@ -219,14 +242,14 @@ afterAll(apiServer.close)
 
 describe('character Finance production route', async () => {
   await setup({
-    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
+    browser: true,
     build: false,
+    captureServerLogs: false,
     nuxtConfig: {
       nitro: { output: { dir: fileURLToPath(new URL('../../.output-e2e', import.meta.url)) } },
     },
-    browser: true,
+    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
     server: true,
-    captureServerLogs: false,
     setupTimeout: 120_000,
   })
 
@@ -259,7 +282,7 @@ describe('character Finance production route', async () => {
 
   it('renders long desktop lists, bounded pagination, and contract drill-down geometry', async () => {
     const page = await openPage(`/characters/${characterId}/finance`)
-    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.setViewportSize({ height: 900, width: 1440 })
     await page
       .locator('.character-summary-card h2')
       .filter({ hasText: '9,876,543.21 ISK' })
@@ -284,7 +307,7 @@ describe('character Finance production route', async () => {
       (url) => !url.searchParams.has('fromId'),
     ).length
     await servicePanel(page, 'Market transactions')
-      .getByRole('button', { name: 'OLDER', exact: true })
+      .getByRole('button', { exact: true, name: 'OLDER' })
       .click()
     await page.getByText('Older Tritanium', { exact: true }).waitFor()
     expect(transactionRequests().at(-1)?.searchParams.get('fromId')).toBe('900')
@@ -294,8 +317,8 @@ describe('character Finance production route', async () => {
 
     await openFinanceTab(page, 'Journal')
     const journalNext = servicePanel(page, 'Wallet journal').getByRole('button', {
-      name: 'NEXT',
       exact: true,
+      name: 'NEXT',
     })
     await journalNext.focus()
     await page.keyboard.press('Enter')
@@ -324,16 +347,16 @@ describe('character Finance production route', async () => {
     ).toBe(16)
 
     const auctionTrigger = contractRow(page, 'Auction lot 0').getByRole('button', {
-      name: 'Open details for Auction lot 0',
       exact: true,
+      name: 'Open details for Auction lot 0',
     })
     expect(contractDetailRequests()).toHaveLength(0)
     await auctionTrigger.click()
-    const details = page.getByRole('dialog', { name: 'Auction lot 0', exact: true })
+    const details = page.getByRole('dialog', { exact: true, name: 'Auction lot 0' })
     await details.waitFor()
     const closeDetails = details.getByRole('button', {
-      name: 'Close contract details',
       exact: true,
+      name: 'Close contract details',
     })
     expect(await closeDetails.evaluate((element) => document.activeElement === element)).toBe(true)
     await waitForAnimations(details)
@@ -360,16 +383,16 @@ describe('character Finance production route', async () => {
 
   it('keeps keyboard controls, item popovers, drill-downs, and document width usable on mobile', async () => {
     const page = await openPage(`/characters/${characterId}/finance`)
-    await page.setViewportSize({ width: 390, height: 844 })
+    await page.setViewportSize({ height: 844, width: 390 })
     await openFinanceTab(page, 'Orders')
     const ordersPanel = servicePanel(page, 'Market orders')
-    const historyMode = ordersPanel.getByRole('button', { name: 'Order history', exact: true })
+    const historyMode = ordersPanel.getByRole('button', { exact: true, name: 'Order history' })
     await historyMode.focus()
     await page.keyboard.press('Enter')
     await ordersPanel.getByText('Scordite', { exact: true }).first().waitFor()
-    const sellFilter = ordersPanel.getByRole('button', { name: 'Sell', exact: true })
+    const sellFilter = ordersPanel.getByRole('button', { exact: true, name: 'Sell' })
     await sellFilter.click()
-    const historyNext = ordersPanel.getByRole('button', { name: 'NEXT', exact: true })
+    const historyNext = ordersPanel.getByRole('button', { exact: true, name: 'NEXT' })
     await historyNext.focus()
     await page.keyboard.press('Enter')
     expect(historyRequests().at(-1)?.searchParams.get('page')).toBe('2')
@@ -381,12 +404,12 @@ describe('character Finance production route', async () => {
       .getByText('Auction lot 0', { exact: true })
       .waitFor()
     const auctionTrigger = contractRow(page, 'Auction lot 0').getByRole('button', {
-      name: 'Open details for Auction lot 0',
       exact: true,
+      name: 'Open details for Auction lot 0',
     })
     await auctionTrigger.focus()
     await page.keyboard.press('Enter')
-    const details = page.getByRole('dialog', { name: 'Auction lot 0', exact: true })
+    const details = page.getByRole('dialog', { exact: true, name: 'Auction lot 0' })
     await details.waitFor()
     await waitForAnimations(details)
     const detailBox = await details.boundingBox()
@@ -398,7 +421,7 @@ describe('character Finance production route', async () => {
     ).toBeLessThan(2)
     expect(Math.abs(detailBox!.width - page.viewportSize()!.width)).toBeLessThan(2)
 
-    await details.getByRole('button', { name: 'Close contract details', exact: true }).click()
+    await details.getByRole('button', { exact: true, name: 'Close contract details' }).click()
     await details.waitFor({ state: 'detached' })
 
     await openFinanceTab(page, 'Transactions')
@@ -412,7 +435,9 @@ describe('character Finance production route', async () => {
     await page.keyboard.press('Enter')
     const dialog = page.locator('.eve-item-information-popover[role="dialog"]')
     await dialog.getByRole('heading', { name: 'Tritanium' }).waitFor()
-    expect(typeDetailRequests().map((url) => url.pathname)).toEqual(['/api/universe/types/34'])
+    expect(typeDetailRequests().map((url) => url.pathname)).toStrictEqual([
+      '/api/universe/types/34',
+    ])
     expect(financeRequests()).toHaveLength(financeCount)
     await page.keyboard.press('Escape')
     await dialog.waitFor({ state: 'detached' })
@@ -460,7 +485,7 @@ describe('character Finance production route', async () => {
       .waitFor()
     expect(
       await servicePanel(page, 'Wallet journal')
-        .getByRole('button', { name: 'NEXT', exact: true })
+        .getByRole('button', { exact: true, name: 'NEXT' })
         .isEnabled(),
     ).toBe(true)
     await openFinanceTab(page, 'Transactions')
@@ -469,7 +494,7 @@ describe('character Finance production route', async () => {
       .waitFor()
     expect(
       await servicePanel(page, 'Market transactions')
-        .getByRole('button', { name: 'OLDER', exact: true })
+        .getByRole('button', { exact: true, name: 'OLDER' })
         .isEnabled(),
     ).toBe(true)
     await openFinanceTab(page, 'Orders')
@@ -497,7 +522,7 @@ describe('character Finance production route', async () => {
 })
 
 function servicePanel(page: Page, title: string): Locator {
-  return page.getByRole('region', { name: title, exact: true })
+  return page.getByRole('region', { exact: true, name: title })
 }
 
 function financeTab(page: Page, label: string): Locator {
@@ -572,116 +597,118 @@ async function waitForAnimations(locator: Locator) {
 
 function scopeRequired(resource: string) {
   return {
-    status: 403,
     body: {
+      authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
       code: 'EVE_SCOPE_REQUIRED',
       message: `Authorize ${resource} for this character.`,
       requiredScope: 'required.scope.v1',
-      authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
     },
+    status: 403,
   }
 }
 
 function metadata() {
   return {
     cachedUntil: '2026-09-02T13:00:00.000Z',
-    validatedAt: '2026-09-02T12:00:00.000Z',
     stale: false,
+    validatedAt: '2026-09-02T12:00:00.000Z',
   }
 }
 
 function journalEntry(journalId: number, description: string) {
   return {
-    journalId,
-    date: '2026-09-02T11:00:00.000Z',
     amount: 50,
-    balance: 1_000,
-    referenceType: 'market_transaction',
-    description,
-    reason: null,
-    taxAmount: null,
+    balance: 1000,
     context: null,
+    date: '2026-09-02T11:00:00.000Z',
+    description,
+    journalId,
+    reason: null,
+    referenceType: 'market_transaction',
+    taxAmount: null,
   }
 }
 
 function transaction(transactionId: number, typeId: number, typeName: string) {
   return {
-    transactionId,
-    journalRefId: transactionId + 10,
     date: '2026-09-02T11:00:00.000Z',
+    isBuy: transactionId % 2 === 0,
+    journalRefId: transactionId + 10,
+    locationId: 60_000_001,
+    quantity: 5,
+    totalPrice: 50,
+    transactionId,
     typeId,
     typeName,
-    quantity: 5,
     unitPrice: 10,
-    totalPrice: 50,
-    isBuy: transactionId % 2 === 0,
-    locationId: 60_000_001,
   }
 }
 
 function transactionName(index: number) {
-  if (index === 1) return 'Unknown type 999999'
+  if (index === 1) {
+    return 'Unknown type 999999'
+  }
   return `Tritanium batch ${index}`
 }
 
 function marketOrder(orderId: number, typeId: number, isBuy: boolean) {
   return {
+    durationDays: 30,
+    escrow: null,
+    expiresAt: '2026-10-01T10:00:00.000Z',
+    isBuy,
+    issuedAt: '2026-09-01T10:00:00.000Z',
+    locationId: 60_000_001,
+    minimumVolume: null,
     orderId,
+    price: 100,
+    range: 'station',
+    regionId: 10_000_002,
     typeId,
     typeName: typeId === 35 ? 'Pyerite' : typeId === 36 ? 'Scordite' : 'Tritanium',
-    isBuy,
-    price: 100,
     volumeRemain: 10,
     volumeTotal: 20,
-    minimumVolume: null,
-    escrow: null,
-    range: 'station',
-    locationId: 60_000_001,
-    regionId: 10_000_002,
-    issuedAt: '2026-09-01T10:00:00.000Z',
-    durationDays: 30,
-    expiresAt: '2026-10-01T10:00:00.000Z',
   }
 }
 
 function contract(contractId: number, type: string, index: number) {
   return {
-    contractId,
-    type,
-    status: 'outstanding',
-    availability: 'personal',
-    role: type === 'auction' ? 'assigned' : 'issued',
-    title: type === 'auction' ? `Auction lot ${index}` : `Loan terms ${index}`,
-    issuedAt: '2026-09-01T10:00:00.000Z',
-    expiredAt: '2026-09-08T10:00:00.000Z',
     acceptedAt: null,
+    availability: 'personal',
+    buyout: type === 'auction' ? 200 : null,
+    collateral: null,
     completedAt: null,
+    contractId,
     daysToComplete: null,
-    startLocationId: 60_000_001,
     endLocationId: null,
+    expiredAt: '2026-09-08T10:00:00.000Z',
+    issuedAt: '2026-09-01T10:00:00.000Z',
     price: 100,
     reward: null,
-    collateral: null,
-    buyout: type === 'auction' ? 200 : null,
+    role: type === 'auction' ? 'assigned' : 'issued',
+    startLocationId: 60_000_001,
+    status: 'outstanding',
+    title: type === 'auction' ? `Auction lot ${index}` : `Loan terms ${index}`,
+    type,
     volume: 5,
   }
 }
 
 function ownedCharacter() {
   return {
-    characterId,
-    name: 'Ledger Pilot',
-    corporationId: 98_000_001,
-    allianceId: null,
-    isMain: true,
-    birthday: '2020-01-01T00:00:00.000Z',
-    securityStatus: 1.2,
-    raceFactionId: 500_001,
-    location: { solarSystemId: 30_000_142, solarSystemName: 'Jita', locationType: 'space' },
-    ship: { typeId: 670, typeName: 'Capsule', groupId: 29, name: 'Ledger One' },
-    walletBalance: 9_876_543.21,
-    totalSp: 5_000_000,
-    corporation: { id: 98_000_001, name: 'Ledger Corporation' },
     alliance: null,
+    allianceId: null,
+    birthday: '2020-01-01T00:00:00.000Z',
+    characterId,
+    corporation: { id: 98_000_001, name: 'Ledger Corporation' },
+    corporationId: 98_000_001,
+    isMain: true,
+    location: { locationType: 'space', solarSystemId: 30_000_142, solarSystemName: 'Jita' },
+    name: 'Ledger Pilot',
+    raceFactionId: 500_001,
+    securityStatus: 1.2,
+    ship: { groupId: 29, name: 'Ledger One', typeId: 670, typeName: 'Capsule' },
+    totalSp: 5_000_000,
+    walletBalance: 9_876_543.21,
   }
 }

@@ -3,21 +3,6 @@ import { findDependencyCycles } from '../dependency-cycles.js'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
-  representation: [
-    'collection-state',
-    'module-navigation',
-    'resource-batch-contract',
-    'resource-id-list',
-    'resource-identity',
-    'resource-subject',
-  ],
-  declaration: [
-    'core-resources',
-    'resource-classifier-input',
-    'resource-declarations',
-    'resources',
-  ],
-  state: ['module-runtime-cache'],
   adapter: [
     'collection-state-store',
     'core-read-capabilities',
@@ -33,6 +18,22 @@ const modulesByTier = {
     'resource-purge',
     'resource-collection-context',
   ],
+  application: ['resource-batch', 'resource-maintenance', 'resource-refresh'],
+  declaration: [
+    'core-resources',
+    'resource-classifier-input',
+    'resource-declarations',
+    'resources',
+  ],
+  entry: ['collection-state-repair'],
+  representation: [
+    'collection-state',
+    'module-navigation',
+    'resource-batch-contract',
+    'resource-id-list',
+    'resource-identity',
+    'resource-subject',
+  ],
   service: [
     'collection-status',
     'module-activity-provider-capabilities',
@@ -46,8 +47,7 @@ const modulesByTier = {
     'reviewer-contributions',
     'reviewer-search-capabilities',
   ],
-  application: ['resource-batch', 'resource-maintenance', 'resource-refresh'],
-  entry: ['collection-state-repair'],
+  state: ['module-runtime-cache'],
   transport: ['module-route-composition', 'organization-review-routes', 'routes'],
 } as const
 
@@ -60,13 +60,13 @@ const tierByModule = new Map<string, PlatformTier>(
 )
 
 const allowedImportTiersBySourceTier: Record<PlatformTier, readonly PlatformTier[]> = {
-  representation: ['representation'],
-  declaration: ['representation', 'declaration'],
-  state: ['representation', 'state'],
   adapter: ['representation', 'declaration', 'state', 'adapter'],
-  service: ['representation', 'declaration', 'state', 'adapter', 'service'],
   application: ['representation', 'declaration', 'state', 'adapter', 'service', 'application'],
+  declaration: ['representation', 'declaration'],
   entry: ['representation', 'declaration', 'state', 'adapter', 'service', 'application', 'entry'],
+  representation: ['representation'],
+  service: ['representation', 'declaration', 'state', 'adapter', 'service'],
+  state: ['representation', 'state'],
   transport: [
     'representation',
     'declaration',
@@ -100,20 +100,24 @@ export function platformImportViolations(sources: readonly PlatformSource[]) {
 function violationsForSource(source: PlatformSource) {
   const module = moduleName(source.path)
   const sourceTier = tierByModule.get(module)
-  if (!sourceTier) return [`${source.path}: Platform module ${module} has no declared tier`]
+  if (!sourceTier) {
+    return [`${source.path}: Platform module ${module} has no declared tier`]
+  }
 
   return typescriptModuleSpecifiers(source.path, source.source).flatMap((specifier) => {
     const importedPath = relativeImportPath(source.path, specifier)
-    if (importedPath?.startsWith('api/src/queue/'))
+    if (importedPath?.startsWith('api/src/queue/')) {
       return [`${source.path}: Platform module ${module} cannot import queue module ${specifier}`]
+    }
     if (
       sourceTier === 'representation' &&
       !importedPath?.startsWith('api/src/platform/') &&
       !allowedRepresentationPackages.has(specifier)
-    )
+    ) {
       return [
         `${source.path}: representation module ${module} cannot import runtime dependency ${specifier}`,
       ]
+    }
     return violationsForImport(source.path, module, sourceTier, specifier)
   })
 }
@@ -125,10 +129,14 @@ function violationsForImport(
   specifier: string,
 ) {
   const importedModule = localModuleName(path, specifier)
-  if (!importedModule) return []
+  if (!importedModule) {
+    return []
+  }
 
   const importedTier = tierByModule.get(importedModule)
-  if (!importedTier || allowedImportTiersBySourceTier[sourceTier].includes(importedTier)) return []
+  if (!importedTier || allowedImportTiersBySourceTier[sourceTier].includes(importedTier)) {
+    return []
+  }
   return [
     `${path}: ${sourceTier} module ${module} cannot import ${importedTier} module ${importedModule}`,
   ]
@@ -159,7 +167,9 @@ function localModuleName(sourcePath: string, specifier: string) {
 }
 
 function relativeImportPath(sourcePath: string, specifier: string) {
-  if (!specifier.startsWith('.')) return undefined
+  if (!specifier.startsWith('.')) {
+    return
+  }
   const normalizedSource = sourcePath.replaceAll('\\', '/')
   return posix.normalize(posix.join(posix.dirname(normalizedSource), specifier))
 }

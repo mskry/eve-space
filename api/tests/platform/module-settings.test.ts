@@ -21,20 +21,22 @@ describe('installed module reconciliation', () => {
 
   test('inserts explicit defaults without updating existing rows', async () => {
     const connection = vi.fn((value) => {
-      if (Array.isArray(value) && !('raw' in value)) return 'module-default-values'
+      if (Array.isArray(value) && !('raw' in value)) {
+        return 'module-default-values'
+      }
       return Promise.resolve([])
     })
 
     await reconcileInstalledModules(connection as never, [
-      { moduleId: 'alpha', defaultEnabled: false },
-      { moduleId: 'beta', defaultEnabled: true },
+      { defaultEnabled: false, moduleId: 'alpha' },
+      { defaultEnabled: true, moduleId: 'beta' },
     ])
 
     expect(connection).toHaveBeenNthCalledWith(
       1,
       [
-        { module_id: 'alpha', enabled: false },
-        { module_id: 'beta', enabled: true },
+        { enabled: false, module_id: 'alpha' },
+        { enabled: true, module_id: 'beta' },
       ],
       'module_id',
       'enabled',
@@ -46,17 +48,17 @@ describe('installed module reconciliation', () => {
 describe('installed module section reconciliation', () => {
   const definitions = [
     {
-      moduleId: 'alpha',
+      defaultEnabled: false as const,
       id: 'overview',
       kind: 'workspace' as const,
-      defaultEnabled: false as const,
+      moduleId: 'alpha',
     },
     {
-      moduleId: 'alpha',
-      id: 'skills',
-      kind: 'sensitive-evidence' as const,
       defaultEnabled: false as const,
       disclosureRevision: 2,
+      id: 'skills',
+      kind: 'sensitive-evidence' as const,
+      moduleId: 'alpha',
     },
   ]
 
@@ -69,7 +71,9 @@ describe('installed module section reconciliation', () => {
 
   test('inserts every section disabled with disclosure policy metadata', async () => {
     const connection = vi.fn((value) => {
-      if (Array.isArray(value) && !('raw' in value)) return 'section-default-values'
+      if (Array.isArray(value) && !('raw' in value)) {
+        return 'section-default-values'
+      }
       return Promise.resolve([])
     })
 
@@ -79,18 +83,18 @@ describe('installed module section reconciliation', () => {
       1,
       [
         {
+          declaration_revision: null,
+          enabled: false,
+          kind: 'workspace',
           module_id: 'alpha',
           section_id: 'overview',
-          kind: 'workspace',
-          enabled: false,
-          declaration_revision: null,
         },
         {
+          declaration_revision: 2,
+          enabled: false,
+          kind: 'sensitive-evidence',
           module_id: 'alpha',
           section_id: 'skills',
-          kind: 'sensitive-evidence',
-          enabled: false,
-          declaration_revision: 2,
         },
       ],
       'module_id',
@@ -105,30 +109,32 @@ describe('installed module section reconciliation', () => {
   test('applies module override while retaining independently enabled sections', async () => {
     const connection = vi.fn((strings: TemplateStringsArray) => {
       const query = strings.join(' ')
-      if (query.includes('from deployment_modules'))
+      if (query.includes('from deployment_modules')) {
         return Promise.resolve([
-          { module_id: 'alpha', enabled: false, updated_at: new Date('2026-09-16T00:00:00Z') },
+          { enabled: false, module_id: 'alpha', updated_at: new Date('2026-09-16T00:00:00Z') },
         ])
-      if (query.includes('from deployment_module_sections'))
+      }
+      if (query.includes('from deployment_module_sections')) {
         return Promise.resolve([
           {
-            module_id: 'alpha',
-            section_id: 'skills',
-            kind: 'sensitive-evidence',
-            enabled: true,
+            activation_version: 1,
             declaration_revision: 2,
             disclosure_version: 1,
-            activation_version: 1,
+            enabled: true,
+            kind: 'sensitive-evidence',
+            module_id: 'alpha',
+            section_id: 'skills',
             updated_at: new Date('2026-09-16T00:00:00Z'),
           },
         ])
+      }
       return Promise.resolve([])
     })
 
     await expect(
       loadModuleRuntimeState(
         connection as never,
-        [{ moduleId: 'alpha', defaultEnabled: false }],
+        [{ defaultEnabled: false, moduleId: 'alpha' }],
         [],
         definitions,
       ),
@@ -138,24 +144,24 @@ describe('installed module section reconciliation', () => {
   test('loads an uncached canonical snapshot of enabled declared evidence sections', async () => {
     const connection = vi.fn(() =>
       Promise.resolve([
-        { module_id: 'alpha', section_id: 'skills', disclosure_version: 4 },
-        { module_id: 'removed', section_id: 'wallet', disclosure_version: 9 },
+        { disclosure_version: 4, module_id: 'alpha', section_id: 'skills' },
+        { disclosure_version: 9, module_id: 'removed', section_id: 'wallet' },
       ]),
     )
 
     await expect(
       loadEnabledReviewerUseDisclosures(connection as never, definitions),
-    ).resolves.toEqual([{ moduleId: 'alpha', sectionId: 'skills', disclosureVersion: 4 }])
+    ).resolves.toStrictEqual([{ disclosureVersion: 4, moduleId: 'alpha', sectionId: 'skills' }])
     expect(connection).toHaveBeenCalledOnce()
   })
 })
 
 describe('shell navigation order resolution', () => {
   const defaults = [
-    { ownerId: 'core', navigationId: 'core-overview', placement: 'dashboard', order: 10 },
-    { ownerId: 'core', navigationId: 'core-settings', placement: 'dashboard', order: 20 },
-    { ownerId: 'alpha', navigationId: 'alpha-audit', placement: 'dashboard', order: 30 },
-    { ownerId: 'alpha', navigationId: 'alpha-character', placement: 'character', order: 10 },
+    { navigationId: 'core-overview', order: 10, ownerId: 'core', placement: 'dashboard' },
+    { navigationId: 'core-settings', order: 20, ownerId: 'core', placement: 'dashboard' },
+    { navigationId: 'alpha-audit', order: 30, ownerId: 'alpha', placement: 'dashboard' },
+    { navigationId: 'alpha-character', order: 10, ownerId: 'alpha', placement: 'character' },
   ] as const
 
   test('orders saved available entries first and appends new defaults per placement', () => {
@@ -163,29 +169,29 @@ describe('shell navigation order resolution', () => {
       resolveShellNavigationOrder(
         defaults,
         [
-          { owner_id: 'alpha', navigation_id: 'alpha-audit', position: 0 },
-          { owner_id: 'core', navigation_id: 'core-settings', position: 1 },
-          { owner_id: 'removed', navigation_id: 'removed-entry', position: 0 },
+          { navigation_id: 'alpha-audit', owner_id: 'alpha', position: 0 },
+          { navigation_id: 'core-settings', owner_id: 'core', position: 1 },
+          { navigation_id: 'removed-entry', owner_id: 'removed', position: 0 },
         ],
         new Set(['core', 'alpha']),
       ),
-    ).toEqual({
+    ).toStrictEqual({
+      character: [{ ownerId: 'alpha', navigationId: 'alpha-character' }],
       dashboard: [
         { ownerId: 'alpha', navigationId: 'alpha-audit' },
         { ownerId: 'core', navigationId: 'core-settings' },
         { ownerId: 'core', navigationId: 'core-overview' },
       ],
-      character: [{ ownerId: 'alpha', navigationId: 'alpha-character' }],
     })
   })
 
   test('omits unavailable owners without losing deterministic core defaults', () => {
-    expect(resolveShellNavigationOrder(defaults, [], new Set(['core']))).toEqual({
+    expect(resolveShellNavigationOrder(defaults, [], new Set(['core']))).toStrictEqual({
+      character: [],
       dashboard: [
         { ownerId: 'core', navigationId: 'core-overview' },
         { ownerId: 'core', navigationId: 'core-settings' },
       ],
-      character: [],
     })
   })
 
@@ -193,17 +199,17 @@ describe('shell navigation order resolution', () => {
     const sectionDefaults = [
       ...defaults,
       {
-        ownerId: 'alpha',
         navigationId: 'alpha-skills',
-        placement: 'dashboard' as const,
         order: 40,
+        ownerId: 'alpha',
+        placement: 'dashboard' as const,
         sectionId: 'skills',
       },
       {
-        ownerId: 'alpha',
         navigationId: 'alpha-assets',
-        placement: 'dashboard' as const,
         order: 50,
+        ownerId: 'alpha',
+        placement: 'dashboard' as const,
         sectionId: 'assets',
       },
     ]
@@ -215,22 +221,22 @@ describe('shell navigation order resolution', () => {
         new Set(['core', 'alpha']),
         new Set(['alpha/skills']),
       ).dashboard.map(({ navigationId }) => navigationId),
-    ).toEqual(['core-overview', 'core-settings', 'alpha-audit', 'alpha-skills'])
+    ).toStrictEqual(['core-overview', 'core-settings', 'alpha-audit', 'alpha-skills'])
   })
 
   test('requires one current identity in its declared placement', () => {
     const complete = {
+      character: [{ ownerId: 'alpha', navigationId: 'alpha-character' }],
       dashboard: [
         { ownerId: 'core', navigationId: 'core-overview' },
         { ownerId: 'core', navigationId: 'core-settings' },
         { ownerId: 'alpha', navigationId: 'alpha-audit' },
       ],
-      character: [{ ownerId: 'alpha', navigationId: 'alpha-character' }],
     }
     expect(isCompleteShellNavigationOrder(complete, defaults)).toBe(true)
     expect(
       isCompleteShellNavigationOrder(
-        { ...complete, character: [{ ownerId: 'alpha', navigationId: 'alpha-audit' }] },
+        { ...complete, character: [{ navigationId: 'alpha-audit', ownerId: 'alpha' }] },
         defaults,
       ),
     ).toBe(false)
@@ -238,11 +244,11 @@ describe('shell navigation order resolution', () => {
 
   test('requires Clones in a complete generated character order', () => {
     const complete = {
-      dashboard: platformNavigationDefaults
-        .filter((entry) => entry.placement === 'dashboard')
-        .map(({ ownerId, navigationId }) => ({ ownerId, navigationId })),
       character: platformNavigationDefaults
         .filter((entry) => entry.placement === 'character')
+        .map(({ ownerId, navigationId }) => ({ ownerId, navigationId })),
+      dashboard: platformNavigationDefaults
+        .filter((entry) => entry.placement === 'dashboard')
         .map(({ ownerId, navigationId }) => ({ ownerId, navigationId })),
     }
 
@@ -265,7 +271,7 @@ describe('shell navigation order resolution', () => {
     const characterIds = resolved.character.map(({ navigationId }) => navigationId)
     const financeIndex = characterIds.indexOf('core-character-finance')
 
-    expect(characterIds.slice(financeIndex, financeIndex + 4)).toEqual([
+    expect(characterIds.slice(financeIndex, financeIndex + 4)).toStrictEqual([
       'core-character-finance',
       'core-character-assets',
       'core-character-history',

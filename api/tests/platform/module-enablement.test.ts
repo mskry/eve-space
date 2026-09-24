@@ -37,7 +37,7 @@ describe('module enablement middleware', () => {
     const response = await app.request('/api/modules/alpha/characters/90000001')
 
     expect(response.status).toBe(404)
-    await expect(response.json()).resolves.toEqual({ message: 'Route not found' })
+    await expect(response.json()).resolves.toStrictEqual({ message: 'Route not found' })
     expect(mocks.isInstalledModuleContributionEnabled).toHaveBeenCalledWith('alpha', undefined)
     expect(authenticate).not.toHaveBeenCalled()
     expect(moduleHandler).not.toHaveBeenCalled()
@@ -52,7 +52,7 @@ describe('module enablement middleware', () => {
     })
 
     expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({ ok: true })
+    await expect(response.json()).resolves.toStrictEqual({ ok: true })
     expect(authenticate).toHaveBeenCalledOnce()
     expect(moduleHandler).toHaveBeenCalledOnce()
   })

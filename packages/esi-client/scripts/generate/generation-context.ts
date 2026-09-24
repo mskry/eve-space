@@ -90,8 +90,8 @@ export async function prepareGenerationContext(
   const context: EmitterContext = Object.freeze({
     compatibilityDate: input.compatibilityDate,
     correctedDocument: input.document,
-    normalizedModel,
     namingReviewReport,
+    normalizedModel,
     operationMetadata,
     outputDirectory,
     outputPath: (target: string) => resolveOutputPath(outputDirectory, target),

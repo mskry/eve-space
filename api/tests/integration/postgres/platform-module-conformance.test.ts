@@ -24,23 +24,23 @@ const snapshotSchema = z.strictObject({
 })
 const readConformanceSnapshotOperation = definePlatformPersistenceOperation({
   id: 'read-conformance-snapshot',
-  method: 'readConformanceSnapshot',
-  revision: 1,
-  mode: 'read',
   inputSchema: z.strictObject({ characterId: z.number().int().positive() }),
-  outputSchema: z.union([snapshotSchema, z.null()]),
   maximumInputBytes: 64,
-  maximumOutputBytes: 1_024,
+  maximumOutputBytes: 1024,
+  method: 'readConformanceSnapshot',
+  mode: 'read',
+  outputSchema: z.union([snapshotSchema, z.null()]),
+  revision: 1,
 })
 const upsertConformanceSnapshotOperation = definePlatformPersistenceOperation({
   id: 'upsert-conformance-snapshot',
-  method: 'upsertConformanceSnapshot',
-  revision: 1,
-  mode: 'write',
   inputSchema: snapshotSchema,
-  outputSchema: z.strictObject({ applied: z.literal(true) }),
-  maximumInputBytes: 1_024,
+  maximumInputBytes: 1024,
   maximumOutputBytes: 64,
+  method: 'upsertConformanceSnapshot',
+  mode: 'write',
+  outputSchema: z.strictObject({ applied: z.literal(true) }),
+  revision: 1,
 })
 
 it('runs the conformance migration under its schema-only role and leaves the ledger platform-owned', async () => {
@@ -76,8 +76,8 @@ it('runs the conformance migration under its schema-only role and leaves the led
     const operations = await conformancePersistenceDescriptors(migrations[1]!.sql)
     await runModuleMigrationSets(connection, [
       {
-        moduleId: 'conformance',
         migrations,
+        moduleId: 'conformance',
         persistenceOperations: operations,
       },
     ])
@@ -153,12 +153,12 @@ it('runs the conformance migration under its schema-only role and leaves the led
       where schema_namespace.nspname = 'eve_module_conformance'
         and ledger.oid = 'public.schema_migrations'::regclass
     `
-    expect(snapshot).toEqual({
+    expect(snapshot).toStrictEqual({
       characterId: 9001,
       pilotsOnline: 12,
       validatedAt: '2026-09-14T12:00:00+00:00',
     })
-    expect(state).toEqual({
+    expect(state).toStrictEqual({
       direct_table_access: false,
       enabled: false,
       ledger_owner: 'eve_space',
@@ -183,29 +183,29 @@ async function conformancePersistenceDescriptors(sql: string) {
   return Promise.all(
     definitions.map(async (definition) => {
       const canonical = await canonicalizePersistenceRoutineSql({
+        mode: definition.mode,
         moduleId: 'conformance',
         operationId: definition.id,
         revision: definition.revision,
-        mode: definition.mode,
         sql,
       })
       return {
+        definition,
+        definitionFingerprint: canonical.definitionFingerprint,
+        grants: {
+          activityProviders: definition.mode === 'read' ? ['conformance-activity'] : [],
+          resourceMaterializations: definition.mode === 'write' ? ['conformance-status'] : [],
+          resourceProjections: [],
+          routes: [],
+        },
+        method: definition.method,
+        migration: 'conformance-002-persistence-operations.sql',
+        mode: definition.mode,
         moduleId: 'conformance',
         operationId: definition.id,
-        method: definition.method,
         revision: definition.revision,
-        mode: definition.mode,
-        migration: 'conformance-002-persistence-operations.sql',
-        schemaName: canonical.identity.schemaName,
         routineName: canonical.identity.routineName,
-        definitionFingerprint: canonical.definitionFingerprint,
-        definition,
-        grants: {
-          routes: [],
-          activityProviders: definition.mode === 'read' ? ['conformance-activity'] : [],
-          resourceProjections: [],
-          resourceMaterializations: definition.mode === 'write' ? ['conformance-status'] : [],
-        },
+        schemaName: canonical.identity.schemaName,
       }
     }),
   )

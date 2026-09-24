@@ -37,7 +37,7 @@ describe('ESI query recovery', () => {
     const { wrapper } = mountWithQueryPlugins(Consumer)
     await flushPromises()
 
-    expect(statusOptions.autoRefetch).toEqual(expect.any(Function))
+    expect(statusOptions.autoRefetch).toStrictEqual(expect.any(Function))
     expect(statusQuery).toHaveBeenCalledOnce()
     expect(ordinaryQuery).toHaveBeenCalledOnce()
 
@@ -72,29 +72,29 @@ describe('ESI query recovery', () => {
     const Consumer = defineComponent({
       setup() {
         useQuery({
+          autoRefetch: false,
           key: PUBLIC_QUERY_KEYS.systemStatus(),
+          meta: { esiPersistence: { kind: 'none' } },
           query: statusQuery,
           staleTime: 60_000,
-          autoRefetch: false,
-          meta: { esiPersistence: { kind: 'none' } },
         })
         useQuery({
           key: ['public', 'eligible-stale'],
+          meta: { esiPersistence: { kind: 'public-esi' } },
           query: eligibleStaleQuery,
           staleTime: 0,
-          meta: { esiPersistence: { kind: 'public-esi' } },
         })
         useQuery({
           key: ['public', 'eligible-fresh'],
+          meta: { esiPersistence: { kind: 'public-esi' } },
           query: eligibleFreshQuery,
           staleTime: 60_000,
-          meta: { esiPersistence: { kind: 'public-esi' } },
         })
         useQuery({
           key: ['public', 'unclassified'],
+          meta: { esiPersistence: { kind: 'none' } },
           query: unclassifiedQuery,
           staleTime: 0,
-          meta: { esiPersistence: { kind: 'none' } },
         })
         return () => h('span')
       },
@@ -103,15 +103,17 @@ describe('ESI query recovery', () => {
     await flushPromises()
     const inactiveEntry = queryCache.ensure({
       key: ['public', 'eligible-inactive'],
+      meta: { esiPersistence: { kind: 'public-esi' } },
       query: inactiveQuery,
       staleTime: 0,
-      meta: { esiPersistence: { kind: 'public-esi' } },
     })
     await queryCache.refresh(inactiveEntry)
     const invalidateQueries = vi.spyOn(queryCache, 'invalidateQueries')
     const remove = vi.spyOn(queryCache, 'remove')
     const statusEntry = queryCache.get(PUBLIC_QUERY_KEYS.systemStatus())
-    if (!statusEntry) throw new Error('Expected a system-status query entry.')
+    if (!statusEntry) {
+      throw new Error('Expected a system-status query entry.')
+    }
 
     await queryCache.fetch(statusEntry)
     await flushPromises()
@@ -138,20 +140,20 @@ describe('ESI query recovery', () => {
     const Consumer = defineComponent({
       setup() {
         useQuery({
-          key: PUBLIC_QUERY_KEYS.systemStatus(),
+          autoRefetch: false,
+          enabled: false,
           initialData: () => systemStatusResult('unavailable'),
           initialDataUpdatedAt: 0,
-          enabled: false,
+          key: PUBLIC_QUERY_KEYS.systemStatus(),
+          meta: { esiPersistence: { kind: 'none' } },
           query: statusQuery,
           staleTime: 0,
-          autoRefetch: false,
-          meta: { esiPersistence: { kind: 'none' } },
         })
         useQuery({
           key: ['public', 'hydrated-recovery'],
+          meta: { esiPersistence: { kind: 'public-esi' } },
           query: staleQuery,
           staleTime: 0,
-          meta: { esiPersistence: { kind: 'public-esi' } },
         })
         return () => h('span')
       },
@@ -160,7 +162,9 @@ describe('ESI query recovery', () => {
     await flushPromises()
     const invalidateQueries = vi.spyOn(queryCache, 'invalidateQueries')
     const statusEntry = queryCache.get(PUBLIC_QUERY_KEYS.systemStatus())
-    if (!statusEntry) throw new Error('Expected a system-status query entry.')
+    if (!statusEntry) {
+      throw new Error('Expected a system-status query entry.')
+    }
 
     await queryCache.fetch(statusEntry)
     await flushPromises()

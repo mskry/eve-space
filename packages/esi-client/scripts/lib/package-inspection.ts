@@ -138,7 +138,9 @@ export function validatePackedPackageBoundary(
   files: readonly PackedFile[],
   packageJson: PackedPackageManifest,
 ): PackedPackageBoundaryResult {
-  if (!Array.isArray(files)) throw new TypeError('Packed files must be an array');
+  if (!Array.isArray(files)) {
+    throw new TypeError('Packed files must be an array');
+  }
   const forbidden = findForbiddenPackedPaths(files);
   if (forbidden.length > 0) {
     throw new Error(`Packed documentation artifacts are forbidden: ${forbidden.join(', ')}`);
@@ -189,7 +191,9 @@ export function validatePackedArtifactIntegrity(
 }
 
 function normalizePackedArtifacts(files: readonly PackedFile[]): NormalizedPackedFile[] {
-  if (!Array.isArray(files)) throw new TypeError('Packed files must be an array');
+  if (!Array.isArray(files)) {
+    throw new TypeError('Packed files must be an array');
+  }
   const normalizedFiles: NormalizedPackedFile[] = files.map((file) => ({
     path: normalizePackedPath(file.path),
     size: requireNonnegativeInteger(file.size, `Packed artifact ${file.path} size`),
@@ -230,7 +234,9 @@ function validatePackedArtifact(
   } else if (/\.d\.(?:ts|mts|cts)$/u.test(artifact.path)) {
     kind = 'declaration';
   }
-  if (kind === undefined) return 0;
+  if (kind === undefined) {
+    return 0;
+  }
   if (typeof artifact.source !== 'string') {
     throw new TypeError(`Packed ${kind} artifact source is unavailable: ${artifact.path}`);
   }
@@ -276,9 +282,12 @@ export function measurePackedPackage(
   },
   packageJson: PackedPackageManifest & { readonly version?: string },
 ): PackageMeasurements {
-  if (pack === null || typeof pack !== 'object')
+  if (pack === null || typeof pack !== 'object') {
     throw new TypeError('Pack result must be an object');
-  if (!Array.isArray(pack.files)) throw new TypeError('Packed files must be an array');
+  }
+  if (!Array.isArray(pack.files)) {
+    throw new TypeError('Packed files must be an array');
+  }
 
   const files: NormalizedPackedFile[] = pack.files.map((file) => ({
     path: normalizePackedPath(file.path),
@@ -294,32 +303,32 @@ export function measurePackedPackage(
   const publicEntries: PackageMeasurements['publicEntries'] = {};
   for (const [entryName, targets] of collectPublicEntryTargets(packageJson)) {
     publicEntries[entryName] = {
-      runtime: tracePackedArtifactGraph(
-        files,
-        targets.runtime,
-        'runtime',
-        approvedExternalPackages,
-      ),
       declaration: tracePackedArtifactGraph(
         files,
         targets.declaration,
         'declaration',
         approvedExternalPackages,
       ),
+      runtime: tracePackedArtifactGraph(
+        files,
+        targets.runtime,
+        'runtime',
+        approvedExternalPackages,
+      ),
     };
   }
 
   return {
+    files: files.map(({ path }) => path).toSorted(compareText),
     packageVersion: requireNonemptyString(packageJson?.version, 'Package version'),
+    publicEntries,
     totals: {
       compressedBytes: requireNonnegativeInteger(pack.size, 'Compressed package size'),
-      unpackedBytes: requireNonnegativeInteger(pack.unpackedSize, 'Unpacked package size'),
-      javascriptBytes: sumFileSizes(files, (path) => path.endsWith('.js')),
       declarationBytes: sumFileSizes(files, (path) => /\.d\.(?:ts|mts|cts)$/u.test(path)),
       fileCount: requireNonnegativeInteger(pack.entryCount ?? files.length, 'Packed file count'),
+      javascriptBytes: sumFileSizes(files, (path) => path.endsWith('.js')),
+      unpackedBytes: requireNonnegativeInteger(pack.unpackedSize, 'Unpacked package size'),
     },
-    publicEntries,
-    files: files.map(({ path }) => path).toSorted(compareText),
   };
 }
 
@@ -360,7 +369,9 @@ export function tracePackedArtifactGraph(
 
   while (pending.length > 0) {
     const path = pending.pop();
-    if (path === undefined || reachable.has(path)) continue;
+    if (path === undefined || reachable.has(path)) {
+      continue;
+    }
     const artifact = artifacts.get(path);
     if (artifact === undefined) {
       throw new Error(`Packed ${kind} graph target is missing: ${path}`);
@@ -370,15 +381,16 @@ export function tracePackedArtifactGraph(
     }
     reachable.add(path);
 
-    for (const specifier of parseArtifactImports(artifact.source, path, kind))
+    for (const specifier of parseArtifactImports(artifact.source, path, kind)) {
       collectArtifactEdge(path, specifier, edgeContext);
+    }
   }
 
   const reachableFiles = [...reachable].toSorted(compareText);
   return {
-    target: normalizedTarget,
-    files: reachableFiles,
     externalEdges: [...externalEdges.values()].toSorted(compareExternalEdges),
+    files: reachableFiles,
+    target: normalizedTarget,
     uniqueBytes: reachableFiles.reduce((total, path) => {
       const artifact = artifacts.get(path);
       return total + (artifact === undefined ? 0 : artifact.size);
@@ -390,7 +402,9 @@ function collectArtifactEdge(path: string, specifier: string, context: ArtifactE
   const { approved, artifacts, externalEdges, kind, pending, reachable } = context;
   if (isRelativeSpecifier(specifier)) {
     const resolved = resolvePackedRelativeEdge(path, specifier, kind, artifacts);
-    if (!reachable.has(resolved)) pending.push(resolved);
+    if (!reachable.has(resolved)) {
+      pending.push(resolved);
+    }
     return;
   }
   if (isUnsupportedSpecifier(specifier)) {
@@ -470,8 +484,8 @@ export function createPackageBudgetBaseline(
   const publicEntries: PackageBudgetBaseline['publicEntries'] = {};
   for (const [entryName, entry] of Object.entries(measurements.publicEntries)) {
     publicEntries[entryName] = {
-      runtime: createEntryBudget(entry.runtime),
       declaration: createEntryBudget(entry.declaration),
+      runtime: createEntryBudget(entry.runtime),
     };
   }
 
@@ -479,23 +493,23 @@ export function createPackageBudgetBaseline(
   for (const metric of totalMetrics) {
     const measured = measurements.totals[metric];
     totals[metric] = {
-      measured,
       maximum:
         metric === 'fileCount' ? measured + packageBudgetFileCountHeadroom : maximumBytes(measured),
+      measured,
     };
   }
 
   return {
-    schemaVersion: packageBudgetSchemaVersion,
+    allowedFiles: [...measurements.files],
     policy: {
       byteHeadroomPercent: packageBudgetByteHeadroomPercent,
-      fileCountHeadroom: packageBudgetFileCountHeadroom,
       description:
         'Byte maxima are accepted unique transitive measurements plus 2%; reachable files, external edges, file count, and packed paths have no headroom, so every graph or artifact change requires review.',
+      fileCountHeadroom: packageBudgetFileCountHeadroom,
     },
-    totals,
     publicEntries,
-    allowedFiles: [...measurements.files],
+    schemaVersion: packageBudgetSchemaVersion,
+    totals,
   };
 }
 
@@ -515,7 +529,9 @@ export function validatePackageBudgets(
   compareKeys('total metric budgets', totalMetrics, Object.keys(budgetTotals), issues);
   for (const metric of totalMetrics) {
     const budget = budgetTotals[metric];
-    if (!validateTotalBudget(metric, budget, issues)) continue;
+    if (!validateTotalBudget(metric, budget, issues)) {
+      continue;
+    }
     const actual = measurements.totals[metric];
     if (actual > budget.maximum) {
       issues.push(`${metric} is ${actual}, exceeding budget ${budget.maximum}`);
@@ -533,7 +549,9 @@ export function validatePackageBudgets(
   for (const entryName of Object.keys(measuredEntries)) {
     const measuredEntry = measuredEntries[entryName];
     const budgetEntry = budgetEntries[entryName];
-    if (!isRecord(budgetEntry)) continue;
+    if (!isRecord(budgetEntry)) {
+      continue;
+    }
     compareKeys(
       `public entry ${entryName} artifact budgets`,
       ['runtime', 'declaration'],
@@ -561,10 +579,14 @@ export function validatePackageBudgets(
 function collectPublicEntryTargets(
   packageJson: PackedPackageManifest,
 ): [string, { runtime: string; declaration: string }][] {
-  if (!isRecord(packageJson?.exports)) throw new Error('Package exports must be an object');
+  if (!isRecord(packageJson?.exports)) {
+    throw new Error('Package exports must be an object');
+  }
   return Object.entries(packageJson.exports).flatMap(([entryName, entry]) => {
     if (typeof entry === 'string') {
-      if (entryName === './package.json' && entry === './package.json') return [];
+      if (entryName === './package.json' && entry === './package.json') {
+        return [];
+      }
       throw new Error(`Public metadata entry ${entryName} must target ./package.json`);
     }
     if (!isRecord(entry)) {
@@ -574,14 +596,14 @@ function collectPublicEntryTargets(
       [
         entryName,
         {
-          runtime: normalizePackedPath(
-            requireNonemptyString(entry.import, `Public entry ${entryName} import target`).replace(
+          declaration: normalizePackedPath(
+            requireNonemptyString(entry.types, `Public entry ${entryName} types target`).replace(
               /^\.\//u,
               '',
             ),
           ),
-          declaration: normalizePackedPath(
-            requireNonemptyString(entry.types, `Public entry ${entryName} types target`).replace(
+          runtime: normalizePackedPath(
+            requireNonemptyString(entry.import, `Public entry ${entryName} import target`).replace(
               /^\.\//u,
               '',
             ),
@@ -594,11 +616,11 @@ function collectPublicEntryTargets(
 
 function createEntryBudget(measurement: PackedArtifactGraph): PackageEntryBudget {
   return {
-    target: measurement.target,
-    files: [...measurement.files],
     externalEdges: measurement.externalEdges.map((edge) => ({ ...edge })),
-    measuredUniqueBytes: measurement.uniqueBytes,
+    files: [...measurement.files],
     maximumUniqueBytes: maximumBytes(measurement.uniqueBytes),
+    measuredUniqueBytes: measurement.uniqueBytes,
+    target: measurement.target,
   };
 }
 
@@ -627,7 +649,9 @@ function validateTotalBudget(
   budget: unknown,
   issues: string[],
 ): budget is { measured: number; maximum: number } {
-  if (!isRecord(budget)) return false;
+  if (!isRecord(budget)) {
+    return false;
+  }
   const measured = budget.measured;
   const maximum = budget.maximum;
   if (typeof measured !== 'number' || !Number.isSafeInteger(measured) || measured < 0) {
@@ -765,7 +789,9 @@ function parseArtifactImports(
   }
   const specifiers: string[] = [];
   for (const entry of imports) {
-    if (entry.d === -2) continue;
+    if (entry.d === -2) {
+      continue;
+    }
     if (entry.d >= 0 && entry.n === undefined) {
       throw new Error(`Packed ${kind} graph has nonliteral dynamic import in ${path}`);
     }
@@ -832,16 +858,28 @@ function resolvePackedRelativeEdge(
 }
 
 function declarationResolutionCandidates(path: string): string[] {
-  if (path.endsWith('.js')) return [path.slice(0, -3) + '.d.ts'];
-  if (path.endsWith('.mjs')) return [path.slice(0, -4) + '.d.mts'];
-  if (path.endsWith('.cjs')) return [path.slice(0, -4) + '.d.cts'];
-  if (/\.d\.(?:ts|mts|cts)$/u.test(path)) return [path];
-  if (posix.extname(path) === '') return [`${path}.d.ts`, `${path}/index.d.ts`];
+  if (path.endsWith('.js')) {
+    return [path.slice(0, -3) + '.d.ts'];
+  }
+  if (path.endsWith('.mjs')) {
+    return [path.slice(0, -4) + '.d.mts'];
+  }
+  if (path.endsWith('.cjs')) {
+    return [path.slice(0, -4) + '.d.cts'];
+  }
+  if (/\.d\.(?:ts|mts|cts)$/u.test(path)) {
+    return [path];
+  }
+  if (posix.extname(path) === '') {
+    return [`${path}.d.ts`, `${path}/index.d.ts`];
+  }
   return [path];
 }
 
 function runtimeResolutionCandidates(path: string): string[] {
-  if (posix.extname(path) !== '') return [path];
+  if (posix.extname(path) !== '') {
+    return [path];
+  }
   return [`${path}.js`, `${path}/index.js`];
 }
 
@@ -869,7 +907,9 @@ function isUnsupportedSpecifier(specifier: string): boolean {
 }
 
 function externalPackageName(specifier: string): string {
-  if (specifier.startsWith('@')) return specifier.split('/').slice(0, 2).join('/');
+  if (specifier.startsWith('@')) {
+    return specifier.split('/').slice(0, 2).join('/');
+  }
   return specifier.split('/')[0];
 }
 
@@ -878,17 +918,23 @@ function domainIsolationViolation(
   domain: string,
   domains: ReadonlySet<string>,
 ): string | undefined {
-  if (/^dist\/root(?:\.d\.ts|\.js)$/u.test(path)) return 'aggregate root';
+  if (/^dist\/root(?:\.d\.ts|\.js)$/u.test(path)) {
+    return 'aggregate root';
+  }
   if (/^dist\/operations(?:\d+)?(?:\.d\.ts|\.js)$/u.test(path)) {
     return 'global operation discovery';
   }
   if (/^dist\/(?:index|manifest|registry)(?:\d+)?(?:\.d\.ts|\.js)$/u.test(path)) {
     return 'aggregate operation registry or discovery';
   }
-  if (path.startsWith('dist/operations/')) return 'global operation discovery entry';
+  if (path.startsWith('dist/operations/')) {
+    return 'global operation discovery entry';
+  }
 
   const domainEntry = /^dist\/domains\/([^/]+?)(?:\.d\.ts|\.js)$/u.exec(path)?.[1];
-  if (domainEntry !== undefined && domainEntry !== domain) return `unrelated ${domainEntry} entry`;
+  if (domainEntry !== undefined && domainEntry !== domain) {
+    return `unrelated ${domainEntry} entry`;
+  }
 
   const chunk = packedChunkName(path);
   if (chunk !== undefined && domains.has(chunk) && chunk !== domain) {
@@ -898,18 +944,28 @@ function domainIsolationViolation(
 }
 
 function packedChunkName(path: string): string | undefined {
-  if (!path.startsWith('dist/')) return undefined;
+  if (!path.startsWith('dist/')) {
+    return undefined;
+  }
   const fileName = path.slice('dist/'.length);
-  if (fileName.includes('/')) return undefined;
+  if (fileName.includes('/')) {
+    return undefined;
+  }
 
   let extension;
-  if (fileName.endsWith('.d.ts')) extension = '.d.ts';
-  else if (fileName.endsWith('.js')) extension = '.js';
-  else return undefined;
+  if (fileName.endsWith('.d.ts')) {
+    extension = '.d.ts';
+  } else if (fileName.endsWith('.js')) {
+    extension = '.js';
+  } else {
+    return undefined;
+  }
 
   const baseName = fileName.slice(0, -extension.length);
   let end = baseName.length;
-  while (end > 1 && isAsciiDigit(baseName.codePointAt(end - 1))) end -= 1;
+  while (end > 1 && isAsciiDigit(baseName.codePointAt(end - 1))) {
+    end -= 1;
+  }
   return baseName.slice(0, end);
 }
 
@@ -934,8 +990,12 @@ function compareKeys(
   const actualSet = new Set(actual);
   const missing = [...expectedSet].filter((value) => !actualSet.has(value)).toSorted(compareText);
   const stale = [...actualSet].filter((value) => !expectedSet.has(value)).toSorted(compareText);
-  if (missing.length > 0) issues.push(`${label} missing: ${missing.join(', ')}`);
-  if (stale.length > 0) issues.push(`${label} stale or unexpected: ${stale.join(', ')}`);
+  if (missing.length > 0) {
+    issues.push(`${label} missing: ${missing.join(', ')}`);
+  }
+  if (stale.length > 0) {
+    issues.push(`${label} stale or unexpected: ${stale.join(', ')}`);
+  }
 }
 
 function sumFileSizes(
@@ -963,7 +1023,9 @@ function findDuplicates(values: readonly string[]): string[] {
   const seen = new Set<string>();
   const duplicates = new Set<string>();
   for (const value of values) {
-    if (seen.has(value)) duplicates.add(value);
+    if (seen.has(value)) {
+      duplicates.add(value);
+    }
     seen.add(value);
   }
   return [...duplicates].toSorted(compareText);
@@ -974,8 +1036,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function collectExportTargets(value: unknown): string[] {
-  if (typeof value === 'string') return [value];
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return [];
+  if (typeof value === 'string') {
+    return [value];
+  }
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return [];
+  }
   return Object.values(value).flatMap(collectExportTargets);
 }
 
@@ -987,7 +1053,11 @@ function normalizePackedPath(path: string): string {
 }
 
 function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
+  if (left < right) {
+    return -1;
+  }
+  if (left > right) {
+    return 1;
+  }
   return 0;
 }

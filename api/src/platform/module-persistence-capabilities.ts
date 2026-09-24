@@ -10,7 +10,7 @@ import {
   installedModulePersistenceOperations,
 } from '../generated/platform/installed-module-persistence.js'
 
-const resourcePersistenceTimeoutMilliseconds = 2_000
+const resourcePersistenceTimeoutMilliseconds = 2000
 
 type PersistenceCapabilityFactory = (invoke: PlatformPersistenceOperationInvoker) => object
 type PersistenceCapabilityFactories = typeof installedModulePersistenceCapabilityFactories
@@ -137,8 +137,9 @@ function resolveFactory<
     Record<string, PersistenceCapabilityFactory>
   >
   const factory = factories[`${moduleId}/${contributionId}`]
-  if (!factory)
+  if (!factory) {
     throw new Error(`Missing generated persistence capability ${moduleId}/${contributionId}`)
+  }
   return factory as (
     invoke: PlatformPersistenceOperationInvoker,
   ) => PersistenceCapabilityResult<Group, ModuleId, ContributionId>

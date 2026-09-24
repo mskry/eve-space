@@ -45,7 +45,9 @@ watch(
 )
 
 async function changeBlock() {
-  if (!canSubmit.value || !block.data.value) return
+  if (!canSubmit.value || !block.data.value) {
+    return
+  }
   actionPending.value = true
   actionMessage.value = ''
   const revision = actionRevision
@@ -53,18 +55,20 @@ async function changeBlock() {
   try {
     const response = currentlyBlocked
       ? await api.api.modules['member-audit'].accounts[':userId'].block.$delete({
-          param: { userId: props.target.userId },
           json: { reason: reason.value.trim() },
+          param: { userId: props.target.userId },
         })
       : await api.api.modules['member-audit'].accounts[':userId'].block.$post({
-          param: { userId: props.target.userId },
           json: { reason: reason.value.trim() },
+          param: { userId: props.target.userId },
         })
     await readPlatformApiResponse(
       response,
       currentlyBlocked ? 'The member could not be unblocked.' : 'The member could not be blocked.',
     )
-    if (revision !== actionRevision) return
+    if (revision !== actionRevision) {
+      return
+    }
     actionMessage.value = currentlyBlocked
       ? 'Member unblocked. Core will reevaluate current compliance and assignments.'
       : 'Member blocked. Protected organization access is denied immediately.'
@@ -72,10 +76,14 @@ async function changeBlock() {
     confirmed.value = false
     await block.refetch()
   } catch (error) {
-    if (revision !== actionRevision) return
+    if (revision !== actionRevision) {
+      return
+    }
     actionMessage.value = error instanceof Error ? error.message : 'The block action failed.'
   } finally {
-    if (revision === actionRevision) actionPending.value = false
+    if (revision === actionRevision) {
+      actionPending.value = false
+    }
   }
 }
 

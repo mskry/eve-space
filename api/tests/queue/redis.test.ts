@@ -7,12 +7,12 @@ vi.mock('ioredis', () => ({
     status = 'ready'
     constructor(url: string, options: Record<string, unknown>) {
       mocks.instances.push({
-        url,
-        options,
-        on: vi.fn(),
-        quit: vi.fn(),
         disconnect: vi.fn(),
+        on: vi.fn(),
+        options,
+        quit: vi.fn(),
         status: this.status,
+        url,
       })
       Object.assign(this, mocks.instances.at(-1))
     }
@@ -34,11 +34,11 @@ describe('queue Redis connections', () => {
       retryStrategy: (attempt: number) => number
     }
     expect(workerOptions).toMatchObject({
-      connectTimeout: 1_000,
+      connectTimeout: 1000,
       lazyConnect: true,
       maxRetriesPerRequest: null,
     })
-    expect(workerOptions.retryStrategy(25)).toBe(2_000)
+    expect(workerOptions.retryStrategy(25)).toBe(2000)
     expect(workerOptions.maxRetriesPerRequest).toBeNull()
     expect(worker.on).toHaveBeenCalledWith('error', expect.any(Function))
   })

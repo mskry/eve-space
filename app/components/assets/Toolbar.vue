@@ -26,15 +26,15 @@ const emit = defineEmits<{
 const sort = defineModel<string>('sort', { required: true })
 
 const singletonOptions = [
-  { value: 'all', label: 'Any' },
-  { value: 'yes', label: 'Unique item' },
-  { value: 'no', label: 'Stackable' },
+  { label: 'Any', value: 'all' },
+  { label: 'Unique item', value: 'yes' },
+  { label: 'Stackable', value: 'no' },
 ] as const
 const blueprintOptions = [
-  { value: 'all', label: 'Any' },
-  { value: 'copy', label: 'BPC' },
-  { value: 'original', label: 'BPO' },
-  { value: 'unknown', label: 'Unknown' },
+  { label: 'Any', value: 'all' },
+  { label: 'BPC', value: 'copy' },
+  { label: 'BPO', value: 'original' },
+  { label: 'Unknown', value: 'unknown' },
 ] as const
 
 const filtersOpen = ref(false)
@@ -101,48 +101,55 @@ const showFlag = computed(() => props.flagOptions.length > 1 || props.filters.fl
 
 const activeChips = computed(() => {
   const chips: { facet: string; key: keyof AssetFilterState; label: string }[] = []
-  if (props.filters.typeIds[0] !== undefined)
+  if (props.filters.typeIds[0] !== undefined) {
     chips.push({
       facet: 'Type',
       key: 'typeIds',
       label: named(props.typeOptions, props.filters.typeIds[0]),
     })
-  if (props.filters.groupIds[0] !== undefined)
+  }
+  if (props.filters.groupIds[0] !== undefined) {
     chips.push({
       facet: 'Group',
       key: 'groupIds',
       label: named(props.groupOptions, props.filters.groupIds[0]),
     })
-  if (props.filters.categoryIds[0] !== undefined)
+  }
+  if (props.filters.categoryIds[0] !== undefined) {
     chips.push({
       facet: 'Category',
       key: 'categoryIds',
       label: named(props.categoryOptions, props.filters.categoryIds[0]),
     })
-  if (props.filters.locationKeys[0] !== undefined)
+  }
+  if (props.filters.locationKeys[0] !== undefined) {
     chips.push({
       facet: 'Location',
       key: 'locationKeys',
       label: named(props.locationOptions, props.filters.locationKeys[0]),
     })
-  if (props.filters.flags[0] !== undefined)
+  }
+  if (props.filters.flags[0] !== undefined) {
     chips.push({
       facet: 'Placement',
       key: 'flags',
       label: named(props.flagOptions, props.filters.flags[0]),
     })
-  if (props.filters.singleton !== 'all')
+  }
+  if (props.filters.singleton !== 'all') {
     chips.push({
       facet: 'Item state',
       key: 'singleton',
       label: singletonOptions.find((option) => option.value === props.filters.singleton)!.label,
     })
-  if (props.filters.blueprint !== 'all')
+  }
+  if (props.filters.blueprint !== 'all') {
     chips.push({
       facet: 'Blueprint',
       key: 'blueprint',
       label: blueprintOptions.find((option) => option.value === props.filters.blueprint)!.label,
     })
+  }
   return chips
 })
 const activeCount = computed(
@@ -162,9 +169,13 @@ function clearSearch() {
 }
 
 function clearChip(key: keyof AssetFilterState) {
-  if (key === 'singleton') emit('change', { ...props.filters, singleton: 'all' })
-  else if (key === 'blueprint') emit('change', { ...props.filters, blueprint: 'all' })
-  else emit('change', { ...props.filters, [key]: [] })
+  if (key === 'singleton') {
+    emit('change', { ...props.filters, singleton: 'all' })
+  } else if (key === 'blueprint') {
+    emit('change', { ...props.filters, blueprint: 'all' })
+  } else {
+    emit('change', { ...props.filters, [key]: [] })
+  }
 }
 
 function clearAll() {
@@ -177,7 +188,9 @@ function filterModel<T extends string | number>(
   update: (selected: readonly T[]) => void,
 ) {
   const labelFor = (selected: T | undefined) => {
-    if (selected === undefined) return ''
+    if (selected === undefined) {
+      return ''
+    }
     const options = getOptions()
     return (
       options.find((option) => option.value === selected)?.label ??
@@ -194,13 +207,15 @@ function filterModel<T extends string | number>(
     set: (value) => {
       draft.value = value
       const option = getOptions().find((entry) => entry.label === value)
-      if (option || value === '') update(option ? [option.value] : [])
+      if (option || value === '') {
+        update(option ? [option.value] : [])
+      }
     },
   })
 }
 
 function unavailableOption<T extends string | number>(value: T): AssetsFilterOption<T> {
-  return { value, label: `${String(value) || 'Unknown'} (unavailable)` }
+  return { label: `${String(value) || 'Unknown'} (unavailable)`, value }
 }
 
 function autocompleteOptions<T extends string | number>(

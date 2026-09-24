@@ -35,26 +35,30 @@ export async function processInstalledResourceBatch(
     await Promise.all(
       attempted.map(({ identity, authorizationGeneration, managedAuthority }) =>
         recordInstalledResourceCollectionFailure(identity, failure, {
-          resources: options.resources,
           expectedAuthorizationGeneration: authorizationGeneration,
+          resources: options.resources,
           ...(managedAuthority === undefined ? {} : { expectedManagedAuthority: managedAuthority }),
         }),
       ),
     )
     throw failure
   }
-  if (execution.outcome === 'noop') return
+  if (execution.outcome === 'noop') {
+    return
+  }
   signal?.throwIfAborted()
 
   const changed = await applyBatchClassifications(execution, options, signal)
-  if (changed.length === 0) return
+  if (changed.length === 0) {
+    return
+  }
 
   await producer.enqueueMany(
     changed.map((subject) => ({
+      materializationIntervalSeconds: execution.resource.materializationIntervalSeconds,
       name: 'resource-refresh',
       payload: subject.identity,
       source: 'on-demand',
-      materializationIntervalSeconds: execution.resource.materializationIntervalSeconds,
     })),
     { signal },
   )
@@ -82,7 +86,7 @@ async function applyBatchClassifications(
         managedAuthority: classification.managedAuthority,
         validatedAt: execution.validatedAt,
         ...(classification.outcome === 'complete'
-          ? { outcome: 'complete', data: classification.data }
+          ? { data: classification.data, outcome: 'complete' }
           : { outcome: 'unchanged' }),
         signal,
       })
@@ -91,8 +95,8 @@ async function applyBatchClassifications(
       const failure = new PlatformResourcePersistenceError(error)
       // oxlint-disable-next-line no-await-in-loop
       await recordInstalledResourceCollectionFailure(classification.identity, failure, {
-        resources: options.resources,
         expectedAuthorizationGeneration: classification.authorizationGeneration,
+        resources: options.resources,
         ...(classification.managedAuthority === undefined
           ? {}
           : { expectedManagedAuthority: classification.managedAuthority }),

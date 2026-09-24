@@ -6,7 +6,7 @@ import type { ActivitySourceRead } from '../src/activity-source.js'
 
 const snapshot = {
   ...summarySnapshot(
-    { id: 'a', name: 'Project', state: 'Active', progress: { current: 0, desired: 10 } },
+    { id: 'a', name: 'Project', progress: { current: 0, desired: 10 }, state: 'Active' },
     'project',
     9801,
   ),
@@ -15,10 +15,10 @@ const snapshot = {
   reward: { initial: 1_000_000, remaining: 750_000 },
 }
 const status = {
-  status: 'current' as const,
-  validatedAt: '2026-09-07T10:00:00Z',
   authorizationGeneration: 1,
   lastFailureClass: null,
+  status: 'current' as const,
+  validatedAt: '2026-09-07T10:00:00Z',
 }
 const source: ActivitySourceRead = {
   resourceId: 'corporation-projects',
@@ -26,15 +26,15 @@ const source: ActivitySourceRead = {
   status,
 }
 const character: PlatformActivityProviderCharacter = {
-  characterId: 9001,
-  name: 'Member',
-  corporationId: 9801,
+  affiliationCheckedAt: status.validatedAt,
+  affiliationFreshness: 'fresh',
   allianceId: null,
+  characterId: 9001,
+  corporationId: 9801,
   isMain: true,
   membership: 'managed',
+  name: 'Member',
   subjectLifecycleId: 'lifecycle',
-  affiliationFreshness: 'fresh',
-  affiliationCheckedAt: status.validatedAt,
 }
 
 test('deduplicates activities and keeps character scopes independent, excluding external characters', () => {
@@ -50,7 +50,7 @@ test('deduplicates activities and keeps character scopes independent, excluding 
         {
           ...source,
           resourceId: 'character-projects',
-          snapshots: [{ ...snapshot, contributed: 2, committed: true }],
+          snapshots: [{ ...snapshot, committed: true, contributed: 2 }],
         },
       ],
     },
@@ -62,33 +62,33 @@ test('deduplicates activities and keeps character scopes independent, excluding 
           resourceId: 'character-projects',
           status: {
             ...status,
-            status: 'authorization-required',
             requiredScope: 'esi-corporations.read_projects.v1',
+            status: 'authorization-required',
           },
         },
       ],
     },
   ])
   expect(result).toHaveLength(1)
-  expect(result[0]?.eligibleCharacterIds).toEqual([9001])
+  expect(result[0]?.eligibleCharacterIds).toStrictEqual([9001])
   expect(result[0]).toMatchObject({
+    linkTarget: { characterId: 9001 },
     objective: 'manufacturing',
-    state: 'Active',
     progress: { current: 0, desired: 10 },
     reward: { initial: 1_000_000, remaining: 750_000 },
-    linkTarget: { characterId: 9001 },
+    state: 'Active',
   })
-  expect(result[0]?.participation).toEqual([
-    { characterId: 9001, state: 'participating', contribution: 2 },
-    { characterId: 9002, state: 'authorization-required', contribution: null },
+  expect(result[0]?.participation).toStrictEqual([
+    { characterId: 9001, contribution: 2, state: 'participating' },
+    { characterId: 9002, contribution: null, state: 'authorization-required' },
   ])
-  expect(result[0]?.requiredAction).toMatchObject({ kind: 'authorization', characterId: 9002 })
+  expect(result[0]?.requiredAction).toMatchObject({ characterId: 9002, kind: 'authorization' })
 })
 
 test('deduplicates public and private jobs with per-character participation', () => {
   const job = {
     ...summarySnapshot(
-      { id: 'job-a', name: 'Freelance job', state: 'Active', progress: { current: 2, desired: 8 } },
+      { id: 'job-a', name: 'Freelance job', progress: { current: 2, desired: 8 }, state: 'Active' },
       'job',
       null,
     ),
@@ -105,7 +105,7 @@ test('deduplicates public and private jobs with per-character participation', ()
           {
             ...source,
             resourceId: 'character-jobs',
-            snapshots: [{ ...job, contributed: 3, committed: true }],
+            snapshots: [{ ...job, committed: true, contributed: 3 }],
           },
         ],
       },
@@ -118,9 +118,9 @@ test('deduplicates public and private jobs with per-character participation', ()
 
   expect(result).toHaveLength(1)
   expect(result[0]).toMatchObject({
+    eligibleCharacterIds: [9001, 9002],
     id: 'job-a',
     kind: 'job',
-    eligibleCharacterIds: [9001, 9002],
     participation: [
       { characterId: 9001, state: 'participating', contribution: 3 },
       { characterId: 9002, state: 'eligible', contribution: null },
@@ -131,13 +131,13 @@ test('deduplicates public and private jobs with per-character participation', ()
 test('projects campaign participation without assigning an objective contribution', () => {
   const campaign = {
     ...snapshot,
+    corporationId: null,
     id: 'campaign-a',
     kind: 'campaign' as const,
-    corporationId: null,
-    title: 'Military campaign',
     objective: null,
     progress: { current: 0.4, desired: 1 },
     reward: null,
+    title: 'Military campaign',
   }
   const result = combineActivitySources(
     [{ ...source, resourceId: 'campaigns', snapshots: [campaign] }],
@@ -152,19 +152,19 @@ test('projects campaign participation without assigning an objective contributio
             snapshots: [
               {
                 ...campaign,
+                campaignId: campaign.id,
+                committed: true,
+                contributed: 0.25,
                 id: 'objective-a',
                 kind: 'objective' as const,
-                campaignId: campaign.id,
-                contributed: 0.25,
-                committed: true,
               },
               {
                 ...campaign,
+                campaignId: campaign.id,
+                committed: true,
+                contributed: 0.75,
                 id: 'objective-b',
                 kind: 'objective' as const,
-                campaignId: campaign.id,
-                contributed: 0.75,
-                committed: true,
               },
             ],
           },
@@ -174,9 +174,9 @@ test('projects campaign participation without assigning an objective contributio
   )
 
   expect(result[0]).toMatchObject({
-    state: 'Active',
-    progress: { current: 0.4, desired: 1 },
     participation: [{ characterId: 9001, state: 'participating', contribution: null }],
+    progress: { current: 0.4, desired: 1 },
+    state: 'Active',
   })
 })
 
@@ -190,14 +190,14 @@ test('stale sources and stale affiliation never grant eligibility', () => {
       [character],
       privateSources,
     )[0]?.eligibleCharacterIds,
-  ).toEqual([])
+  ).toStrictEqual([])
   expect(
     combineActivitySources(
       [source],
       [{ ...character, affiliationFreshness: 'stale' }],
       privateSources,
     )[0]?.eligibleCharacterIds,
-  ).toEqual([])
+  ).toStrictEqual([])
 })
 
 test('omits completed records and projects outside the character corporation', () => {
@@ -207,10 +207,10 @@ test('omits completed records and projects outside the character corporation', (
       [character],
       [],
     ),
-  ).toEqual([])
+  ).toStrictEqual([])
   expect(
     combineActivitySources([source], [{ ...character, corporationId: 9802 }], [])[0]?.participation,
-  ).toEqual([])
+  ).toStrictEqual([])
 })
 
 test('provider caps concurrent reads while retaining every managed character', async () => {
@@ -223,7 +223,9 @@ test('provider caps concurrent reads while retaining every managed character', a
       read: async (_id: string, subject: { characterId?: number }) => {
         active++
         maximum = Math.max(maximum, active)
-        if (subject.characterId) seen.add(subject.characterId)
+        if (subject.characterId) {
+          seen.add(subject.characterId)
+        }
         await new Promise((resolve) => setTimeout(resolve, 1))
         active--
         return { ...status, subjectLifecycleId: undefined }
@@ -240,8 +242,8 @@ test('provider caps concurrent reads while retaining every managed character', a
     characterId: 9001 + index,
   }))
   await provider({
-    organizationVersion: 7,
     characters,
+    organizationVersion: 7,
     signal: new AbortController().signal,
   } as never)
   expect(maximum).toBeLessThanOrEqual(4)
@@ -264,6 +266,6 @@ test('bounded readers stop scheduling after cancellation', async () => {
       controller.signal,
     ),
   ).rejects.toThrow('aborted')
-  expect(visited).toEqual([1])
+  expect(visited).toStrictEqual([1])
   await expect(mapWithConcurrency([], 0, async (item) => item)).rejects.toThrow('concurrency')
 })

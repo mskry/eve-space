@@ -62,12 +62,19 @@ export type EsiFailureClassification =
   | 'unknown';
 
 export function classifyEsiFailure(error: unknown): EsiFailureClassification {
-  if (error instanceof EsiTransportError) return 'transient';
-  if (error instanceof EsiNotModifiedError) return 'not-modified';
-  if (error instanceof EsiResponseParseError || error instanceof EsiResponseValidationError)
+  if (error instanceof EsiTransportError) {
+    return 'transient';
+  }
+  if (error instanceof EsiNotModifiedError) {
+    return 'not-modified';
+  }
+  if (error instanceof EsiResponseParseError || error instanceof EsiResponseValidationError) {
     return 'invalid-response';
+  }
   if (error instanceof EsiHttpError) {
-    if (error.status === 429) return 'throttled';
+    if (error.status === 429) {
+      return 'throttled';
+    }
     return error.status >= 500 && error.status < 600 ? 'transient' : 'permanent';
   }
   return error instanceof EsiError ? 'permanent' : 'unknown';

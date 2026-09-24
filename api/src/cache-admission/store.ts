@@ -68,10 +68,10 @@ export async function loadCharacterAdmissionFacts(userId: string) {
   return db
     .select({
       characterId: characters.characterId,
+      scopes: eveTokens.scopes,
       subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
       tokenCharacterId: eveTokens.characterId,
       tokenVersion: eveTokens.tokenVersion,
-      scopes: eveTokens.scopes,
     })
     .from(characters)
     .leftJoin(
@@ -88,13 +88,13 @@ export async function loadOrganizationAdmissionFoundation(
 ): Promise<OrganizationAdmissionFoundation | null> {
   const [organization] = await db
     .select({
-      organizationVersion: deploymentSettings.organizationVersion,
-      registrationPolicyVersion: deploymentSettings.registrationPolicyVersion,
-      state: organizationAccountCompliance.state,
-      evidenceFreshness: organizationAccountCompliance.evidenceFreshness,
-      reviewDeadline: organizationAccountCompliance.reviewDeadline,
       accessValidUntil: organizationAccountCompliance.accessValidUntil,
       blockId: organizationMemberBlocks.blockId,
+      evidenceFreshness: organizationAccountCompliance.evidenceFreshness,
+      organizationVersion: deploymentSettings.organizationVersion,
+      registrationPolicyVersion: deploymentSettings.registrationPolicyVersion,
+      reviewDeadline: organizationAccountCompliance.reviewDeadline,
+      state: organizationAccountCompliance.state,
     })
     .from(deploymentSettings)
     .leftJoin(
@@ -119,7 +119,9 @@ export async function loadOrganizationAdmissionFoundation(
       ),
     )
     .where(eq(deploymentSettings.id, 1))
-  if (!organization) return null
+  if (!organization) {
+    return null
+  }
 
   const moduleIds = installedModuleDefinitions.map(({ moduleId }) => moduleId)
   const moduleRows =
@@ -127,8 +129,8 @@ export async function loadOrganizationAdmissionFoundation(
       ? []
       : await db
           .select({
-            moduleId: deploymentModules.moduleId,
             enabled: deploymentModules.enabled,
+            moduleId: deploymentModules.moduleId,
             updatedAt: deploymentModules.updatedAt,
           })
           .from(deploymentModules)
@@ -136,14 +138,13 @@ export async function loadOrganizationAdmissionFoundation(
   const modulesById = new Map(moduleRows.map((row) => [row.moduleId, row]))
   return {
     context: {
-      organizationVersion: organization.organizationVersion,
-      state: organization.state ?? 'pending',
-      evidenceFreshness: organization.evidenceFreshness ?? 'unavailable',
-      reviewDeadline: organization.reviewDeadline,
       accessValidUntil: organization.accessValidUntil,
       blocked: organization.blockId !== null,
+      evidenceFreshness: organization.evidenceFreshness ?? 'unavailable',
+      organizationVersion: organization.organizationVersion,
+      reviewDeadline: organization.reviewDeadline,
+      state: organization.state ?? 'pending',
     },
-    registrationPolicyVersion: organization.registrationPolicyVersion,
     modules: moduleIds.map((moduleId) => {
       const row = modulesById.get(moduleId)
       return {
@@ -152,6 +153,7 @@ export async function loadOrganizationAdmissionFoundation(
         updatedAt: row?.updatedAt ?? null,
       }
     }),
+    registrationPolicyVersion: organization.registrationPolicyVersion,
   }
 }
 
@@ -175,12 +177,12 @@ export async function loadOrganizationRevisionFacts(
       .limit(1),
     db
       .select({
-        grantId: organizationRoleGrants.grantId,
-        role: organizationRoleGrants.role,
-        grantedAt: organizationRoleGrants.grantedAt,
-        evidenceStatus: organizationAuthorityEvidence.status,
-        evidenceReviewDeadline: organizationAuthorityEvidence.graceUntil,
         evidenceFreshUntil: organizationAuthorityEvidence.freshUntil,
+        evidenceReviewDeadline: organizationAuthorityEvidence.graceUntil,
+        evidenceStatus: organizationAuthorityEvidence.status,
+        grantId: organizationRoleGrants.grantId,
+        grantedAt: organizationRoleGrants.grantedAt,
+        role: organizationRoleGrants.role,
       })
       .from(organizationRoleGrants)
       .leftJoin(
@@ -198,11 +200,11 @@ export async function loadOrganizationRevisionFacts(
       .orderBy(asc(organizationRoleGrants.role), asc(organizationRoleGrants.grantId)),
     db
       .select({
-        sourceId: organizationDerivedAuthoritySources.sourceId,
-        observedAt: organizationDerivedAuthoritySources.observedAt,
-        evidenceStatus: organizationDerivedAuthoritySources.status,
-        evidenceReviewDeadline: organizationDerivedAuthoritySources.graceUntil,
         evidenceFreshUntil: organizationDerivedAuthoritySources.freshUntil,
+        evidenceReviewDeadline: organizationDerivedAuthoritySources.graceUntil,
+        evidenceStatus: organizationDerivedAuthoritySources.status,
+        observedAt: organizationDerivedAuthoritySources.observedAt,
+        sourceId: organizationDerivedAuthoritySources.sourceId,
       })
       .from(organizationDerivedAuthoritySources)
       .where(
@@ -216,15 +218,15 @@ export async function loadOrganizationRevisionFacts(
       .orderBy(asc(organizationDerivedAuthoritySources.sourceId)),
     db
       .select({
-        assignmentId: organizationGroupAssignments.assignmentId,
-        groupId: organizationGroupAssignments.groupId,
         assignedAt: organizationGroupAssignments.assignedAt,
-        expiresAt: organizationGroupAssignments.expiresAt,
+        assignmentId: organizationGroupAssignments.assignmentId,
         bundleId: organizationGroupPermissionBundles.bundleId,
-        permissionType: organizationPermissionBundleEntries.permissionType,
-        permissionKey: organizationPermissionBundleEntries.permissionKey,
-        publisherPackage: organizationPermissionBundleEntries.publisherPackage,
+        expiresAt: organizationGroupAssignments.expiresAt,
+        groupId: organizationGroupAssignments.groupId,
         moduleId: organizationPermissionBundleEntries.moduleId,
+        permissionKey: organizationPermissionBundleEntries.permissionKey,
+        permissionType: organizationPermissionBundleEntries.permissionType,
+        publisherPackage: organizationPermissionBundleEntries.publisherPackage,
         reviewAllowed: organizationPermissionBundleEntries.reviewAllowed,
       })
       .from(organizationGroupAssignments)
@@ -292,6 +294,18 @@ export async function loadOrganizationRevisionFacts(
       ),
   ])
   return {
+    groups: groupRows.map((group) => ({
+      assignmentId: group.assignmentId,
+      groupId: group.groupId,
+      assignedAt: group.assignedAt.toISOString(),
+      expiresAt: group.expiresAt?.toISOString() ?? null,
+      bundleId: group.bundleId,
+      permissionType: group.permissionType,
+      permissionKey: group.permissionKey,
+      publisherPackage: group.publisherPackage,
+      moduleId: group.moduleId,
+      reviewAllowed: group.reviewAllowed,
+    })),
     latestAuditSequence: auditRows[0]?.auditSequence.toString() ?? null,
     roles: [
       ...roleRows.map((role) => ({
@@ -311,18 +325,6 @@ export async function loadOrganizationRevisionFacts(
         evidenceValidUntil: authorityEvidenceValidUntil(source),
       })),
     ],
-    groups: groupRows.map((group) => ({
-      assignmentId: group.assignmentId,
-      groupId: group.groupId,
-      assignedAt: group.assignedAt.toISOString(),
-      expiresAt: group.expiresAt?.toISOString() ?? null,
-      bundleId: group.bundleId,
-      permissionType: group.permissionType,
-      permissionKey: group.permissionKey,
-      publisherPackage: group.publisherPackage,
-      moduleId: group.moduleId,
-      reviewAllowed: group.reviewAllowed,
-    })),
   }
 }
 
@@ -331,8 +333,11 @@ function authorityEvidenceValidUntil(evidence: {
   evidenceFreshUntil: Date | null
   evidenceReviewDeadline: Date | null
 }) {
-  if (evidence.evidenceStatus === 'fresh') return evidence.evidenceFreshUntil?.toISOString() ?? null
-  if (evidence.evidenceStatus === 'degraded')
+  if (evidence.evidenceStatus === 'fresh') {
+    return evidence.evidenceFreshUntil?.toISOString() ?? null
+  }
+  if (evidence.evidenceStatus === 'degraded') {
     return evidence.evidenceReviewDeadline?.toISOString() ?? null
+  }
   return null
 }

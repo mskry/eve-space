@@ -39,8 +39,8 @@ export function normalizeMetadata(
     retryAfterSeconds?: number;
     routeRateLimit?: EsiRouteRateLimitMetadata;
   } = {
-    status,
     headers: normalizeHeaders(input?.headers, redactor),
+    status,
   };
   if (input?.requestId !== undefined) {
     metadata.requestId = sanitizeString(
@@ -51,15 +51,24 @@ export function normalizeMetadata(
     );
   }
   const pagination = normalizePagination(input?.pagination, redactor);
-  if (pagination !== undefined) metadata.pagination = pagination;
+  if (pagination !== undefined) {
+    metadata.pagination = pagination;
+  }
   const cache = normalizeCache(input?.cache, redactor);
-  if (cache !== undefined) metadata.cache = cache;
+  if (cache !== undefined) {
+    metadata.cache = cache;
+  }
   const errorLimit = normalizeErrorLimit(input?.errorLimit);
-  if (errorLimit !== undefined) metadata.errorLimit = errorLimit;
-  if (isNonnegativeFiniteNumber(input?.retryAfterSeconds))
+  if (errorLimit !== undefined) {
+    metadata.errorLimit = errorLimit;
+  }
+  if (isNonnegativeFiniteNumber(input?.retryAfterSeconds)) {
     metadata.retryAfterSeconds = input.retryAfterSeconds;
+  }
   const routeRateLimit = normalizeRouteRateLimit(input?.routeRateLimit, redactor);
-  if (routeRateLimit !== undefined) metadata.routeRateLimit = routeRateLimit;
+  if (routeRateLimit !== undefined) {
+    metadata.routeRateLimit = routeRateLimit;
+  }
   return Object.freeze(metadata);
 }
 
@@ -70,18 +79,26 @@ function normalizeHeaders(
   const result: Record<string, string> = {};
   let count = 0;
   for (const [rawName, rawValue] of Object.entries(headers ?? {})) {
-    if (count >= MAX_HEADER_COUNT) break;
-    if (typeof rawValue !== 'string') continue;
+    if (count >= MAX_HEADER_COUNT) {
+      break;
+    }
+    if (typeof rawValue !== 'string') {
+      continue;
+    }
     const name = sanitizeString(rawName.toLowerCase(), redactor, MAX_HEADER_NAME_CHARACTERS, '');
-    if (name.length === 0) continue;
-    if (Object.hasOwn(result, name)) continue;
+    if (name.length === 0) {
+      continue;
+    }
+    if (Object.hasOwn(result, name)) {
+      continue;
+    }
     const value = isSensitiveName(rawName)
       ? REDACTED
       : sanitizeString(rawValue, redactor, MAX_METADATA_STRING_CHARACTERS, '');
     Object.defineProperty(result, name, {
-      value,
-      enumerable: true,
       configurable: false,
+      enumerable: true,
+      value,
       writable: false,
     });
     count += 1;
@@ -93,14 +110,18 @@ function normalizePagination(
   input: EsiPaginationMetadata | undefined,
   redactor: Redactor,
 ): EsiPaginationMetadata | undefined {
-  if (input === undefined) return undefined;
+  if (input === undefined) {
+    return undefined;
+  }
   const result: {
     pages?: number;
     cursor?: string;
     nextCursor?: string;
     previousCursor?: string;
   } = {};
-  if (isFiniteNumber(input.pages)) result.pages = input.pages;
+  if (isFiniteNumber(input.pages)) {
+    result.pages = input.pages;
+  }
   if (input.cursor !== undefined) {
     result.cursor = sanitizeString(input.cursor, redactor, MAX_METADATA_STRING_CHARACTERS, '');
   }
@@ -127,7 +148,9 @@ function normalizeCache(
   input: EsiCacheMetadata | undefined,
   redactor: Redactor,
 ): EsiCacheMetadata | undefined {
-  if (input === undefined) return undefined;
+  if (input === undefined) {
+    return undefined;
+  }
   const result: {
     etag?: string;
     expires?: string;
@@ -157,17 +180,25 @@ function normalizeCache(
       '',
     );
   }
-  if (isNonnegativeFiniteNumber(input.maxAgeSeconds)) result.maxAgeSeconds = input.maxAgeSeconds;
+  if (isNonnegativeFiniteNumber(input.maxAgeSeconds)) {
+    result.maxAgeSeconds = input.maxAgeSeconds;
+  }
   return Object.freeze(result);
 }
 
 function normalizeErrorLimit(
   input: EsiErrorLimitMetadata | undefined,
 ): EsiErrorLimitMetadata | undefined {
-  if (input === undefined) return undefined;
+  if (input === undefined) {
+    return undefined;
+  }
   const result: { remaining?: number; reset?: number } = {};
-  if (isNonnegativeFiniteNumber(input.remaining)) result.remaining = input.remaining;
-  if (isNonnegativeFiniteNumber(input.reset)) result.reset = input.reset;
+  if (isNonnegativeFiniteNumber(input.remaining)) {
+    result.remaining = input.remaining;
+  }
+  if (isNonnegativeFiniteNumber(input.reset)) {
+    result.reset = input.reset;
+  }
   return Object.freeze(result);
 }
 
@@ -175,18 +206,27 @@ function normalizeRouteRateLimit(
   input: EsiRouteRateLimitMetadata | undefined,
   redactor: Redactor,
 ): EsiRouteRateLimitMetadata | undefined {
-  if (input === undefined) return undefined;
+  if (input === undefined) {
+    return undefined;
+  }
   const result: {
     group?: string;
     limit?: number;
     used?: number;
     remaining?: number;
   } = {};
-  if (input.group !== undefined)
+  if (input.group !== undefined) {
     result.group = sanitizeString(input.group, redactor, MAX_METADATA_STRING_CHARACTERS, '');
-  if (isNonnegativeFiniteNumber(input.limit)) result.limit = input.limit;
-  if (isNonnegativeFiniteNumber(input.used)) result.used = input.used;
-  if (isNonnegativeFiniteNumber(input.remaining)) result.remaining = input.remaining;
+  }
+  if (isNonnegativeFiniteNumber(input.limit)) {
+    result.limit = input.limit;
+  }
+  if (isNonnegativeFiniteNumber(input.used)) {
+    result.used = input.used;
+  }
+  if (isNonnegativeFiniteNumber(input.remaining)) {
+    result.remaining = input.remaining;
+  }
   return Object.keys(result).length === 0 ? undefined : Object.freeze(result);
 }
 
@@ -204,8 +244,12 @@ export function normalizeScopes(
 ): readonly string[] {
   const normalized: string[] = [];
   for (const scope of scopes ?? []) {
-    if (normalized.length >= MAX_SCOPES) break;
-    if (typeof scope !== 'string') continue;
+    if (normalized.length >= MAX_SCOPES) {
+      break;
+    }
+    if (typeof scope !== 'string') {
+      continue;
+    }
     normalized.push(sanitizeString(scope, redactor, MAX_ISSUE_STRING_CHARACTERS, ''));
   }
   return Object.freeze(normalized);
@@ -217,18 +261,22 @@ export function normalizeIssues(
 ): readonly EsiValidationIssue[] {
   const normalized: EsiValidationIssue[] = [];
   for (const issue of issues) {
-    if (normalized.length >= MAX_ISSUES) break;
-    if (typeof issue !== 'object' || issue === null) continue;
+    if (normalized.length >= MAX_ISSUES) {
+      break;
+    }
+    if (typeof issue !== 'object' || issue === null) {
+      continue;
+    }
     normalized.push(
       Object.freeze({
-        path: normalizeIssuePath(issue.path, redactor),
+        code: sanitizeString(issue.code, redactor, MAX_ISSUE_STRING_CHARACTERS, 'custom'),
         message: sanitizeString(
           issue.message,
           redactor,
           MAX_ISSUE_STRING_CHARACTERS,
           'Validation failed',
         ),
-        code: sanitizeString(issue.code, redactor, MAX_ISSUE_STRING_CHARACTERS, 'custom'),
+        path: normalizeIssuePath(issue.path, redactor),
       }),
     );
   }
@@ -241,8 +289,12 @@ function normalizeIssuePath(
 ): readonly (string | number)[] {
   const path: (string | number)[] = [];
   for (const segment of input ?? []) {
-    if (path.length >= MAX_ISSUE_PATH_SEGMENTS) break;
-    if (typeof segment === 'number' && Number.isFinite(segment)) path.push(segment);
+    if (path.length >= MAX_ISSUE_PATH_SEGMENTS) {
+      break;
+    }
+    if (typeof segment === 'number' && Number.isFinite(segment)) {
+      path.push(segment);
+    }
     if (typeof segment === 'string') {
       path.push(sanitizeString(segment, redactor, MAX_ISSUE_STRING_CHARACTERS, ''));
     }

@@ -101,10 +101,12 @@ describe('character reauthorization transitions', () => {
       services.indexOf('function changePage'),
     )
 
-    expect(serviceActivation).toContain(
-      "if (service === 'orders') openOrdersRequested.value = true",
+    expect(serviceActivation).toMatch(
+      /if \(service === 'orders'\)\s*\{\s*openOrdersRequested\.value = true\s*\}/,
     )
     expect(serviceActivation).not.toContain('orderHistoryRequested.value = true')
-    expect(modeActivation).toContain("if (mode === 'history') orderHistoryRequested.value = true")
+    expect(modeActivation).toMatch(
+      /if \(mode === 'history'\)\s*\{\s*orderHistoryRequested\.value = true\s*\}/,
+    )
   })
 })

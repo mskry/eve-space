@@ -6,7 +6,7 @@ import { composeRecordPageTitle } from '../../utils/page-title'
 import { ApiQueryError } from '../../utils/query-error'
 import { parseRouteId } from '../../utils/route-id'
 
-definePageMeta({ title: 'Corporation', layout: 'headerless' })
+definePageMeta({ layout: 'headerless', title: 'Corporation' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
@@ -22,25 +22,41 @@ const corporation = computed(() =>
   recordAccessAllowed.value ? detailQuery.data.value?.corporation : undefined,
 )
 const detailStatus = computed(() => {
-  if (!corporationId.value) return 'not-found'
-  if (authLoading.value) return 'loading'
-  if (!recordAccessAllowed.value) return 'idle'
-  if (detailQuery.data.value) return 'idle'
+  if (!corporationId.value) {
+    return 'not-found'
+  }
+  if (authLoading.value) {
+    return 'loading'
+  }
+  if (!recordAccessAllowed.value) {
+    return 'idle'
+  }
+  if (detailQuery.data.value) {
+    return 'idle'
+  }
   if (detailQuery.error.value instanceof ApiQueryError && detailQuery.error.value.status === 404) {
     return 'not-found'
   }
-  if (detailQuery.status.value === 'error') return 'error'
-  if (detailQuery.asyncStatus.value === 'loading') return 'loading'
+  if (detailQuery.status.value === 'error') {
+    return 'error'
+  }
+  if (detailQuery.asyncStatus.value === 'loading') {
+    return 'loading'
+  }
   return 'idle'
 })
 const detailMessage = computed(() =>
   detailQuery.error.value instanceof Error ? detailQuery.error.value.message : '',
 )
 const navigation = computed<readonly RecordSectionNavigationEntry[]>(() => {
-  if (corporationId.value === undefined) return []
+  if (corporationId.value === undefined) {
+    return []
+  }
   const overviewPath = `/corporation/${corporationId.value}`
-  const overview = { id: 'overview', label: 'OVERVIEW', to: overviewPath, exact: true }
-  if (corporation.value?.type !== 'player_owned') return [overview]
+  const overview = { exact: true, id: 'overview', label: 'OVERVIEW', to: overviewPath }
+  if (corporation.value?.type !== 'player_owned') {
+    return [overview]
+  }
 
   return [
     overview,
@@ -52,7 +68,7 @@ const navigation = computed<readonly RecordSectionNavigationEntry[]>(() => {
   ]
 })
 
-provideCorporationRecord({ corporationId, corporation, recordAccessAllowed })
+provideCorporationRecord({ corporation, corporationId, recordAccessAllowed })
 
 useHead({
   title: computed(() =>

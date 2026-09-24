@@ -31,25 +31,34 @@ describe('platform module runtime surface', () => {
         },
         {
           kind: 'server-stale',
-          validatedAt: '2026-09-15T01:02:00.000Z',
           refreshFailureClass: 'esi-cooldown',
+          validatedAt: '2026-09-15T01:02:00.000Z',
         },
       ]),
     ).toMatchObject({ kind: 'restored-refresh-failed', refreshFailureStatus: 503 })
-    expect(selectEsiQueryPersistencePresentation([])).toEqual({ kind: 'fresh' })
+    expect(selectEsiQueryPersistencePresentation([])).toStrictEqual({ kind: 'fresh' })
   })
 
   it('binds module queries to authoritative private subjects', () => {
     expect(
-      platformModuleQueryKey('activity', { kind: 'character', characterId: 7 }, ['feed']),
-    ).toEqual(['private', 'characters', 7, 'modules', 'activity', 'feed'])
+      platformModuleQueryKey('activity', { characterId: 7, kind: 'character' }, ['feed']),
+    ).toStrictEqual(['private', 'characters', 7, 'modules', 'activity', 'feed'])
     expect(
       platformModuleQueryKey(
         'activity',
-        { kind: 'corporation', corporationId: 99, organizationVersion: 3 },
+        { corporationId: 99, kind: 'corporation', organizationVersion: 3 },
         ['feed'],
       ),
-    ).toEqual(['private', 'organization', 3, 'corporations', 99, 'modules', 'activity', 'feed'])
+    ).toStrictEqual([
+      'private',
+      'organization',
+      3,
+      'corporations',
+      99,
+      'modules',
+      'activity',
+      'feed',
+    ])
   })
 
   it('requires client authentication and subject authorization', () => {
@@ -76,7 +85,7 @@ describe('platform module runtime surface', () => {
         isClient: false,
         moduleEnabled: true,
         ownsCharacter: true,
-        subject: { kind: 'character', characterId: 7 },
+        subject: { characterId: 7, kind: 'character' },
       }),
     ).toBe(false)
     expect(
@@ -85,7 +94,7 @@ describe('platform module runtime surface', () => {
         isClient: true,
         moduleEnabled: true,
         ownsCharacter: true,
-        subject: { kind: 'character', characterId: Number.NaN },
+        subject: { characterId: Number.NaN, kind: 'character' },
       }),
     ).toBe(false)
   })
@@ -94,16 +103,16 @@ describe('platform module runtime surface', () => {
     const rootEntry = queryEntry(['private', 'characters', 7])
     const childEntry = queryEntry(['private', 'characters', 7, 'modules', 'activity'])
     const queryCache = {
+      cancelQueries: vi.fn(),
       getEntries: vi.fn(({ exact }: { exact?: boolean }) =>
         exact ? [rootEntry] : [rootEntry, childEntry],
       ),
-      cancelQueries: vi.fn(),
       remove: vi.fn(),
     } as unknown as QueryCache
 
     removePlatformQuery(queryCache, rootEntry.key)
 
-    expect(queryCache.getEntries).toHaveBeenLastCalledWith({ key: rootEntry.key, exact: true })
+    expect(queryCache.getEntries).toHaveBeenLastCalledWith({ exact: true, key: rootEntry.key })
     expect(queryCache.remove).toHaveBeenCalledWith(rootEntry)
     expect(queryCache.remove).not.toHaveBeenCalledWith(childEntry)
 
@@ -117,8 +126,8 @@ describe('platform module runtime surface', () => {
     const activityEntry = queryEntry(['private', 'organization', 3, 'modules', 'activity', 'feed'])
     const otherEntry = queryEntry(['private', 'characters', 7, 'modules', 'mail', 'headers'])
     const queryCache = {
-      getEntries: vi.fn(() => [activityEntry, otherEntry]),
       cancel: vi.fn(),
+      getEntries: vi.fn(() => [activityEntry, otherEntry]),
       remove: vi.fn(),
     } as unknown as QueryCache
 
@@ -137,15 +146,15 @@ describe('platform module runtime surface', () => {
       platformModuleQueryKey('member-audit', { kind: 'account' }, ['summary'], 'assets'),
     )
     const unrelatedEntry = queryEntry(
-      platformModuleQueryKey('member-audit', { kind: 'character', characterId: 7 }, [
+      platformModuleQueryKey('member-audit', { characterId: 7, kind: 'character' }, [
         'account',
         'sections',
         'skills',
       ]),
     )
     const queryCache = {
-      getEntries: vi.fn(() => [skillsEntry, assetsEntry, unrelatedEntry]),
       cancel: vi.fn(),
+      getEntries: vi.fn(() => [skillsEntry, assetsEntry, unrelatedEntry]),
       remove: vi.fn(),
     } as unknown as QueryCache
 
@@ -196,7 +205,7 @@ describe('platform module runtime surface', () => {
       remove: vi.fn(),
       setQueryData: vi.fn(),
     } as unknown as QueryCache
-    const nextSession = { authenticated: true, account: { userId: 'user-2' } }
+    const nextSession = { account: { userId: 'user-2' }, authenticated: true }
 
     clearAuthenticatedQueriesAfterSessionTransition(queryCache, nextSession)
 
@@ -214,18 +223,18 @@ describe('platform module runtime surface', () => {
         JSON.stringify({
           code: 'organization-review-required',
           message: 'Review required.',
-          state: 'review-required',
           reviewDeadline: '2026-09-07T00:00:00.000Z',
+          state: 'review-required',
         }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } },
+        { headers: { 'Content-Type': 'application/json' }, status: 403 },
       ),
       'Request failed.',
     )
 
     expect(error).toBeInstanceOf(ApiQueryError)
     expect(reviveApiQueryError(reduceApiQueryError(error) || fail())).toMatchObject({
-      state: 'review-required',
       reviewDeadline: '2026-09-07T00:00:00.000Z',
+      state: 'review-required',
     })
   })
 

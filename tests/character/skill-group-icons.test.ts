@@ -27,7 +27,9 @@ describe('skillGroupIcon', () => {
 
 describe('skill group glyphs', () => {
   it('draws a branch for every named icon plus an unknown fallback', () => {
-    for (const name of skillGroupIconNames) expect(component).toContain(`name === '${name}'`)
+    for (const name of skillGroupIconNames) {
+      expect(component).toContain(`name === '${name}'`)
+    }
     expect(component).toContain('<template v-else>')
   })
 

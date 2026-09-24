@@ -34,9 +34,9 @@ const characterId = 7
 const mailId = 7001
 const metadata = {
   cachedUntil: '2026-08-28T12:00:30.000Z',
+  quota: {},
   source: 'esi',
   stale: false,
-  quota: {},
 }
 const headersResponse = {
   characterId,
@@ -45,20 +45,20 @@ const headersResponse = {
   ...metadata,
 }
 const detailResponse = {
-  characterId,
-  mailId,
-  sender: null,
-  recipients: [],
-  subject: 'Message subject',
-  sentAt: '2026-08-28T12:00:00.000Z',
-  labelIds: [3],
-  isRead: false,
   body: 'Message body',
+  characterId,
+  isRead: false,
+  labelIds: [3],
+  mailId,
+  recipients: [],
+  sender: null,
+  sentAt: '2026-08-28T12:00:00.000Z',
+  subject: 'Message subject',
   ...metadata,
 }
 const labelsResponse = {
   characterId,
-  labels: [{ labelId: 3, name: 'Inbox', color: '#ffffff', unreadCount: 1 }],
+  labels: [{ color: '#ffffff', labelId: 3, name: 'Inbox', unreadCount: 1 }],
   totalUnreadCount: 1,
   ...metadata,
 }
@@ -70,7 +70,7 @@ const listsResponse = {
 
 describe('mail queries', () => {
   it('isolates header cache entries by character, label selection, and pagination cursor', () => {
-    expect(PRIVATE_QUERY_KEYS.mailHeaders(7, [9, 3], 800)).toEqual([
+    expect(PRIVATE_QUERY_KEYS.mailHeaders(7, [9, 3], 800)).toStrictEqual([
       'private',
       'characters',
       7,
@@ -79,16 +79,16 @@ describe('mail queries', () => {
       [3, 9],
       800,
     ])
-    expect(PRIVATE_QUERY_KEYS.mailHeaders(7, [9, 3], 800)).toEqual(
+    expect(PRIVATE_QUERY_KEYS.mailHeaders(7, [9, 3], 800)).toStrictEqual(
       PRIVATE_QUERY_KEYS.mailHeaders(7, [3, 9, 3], 800),
     )
-    expect(PRIVATE_QUERY_KEYS.mailHeaders(7, [3], null)).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.mailHeaders(7, [3], null)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.mailHeaders(7, [9], null),
     )
-    expect(PRIVATE_QUERY_KEYS.mailHeaders(7, [3], null)).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.mailHeaders(7, [3], null)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.mailHeaders(7, [3], 800),
     )
-    expect(PRIVATE_QUERY_KEYS.mailHeaders(7, [3], null)).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.mailHeaders(7, [3], null)).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.mailHeaders(8, [3], null),
     )
   })
@@ -103,10 +103,10 @@ describe('mail queries', () => {
   it('opts transient recipient resolution out while keeping recipient search character-bound', () => {
     expect(
       resolveMailRecipientsQuery({ apiClient, characterId, names: ['Pilot'] }).meta?.esiPersistence,
-    ).toEqual({ kind: 'none' })
+    ).toStrictEqual({ kind: 'none' })
     expect(
       searchMailRecipientsQuery({ apiClient, characterId, query: 'Pilot' }).meta?.esiPersistence,
-    ).toEqual({ kind: 'character-esi', characterId })
+    ).toStrictEqual({ characterId, kind: 'character-esi' })
   })
 
   it('reuses fresh mail headers without issuing an early request', async () => {
@@ -170,9 +170,9 @@ describe('mail queries', () => {
       runQuery(mailingListsQuery({ apiClient, characterId })),
     ])
 
-    expect(requestedLabels).toEqual(['3', '9'])
+    expect(requestedLabels).toStrictEqual(['3', '9'])
     expect(requestedCursor).toBe('800')
-    expect(results).toEqual([headersResponse, detailResponse, labelsResponse, listsResponse])
+    expect(results).toStrictEqual([headersResponse, detailResponse, labelsResponse, listsResponse])
   })
 
   it('sends read state alone and does not request labels as a result', async () => {
@@ -188,7 +188,7 @@ describe('mail queries', () => {
 
     await mailReadMutation({ apiClient, characterId, mailId, read: true })
 
-    expect(requestBody).toEqual({ read: true })
+    expect(requestBody).toStrictEqual({ read: true })
     expect(requestBody).not.toHaveProperty('labels')
     expect(labelRequests).not.toHaveBeenCalled()
   })
@@ -226,7 +226,7 @@ describe('mail queries', () => {
     )
 
     await expect(
-      createMailLabelMutation({ apiClient, characterId, name: 'Priority', color: '#fe0000' }),
+      createMailLabelMutation({ apiClient, characterId, color: '#fe0000', name: 'Priority' }),
     ).resolves.toBe(44)
     await expect(
       deleteMailLabelMutation({ apiClient, characterId, labelId: 44 }),
@@ -235,7 +235,10 @@ describe('mail queries', () => {
       assignMailLabelsMutation({ apiClient, characterId, labels: [1, 44], mailId }),
     ).resolves.toBeUndefined()
 
-    expect(requestBodies).toEqual([{ name: 'Priority', color: '#fe0000' }, { labels: [1, 44] }])
+    expect(requestBodies).toStrictEqual([
+      { color: '#fe0000', name: 'Priority' },
+      { labels: [1, 44] },
+    ])
     expect(requestBodies[1]).not.toHaveProperty('read')
     expect(labelRequests).not.toHaveBeenCalled()
   })
@@ -251,7 +254,7 @@ describe('mail queries', () => {
 
     await createMailLabelMutation({ apiClient, characterId, name: 'Default color' })
 
-    expect(requestBody).toEqual({ name: 'Default color' })
+    expect(requestBody).toStrictEqual({ name: 'Default color' })
     expect(requestBody).not.toHaveProperty('color')
   })
 
@@ -302,7 +305,7 @@ describe('mail queries', () => {
       }),
     ).resolves.toBe(9001)
     expect(requests).toHaveBeenCalledOnce()
-    expect(requestBody).toEqual({
+    expect(requestBody).toStrictEqual({
       approvedCost: 25,
       body: 'Message body',
       recipients: [{ id: 91, type: 'corporation' }],
@@ -366,11 +369,11 @@ describe('mail queries', () => {
           names: [' Operations Control '],
         }),
       ),
-    ).resolves.toEqual({ recipients: resolved })
+    ).resolves.toStrictEqual({ recipients: resolved })
     await expect(
       runQuery(searchMailRecipientsQuery({ apiClient, characterId, query: ' Operations ' })),
     ).resolves.toMatchObject({ characterId, recipients: resolved })
-    expect(PRIVATE_QUERY_KEYS.mailRecipientResolution(7, 'operations control')).not.toEqual(
+    expect(PRIVATE_QUERY_KEYS.mailRecipientResolution(7, 'operations control')).not.toStrictEqual(
       PRIVATE_QUERY_KEYS.mailRecipientResolution(8, 'operations control'),
     )
   })
@@ -387,26 +390,26 @@ describe('mail queries', () => {
     await expect(
       calculateMailCspaMutation({ apiClient, characterId, recipientIds: [44, 44, 45] }),
     ).resolves.toBe(125)
-    expect(requestBody).toEqual({ characterIds: [44, 45] })
+    expect(requestBody).toStrictEqual({ characterIds: [44, 45] })
   })
 
   it.each([
     [
       403,
       {
+        authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
         code: 'EVE_SCOPE_REQUIRED',
         message: 'Authorize mail organization.',
         requiredScope: 'esi-mail.organize_mail.v1',
-        authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
       },
     ],
     [
       403,
       {
+        authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
         code: 'EVE_REAUTH_REQUIRED',
         message: 'Mail organization authorization expired.',
         requiredScope: 'esi-mail.organize_mail.v1',
-        authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
       },
     ],
     [409, { code: 'MAIL_MUTATION_REJECTED', message: 'EVE rejected the mail change.' }],
@@ -431,7 +434,7 @@ describe('mail queries', () => {
       labelIds: [99],
       mailId: 42,
       recipients: [],
-      sender: { id: 12, type: 'character', name: 'Archive Keeper' },
+      sender: { id: 12, name: 'Archive Keeper', type: 'character' },
       sentAt: '2020-01-01T00:00:00.000Z',
       subject: 'Old but labeled',
     }
@@ -447,7 +450,7 @@ describe('mail queries', () => {
 
     const result = await runQuery(mailHeadersQuery({ apiClient, characterId, labels: [99] }))
 
-    expect(result.messages).toEqual([oldLabeledMessage])
+    expect(result.messages).toStrictEqual([oldLabeledMessage])
   })
 
   it('forwards the query AbortSignal to the mail request', async () => {
@@ -522,9 +525,9 @@ describe('mail queries', () => {
     queryServer.use(http.get(url, () => HttpResponse.json(body)))
 
     await expect(runQuery(query())).rejects.toMatchObject({
-      status: 409,
       code: 'MAIL_IDENTITY_MISMATCH',
       message: 'Mail response did not match the requested identity.',
+      status: 409,
     })
   })
 
@@ -532,19 +535,19 @@ describe('mail queries', () => {
     [
       403,
       {
+        authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
         code: 'EVE_SCOPE_REQUIRED',
         message: 'Authorize mail access.',
         requiredScope: 'esi-mail.read_mail.v1',
-        authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
       },
     ],
     [
       403,
       {
+        authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
         code: 'EVE_REAUTH_REQUIRED',
         message: 'EVE authorization is no longer valid.',
         requiredScope: 'esi-mail.read_mail.v1',
-        authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
       },
     ],
     [
@@ -587,7 +590,9 @@ describe('mail queries', () => {
       resolveMailRecipientsQuery({ apiClient, characterId, names: ['Pilot'] }),
       searchMailRecipientsQuery({ apiClient, characterId, query: 'Pilot' }),
     ]
-    for (const option of options) expect(option).not.toHaveProperty('enabled')
+    for (const option of options) {
+      expect(option).not.toHaveProperty('enabled')
+    }
 
     const Root = defineComponent({
       setup() {

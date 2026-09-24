@@ -29,22 +29,22 @@ export type ResourceMaterializationContext = PlatformResourceMaterializationCont
 export async function materializeActivityResource(context: ResourceMaterializationContext) {
   const { data, subject } = context
   const result = await context.capabilities.persistence.materializeActivityObservation({
-    materializationId: globalThis.crypto.randomUUID(),
-    resourceId: data.resourceId,
-    subjectLifecycleId: subject.lifecycleId,
-    organizationVersion: data.organizationVersion,
     authorizationGeneration: context.authorizationGeneration ?? -1,
-    expectedRevision: data.expectedRevision,
     checkpoint: {
       ...data.checkpoint,
-      retainedIds: data.checkpoint.retainedIds ? [...data.checkpoint.retainedIds] : undefined,
+      cursors: { ...data.checkpoint.cursors },
+      requests: [...data.checkpoint.requests],
       retainedCampaignIds: data.checkpoint.retainedCampaignIds
         ? [...data.checkpoint.retainedCampaignIds]
         : undefined,
-      requests: [...data.checkpoint.requests],
-      cursors: { ...data.checkpoint.cursors },
+      retainedIds: data.checkpoint.retainedIds ? [...data.checkpoint.retainedIds] : undefined,
     },
+    expectedRevision: data.expectedRevision,
+    materializationId: globalThis.crypto.randomUUID(),
+    organizationVersion: data.organizationVersion,
+    resourceId: data.resourceId,
     snapshots: [...data.snapshots],
+    subjectLifecycleId: subject.lifecycleId,
   })
   return result.outcome === 'obsolete' ? result : undefined
 }
@@ -54,10 +54,10 @@ export async function readActivityCheckpoint(
   context: ActivityCollectionContext,
 ) {
   const stored = await context.capabilities.persistence.readActivityCheckpoint({
+    authorizationGeneration: context.authorizationGeneration ?? -1,
+    organizationVersion: context.organizationVersion,
     resourceId,
     subjectLifecycleId: context.subject.lifecycleId,
-    organizationVersion: context.organizationVersion,
-    authorizationGeneration: context.authorizationGeneration ?? -1,
   })
   return stored ?? undefined
 }

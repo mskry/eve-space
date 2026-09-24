@@ -15,7 +15,9 @@ export async function runDerivedAuthorityPlanner(context: QueuePlanningContext) 
       { signal },
     )
     if (admission.status === 'rejected') {
-      if (admission.reason === 'coalesced') continue
+      if (admission.reason === 'coalesced') {
+        continue
+      }
       return { planned, reason: admission.reason }
     }
     planned += 1

@@ -41,8 +41,8 @@ const corePlatformEsiOperationDefinitions = {
   'mail-headers': coreDefinition('mail-headers'),
   'mail-lists': coreDefinition('mail-lists'),
   'mail-message': coreDefinition('mail-message'),
-  skills: coreDefinition('skills'),
   'skill-queue': coreDefinition('skill-queue'),
+  skills: coreDefinition('skills'),
   'universe-resolve-names': coreDefinition('universe-resolve-names'),
   'wallet-balance': coreDefinition('wallet-balance'),
   'wallet-journal': coreDefinition('wallet-journal'),
@@ -82,8 +82,9 @@ export function assertEsiCatalogConfiguration(options: {
 }
 
 export function assertRegisteredEsiOperation(operation: string): asserts operation is EsiOperation {
-  if (!Object.hasOwn(esiOperationCatalog, operation))
+  if (!Object.hasOwn(esiOperationCatalog, operation)) {
     throw new Error(`Unregistered ESI operation: ${operation}`)
+  }
 }
 
 export function getEsiOperationAuthorization(operation: EsiOperation): EsiOperationAuthorization {
@@ -95,8 +96,9 @@ export function getEsiOperationAuthorization(operation: EsiOperation): EsiOperat
 
 export function getCharacterEsiScope(operation: EsiOperation) {
   const authorization = getEsiOperationAuthorization(operation)
-  if (authorization.kind !== 'character')
+  if (authorization.kind !== 'character') {
     throw new Error(`ESI operation ${operation} does not declare character authorization`)
+  }
   return authorization.requiredScope
 }
 
@@ -109,7 +111,9 @@ export function getEsiSetOperationConfiguration(
   operation: EsiOperation,
 ): EsiSetOperationConfiguration {
   const identity = esiOperationCatalog[operation].identity
-  if (identity.kind !== 'set') throw new Error(`ESI operation ${operation} is not set-like`)
+  if (identity.kind !== 'set') {
+    throw new Error(`ESI operation ${operation} is not set-like`)
+  }
   return { field: identity.field, maximumItems: identity.maximumItems }
 }
 
@@ -121,13 +125,15 @@ export function assertPlatformEsiOperation(
   operation: string,
 ): asserts operation is PlatformEsiOperation {
   assertRegisteredEsiOperation(operation)
-  if (!Object.hasOwn(platformEsiOperationDefinitions, operation))
+  if (!Object.hasOwn(platformEsiOperationDefinitions, operation)) {
     throw new Error(`ESI operation ${operation} is not registered for platform execution`)
+  }
 }
 
 export function assertCoreEsiOperation(operation: EsiOperation): void {
-  if (Object.hasOwn(platformEsiOperationDefinitions, operation))
+  if (Object.hasOwn(platformEsiOperationDefinitions, operation)) {
     throw new Error(`ESI operation ${operation} is registered for platform execution`)
+  }
 }
 
 export function getPlatformEsiOperationDefinition<Operation extends PlatformEsiOperation>(
@@ -148,7 +154,9 @@ export function parsePlatformEsiOperationInputs<Operation extends PlatformEsiOpe
 ): PlatformEsiOperationInput<Operation> {
   const parsed: unknown =
     getPlatformEsiOperationDefinition(operation).descriptor.requestSchema.parse(inputs)
-  if (!isRecord(parsed)) throw new Error('ESI SDK operation arguments must resolve to an object')
+  if (!isRecord(parsed)) {
+    throw new Error('ESI SDK operation arguments must resolve to an object')
+  }
   return parsed as PlatformEsiOperationInput<Operation>
 }
 
@@ -166,12 +174,13 @@ export function assertEsiPlatformExecutionConfiguration(): void {
     Object.hasOwn(installedModuleEsiOperationDefinitions, operation),
   )
   assertCorePlatformEsiOperationIdentities()
-  if (duplicateOperations.length > 0)
+  if (duplicateOperations.length > 0) {
     throw new Error(
       `ESI operations select duplicate platform execution paths: ${duplicateOperations
         .toSorted((left, right) => left.localeCompare(right))
         .join(', ')}`,
     )
+  }
   assertExecutableEsiOperationDefinitions(
     platformEsiOperationCatalog,
     platformEsiOperationDefinitions,
@@ -180,16 +189,18 @@ export function assertEsiPlatformExecutionConfiguration(): void {
   const issues: string[] = []
   for (const operation of Object.keys(esiOperationCatalog)) {
     const platform = Object.hasOwn(platformEsiOperationDefinitions, operation)
-    if (!platform && !Object.hasOwn(esiOperationMetadata, operation))
+    if (!platform && !Object.hasOwn(esiOperationMetadata, operation)) {
       issues.push(`operation ${operation} has no core callable execution path`)
+    }
   }
-  if (issues.length > 0)
+  if (issues.length > 0) {
     throw new Error(
       `Invalid ESI execution path selection:\n${issues
         .toSorted((left, right) => left.localeCompare(right))
         .map((issue) => `- ${issue}`)
         .join('\n')}`,
     )
+  }
 }
 
 export function assertEsiExecutableDefinition(operation: EsiOperation, definition: unknown): void {
@@ -210,8 +221,9 @@ export function assertEsiExecutableDefinition(operation: EsiOperation, definitio
     definition.contract.authorization === null ||
     !('kind' in definition.contract.authorization) ||
     definition.contract.authorization.kind !== contract.authorization.kind
-  )
+  ) {
     throw new Error(`ESI operation ${operation} does not match its executable definition`)
+  }
 }
 
 function assertCorePlatformEsiOperationIdentities() {
@@ -222,13 +234,16 @@ function assertCorePlatformEsiOperationIdentities() {
     definitions.some(
       ([operation, definition]) => published.get(operation) !== definition.sdkOperationId,
     )
-  )
+  ) {
     throw new Error('Core platform ESI definitions do not match the published SDK identities')
+  }
 }
 
 function coreDefinition<const Operation extends PlatformCoreEsiOperationId>(operation: Operation) {
   const sdkOperationId = platformCoreEsiOperationSdkIdentities[operation]
   const descriptor = operationRegistry[sdkOperationId]
-  if (!descriptor) throw new Error(`Core ESI operation ${operation} has no SDK descriptor`)
-  return { sdkOperationId, descriptor, contract: esiOperationCatalog[operation] } as const
+  if (!descriptor) {
+    throw new Error(`Core ESI operation ${operation} has no SDK descriptor`)
+  }
+  return { contract: esiOperationCatalog[operation], descriptor, sdkOperationId } as const
 }

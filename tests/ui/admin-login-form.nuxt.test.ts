@@ -6,7 +6,9 @@ import AdminLoginForm from '../../app/components/admin/LoginForm.vue'
 const mountedWrappers: { unmount: () => void }[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
 })
 
 async function mountLoginForm(props: Record<string, unknown> = {}) {
@@ -37,7 +39,7 @@ it('shows field feedback before submitting valid owner credentials', async () =>
   expect(wrapper.find('#admin-login-password-error').exists()).toBe(false)
 
   await wrapper.find('form').trigger('submit')
-  expect(wrapper.emitted('submit')).toEqual([
+  expect(wrapper.emitted('submit')).toStrictEqual([
     [{ email: 'owner@corp.eve', password: 'orbital-anchor-12' }],
   ])
 })

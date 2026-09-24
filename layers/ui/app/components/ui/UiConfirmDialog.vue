@@ -37,7 +37,9 @@ const open = defineModel<boolean>('open', { default: false })
 const guardedOpen = computed({
   get: () => open.value,
   set: (value) => {
-    if (value || !props.pending) open.value = value
+    if (value || !props.pending) {
+      open.value = value
+    }
   },
 })
 </script>

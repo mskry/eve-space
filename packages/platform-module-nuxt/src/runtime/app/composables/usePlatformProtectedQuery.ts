@@ -100,20 +100,23 @@ export function usePlatformProtectedQuery<
   let retainedKey: EntryKey | undefined
   const query = useQuery(() => ({
     ...state.value.queryOptions,
-    key: state.value.key,
     enabled: state.value.enabled,
+    key: state.value.key,
   }))
   const persistencePresentation = usePlatformQueryPersistence(() => state.value.key)
 
   watch(
     state,
     ({ enabled, key }) => {
-      if (retainedKey && !sameQueryKey(retainedKey, key))
+      if (retainedKey && !sameQueryKey(retainedKey, key)) {
         removePlatformQuery(queryCache, retainedKey)
-      if (!enabled) removePlatformQuery(queryCache, key)
+      }
+      if (!enabled) {
+        removePlatformQuery(queryCache, key)
+      }
       retainedKey = key
     },
-    { immediate: true, flush: 'sync' },
+    { flush: 'sync', immediate: true },
   )
 
   return { ...query, persistencePresentation }

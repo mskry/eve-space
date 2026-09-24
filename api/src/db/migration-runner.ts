@@ -49,8 +49,9 @@ export async function runMigrations(
       )
     `
 
-    if (!(await hasContentIdentityColumn(reservedConnection)))
+    if (!(await hasContentIdentityColumn(reservedConnection))) {
       throw new Error('Unsupported core migration history (missing content identity storage)')
+    }
     const applied = await readCoreMigrationHistory(reservedConnection)
     if (usesCanonicalManifest) {
       assertCoreMigrationHistory(applied, activeCoreMigrationManifest)
@@ -62,7 +63,9 @@ export async function runMigrations(
     // Migrations are ordered and each must commit before the next begins.
     // oxlint-disable no-await-in-loop
     for (const migration of migrationsToApply) {
-      if (appliedNames.has(migration.name)) continue
+      if (appliedNames.has(migration.name)) {
+        continue
+      }
       assertTransactionalMigration(migration)
 
       await reservedConnection`begin`
@@ -125,9 +128,12 @@ function assertProvidedMigrationIdentities(
   const appliedByName = new Map(applied.map((row) => [row.name, row]))
   for (const migration of migrations) {
     const row = appliedByName.get(migration.name)
-    if (!row) continue
-    if (row.contentSha256 !== migrationIdentity(migration))
+    if (!row) {
+      continue
+    }
+    if (row.contentSha256 !== migrationIdentity(migration)) {
       throw new Error(`Applied migration content identity mismatch: ${migration.name}`)
+    }
   }
 }
 

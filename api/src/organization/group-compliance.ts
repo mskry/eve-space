@@ -56,36 +56,40 @@ export async function convergeRegistrationComplianceGroupsInTransaction(
       group.groupId,
       input.userId,
     )
-    if (input.eligible === Boolean(existing)) continue
+    if (input.eligible === Boolean(existing)) {
+      continue
+    }
     if (input.eligible) {
       const [assignment] = await transaction
         .insert(organizationGroupAssignments)
         .values({
-          groupId: group.groupId,
-          deploymentId: 1,
-          organizationVersion: input.organizationVersion,
-          userId: input.userId,
+          assignedActorType: 'system',
+          assignedAt: input.now,
+          assignedByUserId: null,
           assignmentSource: 'compliance',
           complianceSource: 'core.registration',
-          assignedActorType: 'system',
-          assignedByUserId: null,
-          reason: 'Account registration compliance established.',
-          assignedAt: input.now,
+          deploymentId: 1,
           expiresAt: null,
+          groupId: group.groupId,
+          organizationVersion: input.organizationVersion,
+          reason: 'Account registration compliance established.',
+          userId: input.userId,
         })
         .returning()
-      if (!assignment) throw new Error('Failed to converge organization group assignment')
+      if (!assignment) {
+        throw new Error('Failed to converge organization group assignment')
+      }
       await appendGroupAudit(
         transaction,
         { organizationVersion: input.organizationVersion, policyVersion: input.policyVersion },
         {
-          eventType: 'group.assigned',
-          actorType: 'system',
           actorId: null,
+          actorType: 'system',
           assignment,
-          reason: assignment.reason,
-          outcome: 'granted',
+          eventType: 'group.assigned',
           now: input.now,
+          outcome: 'granted',
+          reason: assignment.reason,
         },
       )
       continue
@@ -93,20 +97,20 @@ export async function convergeRegistrationComplianceGroupsInTransaction(
     const revoked = await revokeGroupAssignmentRecord(transaction, existing!.assignmentId, {
       actorType: 'system',
       actorUserId: null,
-      reason: 'Account registration compliance no longer grants this group.',
       now: input.now,
+      reason: 'Account registration compliance no longer grants this group.',
     })
     await appendGroupAudit(
       transaction,
       { organizationVersion: input.organizationVersion, policyVersion: input.policyVersion },
       {
-        eventType: 'group.revoked',
-        actorType: 'system',
         actorId: null,
+        actorType: 'system',
         assignment: revoked,
-        reason: revoked.revocationReason!,
-        outcome: 'revoked',
+        eventType: 'group.revoked',
         now: input.now,
+        outcome: 'revoked',
+        reason: revoked.revocationReason!,
       },
     )
   }
@@ -129,72 +133,78 @@ async function convergeComplianceGroupAssignment(
       organization.organizationVersion,
       input.groupId,
     )
-    if (group.managementMode !== 'compliance' || group.complianceSource !== complianceSource)
+    if (group.managementMode !== 'compliance' || group.complianceSource !== complianceSource) {
       throw new OrganizationGroupMutationError('compliance-source-mismatch')
+    }
 
     const [target] = await transaction
       .select({ userId: users.id })
       .from(users)
       .where(eq(users.id, input.targetUserId))
-    if (!target) throw new OrganizationGroupMutationError('target-not-found')
+    if (!target) {
+      throw new OrganizationGroupMutationError('target-not-found')
+    }
     const existing = await loadUnrevokedGroupAssignmentForUpdate(
       transaction,
       organization.organizationVersion,
       group.groupId,
       input.targetUserId,
     )
-    if (input.eligible === Boolean(existing))
+    if (input.eligible === Boolean(existing)) {
       return {
-        changed: false,
         assignment: existing ? toOrganizationGroupAssignment(existing) : null,
+        changed: false,
       }
+    }
 
     const now = new Date()
     if (input.eligible) {
       const [assignment] = await transaction
         .insert(organizationGroupAssignments)
         .values({
-          groupId: group.groupId,
-          deploymentId: 1,
-          organizationVersion: organization.organizationVersion,
-          userId: input.targetUserId,
+          assignedActorType: 'system',
+          assignedAt: now,
+          assignedByUserId: null,
           assignmentSource: 'compliance',
           complianceSource,
-          assignedActorType: 'system',
-          assignedByUserId: null,
-          reason: input.reason,
-          assignedAt: now,
+          deploymentId: 1,
           expiresAt: null,
+          groupId: group.groupId,
+          organizationVersion: organization.organizationVersion,
+          reason: input.reason,
+          userId: input.targetUserId,
         })
         .returning()
-      if (!assignment) throw new Error('Failed to converge organization group assignment')
+      if (!assignment) {
+        throw new Error('Failed to converge organization group assignment')
+      }
       await appendGroupAudit(transaction, organization, {
-        eventType: 'group.assigned',
-        actorType: 'system',
         actorId: null,
+        actorType: 'system',
         assignment,
-        reason: input.reason,
-        outcome: 'granted',
+        eventType: 'group.assigned',
         now,
+        outcome: 'granted',
+        reason: input.reason,
       })
-      return { changed: true, assignment: toOrganizationGroupAssignment(assignment) }
+      return { assignment: toOrganizationGroupAssignment(assignment), changed: true }
     }
 
     const revoked = await revokeGroupAssignmentRecord(transaction, existing!.assignmentId, {
       actorType: 'system',
       actorUserId: null,
-      reason: input.reason,
       now,
+      reason: input.reason,
     })
     await appendGroupAudit(transaction, organization, {
-      eventType: 'group.revoked',
-      actorType: 'system',
       actorId: null,
+      actorType: 'system',
       assignment: revoked,
-      reason: input.reason,
-      outcome: 'revoked',
+      eventType: 'group.revoked',
       now,
+      outcome: 'revoked',
+      reason: input.reason,
     })
-    return { changed: true, assignment: toOrganizationGroupAssignment(revoked) }
+    return { assignment: toOrganizationGroupAssignment(revoked), changed: true }
   })
 }

@@ -8,6 +8,6 @@ export class EsiQuotaError extends Error {
   ) {
     super('ESI quota is temporarily exhausted')
     this.name = 'EsiQuotaError'
-    this.retryAt = retryAt ?? new Date(now + retryAfterSeconds * 1_000)
+    this.retryAt = retryAt ?? new Date(now + retryAfterSeconds * 1000)
   }
 }

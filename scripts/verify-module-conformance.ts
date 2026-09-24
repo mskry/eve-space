@@ -124,8 +124,9 @@ try {
     join(fixtureRoot, 'api/src/generated/platform/installed-module-routes.ts'),
     join(fixtureRoot, 'api/src/generated/platform/installed-reviewer-contributions.ts'),
     join(fixtureRoot, 'generated/platform/installed-nuxt-contributions.ts'),
-  ])
+  ]) {
     if (!existsSync(output)) throw new Error(`Module conformance output is missing ${output}`)
+  }
 
   run('module conformance tests', 'node_modules/.bin/vitest', [
     'run',
@@ -145,13 +146,18 @@ function run(label: string, command: string, args: readonly string[]) {
     env: process.env,
     stdio: 'inherit',
   })
-  if (result.error) throw result.error
-  if (result.status !== 0)
+  if (result.error) {
+    throw result.error
+  }
+  if (result.status !== 0) {
     throw new Error(`${label} failed with status ${result.status ?? 'unknown'}`)
+  }
 }
 
 function cleanOutputs() {
-  for (const output of outputs) rmSync(output, { recursive: true, force: true })
+  for (const output of outputs) {
+    rmSync(output, { force: true, recursive: true })
+  }
 }
 
 function linkFixtureDependencies() {

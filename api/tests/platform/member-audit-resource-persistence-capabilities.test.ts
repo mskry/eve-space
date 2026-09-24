@@ -6,7 +6,7 @@ test('exposes only active persistence methods to trained skill resources', () =>
   const capability = installedModulePersistenceCapabilityFactories.resourceMaterializations[
     'member-audit/trained-skills'
   ](vi.fn())
-  expect(Object.keys(capability).toSorted()).toEqual([
+  expect(Object.keys(capability).toSorted()).toStrictEqual([
     'materializeCurrentSnapshot',
     'purgeEvidence',
   ])
@@ -18,7 +18,7 @@ test('exposes only active persistence methods to trained skill resources', () =>
 
 test('registers only independent audit evidence resources with managed-member gates', () => {
   const resources = installedModuleResources.filter(({ moduleId }) => moduleId === 'member-audit')
-  expect(resources.map(({ resourceId }) => resourceId)).toEqual([
+  expect(resources.map(({ resourceId }) => resourceId)).toStrictEqual([
     'trained-skills',
     'assets',
     'wallet-balance',

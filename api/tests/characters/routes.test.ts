@@ -5,10 +5,10 @@ const mocks = vi.hoisted(() => ({
   deleteCharacter: vi.fn(),
   findOwnedCharacter: vi.fn(),
   findSession: vi.fn(),
-  getCharacterEmploymentHistory: vi.fn(),
   getCharacterContractBids: vi.fn(),
   getCharacterContractItems: vi.fn(),
   getCharacterContracts: vi.fn(),
+  getCharacterEmploymentHistory: vi.fn(),
   getCharacterLocation: vi.fn(),
   getCharacterMarketOrderHistory: vi.fn(),
   getCharacterMarketOrders: vi.fn(),
@@ -78,8 +78,8 @@ vi.mock('../../src/characters/market.js', () => ({
 }))
 
 vi.mock('../../src/characters/contracts.js', () => ({
-  characterContractsScope: 'esi-contracts.read_character_contracts.v1',
   ContractNotFoundError: class ContractNotFoundError extends Error {},
+  characterContractsScope: 'esi-contracts.read_character_contracts.v1',
   getCharacterContractBids: mocks.getCharacterContractBids,
   getCharacterContractItems: mocks.getCharacterContractItems,
   getCharacterContracts: mocks.getCharacterContracts,
@@ -103,50 +103,50 @@ type DeleteCharacterRequest = InferRequestType<(typeof mountedCharacter)['$delet
 
 const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
 const mainCharacter = {
-  characterId: 1404328063,
-  name: 'Bandera Primary',
-  corporationId: 1000166,
   allianceId: null,
+  characterId: 1_404_328_063,
+  corporationId: 1_000_166,
   isMain: true,
+  name: 'Bandera Primary',
 }
 const altCharacter = {
-  characterId: 2112625428,
-  name: 'Bandera Alt',
-  corporationId: 1000166,
-  allianceId: 99000001,
+  allianceId: 99_000_001,
+  characterId: 2_112_625_428,
+  corporationId: 1_000_166,
   isMain: false,
+  name: 'Bandera Alt',
 }
 const altSubjectLifecycleId = 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011'
 const mainSubjectLifecycleId = '614247fe-7206-4a65-8783-30670002d833'
 const ownedAltCharacter = { ...altCharacter, subjectLifecycleId: altSubjectLifecycleId }
-const session = { userId, mainCharacter }
+const session = { mainCharacter, userId }
 const freshness = {
   cachedUntil: '2026-09-01T11:01:00.000Z',
-  validatedAt: '2026-09-01T11:00:00.000Z',
   stale: false,
+  validatedAt: '2026-09-01T11:00:00.000Z',
 }
 const profile = {
+  achievementScore: 10,
+  alliance: { id: 99_000_001, name: 'Test Alliance', ticker: 'ALLY' },
+  birthday: '2020-01-01T00:00:00Z',
+  bloodline: 'Deteis',
+  corporation: { id: 1_000_166, memberCount: 5, name: 'Test Corp', ticker: 'TEST' },
+  gender: 'male',
   id: altCharacter.characterId,
   name: altCharacter.name,
-  birthday: '2020-01-01T00:00:00Z',
-  gender: 'male',
   race: 'Caldari',
-  bloodline: 'Deteis',
+  raceFactionId: 500_001,
   securityStatus: 1.2,
-  raceFactionId: 500001,
-  achievementScore: 10,
-  corporation: { id: 1000166, name: 'Test Corp', ticker: 'TEST', memberCount: 5 },
-  alliance: { id: 99000001, name: 'Test Alliance', ticker: 'ALLY' },
   ...freshness,
 }
 const location = {
-  solarSystemId: 30000142,
+  locationType: 'space' as const,
+  solarSystemId: 30_000_142,
   solarSystemName: 'Jita',
   solarSystemSecurityStatus: 0.945,
-  locationType: 'space' as const,
   ...freshness,
 }
-const ship = { typeId: 670, typeName: 'Capsule', groupId: 29, name: 'My Pod', ...freshness }
+const ship = { groupId: 29, name: 'My Pod', typeId: 670, typeName: 'Capsule', ...freshness }
 
 beforeEach(() => {
   mocks.deleteCharacter.mockResolvedValue('deleted')
@@ -164,11 +164,11 @@ beforeEach(() => {
         recordId: 1,
         startDate: '2020-01-01T00:00:00Z',
         isDeleted: false,
-        corporation: { id: 1000166, name: 'Test Corp' },
+        corporation: { id: 1_000_166, name: 'Test Corp' },
       },
     ],
-    source: 'cache',
     quota: {},
+    source: 'cache',
     ...freshness,
   })
   mocks.getCharacterLocation.mockResolvedValue(location)
@@ -181,10 +181,14 @@ beforeEach(() => {
   mocks.getWalletBalance.mockResolvedValue({
     balance: 1_234_567.89,
     cachedUntil: new Date().toISOString(),
-    validatedAt: new Date().toISOString(),
     stale: false,
+    validatedAt: new Date().toISOString(),
   })
   mocks.getWalletTransactions.mockResolvedValue({
+    cachedUntil: new Date().toISOString(),
+    fromId: null,
+    nextFromId: 1,
+    stale: false,
     transactions: [
       {
         transactionId: 1,
@@ -199,11 +203,7 @@ beforeEach(() => {
         locationId: 60_000_001,
       },
     ],
-    fromId: null,
-    nextFromId: 1,
-    cachedUntil: new Date().toISOString(),
     validatedAt: new Date().toISOString(),
-    stale: false,
   })
 })
 
@@ -222,31 +222,31 @@ describe('character roster', () => {
     const body = await response.json()
 
     expect(response.status).toBe(200)
-    expect(body).toEqual({
+    expect(body).toStrictEqual({
       characters: [
         {
           ...mainCharacter,
-          birthday: profile.birthday,
-          securityStatus: profile.securityStatus,
-          raceFactionId: profile.raceFactionId,
-          location,
-          ship,
-          walletBalance: 1_234_567.89,
-          totalSp: 5_000_000,
-          corporation: { id: mainCharacter.corporationId, name: 'Test Corp' },
           alliance: null,
+          birthday: profile.birthday,
+          corporation: { id: mainCharacter.corporationId, name: 'Test Corp' },
+          location,
+          raceFactionId: profile.raceFactionId,
+          securityStatus: profile.securityStatus,
+          ship,
+          totalSp: 5_000_000,
+          walletBalance: 1_234_567.89,
         },
         {
           ...altCharacter,
-          birthday: profile.birthday,
-          securityStatus: profile.securityStatus,
-          raceFactionId: profile.raceFactionId,
-          location,
-          ship,
-          walletBalance: 1_234_567.89,
-          totalSp: 5_000_000,
-          corporation: { id: altCharacter.corporationId, name: 'Test Corp' },
           alliance: { id: altCharacter.allianceId, name: 'Test Alliance' },
+          birthday: profile.birthday,
+          corporation: { id: altCharacter.corporationId, name: 'Test Corp' },
+          location,
+          raceFactionId: profile.raceFactionId,
+          securityStatus: profile.securityStatus,
+          ship,
+          totalSp: 5_000_000,
+          walletBalance: 1_234_567.89,
         },
       ],
     })
@@ -280,31 +280,31 @@ describe('character roster', () => {
     const response = await authorizedRequest('/')
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toStrictEqual({
       characters: [
         {
           ...mainCharacter,
-          birthday: null,
-          securityStatus: null,
-          raceFactionId: null,
-          location,
-          ship,
-          walletBalance: 1_234_567.89,
-          totalSp: 5_000_000,
-          corporation: { id: mainCharacter.corporationId, name: 'Unknown corporation' },
           alliance: null,
+          birthday: null,
+          corporation: { id: mainCharacter.corporationId, name: 'Unknown corporation' },
+          location,
+          raceFactionId: null,
+          securityStatus: null,
+          ship,
+          totalSp: 5_000_000,
+          walletBalance: 1_234_567.89,
         },
         {
           ...altCharacter,
-          birthday: null,
-          securityStatus: null,
-          raceFactionId: null,
-          location,
-          ship,
-          walletBalance: 1_234_567.89,
-          totalSp: 5_000_000,
-          corporation: { id: altCharacter.corporationId, name: 'Unknown corporation' },
           alliance: { id: altCharacter.allianceId, name: 'Unknown alliance' },
+          birthday: null,
+          corporation: { id: altCharacter.corporationId, name: 'Unknown corporation' },
+          location,
+          raceFactionId: null,
+          securityStatus: null,
+          ship,
+          totalSp: 5_000_000,
+          walletBalance: 1_234_567.89,
         },
       ],
     })
@@ -337,27 +337,27 @@ describe('character roster', () => {
 
     try {
       const responsePending = authorizedRequest('/')
-      await vi.advanceTimersByTimeAsync(2_000)
+      await vi.advanceTimersByTimeAsync(2000)
       const response = await responsePending
       const body = await response.json()
 
       expect(response.status).toBe(200)
-      expect(body.characters).toEqual([
+      expect(body.characters).toStrictEqual([
         expect.objectContaining({
           characterId: mainCharacter.characterId,
-          name: mainCharacter.name,
           location: null,
+          name: mainCharacter.name,
           ship: null,
-          walletBalance: null,
           totalSp: null,
+          walletBalance: null,
         }),
         expect.objectContaining({
           characterId: altCharacter.characterId,
-          name: altCharacter.name,
           location: null,
+          name: altCharacter.name,
           ship: null,
-          walletBalance: null,
           totalSp: null,
+          walletBalance: null,
         }),
       ])
     } finally {
@@ -373,7 +373,9 @@ describe('owned character overview', () => {
     })
 
     expect(response.status).toBe(400)
-    expect(await response.json()).toEqual({ message: 'Character ID must be a positive integer.' })
+    expect(await response.json()).toStrictEqual({
+      message: 'Character ID must be a positive integer.',
+    })
     expect(mocks.findSession).not.toHaveBeenCalled()
     expect(mocks.findOwnedCharacter).not.toHaveBeenCalled()
   })
@@ -384,11 +386,11 @@ describe('owned character overview', () => {
     const response = await authorizedRequest('/90000001')
 
     expect(response.status).toBe(404)
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toStrictEqual({
       code: 'CHARACTER_NOT_FOUND',
       message: 'Character not found.',
     })
-    expect(mocks.findOwnedCharacter).toHaveBeenCalledWith(userId, 90000001)
+    expect(mocks.findOwnedCharacter).toHaveBeenCalledWith(userId, 90_000_001)
     expect(mocks.getCharacterProfile).not.toHaveBeenCalled()
     expect(mocks.getCharacterLocation).not.toHaveBeenCalled()
     expect(mocks.getCharacterSkillsSummary).not.toHaveBeenCalled()
@@ -398,13 +400,13 @@ describe('owned character overview', () => {
     const response = await authorizedRequest(`/${altCharacter.characterId}`)
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toStrictEqual({
+      location: { data: location, status: 'ok' },
       profile,
-      location: { status: 'ok', data: location },
-      ship: { status: 'ok', data: ship },
+      ship: { data: ship, status: 'ok' },
       skills: {
-        status: 'ok',
         data: { totalSp: 5_000_000, unallocatedSp: 0, ...freshness },
+        status: 'ok',
       },
       ...freshness,
     })
@@ -427,10 +429,10 @@ describe('owned character overview', () => {
     mocks.getCharacterProfile.mockResolvedValue({
       ...profile,
       cachedUntil: '2026-09-01T10:59:00.000Z',
-      validatedAt: '2026-09-01T10:58:00.000Z',
-      stale: true,
-      retryAt: '2026-09-01T11:07:00.000Z',
       refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-09-01T11:07:00.000Z',
+      stale: true,
+      validatedAt: '2026-09-01T10:58:00.000Z',
     })
 
     const response = await authorizedRequest(`/${altCharacter.characterId}`)
@@ -438,15 +440,15 @@ describe('owned character overview', () => {
     expect(response.status).toBe(200)
     expect(await response.json()).toMatchObject({
       cachedUntil: '2026-09-01T10:59:00.000Z',
-      validatedAt: '2026-09-01T10:58:00.000Z',
-      stale: true,
-      retryAt: '2026-09-01T11:07:00.000Z',
-      refreshFailureClass: 'esi-unavailable',
       profile: {
         id: altCharacter.characterId,
         stale: true,
         validatedAt: '2026-09-01T10:58:00.000Z',
       },
+      refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-09-01T11:07:00.000Z',
+      stale: true,
+      validatedAt: '2026-09-01T10:58:00.000Z',
     })
   })
 
@@ -460,11 +462,11 @@ describe('owned character overview', () => {
       location: { status: string; requiredScope: string; authorizeUrl: string }
     }
 
-    expect(body.location).toEqual({
-      status: 'scope-required',
+    expect(body.location).toStrictEqual({
+      authorizeUrl: `http://localhost:8788/auth/eve/reauthorize/${altCharacter.characterId}`,
       message: 'Authorize this scope to view this data: esi-location.read_location.v1',
       requiredScope: 'esi-location.read_location.v1',
-      authorizeUrl: `http://localhost:8788/auth/eve/reauthorize/${altCharacter.characterId}`,
+      status: 'scope-required',
     })
   })
 
@@ -489,12 +491,12 @@ describe('owned character overview', () => {
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toMatchObject({
       location: {
-        status: 'unavailable',
         message: 'EVE token refresh is temporarily unavailable.',
+        status: 'unavailable',
       },
       ship: {
-        status: 'unavailable',
         message: 'EVE Online ESI is temporarily unavailable.',
+        status: 'unavailable',
       },
     })
   })
@@ -505,7 +507,7 @@ describe('owned character overview', () => {
     const response = await authorizedRequest(`/${altCharacter.characterId}`)
 
     expect(response.status).toBe(502)
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toStrictEqual({
       message: 'EVE Online ESI is temporarily unavailable. Try again shortly.',
     })
   })
@@ -517,8 +519,8 @@ describe('owned character wallet', () => {
 
     expect(response.status).toBe(200)
     expect(await response.json()).toMatchObject({
-      characterId: altCharacter.characterId,
       balance: 1_234_567.89,
+      characterId: altCharacter.characterId,
     })
     expect(mocks.getWalletBalance).toHaveBeenCalledWith(
       altCharacter.characterId,
@@ -545,11 +547,11 @@ describe('owned character wallet', () => {
     const response = await authorizedRequest(`/${altCharacter.characterId}/wallet`)
 
     expect(response.status).toBe(403)
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toStrictEqual({
+      authorizeUrl: financeAuthorizeUrl(altCharacter.characterId),
       code: 'EVE_SCOPE_REQUIRED',
       message: 'Authorize wallet access for this character.',
       requiredScope: 'esi-wallet.read_character_wallet.v1',
-      authorizeUrl: financeAuthorizeUrl(altCharacter.characterId),
     })
   })
 
@@ -565,8 +567,8 @@ describe('owned character wallet', () => {
     const rejected = await authorizedRequest(`/${altCharacter.characterId}/wallet`)
     expect(rejected.status).toBe(403)
     expect(await rejected.json()).toMatchObject({
-      code: 'EVE_REAUTH_REQUIRED',
       authorizeUrl: financeAuthorizeUrl(altCharacter.characterId),
+      code: 'EVE_REAUTH_REQUIRED',
     })
 
     mocks.getWalletBalance.mockRejectedValueOnce(new Error('ESI unavailable'))
@@ -606,8 +608,8 @@ describe('owned character wallet', () => {
     const scope = await authorizedRequest(`/${altCharacter.characterId}/wallet/transactions`)
     expect(scope.status).toBe(403)
     expect(await scope.json()).toMatchObject({
-      code: 'EVE_SCOPE_REQUIRED',
       authorizeUrl: financeAuthorizeUrl(altCharacter.characterId),
+      code: 'EVE_SCOPE_REQUIRED',
     })
 
     mocks.getWalletTransactions.mockRejectedValueOnce(new EsiQuotaError(45))
@@ -657,7 +659,7 @@ describe('owned character employment history', () => {
     const response = await authorizedRequest(`/${altCharacter.characterId}/history`)
 
     expect(response.status).toBe(502)
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toStrictEqual({
       code: 'ESI_UNAVAILABLE',
       message: 'Employment history is temporarily unavailable.',
     })
@@ -665,27 +667,27 @@ describe('owned character employment history', () => {
 
   test('exposes stale employment metadata at the response root', async () => {
     mocks.getCharacterEmploymentHistory.mockResolvedValue({
-      data: [],
-      source: 'cache',
-      quota: {},
       cachedUntil: '2026-09-01T10:59:00.000Z',
-      validatedAt: '2026-09-01T10:58:00.000Z',
-      stale: true,
-      retryAt: '2026-09-01T11:07:00.000Z',
+      data: [],
+      quota: {},
       refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-09-01T11:07:00.000Z',
+      source: 'cache',
+      stale: true,
+      validatedAt: '2026-09-01T10:58:00.000Z',
     })
 
     const response = await authorizedRequest(`/${altCharacter.characterId}/history`)
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toMatchObject({
+      cachedUntil: '2026-09-01T10:59:00.000Z',
       characterId: altCharacter.characterId,
       history: [],
-      cachedUntil: '2026-09-01T10:59:00.000Z',
-      validatedAt: '2026-09-01T10:58:00.000Z',
-      stale: true,
-      retryAt: '2026-09-01T11:07:00.000Z',
       refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-09-01T11:07:00.000Z',
+      stale: true,
+      validatedAt: '2026-09-01T10:58:00.000Z',
     })
   })
 
@@ -696,7 +698,7 @@ describe('owned character employment history', () => {
 
     expect(response.status).toBe(429)
     expect(response.headers.get('retry-after')).toBe('12')
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toStrictEqual({
       code: 'ESI_COOLDOWN',
       message: 'EVE Online ESI is temporarily rate limited.',
       retryAfterSeconds: 12,
@@ -709,7 +711,9 @@ describe('main character selection', () => {
     const response = await authorizedRequest(`/${altCharacter.characterId}/main`, 'PATCH')
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ mainCharacter: { ...altCharacter, isMain: true } })
+    expect(await response.json()).toStrictEqual({
+      mainCharacter: { ...altCharacter, isMain: true },
+    })
     expect(mocks.setMainCharacter).toHaveBeenCalledWith(userId, altCharacter.characterId)
   })
 
@@ -743,7 +747,7 @@ describe('character deletion', () => {
       routeCounts.set(key, (routeCounts.get(key) ?? 0) + 1)
     }
 
-    expect([...routeCounts.entries()].filter(([, count]) => count > 1)).toEqual([])
+    expect([...routeCounts.entries()].filter(([, count]) => count > 1)).toStrictEqual([])
     expect(routeCounts.get('DELETE /:characterId')).toBe(1)
   })
 
@@ -761,38 +765,38 @@ describe('character deletion', () => {
 
   test.each([
     {
-      name: 'rejects deletion of the current main character',
-      character: mainCharacter,
-      result: 'main-character',
       body: {
         code: 'MAIN_CHARACTER_DELETE_FORBIDDEN',
         message: 'Choose another main character before deleting this one.',
       },
+      character: mainCharacter,
+      name: 'rejects deletion of the current main character',
+      result: 'main-character',
     },
     {
-      name: 'retains organization authority evidence',
-      character: altCharacter,
-      result: 'authority-evidence',
       body: {
         code: 'CHARACTER_AUTHORITY_EVIDENCE_RETAINED',
         message:
           'This character supplies retained organization-owner authority evidence and cannot be deleted.',
       },
+      character: altCharacter,
+      name: 'retains organization authority evidence',
+      result: 'authority-evidence',
     },
     {
-      name: 'retains an active corporation data source',
-      character: altCharacter,
-      result: 'corporation-source',
       body: {
         code: 'CHARACTER_CORPORATION_SOURCE_ACTIVE',
         message: 'Replace this character as the corporation data source before deleting it.',
       },
+      character: altCharacter,
+      name: 'retains an active corporation data source',
+      result: 'corporation-source',
     },
     {
-      name: 'returns not found when the character disappears during deletion',
-      character: altCharacter,
-      result: 'not-found',
       body: { code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' },
+      character: altCharacter,
+      name: 'returns not found when the character disappears during deletion',
+      result: 'not-found',
     },
   ])('$name', async ({ character, result, body }) => {
     mocks.findOwnedCharacter.mockResolvedValue(character)
@@ -801,7 +805,7 @@ describe('character deletion', () => {
     const response = await mountedAuthorizedRequest(`/${character.characterId}`, 'DELETE')
 
     expect(response.status).toBe(result === 'not-found' ? 404 : 409)
-    expect(await response.json()).toEqual(body)
+    expect(await response.json()).toStrictEqual(body)
   })
 
   test('returns the same 404 and never deletes a non-owned target', async () => {
@@ -820,18 +824,18 @@ function stalled() {
 
 function authorizedRequest(path: string, method = 'GET') {
   return characterRoutes.request(path, {
-    method,
     headers: { Cookie: 'eve_space_session=active-session' },
+    method,
   })
 }
 
 function mountedAuthorizedRequest(path: string, method = 'GET') {
   return app.request(`/api/me/characters${path}`, {
-    method,
     headers: {
       Cookie: 'eve_space_session=active-session',
       Origin: 'http://localhost:3000',
     },
+    method,
   })
 }
 

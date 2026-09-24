@@ -48,7 +48,9 @@ describe('organization foundation migration', () => {
       ) values (1, 1, 'Migration ownership', ${userId})
       returning bundle_id
     `
-    if (!bundle) throw new Error('Permission bundle fixture is missing')
+    if (!bundle) {
+      throw new Error('Permission bundle fixture is missing')
+    }
 
     await connection`
       insert into organization_permission_bundle_entries (
@@ -72,18 +74,18 @@ describe('organization foundation migration', () => {
       where bundle_id = ${bundle.bundle_id}
       order by permission_key, publisher_package nulls first
     `
-    expect(rows).toEqual([
+    expect([...rows]).toStrictEqual([
       {
+        module_id: 'alpha',
         permission_key: 'alpha.view',
         publisher_package: '@example/alpha-manifest',
-        module_id: 'alpha',
       },
       {
+        module_id: 'alpha',
         permission_key: 'alpha.view',
         publisher_package: '@replacement/alpha-manifest',
-        module_id: 'alpha',
       },
-      { permission_key: 'legacy.permission', publisher_package: null, module_id: null },
+      { module_id: null, permission_key: 'legacy.permission', publisher_package: null },
     ])
     await expect(
       connection`
@@ -149,24 +151,24 @@ describe('organization foundation migration', () => {
       ) as present
     `
 
-    expect(settings).toEqual({
+    expect(settings).toStrictEqual({
       organization_version: '1',
-      strict_remediation_duration_seconds: 0,
-      stale_evidence_grace_duration_seconds: 3600,
-      required_registration_scopes: [],
       registration_policy_version: '1',
+      required_registration_scopes: [],
+      stale_evidence_grace_duration_seconds: 3600,
+      strict_remediation_duration_seconds: 0,
     })
-    expect(epoch).toEqual({
-      organization_version: '1',
-      organization_type: 'corporation',
+    expect(epoch).toStrictEqual({
       organization_id: '98000001',
+      organization_type: 'corporation',
+      organization_version: '1',
     })
-    expect(character).toEqual({
+    expect(character).toStrictEqual({
       character_id: String(characterId),
-      user_id: userId,
       corporation_id: '98000001',
+      user_id: userId,
     })
-    expect(token).toEqual({ encrypted_tokens: encryptedTokens, scopes, token_version: 7 })
+    expect(token).toStrictEqual({ encrypted_tokens: encryptedTokens, scopes, token_version: 7 })
     expect(ownerGrants?.count).toBe(0)
     expect(installation?.owner_admin_id).toBe(adminId)
     expect(settingsOwnerColumn?.present).toBe(false)
@@ -217,14 +219,14 @@ describe('organization foundation migration', () => {
         and is_nullable = 'NO'
       order by table_name, column_name
     `
-    expect(nullability).toEqual([
+    expect([...nullability]).toStrictEqual([
       {
-        table_name: 'organization_authority_evidence',
         column_name: 'director_role_present',
+        table_name: 'organization_authority_evidence',
       },
       {
-        table_name: 'organization_corporation_sources',
         column_name: 'director_role_present',
+        table_name: 'organization_corporation_sources',
       },
     ])
 
@@ -364,7 +366,9 @@ describe('organization foundation migration', () => {
       `
     const revision = 'roles-observed-at-2026-09-21T00:00:00.000Z'
     const [source] = await insertDerivedSource(revision)
-    if (!source) throw new Error('Derived authority source fixture is missing')
+    if (!source) {
+      throw new Error('Derived authority source fixture is missing')
+    }
 
     await expect(insertDerivedSource(revision)).rejects.toMatchObject({ code: '23505' })
 
@@ -392,7 +396,7 @@ describe('organization foundation migration', () => {
       from organization_derived_authority_sources
       where user_id = ${userId} and source_subject_lifecycle_id = ${characterSubjectLifecycleId}
     `
-    expect(history).toEqual({ current_count: 1, historical_count: 1 })
+    expect(history).toStrictEqual({ current_count: 1, historical_count: 1 })
   })
 
   test('retains immutable corporation-source attribution after its live character is deleted', async () => {
@@ -444,7 +448,7 @@ describe('organization foundation migration', () => {
       from organization_corporation_sources
       where source_id = ${historicalSourceId}
     `
-    expect(historical).toEqual({
+    expect(historical).toStrictEqual({
       character_id: null,
       evidence_character_id: String(historicalCharacterId),
       source_user_id: historicalUserId,
@@ -458,7 +462,9 @@ describe('organization foundation migration', () => {
       where deployment_id = 1 and organization_version = 1 and corporation_id = 98000001
       limit 1
     `
-    if (!source) throw new Error('Corporation source fixture is missing')
+    if (!source) {
+      throw new Error('Corporation source fixture is missing')
+    }
     const [lifecycle] = await connection<{ subject_lifecycle_id: string }[]>`
       insert into platform_subject_lifecycles (
         subject_kind,
@@ -468,7 +474,9 @@ describe('organization foundation migration', () => {
       on conflict (corporation_source_id) do update set subject_id = excluded.subject_id
       returning subject_lifecycle_id
     `
-    if (!lifecycle) throw new Error('Corporation lifecycle fixture is missing')
+    if (!lifecycle) {
+      throw new Error('Corporation lifecycle fixture is missing')
+    }
     await connection`
       insert into platform_collection_state (
         module_id,

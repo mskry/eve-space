@@ -6,11 +6,11 @@ import type { CharacterClones, CharacterImplants } from '../../app/queries/clone
 import type { CloneResourceState } from '../../app/types/clones'
 
 const mountedWrappers: { unmount: () => void }[] = []
-const ready: CloneResourceState = { status: 'ready', message: '', authorizeUrl: '' }
+const ready: CloneResourceState = { authorizeUrl: '', message: '', status: 'ready' }
 const freshness = {
   cachedUntil: '2026-09-03T11:02:00.000Z',
-  validatedAt: '2026-09-03T11:00:00.000Z',
   stale: false,
+  validatedAt: '2026-09-03T11:00:00.000Z',
 }
 const clones = {
   homeLocation: {
@@ -21,16 +21,16 @@ const clones = {
   },
   jumpClones: [
     {
-      jumpCloneId: 11,
-      name: 'Industry clone',
-      location: { locationId: 60_000_001, locationType: 'station', name: 'Jita IV - Moon 4' },
       implants: [{ typeId: 2, name: 'Memory Augmentation', slot: 2, bonuses: [] }],
+      jumpCloneId: 11,
+      location: { locationId: 60_000_001, locationType: 'station', name: 'Jita IV - Moon 4' },
+      name: 'Industry clone',
     },
     {
-      jumpCloneId: 12,
-      name: null,
-      location: { locationId: 1_035_466_617_946, locationType: 'structure', name: null },
       implants: [],
+      jumpCloneId: 12,
+      location: { locationId: 1_035_466_617_946, locationType: 'structure', name: null },
+      name: null,
     },
   ],
   lastCloneJumpAt: '2026-09-02T12:00:00Z',
@@ -39,8 +39,8 @@ const clones = {
 } satisfies CharacterClones
 const implants = {
   implants: [
-    { typeId: 3, name: 'Ocular Filter', slot: 1, bonuses: [{ attribute: 'perception', value: 4 }] },
-    { typeId: 4, name: 'Neural Boost', slot: 3, bonuses: [{ attribute: 'willpower', value: 4 }] },
+    { bonuses: [{ attribute: 'perception', value: 4 }], name: 'Ocular Filter', slot: 1, typeId: 3 },
+    { bonuses: [{ attribute: 'willpower', value: 4 }], name: 'Neural Boost', slot: 3, typeId: 4 },
   ],
   ...freshness,
 } satisfies CharacterImplants
@@ -48,20 +48,22 @@ const skills = {
   groups: [
     {
       skills: [
-        { typeId: 24_242, trainedLevel: 5, activeLevel: 5 },
-        { typeId: 33_407, trainedLevel: 3, activeLevel: 3 },
+        { activeLevel: 5, trainedLevel: 5, typeId: 24_242 },
+        { activeLevel: 3, trainedLevel: 3, typeId: 33_407 },
       ],
     },
   ],
 } as unknown as CharacterSkills
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
 })
 
 describe('character Clones workspace', () => {
   it('keeps jump clones by location collapsed by default', async () => {
-    const wrapper = await mountWorkspace({ clones, implants, expandStoredClones: false })
+    const wrapper = await mountWorkspace({ clones, expandStoredClones: false, implants })
     const trigger = wrapper.get('.character-clones-stored .character-clones-section-heading')
 
     expect(trigger.attributes('aria-expanded')).toBe('false')
@@ -91,7 +93,7 @@ describe('character Clones workspace', () => {
     )
     expect(jumpClones.get('.character-clones-home-location').text()).toContain('Jita IV - Moon 4')
     expect(jumpClones.get('.system-security-status').text()).toContain('0.9')
-    expect(jumpClones.findAll('dt').map((term) => term.text())).toEqual([
+    expect(jumpClones.findAll('dt').map((term) => term.text())).toStrictEqual([
       'HOME STATION',
       'LAST HOME STATION CHANGE',
       'LAST CLONE JUMP',
@@ -139,16 +141,16 @@ describe('character Clones workspace', () => {
       jumpClones: [
         clones.jumpClones[0]!,
         {
-          jumpCloneId: 21,
-          name: null,
-          location: { locationId: 1_035_466_617_946, locationType: 'structure', name: null },
           implants: [],
+          jumpCloneId: 21,
+          location: { locationId: 1_035_466_617_946, locationType: 'structure', name: null },
+          name: null,
         },
         {
-          jumpCloneId: 22,
-          name: null,
-          location: { locationId: 1_035_466_617_946, locationType: 'structure', name: null },
           implants: [],
+          jumpCloneId: 22,
+          location: { locationId: 1_035_466_617_946, locationType: 'structure', name: null },
+          name: null,
         },
       ],
     } satisfies CharacterClones
@@ -160,7 +162,7 @@ describe('character Clones workspace', () => {
     expect(groups[1]?.get('h3').text()).toBe('Jita IV - Moon 4')
 
     const names = groups[0]?.findAll('.character-clones-card-name').map((entry) => entry.text())
-    expect(names).toEqual(['Clone 1 of 2', 'Clone 2 of 2'])
+    expect(names).toStrictEqual(['Clone 1 of 2', 'Clone 2 of 2'])
   })
 
   it('lists stored implants without interaction and keeps item information reachable', async () => {
@@ -190,9 +192,6 @@ describe('character Clones workspace', () => {
       ...clones,
       jumpClones: [
         {
-          jumpCloneId: 31,
-          name: 'Missile clone',
-          location: { locationId: 60_000_001, locationType: 'station', name: 'Jita IV - Moon 4' },
           implants: [
             {
               typeId: 5,
@@ -202,6 +201,9 @@ describe('character Clones workspace', () => {
             },
             { typeId: 6, name: "Zainou 'Snapshot' HM-703", slot: 7, bonuses: [] },
           ],
+          jumpCloneId: 31,
+          location: { locationId: 60_000_001, locationType: 'station', name: 'Jita IV - Moon 4' },
+          name: 'Missile clone',
         },
       ],
     } satisfies CharacterClones
@@ -211,7 +213,7 @@ describe('character Clones workspace', () => {
     const bonuses = wrapper
       .findAll('.character-clones-card .character-clones-implant-bonus')
       .map((entry) => entry.text())
-    expect(bonuses).toEqual(['+5 PER'])
+    expect(bonuses).toStrictEqual(['+5 PER'])
     expect(wrapper.text()).toContain("Zainou 'Snapshot' HM-703")
   })
 
@@ -224,7 +226,7 @@ describe('character Clones workspace', () => {
 
   it('states a full clone bay through the value the summary card already renders', async () => {
     const fullBay = {
-      groups: [{ skills: [{ typeId: 24_242, trainedLevel: 2, activeLevel: 2 }] }],
+      groups: [{ skills: [{ activeLevel: 2, trainedLevel: 2, typeId: 24_242 }] }],
     } as unknown as CharacterSkills
 
     const wrapper = await mountWorkspace({ clones, implants, skills: fullBay })
@@ -240,7 +242,7 @@ describe('character Clones workspace', () => {
 
     expect(jumpClones.text()).toContain('LAST CLONE JUMP')
     expect(jumpClones.text()).toContain('LAST HOME STATION CHANGE')
-    expect(jumpClones.findAll('time').map((time) => time.attributes('datetime'))).toEqual([
+    expect(jumpClones.findAll('time').map((time) => time.attributes('datetime'))).toStrictEqual([
       clones.lastStationChangeAt,
       clones.lastCloneJumpAt,
     ])
@@ -264,8 +266,8 @@ describe('character Clones workspace', () => {
   it('renders without throwing when the API predates the slot and bonus fields', async () => {
     const legacyImplants = {
       implants: [
-        { typeId: 3, name: 'Ocular Filter' },
-        { typeId: 4, name: 'Neural Boost' },
+        { name: 'Ocular Filter', typeId: 3 },
+        { name: 'Neural Boost', typeId: 4 },
       ],
       ...freshness,
     } as unknown as CharacterImplants
@@ -288,8 +290,8 @@ describe('character Clones workspace', () => {
   it('keeps the rack and lists the strays when only some implants carry a slot', async () => {
     const mixed = {
       implants: [
-        { typeId: 3, name: 'Ocular Filter', slot: 1, bonuses: [] },
-        { typeId: 9, name: 'Unknown implant 9', slot: null, bonuses: [] },
+        { bonuses: [], name: 'Ocular Filter', slot: 1, typeId: 3 },
+        { bonuses: [], name: 'Unknown implant 9', slot: null, typeId: 9 },
       ],
       ...freshness,
     } as unknown as CharacterImplants
@@ -340,9 +342,9 @@ describe('character Clones workspace', () => {
     const wrapper = await mountWorkspace({
       clones,
       implantState: {
-        status: 'authorization',
-        message: 'Authorize implant access.',
         authorizeUrl,
+        message: 'Authorize implant access.',
+        status: 'authorization',
       },
     })
 
@@ -354,8 +356,8 @@ describe('character Clones workspace', () => {
 
   it('keeps active implants usable when clone state fails and emits only its retry', async () => {
     const wrapper = await mountWorkspace({
+      cloneState: { authorizeUrl: '', message: 'Clone state failed.', status: 'error' },
       implants,
-      cloneState: { status: 'error', message: 'Clone state failed.', authorizeUrl: '' },
     })
 
     expect(wrapper.text()).toContain('Ocular Filter')
@@ -368,8 +370,8 @@ describe('character Clones workspace', () => {
 
   it('communicates independent loading and implant failure states', async () => {
     const wrapper = await mountWorkspace({
-      cloneState: { status: 'loading', message: '', authorizeUrl: '' },
-      implantState: { status: 'error', message: 'Implants failed.', authorizeUrl: '' },
+      cloneState: { authorizeUrl: '', message: '', status: 'loading' },
+      implantState: { authorizeUrl: '', message: 'Implants failed.', status: 'error' },
     })
 
     expect(wrapper.get('.character-clones-active [role="status"]').text()).toContain(
@@ -392,14 +394,14 @@ describe('character Clones workspace', () => {
         solarSystemSecurityStatus: null,
       },
       jumpClones: [],
-      stale: true,
       refreshFailureClass: 'esi-unavailable',
+      stale: true,
     } satisfies CharacterClones
     const staleImplants = {
       ...implants,
       implants: [{ typeId: 999, name: 'Unknown implant 999', slot: null, bonuses: [] }],
-      stale: true,
       refreshFailureClass: 'esi-cooldown',
+      stale: true,
     } satisfies CharacterImplants
     const wrapper = await mountWorkspace({ clones: staleClones, implants: staleImplants })
 
@@ -418,16 +420,16 @@ describe('character Clones workspace', () => {
         ...clones,
         jumpClones: [
           {
-            jumpCloneId: 101,
-            name: longValue,
-            location: { locationId: 60_000_002, locationType: 'station', name: longValue },
             implants: [{ typeId: 202, name: longValue, slot: 6, bonuses: [] }],
+            jumpCloneId: 101,
+            location: { locationId: 60_000_002, locationType: 'station', name: longValue },
+            name: longValue,
           },
           {
-            jumpCloneId: 102,
-            name: longValue,
-            location: { locationId: 60_000_002, locationType: 'station', name: longValue },
             implants: [{ typeId: 203, name: `${longValue}B`, slot: 7, bonuses: [] }],
+            jumpCloneId: 102,
+            location: { locationId: 60_000_002, locationType: 'station', name: longValue },
+            name: longValue,
           },
         ],
       },
@@ -436,10 +438,9 @@ describe('character Clones workspace', () => {
 
     expect(wrapper.findAll('.character-clones-group-list')).toHaveLength(1)
     expect(wrapper.findAll('.character-clones-card')).toHaveLength(2)
-    expect(wrapper.findAll('.character-clones-card-name').map((entry) => entry.text())).toEqual([
-      longValue,
-      longValue,
-    ])
+    expect(
+      wrapper.findAll('.character-clones-card-name').map((entry) => entry.text()),
+    ).toStrictEqual([longValue, longValue])
     expect(
       wrapper.findAll('.character-clones-card .character-clones-implant-trigger'),
     ).toHaveLength(2)
@@ -458,10 +459,10 @@ interface WorkspaceOverrides {
 async function mountWorkspace(overrides: WorkspaceOverrides) {
   const wrapper = await mountSuspended(CharacterClonesWorkspace, {
     props: {
-      clones: overrides.clones,
       cloneState: overrides.cloneState ?? ready,
-      implants: overrides.implants,
+      clones: overrides.clones,
       implantState: overrides.implantState ?? ready,
+      implants: overrides.implants,
       skills: overrides.skills,
     },
     route: false,
@@ -470,7 +471,8 @@ async function mountWorkspace(overrides: WorkspaceOverrides) {
   const storedClonesTrigger = wrapper.find(
     '.character-clones-stored .character-clones-section-heading',
   )
-  if (overrides.expandStoredClones !== false && storedClonesTrigger.exists())
+  if (overrides.expandStoredClones !== false && storedClonesTrigger.exists()) {
     await storedClonesTrigger.trigger('click')
+  }
   return wrapper
 }

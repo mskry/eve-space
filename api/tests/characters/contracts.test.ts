@@ -12,18 +12,20 @@ const characterId = 90_000_001
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const freshness = {
   cachedUntil: '2026-08-20T12:05:00.000Z',
-  validatedAt: '2026-08-20T12:00:00.000Z',
   quota: {},
   source: 'esi' as const,
   stale: false,
+  validatedAt: '2026-08-20T12:00:00.000Z',
 }
 
 beforeEach(() => {
   mocks.executeRepresentation.mockImplementation((definition) => {
-    if (definition.operation === 'character-contracts')
+    if (definition.operation === 'character-contracts') {
       return Promise.resolve(result({ contracts: [], page: 1, totalPages: 1 }))
-    if (definition.operation === 'character-contract-items')
+    }
+    if (definition.operation === 'character-contract-items') {
       return Promise.resolve(result({ items: [] }))
+    }
     return Promise.resolve(result({ bids: [] }))
   })
 })
@@ -34,23 +36,23 @@ describe('character contracts service', () => {
       result({
         contracts: [
           {
-            contractId: 100,
-            type: 'courier',
-            status: 'outstanding',
-            availability: 'personal',
-            role: 'issued',
-            title: 'Delivery',
-            issuedAt: '2026-08-20T12:00:00Z',
-            expiredAt: '2026-08-27T12:00:00Z',
             acceptedAt: null,
+            availability: 'personal',
+            buyout: null,
+            collateral: null,
             completedAt: null,
+            contractId: 100,
             daysToComplete: null,
-            startLocationId: null,
             endLocationId: null,
+            expiredAt: '2026-08-27T12:00:00Z',
+            issuedAt: '2026-08-20T12:00:00Z',
             price: 100,
             reward: null,
-            collateral: null,
-            buyout: null,
+            role: 'issued',
+            startLocationId: null,
+            status: 'outstanding',
+            title: 'Delivery',
+            type: 'courier',
             volume: null,
           },
         ],
@@ -80,13 +82,13 @@ describe('character contracts service', () => {
         result({
           items: [
             {
+              blueprint: 'original',
+              direction: 'included',
+              isSingleton: true,
+              quantity: 3,
               recordId: 1,
               typeId: 34,
               typeName: 'Tritanium',
-              direction: 'included',
-              quantity: 3,
-              isSingleton: true,
-              blueprint: 'original',
             },
           ],
         }),
@@ -96,11 +98,11 @@ describe('character contracts service', () => {
     await expect(
       getCharacterContractItems(characterId, 300, 2, subjectLifecycleId),
     ).resolves.toMatchObject({
-      items: [{ recordId: 1, blueprint: 'original' }],
+      items: [{ blueprint: 'original', recordId: 1 }],
     })
     expect(
       mocks.executeRepresentation.mock.calls.map(([definition]) => definition.operation),
-    ).toEqual(['character-contracts', 'character-contract-items'])
+    ).toStrictEqual(['character-contracts', 'character-contract-items'])
   })
 
   test('does not load detail when the parent callable excludes the contract', async () => {

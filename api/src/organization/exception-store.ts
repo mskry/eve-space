@@ -39,19 +39,19 @@ export class OrganizationCharacterExceptionMutationError extends Error {
 export async function listCurrentOrganizationCharacterExceptions() {
   return db
     .select({
-      exceptionId: organizationCharacterExceptions.exceptionId,
-      organizationVersion: organizationCharacterExceptions.organizationVersion,
-      userId: organizationCharacterExceptions.userId,
+      approvedAt: organizationCharacterExceptions.approvedAt,
+      approverUserId: organizationCharacterExceptions.approverUserId,
       characterId: organizationCharacterExceptions.characterId,
       characterName: characters.name,
-      approverUserId: organizationCharacterExceptions.approverUserId,
-      reason: organizationCharacterExceptions.reason,
-      approvedAt: organizationCharacterExceptions.approvedAt,
-      expiresAt: organizationCharacterExceptions.expiresAt,
+      exceptionId: organizationCharacterExceptions.exceptionId,
       expiredAt: organizationCharacterExceptions.expiredAt,
+      expiresAt: organizationCharacterExceptions.expiresAt,
+      organizationVersion: organizationCharacterExceptions.organizationVersion,
+      reason: organizationCharacterExceptions.reason,
+      revocationReason: organizationCharacterExceptions.revocationReason,
       revokedAt: organizationCharacterExceptions.revokedAt,
       revokedByUserId: organizationCharacterExceptions.revokedByUserId,
-      revocationReason: organizationCharacterExceptions.revocationReason,
+      userId: organizationCharacterExceptions.userId,
     })
     .from(deploymentSettings)
     .innerJoin(
@@ -75,14 +75,14 @@ export async function listCurrentOrganizationCharacterExceptions() {
 export async function listCurrentOrganizationCharacterExceptionCandidates(now = new Date()) {
   return db
     .select({
-      userId: organizationComplianceIssues.userId,
+      affiliationCheckedAt: characters.affiliationCheckedAt,
       characterId: characters.characterId,
       characterName: characters.name,
-      reasonCode: organizationComplianceIssues.issueCode,
-      state: organizationAccountCompliance.state,
       evidenceFreshness: organizationAccountCompliance.evidenceFreshness,
+      reasonCode: organizationComplianceIssues.issueCode,
       reviewDeadline: organizationAccountCompliance.reviewDeadline,
-      affiliationCheckedAt: characters.affiliationCheckedAt,
+      state: organizationAccountCompliance.state,
+      userId: organizationComplianceIssues.userId,
     })
     .from(deploymentSettings)
     .innerJoin(
@@ -165,44 +165,51 @@ export async function approveOrganizationCharacterException(input: {
 }) {
   return db.transaction(async (transaction) => {
     const organization = await lockCurrentOrganization(transaction, 'key share')
-    if (!(await hasHrAuthority(transaction, organization.organizationVersion, input.actorUserId)))
+    if (!(await hasHrAuthority(transaction, organization.organizationVersion, input.actorUserId))) {
       throw new OrganizationCharacterExceptionMutationError('hr-authority-required')
+    }
     const now = new Date()
-    if (input.expiresAt && input.expiresAt <= now)
+    if (input.expiresAt && input.expiresAt <= now) {
       throw new OrganizationCharacterExceptionMutationError('invalid-expiry')
+    }
 
     const [account] = await transaction
       .select({ userId: users.id })
       .from(users)
       .where(eq(users.id, input.userId))
       .for('update')
-    if (!account) throw new OrganizationCharacterExceptionMutationError('character-not-found')
+    if (!account) {
+      throw new OrganizationCharacterExceptionMutationError('character-not-found')
+    }
     const [character] = await transaction
       .select({
-        corporationId: characters.corporationId,
         affiliationCheckedAt: characters.affiliationCheckedAt,
-        nextAffiliationCheck: characters.nextAffiliationCheck,
         affiliationResolutionState: characters.affiliationResolutionState,
+        corporationId: characters.corporationId,
+        nextAffiliationCheck: characters.nextAffiliationCheck,
       })
       .from(characters)
       .where(
         and(eq(characters.userId, input.userId), eq(characters.characterId, input.characterId)),
       )
       .for('update')
-    if (!character) throw new OrganizationCharacterExceptionMutationError('character-not-found')
+    if (!character) {
+      throw new OrganizationCharacterExceptionMutationError('character-not-found')
+    }
     if (
       character.affiliationResolutionState !== 'resolved' ||
       !character.affiliationCheckedAt ||
       !character.nextAffiliationCheck ||
       character.nextAffiliationCheck <= now
-    )
+    ) {
       throw new OrganizationCharacterExceptionMutationError('character-affiliation-stale')
+    }
     if (organization.organizationType === 'alliance') {
       const [managedEvidence] = await transaction
         .select({
-          validatedAt: platformCollectionState.validatedAt,
-          nextEligibleAt: platformCollectionState.nextEligibleAt,
           lastFailureClass: platformCollectionState.lastFailureClass,
+          nextEligibleAt: platformCollectionState.nextEligibleAt,
+          validatedAt: platformCollectionState.validatedAt,
         })
         .from(platformSubjectLifecycles)
         .leftJoin(
@@ -229,8 +236,9 @@ export async function approveOrganizationCharacterException(input: {
         managedEvidence.lastFailureClass ||
         !managedEvidence.nextEligibleAt ||
         managedEvidence.nextEligibleAt <= now
-      )
+      ) {
         throw new OrganizationCharacterExceptionMutationError('managed-corporation-evidence-stale')
+      }
     }
 
     const [managed] = await transaction
@@ -244,7 +252,9 @@ export async function approveOrganizationCharacterException(input: {
           eq(organizationManagedCorporations.isCurrent, true),
         ),
       )
-    if (managed) throw new OrganizationCharacterExceptionMutationError('character-not-external')
+    if (managed) {
+      throw new OrganizationCharacterExceptionMutationError('character-not-external')
+    }
 
     const [existing] = await transaction
       .select({ exceptionId: organizationCharacterExceptions.exceptionId })
@@ -264,41 +274,45 @@ export async function approveOrganizationCharacterException(input: {
         ),
       )
       .for('update')
-    if (existing) throw new OrganizationCharacterExceptionMutationError('exception-already-active')
+    if (existing) {
+      throw new OrganizationCharacterExceptionMutationError('exception-already-active')
+    }
 
     const [exception] = await transaction
       .insert(organizationCharacterExceptions)
       .values({
-        deploymentId: 1,
-        organizationVersion: organization.organizationVersion,
-        userId: input.userId,
-        characterId: input.characterId,
-        approverUserId: input.actorUserId,
-        reason: input.reason,
         approvedAt: now,
+        approverUserId: input.actorUserId,
+        characterId: input.characterId,
+        deploymentId: 1,
         expiresAt: input.expiresAt,
+        organizationVersion: organization.organizationVersion,
+        reason: input.reason,
+        userId: input.userId,
       })
       .returning()
-    if (!exception) throw new Error('Failed to approve organization character exception')
+    if (!exception) {
+      throw new Error('Failed to approve organization character exception')
+    }
     await appendOrganizationAuditEvent(transaction, {
-      deploymentId: 1,
-      organizationVersion: organization.organizationVersion,
-      policyVersion: organization.policyVersion,
-      eventType: 'exception.approved',
-      actorType: 'user',
       actorId: input.actorUserId,
-      subjectType: 'exception',
-      subjectId: exception.exceptionId,
-      reason: input.reason,
-      outcome: 'granted',
+      actorType: 'user',
+      deploymentId: 1,
+      eventType: 'exception.approved',
       occurredAt: now,
+      organizationVersion: organization.organizationVersion,
+      outcome: 'granted',
+      policyVersion: organization.policyVersion,
+      reason: input.reason,
+      subjectId: exception.exceptionId,
+      subjectType: 'exception',
     })
     await recomputeOrganizationAccountCompliance(
       {
         deploymentId: 1,
+        now,
         organizationVersion: organization.organizationVersion,
         userId: input.userId,
-        now,
       },
       transaction,
     )
@@ -313,8 +327,9 @@ export async function revokeOrganizationCharacterException(input: {
 }) {
   return db.transaction(async (transaction) => {
     const organization = await lockCurrentOrganization(transaction, 'key share')
-    if (!(await hasHrAuthority(transaction, organization.organizationVersion, input.actorUserId)))
+    if (!(await hasHrAuthority(transaction, organization.organizationVersion, input.actorUserId))) {
       throw new OrganizationCharacterExceptionMutationError('hr-authority-required')
+    }
     const [candidate] = await transaction
       .select({ userId: organizationCharacterExceptions.userId })
       .from(organizationCharacterExceptions)
@@ -327,7 +342,9 @@ export async function revokeOrganizationCharacterException(input: {
           isNull(organizationCharacterExceptions.expiredAt),
         ),
       )
-    if (!candidate) throw new OrganizationCharacterExceptionMutationError('exception-not-found')
+    if (!candidate) {
+      throw new OrganizationCharacterExceptionMutationError('exception-not-found')
+    }
     await transaction
       .select({ id: users.id })
       .from(users)
@@ -337,9 +354,9 @@ export async function revokeOrganizationCharacterException(input: {
     const [exception] = await transaction
       .update(organizationCharacterExceptions)
       .set({
+        revocationReason: input.reason,
         revokedAt: now,
         revokedByUserId: input.actorUserId,
-        revocationReason: input.reason,
         updatedAt: now,
       })
       .where(
@@ -354,26 +371,28 @@ export async function revokeOrganizationCharacterException(input: {
         ),
       )
       .returning()
-    if (!exception) throw new OrganizationCharacterExceptionMutationError('exception-not-found')
+    if (!exception) {
+      throw new OrganizationCharacterExceptionMutationError('exception-not-found')
+    }
     await appendOrganizationAuditEvent(transaction, {
-      deploymentId: 1,
-      organizationVersion: organization.organizationVersion,
-      policyVersion: organization.policyVersion,
-      eventType: 'exception.revoked',
-      actorType: 'user',
       actorId: input.actorUserId,
-      subjectType: 'exception',
-      subjectId: exception.exceptionId,
-      reason: input.reason,
-      outcome: 'revoked',
+      actorType: 'user',
+      deploymentId: 1,
+      eventType: 'exception.revoked',
       occurredAt: now,
+      organizationVersion: organization.organizationVersion,
+      outcome: 'revoked',
+      policyVersion: organization.policyVersion,
+      reason: input.reason,
+      subjectId: exception.exceptionId,
+      subjectType: 'exception',
     })
     await recomputeOrganizationAccountCompliance(
       {
         deploymentId: 1,
+        now,
         organizationVersion: organization.organizationVersion,
         userId: exception.userId,
-        now,
       },
       transaction,
     )
@@ -388,12 +407,13 @@ export async function expireOrganizationCharacterException(input: {
 }) {
   return db.transaction(async (transaction) => {
     const organization = await lockCurrentOrganization(transaction, 'key share')
-    if (!(await hasHrAuthority(transaction, organization.organizationVersion, input.actorUserId)))
+    if (!(await hasHrAuthority(transaction, organization.organizationVersion, input.actorUserId))) {
       throw new OrganizationCharacterExceptionMutationError('hr-authority-required')
+    }
     const [candidate] = await transaction
       .select({
-        userId: organizationCharacterExceptions.userId,
         approvedAt: organizationCharacterExceptions.approvedAt,
+        userId: organizationCharacterExceptions.userId,
       })
       .from(organizationCharacterExceptions)
       .where(
@@ -406,7 +426,9 @@ export async function expireOrganizationCharacterException(input: {
         ),
       )
       .for('update')
-    if (!candidate) throw new OrganizationCharacterExceptionMutationError('exception-not-found')
+    if (!candidate) {
+      throw new OrganizationCharacterExceptionMutationError('exception-not-found')
+    }
     await transaction
       .select({ id: users.id })
       .from(users)
@@ -415,7 +437,7 @@ export async function expireOrganizationCharacterException(input: {
     const now = new Date(Math.max(Date.now(), candidate.approvedAt.getTime() + 1))
     const [exception] = await transaction
       .update(organizationCharacterExceptions)
-      .set({ expiresAt: now, expiredAt: now, updatedAt: now })
+      .set({ expiredAt: now, expiresAt: now, updatedAt: now })
       .where(
         and(
           eq(organizationCharacterExceptions.exceptionId, input.exceptionId),
@@ -424,26 +446,28 @@ export async function expireOrganizationCharacterException(input: {
         ),
       )
       .returning()
-    if (!exception) throw new OrganizationCharacterExceptionMutationError('exception-not-found')
+    if (!exception) {
+      throw new OrganizationCharacterExceptionMutationError('exception-not-found')
+    }
     await appendOrganizationAuditEvent(transaction, {
-      deploymentId: 1,
-      organizationVersion: organization.organizationVersion,
-      policyVersion: organization.policyVersion,
-      eventType: 'exception.expired',
-      actorType: 'user',
       actorId: input.actorUserId,
-      subjectType: 'exception',
-      subjectId: exception.exceptionId,
-      reason: input.reason,
-      outcome: 'transitioned',
+      actorType: 'user',
+      deploymentId: 1,
+      eventType: 'exception.expired',
       occurredAt: now,
+      organizationVersion: organization.organizationVersion,
+      outcome: 'transitioned',
+      policyVersion: organization.policyVersion,
+      reason: input.reason,
+      subjectId: exception.exceptionId,
+      subjectType: 'exception',
     })
     await recomputeOrganizationAccountCompliance(
       {
         deploymentId: 1,
+        now,
         organizationVersion: organization.organizationVersion,
         userId: exception.userId,
-        now,
       },
       transaction,
     )
@@ -474,7 +498,9 @@ export async function expireOrganizationCharacterExceptions(now = new Date(), li
         asc(organizationCharacterExceptions.exceptionId),
       )
       .limit(Math.max(1, Math.min(1000, Math.floor(limit))))
-    if (due.length === 0) return []
+    if (due.length === 0) {
+      return []
+    }
 
     const userIds = [...new Set(due.map(({ userId }) => userId))].toSorted((left, right) =>
       left.localeCompare(right),
@@ -505,33 +531,34 @@ export async function expireOrganizationCharacterExceptions(now = new Date(), li
     await appendOrganizationAuditEvents(
       transaction,
       expired.map((exception) => ({
-        deploymentId: 1 as const,
-        organizationVersion: organization.organizationVersion,
-        policyVersion: organization.policyVersion,
-        eventType: 'exception.expired' as const,
-        actorType: 'system' as const,
         actorId: null,
-        subjectType: 'exception' as const,
-        subjectId: exception.exceptionId,
-        reason: 'The character exception reached its configured expiry.',
-        outcome: 'transitioned' as const,
+        actorType: 'system' as const,
+        deploymentId: 1 as const,
+        eventType: 'exception.expired' as const,
         occurredAt: now,
+        organizationVersion: organization.organizationVersion,
+        outcome: 'transitioned' as const,
+        policyVersion: organization.policyVersion,
+        reason: 'The character exception reached its configured expiry.',
+        subjectId: exception.exceptionId,
+        subjectType: 'exception' as const,
       })),
     )
     const affectedUserIds = [...new Set(expired.map(({ userId }) => userId))].toSorted(
       (left, right) => left.localeCompare(right),
     )
-    for (const affectedUserId of affectedUserIds)
+    for (const affectedUserId of affectedUserIds) {
       // oxlint-disable-next-line no-await-in-loop -- User locks must follow stable ID order.
       await recomputeOrganizationAccountCompliance(
         {
           deploymentId: 1,
+          now,
           organizationVersion: organization.organizationVersion,
           userId: affectedUserId,
-          now,
         },
         transaction,
       )
+    }
     return expired
   })
 }
@@ -541,7 +568,9 @@ async function hasHrAuthority(
   organizationVersion: number,
   userId: string,
 ) {
-  if (!(await hasCurrentComplianceAccess(transaction, organizationVersion, userId))) return false
+  if (!(await hasCurrentComplianceAccess(transaction, organizationVersion, userId))) {
+    return false
+  }
   const [grant] = await transaction
     .select({ grantId: organizationRoleGrants.grantId })
     .from(organizationRoleGrants)

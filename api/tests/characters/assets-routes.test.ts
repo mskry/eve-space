@@ -37,8 +37,8 @@ vi.mock('../../src/auth/token-errors.js', () => ({
   TokenRefreshUnavailableError: mocks.TokenRefreshUnavailableError,
 }))
 vi.mock('../../src/characters/assets.js', () => ({
-  characterAssetsScope: 'esi-assets.read_assets.v1',
   CharacterAssetsPaginationError: mocks.CharacterAssetsPaginationError,
+  characterAssetsScope: 'esi-assets.read_assets.v1',
   getCharacterAssets: mocks.getCharacterAssets,
 }))
 vi.mock('../../src/characters/profile.js', () => ({ getCharacterProfile: vi.fn() }))
@@ -60,22 +60,21 @@ import { characterRoutes } from '../../src/characters/routes.js'
 import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 
 const client = testClient(characterRoutes)
-const characterId = 1404328063
+const characterId = 1_404_328_063
 const sessionHeaders = { Cookie: 'eve_space_session=active-session' }
 const character = {
-  characterId,
-  name: 'Asset Pilot',
-  corporationId: 1000166,
   allianceId: null,
+  characterId,
+  corporationId: 1_000_166,
   isMain: true,
+  name: 'Asset Pilot',
   subjectLifecycleId: 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011',
 }
 const session = {
-  userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
   mainCharacter: character,
+  userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
 }
 const assets = {
-  characterId,
   assets: [
     {
       itemId: 22,
@@ -100,11 +99,12 @@ const assets = {
       parentItemId: null,
     },
   ],
-  enrichment: { types: 'complete', names: 'partial', locations: 'unavailable' },
   cachedUntil: '2026-09-03T12:00:00.000Z',
-  validatedAt: '2026-09-03T11:00:00.000Z',
-  stale: true,
+  characterId,
+  enrichment: { locations: 'unavailable', names: 'partial', types: 'complete' },
   refreshFailureClass: 'esi-unavailable',
+  stale: true,
+  validatedAt: '2026-09-03T11:00:00.000Z',
 }
 
 beforeEach(() => {
@@ -124,7 +124,7 @@ describe('typed character asset route', () => {
     )
 
     expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual(assets)
+    await expect(response.json()).resolves.toStrictEqual(assets)
     expect(mocks.getCharacterAssets).toHaveBeenCalledWith(characterId, character.subjectLifecycleId)
     expectPrivateHeaders(response)
   })
@@ -133,7 +133,7 @@ describe('typed character asset route', () => {
     const response = await characterRoutes.request(`/${characterId}/assets`)
 
     expect(response.status).toBe(401)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'AUTH_REQUIRED',
       message: 'Log in with EVE Online first.',
     })
@@ -162,7 +162,7 @@ describe('typed character asset route', () => {
     const response = await authorizedRequest('/90000001/assets')
 
     expect(response.status).toBe(404)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'CHARACTER_NOT_FOUND',
       message: 'Character not found.',
     })
@@ -176,11 +176,11 @@ describe('typed character asset route', () => {
     const response = await authorizedRequest(`/${characterId}/assets`)
 
     expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
+      authorizeUrl: reauthorizationUrl(),
       code: 'EVE_SCOPE_REQUIRED',
       message: 'Authorize asset access for this character.',
       requiredScope: 'esi-assets.read_assets.v1',
-      authorizeUrl: reauthorizationUrl(),
     })
     expectPrivateHeaders(response)
   })
@@ -195,11 +195,11 @@ describe('typed character asset route', () => {
       const response = await authorizedRequest(`/${characterId}/assets`)
 
       expect(response.status).toBe(403)
-      await expect(response.json()).resolves.toEqual({
+      await expect(response.json()).resolves.toStrictEqual({
+        authorizeUrl: reauthorizationUrl(),
         code: 'EVE_REAUTH_REQUIRED',
         message: 'EVE authorization is no longer valid.',
         requiredScope: 'esi-assets.read_assets.v1',
-        authorizeUrl: reauthorizationUrl(),
       })
       expectPrivateHeaders(response)
     },
@@ -212,7 +212,7 @@ describe('typed character asset route', () => {
 
     expect(response.status).toBe(429)
     expect(response.headers.get('retry-after')).toBe('17')
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'ESI_COOLDOWN',
       message: 'EVE Online ESI is temporarily rate limited.',
       retryAfterSeconds: 17,
@@ -226,7 +226,7 @@ describe('typed character asset route', () => {
     const response = await authorizedRequest(`/${characterId}/assets`)
 
     expect(response.status).toBe(503)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       code: 'EVE_TOKEN_REFRESH_UNAVAILABLE',
       message: 'EVE token refresh is temporarily unavailable. Try again shortly.',
     })
@@ -237,7 +237,7 @@ describe('typed character asset route', () => {
     mocks.getCharacterAssets.mockRejectedValueOnce(new CharacterAssetsPaginationError())
     const invalid = await authorizedRequest(`/${characterId}/assets`)
     expect(invalid.status).toBe(502)
-    await expect(invalid.json()).resolves.toEqual({
+    await expect(invalid.json()).resolves.toStrictEqual({
       code: 'ESI_RESPONSE_INVALID',
       message: 'EVE Online returned invalid asset pagination metadata.',
     })
@@ -245,7 +245,7 @@ describe('typed character asset route', () => {
     mocks.getCharacterAssets.mockRejectedValueOnce(new Error('required page unavailable'))
     const unavailable = await authorizedRequest(`/${characterId}/assets`)
     expect(unavailable.status).toBe(502)
-    await expect(unavailable.json()).resolves.toEqual({
+    await expect(unavailable.json()).resolves.toStrictEqual({
       code: 'ESI_UNAVAILABLE',
       message: 'Unable to retrieve the complete character asset collection.',
     })

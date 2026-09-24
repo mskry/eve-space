@@ -78,7 +78,9 @@ export async function startWorkerPlatform(signal?: AbortSignal): Promise<WorkerP
   let stopHeartbeat: (() => void) | undefined
   let forcedCleanup: Promise<void> | undefined
   const forceClose = (cleanupBudgetMs: number): Promise<void> => {
-    if (forcedCleanup) return forcedCleanup
+    if (forcedCleanup) {
+      return forcedCleanup
+    }
     stopHeartbeat?.()
     activeWork.abort()
     disconnect(connection)
@@ -89,7 +91,9 @@ export async function startWorkerPlatform(signal?: AbortSignal): Promise<WorkerP
   }
   try {
     const blockingClient = worker.getBackend().blockingClient
-    if (!blockingClient) throw new Error('BullMQ worker blocking connection is unavailable')
+    if (!blockingClient) {
+      throw new Error('BullMQ worker blocking connection is unavailable')
+    }
     blockingConnection = await waitForAbort(blockingClient, signal)
     await waitForAbort(registerSchedulers(handle.queue), signal)
     stopHeartbeat = await waitForAbort(startWorkerHeartbeat(connection), signal)
@@ -111,7 +115,6 @@ export async function startWorkerPlatform(signal?: AbortSignal): Promise<WorkerP
   stopped.catch(() => {})
 
   return {
-    stopped,
     close(timeoutMs = env.WORKER_SHUTDOWN_TIMEOUT_MS) {
       closing ??= (async () => {
         stopHeartbeat?.()
@@ -136,7 +139,9 @@ export async function startWorkerPlatform(signal?: AbortSignal): Promise<WorkerP
           activeWork.abort()
           await activeJobs.waitForIdle(shutdown.cancellationRemaining())
           await forceClose(shutdown.forcedCleanupRemaining())
-          if (error === shutdownTimeout) return { drained: false, timedOut: true }
+          if (error === shutdownTimeout) {
+            return { drained: false, timedOut: true }
+          }
           throw error
         }
         return { drained, timedOut: false }
@@ -146,6 +151,7 @@ export async function startWorkerPlatform(signal?: AbortSignal): Promise<WorkerP
     forceClose() {
       void forceClose(0)
     },
+    stopped,
   }
 }
 
@@ -155,21 +161,21 @@ function createPlatformShutdownBudget(timeoutMs: number) {
   const boundedTimeoutMs = Math.max(0, timeoutMs)
   const forcedCleanupReserveMs = forcedCleanupReserve(boundedTimeoutMs)
   const cancellationReserveMs = Math.min(
-    1_000,
+    1000,
     Math.floor((boundedTimeoutMs - forcedCleanupReserveMs) / 3),
   )
   const expiresAt = Date.now() + boundedTimeoutMs
   const forcedCleanupStartsAt = expiresAt - forcedCleanupReserveMs
   const cancellationStartsAt = forcedCleanupStartsAt - cancellationReserveMs
   return {
-    gracefulRemaining: () => Math.max(0, cancellationStartsAt - Date.now()),
     cancellationRemaining: () => Math.max(0, forcedCleanupStartsAt - Date.now()),
     forcedCleanupRemaining: () => Math.max(0, expiresAt - Date.now()),
+    gracefulRemaining: () => Math.max(0, cancellationStartsAt - Date.now()),
   }
 }
 
 function forcedCleanupReserve(timeoutMs: number): number {
-  return Math.min(1_000, Math.floor(Math.max(0, timeoutMs) / 4))
+  return Math.min(1000, Math.floor(Math.max(0, timeoutMs) / 4))
 }
 
 async function withDeadline<T>(operation: Promise<T>, timeoutMs: number) {
@@ -197,7 +203,9 @@ async function settleForcedBullMqCleanup(
   try {
     await withDeadline(cleanup, timeoutMs)
   } catch (error) {
-    if (error !== shutdownTimeout) throw error
+    if (error !== shutdownTimeout) {
+      throw error
+    }
   }
 }
 
@@ -217,7 +225,9 @@ async function processJob(
   workerSignal: AbortSignal,
 ) {
   workerSignal.throwIfAborted()
-  if (!hasJobContract(job.name)) throw new UnrecoverableError(`Unknown job type ${job.name}`)
+  if (!hasJobContract(job.name)) {
+    throw new UnrecoverableError(`Unknown job type ${job.name}`)
+  }
   const name = job.name
   let payload
   try {
@@ -228,8 +238,8 @@ async function processJob(
   const scheduler = getJobScheduler(name)
   const execute = (signal: AbortSignal) =>
     executeJobHandler(name, payload, {
-      producer,
       outcomes,
+      producer,
       signal: signal === workerSignal ? signal : AbortSignal.any([workerSignal, signal]),
     })
   const disposition = scheduler
@@ -245,14 +255,21 @@ async function processJob(
     await job.moveToDelayed(disposition.retryAt, job.token)
     throw new DelayedError('Dependency cooldown deferred this job')
   }
-  if (disposition.type === 'permanent') throw new UnrecoverableError('Permanent job failure')
-  if (disposition.type === 'retryable') throw new Error(sanitizeJobFailure(disposition.error))
-  if (job.name === 'domain-event')
+  if (disposition.type === 'permanent') {
+    throw new UnrecoverableError('Permanent job failure')
+  }
+  if (disposition.type === 'retryable') {
+    throw new Error(sanitizeJobFailure(disposition.error))
+  }
+  if (job.name === 'domain-event') {
     recordDiagnostic('worker.domain-event.processed', { context: domainEventJobLogContext(job) })
+  }
 }
 
 function domainEventJobLogContext(job: Job | undefined) {
-  if (job?.name !== 'domain-event' || typeof job.data !== 'object' || job.data === null) return {}
+  if (job?.name !== 'domain-event' || typeof job.data !== 'object' || job.data === null) {
+    return {}
+  }
   const eventId = 'eventId' in job.data ? job.data.eventId : null
   return typeof eventId === 'string' &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId)

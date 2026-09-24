@@ -35,14 +35,17 @@ export async function checkPackage({
   readonly built?: boolean;
   readonly retainDirectory?: string;
 } = {}): Promise<RetainedPackage | undefined> {
-  if (!built) await run('build', process.execPath, [tsdownCli]);
+  if (!built) {
+    await run('build', process.execPath, [tsdownCli]);
+  }
 
   const temporaryDirectory = await mkdtemp(join(tmpdir(), 'esi-client-package-check-'));
   try {
     process.stdout.write('\n> package\nPacking built output once for all package checks.\n');
     const packed = await packPackage(root, temporaryDirectory);
-    if (packed.length !== 1)
+    if (packed.length !== 1) {
       throw new Error(`Expected one package tarball, received ${packed.length}`);
+    }
     const [pack] = packed;
     const tarball = join(temporaryDirectory, pack.filename);
     const packJson = join(temporaryDirectory, 'pack.json');
@@ -52,15 +55,15 @@ export async function checkPackage({
       (typeof packageValidationSteps)[number],
       readonly [string, readonly string[]]
     > = {
-      publint: [process.execPath, [publintCli, '--strict', tarball]],
       attw: [process.execPath, [attwCli, tarball, '--profile', 'esm-only']],
-      'smoke:package': [
-        process.execPath,
-        [join(root, 'scripts/smoke-package.ts'), '--tarball', tarball],
-      ],
       'pack:inspect': [
         process.execPath,
         [join(root, 'scripts/inspect-pack.ts'), '--pack-json', packJson, '--tarball', tarball],
+      ],
+      publint: [process.execPath, [publintCli, '--strict', tarball]],
+      'smoke:package': [
+        process.execPath,
+        [join(root, 'scripts/smoke-package.ts'), '--tarball', tarball],
       ],
     };
 
@@ -123,8 +126,9 @@ function run(name: string, command: string, arguments_: readonly string[]): Prom
     });
     child.once('error', reject);
     child.once('exit', (code, signal) => {
-      if (code === 0) resolvePromise();
-      else {
+      if (code === 0) {
+        resolvePromise();
+      } else {
         const details = output.trim();
         const processResult = signal ?? `exit code ${code}`;
         const outputDetails = details ? `\n\n${details}` : '';
@@ -154,9 +158,13 @@ if (entryPath !== undefined && import.meta.url === pathToFileURL(resolve(entryPa
 
 function argumentValue(name: string): string | undefined {
   const index = process.argv.indexOf(name);
-  if (index < 0) return undefined;
+  if (index < 0) {
+    return undefined;
+  }
   const value = process.argv[index + 1];
-  if (value === undefined) throw new Error(`${name} requires a value`);
+  if (value === undefined) {
+    throw new Error(`${name} requires a value`);
+  }
   return resolve(value);
 }
 

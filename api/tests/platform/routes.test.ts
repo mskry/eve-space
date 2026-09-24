@@ -14,16 +14,16 @@ const runtimeState = {
   enabledModuleIds: ['alpha'],
   enabledSections: [
     {
+      activationVersion: 1,
+      disclosureVersion: 2,
+      kind: 'sensitive-evidence',
       moduleId: 'alpha',
       sectionId: 'skills',
-      kind: 'sensitive-evidence',
-      disclosureVersion: 2,
-      activationVersion: 1,
     },
   ],
   shellNavigationOrder: {
-    dashboard: [{ ownerId: 'core', navigationId: 'core-overview' }],
     character: [{ ownerId: 'alpha', navigationId: 'alpha-character' }],
+    dashboard: [{ ownerId: 'core', navigationId: 'core-overview' }],
   },
 }
 
@@ -36,7 +36,7 @@ describe('module runtime route', () => {
     const response = await moduleRuntimeRoutes.request('/')
 
     expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual(runtimeState)
+    await expect(response.json()).resolves.toStrictEqual(runtimeState)
     expect(response.headers.get('cache-control')).toBe('public, max-age=30')
   })
 })

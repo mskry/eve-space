@@ -33,20 +33,20 @@ const visibleSections = computed(() =>
   dashboardNavigation.value
     .filter((section) => section.audience !== 'admin' || props.adminAuthenticated)
     .map((section) => ({
-      ownerId: section.ownerId,
-      navigationId: section.navigationId,
-      label: section.label,
-      description: section.description,
-      to: resolveShellSectionPath(section.to, props.characterId),
-      icon: section.icon,
       access: section.audience === 'authenticated' ? 'authorized' : section.audience,
       badge: section.navigationId === 'core-mail' ? mailBadge.value : undefined,
+      description: section.description,
+      icon: section.icon,
+      label: section.label,
+      navigationId: section.navigationId,
+      ownerId: section.ownerId,
+      to: resolveShellSectionPath(section.to, props.characterId),
     })),
 )
 const mailBadge = computed(() => resolveMailUnreadBadge(props.characterId, props.mailUnreadCount))
 const warpDirection = ref<'expand' | 'collapse'>()
 const labelsVisible = computed(() => props.expanded || warpDirection.value === 'collapse')
-const accountActions = [{ value: 'logout', label: 'Log out', tone: 'danger' }] as const
+const accountActions = [{ label: 'Log out', tone: 'danger', value: 'logout' }] as const
 const route = useRoute()
 let warpTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -74,11 +74,15 @@ function handleLogout() {
 }
 
 function handleAccountAction(value: string) {
-  if (value === 'logout') handleLogout()
+  if (value === 'logout') {
+    handleLogout()
+  }
 }
 
 function handleToggle() {
-  if (warpTimer) clearTimeout(warpTimer)
+  if (warpTimer) {
+    clearTimeout(warpTimer)
+  }
 
   if (import.meta.client && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     warpDirection.value = undefined
@@ -94,7 +98,9 @@ function handleToggle() {
 }
 
 onBeforeUnmount(() => {
-  if (warpTimer) clearTimeout(warpTimer)
+  if (warpTimer) {
+    clearTimeout(warpTimer)
+  }
 })
 </script>
 

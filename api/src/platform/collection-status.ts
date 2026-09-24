@@ -41,12 +41,15 @@ export async function recordInstalledResourceCollectionSuccess(
   options: CollectionSuccessOptions = {},
 ) {
   const resource = findInstalledResource(identity, options.resources ?? platformResources)
-  if (!resource) throw new Error('Installed platform resource is unavailable')
+  if (!resource) {
+    throw new Error('Installed platform resource is unavailable')
+  }
   const validatedAt = new Date(result.validatedAt)
-  if (Number.isNaN(validatedAt.getTime()))
-    throw new Error('ESI representation validation time is invalid')
+  if (Number.isNaN(validatedAt.getTime())) {
+    throw new TypeError('ESI representation validation time is invalid')
+  }
   const nextEligibleAt = new Date(
-    validatedAt.getTime() + resource.materializationIntervalSeconds * 1_000,
+    validatedAt.getTime() + resource.materializationIntervalSeconds * 1000,
   )
 
   return (options.upsertState ?? upsertPlatformCollectionState)({
@@ -68,40 +71,44 @@ function projectCollectionStatus(
   const lastFailureClass = 'lastFailureClass' in eligibility ? eligibility.lastFailureClass : null
   const authorizationGeneration =
     'authorizationGeneration' in eligibility ? eligibility.authorizationGeneration : null
-  if (eligibility.status === 'authorization-required')
+  if (eligibility.status === 'authorization-required') {
     return {
-      status: 'authorization-required',
       authorizationGeneration,
-      validatedAt,
       lastFailureClass: 'authorization-required',
-      requiredScope: eligibility.requiredScope,
       reauthorizationPath: `/auth/eve/reauthorize/${encodeURIComponent(String(eligibility.authorizationCharacterId ?? identity.subjectId))}`,
-    }
-  if (eligibility.status !== 'eligible')
-    return {
-      status: 'unavailable',
-      authorizationGeneration,
+      requiredScope: eligibility.requiredScope,
+      status: 'authorization-required',
       validatedAt,
-      lastFailureClass,
     }
-  if (validatedAt)
+  }
+  if (eligibility.status !== 'eligible') {
     return {
+      authorizationGeneration,
+      lastFailureClass,
+      status: 'unavailable',
+      validatedAt,
+    }
+  }
+  if (validatedAt) {
+    return {
+      authorizationGeneration,
+      lastFailureClass,
       status: eligibility.due || lastFailureClass ? 'stale' : 'current',
-      authorizationGeneration,
       validatedAt,
-      lastFailureClass,
     }
-  if (lastFailureClass)
+  }
+  if (lastFailureClass) {
     return {
-      status: 'unavailable',
       authorizationGeneration,
-      validatedAt: null,
       lastFailureClass,
+      status: 'unavailable',
+      validatedAt: null,
     }
+  }
   return {
-    status: 'never-collected',
     authorizationGeneration,
-    validatedAt: null,
     lastFailureClass: null,
+    status: 'never-collected',
+    validatedAt: null,
   }
 }

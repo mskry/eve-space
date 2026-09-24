@@ -49,7 +49,7 @@ describe('EVE formatted text normalization', () => {
         `<hint='a>b'>H</hint><localized label="a>b">L</localized><letterspace='a>b'>S</letterspace><url:'a>b'>U</url><fontsize='a>b'>F</fontsize>`,
       ),
     ).toBe('HLSUF')
-    expect(parseEveFormattedText('<font size="12>10" color="#ff00ff00">G</font>')).toEqual({
+    expect(parseEveFormattedText('<font size="12>10" color="#ff00ff00">G</font>')).toStrictEqual({
       plainText: 'G',
       runs: [{ color: '#00ff00ff', start: 0, text: 'G' }],
     })
@@ -75,7 +75,7 @@ describe('EVE formatted text normalization', () => {
       parseEveFormattedText(
         '<font color="#80ff0000">R</font><color=0xFF33FFFFL>C</color><font color=yellow>Y</font><font color=lightblue>B</font>',
       ),
-    ).toEqual({
+    ).toStrictEqual({
       plainText: 'RCYB',
       runs: [
         { color: '#ff000080', start: 0, text: 'R' },
@@ -91,7 +91,7 @@ describe('EVE formatted text normalization', () => {
       parseEveFormattedText(
         '<font color="red;position:fixed">Safe</font><color=#ffffff> six</color><font color=chartreuse> named</font>',
       ),
-    ).toEqual({
+    ).toStrictEqual({
       plainText: 'Safe six named',
       runs: [{ start: 0, text: 'Safe six named' }],
     })
@@ -120,7 +120,7 @@ describe('EVE formatted text normalization', () => {
       parseEveFormattedText(
         String.raw`u'<font color="#ff0000ff"> \u2588</font><font color="#ffffff00"><br>        \u2588</font>'`,
       ),
-    ).toEqual({
+    ).toStrictEqual({
       plainText: '█\n        █',
       runs: [
         { color: '#0000ffff', start: 0, text: '█' },

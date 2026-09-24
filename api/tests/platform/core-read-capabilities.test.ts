@@ -26,10 +26,10 @@ describe('owned-character core reads', () => {
   test('returns only request-bound affiliation fields', async () => {
     mocks.results.push([
       {
-        characterId: 90_000_001,
-        corporationId: 98_000_001,
         allianceId: 99_000_001,
+        characterId: 90_000_001,
         checkedAt: new Date('2026-08-25T12:00:00Z'),
+        corporationId: 98_000_001,
         resolutionState: 'resolved',
       },
     ])
@@ -38,15 +38,15 @@ describe('owned-character core reads', () => {
 
     await expect(
       createOwnedCharacterCoreReads({
-        userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
         characterId: 90_000_001,
         subjectLifecycleId: 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011',
+        userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
       }).loadAffiliation(),
-    ).resolves.toEqual({
-      characterId: 90_000_001,
-      corporationId: 98_000_001,
+    ).resolves.toStrictEqual({
       allianceId: 99_000_001,
+      characterId: 90_000_001,
       checkedAt: '2026-08-25T12:00:00.000Z',
+      corporationId: 98_000_001,
       resolutionState: 'resolved',
     })
   })
@@ -58,9 +58,9 @@ describe('owned-character core reads', () => {
 
     await expect(
       createOwnedCharacterCoreReads({
-        userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
         characterId: 90_000_001,
         subjectLifecycleId: 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011',
+        userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
       }).loadAffiliation(),
     ).resolves.toBeNull()
   })

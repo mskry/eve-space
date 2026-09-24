@@ -14,7 +14,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
-  await rm(workspace, { recursive: true, force: true })
+  await rm(workspace, { force: true, recursive: true })
 })
 
 describe('reviewer panel resolution', () => {
@@ -49,7 +49,7 @@ describe('reviewer panel resolution', () => {
       }),
     )
 
-    expect(messages).toEqual([
+    expect(messages).toStrictEqual([
       'Reviewer panel alpha/missing is missing its package export',
       'Reviewer panel alpha/directory must resolve to a regular file',
       'Reviewer panel alpha/escape must resolve within its owning Nuxt package',

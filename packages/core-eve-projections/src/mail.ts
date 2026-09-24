@@ -28,11 +28,14 @@ export function projectMailSender(
   id: number | undefined,
   parties: MailPartyNames,
 ): MailParty | null {
-  if (id === undefined) return null
+  if (id === undefined) {
+    return null
+  }
   const resolved = parties.universeNames.get(id)
-  if (resolved && isUniverseMailPartyType(resolved.category))
-    return { id, type: resolved.category, name: resolved.name }
-  return { id, type: 'unknown', name: null }
+  if (resolved && isUniverseMailPartyType(resolved.category)) {
+    return { id, name: resolved.name, type: resolved.category }
+  }
+  return { id, name: null, type: 'unknown' }
 }
 
 export function projectMailRecipients(
@@ -45,7 +48,7 @@ export function projectMailRecipients(
       const universeParty = parties.universeNames.get(recipient.recipient_id)
       name = universeParty?.category === recipient.recipient_type ? universeParty.name : null
     }
-    return { id: recipient.recipient_id, type: recipient.recipient_type, name }
+    return { id: recipient.recipient_id, name, type: recipient.recipient_type }
   })
 }
 

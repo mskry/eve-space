@@ -4,16 +4,16 @@ export function formatNumber(value: number | null) {
 
 export function formatUptime(seconds: number) {
   const days = Math.floor(seconds / 86_400)
-  const hours = Math.floor((seconds % 86_400) / 3_600)
-  return days > 0 ? `${days}D ${hours}H` : `${hours}H ${Math.floor((seconds % 3_600) / 60)}M`
+  const hours = Math.floor((seconds % 86_400) / 3600)
+  return days > 0 ? `${days}D ${hours}H` : `${hours}H ${Math.floor((seconds % 3600) / 60)}M`
 }
 
 export function formatCheckedAt(value: string) {
   return new Date(value).toLocaleTimeString('en-GB', {
     hour: '2-digit',
+    hour12: false,
     minute: '2-digit',
     second: '2-digit',
-    hour12: false,
   })
 }
 
@@ -28,14 +28,24 @@ export function formatValidatedAt(value: string) {
 }
 
 export function formatRelativeTime(value: string | null, now = Date.now()) {
-  if (!value) return 'Time unknown'
+  if (!value) {
+    return 'Time unknown'
+  }
   const difference = Date.parse(value) - now
-  if (!Number.isFinite(difference)) return 'Time unknown'
+  if (!Number.isFinite(difference)) {
+    return 'Time unknown'
+  }
   const formatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
   const absolute = Math.abs(difference)
-  if (absolute < 60_000) return formatter.format(Math.round(difference / 1_000), 'second')
-  if (absolute < 3_600_000) return formatter.format(Math.round(difference / 60_000), 'minute')
-  if (absolute < 86_400_000) return formatter.format(Math.round(difference / 3_600_000), 'hour')
+  if (absolute < 60_000) {
+    return formatter.format(Math.round(difference / 1000), 'second')
+  }
+  if (absolute < 3_600_000) {
+    return formatter.format(Math.round(difference / 60_000), 'minute')
+  }
+  if (absolute < 86_400_000) {
+    return formatter.format(Math.round(difference / 3_600_000), 'hour')
+  }
   return formatter.format(Math.round(difference / 86_400_000), 'day')
 }
 

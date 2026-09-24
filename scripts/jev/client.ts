@@ -16,15 +16,16 @@ export async function evaluateSystemOne<const Q extends Questions>(
   state: EntryType,
   questions: Q,
 ): Promise<SystemOneResult<Q>['answers']> {
-  const result = await client.systemOne({ state, questions })
+  const result = await client.systemOne({ questions, state })
   return answersFrom(result)
 }
 
 function answersFrom<Q extends Questions>(
   payload: SystemOneResult<Q>,
 ): SystemOneResult<Q>['answers'] {
-  if (!isRecord(payload) || !isRecord(payload.answers))
+  if (!isRecord(payload) || !isRecord(payload.answers)) {
     throw new Error('TypeSafe response did not contain an answers object')
+  }
   return payload.answers
 }
 

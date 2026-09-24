@@ -79,44 +79,66 @@ export function assertOrganizationOwnerAuthorization(
 }
 
 export function assertOrganizationOwnerScope(requiredScope: string, scopes: readonly string[]) {
-  if (!scopes.includes(requiredScope)) throw new OrganizationAuthorityError('missing-scope')
+  if (!scopes.includes(requiredScope)) {
+    throw new OrganizationAuthorityError('missing-scope')
+  }
 }
 
 export function assertOrganizationOwnerDirectorRole(roles: OrganizationDirectorRoles) {
-  if (!roles.roles.includes('Director')) throw new OrganizationAuthorityError('not-director')
+  if (!roles.roles.includes('Director')) {
+    throw new OrganizationAuthorityError('not-director')
+  }
 }
 
 export function evaluateDerivedDirectorSource(
   source: DerivedDirectorSourcePredicate,
   now: Date,
 ): AuthoritySourceDecision {
-  if (!source.enabled) return invalidDecision('disabled')
-  if (source.blocked) return invalidDecision('blocked')
-  if (!source.lifecycleCurrent) return invalidDecision('lifecycle-replaced')
-  if (!source.authorizationGenerationCurrent)
+  if (!source.enabled) {
+    return invalidDecision('disabled')
+  }
+  if (source.blocked) {
+    return invalidDecision('blocked')
+  }
+  if (!source.lifecycleCurrent) {
+    return invalidDecision('lifecycle-replaced')
+  }
+  if (!source.authorizationGenerationCurrent) {
     return invalidDecision('authorization-generation-changed')
-  if (source.affiliation.corporationId !== source.authorityCorporationId)
+  }
+  if (source.affiliation.corporationId !== source.authorityCorporationId) {
     return invalidDecision('wrong-corporation')
+  }
   if (
     source.organization.organizationType === 'alliance' &&
     source.affiliation.allianceId !== source.organization.organizationId
-  )
+  ) {
     return invalidDecision('wrong-alliance')
-  if (!source.scopes.includes(source.requiredScope)) return invalidDecision('missing-scope')
-  if (!source.roles.roles.includes('Director')) return invalidDecision('not-director')
+  }
+  if (!source.scopes.includes(source.requiredScope)) {
+    return invalidDecision('missing-scope')
+  }
+  if (!source.roles.roles.includes('Director')) {
+    return invalidDecision('not-director')
+  }
 
   const state = resolveAuthorityEvidenceState(source.evidence, now)
-  return { state, eligible: state !== 'invalid', failure: state === 'invalid' ? 'expired' : null }
+  return { eligible: state !== 'invalid', failure: state === 'invalid' ? 'expired' : null, state }
 }
 
 export function resolveAuthorityEvidenceState(
   evidence: AuthorityEvidenceClock,
   now: Date,
 ): AuthorityEvidenceState {
-  if (evidence.status === 'invalid' || evidence.invalidatedAt) return 'invalid'
-  if (now < evidence.freshUntil) return 'fresh'
-  if (evidence.status === 'degraded' && evidence.graceUntil && now < evidence.graceUntil)
+  if (evidence.status === 'invalid' || evidence.invalidatedAt) {
+    return 'invalid'
+  }
+  if (now < evidence.freshUntil) {
+    return 'fresh'
+  }
+  if (evidence.status === 'degraded' && evidence.graceUntil && now < evidence.graceUntil) {
     return 'degraded'
+  }
   return 'invalid'
 }
 
@@ -124,7 +146,9 @@ export function canUseAuthoritySource(
   state: AuthorityEvidenceState,
   operation: AuthorityOperation,
 ) {
-  if (state === 'fresh') return true
+  if (state === 'fresh') {
+    return true
+  }
   return state === 'degraded' && operation !== 'mutate'
 }
 
@@ -133,10 +157,12 @@ export function hasEffectiveDirectorAuthority(input: {
   readonly sourceStates: readonly AuthorityEvidenceState[]
   readonly operation: AuthorityOperation
 }) {
-  if (input.explicitGrant) return true
+  if (input.explicitGrant) {
+    return true
+  }
   return input.sourceStates.some((state) => canUseAuthoritySource(state, input.operation))
 }
 
 function invalidDecision(failure: Exclude<AuthoritySourceDecision['failure'], 'expired' | null>) {
-  return { state: 'invalid', eligible: false, failure } as const
+  return { eligible: false, failure, state: 'invalid' } as const
 }

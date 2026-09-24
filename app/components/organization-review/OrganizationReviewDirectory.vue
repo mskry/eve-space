@@ -78,12 +78,14 @@ const visibleFields = computed(() =>
 )
 const renderedRows = computed(() =>
   props.members.map((member) => ({
-    member,
     cells: visibleFields.value.map((field) => ({ field, presentation: field.present(member) })),
+    member,
   })),
 )
 const resultAnnouncement = computed(() => {
-  if (props.loading) return 'Loading managed members.'
+  if (props.loading) {
+    return 'Loading managed members.'
+  }
   const count = props.members.length
   return `Page ${props.page}, ${count} managed ${count === 1 ? 'member' : 'members'}.`
 })
@@ -105,7 +107,9 @@ const complianceFilter = computed<string>({
 })
 const blockFilter = computed<string>({
   get: () => {
-    if (props.blocked === undefined) return allFilterValue
+    if (props.blocked === undefined) {
+      return allFilterValue
+    }
     return props.blocked ? 'blocked' : 'clear'
   },
   set: (value) =>
@@ -128,8 +132,9 @@ const groupChoices = computed(() => {
 })
 const groupFilterOptions = computed(() => {
   const labels = groupChoices.value.map(({ label }) => label)
-  if (!props.groupId || groupChoices.value.some(({ groupId }) => groupId === props.groupId))
+  if (!props.groupId || groupChoices.value.some(({ groupId }) => groupId === props.groupId)) {
     return labels
+  }
   return [...labels, `Group ${props.groupId}`]
 })
 const groupFilterText = ref('')
@@ -141,35 +146,35 @@ const groupFilterModel = computed<string>({
 watch([() => props.groupId, groupChoices], syncGroupFilterText, { immediate: true })
 
 const auditOptions = [
-  { value: allFilterValue, label: 'All audit states' },
+  { label: 'All audit states', value: allFilterValue },
   ...platformReviewerDirectoryAuditStates.map((state) => ({
-    value: state,
     label: organizationReviewDirectoryAuditStateLabel(state),
+    value: state,
   })),
 ]
 const complianceOptions = [
-  { value: allFilterValue, label: 'All compliance states' },
+  { label: 'All compliance states', value: allFilterValue },
   ...platformReviewerDirectoryComplianceStates.map((state) => ({
-    value: state,
     label: organizationReviewDirectoryAccess(state, { blocked: false }).label,
+    value: state,
   })),
 ]
 const blockOptions = [
-  { value: allFilterValue, label: 'Any block state' },
-  { value: 'clear', label: 'Not blocked' },
-  { value: 'blocked', label: 'Blocked' },
+  { label: 'Any block state', value: allFilterValue },
+  { label: 'Not blocked', value: 'clear' },
+  { label: 'Blocked', value: 'blocked' },
 ]
 const sortOptions = organizationReviewDirectoryFields.flatMap((field) =>
-  field.sort ? [{ value: field.sort, label: field.label }] : [],
+  field.sort ? [{ label: field.label, value: field.sort }] : [],
 )
 const directionOptions = [
-  { value: 'asc', label: 'Ascending' },
-  { value: 'desc', label: 'Descending' },
+  { label: 'Ascending', value: 'asc' },
+  { label: 'Descending', value: 'desc' },
 ]
 const limitOptions = [
-  { value: '10', label: '10 rows' },
-  { value: '25', label: '25 rows' },
-  { value: '50', label: '50 rows' },
+  { label: '10 rows', value: '10' },
+  { label: '25 rows', value: '25' },
+  { label: '50 rows', value: '50' },
 ]
 
 function directoryField(fieldId: OrganizationReviewDirectoryFieldId) {
@@ -185,7 +190,9 @@ function selected(member: OrganizationReviewDirectoryMember) {
 }
 
 function requestHeaderSort(field: OrganizationReviewDirectoryFieldDefinition) {
-  if (!field.sort) return
+  if (!field.sort) {
+    return
+  }
   const direction =
     props.sort === field.sort && props.direction === 'asc' ? ('desc' as const) : ('asc' as const)
   requestSort(field.sort, direction)
@@ -195,21 +202,27 @@ function requestSort(
   sort: PlatformReviewerDirectorySortField,
   direction: PlatformReviewerDirectorySortDirection,
 ) {
-  emit('change-sort', { sort, direction })
+  emit('change-sort', { direction, sort })
 }
 
 function ariaSort(field: OrganizationReviewDirectoryFieldDefinition) {
-  if (!field.sort || field.sort !== props.sort) return 'none'
+  if (!field.sort || field.sort !== props.sort) {
+    return 'none'
+  }
   return props.direction === 'asc' ? 'ascending' : 'descending'
 }
 
 function sortLabel(field: OrganizationReviewDirectoryFieldDefinition) {
-  if (field.sort !== props.sort) return `Sort by ${field.label}`
+  if (field.sort !== props.sort) {
+    return `Sort by ${field.label}`
+  }
   return `Sort by ${field.label}, currently ${props.direction === 'asc' ? 'ascending' : 'descending'}`
 }
 
 function sortIndicator(field: OrganizationReviewDirectoryFieldDefinition) {
-  if (field.sort !== props.sort) return '↕'
+  if (field.sort !== props.sort) {
+    return '↕'
+  }
   return props.direction === 'asc' ? '↑' : '↓'
 }
 
@@ -230,13 +243,20 @@ function updateGroupFilter(value: string) {
     return
   }
   const groupId = groupChoices.value.find(({ label }) => label === value)?.groupId
-  if (groupId) emit('update:groupId', groupId)
+  if (groupId) {
+    emit('update:groupId', groupId)
+  }
 }
 
 function updateColumnVisibility(field: OrganizationReviewDirectoryFieldDefinition, event: Event) {
-  if (field.locked) return
-  if ((event.target as HTMLInputElement).checked) preferences.showField(field.id)
-  else preferences.hideField(field.id)
+  if (field.locked) {
+    return
+  }
+  if ((event.target as HTMLInputElement).checked) {
+    preferences.showField(field.id)
+  } else {
+    preferences.hideField(field.id)
+  }
 }
 
 function fieldVisible(fieldId: OrganizationReviewDirectoryFieldId) {
@@ -245,7 +265,9 @@ function fieldVisible(fieldId: OrganizationReviewDirectoryFieldId) {
 
 function canMove(fieldId: OrganizationReviewDirectoryFieldId, direction: 'up' | 'down') {
   const index = preferences.visibleFieldIds.value.indexOf(fieldId)
-  if (index < 1) return false
+  if (index < 1) {
+    return false
+  }
   return direction === 'up' ? index > 1 : index < preferences.visibleFieldIds.value.length - 2
 }
 </script>

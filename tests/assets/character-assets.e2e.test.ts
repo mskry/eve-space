@@ -9,7 +9,7 @@ import { startCorsJsonApi } from '../support/cors-json-api'
 
 type ApiMode = 'current' | 'partial' | 'scope' | 'long'
 
-const characterId = 7_001
+const characterId = 7001
 const recordedRequests: URL[] = []
 const longValue = 'LONG-ASSET-IDENTITY-WITHOUT-BREAKS-'.repeat(18)
 let apiMode: ApiMode = 'current'
@@ -22,33 +22,34 @@ const apiServer = await startCorsJsonApi((request) => {
   if (url.pathname === '/auth/config') {
     return {
       body: {
+        attachUrl: `${apiOrigin}/auth/eve/attach`,
         configured: true,
         loginUrl: `${apiOrigin}/auth/eve/login`,
-        attachUrl: `${apiOrigin}/auth/eve/attach`,
       },
     }
   }
   if (url.pathname === '/auth/session') {
     return {
       body: {
-        authenticated: true,
         account: {
-          userId: 'assets-e2e-user',
           mainCharacter: { characterId, name: 'Manifest Pilot' },
+          userId: 'assets-e2e-user',
         },
+        authenticated: true,
       },
     }
   }
   if (url.pathname === '/api/me/cache-admission') {
     return { body: cacheAdmissionForCharacter('assets-e2e-user', characterId) }
   }
-  if (url.pathname === '/api/admin/session') return { body: { authenticated: false } }
+  if (url.pathname === '/api/admin/session') {
+    return { body: { authenticated: false } }
+  }
   if (url.pathname === '/api/modules') {
     return {
       body: {
         enabledModuleIds: [],
         shellNavigationOrder: {
-          dashboard: [],
           character: [
             { ownerId: 'core', navigationId: 'core-character-overview' },
             { ownerId: 'core', navigationId: 'core-character-skills' },
@@ -58,22 +59,27 @@ const apiServer = await startCorsJsonApi((request) => {
             { ownerId: 'core', navigationId: 'core-character-history' },
             { ownerId: 'core', navigationId: 'core-character-mail' },
           ],
+          dashboard: [],
         },
       },
     }
   }
-  if (url.pathname === '/api/me/characters') return { body: { characters: [ownedCharacter()] } }
-  if (url.pathname === `/api/me/characters/${characterId}`) return { body: overviewResponse() }
+  if (url.pathname === '/api/me/characters') {
+    return { body: { characters: [ownedCharacter()] } }
+  }
+  if (url.pathname === `/api/me/characters/${characterId}`) {
+    return { body: overviewResponse() }
+  }
   if (url.pathname === `/api/me/characters/${characterId}/assets`) {
     if (apiMode === 'scope') {
       return {
-        status: 403,
         body: {
+          authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}?returnTo=%2Fcharacters%2F${characterId}%2Fassets`,
           code: 'EVE_SCOPE_REQUIRED',
           message: 'Grant esi-assets.read_assets.v1 for this character.',
           requiredScope: 'esi-assets.read_assets.v1',
-          authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}?returnTo=%2Fcharacters%2F${characterId}%2Fassets`,
         },
+        status: 403,
       }
     }
     return { body: assetsResponse() }
@@ -83,8 +89,8 @@ const apiServer = await startCorsJsonApi((request) => {
       body: {
         originSystemId: 30_000_142,
         policy: { kind: 'shortest' },
-        sdeBuildNumber: 1234,
         routes: [{ destinationSystemId: 30_000_142, jumps: 0 }],
+        sdeBuildNumber: 1234,
       },
     }
   }
@@ -93,17 +99,17 @@ const apiServer = await startCorsJsonApi((request) => {
     const typeId = Number(typeMatch[1])
     return {
       body: {
-        typeId,
-        name: apiMode === 'long' ? longValue : `Inventory item ${typeId}`,
-        description: `${apiMode === 'long' ? longValue : 'Public static item detail.'}\n\n${'Detail section. '.repeat(30)}`,
-        group: { id: 12, name: 'Cargo Container' },
         category: { id: 65, name: 'Structure' },
+        description: `${apiMode === 'long' ? longValue : 'Public static item detail.'}\n\n${'Detail section. '.repeat(30)}`,
         detail: null,
+        group: { id: 12, name: 'Cargo Container' },
+        name: apiMode === 'long' ? longValue : `Inventory item ${typeId}`,
+        typeId,
       },
     }
   }
 
-  return { status: 404, body: { code: 'NOT_FOUND', message: 'Not found.' } }
+  return { body: { code: 'NOT_FOUND', message: 'Not found.' }, status: 404 }
 })
 
 apiOrigin = apiServer.origin
@@ -114,14 +120,14 @@ afterAll(apiServer.close)
 
 describe('character Assets production route', async () => {
   await setup({
-    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
+    browser: true,
     build: false,
+    captureServerLogs: false,
     nuxtConfig: {
       nitro: { output: { dir: fileURLToPath(new URL('../../.output-e2e', import.meta.url)) } },
     },
-    browser: true,
+    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
     server: true,
-    captureServerLogs: false,
     setupTimeout: 120_000,
   })
 
@@ -147,10 +153,10 @@ describe('character Assets production route', async () => {
 
     const page = await openPage(`/characters/${characterId}`)
     const navigation = page.getByRole('navigation', { name: 'Character record sections' })
-    const assetsLink = navigation.getByRole('link', { name: 'ASSETS', exact: true })
+    const assetsLink = navigation.getByRole('link', { exact: true, name: 'ASSETS' })
     await assetsLink.waitFor()
     await expect.poll(() => page.title()).toBe('Manifest Pilot // Character Overview // EVE Space')
-    expect(await navigation.getByRole('link').allTextContents()).toEqual([
+    expect(await navigation.getByRole('link').allTextContents()).toStrictEqual([
       'OVERVIEW',
       'SKILLS',
       'CLONES',
@@ -193,7 +199,7 @@ describe('character Assets production route', async () => {
   it('announces a distinct loaded title for every character child route', async () => {
     const page = await openPage(`/characters/${characterId}`)
     const navigation = page.getByRole('navigation', { name: 'Character record sections' })
-    await navigation.getByRole('link', { name: 'OVERVIEW', exact: true }).waitFor()
+    await navigation.getByRole('link', { exact: true, name: 'OVERVIEW' }).waitFor()
     await expect.poll(() => page.title()).toBe('Manifest Pilot // Character Overview // EVE Space')
 
     const routes = [
@@ -205,7 +211,7 @@ describe('character Assets production route', async () => {
       ['MAIL', 'Character Mail'],
     ] as const
     for (const [label, title] of routes) {
-      await navigation.getByRole('link', { name: label, exact: true }).click()
+      await navigation.getByRole('link', { exact: true, name: label }).click()
       const expectedTitle = `Manifest Pilot // ${title} // EVE Space`
       await expect.poll(() => page.title()).toBe(expectedTitle)
       await expect
@@ -213,7 +219,7 @@ describe('character Assets production route', async () => {
         .toBe(expectedTitle)
     }
 
-    await navigation.getByRole('link', { name: 'OVERVIEW', exact: true }).click()
+    await navigation.getByRole('link', { exact: true, name: 'OVERVIEW' }).click()
     const overviewTitle = 'Manifest Pilot // Character Overview // EVE Space'
     await expect.poll(() => page.title()).toBe(overviewTitle)
     await expect
@@ -224,7 +230,7 @@ describe('character Assets production route', async () => {
   it('renders the complete collection through bounded desktop rows and nested search context', async () => {
     apiMode = 'partial'
     const page = await openPage(`/characters/${characterId}/assets`)
-    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.setViewportSize({ height: 900, width: 1440 })
     await page.getByRole('heading', { name: '237 TOTAL ASSETS' }).waitFor()
     expect(await assetRows(page).count()).toBe(100)
     expect(
@@ -236,17 +242,17 @@ describe('character Assets production route', async () => {
     ).toBe(true)
     expect(await page.locator('.system-security-status').textContent()).toContain('0.9')
 
-    const quantitySort = page.getByRole('button', { name: 'Quantity', exact: true })
+    const quantitySort = page.getByRole('button', { exact: true, name: 'Quantity' })
     await quantitySort.click()
     expect(await quantitySort.locator('..').getAttribute('aria-sort')).toBe('ascending')
 
     await page.locator('.assets-strip-filters').click()
     const typeFilter = page.getByRole('combobox', { name: 'Type filter' })
     await typeFilter.fill('Inventory item 2')
-    await page.getByRole('option', { name: 'Inventory item 2', exact: true }).click()
+    await page.getByRole('option', { exact: true, name: 'Inventory item 2' }).click()
     expect(await typeFilter.inputValue()).toBe('Inventory item 2')
     await expect.poll(() => assetRows(page).count()).toBe(2)
-    await page.getByRole('button', { name: 'Clear type filter', exact: true }).click()
+    await page.getByRole('button', { exact: true, name: 'Clear type filter' }).click()
 
     const search = page.getByRole('searchbox', { name: 'Search text' })
     await search.fill('Dep scaner')
@@ -295,7 +301,7 @@ describe('character Assets production route', async () => {
   it('keeps long mobile inventory and lazy item information within the viewport and restores focus', async () => {
     apiMode = 'long'
     const page = await openPage(`/characters/${characterId}/assets`)
-    await page.setViewportSize({ width: 390, height: 844 })
+    await page.setViewportSize({ height: 844, width: 390 })
     await page.getByRole('heading', { name: '237 TOTAL ASSETS' }).waitFor()
     const search = page.getByRole('searchbox', { name: 'Search text' })
     await search.fill(longValue.slice(0, 40))
@@ -313,7 +319,9 @@ describe('character Assets production route', async () => {
     const dialog = page.getByRole('dialog', { name: 'Item information' })
     await dialog.getByRole('heading', { name: longValue }).waitFor()
     await expect.poll(async () => isWithinViewport(await dialog.boundingBox(), 390, 844)).toBe(true)
-    expect(typeDetailRequests().map((url) => url.pathname)).toEqual(['/api/universe/types/103'])
+    expect(typeDetailRequests().map((url) => url.pathname)).toStrictEqual([
+      '/api/universe/types/103',
+    ])
     expect(assetRequests()).toHaveLength(assetsBefore)
     expectWithinViewport(await dialog.boundingBox(), 390, 844)
     expect(await hasHorizontalOverflow(page)).toBe(false)
@@ -385,15 +393,15 @@ function isWithinViewport(
 
 function assetsResponse() {
   return {
-    characterId,
     assets: inventoryAssets(),
+    cachedUntil: '2026-09-03T13:00:00.000Z',
+    characterId,
     enrichment:
       apiMode === 'partial'
         ? { types: 'complete', names: 'partial', locations: 'partial' }
         : { types: 'complete', names: 'complete', locations: 'complete' },
-    cachedUntil: '2026-09-03T13:00:00.000Z',
-    validatedAt: '2026-09-03T12:00:00.000Z',
     stale: false,
+    validatedAt: '2026-09-03T12:00:00.000Z',
   }
 }
 
@@ -402,105 +410,105 @@ function inventoryAssets() {
   const assets = [
     asset(1, {
       customName: 'Cargo vault',
-      typeName: 'Secure Container',
       locationName,
+      typeName: 'Secure Container',
     }),
     asset(2, {
       customName: 'Deep scanner',
+      locationFlag: 'Cargo',
       locationId: 1,
-      locationType: 'item',
       locationName: null,
+      locationType: 'item',
+      parentItemId: 1,
       solarSystemId: null,
       solarSystemSecurityStatus: null,
-      parentItemId: 1,
-      locationFlag: 'Cargo',
     }),
     asset(3, {
       customName: apiMode === 'long' ? longValue : null,
+      locationFlag: apiMode === 'long' ? longValue : 'Hangar',
+      locationName: apiMode === 'long' ? longValue : locationName,
       typeId: 103,
       typeName: apiMode === 'long' ? longValue : 'Inventory item 103',
-      locationName: apiMode === 'long' ? longValue : locationName,
-      locationFlag: apiMode === 'long' ? longValue : 'Hangar',
     }),
   ]
   for (let itemId = 4; itemId <= 237; itemId += 1) {
-    assets.push(asset(itemId, { typeId: 100 + itemId, locationName }))
+    assets.push(asset(itemId, { locationName, typeId: 100 + itemId }))
   }
   return assets
 }
 
 function asset(itemId: number, overrides: Record<string, unknown> = {}) {
   return {
-    itemId,
-    typeId: 100 + itemId,
-    typeName: `Inventory item ${itemId}`,
-    groupId: 12,
-    groupName: 'Cargo Container',
     categoryId: 65,
     categoryName: 'Structure',
-    unitVolume: 1.5,
-    totalVolume: 1.5,
-    quantity: itemId,
-    isSingleton: true,
-    isBlueprintCopy: null,
     customName: null,
+    groupId: 12,
+    groupName: 'Cargo Container',
+    isBlueprintCopy: null,
+    isSingleton: true,
+    itemId,
+    locationFlag: 'Hangar',
     locationId: 60_003_760,
-    locationType: 'station',
     locationName: 'Jita IV - Moon 4',
+    locationType: 'station',
+    parentItemId: null,
+    quantity: itemId,
     solarSystemId: 30_000_142,
     solarSystemSecurityStatus: 0.945,
-    locationFlag: 'Hangar',
-    parentItemId: null,
+    totalVolume: 1.5,
+    typeId: 100 + itemId,
+    typeName: `Inventory item ${itemId}`,
+    unitVolume: 1.5,
     ...overrides,
   }
 }
 
 function ownedCharacter() {
   return {
-    characterId,
-    name: 'Manifest Pilot',
-    corporationId: 98_000_001,
-    allianceId: null,
-    isMain: true,
-    birthday: '2020-01-01T00:00:00.000Z',
-    securityStatus: 1.2,
-    raceFactionId: 500_001,
-    location: { solarSystemId: 30_000_142, solarSystemName: 'Jita', locationType: 'space' },
-    ship: { typeId: 670, typeName: 'Capsule', groupId: 29, name: 'Manifest' },
-    walletBalance: 1_000_000,
-    totalSp: 5_000_000,
-    corporation: { id: 98_000_001, name: 'Manifest Corporation' },
     alliance: null,
+    allianceId: null,
+    birthday: '2020-01-01T00:00:00.000Z',
+    characterId,
+    corporation: { id: 98_000_001, name: 'Manifest Corporation' },
+    corporationId: 98_000_001,
+    isMain: true,
+    location: { locationType: 'space', solarSystemId: 30_000_142, solarSystemName: 'Jita' },
+    name: 'Manifest Pilot',
+    raceFactionId: 500_001,
+    securityStatus: 1.2,
+    ship: { groupId: 29, name: 'Manifest', typeId: 670, typeName: 'Capsule' },
+    totalSp: 5_000_000,
+    walletBalance: 1_000_000,
   }
 }
 
 function overviewResponse() {
   return {
+    location: { message: 'Unavailable', status: 'unavailable' },
     profile: {
-      id: characterId,
-      name: 'Manifest Pilot',
-      birthday: '2020-01-01T00:00:00.000Z',
-      gender: 'Female',
-      race: 'Caldari',
-      raceFactionId: null,
-      bloodline: 'Deteis',
-      securityStatus: 1.2,
       achievementScore: 0,
-      factionId: null,
+      alliance: null,
       bio: {
         plainText: 'Inventory specialist.',
         runs: [{ start: 0, text: 'Inventory specialist.' }],
       },
+      birthday: '2020-01-01T00:00:00.000Z',
+      bloodline: 'Deteis',
       corporation: {
         id: 98_000_001,
+        memberCount: 8,
         name: 'Manifest Corporation',
         ticker: 'MNFS',
-        memberCount: 8,
       },
-      alliance: null,
+      factionId: null,
+      gender: 'Female',
+      id: characterId,
+      name: 'Manifest Pilot',
+      race: 'Caldari',
+      raceFactionId: null,
+      securityStatus: 1.2,
     },
-    location: { status: 'unavailable', message: 'Unavailable' },
-    ship: { status: 'unavailable', message: 'Unavailable' },
-    skills: { status: 'unavailable', message: 'Unavailable' },
+    ship: { message: 'Unavailable', status: 'unavailable' },
+    skills: { message: 'Unavailable', status: 'unavailable' },
   }
 }

@@ -21,8 +21,8 @@ mockNuxtImport('usePlatformProtectedQuery', () => (options: unknown) => {
   return {
     data: ref(mocks.queryData[routeId]),
     error: ref<unknown>(),
-    status: ref('success'),
     refetch: mocks.refetch,
+    status: ref('success'),
   }
 })
 
@@ -83,7 +83,9 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  for (const wrapper of wrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of wrappers.splice(0)) {
+    wrapper.unmount()
+  }
   vi.clearAllMocks()
 })
 
@@ -97,9 +99,9 @@ describe('Member Audit reviewer panels', () => {
         hasEvidence: false,
         permission: 'member-audit.assets.read',
         state: {
+          message: 'The character owner must renew authorization.',
           status: 'authorization-required',
           title: 'Character authorization required',
-          message: 'The character owner must renew authorization.',
         },
         statuses: [
           {
@@ -148,11 +150,11 @@ describe('Member Audit reviewer panels', () => {
     await flushPromises()
 
     expect(mocks.assignGroup).toHaveBeenCalledWith({
+      json: { expiresAt: null, reason: 'Approved for fleet operations.' },
       param: {
         groupId: '55555555-5555-4555-8555-555555555555',
         userId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
       },
-      json: { expiresAt: null, reason: 'Approved for fleet operations.' },
     })
     expect(mocks.refetch).toHaveBeenCalledOnce()
     expect(wrapper.get('output.member-audit-groups__result').text()).toContain(
@@ -177,8 +179,8 @@ describe('Member Audit reviewer panels', () => {
     await flushPromises()
 
     expect(mocks.blockMember).toHaveBeenCalledWith({
-      param: { userId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
       json: { reason: 'Immediate access review required.' },
+      param: { userId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
     })
     expect(wrapper.get('output.member-audit-block__result').text()).toContain(
       'Protected organization access is denied immediately',

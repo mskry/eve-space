@@ -38,11 +38,11 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 3600,
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
-      projection: [],
       materialization: [
         { operationId: 'materialize-current-snapshot' },
         { operationId: 'purge-evidence' },
       ],
+      projection: [],
     } as const,
     implementation: module0Resource0 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource0,
@@ -64,12 +64,12 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 3600,
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
-      projection: [{ operationId: 'read-active-evidence-continuation' }],
       materialization: [
         { operationId: 'write-evidence-continuation' },
         { operationId: 'promote-evidence-observation' },
         { operationId: 'purge-evidence' },
       ],
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
     } as const,
     implementation: module0Resource1 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource1,
@@ -92,11 +92,11 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
-      projection: [],
       materialization: [
         { operationId: 'materialize-current-snapshot' },
         { operationId: 'purge-evidence' },
       ],
+      projection: [],
     } as const,
     implementation: module0Resource2 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource2,
@@ -117,12 +117,12 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
-      projection: [{ operationId: 'read-active-evidence-continuation' }],
       materialization: [
         { operationId: 'write-evidence-continuation' },
         { operationId: 'promote-evidence-observation' },
         { operationId: 'purge-evidence' },
       ],
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
     } as const,
     implementation: module0Resource3 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource3,
@@ -143,12 +143,12 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
-      projection: [{ operationId: 'read-active-evidence-continuation' }],
       materialization: [
         { operationId: 'write-evidence-continuation' },
         { operationId: 'promote-evidence-observation' },
         { operationId: 'purge-evidence' },
       ],
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
     } as const,
     implementation: module0Resource4 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource4,
@@ -170,12 +170,12 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
-      projection: [{ operationId: 'read-active-evidence-continuation' }],
       materialization: [
         { operationId: 'write-evidence-continuation' },
         { operationId: 'promote-evidence-observation' },
         { operationId: 'purge-evidence' },
       ],
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
     } as const,
     implementation: module0Resource5 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource5,
@@ -197,12 +197,12 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-managed-member-character' },
     persistence: {
-      projection: [{ operationId: 'read-active-evidence-continuation' }],
       materialization: [
         { operationId: 'write-evidence-continuation' },
         { operationId: 'promote-evidence-observation' },
         { operationId: 'purge-evidence' },
       ],
+      projection: [{ operationId: 'read-active-evidence-continuation' }],
     } as const,
     implementation: module0Resource6 satisfies PlatformResourceImplementationForContract<
       typeof module0Resource6,
@@ -229,8 +229,8 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-deployment' },
     persistence: {
-      projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
+      projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
     implementation: module1Resource0 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource0,
@@ -256,8 +256,8 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-deployment' },
     persistence: {
-      projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
+      projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
     implementation: module1Resource1 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource1,
@@ -279,8 +279,8 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-managed-corporation-source' },
     persistence: {
-      projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
+      projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
     implementation: module1Resource2 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource2,
@@ -301,8 +301,8 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-managed-corporation-source' },
     persistence: {
-      projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
+      projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
     implementation: module1Resource3 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource3,
@@ -325,8 +325,8 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-owned-character' },
     persistence: {
-      projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
+      projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
     implementation: module1Resource4 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource4,
@@ -349,8 +349,8 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-owned-character' },
     persistence: {
-      projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
+      projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
     implementation: module1Resource5 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource5,
@@ -374,8 +374,8 @@ export const installedModuleResources = [
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-owned-character' },
     persistence: {
-      projection: [{ operationId: 'read-activity-checkpoint' }],
       materialization: [{ operationId: 'materialize-activity-observation' }],
+      projection: [{ operationId: 'read-activity-checkpoint' }],
     } as const,
     implementation: module1Resource6 satisfies PlatformResourceImplementationForContract<
       typeof module1Resource6,

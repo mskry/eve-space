@@ -23,52 +23,53 @@ const grantId = '35acd527-9539-44ad-aacf-9f8e45232267'
 const sourceId = '66503848-72b8-4fa3-8af5-de056001a37e'
 const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
 const sourceContext = {
-  organizationVersion: 3,
-  sourceSubjectLifecycleId: grantId,
   authorizationGeneration: 7,
+  organizationVersion: 3,
   roleEvidenceRevision: '2026-09-21T12:00:00.000Z',
+  sourceSubjectLifecycleId: grantId,
 } as const
 const resourceIdentity = {
   moduleId: 'member-audit',
   resourceId: 'trained-skills',
+  subjectId: '1404328063',
   subjectKind: 'character' as const,
   subjectLifecycleId: grantId,
-  subjectId: '1404328063',
 } as const
 const resourceBatch = {
   moduleId: 'member-audit',
   resourceId: 'trained-skills',
   subjectKind: 'character' as const,
-  subjects: [{ subjectLifecycleId: grantId, subjectId: '1404328063' }],
+  subjects: [{ subjectId: '1404328063', subjectLifecycleId: grantId }],
 }
 const affiliationMaximumBatchSize =
   operationRegistry.PostCharactersAffiliation.transport.protocol.maximumBatchSize
-if (affiliationMaximumBatchSize === null)
+if (affiliationMaximumBatchSize === null) {
   throw new Error('Bulk affiliation operation must declare a maximum batch size')
+}
 
 const fixtures = {
+  affiliation: { characterIds: [1], operationId: `affiliation-1--${eventId}` },
+  'corporation-source-evidence': { sourceId, ...sourceContext },
+  'derived-authority': {
+    authorizationGeneration: sourceContext.authorizationGeneration,
+    characterId: 1_404_328_063,
+    organizationVersion: sourceContext.organizationVersion,
+    roleEvidenceRevision: null,
+    sourceId: null,
+    subjectLifecycleId: sourceContext.sourceSubjectLifecycleId,
+    userId,
+  },
   diagnostic: { operationId: 'queue-diagnostic' },
-  planner: { operationId: 'queue-planner' },
   'domain-event': { eventId },
-  'outbox-relay': { operationId: 'outbox-relay' },
   'domain-event-retention': { operationId: 'domain-event-retention' },
-  affiliation: { operationId: `affiliation-1--${eventId}`, characterIds: [1] },
   'organization-owner-evidence': {
     grantId,
     ...sourceContext,
   },
-  'corporation-source-evidence': { sourceId, ...sourceContext },
-  'derived-authority': {
-    organizationVersion: sourceContext.organizationVersion,
-    userId,
-    characterId: 1404328063,
-    subjectLifecycleId: sourceContext.sourceSubjectLifecycleId,
-    authorizationGeneration: sourceContext.authorizationGeneration,
-    sourceId: null,
-    roleEvidenceRevision: null,
-  },
-  'resource-refresh': resourceIdentity,
+  'outbox-relay': { operationId: 'outbox-relay' },
+  planner: { operationId: 'queue-planner' },
   'resource-batch': resourceBatch,
+  'resource-refresh': resourceIdentity,
 } satisfies JobPayloadByName
 
 const expected = [
@@ -91,13 +92,13 @@ describe('job contracts', () => {
     expect(listJobContracts()).toHaveLength(expected.length)
     for (const [name, attempts, durability, recovery, deduplication, delay, priority] of expected) {
       const contract = getJobContract(name)
-      expect(parseJobPayload(name, fixtures[name])).toEqual(fixtures[name])
+      expect(parseJobPayload(name, fixtures[name])).toStrictEqual(fixtures[name])
       expect(contract).toMatchObject({
-        name,
-        attempts,
-        durability: { kind: durability, ...(recovery ? { recovery } : {}) },
         activeWorkDeduplication: deduplication,
+        attempts,
         delay,
+        durability: { kind: durability, ...(recovery ? { recovery } : {}) },
+        name,
         priority,
         retention: {
           completed: {
@@ -132,7 +133,7 @@ describe('job contracts', () => {
         ...resourceBatch,
         subjects: [
           ...resourceBatch.subjects,
-          { subjectLifecycleId: eventId, subjectId: '1404328064' },
+          { subjectId: '1404328064', subjectLifecycleId: eventId },
         ],
       }),
     ).toBe(resourceBatchJobId(resourceBatch))
@@ -150,28 +151,29 @@ describe('job contracts', () => {
   test('rejects affiliation identities that do not match unique payload characters', () => {
     expect(() =>
       parseJobPayload('affiliation', {
-        operationId: 'affiliation-1-2',
         characterIds: [1, 3],
+        operationId: 'affiliation-1-2',
       }),
     ).toThrow('Invalid affiliation')
     expect(() =>
       parseJobPayload('affiliation', {
-        operationId: 'affiliation-1-1',
         characterIds: [1, 1],
+        operationId: 'affiliation-1-1',
       }),
     ).toThrow('Invalid affiliation')
   })
 
   test('strictly rejects malformed and sensitive payloads', () => {
-    for (const name of Object.keys(fixtures) as JobName[])
+    for (const name of Object.keys(fixtures) as JobName[]) {
       expect(() => parseJobPayload(name, { ...fixtures[name], unexpected: true })).toThrow(
         `Invalid ${name}`,
       )
+    }
     expect(() => assertSafeJobPayload({ refreshToken: 'not-allowed' })).toThrow('sensitive')
     expect(() =>
       parseJobPayload('affiliation', {
+        characterIds: Array.from({ length: 1001 }, (_, index) => index + 1),
         operationId: 'affiliation-1',
-        characterIds: Array.from({ length: 1_001 }, (_, index) => index + 1),
       }),
     ).toThrow('Invalid affiliation')
   })
@@ -193,7 +195,7 @@ describe('job contracts', () => {
 function affiliationPayload(size: number) {
   const characterIds = Array.from({ length: size }, (_, index) => index + 1)
   return {
-    operationId: affiliationJobId(characterIds),
     characterIds,
+    operationId: affiliationJobId(characterIds),
   }
 }

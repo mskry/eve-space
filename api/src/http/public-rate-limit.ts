@@ -9,7 +9,7 @@ interface PublicRequestRateLimitOptions<Code extends string> {
 
 const rateLimitWindowMs = 60_000
 const rateLimitMaximum = 60
-const maxRateLimitEntries = 1_000
+const maxRateLimitEntries = 1000
 
 export function createPublicRequestRateLimit<const Code extends string>({
   code,
@@ -27,11 +27,13 @@ export function createPublicRequestRateLimit<const Code extends string>({
     entries.set(client, entry)
     if (entries.size > maxRateLimitEntries) {
       const oldest = entries.keys().next().value
-      if (oldest !== undefined) entries.delete(oldest)
+      if (oldest !== undefined) {
+        entries.delete(oldest)
+      }
     }
 
     if (entry.count > rateLimitMaximum) {
-      const retryAfterSeconds = Math.max(1, Math.ceil((entry.resetAt - now) / 1_000))
+      const retryAfterSeconds = Math.max(1, Math.ceil((entry.resetAt - now) / 1000))
       context.header('Retry-After', String(retryAfterSeconds))
       return context.json({ code, message }, 429)
     }

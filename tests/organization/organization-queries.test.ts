@@ -40,20 +40,20 @@ describe('organization queries', () => {
       memberAccess: true,
     }
     const catalog = organizationPermissionCatalogQuery({
+      access: allowed,
       apiClient,
       organizationVersion: 7,
-      access: allowed,
     })
     const bundles = organizationPermissionBundlesQuery({
+      access: allowed,
       apiClient,
       organizationVersion: 7,
-      access: allowed,
     })
 
-    expect(catalog.key).toEqual(['private', 'organization', 7, 'permission-catalog'])
-    expect(bundles.key).toEqual(['private', 'organization', 7, 'permission-bundles'])
-    expect(catalog.meta.esiPersistence).toEqual({ kind: 'none' })
-    expect(bundles.meta.esiPersistence).toEqual({ kind: 'none' })
+    expect(catalog.key).toStrictEqual(['private', 'organization', 7, 'permission-catalog'])
+    expect(bundles.key).toStrictEqual(['private', 'organization', 7, 'permission-bundles'])
+    expect(catalog.meta.esiPersistence).toStrictEqual({ kind: 'none' })
+    expect(bundles.meta.esiPersistence).toStrictEqual({ kind: 'none' })
     expect(canRunOrganizationOwnerQuery(allowed, 7)).toBe(true)
 
     for (const access of [
@@ -69,15 +69,8 @@ describe('organization queries', () => {
 
   it('loads member compliance through the private API query', async () => {
     const response = {
-      organizationVersion: 1,
-      state: 'compliant',
-      evidenceFreshness: 'fresh',
-      evidenceAt: '2026-09-08T10:00:00.000Z',
-      reviewDeadline: null,
       accessValidUntil: null,
-      evaluatedAt: '2026-09-08T10:00:00.000Z',
       accountReasons: [],
-      remediationActions: [],
       characters: [
         {
           characterId: 1_404_328_063,
@@ -91,6 +84,13 @@ describe('organization queries', () => {
       ],
       disclosureNotice:
         'EVE SSO authorizes one selected character at a time. Registration completeness depends on member disclosure and organization policy.',
+      evaluatedAt: '2026-09-08T10:00:00.000Z',
+      evidenceAt: '2026-09-08T10:00:00.000Z',
+      evidenceFreshness: 'fresh',
+      organizationVersion: 1,
+      remediationActions: [],
+      reviewDeadline: null,
+      state: 'compliant',
     } satisfies OrganizationCompliance
     queryServer.use(
       http.get('http://localhost/api/organization/compliance', () => HttpResponse.json(response)),
@@ -112,10 +112,6 @@ describe('organization queries', () => {
   it('loads prioritized member activities through the private API query', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-08T10:00:00.000Z'))
     const response = {
-      organizationVersion: 1,
-      generatedAt: '2026-09-08T10:00:00.000Z',
-      stale: true,
-      validatedAt: '2026-09-08T09:55:00.000Z',
       activities: [
         {
           id: 'organization-activity:project:17',
@@ -126,7 +122,7 @@ describe('organization queries', () => {
           objective: 'manufacturing',
           state: 'Active',
           progress: { current: 2, desired: 10 },
-          reward: { initial: 1_000, remaining: 800 },
+          reward: { initial: 1000, remaining: 800 },
           requiredAction: {
             kind: 'delivery',
             label: 'Deliver requested hulls',
@@ -146,6 +142,8 @@ describe('organization queries', () => {
           freshness: { state: 'stale', collectedAt: '2026-09-08T09:55:00.000Z' },
         },
       ],
+      generatedAt: '2026-09-08T10:00:00.000Z',
+      organizationVersion: 1,
       sources: [
         {
           sourceId: 'organization-activity:organization-activity',
@@ -154,6 +152,8 @@ describe('organization queries', () => {
           freshness: { state: 'stale', collectedAt: '2026-09-08T09:55:00.000Z' },
         },
       ],
+      stale: true,
+      validatedAt: '2026-09-08T09:55:00.000Z',
     } satisfies OrganizationActivities
     queryServer.use(
       http.get('http://localhost/api/organization/activities', () => HttpResponse.json(response)),
@@ -180,24 +180,24 @@ describe('organization queries', () => {
 
   it('loads the private authority context', async () => {
     const response = {
+      authorityCharacter: null,
+      capabilities: { reviewRegistration: true, viewRosterCoverage: true },
+      claimAvailable: false,
+      freshUntil: '2026-09-10T13:00:00.000Z',
+      graceUntil: null,
+      isBlocked: false,
+      isOrganizationOwner: true,
+      memberAccess: true,
       organization: {
-        organizationType: 'corporation',
         organizationId: 98_000_001,
         organizationName: 'Example Corporation',
         organizationTicker: 'EX',
+        organizationType: 'corporation',
         organizationVersion: 1,
       },
-      isOrganizationOwner: true,
-      isBlocked: false,
-      memberAccess: true,
-      capabilities: { reviewRegistration: true, viewRosterCoverage: true },
-      claimAvailable: false,
-      ownerStatus: 'fresh',
       ownerFailureClass: null,
-      freshUntil: '2026-09-10T13:00:00.000Z',
-      graceUntil: null,
+      ownerStatus: 'fresh',
       reviewDeadline: null,
-      authorityCharacter: null,
     } satisfies OrganizationContext
     queryServer.use(
       http.get('http://localhost/api/organization/context', () => HttpResponse.json(response)),
@@ -218,6 +218,8 @@ describe('organization queries', () => {
 
   it('loads the owner-only role list', async () => {
     const response = {
+      corporationSources: [],
+      derivedSources: [],
       grants: [
         {
           grantId: '35acd527-9539-44ad-aacf-9f8e45232267',
@@ -231,8 +233,6 @@ describe('organization queries', () => {
         },
       ],
       ownerSources: [],
-      derivedSources: [],
-      corporationSources: [],
     } satisfies OrganizationRoles
     queryServer.use(
       http.get('http://localhost/api/organization/roles', () => HttpResponse.json(response)),
@@ -254,15 +254,6 @@ describe('organization queries', () => {
   it('loads HR roster coverage through the private API query', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-01T10:00:00.000Z'))
     const response = {
-      stale: true,
-      validatedAt: '2026-09-01T09:30:00.000Z',
-      refreshFailureClass: 'esi-cooldown',
-      managedCorporations: {
-        status: 'stale',
-        validatedAt: '2026-09-01T09:30:00.000Z',
-        attemptedAt: '2026-09-01T10:00:00.000Z',
-        lastFailureClass: 'esi-cooldown',
-      },
       corporations: [
         {
           organizationVersion: 1,
@@ -281,6 +272,15 @@ describe('organization queries', () => {
           ],
         },
       ],
+      managedCorporations: {
+        attemptedAt: '2026-09-01T10:00:00.000Z',
+        lastFailureClass: 'esi-cooldown',
+        status: 'stale',
+        validatedAt: '2026-09-01T09:30:00.000Z',
+      },
+      refreshFailureClass: 'esi-cooldown',
+      stale: true,
+      validatedAt: '2026-09-01T09:30:00.000Z',
     } satisfies OrganizationRosterCoverage
     queryServer.use(
       http.get('http://localhost/api/organization/roster-coverage', () =>
@@ -309,7 +309,6 @@ describe('organization queries', () => {
 
   it('loads HR exceptions and bounded audit history through private API queries', async () => {
     const exceptions = {
-      reviewCandidates: [],
       exceptions: [
         {
           exceptionId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
@@ -327,29 +326,30 @@ describe('organization queries', () => {
           revocationReason: null,
         },
       ],
+      reviewCandidates: [],
     } satisfies OrganizationExceptions
     const audit = {
       events: [
         {
+          actorId: 'db7121b5-a761-41e4-ba5d-217ed1b2fa38',
+          actorType: 'user',
+          assignmentId: null,
+          assignmentSource: null,
           auditId: '35acd527-9539-44ad-aacf-9f8e45232267',
           auditSequence: '9',
-          organizationVersion: 1,
-          policyVersion: 2,
-          eventType: 'exception.approved',
-          actorType: 'user',
-          actorId: 'db7121b5-a761-41e4-ba5d-217ed1b2fa38',
-          subjectType: 'exception',
-          subjectId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
-          reason: 'Approved external character.',
-          outcome: 'granted',
-          groupId: null,
-          assignmentId: null,
-          targetUserId: null,
-          assignmentSource: null,
+          causationAuditId: null,
           complianceSource: null,
           entitlementExpiresAt: null,
-          causationAuditId: null,
+          eventType: 'exception.approved',
+          groupId: null,
           occurredAt: '2026-09-08T10:00:00.000Z',
+          organizationVersion: 1,
+          outcome: 'granted',
+          policyVersion: 2,
+          reason: 'Approved external character.',
+          subjectId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+          subjectType: 'exception',
+          targetUserId: null,
         },
       ],
       nextBeforeAuditSequence: null,

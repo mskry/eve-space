@@ -6,7 +6,9 @@ const mountedWrappers: { unmount: () => void }[] = []
 const checkedAt = '2026-09-01T10:58:46.928Z'
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
 })
 
 async function mountNotice(props: {
@@ -36,8 +38,8 @@ describe('AppUpstreamNotice', () => {
 
   it('keeps normal browser restoration quiet while the upstream is healthy', async () => {
     const wrapper = await mountNotice({
-      status: 'operational',
       presentation: { kind: 'restored', originalSuccessAt: checkedAt },
+      status: 'operational',
     })
 
     expect(wrapper.find('.upstream-notice').exists()).toBe(false)
@@ -46,8 +48,8 @@ describe('AppUpstreamNotice', () => {
   it('distinguishes a restored snapshot whose refresh failed from server-stale data', async () => {
     const retryAt = '2026-09-01T11:05:00.000Z'
     const restored = await mountNotice({
-      status: 'operational',
       presentation: { kind: 'restored-refresh-failed', originalSuccessAt: checkedAt, retryAt },
+      status: 'operational',
     })
     expect(restored.get('.upstream-notice').attributes('data-status')).toBe(
       'restored-refresh-failed',
@@ -56,8 +58,8 @@ describe('AppUpstreamNotice', () => {
     expect(restored.text()).toContain('RETRY AFTER')
 
     const serverStale = await mountNotice({
+      presentation: { kind: 'server-stale', retryAt, validatedAt: checkedAt },
       status: 'operational',
-      presentation: { kind: 'server-stale', validatedAt: checkedAt, retryAt },
     })
     expect(serverStale.get('.upstream-notice').attributes('data-status')).toBe('server-stale')
     expect(serverStale.text()).toContain('SERVER CACHE DEGRADED')
@@ -94,7 +96,7 @@ describe('AppUpstreamNotice', () => {
   })
 
   it('omits the contact line when the upstream was never reached', async () => {
-    const wrapper = await mountNotice({ status: 'unavailable', checkedAt: undefined })
+    const wrapper = await mountNotice({ checkedAt: undefined, status: 'unavailable' })
 
     expect(wrapper.find('.upstream-notice-contact').exists()).toBe(false)
   })

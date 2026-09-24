@@ -41,8 +41,9 @@ export async function finalizeModulePersistenceRoutines(
   operations: readonly ModulePersistenceRoutineDescriptor[],
 ) {
   for (const operation of operations) {
-    if (operation.moduleId !== moduleId || operation.migration !== migrationName)
+    if (operation.moduleId !== moduleId || operation.migration !== migrationName) {
       throw routineError(moduleId, operation.operationId, 'metadata')
+    }
     // oxlint-disable-next-line no-await-in-loop
     await finalizeModulePersistenceRoutine(connection, operation)
   }
@@ -56,17 +57,22 @@ export async function reconcileModulePersistenceRoutineGrants(
 ) {
   const names = modulePersistenceNames(moduleId)
   for (const operation of operations) {
-    if (operation.moduleId !== moduleId || operation.schemaName !== names.schemaName)
+    if (operation.moduleId !== moduleId || operation.schemaName !== names.schemaName) {
       throw routineError(moduleId, operation.operationId, 'metadata')
+    }
     // oxlint-disable-next-line no-await-in-loop
     const exists = await routineExists(connection, operation)
     if (!exists) {
-      if (requireAll) throw routineError(moduleId, operation.operationId, 'signature')
+      if (requireAll) {
+        throw routineError(moduleId, operation.operationId, 'signature')
+      }
       continue
     }
     // oxlint-disable-next-line no-await-in-loop
     const routine = await loadRoutine(connection, operation)
-    if (!routine.signatureValid) throw routineError(moduleId, operation.operationId, 'signature')
+    if (!routine.signatureValid) {
+      throw routineError(moduleId, operation.operationId, 'signature')
+    }
     // oxlint-disable-next-line no-await-in-loop
     await reconcileRoutineGrants(connection, routine.oid, routineSqlIdentity(operation), names)
   }
@@ -88,12 +94,14 @@ async function finalizeModulePersistenceRoutine(
   operation: ModulePersistenceRoutineDescriptor,
 ) {
   const names = modulePersistenceNames(operation.moduleId)
-  if (operation.schemaName !== names.schemaName)
+  if (operation.schemaName !== names.schemaName) {
     throw routineError(operation.moduleId, operation.operationId, 'metadata')
+  }
 
   const routine = await loadRoutine(connection, operation)
-  if (!routine.signatureValid)
+  if (!routine.signatureValid) {
     throw routineError(operation.moduleId, operation.operationId, 'signature')
+  }
 
   const identity = routineSqlIdentity(operation)
   await connection
@@ -143,8 +151,9 @@ async function loadRoutine(
     where namespace.nspname = ${operation.schemaName}
       and routine.proname = ${operation.routineName}
   `
-  if (routines.length !== 1)
+  if (routines.length !== 1) {
     throw routineError(operation.moduleId, operation.operationId, 'signature')
+  }
   return routines[0]!
 }
 
@@ -167,7 +176,9 @@ async function reconcileRoutineGrants(
 ) {
   const grants = await loadRoutineGrants(connection, routineOid)
   for (const { grantee } of grants) {
-    if (grantee === names.migrationRoleName) continue
+    if (grantee === names.migrationRoleName) {
+      continue
+    }
     // oxlint-disable-next-line no-await-in-loop
     await connection
       .unsafe(`revoke all privileges on function ${identity} from ${quoteRole(grantee)}`)
@@ -194,18 +205,20 @@ async function attestRoutine(
     routine.settings?.length !== 1 ||
     routine.settings[0] !== expectedSettings ||
     !routine.signatureValid
-  )
+  ) {
     throw routineError(operation.moduleId, operation.operationId, 'metadata')
+  }
 
   const canonical = await canonicalizePersistenceRoutineSql({
+    mode: operation.mode,
     moduleId: operation.moduleId,
     operationId: operation.operationId,
     revision: operation.revision,
-    mode: operation.mode,
     sql: routine.definition,
   })
-  if (canonical.definitionFingerprint !== operation.definitionFingerprint)
+  if (canonical.definitionFingerprint !== operation.definitionFingerprint) {
     throw routineError(operation.moduleId, operation.operationId, 'definition')
+  }
 
   const grants = await loadRoutineGrants(connection, routine.oid)
   if (
@@ -218,8 +231,9 @@ async function attestRoutine(
     !grants.some(
       ({ grantee, privilege }) => grantee === names.runtimeRoleName && privilege === 'EXECUTE',
     )
-  )
+  ) {
     throw routineError(operation.moduleId, operation.operationId, 'grants')
+  }
 
   await connection`
     insert into public.module_persistence_operation_attestations (

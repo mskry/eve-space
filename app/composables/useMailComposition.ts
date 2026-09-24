@@ -45,14 +45,18 @@ export function useMailComposition(options: MailCompositionOptions) {
   function resetPrivateState() {
     closeConfirmDialog()
     draft.resetDraft()
-    if (toastKey !== undefined) dismissToast(toastKey)
+    if (toastKey !== undefined) {
+      dismissToast(toastKey)
+    }
     toastKey = undefined
     preserveToastOnDispose = false
   }
 
   onBeforeUnmount(() => {
     draft.dispose()
-    if (toastKey !== undefined && !preserveToastOnDispose) dismissToast(toastKey)
+    if (toastKey !== undefined && !preserveToastOnDispose) {
+      dismissToast(toastKey)
+    }
   })
 
   return {
@@ -77,16 +81,16 @@ export function useMailComposition(options: MailCompositionOptions) {
     removeRecipient: draft.removeRecipient,
     replyUnavailableReason: draft.replyUnavailableReason,
     requestClose: draft.requestClose,
+    resetPrivateState,
     resolveRecipient: draft.resolveRecipient,
     resolving: draft.resolving,
-    resetPrivateState,
     searchAuthorization: draft.searchAuthorization,
     searchFeedback: draft.searchFeedback,
     searching: draft.searching,
     send: submission.send,
-    sendDisabledReason: submission.sendDisabledReason,
     sendAuthorizationMessage: submission.sendAuthorizationMessage,
     sendAuthorizationUrl: submission.sendAuthorizationUrl,
+    sendDisabledReason: submission.sendDisabledReason,
     sending: submission.sending,
     subject: draft.subject,
     subjectRemaining: computed(() => MAIL_SUBJECT_LIMIT - draft.subject.value.length),

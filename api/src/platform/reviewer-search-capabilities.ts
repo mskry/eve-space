@@ -16,15 +16,19 @@ export function createPlatformReviewerAccountSearch(
   return {
     async search(filters) {
       try {
-        const page = await searchManagedOrganizationAccounts({ organizationVersion, filters })
-        if (page.status === 'unavailable' || page.items.length === 0) return page
+        const page = await searchManagedOrganizationAccounts({ filters, organizationVersion })
+        if (page.status === 'unavailable' || page.items.length === 0) {
+          return page
+        }
         const items = await mapWithConcurrency(page.items, summaryConcurrency, async (item) => {
           const target = await resolveOrganizationReviewerTarget({
+            characterId: item.managedAffiliation.characterId,
             organizationVersion,
             targetUserId: item.account.userId,
-            characterId: item.managedAffiliation.characterId,
           })
-          if (!target) return null
+          if (!target) {
+            return null
+          }
           const [summary] = await createPlatformReviewerEvidenceSummaryReads({
             moduleId,
             target,
@@ -33,11 +37,12 @@ export function createPlatformReviewerAccountSearch(
         })
         return { ...page, items: items.filter((item) => item !== null) }
       } catch (error) {
-        if (error instanceof ReviewerAccountSearchInputError)
+        if (error instanceof ReviewerAccountSearchInputError) {
           throw platformModuleError(400, {
             code: 'INVALID_REVIEWER_SEARCH_INPUT',
             message: 'Invalid reviewer account search input.',
           })
+        }
         throw error
       }
     },
@@ -51,7 +56,9 @@ async function mapWithConcurrency<Input, Output>(
 ) {
   const outputs: Output[] = []
   async function run(index: number): Promise<void> {
-    if (index >= inputs.length) return
+    if (index >= inputs.length) {
+      return
+    }
     outputs[index] = await operation(inputs[index]!)
     return run(index + concurrency)
   }

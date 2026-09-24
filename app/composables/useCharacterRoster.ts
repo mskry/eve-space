@@ -40,9 +40,15 @@ export function useCharacterRoster(apiClient: ApiClient) {
   // `error` is a completed failed request, `loading` a request in flight, and `unavailable` a query
   // holding no data with neither: no verdict was reached, so it must offer a retry.
   const rosterStatus = computed(() => {
-    if (rosterQuery.data.value) return 'idle'
-    if (rosterQuery.asyncStatus.value === 'loading') return 'loading'
-    if (rosterQuery.status.value === 'error') return 'error'
+    if (rosterQuery.data.value) {
+      return 'idle'
+    }
+    if (rosterQuery.asyncStatus.value === 'loading') {
+      return 'loading'
+    }
+    if (rosterQuery.status.value === 'error') {
+      return 'error'
+    }
     return 'unavailable'
   })
   const rosterMessage = computed(() => {
@@ -56,15 +62,15 @@ export function useCharacterRoster(apiClient: ApiClient) {
     if (rosterStatus.value === 'error') {
       return {
         code: 'ERR / CHARACTERS',
-        title: 'Characters unavailable',
         message: rosterMessage.value || 'Character roster is unavailable.',
+        title: 'Characters unavailable',
       }
     }
     if (rosterStatus.value === 'unavailable') {
       return {
         code: 'IDLE / CHARACTERS',
-        title: 'Character list not loaded',
         message: 'No character request is in flight. Retry to load your characters.',
+        title: 'Character list not loaded',
       }
     }
     return null
@@ -83,7 +89,9 @@ export function useCharacterRoster(apiClient: ApiClient) {
   watch(
     () => rosterQuery.data.value?.characters,
     (currentCharacters, previousCharacters) => {
-      if (!currentCharacters || !previousCharacters) return
+      if (!currentCharacters || !previousCharacters) {
+        return
+      }
       const currentCharacterIds = new Set(
         currentCharacters.map((character) => character.characterId),
       )
@@ -111,8 +119,9 @@ export function useCharacterRoster(apiClient: ApiClient) {
     if (
       mainCharacterMutation.asyncStatus.value === 'loading' ||
       deleteCharacterMutation.asyncStatus.value === 'loading'
-    )
+    ) {
       return false
+    }
 
     try {
       const { mainCharacter } = await mainCharacterMutation.mutateAsync(characterId)
@@ -133,7 +142,7 @@ export function useCharacterRoster(apiClient: ApiClient) {
       await initializeAuth(true)
       return true
     } catch (error) {
-      reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'character', characterId }, error)
+      reportPrivateQueryAuthorizationDenial(queryCache, { characterId, kind: 'character' }, error)
       return false
     }
   }
@@ -142,21 +151,24 @@ export function useCharacterRoster(apiClient: ApiClient) {
     if (
       mainCharacterMutation.asyncStatus.value === 'loading' ||
       deleteCharacterMutation.asyncStatus.value === 'loading'
-    )
+    ) {
       return false
+    }
 
     try {
       await deleteCharacterMutation.mutateAsync(characterId)
-      await refreshPrivateAuthorization(queryCache, { kind: 'character', characterId })
+      await refreshPrivateAuthorization(queryCache, { characterId, kind: 'character' })
       return true
     } catch (error) {
-      reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'character', characterId }, error)
+      reportPrivateQueryAuthorizationDenial(queryCache, { characterId, kind: 'character' }, error)
       return false
     }
   }
 
   async function attachCharacter() {
-    if (!authConfig.value.configured || !authConfig.value.attachUrl) return false
+    if (!authConfig.value.configured || !authConfig.value.attachUrl) {
+      return false
+    }
     await navigateTo(authConfig.value.attachUrl, { external: true })
     return true
   }
@@ -167,11 +179,11 @@ export function useCharacterRoster(apiClient: ApiClient) {
     deleteCharacterPending,
     loadCharacterRoster,
     mainCharacterPending,
+    refetchCharacterRoster,
+    removeCharacter,
     rosterMessage,
     rosterRetryPanel,
     rosterStatus,
-    removeCharacter,
-    refetchCharacterRoster,
     selectMainCharacter,
   }
 }

@@ -8,28 +8,28 @@ import {
 describe('platform persistence operation definitions', () => {
   test('retains bounded schemas and stable operation metadata', () => {
     const inputSchema = z.object({ snapshotId: z.string().max(100) })
-    const outputSchema = z.object({ value: z.string().max(1_000).nullable() })
+    const outputSchema = z.object({ value: z.string().max(1000).nullable() })
 
     expect(
       definePlatformPersistenceOperation({
         id: 'read-snapshot',
-        method: 'readSnapshot',
-        revision: 2,
-        mode: 'read',
         inputSchema,
+        maximumInputBytes: 1024,
+        maximumOutputBytes: 4096,
+        method: 'readSnapshot',
+        mode: 'read',
         outputSchema,
-        maximumInputBytes: 1_024,
-        maximumOutputBytes: 4_096,
+        revision: 2,
       }),
-    ).toEqual({
+    ).toStrictEqual({
       id: 'read-snapshot',
-      method: 'readSnapshot',
-      revision: 2,
-      mode: 'read',
       inputSchema,
+      maximumInputBytes: 1024,
+      maximumOutputBytes: 4096,
+      method: 'readSnapshot',
+      mode: 'read',
       outputSchema,
-      maximumInputBytes: 1_024,
-      maximumOutputBytes: 4_096,
+      revision: 2,
     })
   })
 
@@ -47,13 +47,13 @@ describe('platform persistence operation definitions', () => {
     expect(() =>
       definePlatformPersistenceOperation({
         id: 'read-snapshot',
-        method: 'readSnapshot',
-        revision: 1,
-        mode: 'read',
         inputSchema: z.object({ snapshotId: z.string().max(100) }),
-        outputSchema: z.object({ value: z.string().max(1_000).nullable() }),
-        maximumInputBytes: 1_024,
-        maximumOutputBytes: 4_096,
+        maximumInputBytes: 1024,
+        maximumOutputBytes: 4096,
+        method: 'readSnapshot',
+        mode: 'read',
+        outputSchema: z.object({ value: z.string().max(1000).nullable() }),
+        revision: 1,
         ...override,
       } as never),
     ).toThrow(expected)

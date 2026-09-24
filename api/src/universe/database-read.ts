@@ -1,8 +1,8 @@
 import type postgres from 'postgres'
 import { executeCancellableQuery } from '../query-cancellation.js'
 
-export const universeDatabaseTimeoutMilliseconds = 2_000
-export const universeDatabaseOperationTimeoutMilliseconds = 2_500
+export const universeDatabaseTimeoutMilliseconds = 2000
+export const universeDatabaseOperationTimeoutMilliseconds = 2500
 
 export type UniverseDatabase = postgres.Sql
 export type UniverseQuery = postgres.Sql | postgres.TransactionSql

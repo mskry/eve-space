@@ -11,7 +11,7 @@ import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 
 describe('query prefetching and hooks', () => {
   it('opts the production session query into the centralized error policy', () => {
-    expect(authSessionQuery(createApiClient('http://localhost')).meta).toEqual({
+    expect(authSessionQuery(createApiClient('http://localhost')).meta).toStrictEqual({
       esiPersistence: { kind: 'none' },
       globalErrorMessage: 'Session verification is unavailable.',
     })
@@ -100,9 +100,9 @@ describe('query prefetching and hooks', () => {
       setup() {
         useQuery({
           key: ['test', 'global-hook'],
+          meta: { globalErrorMessage: 'Shared request failed.' },
           query,
           retry: 0,
-          meta: { globalErrorMessage: 'Shared request failed.' },
         })
         return () => h('span')
       },
@@ -116,7 +116,7 @@ describe('query prefetching and hooks', () => {
     expect(report).toHaveBeenCalledTimes(1)
     const event = report.mock.calls[0]?.[0]
     expect(event).toBeInstanceOf(CustomEvent)
-    expect((event as CustomEvent).detail).toEqual({
+    expect((event as CustomEvent).detail).toStrictEqual({
       message: 'Shared request failed.',
     })
     globalThis.removeEventListener(QUERY_ERROR_EVENT, report)

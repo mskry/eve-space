@@ -15,22 +15,22 @@ describe('domain event handlers', () => {
   test('requires every handler to declare its idempotency boundary', () => {
     expect(() =>
       verifyDomainEventHandlers([
-        { eventType: 'character.attached', payloadVersion: 1, handle: vi.fn() },
+        { eventType: 'character.attached', handle: vi.fn(), payloadVersion: 1 },
       ]),
     ).toThrow('must declare an idempotency strategy')
     expect(() =>
       verifyDomainEventHandlers([
         {
           eventType: 'character.attached',
-          payloadVersion: 1,
-          idempotency: 'event-id-persistence',
           handle: vi.fn(),
+          idempotency: 'event-id-persistence',
+          payloadVersion: 1,
         },
         {
           eventType: 'character.detached',
-          payloadVersion: 1,
-          idempotency: 'convergent-state',
           handle: vi.fn(),
+          idempotency: 'convergent-state',
+          payloadVersion: 1,
         },
       ]),
     ).not.toThrow()
@@ -68,15 +68,15 @@ describe('domain event handlers', () => {
       payload:
         eventType === 'character.scopes-changed'
           ? {
-              userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
-              characterId: 1404328063,
               addedScopes: ['esi-wallet.read_character_wallet.v1'],
+              characterId: 1_404_328_063,
               removedScopes: [],
+              userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
             }
           : eventType === 'character.affiliation-observed'
             ? {
+                characterId: 1_404_328_063,
                 userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
-                characterId: 1404328063,
               }
             : storedEvent().payload,
     } as never
@@ -85,7 +85,7 @@ describe('domain event handlers', () => {
       dispatchDomainEvent(eventId, handlers, vi.fn().mockResolvedValue(event)),
     ).resolves.toBe(event)
     expect(repair).toHaveBeenCalledOnce()
-    expect(repair).toHaveBeenCalledWith({ characterId: 1404328063 })
+    expect(repair).toHaveBeenCalledWith({ characterId: 1_404_328_063 })
   })
 
   test.each([
@@ -121,10 +121,10 @@ describe('domain event handlers', () => {
     const handlers = createManagedCorporationComplianceEventHandlers(recompute)
     const event = {
       ...storedEvent(),
-      eventType,
-      aggregateType: 'deployment',
       aggregateId: '1',
-      payload: { deploymentId: 1, organizationVersion: 4, corporationId: 98000001 },
+      aggregateType: 'deployment',
+      eventType,
+      payload: { corporationId: 98_000_001, deploymentId: 1, organizationVersion: 4 },
     } as never
 
     await expect(
@@ -132,9 +132,9 @@ describe('domain event handlers', () => {
     ).resolves.toBe(event)
     expect(recompute).toHaveBeenCalledOnce()
     expect(recompute).toHaveBeenCalledWith({
+      corporationId: 98_000_001,
       deploymentId: 1,
       organizationVersion: 4,
-      corporationId: 98000001,
     })
   })
 
@@ -145,8 +145,8 @@ describe('domain event handlers', () => {
       ...storedEvent(),
       eventType: 'character.affiliation-observed',
       payload: {
+        characterId: 1_404_328_063,
         userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
-        characterId: 1404328063,
       },
     } as never
     const loader = vi.fn().mockResolvedValue(event)
@@ -162,24 +162,24 @@ describe('domain event handlers', () => {
 function handler(idempotency: DomainEventHandler['idempotency']): DomainEventHandler {
   return {
     eventType: 'character.attached',
-    payloadVersion: 1,
-    idempotency,
     handle: vi.fn(),
+    idempotency,
+    payloadVersion: 1,
   }
 }
 
 function storedEvent() {
   return {
+    aggregateId: '1404328063',
+    aggregateType: 'character' as const,
     eventId,
     eventSequence: 1n,
     eventType: 'character.attached' as const,
-    payloadVersion: 1 as const,
-    aggregateType: 'character' as const,
-    aggregateId: '1404328063',
-    payload: {
-      userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
-      characterId: 1404328063,
-    },
     occurredAt: new Date('2026-08-23T12:00:00.000Z'),
+    payload: {
+      characterId: 1_404_328_063,
+      userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+    },
+    payloadVersion: 1 as const,
   }
 }

@@ -12,9 +12,9 @@ const mocks = vi.hoisted(() => ({
   createCommands: vi.fn(),
   createEvidence: vi.fn(),
   createEvidenceSummary: vi.fn(),
+  enabled: true,
   evidenceRead: vi.fn(),
   evidenceSummaryRead: vi.fn(),
-  enabled: true,
   findSession: vi.fn(),
   recordSensitiveAccess: vi.fn(),
   resolveTarget: vi.fn(),
@@ -30,14 +30,14 @@ vi.mock('../../src/platform/module-settings.js', () => ({
     enabledModuleIds: ['member-audit'],
     enabledSections: ['overview', 'skills', 'assets', 'wallet', 'mail', 'access-management'].map(
       (sectionId) => ({
+        activationVersion: 1,
+        disclosureVersion: 1,
+        kind: sectionId === 'access-management' ? 'access-management' : 'sensitive-evidence',
         moduleId: 'member-audit',
         sectionId,
-        kind: sectionId === 'access-management' ? 'access-management' : 'sensitive-evidence',
-        disclosureVersion: 1,
-        activationVersion: 1,
       }),
     ),
-    shellNavigationOrder: { dashboard: [], character: [] },
+    shellNavigationOrder: { character: [], dashboard: [] },
   })),
 }))
 vi.mock('../../src/middleware/organization-session.js', () => ({
@@ -91,20 +91,19 @@ const jsonHeaders = {
   'content-type': 'application/json',
 }
 const organizationSession = {
-  organizationVersion: 7,
-  state: 'compliant' as const,
-  evidenceFreshness: 'fresh' as const,
-  reviewDeadline: null,
   accessValidUntil: new Date('2026-09-19T12:00:00.000Z'),
   blocked: false,
+  evidenceFreshness: 'fresh' as const,
+  organizationVersion: 7,
+  reviewDeadline: null,
+  state: 'compliant' as const,
 }
 const targetBase = {
-  organizationVersion: 7,
-  managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
   account: {
-    userId: targetUserId,
     mainCharacter: { characterId, name: 'Target Pilot' },
+    userId: targetUserId,
   },
+  block: { blocked: false as const },
   characters: [
     {
       characterId,
@@ -122,12 +121,12 @@ const targetBase = {
     },
   ],
   compliance: {
-    state: 'compliant' as const,
-    evidenceFreshness: 'fresh' as const,
-    evidenceAt: '2026-09-18T10:00:00.000Z',
-    reviewDeadline: null,
     accessValidUntil: null,
     evaluatedAt: '2026-09-18T10:00:00.000Z',
+    evidenceAt: '2026-09-18T10:00:00.000Z',
+    evidenceFreshness: 'fresh' as const,
+    reviewDeadline: null,
+    state: 'compliant' as const,
   },
   groups: [
     {
@@ -141,7 +140,8 @@ const targetBase = {
       expiresAt: null,
     },
   ],
-  block: { blocked: false as const },
+  managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+  organizationVersion: 7,
 }
 
 describe('full-root Member Audit routes', () => {
@@ -149,14 +149,14 @@ describe('full-root Member Audit routes', () => {
     vi.clearAllMocks()
     mocks.enabled = true
     mocks.findSession.mockResolvedValue({
-      userId: reviewerUserId,
       mainCharacter: {
-        characterId: 90_000_010,
-        name: 'Reviewer Pilot',
-        corporationId: 98_000_001,
         allianceId: null,
+        characterId: 90_000_010,
+        corporationId: 98_000_001,
         isMain: true,
+        name: 'Reviewer Pilot',
       },
+      userId: reviewerUserId,
     })
     mocks.authorizeReviewer.mockImplementation(
       async (
@@ -166,11 +166,11 @@ describe('full-root Member Audit routes', () => {
       ) => ({
         authorized: true,
         context: {
-          organizationVersion: 7,
-          audience: declaration.audience,
-          requiredPermission: declaration.requiredPermission,
           additionalRequiredPermissions: declaration.additionalRequiredPermissions,
+          audience: declaration.audience,
           entitlementScope: 'all',
+          organizationVersion: 7,
+          requiredPermission: declaration.requiredPermission,
         },
       }),
     )
@@ -182,21 +182,21 @@ describe('full-root Member Audit routes', () => {
             selectedCharacterId === undefined
               ? { kind: 'account' as const }
               : {
-                  kind: 'character' as const,
                   characterId: selectedCharacterId,
+                  kind: 'character' as const,
                   subjectLifecycleId: targetBase.characters[0]!.subjectLifecycleId,
                 },
         }) satisfies PlatformReviewerTargetContext,
     )
     mocks.searchDirectory.mockResolvedValue({
+      groupFacets: [],
+      items: [],
+      nextCursor: null,
       organizationVersion: 7,
       status: 'available',
-      items: [],
-      groupFacets: [],
-      nextCursor: null,
     })
     mocks.evidenceSummaryRead.mockResolvedValue([
-      { characterId, sections: [{ sectionId: 'skills', resources: [] }] },
+      { characterId, sections: [{ resources: [], sectionId: 'skills' }] },
     ])
     mocks.createEvidenceSummary.mockReturnValue({ read: mocks.evidenceSummaryRead })
     mocks.collectionStatusRead.mockImplementation(async (resourceId: string) => ({
@@ -206,31 +206,31 @@ describe('full-root Member Audit routes', () => {
     mocks.evidenceRead.mockResolvedValue({ records: [] })
     mocks.createEvidence.mockReturnValue({ read: mocks.evidenceRead })
     mocks.assignOrdinaryGroup.mockResolvedValue({
-      decision: 'assigned',
-      groupId,
       assignmentId,
+      decision: 'assigned',
       expiresAt: null,
+      groupId,
     })
     mocks.revokeOrdinaryGroup.mockResolvedValue({
+      assignmentId,
       decision: 'revoked',
       groupId,
-      assignmentId,
       revokedAt: '2026-09-18T12:00:00.000Z',
     })
     mocks.blockMember.mockResolvedValue({
-      decision: 'blocked',
       blockId: '00000000-0000-4000-8000-000000000040',
       blockedAt: '2026-09-18T12:00:00.000Z',
+      decision: 'blocked',
     })
     mocks.unblockMember.mockResolvedValue({
-      decision: 'unblocked',
       blockId: '00000000-0000-4000-8000-000000000040',
+      decision: 'unblocked',
       unblockedAt: '2026-09-18T12:05:00.000Z',
     })
     mocks.createCommands.mockReturnValue({
       assignOrdinaryGroup: mocks.assignOrdinaryGroup,
-      revokeOrdinaryGroup: mocks.revokeOrdinaryGroup,
       blockMember: mocks.blockMember,
+      revokeOrdinaryGroup: mocks.revokeOrdinaryGroup,
       unblockMember: mocks.unblockMember,
     })
   })
@@ -241,7 +241,7 @@ describe('full-root Member Audit routes', () => {
     })
     expect(search.status).toBe(200)
     expectPrivate(search)
-    await expect(search.json()).resolves.toMatchObject({ organizationVersion: 7, items: [] })
+    await expect(search.json()).resolves.toMatchObject({ items: [], organizationVersion: 7 })
 
     const summary = await app.request(
       `/api/modules/member-audit/accounts/${targetUserId}/summary`,
@@ -250,10 +250,10 @@ describe('full-root Member Audit routes', () => {
     expect(summary.status).toBe(200)
     expectPrivate(summary)
     await expect(summary.json()).resolves.toMatchObject({
-      organizationVersion: 7,
       account: { userId: targetUserId },
-      groups: [{ managementMode: 'compliance', readOnly: true }],
       evidence: [{ characterId }],
+      groups: [{ managementMode: 'compliance', readOnly: true }],
+      organizationVersion: 7,
     })
 
     const sections = [
@@ -279,11 +279,11 @@ describe('full-root Member Audit routes', () => {
     expect(mocks.recordSensitiveAccess).toHaveBeenCalledWith(
       expect.objectContaining({
         actorUserId: reviewerUserId,
-        targetUserId,
-        targetCharacterId: characterId,
-        sectionId: 'mail',
         decision: 'allowed',
         reason: 'authorized',
+        sectionId: 'mail',
+        targetCharacterId: characterId,
+        targetUserId,
       }),
     )
   })
@@ -292,9 +292,9 @@ describe('full-root Member Audit routes', () => {
     const assigned = await app.request(
       `/api/modules/member-audit/accounts/${targetUserId}/groups/${groupId}`,
       {
-        method: 'POST',
-        headers: jsonHeaders,
         body: JSON.stringify({ reason: 'Approved access.' }),
+        headers: jsonHeaders,
+        method: 'POST',
       },
     )
     expect(assigned.status).toBe(201)
@@ -306,30 +306,30 @@ describe('full-root Member Audit routes', () => {
     const revoked = await app.request(
       `/api/modules/member-audit/accounts/${targetUserId}/groups/${groupId}/assignments/${assignmentId}`,
       {
-        method: 'DELETE',
-        headers: jsonHeaders,
         body: JSON.stringify({ reason: 'Access ended.' }),
+        headers: jsonHeaders,
+        method: 'DELETE',
       },
     )
     expect(revoked.status).toBe(200)
     expect(mocks.revokeOrdinaryGroup).toHaveBeenCalledWith({
-      groupId,
       assignmentId,
+      groupId,
       reason: 'Access ended.',
     })
 
     const blocked = await app.request(`/api/modules/member-audit/accounts/${targetUserId}/block`, {
-      method: 'POST',
-      headers: jsonHeaders,
       body: JSON.stringify({ reason: 'Immediate review hold.' }),
+      headers: jsonHeaders,
+      method: 'POST',
     })
     expect(blocked.status).toBe(201)
     const unblocked = await app.request(
       `/api/modules/member-audit/accounts/${targetUserId}/block`,
       {
-        method: 'DELETE',
-        headers: jsonHeaders,
         body: JSON.stringify({ reason: 'Reevaluate current access.' }),
+        headers: jsonHeaders,
+        method: 'DELETE',
       },
     )
     expect(unblocked.status).toBe(200)
@@ -337,9 +337,9 @@ describe('full-root Member Audit routes', () => {
     const forged = await app.request(
       `/api/modules/member-audit/accounts/${targetUserId}/groups/${groupId}`,
       {
-        method: 'POST',
-        headers: jsonHeaders,
         body: JSON.stringify({ reason: 'Substitution.', targetUserId: reviewerUserId }),
+        headers: jsonHeaders,
+        method: 'POST',
       },
     )
     expect(forged.status).toBe(400)
@@ -367,8 +367,8 @@ describe('full-root Member Audit routes', () => {
     expect(mocks.recordSensitiveAccess).toHaveBeenCalledWith(
       expect.objectContaining({
         decision: 'denied',
-        targetUserId: null,
         targetCharacterId: null,
+        targetUserId: null,
       }),
     )
   })

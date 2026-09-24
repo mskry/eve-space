@@ -19,7 +19,7 @@ describe('CharacterOverviewDetails', () => {
 
     expect(
       wrapper.findAll('.character-overview-detail-section--identity dt').map((term) => term.text()),
-    ).toEqual([
+    ).toStrictEqual([
       'SECURITY STATUS',
       'RACE',
       'BLOODLINE',

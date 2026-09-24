@@ -10,12 +10,12 @@ import { wait } from './timing.js'
 
 const concurrencyLeaseTtlMs = 30_000
 const permitPollMs = 50
-const maximumLocalCooldowns = 1_000
+const maximumLocalCooldowns = 1000
 const processLocalQuotaState: RuntimeLocalQuotaStatePort = {
-  operationCooldowns: new Map(),
+  globalCooldownUntil: 0,
   groupCooldowns: new Map(),
   inFlight: new Map(),
-  globalCooldownUntil: 0,
+  operationCooldowns: new Map(),
 }
 const systemTiming: Pick<RuntimeTimingPort, 'now' | 'wait'> = { now: () => Date.now(), wait }
 
@@ -49,9 +49,12 @@ export function recordLocalEsiCooldowns(options: {
   const state = options.state ?? processLocalQuotaState
   const now = options.now ?? Date.now()
   pruneLocalCooldowns(state, now)
-  if (options.globalRetryAt !== undefined)
+  if (options.globalRetryAt !== undefined) {
     state.globalCooldownUntil = Math.max(state.globalCooldownUntil, options.globalRetryAt)
-  if (options.operationRetryAt === undefined) return
+  }
+  if (options.operationRetryAt === undefined) {
+    return
+  }
 
   const identity = `${options.operation}:${options.principal}`
   state.operationCooldowns.set(
@@ -86,11 +89,12 @@ export async function acquireLocalEsiRequestPermit(options: {
   while (timing.now() < options.deadline) {
     const now = timing.now()
     const cooldownUntil = getLocalEsiCooldownUntil(options.operation, options.principal, now, state)
-    if (cooldownUntil > now)
+    if (cooldownUntil > now) {
       return {
         kind: 'cooldown',
-        retryAfterSeconds: Math.max(1, Math.ceil((cooldownUntil - now) / 1_000)),
+        retryAfterSeconds: Math.max(1, Math.ceil((cooldownUntil - now) / 1000)),
       }
+    }
     const count = state.inFlight.get(options.operation) ?? 0
     if (count < limit) {
       state.inFlight.set(options.operation, count + 1)
@@ -98,13 +102,16 @@ export async function acquireLocalEsiRequestPermit(options: {
         kind: 'acquired',
         permit: {
           coordinationAvailable: false,
-          ttlMs: concurrencyLeaseTtlMs,
-          renew: async () => true,
           async release() {
             const current = state.inFlight.get(options.operation) ?? 0
-            if (current <= 1) state.inFlight.delete(options.operation)
-            else state.inFlight.set(options.operation, current - 1)
+            if (current <= 1) {
+              state.inFlight.delete(options.operation)
+            } else {
+              state.inFlight.set(options.operation, current - 1)
+            }
           },
+          renew: async () => true,
+          ttlMs: concurrencyLeaseTtlMs,
         },
       }
     }
@@ -118,19 +125,27 @@ export async function acquireLocalEsiRequestPermit(options: {
 }
 
 function pruneLocalCooldowns(state: RuntimeLocalQuotaStatePort, now: number) {
-  if (state.globalCooldownUntil <= now) state.globalCooldownUntil = 0
+  if (state.globalCooldownUntil <= now) {
+    state.globalCooldownUntil = 0
+  }
   for (const [key, retryAt] of state.operationCooldowns) {
-    if (retryAt <= now) state.operationCooldowns.delete(key)
+    if (retryAt <= now) {
+      state.operationCooldowns.delete(key)
+    }
   }
   for (const [key, retryAt] of state.groupCooldowns) {
-    if (retryAt <= now) state.groupCooldowns.delete(key)
+    if (retryAt <= now) {
+      state.groupCooldowns.delete(key)
+    }
   }
 }
 
 function boundLocalCooldowns(cooldowns: Map<string, number>) {
   while (cooldowns.size > maximumLocalCooldowns) {
     const oldest = cooldowns.keys().next().value
-    if (oldest === undefined) return
+    if (oldest === undefined) {
+      return
+    }
     cooldowns.delete(oldest)
   }
 }

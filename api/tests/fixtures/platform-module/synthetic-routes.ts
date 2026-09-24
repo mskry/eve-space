@@ -28,7 +28,7 @@ export function createSyntheticOwnedCharacterRoutes(
     const affiliation = await context.var.platform.coreReads.loadAffiliation()
     const stored = await capabilities.persistence.readModuleScope()
     return context.json(
-      { authorization: context.var.platform.authorization, affiliation, stored },
+      { affiliation, authorization: context.var.platform.authorization, stored },
       200,
     )
   })

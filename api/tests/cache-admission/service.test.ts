@@ -21,21 +21,20 @@ const moduleScope = platformOrganizationAdmissionScope('alpha', {
   requiredPermission: 'alpha.view',
 })
 const moduleAdmission = {
-  moduleId: 'alpha',
   admissionScope: moduleScope,
   audience: 'member' as const,
+  moduleId: 'alpha',
   requiredPermission: 'alpha.view',
 }
 const foundation: OrganizationAdmissionFoundation = {
   context: {
-    organizationVersion: 7,
-    state: 'compliant' as const,
-    evidenceFreshness: 'fresh' as const,
-    reviewDeadline: null,
     accessValidUntil,
     blocked: false,
+    evidenceFreshness: 'fresh' as const,
+    organizationVersion: 7,
+    reviewDeadline: null,
+    state: 'compliant' as const,
   },
-  registrationPolicyVersion: 3,
   modules: [
     {
       moduleId: 'alpha',
@@ -43,19 +42,9 @@ const foundation: OrganizationAdmissionFoundation = {
       updatedAt: new Date('2026-09-14T10:00:00.000Z'),
     },
   ],
+  registrationPolicyVersion: 3,
 }
 const revisionFacts: OrganizationRevisionFacts = {
-  latestAuditSequence: '42',
-  roles: [
-    {
-      grantId: '35acd527-9539-44ad-aacf-9f8e45232267',
-      role: 'hr_auditor',
-      grantedAt: '2026-09-01T09:00:00.000Z',
-      evidenceStatus: null,
-      evidenceReviewDeadline: '2026-09-14T13:00:00.000Z',
-      evidenceValidUntil: null,
-    },
-  ],
   groups: [
     {
       assignmentId: '7643fd73-6350-4307-b7cd-041b74c41ad6',
@@ -70,6 +59,17 @@ const revisionFacts: OrganizationRevisionFacts = {
       reviewAllowed: true,
     },
   ],
+  latestAuditSequence: '42',
+  roles: [
+    {
+      grantId: '35acd527-9539-44ad-aacf-9f8e45232267',
+      role: 'hr_auditor',
+      grantedAt: '2026-09-01T09:00:00.000Z',
+      evidenceStatus: null,
+      evidenceReviewDeadline: '2026-09-14T13:00:00.000Z',
+      evidenceValidUntil: null,
+    },
+  ],
 }
 const permissions: { modules: string[]; services: string[] } = {
   modules: ['alpha.view'],
@@ -78,10 +78,10 @@ const permissions: { modules: string[]; services: string[] } = {
 const characters: readonly CharacterAdmissionFact[] = [
   {
     characterId: 90_000_002,
+    scopes: ['scope.b', 'scope.a', 'scope.a'],
     subjectLifecycleId: '614247fe-7206-4a65-8783-30670002d833',
     tokenCharacterId: 90_000_002,
     tokenVersion: 4,
-    scopes: ['scope.b', 'scope.a', 'scope.a'],
   },
 ]
 
@@ -93,17 +93,17 @@ describe('cache admission service', () => {
       { ...characters[0]!, scopes: ['scope.a', 'scope.b'] },
       {
         characterId: 90_000_001,
+        scopes: null,
         subjectLifecycleId: 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011',
         tokenCharacterId: null,
         tokenVersion: null,
-        scopes: null,
       },
       {
         characterId: 90_000_003,
+        scopes: [],
         subjectLifecycleId: null,
         tokenCharacterId: 90_000_003,
         tokenVersion: 1,
-        scopes: [],
       },
     ]
     const first = await loadCacheAdmissionContext(userId, characterOnlyOptions(facts))
@@ -112,13 +112,13 @@ describe('cache admission service', () => {
       characterOnlyOptions([{ ...characters[0]!, scopes: ['scope.b', 'scope.a', 'scope.a'] }]),
     )
 
-    expect(first.characters).toEqual([
-      { characterId: 90_000_001, admissionRevision: null },
+    expect(first.characters).toStrictEqual([
+      { admissionRevision: null, characterId: 90_000_001 },
       {
-        characterId: 90_000_002,
         admissionRevision: expect.stringMatching(/^character-admission:v1:sha256:[a-f0-9]{64}$/),
+        characterId: 90_000_002,
       },
-      { characterId: 90_000_003, admissionRevision: null },
+      { admissionRevision: null, characterId: 90_000_003 },
     ])
     expect(reordered.characters[0]?.admissionRevision).toBe(first.characters[1]?.admissionRevision)
     expect(first.organization).toBeNull()
@@ -132,7 +132,9 @@ describe('cache admission service', () => {
       { ...characters[0]!, scopes: ['scope.a'] },
     ]
 
-    for (const variant of variants) expect(await characterRevision(variant)).not.toBe(baseline)
+    for (const variant of variants) {
+      expect(await characterRevision(variant)).not.toBe(baseline)
+    }
   })
 
   test('returns authorized core and deduplicated module scopes with bounded validity', async () => {
@@ -145,8 +147,7 @@ describe('cache admission service', () => {
       organizationOptions({ authorize, loadPermissions }),
     )
 
-    expect(result).toEqual({
-      userId,
+    expect(result).toStrictEqual({
       characters: [
         {
           characterId: 90_000_002,
@@ -154,15 +155,16 @@ describe('cache admission service', () => {
         },
       ],
       organization: {
-        organizationVersion: 7,
         admissionRevision: expect.stringMatching(/^organization-admission:v1:sha256:[a-f0-9]{64}$/),
-        validUntil: '2026-09-14T12:45:00.000Z',
         admissionScopes: [
           moduleScope,
           coreOrganizationAdmissionScopes.rosterCoverage,
           coreOrganizationAdmissionScopes.activities,
         ].toSorted(),
+        organizationVersion: 7,
+        validUntil: '2026-09-14T12:45:00.000Z',
       },
+      userId,
     })
     expect(loadPermissions).toHaveBeenCalledOnce()
     expect(authorize).toHaveBeenCalledOnce()
@@ -201,8 +203,8 @@ describe('cache admission service', () => {
             ...foundation,
             context: {
               ...foundation.context,
-              state: 'review_required',
               reviewDeadline: new Date('2026-09-14T12:30:00.000Z'),
+              state: 'review_required',
             },
           },
         }),
@@ -236,8 +238,9 @@ describe('cache admission service', () => {
       ),
     ])
 
-    for (const context of changedContexts)
+    for (const context of changedContexts) {
       expect(context.organization?.admissionRevision).not.toBe(baseline.admissionRevision)
+    }
     expect(changedContexts[2]?.organization?.admissionScopes).not.toContain(moduleScope)
     expect(changedContexts[3]?.organization?.validUntil).toBe('2026-09-14T12:30:00.000Z')
     expect(changedContexts[3]?.organization?.admissionScopes).not.toContain(
@@ -252,8 +255,8 @@ describe('cache admission service', () => {
           ...foundation,
           context: {
             ...foundation.context,
-            state: 'suspended',
             accessValidUntil: null,
+            state: 'suspended',
           },
         },
       }),
@@ -270,9 +273,9 @@ describe('cache admission service', () => {
 
   test('returns no organization admission when deployment setup is absent', async () => {
     const result = await loadCacheAdmissionContext(userId, {
-      now,
       loadCharacters: async () => characters,
       loadOrganization: async () => null,
+      now,
     })
 
     expect(result.organization).toBeNull()
@@ -283,12 +286,12 @@ function characterOnlyOptions(
   facts: readonly CharacterAdmissionFact[],
 ): CacheAdmissionServiceOptions {
   return {
-    now,
     loadCharacters: async () => facts,
     loadOrganization: async () => ({
       ...foundation,
       context: { ...foundation.context, blocked: true },
     }),
+    now,
   }
 }
 
@@ -310,16 +313,16 @@ function organizationOptions(
   const selectedRevision = overrides.revision ?? revisionFacts
   const selectedPermissions = overrides.permissions ?? permissions
   return {
-    now,
+    authorize: overrides.authorize ?? createAuthorizer(selectedRevision.roles, selectedPermissions),
     loadCharacters: async () => characters,
     loadOrganization: async () => selectedFoundation,
     loadOrganizationRevision: async () => selectedRevision,
     loadPermissions: overrides.loadPermissions ?? (async () => selectedPermissions),
-    authorize: overrides.authorize ?? createAuthorizer(selectedRevision.roles, selectedPermissions),
     moduleAdmissionScopes: [
       { publisherPackage: '@example/alpha-manifest', ...moduleAdmission },
       { publisherPackage: '@example/alpha-manifest', ...moduleAdmission },
     ],
+    now,
   }
 }
 
@@ -337,15 +340,16 @@ function createAuthorizer(
     if (
       !selectedPermissions.modules.includes(declaration.requiredPermission) ||
       (declaration.audience === 'hr' && !hasHrRole)
-    )
+    ) {
       return { authorized: false, reason: 'permission' }
+    }
     return {
       authorized: true,
       context: {
-        organizationVersion: organization.organizationVersion,
         audience: declaration.audience,
-        requiredPermission: declaration.requiredPermission,
         entitlementScope: organization.state === 'review_required' ? 'review' : 'all',
+        organizationVersion: organization.organizationVersion,
+        requiredPermission: declaration.requiredPermission,
       },
     }
   }

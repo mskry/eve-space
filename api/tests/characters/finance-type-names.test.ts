@@ -25,7 +25,7 @@ describe('Finance type-name lookup', () => {
 
     const names = await loadFinanceTypeNames([34, 36, 34])
 
-    expect(names).toEqual(
+    expect(names).toStrictEqual(
       new Map([
         [36, 'Mexallon'],
         [34, 'Tritanium'],
@@ -40,22 +40,22 @@ describe('Finance type-name lookup', () => {
   test('does not query for an empty collection', async () => {
     const { loadFinanceTypeNames } = await import('../../src/characters/finance-type-names.js')
 
-    await expect(loadFinanceTypeNames([])).resolves.toEqual(new Map())
+    await expect(loadFinanceTypeNames([])).resolves.toStrictEqual(new Map())
     expect(mocks.select).not.toHaveBeenCalled()
   })
 
   test('loads more than 1,000 unique IDs in bounded query batches', async () => {
     mocks.where
       .mockResolvedValueOnce([{ typeId: 1, typeName: 'First type' }])
-      .mockResolvedValueOnce([{ typeId: 1_001, typeName: 'Next batch type' }])
+      .mockResolvedValueOnce([{ typeId: 1001, typeName: 'Next batch type' }])
     const { loadFinanceTypeNames } = await import('../../src/characters/finance-type-names.js')
 
     await expect(
-      loadFinanceTypeNames(Array.from({ length: 1_001 }, (_, index) => index + 1)),
-    ).resolves.toEqual(
+      loadFinanceTypeNames(Array.from({ length: 1001 }, (_, index) => index + 1)),
+    ).resolves.toStrictEqual(
       new Map([
         [1, 'First type'],
-        [1_001, 'Next batch type'],
+        [1001, 'Next batch type'],
       ]),
     )
     expect(mocks.select).toHaveBeenCalledTimes(2)

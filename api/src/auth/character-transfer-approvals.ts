@@ -17,8 +17,8 @@ import { lockCharacter, setAuthTransactionLockTimeout } from './character-lock.j
 import { createOpaqueToken, hashToken, tokensMatch } from './security.js'
 import { loadDatabaseWallClock, lockTransferUsers } from './character-transfer-store.js'
 
-const previewTtlMs = 5 * 60 * 1_000
-const approvalTtlMs = 15 * 60 * 1_000
+const previewTtlMs = 5 * 60 * 1000
+const approvalTtlMs = 15 * 60 * 1000
 
 export type CharacterTransferBlocker =
   | 'unavailable'
@@ -50,18 +50,27 @@ export async function previewCharacterTransfer(input: {
   return db.transaction(async (transaction) => {
     await setAuthTransactionLockTimeout(transaction)
     const initial = await loadTransferCandidates(transaction, input)
-    if (!initial) return { eligible: false as const, blocker: 'unavailable' as const }
+    if (!initial) {
+      return { blocker: 'unavailable' as const, eligible: false as const }
+    }
 
     await lockCharacter(transaction, input.characterId)
     await lockCurrentOrganizationVersionForCompliance(transaction)
-    if (!(await lockTransferUsers(transaction, [initial.sourceUserId, initial.destinationUserId])))
-      return { eligible: false as const, blocker: 'unavailable' as const }
+    if (
+      !(await lockTransferUsers(transaction, [initial.sourceUserId, initial.destinationUserId]))
+    ) {
+      return { blocker: 'unavailable' as const, eligible: false as const }
+    }
     const candidates = await loadTransferCandidates(transaction, input)
-    if (!candidates) return { eligible: false as const, blocker: 'unavailable' as const }
+    if (!candidates) {
+      return { blocker: 'unavailable' as const, eligible: false as const }
+    }
 
     const blocker = await findTransferBlocker(transaction, candidates)
     const publicPreview = toPublicPreview(candidates)
-    if (blocker) return { eligible: false as const, blocker, ...publicPreview }
+    if (blocker) {
+      return { blocker, eligible: false as const, ...publicPreview }
+    }
 
     const now = await loadDatabaseWallClock(transaction)
     const [preview] = await transaction
@@ -70,21 +79,23 @@ export async function previewCharacterTransfer(input: {
         administratorId: input.administratorId,
         characterId: candidates.characterId,
         characterName: candidates.characterName,
-        sourceUserId: candidates.sourceUserId,
-        sourceSubjectLifecycleId: candidates.sourceSubjectLifecycleId,
-        sourceCharacterCount: candidates.sourceCharacterCount,
-        destinationUserId: candidates.destinationUserId,
+        createdAt: now,
         destinationMainCharacterId: candidates.destinationMainCharacterId,
         destinationMainCharacterName: candidates.destinationMainCharacterName,
-        reason: input.reason,
-        createdAt: now,
+        destinationUserId: candidates.destinationUserId,
         expiresAt: new Date(now.getTime() + previewTtlMs),
+        reason: input.reason,
+        sourceCharacterCount: candidates.sourceCharacterCount,
+        sourceSubjectLifecycleId: candidates.sourceSubjectLifecycleId,
+        sourceUserId: candidates.sourceUserId,
       })
       .returning({
-        previewId: characterTransferPreviews.previewId,
         expiresAt: characterTransferPreviews.expiresAt,
+        previewId: characterTransferPreviews.previewId,
       })
-    if (!preview) throw new Error('Failed to store character transfer preview')
+    if (!preview) {
+      throw new Error('Failed to store character transfer preview')
+    }
     return { eligible: true as const, ...publicPreview, ...preview }
   })
 }
@@ -96,56 +107,67 @@ export async function createCharacterTransferApproval(input: {
   return db.transaction(async (transaction) => {
     await setAuthTransactionLockTimeout(transaction)
     const initial = await findPreview(transaction, input)
-    if (!initial) throw new CharacterTransferApprovalError('preview-unavailable')
+    if (!initial) {
+      throw new CharacterTransferApprovalError('preview-unavailable')
+    }
 
     await lockCharacter(transaction, initial.characterId)
     await lockCurrentOrganizationVersionForCompliance(transaction)
-    if (!(await lockTransferUsers(transaction, [initial.sourceUserId, initial.destinationUserId])))
+    if (
+      !(await lockTransferUsers(transaction, [initial.sourceUserId, initial.destinationUserId]))
+    ) {
       throw new CharacterTransferApprovalError('preview-stale')
+    }
     const preview = await findPreview(transaction, input, true)
-    if (!preview) throw new CharacterTransferApprovalError('preview-stale')
+    if (!preview) {
+      throw new CharacterTransferApprovalError('preview-stale')
+    }
     const candidates = await loadTransferCandidates(transaction, {
       characterId: preview.characterId,
       destinationMainCharacterId: preview.destinationMainCharacterId,
     })
-    if (!candidates || !previewMatches(preview, candidates))
+    if (!candidates || !previewMatches(preview, candidates)) {
       throw new CharacterTransferApprovalError('preview-stale')
-    if (await findTransferBlocker(transaction, candidates))
+    }
+    if (await findTransferBlocker(transaction, candidates)) {
       throw new CharacterTransferApprovalError('preview-stale')
+    }
 
     const now = await loadDatabaseWallClock(transaction)
     const secret = createOpaqueToken()
     const [approval] = await transaction
       .insert(characterTransferApprovals)
       .values({
-        linkSecretHash: hashToken(secret),
+        approvedByAdministratorId: input.administratorId,
         characterId: preview.characterId,
         characterName: preview.characterName,
-        sourceUserId: preview.sourceUserId,
-        sourceSubjectLifecycleId: preview.sourceSubjectLifecycleId,
-        sourceCharacterCount: preview.sourceCharacterCount,
-        destinationUserId: preview.destinationUserId,
+        createdAt: now,
         destinationMainCharacterId: preview.destinationMainCharacterId,
         destinationMainCharacterName: preview.destinationMainCharacterName,
-        approvedByAdministratorId: input.administratorId,
-        reason: preview.reason,
-        createdAt: now,
+        destinationUserId: preview.destinationUserId,
         expiresAt: new Date(now.getTime() + approvalTtlMs),
+        linkSecretHash: hashToken(secret),
+        reason: preview.reason,
+        sourceCharacterCount: preview.sourceCharacterCount,
+        sourceSubjectLifecycleId: preview.sourceSubjectLifecycleId,
+        sourceUserId: preview.sourceUserId,
       })
       .returning()
-    if (!approval) throw new Error('Failed to create character transfer approval')
+    if (!approval) {
+      throw new Error('Failed to create character transfer approval')
+    }
     await transaction.insert(characterTransferAudit).values({
-      approvalId: approval.approvalId,
       action: 'created',
-      approvedByAdministratorId: input.administratorId,
       actionAdministratorId: input.administratorId,
+      approvalId: approval.approvalId,
+      approvedByAdministratorId: input.administratorId,
       characterId: approval.characterId,
-      sourceUserId: approval.sourceUserId,
-      sourceSubjectLifecycleId: approval.sourceSubjectLifecycleId,
       destinationUserId: approval.destinationUserId,
-      reason: approval.reason,
-      outcome: 'created',
       occurredAt: now,
+      outcome: 'created',
+      reason: approval.reason,
+      sourceSubjectLifecycleId: approval.sourceSubjectLifecycleId,
+      sourceUserId: approval.sourceUserId,
     })
     await transaction
       .delete(characterTransferPreviews)
@@ -160,13 +182,15 @@ export async function inspectCharacterTransferApproval(approvalId: string) {
     .select()
     .from(characterTransferApprovals)
     .where(eq(characterTransferApprovals.approvalId, approvalId))
-  if (!approval) return null
+  if (!approval) {
+    return null
+  }
   const audit = await db
     .select({
       action: characterTransferAudit.action,
-      reason: characterTransferAudit.reason,
       occurredAt: characterTransferAudit.occurredAt,
       outcome: characterTransferAudit.outcome,
+      reason: characterTransferAudit.reason,
     })
     .from(characterTransferAudit)
     .where(eq(characterTransferAudit.approvalId, approvalId))
@@ -186,34 +210,44 @@ export async function revokeCharacterTransferApproval(input: {
       .from(characterTransferApprovals)
       .where(eq(characterTransferApprovals.approvalId, input.approvalId))
       .for('update')
-    if (!approval) throw new CharacterTransferApprovalError('approval-unavailable')
-    if (approval.consumedAt) throw new CharacterTransferApprovalError('approval-consumed')
-    if (approval.revokedAt) throw new CharacterTransferApprovalError('approval-revoked')
+    if (!approval) {
+      throw new CharacterTransferApprovalError('approval-unavailable')
+    }
+    if (approval.consumedAt) {
+      throw new CharacterTransferApprovalError('approval-consumed')
+    }
+    if (approval.revokedAt) {
+      throw new CharacterTransferApprovalError('approval-revoked')
+    }
     const now = await loadDatabaseWallClock(transaction)
-    if (approval.expiresAt <= now) throw new CharacterTransferApprovalError('approval-expired')
+    if (approval.expiresAt <= now) {
+      throw new CharacterTransferApprovalError('approval-expired')
+    }
 
     const [revoked] = await transaction
       .update(characterTransferApprovals)
       .set({
+        revocationReason: input.reason,
         revokedAt: now,
         revokedByAdministratorId: input.administratorId,
-        revocationReason: input.reason,
       })
       .where(eq(characterTransferApprovals.approvalId, input.approvalId))
       .returning()
-    if (!revoked) throw new Error('Failed to revoke character transfer approval')
+    if (!revoked) {
+      throw new Error('Failed to revoke character transfer approval')
+    }
     await transaction.insert(characterTransferAudit).values({
-      approvalId: approval.approvalId,
       action: 'revoked',
-      approvedByAdministratorId: approval.approvedByAdministratorId,
       actionAdministratorId: input.administratorId,
+      approvalId: approval.approvalId,
+      approvedByAdministratorId: approval.approvedByAdministratorId,
       characterId: approval.characterId,
-      sourceUserId: approval.sourceUserId,
-      sourceSubjectLifecycleId: approval.sourceSubjectLifecycleId,
       destinationUserId: approval.destinationUserId,
-      reason: input.reason,
-      outcome: 'revoked',
       occurredAt: now,
+      outcome: 'revoked',
+      reason: input.reason,
+      sourceSubjectLifecycleId: approval.sourceSubjectLifecycleId,
+      sourceUserId: approval.sourceUserId,
     })
     return toApprovalDto(revoked, now)
   })
@@ -234,15 +268,18 @@ export async function loadTransferApprovalForStart(input: {
       approval.consumedAt ||
       approval.revokedAt ||
       !tokensMatch(hashToken(input.secret), approval.linkSecretHash)
-    )
+    ) {
       return null
+    }
     const now = await loadDatabaseWallClock(transaction)
-    if (approval.expiresAt <= now) return null
+    if (approval.expiresAt <= now) {
+      return null
+    }
 
     const [source] = await transaction
       .select({
-        userId: characters.userId,
         subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+        userId: characters.userId,
       })
       .from(characters)
       .innerJoin(
@@ -263,14 +300,15 @@ export async function loadTransferApprovalForStart(input: {
       source?.subjectLifecycleId !== approval.sourceSubjectLifecycleId ||
       !destinationMain ||
       administrator?.administratorId !== approval.approvedByAdministratorId
-    )
+    ) {
       return null
+    }
     return {
       approvalId: approval.approvalId,
-      sourceUserId: approval.sourceUserId,
-      sourceSubjectLifecycleId: approval.sourceSubjectLifecycleId,
-      userId: approval.destinationUserId,
       characterId: approval.characterId,
+      sourceSubjectLifecycleId: approval.sourceSubjectLifecycleId,
+      sourceUserId: approval.sourceUserId,
+      userId: approval.destinationUserId,
     }
   })
 }
@@ -283,9 +321,9 @@ async function loadTransferCandidates(
     .select({
       characterId: characters.characterId,
       characterName: characters.name,
-      sourceUserId: characters.userId,
       sourceIsMain: characters.isMain,
       sourceSubjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+      sourceUserId: characters.userId,
     })
     .from(characters)
     .innerJoin(
@@ -295,14 +333,16 @@ async function loadTransferCandidates(
     .where(eq(characters.characterId, input.characterId))
   const [destination] = await transaction
     .select({
-      destinationUserId: characters.userId,
+      destinationIsMain: characters.isMain,
       destinationMainCharacterId: characters.characterId,
       destinationMainCharacterName: characters.name,
-      destinationIsMain: characters.isMain,
+      destinationUserId: characters.userId,
     })
     .from(characters)
     .where(eq(characters.characterId, input.destinationMainCharacterId))
-  if (!source || !destination) return null
+  if (!source || !destination) {
+    return null
+  }
   const [sourceCount] = await transaction
     .select({ value: count() })
     .from(characters)
@@ -318,9 +358,15 @@ async function findTransferBlocker(
   transaction: DatabaseTransaction,
   candidates: NonNullable<Awaited<ReturnType<typeof loadTransferCandidates>>>,
 ): Promise<CharacterTransferBlocker | null> {
-  if (candidates.sourceUserId === candidates.destinationUserId) return 'same-account'
-  if (!candidates.destinationIsMain) return 'destination-main'
-  if (candidates.sourceIsMain && candidates.sourceCharacterCount > 1) return 'main-character'
+  if (candidates.sourceUserId === candidates.destinationUserId) {
+    return 'same-account'
+  }
+  if (!candidates.destinationIsMain) {
+    return 'destination-main'
+  }
+  if (candidates.sourceIsMain && candidates.sourceCharacterCount > 1) {
+    return 'main-character'
+  }
   return findCharacterDetachmentBlocker(transaction, candidates.characterId)
 }
 
@@ -375,18 +421,18 @@ function toApprovalDto(approval: typeof characterTransferApprovals.$inferSelect,
   return {
     approvalId: approval.approvalId,
     character: { characterId: approval.characterId, name: approval.characterName },
+    consumedAt: approval.consumedAt,
+    createdAt: approval.createdAt,
     destinationMain: {
       characterId: approval.destinationMainCharacterId,
       name: approval.destinationMainCharacterName,
     },
-    sourceCharacterCount: approval.sourceCharacterCount,
-    reason: approval.reason,
-    status,
-    createdAt: approval.createdAt,
     expiresAt: approval.expiresAt,
-    consumedAt: approval.consumedAt,
-    revokedAt: approval.revokedAt,
+    reason: approval.reason,
     revocationReason: approval.revocationReason,
+    revokedAt: approval.revokedAt,
+    sourceCharacterCount: approval.sourceCharacterCount,
+    status,
   }
 }
 
@@ -394,7 +440,11 @@ function transferApprovalStatus(
   approval: typeof characterTransferApprovals.$inferSelect,
   now: Date,
 ) {
-  if (approval.consumedAt) return 'consumed' as const
-  if (approval.revokedAt) return 'revoked' as const
+  if (approval.consumedAt) {
+    return 'consumed' as const
+  }
+  if (approval.revokedAt) {
+    return 'revoked' as const
+  }
   return approval.expiresAt <= now ? ('expired' as const) : ('pending' as const)
 }

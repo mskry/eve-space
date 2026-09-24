@@ -32,18 +32,17 @@ export function registerPlatformTemplates(
   const { navigation, pages } = createPlatformNavigation(contributions)
   addTemplate({
     filename: 'eve-space-platform/navigation.ts',
-    write: true,
     getContents: () =>
       `import type { PlatformNavigationEntry, PlatformPageMetadata } from '@eve-space/platform-module-nuxt/runtime'\n\nexport const platformNavigation: readonly PlatformNavigationEntry[] = ${JSON.stringify(navigation)}\n\nexport const platformPageMetadata: readonly PlatformPageMetadata[] = ${JSON.stringify(pages)}\n`,
+    write: true,
   })
   addTemplate({
     filename: 'eve-space-platform/reviewer-panels.ts',
-    write: true,
     getContents: () => renderReviewerPanelCatalog(reviewerPanels),
+    write: true,
   })
   addTemplate({
     filename: 'eve-space-platform/query-admission-scopes.ts',
-    write: true,
     getContents: () =>
       `import type { PlatformQueryAdmissionScopeDescriptor } from '@eve-space/platform-module-contract/nuxt'\n\nexport const platformQueryAdmissionScopes: readonly (PlatformQueryAdmissionScopeDescriptor & { readonly moduleId: string })[] = ${JSON.stringify(
         contributions.flatMap((contribution) =>
@@ -53,6 +52,7 @@ export function registerPlatformTemplates(
           })),
         ),
       )}\n`,
+    write: true,
   })
   addTypeTemplate({
     filename: 'types/eve-space-platform-page-meta.d.ts',

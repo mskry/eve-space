@@ -59,17 +59,19 @@ export async function resolveCurrentPermissionSelections(
   ]
   const enabledModuleIds = await loadEnabledModuleIds(transaction, moduleIds)
   return unique.map((entry) => {
-    if (entry.type === 'service')
-      return { type: 'service', key: entry.key, reviewAllowed: Boolean(entry.reviewAllowed) }
+    if (entry.type === 'service') {
+      return { key: entry.key, reviewAllowed: Boolean(entry.reviewAllowed), type: 'service' }
+    }
     const declaration = findCatalogPermission(catalog, entry)
-    if (!declaration || !enabledModuleIds.has(entry.moduleId))
+    if (!declaration || !enabledModuleIds.has(entry.moduleId)) {
       throw new OrganizationPermissionCatalogError('permission-unavailable')
+    }
     return {
-      type: 'module',
-      publisherPackage: entry.publisherPackage,
-      moduleId: entry.moduleId,
       key: entry.key,
+      moduleId: entry.moduleId,
+      publisherPackage: entry.publisherPackage,
       reviewAllowed: declaration.reviewAllowed,
+      type: 'module',
     }
   })
 }
@@ -94,26 +96,31 @@ export async function previewEnabledPermissionProfile(input: {
 }) {
   const profile = findCatalogProfile(catalog, { ...input, id: input.profileId })
   const enabled = await loadEnabledModuleIds(db, [input.moduleId])
-  if (!profile || !enabled.has(input.moduleId))
+  if (!profile || !enabled.has(input.moduleId)) {
     throw new OrganizationPermissionCatalogError('profile-unavailable')
+  }
   const permissions = profile.permissions.map((key) => {
     const declaration = findCatalogPermission(catalog, { ...input, key })
-    if (!declaration) throw new OrganizationPermissionCatalogError('profile-unavailable')
+    if (!declaration) {
+      throw new OrganizationPermissionCatalogError('profile-unavailable')
+    }
     return {
       input: {
-        type: 'module' as const,
-        publisherPackage: declaration.publisherPackage,
-        moduleId: declaration.moduleId,
         key: declaration.key,
+        moduleId: declaration.moduleId,
+        publisherPackage: declaration.publisherPackage,
+        type: 'module' as const,
       },
       ...declaration,
     }
   })
-  return { profile, permissions }
+  return { permissions, profile }
 }
 
 async function loadEnabledModuleIds(executor: QueryExecutor, moduleIds: readonly string[]) {
-  if (moduleIds.length === 0) return new Set<string>()
+  if (moduleIds.length === 0) {
+    return new Set<string>()
+  }
   const rows = await executor
     .select({ moduleId: deploymentModules.moduleId })
     .from(deploymentModules)

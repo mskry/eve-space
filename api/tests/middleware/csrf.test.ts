@@ -13,16 +13,16 @@ describe('global CSRF protection', () => {
     ['plain text', 'text/plain; charset=UTF-8'],
   ])('rejects cross-site POST requests with %s', async (_label, contentType) => {
     const response = await app.request(missingRoute, {
-      method: 'POST',
       headers: {
         Origin: 'https://attacker.invalid',
         'Sec-Fetch-Site': 'cross-site',
         ...(contentType ? { 'Content-Type': contentType } : {}),
       },
+      method: 'POST',
     })
 
     expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toEqual({ message: 'Forbidden' })
+    await expect(response.json()).resolves.toStrictEqual({ message: 'Forbidden' })
   })
 
   test('rejects unsafe form-compatible requests without browser provenance', async () => {
@@ -33,8 +33,8 @@ describe('global CSRF protection', () => {
 
   test('allows unsafe form-compatible requests from the configured web origin', async () => {
     const response = await app.request(missingRoute, {
-      method: 'POST',
       headers: { Origin: 'http://localhost:3000' },
+      method: 'POST',
     })
 
     expect(response.status).toBe(404)
@@ -42,8 +42,8 @@ describe('global CSRF protection', () => {
 
   test('allows unsafe form-compatible requests with same-origin fetch metadata', async () => {
     const response = await app.request(missingRoute, {
-      method: 'POST',
       headers: { 'Sec-Fetch-Site': 'same-origin' },
+      method: 'POST',
     })
 
     expect(response.status).toBe(404)
@@ -52,12 +52,12 @@ describe('global CSRF protection', () => {
   test('accepts an opaque origin only for the development fixture session exchange', async () => {
     const nodeEnvironment = env.NODE_ENV
     const opaqueFormPost = {
-      method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         Origin: 'null',
         'Sec-Fetch-Site': 'cross-site',
       },
+      method: 'POST',
     }
     try {
       env.NODE_ENV = 'production'
@@ -73,12 +73,12 @@ describe('global CSRF protection', () => {
 
   test('leaves non-form JSON requests to the API route protections', async () => {
     const response = await app.request(missingRoute, {
-      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Origin: 'https://attacker.invalid',
         'Sec-Fetch-Site': 'cross-site',
       },
+      method: 'POST',
     })
 
     expect(response.status).toBe(404)

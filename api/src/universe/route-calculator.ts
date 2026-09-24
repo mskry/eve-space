@@ -9,13 +9,15 @@ import { getUniverseTopology } from './topology.js'
 export async function calculateUniverseRoutes(
   request: UniverseRouteRequest,
 ): Promise<UniverseRouteResult> {
-  if (request.policy.kind !== 'shortest') throw new Error('Unsupported universe route policy')
+  if (request.policy.kind !== 'shortest') {
+    throw new Error('Unsupported universe route policy')
+  }
   const topology = await getUniverseTopology()
   return {
     originSystemId: request.originSystemId,
     policy: request.policy,
-    sdeBuildNumber: topology.revision.buildNumber,
     routes: shortestRoutes(topology, request.originSystemId, request.destinationSystemIds),
+    sdeBuildNumber: topology.revision.buildNumber,
   }
 }
 
@@ -35,7 +37,9 @@ function shortestRoutes(
       destinations.delete(currentId)
       const nextDistance = distances.get(currentId)! + 1
       for (const neighborId of topology.systems.get(currentId)!.neighbors) {
-        if (distances.has(neighborId)) continue
+        if (distances.has(neighborId)) {
+          continue
+        }
         distances.set(neighborId, nextDistance)
         queue.push(neighborId)
       }
@@ -51,9 +55,14 @@ function shortestRoutes(
 }
 
 function compareRouteDistance(left: UniverseRouteEntry, right: UniverseRouteEntry) {
-  if (left.jumps === null && right.jumps === null)
+  if (left.jumps === null && right.jumps === null) {
     return left.destinationSystemId - right.destinationSystemId
-  if (left.jumps === null) return 1
-  if (right.jumps === null) return -1
+  }
+  if (left.jumps === null) {
+    return 1
+  }
+  if (right.jumps === null) {
+    return -1
+  }
   return left.jumps - right.jumps || left.destinationSystemId - right.destinationSystemId
 }

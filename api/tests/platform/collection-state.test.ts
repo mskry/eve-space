@@ -46,7 +46,7 @@ describe('platform collection state', () => {
     const { moduleId, resourceId, subjectKind, subjectLifecycleId, subjectId } = collectionState()
     await expect(
       loadPlatformCollectionState(
-        { moduleId, resourceId, subjectKind, subjectLifecycleId, subjectId },
+        { moduleId, resourceId, subjectId, subjectKind, subjectLifecycleId },
         { select } as never,
       ),
     ).resolves.toBeNull()
@@ -67,11 +67,12 @@ describe('platform collection state', () => {
     const values = vi.fn().mockReturnValue({ onConflictDoUpdate })
     const insert = vi.fn().mockReturnValue({ values })
 
-    await expect(upsertPlatformCollectionState(input, { insert } as never)).resolves.toEqual(stored)
+    await expect(upsertPlatformCollectionState(input, { insert } as never)).resolves.toStrictEqual(
+      stored,
+    )
     expect(values).toHaveBeenCalledWith({ ...input, failureStartedAt: null })
     expect(onConflictDoUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
-        target: expect.any(Array),
         set: expect.objectContaining({
           authorizationGeneration: input.authorizationGeneration,
           failureStartedAt: null,
@@ -79,6 +80,7 @@ describe('platform collection state', () => {
           nextEligibleAt: input.nextEligibleAt,
           validatedAt: input.validatedAt,
         }),
+        target: expect.any(Array),
       }),
     )
   })
@@ -87,7 +89,7 @@ describe('platform collection state', () => {
     const insert = vi.fn()
     await expect(
       upsertPlatformCollectionState(
-        collectionState({ subjectId: '   ', lastFailureClass: 'unknown' }),
+        collectionState({ lastFailureClass: 'unknown', subjectId: '   ' }),
         { insert } as never,
       ),
     ).rejects.toThrow(/Too small/)
@@ -107,15 +109,15 @@ function collectionState(
   overrides: Partial<PlatformCollectionStateWrite> = {},
 ): PlatformCollectionStateWrite {
   return {
+    authorizationGeneration: 3,
+    lastFailureClass: null,
     moduleId: 'member-audit',
+    nextEligibleAt: new Date('2026-08-26T12:00:00Z'),
     resourceId: 'character-skills',
+    subjectId: '1404328063',
     subjectKind: 'character',
     subjectLifecycleId: randomUUID(),
-    subjectId: '1404328063',
-    nextEligibleAt: new Date('2026-08-26T12:00:00Z'),
-    authorizationGeneration: 3,
     validatedAt: new Date('2026-08-26T11:00:00Z'),
-    lastFailureClass: null,
     ...overrides,
   }
 }

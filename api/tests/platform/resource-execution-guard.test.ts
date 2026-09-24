@@ -17,19 +17,19 @@ import { coreResources } from '../../src/platform/core-resources.js'
 const identity = {
   moduleId: 'test-feature',
   resourceId: 'wallet-balance',
+  subjectId: '1404328063',
   subjectKind: 'character',
   subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
-  subjectId: '1404328063',
 } as const
 
 const privateResource = {
-  moduleId: identity.moduleId,
-  resourceId: identity.resourceId,
-  subjectKind: 'character',
-  operationId: 'wallet-balance',
-  materializationIntervalSeconds: 900,
   eligibility: { kind: 'current-owned-character' },
   implementation: () => Promise.resolve({}),
+  materializationIntervalSeconds: 900,
+  moduleId: identity.moduleId,
+  operationId: 'wallet-balance',
+  resourceId: identity.resourceId,
+  subjectKind: 'character',
 } as const
 
 describe('platform resource execution guard', () => {
@@ -40,11 +40,11 @@ describe('platform resource execution guard', () => {
 
       await expect(
         guardInstalledResourceExecution(identity, {
-          resources: [privateResource],
-          resolveEligibility: vi.fn().mockResolvedValue({ status }),
           loadCharacterCacheAuthorization: loadAuthorization,
+          resolveEligibility: vi.fn().mockResolvedValue({ status }),
+          resources: [privateResource],
         }),
-      ).resolves.toEqual({ outcome: 'noop', reason: status })
+      ).resolves.toStrictEqual({ outcome: 'noop', reason: status })
       expect(loadAuthorization).not.toHaveBeenCalled()
     },
   )
@@ -53,11 +53,11 @@ describe('platform resource execution guard', () => {
     const loadAuthorization = vi.fn()
     await expect(
       guardInstalledResourceExecution(identity, {
-        resources: [privateResource],
-        resolveEligibility: vi.fn().mockResolvedValue(eligible(4, false)),
         loadCharacterCacheAuthorization: loadAuthorization,
+        resolveEligibility: vi.fn().mockResolvedValue(eligible(4, false)),
+        resources: [privateResource],
       }),
-    ).resolves.toEqual({ outcome: 'noop', reason: 'already-current' })
+    ).resolves.toStrictEqual({ outcome: 'noop', reason: 'already-current' })
     expect(loadAuthorization).not.toHaveBeenCalled()
   })
 
@@ -73,18 +73,18 @@ describe('platform resource execution guard', () => {
     })
 
     const guarded = await guardInstalledResourceExecution(identity, {
-      resources: [privateResource],
       resolveEligibility,
+      resources: [privateResource],
     })
     expect(guarded).toMatchObject({
+      authorization: { tokenVersion: 4 },
       outcome: 'ready',
       resource: privateResource,
-      authorization: { tokenVersion: 4 },
     })
     expect(guarded).not.toHaveProperty('authorization.accessToken')
-    expect(order).toEqual(['eligibility', 'token'])
+    expect(order).toStrictEqual(['eligibility', 'token'])
     expect(authMocks.getCharacterCacheAuthorizationForLifecycle).toHaveBeenCalledWith(
-      1404328063,
+      1_404_328_063,
       identity.subjectLifecycleId,
       'esi-wallet.read_character_wallet.v1',
     )
@@ -98,13 +98,13 @@ describe('platform resource execution guard', () => {
 
     await expect(
       guardInstalledResourceExecution(identity, {
-        resources: [privateResource],
-        resolveEligibility,
         loadCharacterCacheAuthorization: vi
           .fn()
           .mockResolvedValue({ scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 5 }),
+        resolveEligibility,
+        resources: [privateResource],
       }),
-    ).resolves.toEqual({ outcome: 'noop', reason: 'obsolete' })
+    ).resolves.toStrictEqual({ outcome: 'noop', reason: 'obsolete' })
     expect(resolveEligibility).toHaveBeenCalledTimes(2)
   })
 
@@ -116,11 +116,11 @@ describe('platform resource execution guard', () => {
     async (error, reason) => {
       await expect(
         guardInstalledResourceExecution(identity, {
-          resources: [privateResource],
-          resolveEligibility: vi.fn().mockResolvedValue(eligible(4)),
           loadCharacterCacheAuthorization: vi.fn().mockRejectedValue(error),
+          resolveEligibility: vi.fn().mockResolvedValue(eligible(4)),
+          resources: [privateResource],
         }),
-      ).resolves.toEqual({ outcome: 'noop', reason })
+      ).resolves.toStrictEqual({ outcome: 'noop', reason })
     },
   )
 
@@ -130,11 +130,11 @@ describe('platform resource execution guard', () => {
 
     await expect(
       guardInstalledResourceExecution(identity, {
-        resources: [publicResource],
-        resolveEligibility: vi.fn().mockResolvedValue(eligible(null)),
         loadCharacterCacheAuthorization: loadCharacterAuthorization,
+        resolveEligibility: vi.fn().mockResolvedValue(eligible(null)),
+        resources: [publicResource],
       }),
-    ).resolves.toMatchObject({ outcome: 'ready', authorization: null })
+    ).resolves.toMatchObject({ authorization: null, outcome: 'ready' })
     expect(loadCharacterAuthorization).not.toHaveBeenCalled()
   })
 
@@ -143,9 +143,9 @@ describe('platform resource execution guard', () => {
     const corporationIdentity = {
       moduleId: 'core',
       resourceId: 'corporation-roster',
+      subjectId: '98000001',
       subjectKind: 'corporation' as const,
       subjectLifecycleId: '34b4904d-c8d2-451a-b1d2-465f4bac99c4',
-      subjectId: '98000001',
     }
     const loadCharacterAuthorization = vi
       .fn()
@@ -154,19 +154,19 @@ describe('platform resource execution guard', () => {
 
     await expect(
       guardInstalledResourceExecution(corporationIdentity, {
-        resources: [coreResources[1]],
+        isCorporationSourceCurrent,
+        loadCharacterAuthorization,
         resolveEligibility: vi.fn().mockResolvedValue({
           ...eligible(7),
           authorizationCharacterId: 1_404_328_063,
           authorizationCharacterLifecycleId: sourceLifecycleId,
         }),
-        loadCharacterAuthorization,
-        isCorporationSourceCurrent,
+        resources: [coreResources[1]],
       }),
     ).resolves.toMatchObject({
-      outcome: 'ready',
-      subject: { kind: 'corporation', corporationId: 98_000_001 },
       authorizationCharacterId: 1_404_328_063,
+      outcome: 'ready',
+      subject: { corporationId: 98_000_001, kind: 'corporation' },
     })
     expect(loadCharacterAuthorization).toHaveBeenCalledWith(
       1_404_328_063,
@@ -175,10 +175,10 @@ describe('platform resource execution guard', () => {
     )
     expect(isCorporationSourceCurrent).toHaveBeenCalledTimes(2)
     expect(isCorporationSourceCurrent).toHaveBeenCalledWith({
-      corporationSubjectLifecycleId: corporationIdentity.subjectLifecycleId,
+      authorizationGeneration: 7,
       characterId: 1_404_328_063,
       characterSubjectLifecycleId: sourceLifecycleId,
-      authorizationGeneration: 7,
+      corporationSubjectLifecycleId: corporationIdentity.subjectLifecycleId,
     })
   })
 
@@ -189,20 +189,20 @@ describe('platform resource execution guard', () => {
         {
           moduleId: 'core',
           resourceId: 'managed-corporations',
+          subjectId: '99000001',
           subjectKind: 'alliance',
           subjectLifecycleId: '34b4904d-c8d2-451a-b1d2-465f4bac99c4',
-          subjectId: '99000001',
         },
         {
-          resources: [coreResources[0]],
-          resolveEligibility: vi.fn().mockResolvedValue(eligible(null)),
           loadCharacterAuthorization,
+          resolveEligibility: vi.fn().mockResolvedValue(eligible(null)),
+          resources: [coreResources[0]],
         },
       ),
     ).resolves.toMatchObject({
-      outcome: 'ready',
-      subject: { kind: 'alliance', allianceId: 99_000_001 },
       authorization: null,
+      outcome: 'ready',
+      subject: { allianceId: 99_000_001, kind: 'alliance' },
     })
     expect(loadCharacterAuthorization).not.toHaveBeenCalled()
   })
@@ -210,9 +210,9 @@ describe('platform resource execution guard', () => {
 
 function eligible(authorizationGeneration: number | null, due = true) {
   return {
-    status: 'eligible' as const,
-    due,
     authorizationGeneration,
+    due,
     nextEligibleAt: null,
+    status: 'eligible' as const,
   }
 }

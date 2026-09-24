@@ -19,13 +19,13 @@ vi.mock('../../src/platform/resource-planning.js', async (importOriginal) => ({
 }))
 
 const resource = {
-  moduleId: 'member-audit',
-  resourceId: 'character-skills',
-  operationId: 'skills',
-  subjectKind: 'character',
-  materializationIntervalSeconds: 900,
   eligibility: { kind: 'current-owned-character' },
   implementation: {},
+  materializationIntervalSeconds: 900,
+  moduleId: 'member-audit',
+  operationId: 'skills',
+  resourceId: 'character-skills',
+  subjectKind: 'character',
 } as const satisfies PlatformInstalledResourceDescriptor
 
 const batchResource = {
@@ -39,8 +39,8 @@ beforeEach(() => {
     Promise.resolve(
       requests.map(() => ({
         active: false,
-        retryAfterSeconds: null,
         coordinationAvailable: true,
+        retryAfterSeconds: null,
       })),
     ),
   )
@@ -48,10 +48,10 @@ beforeEach(() => {
 
 describe('generic resource planner', () => {
   test('is idle without installed resources and touches no external boundary', async () => {
-    await expect(runResourcePlanner(context(), { resources: [] })).resolves.toEqual({
-      selected: 0,
+    await expect(runResourcePlanner(context(), { resources: [] })).resolves.toStrictEqual({
       planned: 0,
       reason: 'idle',
+      selected: 0,
     })
     expect(plannerMocks.selectDue).not.toHaveBeenCalled()
   })
@@ -59,19 +59,19 @@ describe('generic resource planner', () => {
   test('does not schedule resources whose collectors are not materialized', async () => {
     await expect(
       runResourcePlanner(context(), { resources: [{ ...resource, scheduled: false }] }),
-    ).resolves.toEqual({
-      selected: 0,
+    ).resolves.toStrictEqual({
       planned: 0,
       reason: 'idle',
+      selected: 0,
     })
     expect(plannerMocks.selectDue).not.toHaveBeenCalled()
   })
 
   test('bounds PostgreSQL selection by remaining high-water capacity', async () => {
     await runResourcePlanner(context({ depth: 5 }), {
-      resources: [resource],
-      pageSize: 5,
       highWaterMark: 7,
+      pageSize: 5,
+      resources: [resource],
     })
     expect(plannerMocks.selectDue).toHaveBeenCalledWith({ limit: 2, resources: [resource] })
   })
@@ -79,10 +79,10 @@ describe('generic resource planner', () => {
   test('does not query PostgreSQL when queue capacity is exhausted', async () => {
     await expect(
       runResourcePlanner(context({ depth: 3 }), {
-        resources: [resource],
         highWaterMark: 3,
+        resources: [resource],
       }),
-    ).resolves.toMatchObject({ selected: 0, planned: 0, reason: 'capacity' })
+    ).resolves.toMatchObject({ planned: 0, reason: 'capacity', selected: 0 })
     expect(plannerMocks.selectDue).not.toHaveBeenCalled()
   })
 
@@ -104,16 +104,16 @@ describe('generic resource planner', () => {
     const subject = context()
     subject.producer.enqueueMany = vi.fn().mockResolvedValue([
       {
-        status: 'rejected',
-        depth: 1_000,
+        depth: 1000,
         reason: 'planner-paused',
+        status: 'rejected',
       },
     ])
 
     await expect(runResourcePlanner(subject, { resources: [resource] })).resolves.toMatchObject({
-      selected: 1,
       planned: 0,
       reason: 'capacity',
+      selected: 1,
     })
   })
 
@@ -123,20 +123,20 @@ describe('generic resource planner', () => {
     const subject = context()
 
     await expect(runResourcePlanner(subject, { resources: [resource] })).resolves.toMatchObject({
-      selected: 1,
       planned: 1,
       reason: 'scheduled',
+      selected: 1,
     })
 
     expect(plannerMocks.getCooldowns).toHaveBeenCalledWith([
-      { operation: 'skills', characterId: 1_404_328_063 },
+      { characterId: 1_404_328_063, operation: 'skills' },
     ])
-    expect(subject.producer.commands).toEqual([
+    expect(subject.producer.commands).toStrictEqual([
       {
+        materializationIntervalSeconds: 900,
         name: 'resource-refresh',
         payload: candidate.identity,
         source: 'planner',
-        materializationIntervalSeconds: 900,
       },
     ])
   })
@@ -145,15 +145,15 @@ describe('generic resource planner', () => {
     const candidates = [dueResource('1404328063'), dueResource('1404328064')]
     plannerMocks.selectDue.mockResolvedValue(candidates)
     plannerMocks.getCooldowns.mockResolvedValueOnce([
-      { active: false, retryAfterSeconds: null, coordinationAvailable: true },
-      { active: true, retryAfterSeconds: 12, coordinationAvailable: true },
+      { active: false, coordinationAvailable: true, retryAfterSeconds: null },
+      { active: true, coordinationAvailable: true, retryAfterSeconds: 12 },
     ])
     const subject = context()
 
     await expect(runResourcePlanner(subject, { resources: [resource] })).resolves.toMatchObject({
-      selected: 2,
       planned: 1,
       reason: 'cooldown',
+      selected: 2,
     })
     expect(subject.producer.commands).toHaveLength(1)
   })
@@ -168,15 +168,17 @@ describe('generic resource planner', () => {
 
     await expect(
       runResourcePlanner(subject, { resources: [batchResource] }),
-    ).resolves.toMatchObject({ selected: 2, planned: 1, reason: 'scheduled' })
+    ).resolves.toMatchObject({ planned: 1, reason: 'scheduled', selected: 2 })
     const command = subject.producer.commands[0]
     expect(command).toMatchObject({
+      materializationIntervalSeconds: 900,
       name: 'resource-batch',
       source: 'planner',
-      materializationIntervalSeconds: 900,
     })
-    if (command?.name !== 'resource-batch') throw new Error('Expected a resource batch command')
-    expect(command.payload.subjects.map(({ subjectId }) => subjectId)).toEqual([
+    if (command?.name !== 'resource-batch') {
+      throw new Error('Expected a resource batch command')
+    }
+    expect(command.payload.subjects.map(({ subjectId }) => subjectId)).toStrictEqual([
       '1404328063',
       '1404328064',
     ])
@@ -194,11 +196,11 @@ describe('generic resource planner', () => {
 
 function context(options: { depth?: number } = {}) {
   return {
-    producer: createInMemoryQueueProducer({ depth: options.depth }),
     outcomes: {
       recordAffiliation: vi.fn().mockResolvedValue(undefined),
       recordOutbox: vi.fn().mockResolvedValue(undefined),
     },
+    producer: createInMemoryQueueProducer({ depth: options.depth }),
   }
 }
 
@@ -210,9 +212,9 @@ function dueResource(
     identity: {
       moduleId: descriptor.moduleId,
       resourceId: descriptor.resourceId,
+      subjectId,
       subjectKind: descriptor.subjectKind,
       subjectLifecycleId: '6f80b8de-8ff0-4dc6-af2c-9fb5c892174a',
-      subjectId,
     },
     operationId: descriptor.operationId as 'skills',
   }

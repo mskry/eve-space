@@ -23,32 +23,34 @@ const apiServer = await startCorsJsonApi((request) => {
   if (url.pathname === '/auth/config') {
     return {
       body: {
+        attachUrl: `${apiOrigin}/auth/eve/attach`,
         configured: true,
         loginUrl: `${apiOrigin}/auth/eve/login`,
-        attachUrl: `${apiOrigin}/auth/eve/attach`,
       },
     }
   }
   if (url.pathname === '/auth/session') {
     return {
       body: {
-        authenticated: true,
         account: {
-          userId: 'corporation-e2e-user',
           mainCharacter: { characterId: 7, name: 'Corporation Pilot' },
+          userId: 'corporation-e2e-user',
         },
+        authenticated: true,
       },
     }
   }
   if (url.pathname === '/api/me/cache-admission') {
     return { body: cacheAdmissionForCharacter('corporation-e2e-user', 7) }
   }
-  if (url.pathname === '/api/admin/session') return { body: { authenticated: false } }
+  if (url.pathname === '/api/admin/session') {
+    return { body: { authenticated: false } }
+  }
   if (url.pathname === '/api/modules') {
     return {
       body: {
         enabledModuleIds: [],
-        shellNavigationOrder: { dashboard: [], character: [] },
+        shellNavigationOrder: { character: [], dashboard: [] },
       },
     }
   }
@@ -56,28 +58,28 @@ const apiServer = await startCorsJsonApi((request) => {
     return {
       body: {
         corporation: {
-          corporationId,
-          name: 'Navigation Industries',
-          ticker: 'NAV',
-          memberCount: 42,
-          ceoId: 9,
-          ceoName: 'Chief Navigator',
-          creatorId: 10,
-          creatorName: 'First Navigator',
-          taxRate: 5,
-          loyaltyPointTaxRate: 2.5,
-          dateFounded: '2020-01-01T00:00:00Z',
-          description: 'A corporation used to verify routed records.',
-          url: null,
-          factionId: null,
-          homeStationId: null,
-          homeStationName: null,
-          shares: null,
           allianceId: corporationType === 'player_owned' ? 99_000_001 : null,
           allianceName: corporationType === 'player_owned' ? 'Route Alliance' : null,
-          type: corporationType,
-          state: 'active',
+          ceoId: 9,
+          ceoName: 'Chief Navigator',
+          corporationId,
+          creatorId: 10,
+          creatorName: 'First Navigator',
+          dateFounded: '2020-01-01T00:00:00Z',
+          description: 'A corporation used to verify routed records.',
+          factionId: null,
           friendlyFire: 'legal',
+          homeStationId: null,
+          homeStationName: null,
+          loyaltyPointTaxRate: 2.5,
+          memberCount: 42,
+          name: 'Navigation Industries',
+          shares: null,
+          state: 'active',
+          taxRate: 5,
+          ticker: 'NAV',
+          type: corporationType,
+          url: null,
           warEligible: true,
           warHistory: [],
         },
@@ -87,8 +89,8 @@ const apiServer = await startCorsJsonApi((request) => {
   if (url.pathname === `/api/corporations/${corporationId}/alliance-history`) {
     if (historyMode === 'error') {
       return {
-        status: 502,
         body: { message: 'Alliance history is temporarily unavailable.' },
+        status: 502,
       }
     }
     return {
@@ -110,7 +112,7 @@ const apiServer = await startCorsJsonApi((request) => {
     }
   }
 
-  return { status: 404, body: { code: 'NOT_FOUND', message: 'Not found.' } }
+  return { body: { code: 'NOT_FOUND', message: 'Not found.' }, status: 404 }
 })
 
 apiOrigin = apiServer.origin
@@ -121,14 +123,14 @@ afterAll(apiServer.close)
 
 describe('corporation record routes', async () => {
   await setup({
-    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
+    browser: true,
     build: false,
+    captureServerLogs: false,
     nuxtConfig: {
       nitro: { output: { dir: fileURLToPath(new URL('../../.output-e2e', import.meta.url)) } },
     },
-    browser: true,
+    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
     server: true,
-    captureServerLogs: false,
     setupTimeout: 120_000,
   })
 
@@ -169,7 +171,9 @@ describe('corporation record routes', async () => {
 
     expect(historyRequests()).toHaveLength(0)
     const shellHeader = await page.locator('.character-shell-header').elementHandle()
-    if (!shellHeader) throw new Error('Corporation shell header was not rendered.')
+    if (!shellHeader) {
+      throw new Error('Corporation shell header was not rendered.')
+    }
 
     await page.getByRole('link', { name: 'ALLIANCE HISTORY' }).click()
     await page.waitForURL(
@@ -199,7 +203,7 @@ describe('corporation record routes', async () => {
       .toBe('Navigation Industries [NAV] // Corporation Overview // EVE Space')
     await expect
       .poll(() =>
-        page.getByRole('link', { name: 'OVERVIEW', exact: true }).getAttribute('aria-current'),
+        page.getByRole('link', { exact: true, name: 'OVERVIEW' }).getAttribute('aria-current'),
       )
       .toBe('page')
 
@@ -215,7 +219,7 @@ describe('corporation record routes', async () => {
   it('supports direct history entry and keeps navigation stable for empty and failed data', async () => {
     historyMode = 'empty'
     const emptyPage = await openPage(`/corporation/${corporationId}/alliance-history`)
-    await emptyPage.setViewportSize({ width: 390, height: 844 })
+    await emptyPage.setViewportSize({ height: 844, width: 390 })
     await emptyPage.getByRole('heading', { name: 'No alliance history' }).waitFor()
     const navigation = emptyPage.getByRole('navigation', { name: 'Corporation record sections' })
     expect(await navigation.getByRole('link').count()).toBe(2)
@@ -255,10 +259,12 @@ describe('corporation record routes', async () => {
     await page.waitForURL((url) => url.pathname === `/corporation/${corporationId}`)
     await page.getByRole('heading', { name: 'Navigation Industries' }).waitFor()
     await page.getByText('NPC', { exact: true }).waitFor()
-    expect(await page.locator('.corporation-dossier-badge').allTextContents()).toEqual(['NPC'])
+    expect(await page.locator('.corporation-dossier-badge').allTextContents()).toStrictEqual([
+      'NPC',
+    ])
 
     const navigation = page.getByRole('navigation', { name: 'Corporation record sections' })
-    expect(await navigation.getByRole('link').allTextContents()).toEqual(['OVERVIEW'])
+    expect(await navigation.getByRole('link').allTextContents()).toStrictEqual(['OVERVIEW'])
     expect(historyRequests()).toHaveLength(0)
   })
 

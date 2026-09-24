@@ -2,8 +2,8 @@
 import type { SystemStatusTelemetry } from '../queries/system-status'
 
 const {
-  telemetry = undefined,
-  apiLatencyMs = undefined,
+  telemetry,
+  apiLatencyMs,
   loading = false,
   error = false,
 } = defineProps<{
@@ -21,27 +21,29 @@ const overallStatus = computed(() => telemetry?.status ?? 'pending')
 const overallLabel = computed(
   () =>
     ({
-      pending: 'PENDING',
-      operational: 'OPERATIONAL',
       degraded: 'DEGRADED',
+      operational: 'OPERATIONAL',
+      pending: 'PENDING',
       unavailable: 'UNAVAILABLE',
     })[overallStatus.value],
 )
 const services = computed(() => {
-  if (!telemetry) return []
+  if (!telemetry) {
+    return []
+  }
   return [
-    { id: 'api', label: 'API', status: telemetry.services.api.status, latencyMs: apiLatencyMs },
+    { id: 'api', label: 'API', latencyMs: apiLatencyMs, status: telemetry.services.api.status },
     {
       id: 'database',
       label: 'Database',
-      status: telemetry.services.database.status,
       latencyMs: telemetry.services.database.latencyMs,
+      status: telemetry.services.database.status,
     },
     {
       id: 'tranquility',
       label: 'Tranquility',
-      status: telemetry.services.esi.status,
       latencyMs: telemetry.services.esi.latencyMs,
+      status: telemetry.services.esi.status,
     },
   ]
 })
@@ -50,7 +52,9 @@ const sdeBuild = computed(() => {
   return sde?.status === 'operational' && sde.buildNumber !== null ? String(sde.buildNumber) : '--'
 })
 const checkedLabel = computed(() => {
-  if (loading) return 'REFRESHING'
+  if (loading) {
+    return 'REFRESHING'
+  }
   return telemetry ? formatCheckedAt(telemetry.checkedAt) : '--'
 })
 

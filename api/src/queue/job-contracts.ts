@@ -18,59 +18,61 @@ const outboxRelayJobPayload = z.object({ operationId: z.literal('outbox-relay') 
 const domainEventRetentionJobPayload = z
   .object({ operationId: z.literal('domain-event-retention') })
   .strict()
-const affiliationJobBatchLimit = 1_000
+const affiliationJobBatchLimit = 1000
 const affiliationJobPayload = z
   .object({
+    characterIds: z.array(z.number().int().positive()).min(1).max(affiliationJobBatchLimit),
     operationId: z
       .string()
       .regex(/^affiliation-\d+(?:-\d+)*(?:--[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12})?$/i),
-    characterIds: z.array(z.number().int().positive()).min(1).max(affiliationJobBatchLimit),
   })
   .strict()
   .superRefine((payload, context) => {
-    if (new Set(payload.characterIds).size !== payload.characterIds.length)
+    if (new Set(payload.characterIds).size !== payload.characterIds.length) {
       context.addIssue({
         code: 'custom',
-        path: ['characterIds'],
         message: 'Affiliation job character IDs must be unique',
+        path: ['characterIds'],
       })
+    }
     const refreshSeparator = payload.operationId.indexOf('--')
     const refreshId =
       refreshSeparator === -1 ? undefined : payload.operationId.slice(refreshSeparator + 2)
-    if (payload.operationId !== buildAffiliationJobId(payload.characterIds, refreshId))
+    if (payload.operationId !== buildAffiliationJobId(payload.characterIds, refreshId)) {
       context.addIssue({
         code: 'custom',
-        path: ['operationId'],
         message: 'Affiliation job identity does not match its character IDs',
+        path: ['operationId'],
       })
+    }
   })
 const organizationOwnerEvidenceJobPayload = z
   .object({
+    authorizationGeneration: z.number().int().nonnegative(),
     grantId: z.uuid(),
     organizationVersion: z.number().int().positive(),
-    sourceSubjectLifecycleId: z.uuid(),
-    authorizationGeneration: z.number().int().nonnegative(),
     roleEvidenceRevision: z.string().trim().min(1).max(200),
+    sourceSubjectLifecycleId: z.uuid(),
   })
   .strict()
 const corporationSourceEvidenceJobPayload = z
   .object({
-    sourceId: z.uuid(),
-    organizationVersion: z.number().int().positive(),
-    sourceSubjectLifecycleId: z.uuid(),
     authorizationGeneration: z.number().int().nonnegative(),
+    organizationVersion: z.number().int().positive(),
     roleEvidenceRevision: z.string().trim().min(1).max(200),
+    sourceId: z.uuid(),
+    sourceSubjectLifecycleId: z.uuid(),
   })
   .strict()
 const derivedAuthorityJobPayload = z
   .object({
-    organizationVersion: z.number().int().positive(),
-    userId: z.uuid(),
-    characterId: z.number().int().positive(),
-    subjectLifecycleId: z.uuid(),
     authorizationGeneration: z.number().int().nonnegative(),
-    sourceId: z.uuid().nullable(),
+    characterId: z.number().int().positive(),
+    organizationVersion: z.number().int().positive(),
     roleEvidenceRevision: z.string().trim().min(1).max(200).nullable(),
+    sourceId: z.uuid().nullable(),
+    subjectLifecycleId: z.uuid(),
+    userId: z.uuid(),
   })
   .strict()
   .refine(
@@ -133,56 +135,6 @@ const retention = {
 } as const
 
 const jobContracts = {
-  diagnostic: contract({
-    name: 'diagnostic',
-    payload: diagnosticJobPayload,
-    attempts: 3,
-    durability: { kind: 'derived' },
-    activeWorkDeduplication: 'planner-simple',
-    delay: 'planner-stagger',
-    priority: 'none',
-    operationIdentity: ({ operationId }) => operationId,
-  }),
-  planner: contract({
-    name: 'planner',
-    payload: plannerJobPayload,
-    attempts: 3,
-    durability: { kind: 'derived' },
-    activeWorkDeduplication: 'scheduler',
-    delay: 'none',
-    priority: 'none',
-    operationIdentity: ({ operationId }) => operationId,
-  }),
-  'domain-event': contract({
-    name: 'domain-event',
-    payload: domainEventJobPayload,
-    attempts: 5,
-    durability: { kind: 'authoritative', recovery: 'outbox' },
-    activeWorkDeduplication: 'job-id',
-    delay: 'none',
-    priority: 'none',
-    operationIdentity: ({ eventId }) => domainEventJobId(eventId),
-  }),
-  'outbox-relay': contract({
-    name: 'outbox-relay',
-    payload: outboxRelayJobPayload,
-    attempts: 3,
-    durability: { kind: 'derived' },
-    activeWorkDeduplication: 'scheduler',
-    delay: 'none',
-    priority: 'none',
-    operationIdentity: ({ operationId }) => operationId,
-  }),
-  'domain-event-retention': contract({
-    name: 'domain-event-retention',
-    payload: domainEventRetentionJobPayload,
-    attempts: 3,
-    durability: { kind: 'derived' },
-    activeWorkDeduplication: 'scheduler',
-    delay: 'none',
-    priority: 'none',
-    operationIdentity: ({ operationId }) => operationId,
-  }),
   affiliation: contract({
     name: 'affiliation',
     payload: affiliationJobPayload,
@@ -192,16 +144,6 @@ const jobContracts = {
     delay: 'none',
     priority: 'none',
     operationIdentity: ({ operationId }) => operationId,
-  }),
-  'organization-owner-evidence': contract({
-    name: 'organization-owner-evidence',
-    payload: organizationOwnerEvidenceJobPayload,
-    attempts: 3,
-    durability: { kind: 'derived' },
-    activeWorkDeduplication: 'simple',
-    delay: 'none',
-    priority: 'none',
-    operationIdentity: organizationOwnerEvidenceJobId,
   }),
   'corporation-source-evidence': contract({
     name: 'corporation-source-evidence',
@@ -223,15 +165,65 @@ const jobContracts = {
     priority: 'none',
     operationIdentity: derivedAuthorityJobId,
   }),
-  'resource-refresh': contract({
-    name: 'resource-refresh',
-    payload: resourceRefreshJobPayload,
-    attempts: 1,
+  diagnostic: contract({
+    name: 'diagnostic',
+    payload: diagnosticJobPayload,
+    attempts: 3,
+    durability: { kind: 'derived' },
+    activeWorkDeduplication: 'planner-simple',
+    delay: 'planner-stagger',
+    priority: 'none',
+    operationIdentity: ({ operationId }) => operationId,
+  }),
+  'domain-event': contract({
+    name: 'domain-event',
+    payload: domainEventJobPayload,
+    attempts: 5,
+    durability: { kind: 'authoritative', recovery: 'outbox' },
+    activeWorkDeduplication: 'job-id',
+    delay: 'none',
+    priority: 'none',
+    operationIdentity: ({ eventId }) => domainEventJobId(eventId),
+  }),
+  'domain-event-retention': contract({
+    name: 'domain-event-retention',
+    payload: domainEventRetentionJobPayload,
+    attempts: 3,
+    durability: { kind: 'derived' },
+    activeWorkDeduplication: 'scheduler',
+    delay: 'none',
+    priority: 'none',
+    operationIdentity: ({ operationId }) => operationId,
+  }),
+  'organization-owner-evidence': contract({
+    name: 'organization-owner-evidence',
+    payload: organizationOwnerEvidenceJobPayload,
+    attempts: 3,
     durability: { kind: 'derived' },
     activeWorkDeduplication: 'simple',
-    delay: 'planner-stagger',
-    priority: 'resource',
-    operationIdentity: resourceRefreshJobId,
+    delay: 'none',
+    priority: 'none',
+    operationIdentity: organizationOwnerEvidenceJobId,
+  }),
+  'outbox-relay': contract({
+    name: 'outbox-relay',
+    payload: outboxRelayJobPayload,
+    attempts: 3,
+    durability: { kind: 'derived' },
+    activeWorkDeduplication: 'scheduler',
+    delay: 'none',
+    priority: 'none',
+    operationIdentity: ({ operationId }) => operationId,
+  }),
+  planner: contract({
+    name: 'planner',
+    payload: plannerJobPayload,
+    attempts: 3,
+    durability: { kind: 'derived' },
+    activeWorkDeduplication: 'scheduler',
+    delay: 'none',
+    priority: 'none',
+    operationIdentity: ({ operationId }) => operationId,
   }),
   'resource-batch': contract({
     name: 'resource-batch',
@@ -242,6 +234,16 @@ const jobContracts = {
     delay: 'planner-stagger',
     priority: 'resource',
     operationIdentity: resourceBatchJobId,
+  }),
+  'resource-refresh': contract({
+    name: 'resource-refresh',
+    payload: resourceRefreshJobPayload,
+    attempts: 1,
+    durability: { kind: 'derived' },
+    activeWorkDeduplication: 'simple',
+    delay: 'planner-stagger',
+    priority: 'resource',
+    operationIdentity: resourceRefreshJobId,
   }),
 } satisfies JobContractCatalog
 
@@ -262,7 +264,9 @@ export function parseJobPayload<Name extends JobName>(
   payload: unknown,
 ): JobPayloadByName[Name] {
   const result = getJobContract(name).payload.safeParse(payload)
-  if (!result.success) throw new Error(`Invalid ${name} job payload`)
+  if (!result.success) {
+    throw new Error(`Invalid ${name} job payload`)
+  }
   assertSafeJobPayload(result.data)
   return result.data
 }
@@ -272,18 +276,21 @@ export function resolveJobContract<Name extends JobName>(name: Name, payload: un
   const parsed = parseJobPayload(name, payload)
   return {
     contract: resolvedContract,
-    payload: parsed,
     operationIdentity: resolvedContract.operationIdentity(parsed),
+    payload: parsed,
   }
 }
 
 export function verifyJobContracts(contracts = listJobContracts()) {
   const names = new Set<string>()
   for (const job of contracts) {
-    if (names.has(job.name)) throw new Error(`Duplicate job contract ${job.name}`)
+    if (names.has(job.name)) {
+      throw new Error(`Duplicate job contract ${job.name}`)
+    }
     names.add(job.name)
-    if (job.durability.kind === 'authoritative' && job.durability.recovery !== 'outbox')
+    if (job.durability.kind === 'authoritative' && job.durability.recovery !== 'outbox') {
       throw new Error(`Authoritative job ${job.name} requires outbox recovery`)
+    }
   }
 }
 
@@ -365,8 +372,9 @@ export function assertSafeJobPayload(payload: unknown) {
     /(?:access|refresh)[_-]?token|bearer|credential|password|session|secret|encryption/i.test(
       serialized,
     )
-  )
+  ) {
     throw new Error('Job payload contains a sensitive value')
+  }
 }
 
 function contract<Name extends JobName>(

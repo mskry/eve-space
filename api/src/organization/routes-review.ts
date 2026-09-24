@@ -21,12 +21,11 @@ const characterExceptionParamsSchema = memberParamsSchema.extend({
 })
 const exceptionParamsSchema = z.object({ exceptionId: z.uuid('Enter a valid exception ID.') })
 const approveExceptionSchema = z
-  .object({ reason: reasonSchema, expiresAt: z.iso.datetime({ offset: true }).nullable() })
+  .object({ expiresAt: z.iso.datetime({ offset: true }).nullable(), reason: reasonSchema })
   .strict()
 const revokeExceptionSchema = z.object({ reason: reasonSchema }).strict()
 const maximumPostgresBigint = '9223372036854775807'
 const auditHistoryQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(50),
   beforeAuditSequence: z
     .string()
     .regex(/^[1-9]\d*$/)
@@ -37,6 +36,7 @@ const auditHistoryQuerySchema = z.object({
       { message: 'Audit sequence exceeds the supported range.' },
     )
     .optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
 })
 
 export const organizationReviewRoutes = new Hono<OrganizationSessionEnv>()
@@ -58,10 +58,10 @@ export const organizationReviewRoutes = new Hono<OrganizationSessionEnv>()
       const query = context.req.valid('query')
       return context.json(
         await listCurrentOrganizationAuditHistory({
-          limit: query.limit,
           beforeAuditSequence: query.beforeAuditSequence
             ? BigInt(query.beforeAuditSequence)
             : undefined,
+          limit: query.limit,
         }),
       )
     },
@@ -78,10 +78,10 @@ export const organizationReviewRoutes = new Hono<OrganizationSessionEnv>()
         const body = context.req.valid('json')
         const exception = await approveOrganizationCharacterException({
           actorUserId: context.var.session!.userId,
-          userId: parameters.userId,
           characterId: parameters.characterId,
-          reason: body.reason,
           expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+          reason: body.reason,
+          userId: parameters.userId,
         })
         return context.json({ exception }, 201)
       } catch (error) {
@@ -129,7 +129,9 @@ export const organizationReviewRoutes = new Hono<OrganizationSessionEnv>()
   )
 
 function characterExceptionMutationFailure(context: Context, error: unknown) {
-  if (!(error instanceof OrganizationCharacterExceptionMutationError)) throw error
+  if (!(error instanceof OrganizationCharacterExceptionMutationError)) {
+    throw error
+  }
   switch (error.code) {
     case 'hr-authority-required':
       return context.json(

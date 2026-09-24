@@ -47,10 +47,10 @@ export function createPermissionCatalogIndex(
 ): PermissionCatalogIndex {
   return {
     permissions,
-    profiles,
     permissionsByIdentity: new Map(
       permissions.map((permission) => [permissionIdentity(permission), permission]),
     ),
+    profiles,
     profilesByIdentity: new Map(profiles.map((profile) => [profileIdentity(profile), profile])),
   }
 }

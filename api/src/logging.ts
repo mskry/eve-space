@@ -3,7 +3,7 @@ import { isIP } from 'node:net'
 import { LogLayer, StructuredTransport, type LogLevelType } from 'loglayer'
 import { containsSensitiveText } from './sensitive-data.js'
 
-const maximumRequestPathLength = 2_048
+const maximumRequestPathLength = 2048
 const maximumDiagnosticIdentifierLength = 100
 const diagnosticIdentifierPattern = /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/
 const correlationIdentifierPattern =
@@ -128,8 +128,8 @@ export function recordDiagnostic(event: DiagnosticEvent, options: DiagnosticOpti
   const failureCategory =
     definition.failureCategory ?? validatedFailureCategory(options.failureCategory)
   const metadata = {
-    event,
     correlationId,
+    event,
     ...safeDiagnosticContext(definition.contextKeys, options.context),
     ...(failureCategory ? { failureCategory } : {}),
     ...(Object.hasOwn(options, 'error') ? safeErrorMetadata(options.error) : {}),
@@ -163,15 +163,18 @@ function safeRequestPath(path: string) {
     path.includes('#') ||
     hasUnsafeRequestPathCharacter(path) ||
     requestPathContainsSensitiveText(path)
-  )
+  ) {
     return '[redacted]'
+  }
   return path
 }
 
 function hasUnsafeRequestPathCharacter(path: string) {
   for (const character of path) {
     const codePoint = character.codePointAt(0)!
-    if (codePoint <= 31 || codePoint === 127) return true
+    if (codePoint <= 31 || codePoint === 127) {
+      return true
+    }
   }
   return false
 }
@@ -179,10 +182,14 @@ function hasUnsafeRequestPathCharacter(path: string) {
 function requestPathContainsSensitiveText(path: string) {
   let candidate = path
   for (let decodeCount = 0; decodeCount < 3; decodeCount++) {
-    if (containsSensitiveText(candidate)) return true
+    if (containsSensitiveText(candidate)) {
+      return true
+    }
     try {
       const decoded = decodeURIComponent(candidate)
-      if (decoded === candidate) return false
+      if (decoded === candidate) {
+        return false
+      }
       candidate = decoded
     } catch {
       return true
@@ -203,14 +210,16 @@ function diagnostic(
   contextKeys: readonly DiagnosticContextKey[],
   failureCategory?: DiagnosticFailureCategory,
 ) {
-  return { level, contextKeys, failureCategory }
+  return { contextKeys, failureCategory, level }
 }
 
 function safeDiagnosticContext(
   allowedKeys: readonly DiagnosticContextKey[],
   context: DiagnosticContext | undefined,
 ) {
-  if (!context) return {}
+  if (!context) {
+    return {}
+  }
   return Object.fromEntries(
     allowedKeys.flatMap((key) => {
       const value = safeDiagnosticValue(key, context[key])
@@ -220,9 +229,15 @@ function safeDiagnosticContext(
 }
 
 function safeDiagnosticValue(key: DiagnosticContextKey, value: unknown) {
-  if (key === 'port') return safePositiveDiagnosticInteger(value, 65_535)
-  if (key === 'payloadVersion') return safePositiveDiagnosticInteger(value, 1_000)
-  if (typeof value !== 'string') return undefined
+  if (key === 'port') {
+    return safePositiveDiagnosticInteger(value, 65_535)
+  }
+  if (key === 'payloadVersion') {
+    return safePositiveDiagnosticInteger(value, 1000)
+  }
+  if (typeof value !== 'string') {
+    return
+  }
 
   switch (key) {
     case 'path':

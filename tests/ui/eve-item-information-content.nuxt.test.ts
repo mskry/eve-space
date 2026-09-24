@@ -6,16 +6,18 @@ import { readWorkspaceFile } from '../support/read-workspace-file'
 
 const mountedWrappers: { unmount: () => void }[] = []
 const item = {
-  typeId: 34,
-  name: 'Tritanium',
-  description: 'Useful <img src=x onerror="globalThis.compromised=true"> material.',
-  group: { id: 18, name: 'Mineral' },
   category: { id: 4, name: 'Material' },
+  description: 'Useful <img src=x onerror="globalThis.compromised=true"> material.',
   detail: null,
+  group: { id: 18, name: 'Mineral' },
+  name: 'Tritanium',
+  typeId: 34,
 }
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
 })
 
 describe('EveItemInformationContent', () => {

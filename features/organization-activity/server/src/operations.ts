@@ -2,329 +2,329 @@ import { definePlatformExecutableEsiOperation } from '@eve-space/platform-module
 
 const audit = { reviewedDate: '2026-09-07' } as const
 const retry = {
-  kind: 'idempotent',
   attempts: 2,
   initialDelayMilliseconds: 250,
+  kind: 'idempotent',
   maximumDelayMilliseconds: 1000,
 } as const
 const responseValidation = { kind: 'enabled' } as const
 
 const sharedCache = {
-  kind: 'shared',
   collapse: true,
+  kind: 'shared',
+  retentionMilliseconds: 86_400_000,
   revalidate: true,
-  stale: { kind: 'bounded', milliseconds: 3600000 },
-  retentionMilliseconds: 86400000,
+  stale: { kind: 'bounded', milliseconds: 3_600_000 },
 } as const
 
 const privateCache = {
-  kind: 'shared',
   collapse: true,
+  kind: 'shared',
+  retentionMilliseconds: 86_400_000,
   revalidate: true,
-  stale: { kind: 'outage', milliseconds: 3600000 },
-  retentionMilliseconds: 86400000,
+  stale: { kind: 'outage', milliseconds: 3_600_000 },
 } as const
 
 export const campaignListOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetMilitaryCampaignsListing',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'public' },
-    identity: { kind: 'ordered', fields: [] },
-    freshness: { kind: 'relative', seconds: 60 },
     cache: sharedCache,
-    rateGroup: { kind: 'declared', group: 'military-campaign', maximumTokens: 300, window: '15m' },
     compatibility: { minimumDate: '2026-08-04' },
-    retry: retry,
+    freshness: { kind: 'relative', seconds: 60 },
+    identity: { fields: [], kind: 'ordered' },
+    rateGroup: { group: 'military-campaign', kind: 'declared', maximumTokens: 300, window: '15m' },
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetMilitaryCampaignsListing',
 })
 
 export const campaignDetailOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetMilitaryCampaignsDetail',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'public' },
-    identity: { kind: 'mixed', fields: [{ kind: 'scalar', field: 'campaignId' }] },
-    freshness: { kind: 'relative', seconds: 60 },
     cache: sharedCache,
-    rateGroup: { kind: 'declared', group: 'military-campaign', maximumTokens: 300, window: '15m' },
     compatibility: { minimumDate: '2026-08-04' },
-    retry: retry,
+    freshness: { kind: 'relative', seconds: 60 },
+    identity: { fields: [{ kind: 'scalar', field: 'campaignId' }], kind: 'mixed' },
+    rateGroup: { group: 'military-campaign', kind: 'declared', maximumTokens: 300, window: '15m' },
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetMilitaryCampaignsDetail',
 })
 
 export const objectiveListOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetMilitaryCampaignsObjectivesListing',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'public' },
+    cache: sharedCache,
+    compatibility: { minimumDate: '2026-08-04' },
+    freshness: { kind: 'relative', seconds: 60 },
     identity: {
-      kind: 'mixed',
       fields: [
         { kind: 'scalar', field: 'campaignId' },
         { kind: 'scalar', field: 'before', nullable: true },
         { kind: 'scalar', field: 'after', nullable: true },
         { kind: 'scalar', field: 'limit', nullable: true },
       ],
+      kind: 'mixed',
     },
-    freshness: { kind: 'relative', seconds: 60 },
-    cache: sharedCache,
-    rateGroup: { kind: 'declared', group: 'military-campaign', maximumTokens: 300, window: '15m' },
-    compatibility: { minimumDate: '2026-08-04' },
-    retry: retry,
+    rateGroup: { group: 'military-campaign', kind: 'declared', maximumTokens: 300, window: '15m' },
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetMilitaryCampaignsObjectivesListing',
 })
 
 export const objectiveDetailOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetMilitaryCampaignsObjectivesDetail',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'public' },
+    cache: sharedCache,
+    compatibility: { minimumDate: '2026-08-04' },
+    freshness: { kind: 'relative', seconds: 60 },
     identity: {
-      kind: 'mixed',
       fields: [
         { kind: 'scalar', field: 'campaignId' },
         { kind: 'scalar', field: 'objectiveId' },
       ],
+      kind: 'mixed',
     },
-    freshness: { kind: 'relative', seconds: 60 },
-    cache: sharedCache,
-    rateGroup: { kind: 'declared', group: 'military-campaign', maximumTokens: 300, window: '15m' },
-    compatibility: { minimumDate: '2026-08-04' },
-    retry: retry,
+    rateGroup: { group: 'military-campaign', kind: 'declared', maximumTokens: 300, window: '15m' },
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetMilitaryCampaignsObjectivesDetail',
 })
 
 export const jobListOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetFreelanceJobsListing',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'public' },
+    cache: sharedCache,
+    compatibility: { minimumDate: '2025-12-16' },
+    freshness: { kind: 'runtime-only' },
     identity: {
-      kind: 'mixed',
       fields: [
         { kind: 'scalar', field: 'before', nullable: true },
         { kind: 'scalar', field: 'after', nullable: true },
         { kind: 'scalar', field: 'limit', nullable: true },
       ],
+      kind: 'mixed',
     },
-    freshness: { kind: 'runtime-only' },
-    cache: sharedCache,
-    rateGroup: { kind: 'declared', group: 'freelance-job', maximumTokens: 12000, window: '15m' },
-    compatibility: { minimumDate: '2025-12-16' },
-    retry: retry,
+    rateGroup: { group: 'freelance-job', kind: 'declared', maximumTokens: 12_000, window: '15m' },
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetFreelanceJobsListing',
 })
 
 export const jobDetailOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetFreelanceJobsDetail',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'public' },
-    identity: { kind: 'mixed', fields: [{ kind: 'scalar', field: 'jobId' }] },
-    freshness: { kind: 'relative', seconds: 60 },
     cache: sharedCache,
-    rateGroup: { kind: 'declared', group: 'freelance-job', maximumTokens: 12000, window: '15m' },
     compatibility: { minimumDate: '2025-12-16' },
-    retry: retry,
+    freshness: { kind: 'relative', seconds: 60 },
+    identity: { fields: [{ kind: 'scalar', field: 'jobId' }], kind: 'mixed' },
+    rateGroup: { group: 'freelance-job', kind: 'declared', maximumTokens: 12_000, window: '15m' },
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetFreelanceJobsDetail',
 })
 
 export const corporationJobsOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetCorporationsFreelanceJobsListing',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'character', scope: 'esi-corporations.read_freelance_jobs.v1' },
+    cache: privateCache,
+    compatibility: { minimumDate: '2025-12-16' },
+    freshness: { kind: 'runtime-only' },
     identity: {
-      kind: 'mixed',
       fields: [
         { kind: 'scalar', field: 'corporationId' },
         { kind: 'scalar', field: 'before', nullable: true },
         { kind: 'scalar', field: 'after', nullable: true },
         { kind: 'scalar', field: 'limit', nullable: true },
       ],
+      kind: 'mixed',
     },
-    freshness: { kind: 'runtime-only' },
-    cache: privateCache,
-    rateGroup: { kind: 'declared', group: 'corp-freelance-job', maximumTokens: 300, window: '15m' },
-    compatibility: { minimumDate: '2025-12-16' },
-    retry: retry,
+    rateGroup: { group: 'corp-freelance-job', kind: 'declared', maximumTokens: 300, window: '15m' },
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetCorporationsFreelanceJobsListing',
 })
 
 export const projectListOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetCorporationsProjectsListing',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'character', scope: 'esi-corporations.read_projects.v1' },
+    cache: privateCache,
+    compatibility: { minimumDate: '2025-08-26' },
+    freshness: { kind: 'runtime-only' },
     identity: {
-      kind: 'mixed',
       fields: [
         { kind: 'scalar', field: 'corporationId' },
         { kind: 'scalar', field: 'before', nullable: true },
         { kind: 'scalar', field: 'after', nullable: true },
         { kind: 'scalar', field: 'limit', nullable: true },
       ],
+      kind: 'mixed',
     },
-    freshness: { kind: 'runtime-only' },
-    cache: privateCache,
-    rateGroup: { kind: 'declared', group: 'corp-project', maximumTokens: 600, window: '15m' },
-    compatibility: { minimumDate: '2025-08-26' },
-    retry: retry,
+    rateGroup: { group: 'corp-project', kind: 'declared', maximumTokens: 600, window: '15m' },
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetCorporationsProjectsListing',
 })
 
 export const projectDetailOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetCorporationsProjectsDetail',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'character', scope: 'esi-corporations.read_projects.v1' },
+    cache: privateCache,
+    compatibility: { minimumDate: '2025-08-26' },
+    freshness: { kind: 'relative', seconds: 60 },
     identity: {
-      kind: 'mixed',
       fields: [
         { kind: 'scalar', field: 'corporationId' },
         { kind: 'scalar', field: 'projectId' },
       ],
+      kind: 'mixed',
     },
-    freshness: { kind: 'relative', seconds: 60 },
-    cache: privateCache,
-    rateGroup: { kind: 'declared', group: 'corp-project', maximumTokens: 600, window: '15m' },
-    compatibility: { minimumDate: '2025-08-26' },
-    retry: retry,
+    rateGroup: { group: 'corp-project', kind: 'declared', maximumTokens: 600, window: '15m' },
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetCorporationsProjectsDetail',
 })
 
 export const projectContributionOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetCorporationsProjectsContribution',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'character', scope: 'esi-corporations.read_projects.v1' },
+    cache: privateCache,
+    compatibility: { minimumDate: '2025-08-26' },
+    freshness: { kind: 'relative', seconds: 60 },
     identity: {
-      kind: 'mixed',
       fields: [
         { kind: 'scalar', field: 'corporationId' },
         { kind: 'scalar', field: 'projectId' },
         { kind: 'scalar', field: 'characterId' },
       ],
+      kind: 'mixed',
     },
-    freshness: { kind: 'relative', seconds: 60 },
-    cache: privateCache,
-    rateGroup: { kind: 'declared', group: 'corp-project', maximumTokens: 600, window: '15m' },
-    compatibility: { minimumDate: '2025-08-26' },
-    retry: retry,
+    rateGroup: { group: 'corp-project', kind: 'declared', maximumTokens: 600, window: '15m' },
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetCorporationsProjectsContribution',
 })
 
 export const characterJobsOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetCharactersFreelanceJobsListing',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'character', scope: 'esi-characters.read_freelance_jobs.v1' },
-    identity: { kind: 'mixed', fields: [{ kind: 'scalar', field: 'characterId' }] },
-    freshness: { kind: 'relative', seconds: 60 },
     cache: privateCache,
-    rateGroup: { kind: 'declared', group: 'char-freelance-job', maximumTokens: 300, window: '15m' },
     compatibility: { minimumDate: '2025-12-16' },
-    retry: retry,
+    freshness: { kind: 'relative', seconds: 60 },
+    identity: { fields: [{ kind: 'scalar', field: 'characterId' }], kind: 'mixed' },
+    rateGroup: { group: 'char-freelance-job', kind: 'declared', maximumTokens: 300, window: '15m' },
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetCharactersFreelanceJobsListing',
 })
 
 export const jobParticipationOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetCharactersFreelanceJobsParticipation',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'character', scope: 'esi-characters.read_freelance_jobs.v1' },
+    cache: privateCache,
+    compatibility: { minimumDate: '2025-12-16' },
+    freshness: { kind: 'relative', seconds: 60 },
     identity: {
-      kind: 'mixed',
       fields: [
         { kind: 'scalar', field: 'characterId' },
         { kind: 'scalar', field: 'jobId' },
       ],
+      kind: 'mixed',
     },
-    freshness: { kind: 'relative', seconds: 60 },
-    cache: privateCache,
-    rateGroup: { kind: 'declared', group: 'char-freelance-job', maximumTokens: 300, window: '15m' },
-    compatibility: { minimumDate: '2025-12-16' },
-    retry: retry,
+    rateGroup: { group: 'char-freelance-job', kind: 'declared', maximumTokens: 300, window: '15m' },
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetCharactersFreelanceJobsParticipation',
 })
 
 export const characterObjectivesOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetCharactersMilitaryCampaignsObjectivesListing',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'character', scope: 'esi.activity.char:read' },
+    cache: privateCache,
+    compatibility: { minimumDate: '2026-08-04' },
+    freshness: { kind: 'relative', seconds: 60 },
     identity: {
-      kind: 'mixed',
       fields: [
         { kind: 'scalar', field: 'characterId' },
         { kind: 'scalar', field: 'before', nullable: true },
         { kind: 'scalar', field: 'after', nullable: true },
         { kind: 'scalar', field: 'limit', nullable: true },
       ],
+      kind: 'mixed',
     },
-    freshness: { kind: 'relative', seconds: 60 },
-    cache: privateCache,
     rateGroup: {
-      kind: 'declared',
       group: 'char-military-campaign',
+      kind: 'declared',
       maximumTokens: 150,
       window: '15m',
     },
-    compatibility: { minimumDate: '2026-08-04' },
-    retry: retry,
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetCharactersMilitaryCampaignsObjectivesListing',
 })
 
 export const objectiveParticipationOperation = definePlatformExecutableEsiOperation({
-  sdkOperationId: 'GetCharactersMilitaryCampaignsObjectivesParticipation',
   policy: {
     audit: audit,
-    representationVersion: 'v1',
     authorization: { kind: 'character', scope: 'esi.activity.char:read' },
+    cache: privateCache,
+    compatibility: { minimumDate: '2026-08-04' },
+    freshness: { kind: 'relative', seconds: 60 },
     identity: {
-      kind: 'mixed',
       fields: [
         { kind: 'scalar', field: 'characterId' },
         { kind: 'scalar', field: 'objectiveId' },
       ],
+      kind: 'mixed',
     },
-    freshness: { kind: 'relative', seconds: 60 },
-    cache: privateCache,
     rateGroup: {
-      kind: 'declared',
       group: 'char-military-campaign',
+      kind: 'declared',
       maximumTokens: 150,
       window: '15m',
     },
-    compatibility: { minimumDate: '2026-08-04' },
-    retry: retry,
+    representationVersion: 'v1',
     responseValidation: responseValidation,
+    retry: retry,
   },
+  sdkOperationId: 'GetCharactersMilitaryCampaignsObjectivesParticipation',
 })

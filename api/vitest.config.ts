@@ -4,16 +4,7 @@ import { apiCoverageThresholdScopes } from './vitest.coverage-thresholds.js'
 export default defineConfig({
   test: {
     clearMocks: true,
-    environment: 'node',
-    env: {
-      DATABASE_URL: 'postgres://localhost:5432/eve_space',
-    },
-    maxWorkers: 4,
-    include: ['tests/**/*.test.ts'],
-    exclude: ['tests/integration/**/*.test.ts', 'tests/packaging/**/*.test.ts'],
     coverage: {
-      provider: 'v8',
-      include: ['src/**/*.ts'],
       exclude: [
         'src/{env,server}.ts',
         'src/commands/{local-organization-fixture,redrive-domain-events,seed-local-organization-fixture,verify-worker-rollback}.ts',
@@ -28,6 +19,8 @@ export default defineConfig({
         'src/queue/{platform,redis,worker-identity}.ts',
         'src/worker/health.ts',
       ],
+      include: ['src/**/*.ts'],
+      provider: 'v8',
       reporter: ['text', 'json-summary', 'lcov'],
       reportsDirectory: 'coverage',
       thresholds: {
@@ -38,5 +31,12 @@ export default defineConfig({
         ...apiCoverageThresholdScopes.api.thresholds,
       },
     },
+    env: {
+      DATABASE_URL: 'postgres://localhost:5432/eve_space',
+    },
+    environment: 'node',
+    exclude: ['tests/integration/**/*.test.ts', 'tests/packaging/**/*.test.ts'],
+    include: ['tests/**/*.test.ts'],
+    maxWorkers: 4,
   },
 })

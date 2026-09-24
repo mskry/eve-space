@@ -36,53 +36,53 @@ import { executeInstalledResourceOperation } from '../../src/platform/resource-o
 const identity = {
   moduleId: 'test-feature',
   resourceId: 'wallet-balance',
+  subjectId: '1404328063',
   subjectKind: 'character',
   subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
-  subjectId: '1404328063',
 } as const
 
 const implementation = {
+  map: vi.fn(({ data }: { data: unknown }) => Number(data)),
+  materialize: vi.fn().mockResolvedValue(undefined),
   mode: 'single-request',
   operation: 'wallet-balance',
   request: vi.fn(({ characterId }: { characterId: number }) => ({
     path: { character_id: characterId },
   })),
-  map: vi.fn(({ data }: { data: unknown }) => Number(data)),
-  materialize: vi.fn().mockResolvedValue(undefined),
 } satisfies PlatformSingleRequestResourceImplementation
 type WalletCollectionContext = PlatformResourceCollectionContext<
   PlatformCharacterResourceSubject,
   PlatformEsiOperationProtocol<'wallet-balance'>
 >
-const walletInputs = { path: { character_id: 1404328063 } } as const
+const walletInputs = { path: { character_id: 1_404_328_063 } } as const
 const managedAuthority = {
+  disclosureVersion: 1,
+  managedMemberLifecycleId: '33333333-3333-4333-8333-333333333333',
   organizationDeploymentId: 1 as const,
   organizationVersion: 2,
-  targetUserId: '22222222-2222-4222-8222-222222222222',
-  managedMemberLifecycleId: '33333333-3333-4333-8333-333333333333',
-  sectionId: 'wallet',
-  disclosureVersion: 1,
   sectionActivationVersion: 1,
+  sectionId: 'wallet',
+  targetUserId: '22222222-2222-4222-8222-222222222222',
 }
 const resource = {
-  moduleId: identity.moduleId,
-  resourceId: identity.resourceId,
-  subjectKind: 'character',
-  operationId: 'wallet-balance',
-  materializationIntervalSeconds: 900,
   eligibility: { kind: 'current-owned-character' },
   implementation,
+  materializationIntervalSeconds: 900,
+  moduleId: identity.moduleId,
+  operationId: 'wallet-balance',
+  resourceId: identity.resourceId,
+  subjectKind: 'character',
 } as const satisfies PlatformInstalledResourceDescriptor
 
 const batchImplementation = {
   ...implementation,
   batch: {
+    classify: vi.fn(),
     mode: 'complete-observation',
     operation: 'universe-resolve-names',
     request: vi.fn((subjects: readonly PlatformCharacterResourceSubject[]) => ({
       ids: subjects.map(({ characterId }) => characterId),
     })),
-    classify: vi.fn(),
   },
 } as const satisfies PlatformSingleRequestResourceImplementation
 
@@ -99,54 +99,54 @@ describe('installed resource operation policy', () => {
       scopes: ['esi-wallet.read_character_wallet.v1'],
       tokenVersion: 4,
     })
-    mocks.resolveUniverseNamesBestEffort.mockResolvedValue({ names: new Map(), complete: true })
+    mocks.resolveUniverseNamesBestEffort.mockResolvedValue({ complete: true, names: new Map() })
   })
 
   test('maps cached platform wire data before returning a resource observation', async () => {
     const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution('123.45', 5, 'cache'))
     const guardExecution = vi.fn().mockResolvedValue({
+      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
+      characterId: 1_404_328_063,
       outcome: 'ready',
       resource,
-      characterId: 1404328063,
-      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
     })
 
     await expect(
       executeInstalledResourceOperation(identity, {
-        resources: [resource],
-        guardExecution,
         executeEsiOperation,
+        guardExecution,
+        resources: [resource],
       }),
     ).resolves.toMatchObject({
-      outcome: 'loaded',
       authorizationGeneration: 5,
+      outcome: 'loaded',
       result: { data: 123.45, source: 'cache' },
     })
     expect(executeEsiOperation).toHaveBeenCalledWith({
-      operation: 'wallet-balance',
-      inputs: walletInputs,
       authorization: {
-        kind: 'character-lifecycle',
-        characterId: 1404328063,
-        lifecycleId: identity.subjectLifecycleId,
+        characterId: 1_404_328_063,
         generation: 4,
+        kind: 'character-lifecycle',
+        lifecycleId: identity.subjectLifecycleId,
       },
+      inputs: walletInputs,
+      operation: 'wallet-balance',
     })
     expect(implementation.map).toHaveBeenCalledWith(
       expect.objectContaining({
+        capabilities: { coreData: {} },
+        data: '123.45',
         subject: {
+          characterId: 1_404_328_063,
           kind: 'character',
-          characterId: 1404328063,
           lifecycleId: identity.subjectLifecycleId,
         },
-        data: '123.45',
-        capabilities: { coreData: {} },
       }),
     )
   })
 
   test('awaits mapping with only declared core-data capabilities', async () => {
-    const publishedTypeGroups = vi.fn().mockResolvedValue({ rows: [], complete: true })
+    const publishedTypeGroups = vi.fn().mockResolvedValue({ complete: true, rows: [] })
     const map = vi.fn(async ({ data, capabilities }) => {
       await capabilities.coreData.publishedTypeGroups({ typeIds: [34] })
       return Number(data)
@@ -157,10 +157,10 @@ describe('installed resource operation policy', () => {
       implementation: { ...implementation, map },
     }
     const guardExecution = vi.fn().mockResolvedValue({
+      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
+      characterId: 1_404_328_063,
       outcome: 'ready',
       resource: mappedResource,
-      characterId: 1404328063,
-      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
     })
     const createMappingCapabilities = vi.fn().mockReturnValue({
       coreData: { publishedTypeGroups },
@@ -168,14 +168,14 @@ describe('installed resource operation policy', () => {
 
     await expect(
       executeInstalledResourceOperation(identity, {
-        resources: [mappedResource],
-        guardExecution,
         createMappingCapabilities,
         executeEsiOperation: vi.fn().mockResolvedValue(platformExecution('123.45', 4)),
+        guardExecution,
+        resources: [mappedResource],
       }),
     ).resolves.toMatchObject({ result: { data: 123.45 } })
     expect(createMappingCapabilities).toHaveBeenCalledWith(mappedResource)
-    expect(map.mock.calls[0]![0].capabilities).toEqual({
+    expect(map.mock.calls[0]![0].capabilities).toStrictEqual({
       coreData: { publishedTypeGroups },
     })
   })
@@ -184,17 +184,17 @@ describe('installed resource operation policy', () => {
     const map = vi.fn().mockRejectedValue(new Error('published product timed out with SQL detail'))
     const mappedResource = { ...resource, implementation: { ...implementation, map } }
     const guardExecution = vi.fn().mockResolvedValue({
+      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
+      characterId: 1_404_328_063,
       outcome: 'ready',
       resource: mappedResource,
-      characterId: 1404328063,
-      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
     })
 
     await expect(
       executeInstalledResourceOperation(identity, {
-        resources: [mappedResource],
-        guardExecution,
         executeEsiOperation: vi.fn().mockResolvedValue(platformExecution('123.45', 4)),
+        guardExecution,
+        resources: [mappedResource],
       }),
     ).rejects.toThrow('Platform resource mapping failed')
   })
@@ -202,19 +202,19 @@ describe('installed resource operation policy', () => {
   test('does not resolve lifecycle token material for a fresh cached result', async () => {
     const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution(123.45, 4, 'cache'))
     const guardExecution = vi.fn().mockResolvedValue({
+      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
+      characterId: 1_404_328_063,
       outcome: 'ready',
       resource,
-      characterId: 1404328063,
-      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
     })
 
     await expect(
       executeInstalledResourceOperation(identity, {
-        resources: [resource],
-        guardExecution,
         executeEsiOperation,
+        guardExecution,
+        resources: [resource],
       }),
-    ).resolves.toMatchObject({ outcome: 'loaded', authorizationGeneration: 4 })
+    ).resolves.toMatchObject({ authorizationGeneration: 4, outcome: 'loaded' })
     expect(executeEsiOperation).toHaveBeenCalledOnce()
   })
 
@@ -223,17 +223,17 @@ describe('installed resource operation policy', () => {
       .fn()
       .mockRejectedValue(new PlatformEsiRequestError('Platform ESI request inputs are invalid'))
     const guardExecution = vi.fn().mockResolvedValue({
+      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
+      characterId: 1_404_328_063,
       outcome: 'ready',
       resource,
-      characterId: 1404328063,
-      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
     })
 
     await expect(
       executeInstalledResourceOperation(identity, {
-        resources: [resource],
-        guardExecution,
         executeEsiOperation,
+        guardExecution,
+        resources: [resource],
       }),
     ).rejects.toThrow('Platform resource mapping failed')
     expect(executeEsiOperation).toHaveBeenCalledOnce()
@@ -245,18 +245,18 @@ describe('installed resource operation policy', () => {
     const guardExecution = vi.fn((executionIdentity, options) =>
       guardInstalledResourceExecution(executionIdentity, {
         ...options,
-        resolveEligibility: vi.fn().mockResolvedValue({ status: 'disabled' }),
         loadCharacterCacheAuthorization: loadCharacterAuthorization,
+        resolveEligibility: vi.fn().mockResolvedValue({ status: 'disabled' }),
       }),
     )
 
     await expect(
       executeInstalledResourceOperation(identity, {
-        resources: [resource],
-        guardExecution,
         createCapabilities,
+        guardExecution,
+        resources: [resource],
       }),
-    ).resolves.toEqual({ outcome: 'noop', reason: 'disabled' })
+    ).resolves.toStrictEqual({ outcome: 'noop', reason: 'disabled' })
     expect(loadCharacterAuthorization).not.toHaveBeenCalled()
     expect(implementation.request).not.toHaveBeenCalled()
     expect(implementation.map).not.toHaveBeenCalled()
@@ -265,8 +265,8 @@ describe('installed resource operation policy', () => {
 
   test('validates every installed descriptor without consulting runtime enablement', () => {
     const definitions = {
-      'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet'),
       'universe-resolve-names': executableDefinition('PostUniverseNames'),
+      'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet'),
     }
     expect(() => assertInstalledResourceDeclarations([resource], definitions)).not.toThrow()
     expect(() =>
@@ -285,9 +285,9 @@ describe('installed resource operation policy', () => {
         [
           {
             ...resource,
-            operationId: 'universe-resolve-names',
             dependentOperationIds: ['wallet-balance'],
             implementation: { ...implementation, operation: 'universe-resolve-names' },
+            operationId: 'universe-resolve-names',
           },
         ],
         definitions,
@@ -359,23 +359,23 @@ describe('installed resource operation policy', () => {
     const collectingResource = walletCollectionResource(collect)
     const guardExecution = vi.fn().mockResolvedValue(readyCollection(collectingResource))
     const options = {
-      resources: [collectingResource],
-      guardExecution,
+      createCapabilities: vi.fn().mockReturnValue({}),
       executeEsiOperation: vi.fn().mockResolvedValue(platformExecution(123, 4)),
+      guardExecution,
       loadCollectionContext: vi
         .fn()
-        .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
-      createCapabilities: vi.fn().mockReturnValue({}),
+        .mockResolvedValue({ organizationVersion: 2, corporationId: 98_000_001 }),
+      resources: [collectingResource],
     }
     await expect(executeInstalledResourceOperation(identity, options)).resolves.toMatchObject({
+      authorizationGeneration: 4,
       complete: false,
       organizationVersion: 2,
-      authorizationGeneration: 4,
       result: { data: { data: 123 } },
     })
     expect(guardExecution).toHaveBeenCalledTimes(2)
     expect(options.executeEsiOperation).toHaveBeenCalledWith(
-      expect.objectContaining({ operation: 'wallet-balance', inputs: walletInputs }),
+      expect.objectContaining({ inputs: walletInputs, operation: 'wallet-balance' }),
     )
     expect(options.createCapabilities).toHaveBeenCalledWith(collectingResource)
 
@@ -403,7 +403,9 @@ describe('installed resource operation policy', () => {
       'corporation is outside',
     )
     collect.mockImplementation(async (context) => {
-      for (let i = 0; i < 33; i++) await context.operations['wallet-balance'](walletInputs)
+      for (let i = 0; i < 33; i++) {
+        await context.operations['wallet-balance'](walletInputs)
+      }
       return { complete: false, data: null }
     })
     await expect(executeInstalledResourceOperation(identity, options)).rejects.toThrow(
@@ -439,21 +441,20 @@ describe('installed resource operation policy', () => {
 
     await expect(
       executeInstalledResourceOperation(identity, {
-        resources: [collectingResource],
-        guardExecution: vi.fn().mockResolvedValue(readyCollection(collectingResource)),
+        createCapabilities: vi.fn().mockReturnValue({}),
         executeEsiOperation,
+        guardExecution: vi.fn().mockResolvedValue(readyCollection(collectingResource)),
         loadCollectionContext: vi
           .fn()
-          .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
-        createCapabilities: vi.fn().mockReturnValue({}),
+          .mockResolvedValue({ organizationVersion: 2, corporationId: 98_000_001 }),
+        resources: [collectingResource],
       }),
-    ).resolves.toMatchObject({ outcome: 'loaded', complete: true })
+    ).resolves.toMatchObject({ complete: true, outcome: 'loaded' })
     expect(Object.isFrozen(operations)).toBe(true)
     expect(Object.getPrototypeOf(operations)).toBeNull()
-    expect(Object.keys(operations).toSorted((left, right) => left.localeCompare(right))).toEqual([
-      'universe-resolve-names',
-      'wallet-balance',
-    ])
+    expect(
+      Object.keys(operations).toSorted((left, right) => left.localeCompare(right)),
+    ).toStrictEqual(['universe-resolve-names', 'wallet-balance'])
     expect(executeEsiOperation).toHaveBeenCalledOnce()
   })
 
@@ -467,13 +468,13 @@ describe('installed resource operation policy', () => {
 
     await expect(
       executeInstalledResourceOperation(identity, {
-        resources: [collectingResource],
-        guardExecution: vi.fn().mockResolvedValue(readyCollection(collectingResource)),
+        createCapabilities: vi.fn().mockReturnValue({}),
         executeEsiOperation,
+        guardExecution: vi.fn().mockResolvedValue(readyCollection(collectingResource)),
         loadCollectionContext: vi
           .fn()
-          .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
-        createCapabilities: vi.fn().mockReturnValue({}),
+          .mockResolvedValue({ organizationVersion: 2, corporationId: 98_000_001 }),
+        resources: [collectingResource],
       }),
     ).rejects.toThrow('Platform resource mapping failed')
     expect(executeEsiOperation).not.toHaveBeenCalled()
@@ -497,13 +498,13 @@ describe('installed resource operation policy', () => {
 
     await expect(
       executeInstalledResourceOperation(identity, {
-        resources: [collectingResource],
-        guardExecution,
+        createCapabilities: vi.fn().mockReturnValue({}),
         executeEsiOperation,
+        guardExecution,
         loadCollectionContext: vi
           .fn()
-          .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
-        createCapabilities: vi.fn().mockReturnValue({}),
+          .mockResolvedValue({ organizationVersion: 2, corporationId: 98_000_001 }),
+        resources: [collectingResource],
       }),
     ).rejects.toThrow('authority changed')
   })
@@ -528,13 +529,13 @@ describe('installed resource operation policy', () => {
 
     await expect(
       executeInstalledResourceOperation(identity, {
-        resources: [collectingResource],
-        guardExecution: vi.fn().mockResolvedValue(readyCollection(collectingResource)),
+        createCapabilities: vi.fn().mockReturnValue({}),
         executeEsiOperation,
+        guardExecution: vi.fn().mockResolvedValue(readyCollection(collectingResource)),
         loadCollectionContext: vi
           .fn()
-          .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
-        createCapabilities: vi.fn().mockReturnValue({}),
+          .mockResolvedValue({ organizationVersion: 2, corporationId: 98_000_001 }),
+        resources: [collectingResource],
       }),
     ).resolves.toMatchObject({
       result: { data: 'collected', validatedAt: '2026-08-26T14:57:00.000Z' },
@@ -543,8 +544,8 @@ describe('installed resource operation policy', () => {
 
   test('validates inspectable execution-mode shapes for erased implementations', () => {
     const definitions = {
-      'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet'),
       'universe-resolve-names': executableDefinition('PostUniverseNames'),
+      'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet'),
     }
     const collection = walletCollectionResource(vi.fn())
     const validate = (candidate: unknown, dependentOperationIds?: readonly string[]) => () =>
@@ -568,7 +569,7 @@ describe('installed resource operation policy', () => {
     expect(validate({ ...implementation, collect: vi.fn() })).toThrow(
       'single-request execution cannot provide collect',
     )
-    expect(validate({ ...collection.implementation, request: vi.fn(), map: vi.fn() })).toThrow(
+    expect(validate({ ...collection.implementation, map: vi.fn(), request: vi.fn() })).toThrow(
       'bounded-collection execution cannot provide request or map',
     )
     expect(validate({ ...collection.implementation, collect: undefined })).toThrow(
@@ -589,19 +590,19 @@ describe('installed resource operation policy', () => {
   test('executes declared public enrichment without forwarding character authority', async () => {
     const collect = vi.fn(async (context) => ({
       complete: true,
-      data: await context.operations['universe-resolve-names']({ body: [1404328063] }),
+      data: await context.operations['universe-resolve-names']({ body: [1_404_328_063] }),
     }))
     const collectingResource = {
       ...walletCollectionResource(collect),
       dependentOperationIds: ['universe-resolve-names'],
     }
     const guardExecution = vi.fn().mockResolvedValue({
+      authorization: { tokenVersion: 4 },
+      authorizationCharacterId: 1_404_328_063,
+      authorizationCharacterLifecycleId: identity.subjectLifecycleId,
+      characterId: 1_404_328_063,
       outcome: 'ready',
       resource: collectingResource,
-      characterId: 1404328063,
-      authorization: { tokenVersion: 4 },
-      authorizationCharacterId: 1404328063,
-      authorizationCharacterLifecycleId: identity.subjectLifecycleId,
     })
     const executeEsiOperation = vi
       .fn()
@@ -609,26 +610,26 @@ describe('installed resource operation policy', () => {
 
     await expect(
       executeInstalledResourceOperation(identity, {
-        resources: [collectingResource],
-        guardExecution,
+        createCapabilities: vi.fn().mockReturnValue({}),
         executeEsiOperation,
+        guardExecution,
         loadCollectionContext: vi
           .fn()
-          .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
-        createCapabilities: vi.fn().mockReturnValue({}),
+          .mockResolvedValue({ organizationVersion: 2, corporationId: 98_000_001 }),
+        resources: [collectingResource],
       }),
     ).resolves.toMatchObject({
       authorizationGeneration: 4,
       complete: true,
       result: {
-        pagination: { pages: 4 },
         data: { pagination: { pages: 4 } },
+        pagination: { pages: 4 },
       },
     })
     expect(executeEsiOperation).toHaveBeenCalledWith({
-      operation: 'universe-resolve-names',
-      inputs: { body: [1404328063] },
       authorization: { kind: 'public' },
+      inputs: { body: [1_404_328_063] },
+      operation: 'universe-resolve-names',
     })
   })
 
@@ -642,28 +643,28 @@ describe('installed resource operation policy', () => {
       dependentOperationIds: ['universe-resolve-names'],
     }
     const guardExecution = vi.fn().mockResolvedValue({
+      authorization: { tokenVersion: 4 },
+      characterId: 1_404_328_063,
       outcome: 'ready',
       resource: collectingResource,
-      characterId: 1_404_328_063,
-      authorization: { tokenVersion: 4 },
     })
     mocks.resolveUniverseNamesBestEffort.mockResolvedValue({
-      names: new Map([[1, { id: 1, name: 'Resolved', category: 'character' }]]),
       complete: true,
+      names: new Map([[1, { id: 1, name: 'Resolved', category: 'character' }]]),
     })
 
     await expect(
       executeInstalledResourceOperation(identity, {
-        resources: [collectingResource],
+        createCapabilities: vi.fn().mockReturnValue({}),
         guardExecution,
         loadCollectionContext: vi
           .fn()
           .mockResolvedValue({ organizationVersion: 2, corporationId: 98_000_001 }),
-        createCapabilities: vi.fn().mockReturnValue({}),
+        resources: [collectingResource],
       }),
     ).resolves.toMatchObject({
       complete: true,
-      result: { data: { data: [{ id: 1, name: 'Resolved', category: 'character' }] } },
+      result: { data: { data: [{ category: 'character', id: 1, name: 'Resolved' }] } },
     })
     expect(mocks.resolveUniverseNamesBestEffort).toHaveBeenCalledWith([1, 90_666_561], {
       signal: undefined,
@@ -687,33 +688,33 @@ describe('installed resource operation policy', () => {
     )
     const assetResource = {
       ...resource,
-      resourceId: 'assets',
-      operationId: 'character-assets-page',
       dependentOperationIds: ['character-asset-names', 'universe-resolve-names'],
       implementation: {
         ...walletCollectionResource(vi.fn()).implementation,
         operation: 'character-assets-page',
       },
+      operationId: 'character-assets-page',
+      resourceId: 'assets',
     } as const satisfies PlatformInstalledResourceDescriptor
     const mailResource = {
       ...resource,
-      resourceId: 'mail',
-      operationId: 'mail-headers',
       dependentOperationIds: ['mail-message', 'mail-lists', 'universe-resolve-names'],
       implementation: {
         ...walletCollectionResource(vi.fn()).implementation,
         operation: 'mail-headers',
       },
+      operationId: 'mail-headers',
+      resourceId: 'mail',
     } as const satisfies PlatformInstalledResourceDescriptor
 
     expect(() =>
       assertInstalledResourceDeclarations([assetResource, mailResource], definitions),
     ).not.toThrow()
-    expect(assetResource.dependentOperationIds).toEqual([
+    expect(assetResource.dependentOperationIds).toStrictEqual([
       'character-asset-names',
       'universe-resolve-names',
     ])
-    expect(mailResource.dependentOperationIds).toEqual([
+    expect(mailResource.dependentOperationIds).toStrictEqual([
       'mail-message',
       'mail-lists',
       'universe-resolve-names',
@@ -722,9 +723,9 @@ describe('installed resource operation policy', () => {
 
   test('requires batch descriptors and implementations to match a public set operation', () => {
     const definitions = {
-      'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet'),
-      'universe-resolve-names': executableDefinition('PostUniverseNames'),
       'public-character': executableDefinition('GetCharactersDetail'),
+      'universe-resolve-names': executableDefinition('PostUniverseNames'),
+      'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet'),
     }
     expect(() => assertInstalledResourceDeclarations([batchResource], definitions)).not.toThrow()
     expect(() =>
@@ -832,23 +833,23 @@ function walletCollectionResource(collect: ReturnType<typeof vi.fn>) {
   return {
     ...resource,
     implementation: {
-      mode: 'bounded-collection' as const,
-      operation: 'wallet-balance',
       collect,
       materialize: vi.fn(),
+      mode: 'bounded-collection' as const,
+      operation: 'wallet-balance',
     },
   }
 }
 
 function readyCollection(collectingResource: PlatformInstalledResourceDescriptor) {
   return {
+    authorization: { tokenVersion: 4 },
+    authorizationCharacterId: 1_404_328_063,
+    authorizationCharacterLifecycleId: identity.subjectLifecycleId,
+    characterId: 1_404_328_063,
+    managedAuthority: null,
     outcome: 'ready',
     resource: collectingResource,
-    characterId: 1404328063,
-    authorization: { tokenVersion: 4 },
-    authorizationCharacterId: 1404328063,
-    authorizationCharacterLifecycleId: identity.subjectLifecycleId,
-    managedAuthority: null,
   }
 }
 
@@ -859,8 +860,6 @@ function executableDefinition<SdkOperation extends StableOperationId>(
     : 'public',
 ) {
   return {
-    sdkOperationId,
-    descriptor: operationRegistry[sdkOperationId] as never,
     contract: {
       audit: { esiOperationId: sdkOperationId, reviewedDate: '2026-09-03' },
       representationVersion: '1',
@@ -876,17 +875,19 @@ function executableDefinition<SdkOperation extends StableOperationId>(
       compatibility: { minimumDate: '2020-01-01' },
       responseValidation: { kind: 'enabled' },
     } as never,
+    descriptor: operationRegistry[sdkOperationId] as never,
+    sdkOperationId,
   } satisfies PlatformExecutableEsiOperationDefinition
 }
 
 function cached(data: unknown) {
   return {
-    data,
     cachedUntil: '2026-08-26T15:00:00.000Z',
-    validatedAt: '2026-08-26T14:58:00.000Z',
+    data,
+    quota: {},
     source: 'esi' as const,
     stale: false,
-    quota: {},
+    validatedAt: '2026-08-26T14:58:00.000Z',
   }
 }
 
@@ -898,8 +899,8 @@ function platformExecution(
 ) {
   return {
     ...cached(data),
-    source,
     authorizationGeneration,
+    source,
     ...(pagination ? { pagination } : {}),
   }
 }

@@ -52,7 +52,7 @@ export function loadPublishedTypeDetailsProduct(
       const revision = await selectCoreDataRevision(transaction, signal)
       const sourceRows =
         typeIds.length === 0 ? [] : await selectPublishedTypeDetails(transaction, signal, typeIds)
-      return { rows: sourceRows.map(mapPublishedTypeDetail), revision, complete: true }
+      return { complete: true, revision, rows: sourceRows.map(mapPublishedTypeDetail) }
     },
   )
 }
@@ -88,12 +88,12 @@ async function selectPublishedTypeDetails(
 
 function mapPublishedTypeDetail(row: PublishedTypeDetailRow): PublishedTypeDetail {
   return {
-    typeId: positiveSafeInteger(row.type_id, 'type-detail type ID'),
-    typeName: nonemptyString(row.type_name, 'type-detail type name'),
-    groupId: positiveSafeInteger(row.group_id, 'type-detail group ID'),
-    groupName: nonemptyString(row.group_name, 'type-detail group name'),
     categoryId: positiveSafeInteger(row.category_id, 'type-detail category ID'),
     categoryName: nonemptyString(row.category_name, 'type-detail category name'),
+    groupId: positiveSafeInteger(row.group_id, 'type-detail group ID'),
+    groupName: nonemptyString(row.group_name, 'type-detail group name'),
     packagedVolume: nullableNonnegativeFinite(row.packaged_volume, 'type-detail packaged volume'),
+    typeId: positiveSafeInteger(row.type_id, 'type-detail type ID'),
+    typeName: nonemptyString(row.type_name, 'type-detail type name'),
   }
 }

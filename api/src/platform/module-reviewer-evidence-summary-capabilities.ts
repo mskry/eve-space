@@ -52,8 +52,8 @@ export function createPlatformReviewerEvidenceSummaryReads(
     ((sectionId, target) =>
       createPlatformReviewerCollectionStatusReads({
         moduleId: binding.moduleId,
-        sectionId,
         resourceIds: binding.resourceIds,
+        sectionId,
         target,
       }))
 
@@ -71,18 +71,18 @@ export function createPlatformReviewerEvidenceSummaryReads(
           sections: await Promise.all(
             [...resourcesBySection].map(async ([sectionId, sectionResources]) => {
               const enabled = await enabledBySection.get(sectionId)!
-              if (!enabled)
+              if (!enabled) {
                 return {
-                  sectionId,
                   resources: sectionResources.map(({ resourceId }) => ({
                     resourceId,
                     status: 'unavailable' as const,
                     validatedAt: null,
                   })),
+                  sectionId,
                 }
+              }
               const statusReads = createStatusReads(sectionId, binding.target)
               return {
-                sectionId,
                 resources: await Promise.all(
                   sectionResources.map(async ({ resourceId }) => {
                     const status = await statusReads.read(resourceId, characterId)
@@ -93,6 +93,7 @@ export function createPlatformReviewerEvidenceSummaryReads(
                     }
                   }),
                 ),
+                sectionId,
               }
             }),
           ),

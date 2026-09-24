@@ -13,8 +13,8 @@ beforeAll(async () => {
   container = await new GenericContainer('postgres:17-alpine')
     .withEnvironment({
       POSTGRES_DB: 'eve_space',
-      POSTGRES_USER: 'eve_space',
       POSTGRES_PASSWORD: password,
+      POSTGRES_USER: 'eve_space',
     })
     .withExposedPorts(5432)
     .withWaitStrategy(Wait.forLogMessage(/database system is ready to accept connections/, 2))
@@ -51,15 +51,15 @@ describe('universe topology PostgreSQL projection', () => {
   test('loads one completed-build graph with disconnected systems intact', async () => {
     const snapshot = await loadUniverseTopologySnapshot(connection)
 
-    expect(snapshot.revision).toEqual({
+    expect(snapshot.revision).toStrictEqual({
       buildNumber: 1234,
       ingestVersion: 4,
       ingestedAt: '2026-08-26 12:00:00.123456+00',
     })
-    expect([...snapshot.systems.values()]).toEqual([
-      { id: 30_000_001, securityStatus: 0.9, neighbors: [30_000_002] },
-      { id: 30_000_002, securityStatus: 0.5, neighbors: [30_000_001] },
-      { id: 30_000_003, securityStatus: -0.2, neighbors: [] },
+    expect([...snapshot.systems.values()]).toStrictEqual([
+      { id: 30_000_001, neighbors: [30_000_002], securityStatus: 0.9 },
+      { id: 30_000_002, neighbors: [30_000_001], securityStatus: 0.5 },
+      { id: 30_000_003, neighbors: [], securityStatus: -0.2 },
     ])
   })
 })

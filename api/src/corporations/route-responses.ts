@@ -2,7 +2,9 @@ import type { Context } from 'hono'
 import { EsiQuotaError } from '../esi-gateway/failures.js'
 
 export function npcCorporationsError(context: Context, error: unknown) {
-  if (error instanceof EsiQuotaError) return esiCooldown(context, error)
+  if (error instanceof EsiQuotaError) {
+    return esiCooldown(context, error)
+  }
   return context.json({ message: 'Corporation data is temporarily unavailable.' }, 502)
 }
 
@@ -11,7 +13,9 @@ export function corporationResourceError(
   error: unknown,
   unavailableMessage: string,
 ) {
-  if (error instanceof EsiQuotaError) return esiCooldown(context, error)
+  if (error instanceof EsiQuotaError) {
+    return esiCooldown(context, error)
+  }
 
   const status = errorStatus(error)
   if (status === 404 || status === 422) {

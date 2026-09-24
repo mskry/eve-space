@@ -22,14 +22,14 @@ interface WalletBalanceRepresentationInput {
 }
 
 const walletBalanceRead = createCharacterEsiRead({
-  operation: 'wallet-balance',
-  name: 'wallet-balance-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdWallet.transport,
   cacheSchema: operationRegistry.GetCharactersCharacterIdWallet.responseSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdWallet.transport,
   encodeRequest: (input: WalletBalanceRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
   map: (response): number => response.data,
+  name: 'wallet-balance-core',
+  operation: 'wallet-balance',
 })
 
 export const walletScope = walletBalanceRead.requiredScope
@@ -70,17 +70,17 @@ const walletJournalCacheSchema = z
   .object({
     entries: z.array(
       z.object({
-        journalId: z.number(),
-        date: z.string(),
         amount: z.number().nullable(),
         balance: z.number().nullable(),
-        referenceType: z.string(),
-        description: z.string(),
-        reason: z.string().nullable(),
-        taxAmount: z.number().nullable(),
         context: z
           .object({ id: z.number(), type: z.enum(safeWalletJournalContextTypes) })
           .nullable(),
+        date: z.string(),
+        description: z.string(),
+        journalId: z.number(),
+        reason: z.string().nullable(),
+        referenceType: z.string(),
+        taxAmount: z.number().nullable(),
       }),
     ),
     page: z.number(),
@@ -110,10 +110,8 @@ const walletJournalCacheSchema = z
   })
 
 const walletJournalRead = createCharacterEsiRead({
-  operation: 'wallet-journal',
-  name: 'wallet-journal-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdWalletJournal.transport,
   cacheSchema: walletJournalCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdWalletJournal.transport,
   encodeRequest: (input: WalletJournalRepresentationInput) => ({
     path: { character_id: input.characterId },
     query: { page: input.page },
@@ -123,6 +121,8 @@ const walletJournalRead = createCharacterEsiRead({
     page: input.page,
     totalPages: resolveFinanceTotalPages(response.meta.pagination?.pages, input.page),
   }),
+  name: 'wallet-journal-core',
+  operation: 'wallet-journal',
 })
 
 interface WalletTransactionsRepresentationInput {
@@ -151,9 +151,11 @@ interface WalletTransactionsData {
 
 type WalletTransactionsResult = WalletTransactionsData & EsiReadResultMetadata
 
-const walletTransactionPageSize = 2_500
+const walletTransactionPageSize = 2500
 
 const walletTransactionsCacheSchema = z.object({
+  fromId: z.number().nullable(),
+  nextFromId: z.number().nullable(),
   transactions: z.array(
     z.object({
       transactionId: z.number(),
@@ -169,15 +171,11 @@ const walletTransactionsCacheSchema = z.object({
       locationName: z.string().nullable(),
     }),
   ),
-  fromId: z.number().nullable(),
-  nextFromId: z.number().nullable(),
 })
 
 const walletTransactionsRead = createCharacterEsiRead({
-  operation: 'wallet-transactions',
-  name: 'wallet-transactions-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdWalletTransactions.transport,
   cacheSchema: walletTransactionsCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdWalletTransactions.transport,
   encodeRequest: (input: WalletTransactionsRepresentationInput) => ({
     path: { character_id: input.characterId },
     ...(input.fromId === null ? {} : { query: { from_id: input.fromId } }),
@@ -198,6 +196,8 @@ const walletTransactionsRead = createCharacterEsiRead({
           : Math.min(...response.data.map((transaction) => transaction.transaction_id)),
     }
   },
+  name: 'wallet-transactions-core',
+  operation: 'wallet-transactions',
 })
 
 export async function getWalletBalance(
@@ -223,7 +223,9 @@ export async function getWalletTransactions(
   fromId: number | null = null,
   subjectLifecycleId: string,
 ): Promise<WalletTransactionsResult> {
-  if (fromId !== null) assertFinancePositiveSafeInteger(fromId, 'Wallet transaction continuation')
+  if (fromId !== null) {
+    assertFinancePositiveSafeInteger(fromId, 'Wallet transaction continuation')
+  }
   const result = await walletTransactionsRead.execute({ characterId, fromId, subjectLifecycleId })
   return { ...result.data, ...toEsiReadResultMetadata(result) }
 }

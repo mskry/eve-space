@@ -111,7 +111,7 @@ describe('query persistence runtime', () => {
       expect(ownership.value).toBe(true)
 
       if (transition === 'invalidate') {
-        await invalidatePrivateQueryScope(runtime.queryCache, { kind: 'character', characterId: 7 })
+        await invalidatePrivateQueryScope(runtime.queryCache, { characterId: 7, kind: 'character' })
       } else if (transition === 'logout') {
         await applyVerifiedQueryIdentity(runtime.queryCache, { authenticated: false })
       } else if (transition === 'owner-change') {
@@ -121,7 +121,9 @@ describe('query persistence runtime', () => {
       }
 
       expect(ownership.value).toBe(false)
-      if (transition !== 'dispose') runtime.dispose()
+      if (transition !== 'dispose') {
+        runtime.dispose()
+      }
     },
   )
 
@@ -167,7 +169,7 @@ describe('query persistence runtime', () => {
     expect(
       readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
     ).toBe(true)
-    await refreshPrivateQueryAdmission(runtime.queryCache, { kind: 'character', characterId: 7 })
+    await refreshPrivateQueryAdmission(runtime.queryCache, { characterId: 7, kind: 'character' })
     expect(loadAdmission).toHaveBeenCalledOnce()
     runtime.dispose()
   })
@@ -201,7 +203,7 @@ describe('query persistence runtime', () => {
       expect(
         readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
       ).toBe(false)
-      expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(
+      expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
         authenticatedSession(),
       )
       runtime.dispose()
@@ -213,13 +215,13 @@ describe('query persistence runtime', () => {
     await readyRuntime(runtime)
     const entry = runtime.queryCache.ensure({
       key: CHARACTER_KEY,
+      meta: { esiPersistence: { characterId: 7, kind: 'character-esi' } },
       query: async () => ({ name: 'Live' }),
-      meta: { esiPersistence: { kind: 'character-esi', characterId: 7 } },
     })
 
     await runtime.queryCache.fetch(entry)
 
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Live' })
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Live' })
     runtime.dispose()
   })
 
@@ -245,12 +247,14 @@ describe('query persistence runtime', () => {
     signalNuxtHydrationFinished(runtime.queryCache)
     await expect(applying).resolves.toBe(true)
 
-    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Public' })
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Public' })
     expect(runtime.queryCache.get(PUBLIC_KEY)?.ext.isRetrying).toBeDefined()
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Character' })
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Character' })
     expect(runtime.queryCache.get(CHARACTER_KEY)).toBe(characterEntry)
-    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toEqual({ name: 'Organization' })
-    expect(readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value).toEqual({
+    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toStrictEqual({
+      name: 'Organization',
+    })
+    expect(readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value).toStrictEqual({
       kind: 'restored',
       originalSuccessAt: new Date(NOW - 60_000).toISOString(),
       retainedPrivateAccess: true,
@@ -269,12 +273,12 @@ describe('query persistence runtime', () => {
     )
     await vi.waitFor(() => expect(storage.generationReads).toBe(1))
 
-    await invalidatePrivateQueryScope(runtime.queryCache, { kind: 'character', characterId: 7 })
+    await invalidatePrivateQueryScope(runtime.queryCache, { characterId: 7, kind: 'character' })
     signalNuxtHydrationFinished(runtime.queryCache)
 
     await expect(applying).resolves.toBe(false)
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
-    expect(readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value).toEqual({
+    expect(readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value).toStrictEqual({
       kind: 'fresh',
       retainedPrivateAccess: false,
     })
@@ -286,7 +290,7 @@ describe('query persistence runtime', () => {
     vi.setSystemTime(NOW)
     const envelope = envelopeWithPrivatePartitions()
     envelope.characters['7']!.cache[JSON.stringify(CHARACTER_KEY)]![2] =
-      NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 1_000
+      NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 1000
     const storage = new MemoryQueryPersistenceStorage(envelope)
     const runtime = createRuntime(storage, undefined, Date.now)
     await awaitQueryPersistenceRestoration(runtime.queryCache)
@@ -297,12 +301,12 @@ describe('query persistence runtime', () => {
     )
     await vi.waitFor(() => expect(storage.generationReads).toBe(1))
 
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
     signalNuxtHydrationFinished(runtime.queryCache)
 
     await expect(applying).resolves.toBe(true)
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
-    expect(readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value).toEqual({
+    expect(readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value).toStrictEqual({
       kind: 'fresh',
       retainedPrivateAccess: false,
     })
@@ -317,7 +321,7 @@ describe('query persistence runtime', () => {
     await prefetchProtectedQuery(runtime.queryCache, characterPrefetch(query), protectedAccess, 7)
 
     expect(query).toHaveBeenCalledOnce()
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Prefetched' })
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Prefetched' })
     runtime.dispose()
   })
 
@@ -332,7 +336,7 @@ describe('query persistence runtime', () => {
     await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
       admission(),
     )
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Character' })
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Character' })
     const query = vi.fn().mockResolvedValue({ name: 'Prefetched' })
 
     currentTime += 30_001
@@ -357,7 +361,7 @@ describe('query persistence runtime', () => {
     await restoration
 
     expect(ready).toBe(true)
-    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Public' })
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Public' })
     runtime.mount()
     runtime.dispose()
   })
@@ -372,7 +376,7 @@ describe('query persistence runtime', () => {
     await runtime.queryCache.fetch(entry)
     signalNuxtHydrationFinished(runtime.queryCache)
 
-    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Current' })
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Current' })
     expect(readQueryPersistenceState(runtime.queryCache, PUBLIC_KEY).value).toMatchObject({
       kind: 'fresh',
       originalSuccessAt: new Date(NOW).toISOString(),
@@ -385,16 +389,16 @@ describe('query persistence runtime', () => {
     vi.setSystemTime(NOW)
     const envelope = envelopeWithPrivatePartitions()
     envelope.public[JSON.stringify(PUBLIC_KEY)]![2] =
-      NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 1_000
+      NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 1000
     const storage = new MemoryQueryPersistenceStorage(envelope)
     const runtime = createRuntime(storage, undefined, Date.now)
     await awaitQueryPersistenceRestoration(runtime.queryCache)
 
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
     signalNuxtHydrationFinished(runtime.queryCache)
 
     expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toBeUndefined()
-    expect(storage.snapshot()?.public).toEqual({})
+    expect(storage.snapshot()?.public).toStrictEqual({})
     runtime.dispose()
   })
 
@@ -408,10 +412,12 @@ describe('query persistence runtime', () => {
     )
 
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
-    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toEqual({ name: 'Organization' })
+    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toStrictEqual({
+      name: 'Organization',
+    })
     expect(storage.snapshot()).toMatchObject({
-      invalidationGeneration: 1,
       characters: {},
+      invalidationGeneration: 1,
       organizations: envelopeWithPrivatePartitions().organizations,
     })
     runtime.dispose()
@@ -457,9 +463,11 @@ describe('query persistence runtime', () => {
       admission({ organizationValidUntil: validUntil }),
     )
 
-    await vi.advanceTimersByTimeAsync(9_999)
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Character' })
-    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toEqual({ name: 'Organization' })
+    await vi.advanceTimersByTimeAsync(9999)
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Character' })
+    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toStrictEqual({
+      name: 'Organization',
+    })
 
     await vi.advanceTimersByTimeAsync(1)
     await vi.waitFor(() => expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined())
@@ -482,12 +490,12 @@ describe('query persistence runtime', () => {
     await vi.advanceTimersByTimeAsync(30_000)
     await vi.waitFor(() => expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined())
 
-    expect(runtime.queryCache.getQueryData(rosterKey)).toEqual({ characters: [7] })
+    expect(runtime.queryCache.getQueryData(rosterKey)).toStrictEqual({ characters: [7] })
     expect(storage.invalidationCalls).toBe(0)
     await expect(
       applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission),
     ).resolves.toBe(true)
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Character' })
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Character' })
     runtime.dispose()
   })
 
@@ -507,9 +515,9 @@ describe('query persistence runtime', () => {
 
     await vi.waitFor(() => expect(loadAdmission).toHaveBeenCalledTimes(2))
     await vi.waitFor(() =>
-      expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Character' }),
+      expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Character' }),
     )
-    expect(runtime.queryCache.getQueryData(rosterKey)).toEqual({ characters: [7] })
+    expect(runtime.queryCache.getQueryData(rosterKey)).toStrictEqual({ characters: [7] })
     expect(storage.invalidationCalls).toBe(0)
     runtime.dispose()
   })
@@ -530,7 +538,7 @@ describe('query persistence runtime', () => {
     const invalidateCharacterScope = vi.fn()
     subscribePrivateQueryInvalidation(
       runtime.queryCache,
-      { kind: 'character', characterId: 7 },
+      { characterId: 7, kind: 'character' },
       invalidateCharacterScope,
     )
     currentTime += 31_000
@@ -566,7 +574,7 @@ describe('query persistence runtime', () => {
     const invalidateCharacterScope = vi.fn()
     subscribePrivateQueryInvalidation(
       runtime.queryCache,
-      { kind: 'character', characterId: 7 },
+      { characterId: 7, kind: 'character' },
       invalidateCharacterScope,
     )
     currentTime += 31_000
@@ -595,7 +603,7 @@ describe('query persistence runtime', () => {
     const invalidateCharacterScope = vi.fn()
     subscribePrivateQueryInvalidation(
       runtime.queryCache,
-      { kind: 'character', characterId: 7 },
+      { characterId: 7, kind: 'character' },
       invalidateCharacterScope,
     )
 
@@ -660,14 +668,16 @@ describe('query persistence runtime', () => {
     await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), loadAdmission)
     await runtime.activatePrivateQuery()
     await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledOnce())
-    expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toEqual({ name: 'Live private' })
+    expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toStrictEqual({
+      name: 'Live private',
+    })
 
     currentTime += 31_000
     globalThis.dispatchEvent(new Event('focus'))
 
     await vi.waitFor(() => expect(loadAdmission).toHaveBeenCalledTimes(2))
     await vi.waitFor(() =>
-      expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toEqual({
+      expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toStrictEqual({
         name: 'Live private',
       }),
     )
@@ -717,7 +727,9 @@ describe('query persistence runtime', () => {
     )
 
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
-    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toEqual({ name: 'Organization' })
+    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toStrictEqual({
+      name: 'Organization',
+    })
     expect(storage.snapshot()).toMatchObject({ characters: {}, invalidationGeneration: 1 })
     runtime.dispose()
   })
@@ -758,7 +770,9 @@ describe('query persistence runtime', () => {
 
     expect(loadAdmission).toHaveBeenCalledTimes(2)
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
-    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toEqual({ name: 'Organization' })
+    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toStrictEqual({
+      name: 'Organization',
+    })
     expect(storage.snapshot()).toMatchObject({ characters: {}, invalidationGeneration: 1 })
     runtime.dispose()
   })
@@ -778,14 +792,14 @@ describe('query persistence runtime', () => {
 
     await vi.advanceTimersByTimeAsync(25_000)
 
-    expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(
+    expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
       authenticatedSession(),
     )
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
     expect(storage.invalidationCalls).toBe(0)
     const liveEntry = ensurePrivateQuery(runtime.queryCache, async () => ({ name: 'Live result' }))
     await runtime.queryCache.fetch(liveEntry)
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Live result' })
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Live result' })
     runtime.dispose()
   })
 
@@ -803,15 +817,17 @@ describe('query persistence runtime', () => {
 
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
     expect(storage.invalidationCalls).toBe(0)
-    expect(notifications.published).toEqual([])
+    expect(notifications.published).toStrictEqual([])
 
     await expect(
       applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
         admission(),
       ),
     ).resolves.toBe(true)
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Character' })
-    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toEqual({ name: 'Organization' })
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Character' })
+    expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toStrictEqual({
+      name: 'Organization',
+    })
     runtime.dispose()
   })
 
@@ -824,14 +840,14 @@ describe('query persistence runtime', () => {
     await expect(
       applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () => {
         throw new ApiQueryError('Authentication required.', {
-          status: 401,
           code: 'AUTH_REQUIRED',
+          status: 401,
         })
       }),
     ).resolves.toBe(false)
 
     expect(storage.invalidationCalls).toBe(1)
-    expect(notifications.published).toEqual([{ generation: 1, scope: { kind: 'all' } }])
+    expect(notifications.published).toStrictEqual([{ generation: 1, scope: { kind: 'all' } }])
     await expect(
       applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
         admission(),
@@ -848,7 +864,7 @@ describe('query persistence runtime', () => {
     await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
       admission(),
     )
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Character' })
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Character' })
 
     suspendPrivateQueryAdmission(runtime.queryCache)
 
@@ -862,7 +878,7 @@ describe('query persistence runtime', () => {
         admission(),
       ),
     ).resolves.toBe(true)
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Character' })
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Character' })
     runtime.dispose()
   })
 
@@ -870,8 +886,8 @@ describe('query persistence runtime', () => {
     ['30-second client deadline', 30_000, admission()],
     [
       'earlier organization deadline',
-      5_000,
-      admission({ organizationValidUntil: new Date(NOW + 5_000).toISOString() }),
+      5000,
+      admission({ organizationValidUntil: new Date(NOW + 5000).toISOString() }),
     ],
   ] as const)('rejects an admission response arriving at its %s', async (_label, delay, result) => {
     vi.useFakeTimers()
@@ -912,7 +928,7 @@ describe('query persistence runtime', () => {
 
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
     await changed
-    expect(runtime.queryCache.getQueryData(['private', 'session'])).toEqual(
+    expect(runtime.queryCache.getQueryData(['private', 'session'])).toStrictEqual(
       authenticatedSession('user-2'),
     )
     runtime.dispose()
@@ -920,46 +936,46 @@ describe('query persistence runtime', () => {
 
   it.each([
     {
+      characterRetained: false,
       label: 'logout',
-      session: { authenticated: false as const },
       nextAdmission: null,
-      characterRetained: false,
       organizationRetained: false,
+      session: { authenticated: false as const },
     },
     {
+      characterRetained: false,
       label: 'user switch',
-      session: authenticatedSession('user-2'),
       nextAdmission: admission({ userId: 'user-2' }),
-      characterRetained: false,
       organizationRetained: false,
+      session: authenticatedSession('user-2'),
     },
     {
+      characterRetained: false,
       label: 'character revision',
-      session: authenticatedSession(),
       nextAdmission: admission({ characterRevision: 'character-revision-2' }),
-      characterRetained: false,
       organizationRetained: true,
+      session: authenticatedSession(),
     },
     {
+      characterRetained: true,
       label: 'organization version',
-      session: authenticatedSession(),
       nextAdmission: admission({ organizationVersion: 4 }),
-      characterRetained: true,
       organizationRetained: false,
+      session: authenticatedSession(),
     },
     {
+      characterRetained: true,
       label: 'organization revision',
-      session: authenticatedSession(),
       nextAdmission: admission({ organizationRevision: 'organization-revision-2' }),
-      characterRetained: true,
       organizationRetained: false,
+      session: authenticatedSession(),
     },
     {
-      label: 'module scope removal',
-      session: authenticatedSession(),
-      nextAdmission: admission({ admissionScopes: [] }),
       characterRetained: true,
+      label: 'module scope removal',
+      nextAdmission: admission({ admissionScopes: [] }),
       organizationRetained: false,
+      session: authenticatedSession(),
     },
   ])(
     'keeps control and public data durable through $label cleanup without resurrection',
@@ -979,16 +995,16 @@ describe('query persistence runtime', () => {
         nextAdmission ? async () => nextAdmission : undefined,
       )
 
-      expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Public' })
+      expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Public' })
       expect(runtime.queryCache.getQueryData(CHARACTER_KEY) !== undefined).toBe(characterRetained)
       expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY) !== undefined).toBe(
         organizationRetained,
       )
       expect(storage.currentGeneration).toBe(1)
-      expect(storage.snapshot()?.public[JSON.stringify(PUBLIC_KEY)]?.[0]).toEqual({
+      expect(storage.snapshot()?.public[JSON.stringify(PUBLIC_KEY)]?.[0]).toStrictEqual({
         name: 'Public',
       })
-      await vi.advanceTimersByTimeAsync(1_000)
+      await vi.advanceTimersByTimeAsync(1000)
       runtime.dispose()
 
       const reloaded = createRuntime(storage, undefined, Date.now)
@@ -996,7 +1012,7 @@ describe('query persistence runtime', () => {
       if (nextAdmission) {
         await applyVerifiedQueryIdentity(reloaded.queryCache, session, async () => nextAdmission)
       }
-      expect(reloaded.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Public' })
+      expect(reloaded.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Public' })
       expect(reloaded.queryCache.getQueryData(CHARACTER_KEY) !== undefined).toBe(characterRetained)
       expect(reloaded.queryCache.getQueryData(ORGANIZATION_KEY) !== undefined).toBe(
         organizationRetained,
@@ -1016,19 +1032,19 @@ describe('query persistence runtime', () => {
     const resetConsumerState = vi.fn()
     subscribePrivateQueryInvalidation(
       runtime.queryCache,
-      { kind: 'character', characterId: 7 },
+      { characterId: 7, kind: 'character' },
       resetConsumerState,
     )
     const siblingEntry = runtime.queryCache.ensure({
       key: CHARACTER_SIBLING_KEY,
+      meta: { esiPersistence: { characterId: 7, kind: 'character-esi' } },
       query: async () => ({ balance: 100 }),
       staleTime: 0,
-      meta: { esiPersistence: { kind: 'character-esi', characterId: 7 } },
     })
     await runtime.queryCache.fetch(siblingEntry)
     const scopeError = new ApiQueryError('Character scope required.', {
-      status: 403,
       code: 'EVE_SCOPE_REQUIRED',
+      status: 403,
     })
     const deniedEntry = ensurePrivateQuery(runtime.queryCache, async () => {
       throw scopeError
@@ -1038,9 +1054,9 @@ describe('query persistence runtime', () => {
     await vi.waitFor(() => expect(storage.invalidationCalls).toBe(1))
 
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
-    expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toEqual({ balance: 100 })
+    expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toStrictEqual({ balance: 100 })
     expect(resetConsumerState).not.toHaveBeenCalled()
-    expect(storage.snapshot()?.characters).toEqual({})
+    expect(storage.snapshot()?.characters).toStrictEqual({})
     runtime.dispose()
   })
 
@@ -1052,7 +1068,7 @@ describe('query persistence runtime', () => {
       admission(),
     )
     const resetConsumerState = vi.fn()
-    const scope = { kind: 'character', characterId: 7 } as const
+    const scope = { characterId: 7, kind: 'character' } as const
     subscribePrivateQueryInvalidation(runtime.queryCache, scope, resetConsumerState)
 
     expect(
@@ -1103,8 +1119,8 @@ describe('query persistence runtime', () => {
     priorOwnerAdmission.resolve(admission())
 
     await expect(priorOwnerApplying).resolves.toBe(false)
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'User 2' })
-    expect(runtime.queryCache.getQueryData(['private', 'session'])).toEqual(
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'User 2' })
+    expect(runtime.queryCache.getQueryData(['private', 'session'])).toStrictEqual(
       authenticatedSession('user-2'),
     )
     expect(storage.currentGeneration).toBe(generationAfterNextOwner)
@@ -1130,7 +1146,7 @@ describe('query persistence runtime', () => {
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
     expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeUndefined()
     expect(storage.invalidationCalls).toBe(1)
-    expect(notifications.published).toEqual([{ generation: 1, scope: { kind: 'all' } }])
+    expect(notifications.published).toStrictEqual([{ generation: 1, scope: { kind: 'all' } }])
     runtime.dispose()
   })
 
@@ -1151,7 +1167,7 @@ describe('query persistence runtime', () => {
 
     await expect(applying).resolves.toBe(false)
     expect(storage.invalidationCalls).toBe(1)
-    expect(notifications.published).toEqual([{ generation: 1, scope: { kind: 'all' } }])
+    expect(notifications.published).toStrictEqual([{ generation: 1, scope: { kind: 'all' } }])
     runtime.dispose()
   })
 
@@ -1173,7 +1189,7 @@ describe('query persistence runtime', () => {
     await expect(applying).resolves.toBe(false)
     expect(storage.currentGeneration).toBe(1)
     expect(storage.invalidationCalls).toBe(1)
-    expect(notifications.published).toEqual([{ generation: 1, scope: { kind: 'all' } }])
+    expect(notifications.published).toStrictEqual([{ generation: 1, scope: { kind: 'all' } }])
     runtime.dispose()
   })
 
@@ -1187,8 +1203,8 @@ describe('query persistence runtime', () => {
     )
 
     const first = invalidatePrivateQueryScope(runtime.queryCache, {
-      kind: 'character',
       characterId: 7,
+      kind: 'character',
     })
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
     expect(
@@ -1202,8 +1218,8 @@ describe('query persistence runtime', () => {
     storage.releaseFirstInvalidation()
 
     await expect(first).resolves.toBe(false)
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'New epoch' })
-    expect(notifications.published).toEqual([{ generation: 2, scope: { kind: 'all' } }])
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'New epoch' })
+    expect(notifications.published).toStrictEqual([{ generation: 2, scope: { kind: 'all' } }])
     runtime.dispose()
   })
 
@@ -1224,11 +1240,11 @@ describe('query persistence runtime', () => {
     await expect(invalidating).resolves.toBe(false)
     const entry = ensurePrivateQuery(runtime.queryCache, async () => ({ name: 'Must not persist' }))
     await runtime.queryCache.fetch(entry)
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
 
     expect(storage.privateWritePermissions.length).toBeGreaterThan(writesBeforeInvalidation)
     expect(storage.privateWritePermissions.at(-1)).toBe(false)
-    expect(notifications.published).toEqual([{ generation: null, scope: { kind: 'all' } }])
+    expect(notifications.published).toStrictEqual([{ generation: null, scope: { kind: 'all' } }])
     expect(
       readQueryPersistenceState(runtime.queryCache, CHARACTER_KEY).value.retainedPrivateAccess,
     ).toBe(false)
@@ -1245,7 +1261,7 @@ describe('query persistence runtime', () => {
     )
     storage.setGeneration(2)
 
-    notifications.emit({ generation: 2, scope: { kind: 'character', characterId: 7 } })
+    notifications.emit({ generation: 2, scope: { characterId: 7, kind: 'character' } })
 
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
     expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeUndefined()
@@ -1254,33 +1270,33 @@ describe('query persistence runtime', () => {
 
   it.each([
     {
-      label: 'character denial',
-      kind: 'character' as const,
+      characterRetained: false,
       error: new ApiQueryError('Character reauthorization required.', {
         status: 403,
         code: 'EVE_REAUTH_REQUIRED',
       }),
-      characterRetained: false,
+      kind: 'character' as const,
+      label: 'character denial',
       organizationRetained: true,
     },
     {
-      label: 'organization denial',
-      kind: 'organization' as const,
+      characterRetained: true,
       error: new ApiQueryError('Organization access denied.', {
         status: 403,
         code: 'ORGANIZATION_PERMISSION_REQUIRED',
       }),
-      characterRetained: true,
+      kind: 'organization' as const,
+      label: 'organization denial',
       organizationRetained: false,
     },
     {
-      label: 'session denial',
-      kind: 'character' as const,
+      characterRetained: false,
       error: new ApiQueryError('Authentication required.', {
         status: 401,
         code: 'AUTH_REQUIRED',
       }),
-      characterRetained: false,
+      kind: 'character' as const,
+      label: 'session denial',
       organizationRetained: false,
     },
   ])(
@@ -1310,7 +1326,7 @@ describe('query persistence runtime', () => {
       expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY) !== undefined).toBe(
         organizationRetained,
       )
-      expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Public' })
+      expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Public' })
       runtime.dispose()
     },
   )
@@ -1328,7 +1344,7 @@ describe('query persistence runtime', () => {
     const fetching = runtime.queryCache.fetch(entry)
     await vi.waitFor(() => expect(entry.pending).not.toBeNull())
 
-    await invalidatePrivateQueryScope(runtime.queryCache, { kind: 'character', characterId: 7 })
+    await invalidatePrivateQueryScope(runtime.queryCache, { characterId: 7, kind: 'character' })
     pendingResult.resolve({ name: 'Obsolete result' })
     await fetching
     await nextTick()
@@ -1336,7 +1352,7 @@ describe('query persistence runtime', () => {
     expect(entry.pending).toBeNull()
     expect(entry.state.value.data).toBeUndefined()
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
-    expect(storage.snapshot()?.characters).toEqual({})
+    expect(storage.snapshot()?.characters).toStrictEqual({})
     runtime.dispose()
   })
 
@@ -1352,18 +1368,18 @@ describe('query persistence runtime', () => {
     await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledOnce())
     const entry = runtime.queryCache.get(CHARACTER_SIBLING_KEY)!
 
-    await invalidatePrivateQueryScope(runtime.queryCache, { kind: 'character', characterId: 7 })
+    await invalidatePrivateQueryScope(runtime.queryCache, { characterId: 7, kind: 'character' })
     await nextTick()
 
     expect(privateQuery).toHaveBeenCalledOnce()
-    expect(entry.state.value).toEqual({ status: 'pending', data: undefined, error: null })
+    expect(entry.state.value).toStrictEqual({ data: undefined, error: null, status: 'pending' })
     expect(entry.when).toBe(0)
 
-    await refreshPrivateQueryAdmission(runtime.queryCache, { kind: 'character', characterId: 7 })
+    await refreshPrivateQueryAdmission(runtime.queryCache, { characterId: 7, kind: 'character' })
     await vi.waitFor(() => expect(privateQuery).toHaveBeenCalledTimes(2))
     await nextTick()
 
-    expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toEqual({
+    expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toStrictEqual({
       name: 'Current private',
     })
     runtime.dispose()
@@ -1381,7 +1397,7 @@ describe('query persistence runtime', () => {
     const obsoleteFetch = runtime.queryCache.fetch(entry)
     await vi.waitFor(() => expect(entry.pending).not.toBeNull())
 
-    await invalidatePrivateQueryScope(runtime.queryCache, { kind: 'character', characterId: 7 })
+    await invalidatePrivateQueryScope(runtime.queryCache, { characterId: 7, kind: 'character' })
     await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
       admission(),
     )
@@ -1390,7 +1406,7 @@ describe('query persistence runtime', () => {
     pendingResult.resolve({ name: 'Obsolete' })
     await obsoleteFetch
 
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Current' })
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Current' })
     runtime.dispose()
   })
 
@@ -1405,7 +1421,7 @@ describe('query persistence runtime', () => {
       ),
     ).resolves.toBe(true)
 
-    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Public' })
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Public' })
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
     expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeUndefined()
     runtime.dispose()
@@ -1425,7 +1441,7 @@ describe('query persistence runtime', () => {
 
     const entry = ensurePrivateQuery(runtime.queryCache, async () => ({ name: 'Generation gap' }))
     await runtime.queryCache.fetch(entry)
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
 
     expect(storage.privateWritePermissions.length).toBeGreaterThan(writesBeforeGap)
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
@@ -1454,9 +1470,9 @@ describe('query persistence runtime', () => {
 
       await runtime.queryCache.fetch(publicEntry)
       await runtime.queryCache.fetch(privateEntry)
-      await vi.advanceTimersByTimeAsync(1_000)
+      await vi.advanceTimersByTimeAsync(1000)
 
-      expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(
+      expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
         authenticatedSession(),
       )
       expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
@@ -1464,14 +1480,18 @@ describe('query persistence runtime', () => {
       publicName = 'Public after closure'
       await runtime.queryCache.fetch(publicEntry)
       await runtime.queryCache.fetch(privateEntry)
-      await vi.advanceTimersByTimeAsync(2_000)
+      await vi.advanceTimersByTimeAsync(2000)
 
-      expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Public after closure' })
-      expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({
+      expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({
+        name: 'Public after closure',
+      })
+      expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({
         name: 'Private before failure',
       })
       expect(storage.privateWritePermissions.at(-1)).toBe(false)
       expect(storage.snapshot()).toMatchObject({
+        characters: {},
+        organizations: {},
         public: {
           [JSON.stringify(PUBLIC_KEY)]: [
             { name: 'Public after closure' },
@@ -1480,14 +1500,14 @@ describe('query persistence runtime', () => {
             expect.anything(),
           ],
         },
-        characters: {},
-        organizations: {},
       })
 
       runtime.dispose()
       const reloaded = createRuntime(storage, undefined, Date.now)
       await readyRuntime(reloaded)
-      expect(reloaded.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Public after closure' })
+      expect(reloaded.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({
+        name: 'Public after closure',
+      })
       await applyVerifiedQueryIdentity(reloaded.queryCache, authenticatedSession(), async () =>
         admission(),
       )
@@ -1500,7 +1520,7 @@ describe('query persistence runtime', () => {
     const storage = new MemoryQueryPersistenceStorage()
     storage.setGeneration(4)
     storage.setRaw(
-      JSON.stringify({ ...envelopeWithPrivatePartitions(), version: 2, invalidationGeneration: 4 }),
+      JSON.stringify({ ...envelopeWithPrivatePartitions(), invalidationGeneration: 4, version: 2 }),
     )
     const runtime = createRuntime(storage)
 
@@ -1532,12 +1552,12 @@ describe('query persistence runtime', () => {
     await runtime.activatePrivateQuery()
 
     await runtime.deactivatePrivateQuery()
-    await vi.advanceTimersByTimeAsync(2_000)
+    await vi.advanceTimersByTimeAsync(2000)
 
     expect(runtime.queryCache.get(CHARACTER_KEY)).toBeUndefined()
     expect(storage.snapshot()).toMatchObject({
-      invalidationGeneration: 0,
       characters: {},
+      invalidationGeneration: 0,
     })
     runtime.dispose()
 
@@ -1565,21 +1585,25 @@ describe('query persistence runtime', () => {
 
     await vi.advanceTimersByTimeAsync(25_000)
     expect(loadAdmission).toHaveBeenCalledTimes(2)
-    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Public' })
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Character' })
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Public' })
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Character' })
 
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
 
     expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toBeUndefined()
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
     expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeUndefined()
     expect(runtime.queryCache.get(CHARACTER_KEY)).toBe(activeEntry)
-    expect(activeEntry?.state.value).toEqual({ status: 'pending', data: undefined, error: null })
+    expect(activeEntry?.state.value).toStrictEqual({
+      data: undefined,
+      error: null,
+      status: 'pending',
+    })
     expect(activeEntry?.asyncStatus.value).toBe('idle')
     expect(activeEntry?.when).toBe(0)
     expect(storage.currentGeneration).toBe(0)
     expect(storage.invalidationCalls).toBe(0)
-    expect(storage.snapshot()).toMatchObject({ public: {}, characters: {}, organizations: {} })
+    expect(storage.snapshot()).toMatchObject({ characters: {}, organizations: {}, public: {} })
     runtime.dispose()
   })
 
@@ -1587,7 +1611,7 @@ describe('query persistence runtime', () => {
     vi.useFakeTimers()
     vi.setSystemTime(NOW)
     const envelope = envelopeWithPrivatePartitions()
-    setEnvelopeSuccessTime(envelope, NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 1_000)
+    setEnvelopeSuccessTime(envelope, NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 1000)
     const storage = new MemoryQueryPersistenceStorage(envelope)
     const runtime = createRuntime(storage, undefined, Date.now)
     await readyRuntime(runtime)
@@ -1600,12 +1624,14 @@ describe('query persistence runtime', () => {
     ensurePublicQuery(runtime.queryCache, publicQuery)
     ensurePrivateQuery(runtime.queryCache, privateQuery)
 
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
 
     expect(publicQuery).toHaveBeenCalledOnce()
     expect(privateQuery).toHaveBeenCalledOnce()
-    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Current public' })
-    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Current private' })
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Current public' })
+    expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({
+      name: 'Current private',
+    })
     runtime.dispose()
   })
 
@@ -1613,7 +1639,7 @@ describe('query persistence runtime', () => {
     vi.useFakeTimers()
     vi.setSystemTime(NOW)
     const envelope = envelopeWithPrivatePartitions()
-    setEnvelopeSuccessTime(envelope, NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 1_000)
+    setEnvelopeSuccessTime(envelope, NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 1000)
     const runtime = createRuntime(new MemoryQueryPersistenceStorage(envelope), undefined, Date.now)
     await readyRuntime(runtime)
     await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
@@ -1626,9 +1652,9 @@ describe('query persistence runtime', () => {
     })
     await expect(runtime.queryCache.fetch(entry)).rejects.toBe(failure)
 
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
 
-    expect(entry.state.value).toEqual({ status: 'error', data: undefined, error: failure })
+    expect(entry.state.value).toStrictEqual({ data: undefined, error: failure, status: 'error' })
     expect(entry.asyncStatus.value).toBe('idle')
     expect(entry.when).toBe(0)
     runtime.dispose()
@@ -1644,13 +1670,13 @@ describe('query persistence runtime', () => {
     const entry = ensurePublicQuery(runtime.queryCache, async () => ({ name: 'Current' }))
 
     await runtime.queryCache.fetch(entry)
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
     expect(storage.snapshot()?.public[JSON.stringify(PUBLIC_KEY)]).toBeDefined()
 
-    await vi.advanceTimersByTimeAsync(PERSISTED_ESI_QUERY_CACHE_RETENTION_MS - 1_000)
+    await vi.advanceTimersByTimeAsync(PERSISTED_ESI_QUERY_CACHE_RETENTION_MS - 1000)
 
-    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Current' })
-    expect(storage.snapshot()?.public).toEqual({})
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Current' })
+    expect(storage.snapshot()?.public).toStrictEqual({})
     runtime.dispose()
   })
 
@@ -1673,7 +1699,7 @@ describe('query persistence runtime', () => {
 
     storage.releaseGeneration()
     await vi.waitFor(() =>
-      expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toEqual({ name: 'Character' }),
+      expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toStrictEqual({ name: 'Character' }),
     )
     expect(runtime.queryCache.get(CHARACTER_KEY)).toBe(entry)
     runtime.dispose()
@@ -1684,7 +1710,7 @@ describe('query persistence runtime', () => {
     vi.setSystemTime(NOW)
     const envelope = envelopeWithPrivatePartitions()
     envelope.public[JSON.stringify(PUBLIC_KEY)]![2] =
-      NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 1_000
+      NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 1000
     const storage = new MemoryQueryPersistenceStorage(envelope)
     const runtime = createRuntime(storage, undefined, Date.now)
     await readyRuntime(runtime)
@@ -1694,7 +1720,7 @@ describe('query persistence runtime', () => {
     await runtime.queryCache.fetch(entry)
     await vi.advanceTimersByTimeAsync(500)
 
-    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Fresh current' })
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Fresh current' })
     expect(readQueryPersistenceState(runtime.queryCache, PUBLIC_KEY).value).toMatchObject({
       kind: 'fresh',
       originalSuccessAt: new Date(NOW + 500).toISOString(),
@@ -1706,14 +1732,14 @@ describe('query persistence runtime', () => {
     vi.useFakeTimers()
     vi.setSystemTime(NOW)
     const envelope = envelopeWithPrivatePartitions()
-    setEnvelopeSuccessTime(envelope, NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 1_000)
+    setEnvelopeSuccessTime(envelope, NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 1000)
     const storage = new MemoryQueryPersistenceStorage(envelope)
     const runtime = createRuntime(storage, undefined, Date.now)
     await awaitQueryPersistenceRestoration(runtime.queryCache)
     const writesBeforeDisposal = storage.writeCalls
 
     runtime.dispose()
-    await vi.advanceTimersByTimeAsync(2_000)
+    await vi.advanceTimersByTimeAsync(2000)
 
     expect(storage.writeCalls).toBe(writesBeforeDisposal)
     expect(storage.snapshot()).not.toBeNull()
@@ -1737,7 +1763,7 @@ describe('query persistence runtime', () => {
     await expect(applying).resolves.toBe(false)
     expect(storage.generationReads).toBe(0)
     expect(storage.invalidationCalls).toBe(0)
-    expect(notifications.published).toEqual([])
+    expect(notifications.published).toStrictEqual([])
   })
 
   it('invalidates a second runtime through shared durable storage and notifications', async () => {
@@ -1755,13 +1781,13 @@ describe('query persistence runtime', () => {
     expect(first.queryCache.getQueryData(CHARACTER_KEY)).toBeDefined()
     expect(second.queryCache.getQueryData(CHARACTER_KEY)).toBeDefined()
 
-    await invalidatePrivateQueryScope(first.queryCache, { kind: 'character', characterId: 7 })
+    await invalidatePrivateQueryScope(first.queryCache, { characterId: 7, kind: 'character' })
 
     expect(first.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
     expect(second.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
     expect(storage.snapshot()).toMatchObject({
-      invalidationGeneration: 1,
       characters: {},
+      invalidationGeneration: 1,
     })
     first.dispose()
     second.dispose()
@@ -1791,20 +1817,20 @@ describe('query persistence runtime', () => {
     storage.setGeneration(1)
     notifications.emit({
       generation: 1,
-      scope: { kind: 'organization', admissionScope: ORGANIZATION_SCOPE },
+      scope: { admissionScope: ORGANIZATION_SCOPE, kind: 'organization' },
     })
 
     expect(runtime.queryCache.getQueryData(organizationKey)).toBeUndefined()
     expect(runtime.queryCache.getQueryData(recipientKey)).toBeDefined()
-    expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(
+    expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
       authenticatedSession(),
     )
     expect(resetOrganizationState).toHaveBeenCalledOnce()
 
     storage.setGeneration(2)
-    notifications.emit({ generation: 2, scope: { kind: 'character', characterId: 7 } })
+    notifications.emit({ generation: 2, scope: { characterId: 7, kind: 'character' } })
     expect(runtime.queryCache.getQueryData(recipientKey)).toBeUndefined()
-    expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(
+    expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
       authenticatedSession(),
     )
 
@@ -1829,7 +1855,7 @@ describe('query persistence runtime', () => {
     await vi.waitFor(() => expect(entry.pending).not.toBeNull())
 
     storage.setGeneration(1)
-    notifications.emit({ generation: 1, scope: { kind: 'character', characterId: 7 } })
+    notifications.emit({ generation: 1, scope: { characterId: 7, kind: 'character' } })
     result.resolve({ recipients: [{ id: 8 }] })
     await fetching
     await nextTick()
@@ -1852,7 +1878,7 @@ describe('query persistence runtime', () => {
     })
 
     storage.setGeneration(1)
-    notifications.emit({ generation: 1, scope: { kind: 'character', characterId: 7 } })
+    notifications.emit({ generation: 1, scope: { characterId: 7, kind: 'character' } })
 
     expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.roster())).toBeUndefined()
     runtime.dispose()
@@ -1871,8 +1897,8 @@ describe('query persistence runtime', () => {
     })
     deferAdmission = true
     const refreshing = refreshPrivateQueryAdmission(runtime.queryCache, {
-      kind: 'character',
       characterId: 7,
+      kind: 'character',
     })
 
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
@@ -1887,7 +1913,7 @@ describe('query persistence runtime', () => {
     await expect(refreshing).resolves.toBe(true)
     expect(admissionLoads).toBe(2)
     expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeUndefined()
-    expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(
+    expect(runtime.queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toStrictEqual(
       authenticatedSession(),
     )
     runtime.dispose()
@@ -1903,18 +1929,18 @@ describe('query persistence runtime', () => {
     )
 
     await expect(
-      invalidatePrivateQueryScope(runtime.queryCache, { kind: 'character', characterId: 7 }),
+      invalidatePrivateQueryScope(runtime.queryCache, { characterId: 7, kind: 'character' }),
     ).resolves.toBe(false)
     expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeDefined()
     await expect(
       invalidatePrivateQueryScope(runtime.queryCache, {
-        kind: 'organization',
         admissionScope: ORGANIZATION_SCOPE,
+        kind: 'organization',
       }),
     ).resolves.toBe(true)
 
     expect(runtime.queryCache.getQueryData(ORGANIZATION_KEY)).toBeUndefined()
-    expect(notifications.published).toEqual([
+    expect(notifications.published).toStrictEqual([
       { generation: null, scope: { kind: 'all' } },
       { generation: 1, scope: { kind: 'all' } },
     ])
@@ -1929,27 +1955,27 @@ describe('query persistence runtime', () => {
     await readyRuntime(runtime)
     let result = staleResult(NOW - 60_000, {
       refreshFailureClass: 'esi-unavailable',
-      retryAt: NOW + 5_000,
+      retryAt: NOW + 5000,
     })
     const entry = ensurePublicQuery(runtime.queryCache, async () => result)
 
     await runtime.queryCache.fetch(entry)
     const originalSuccessAt = NOW - 60_000
     vi.setSystemTime(NOW + 10_000)
-    result = staleResult(NOW + 5_000, {
+    result = staleResult(NOW + 5000, {
       refreshFailureClass: 'esi-cooldown',
       retryAt: NOW + 20_000,
     })
     await runtime.queryCache.fetch(entry)
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
 
-    expect(readQueryPersistenceState(runtime.queryCache, PUBLIC_KEY).value).toEqual({
+    expect(readQueryPersistenceState(runtime.queryCache, PUBLIC_KEY).value).toStrictEqual({
       kind: 'server-stale',
       originalSuccessAt: new Date(originalSuccessAt).toISOString(),
-      retainedPrivateAccess: false,
-      validatedAt: new Date(NOW + 5_000).toISOString(),
-      retryAt: new Date(NOW + 20_000).toISOString(),
       refreshFailureClass: 'esi-cooldown',
+      retainedPrivateAccess: false,
+      retryAt: new Date(NOW + 20_000).toISOString(),
+      validatedAt: new Date(NOW + 5000).toISOString(),
     })
     expect(storage.snapshot()?.public[JSON.stringify(PUBLIC_KEY)]?.[2]).toBe(originalSuccessAt)
     runtime.dispose()
@@ -1958,7 +1984,7 @@ describe('query persistence runtime', () => {
   it('preserves repeated stale data across reload, then expires it without resurrection', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(NOW)
-    const originalSuccessAt = NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 2_000
+    const originalSuccessAt = NOW - PERSISTED_ESI_QUERY_CACHE_RETENTION_MS + 2000
     const envelope = envelopeWithPrivatePartitions()
     envelope.public[JSON.stringify(PUBLIC_KEY)]![2] = originalSuccessAt
     const storage = new MemoryQueryPersistenceStorage(envelope)
@@ -1969,7 +1995,7 @@ describe('query persistence runtime', () => {
     )
 
     await first.queryCache.fetch(firstEntry)
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
     expect(storage.snapshot()?.public[JSON.stringify(PUBLIC_KEY)]?.[2]).toBe(originalSuccessAt)
     first.dispose()
 
@@ -1977,7 +2003,7 @@ describe('query persistence runtime', () => {
     await readyRuntime(second)
     expect(second.queryCache.getQueryData(PUBLIC_KEY)).toBeDefined()
     const secondEntry = ensurePublicQuery(second.queryCache, async () =>
-      staleResult(originalSuccessAt + 1_000, { refreshFailureClass: 'esi-cooldown' }),
+      staleResult(originalSuccessAt + 1000, { refreshFailureClass: 'esi-cooldown' }),
     )
     await second.queryCache.fetch(secondEntry)
     expect(readQueryPersistenceState(second.queryCache, PUBLIC_KEY).value).toMatchObject({
@@ -1985,10 +2011,10 @@ describe('query persistence runtime', () => {
       originalSuccessAt: new Date(originalSuccessAt).toISOString(),
     })
 
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
 
     expect(second.queryCache.getQueryData(PUBLIC_KEY)).toBeUndefined()
-    expect(storage.snapshot()?.public ?? {}).toEqual({})
+    expect(storage.snapshot()?.public ?? {}).toStrictEqual({})
     second.dispose()
 
     const third = createRuntime(storage, undefined, Date.now)
@@ -2012,10 +2038,10 @@ describe('query persistence runtime', () => {
 
     runtime.queryCache.invalidate(entry)
     await expect(runtime.queryCache.fetch(entry)).rejects.toBe(error)
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
 
     expect(remove).not.toHaveBeenCalled()
-    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Public' })
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Public' })
     expect(storage.snapshot()?.public[JSON.stringify(PUBLIC_KEY)]?.[2]).toBe(originalSuccessAt)
     runtime.dispose()
   })
@@ -2034,15 +2060,15 @@ describe('query persistence runtime', () => {
       [JSON.stringify(PUBLIC_KEY)]: [ssrData, null, 0, { esiPersistence: { kind: 'public-esi' } }],
     })
     signalNuxtHydrationFinished(runtime.queryCache)
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
 
-    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual(ssrData)
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual(ssrData)
     expect(readQueryPersistenceState(runtime.queryCache, PUBLIC_KEY).value).toMatchObject({
       kind: 'server-stale',
       originalSuccessAt: new Date(NOW - 2 * 60 * 60_000).toISOString(),
       validatedAt: new Date(NOW - 60_000).toISOString(),
     })
-    expect(storage.snapshot()?.public[JSON.stringify(PUBLIC_KEY)]?.[0]).toEqual(ssrData)
+    expect(storage.snapshot()?.public[JSON.stringify(PUBLIC_KEY)]?.[0]).toStrictEqual(ssrData)
     runtime.dispose()
   })
 
@@ -2080,7 +2106,7 @@ describe('query persistence runtime', () => {
       const entry = ensurePublicQuery(runtime.queryCache, async () => result)
 
       await runtime.queryCache.fetch(entry)
-      await vi.advanceTimersByTimeAsync(1_000)
+      await vi.advanceTimersByTimeAsync(1000)
 
       expect(readQueryPersistenceState(runtime.queryCache, PUBLIC_KEY).value).toMatchObject({
         kind: 'server-stale',
@@ -2111,16 +2137,16 @@ describe('query persistence runtime', () => {
     expect(query).toHaveBeenCalledOnce()
     expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toBeUndefined()
     expect(entry.state.value).toMatchObject({
-      status: 'error',
       data: undefined,
       error: {
         code: 'ESI_UNAVAILABLE',
         message: 'Previously cached data expired before current ESI data became available.',
         status: 502,
       },
+      status: 'error',
     })
-    expect(storage.snapshot()?.public ?? {}).toEqual({})
-    expect(readQueryPersistenceState(runtime.queryCache, PUBLIC_KEY).value).toEqual({
+    expect(storage.snapshot()?.public ?? {}).toStrictEqual({})
+    expect(readQueryPersistenceState(runtime.queryCache, PUBLIC_KEY).value).toStrictEqual({
       kind: 'fresh',
       retainedPrivateAccess: false,
     })
@@ -2137,31 +2163,33 @@ describe('query persistence runtime', () => {
     )
     await readyRuntime(runtime)
     let failure: Error | undefined = new ApiQueryError('ESI unavailable.', {
-      status: 503,
       retryAt: new Date(NOW + 10_000).toISOString(),
+      status: 503,
     })
     const entry = ensurePublicQuery(runtime.queryCache, async () => {
-      if (failure) throw failure
+      if (failure) {
+        throw failure
+      }
       return { name: 'Fresh' }
     })
 
     await expect(runtime.queryCache.fetch(entry)).rejects.toThrow('ESI unavailable.')
 
-    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Public' })
-    expect(readQueryPersistenceState(runtime.queryCache, PUBLIC_KEY).value).toEqual({
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Public' })
+    expect(readQueryPersistenceState(runtime.queryCache, PUBLIC_KEY).value).toStrictEqual({
       kind: 'restored-refresh-failed',
       originalSuccessAt: new Date(NOW - 60_000).toISOString(),
+      refreshFailureStatus: 503,
       retainedPrivateAccess: false,
       retryAt: new Date(NOW + 10_000).toISOString(),
-      refreshFailureStatus: 503,
     })
 
     vi.setSystemTime(NOW + 20_000)
     failure = undefined
     await runtime.queryCache.fetch(entry)
 
-    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toEqual({ name: 'Fresh' })
-    expect(readQueryPersistenceState(runtime.queryCache, PUBLIC_KEY).value).toEqual({
+    expect(runtime.queryCache.getQueryData(PUBLIC_KEY)).toStrictEqual({ name: 'Fresh' })
+    expect(readQueryPersistenceState(runtime.queryCache, PUBLIC_KEY).value).toStrictEqual({
       kind: 'fresh',
       originalSuccessAt: new Date(NOW + 20_000).toISOString(),
       retainedPrivateAccess: false,
@@ -2178,13 +2206,13 @@ describe('query persistence runtime', () => {
     ensurePublicQuery(runtime.queryCache, async () => ({ name: 'Fetched' }))
 
     runtime.queryCache.setQueryData(PUBLIC_KEY, { name: 'Local' })
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
 
     expect(readQueryPersistenceState(runtime.queryCache, PUBLIC_KEY).value).toMatchObject({
       kind: 'fresh',
       originalSuccessAt: undefined,
     })
-    expect(storage.snapshot()?.public).toEqual({})
+    expect(storage.snapshot()?.public).toStrictEqual({})
     runtime.dispose()
   })
 })
@@ -2202,25 +2230,25 @@ function createRuntime(
     setup() {
       useQuery({
         enabled: false,
-        gcTime: 1_000,
+        gcTime: 1000,
         key: CHARACTER_KEY,
+        meta: { esiPersistence: { characterId: 7, kind: 'character-esi' } },
         query: async () => ({ name: 'Live' }),
-        meta: { esiPersistence: { kind: 'character-esi', characterId: 7 } },
       })
       useQuery({
         enabled: false,
-        gcTime: 1_000,
+        gcTime: 1000,
         key: PUBLIC_KEY,
-        query: async () => ({ name: 'Live public' }),
         meta: { esiPersistence: { kind: 'public-esi' } },
+        query: async () => ({ name: 'Live public' }),
       })
       if (mountedPrivateQuery) {
         useQuery({
-          gcTime: 1_000,
+          gcTime: 1000,
           key: CHARACTER_SIBLING_KEY,
+          meta: { esiPersistence: { characterId: 7, kind: 'character-esi' } },
           query: mountedPrivateQuery,
           staleTime: 0,
-          meta: { esiPersistence: { kind: 'character-esi', characterId: 7 } },
         })
       }
       return () => null
@@ -2238,11 +2266,15 @@ function createRuntime(
   })
   let mounted = false
   const mount = () => {
-    if (mounted) return
+    if (mounted) {
+      return
+    }
     mounted = true
     app.mount(document.createElement('div'))
   }
-  if (mountImmediately) mount()
+  if (mountImmediately) {
+    mount()
+  }
   const queryCache = useQueryCache(pinia)
   return {
     activatePrivateQuery: async () => {
@@ -2437,7 +2469,9 @@ class DeferredInvalidationStorage extends MemoryQueryPersistenceStorage {
       this.firstDeleteEnvelope = deleteEnvelope
       return this.firstInvalidation.promise
     }
-    if (this.generation === 0) this.generation = 1
+    if (this.generation === 0) {
+      this.generation = 1
+    }
     return this.commitInvalidation(scope, deleteEnvelope)
   }
 
@@ -2462,7 +2496,9 @@ class FailingInvalidationStorage extends MemoryQueryPersistenceStorage {
 class RecoveringInvalidationStorage extends MemoryQueryPersistenceStorage {
   override async invalidate(_scope: PrivateQueryInvalidationScope, deleteEnvelope = false) {
     this.invalidationCalls += 1
-    if (this.invalidationCalls === 1) return null
+    if (this.invalidationCalls === 1) {
+      return null
+    }
     return this.commitInvalidation({ kind: 'all' }, deleteEnvelope)
   }
 }
@@ -2482,7 +2518,9 @@ class GenerationGapWriteStorage extends MemoryQueryPersistenceStorage {
   }
 
   override async write(value: string, allowPrivateWrite: boolean) {
-    if (!this.gapEnabled) return super.write(value, allowPrivateWrite)
+    if (!this.gapEnabled) {
+      return super.write(value, allowPrivateWrite)
+    }
     this.privateWritePermissions.push(allowPrivateWrite)
     this.generation += 2
     return { generation: this.generation, privateAccepted: false }
@@ -2504,7 +2542,9 @@ class RejectingPrivateWriteStorage extends MemoryQueryPersistenceStorage {
     this.privateWritePermissions.push(allowPrivateWrite)
     const failure = this.nextFailure
     this.nextFailure = null
-    if (failure === 'quota') throw new DOMException('Storage quota exceeded.', 'QuotaExceededError')
+    if (failure === 'quota') {
+      throw new DOMException('Storage quota exceeded.', 'QuotaExceededError')
+    }
     this.commitWrite(value, false)
     return { generation: this.generation, privateAccepted: false }
   }
@@ -2529,8 +2569,12 @@ class NotificationHub {
       dispose: () => this.clients.delete(subscribers),
       publish: (notification) => {
         for (const client of this.clients) {
-          if (client === subscribers) continue
-          for (const receive of client) receive(notification)
+          if (client === subscribers) {
+            continue
+          }
+          for (const receive of client) {
+            receive(notification)
+          }
         }
       },
       subscribe: (receive) => {
@@ -2550,7 +2594,9 @@ class TestNotifications implements QueryPersistenceNotifications {
   }
 
   emit(notification: QueryPersistenceNotification) {
-    for (const receive of this.subscribers) receive(notification)
+    for (const receive of this.subscribers) {
+      receive(notification)
+    }
   }
 
   publish(notification: QueryPersistenceNotification) {
@@ -2568,8 +2614,11 @@ function removePartitions(envelope: EsiQueryCacheEnvelope, scope: PrivateQueryIn
     clearRecord(envelope.characters)
     clearRecord(envelope.organizations)
   } else if (scope.kind === 'character') {
-    if (scope.characterId === undefined) clearRecord(envelope.characters)
-    else delete envelope.characters[String(scope.characterId)]
+    if (scope.characterId === undefined) {
+      clearRecord(envelope.characters)
+    } else {
+      delete envelope.characters[String(scope.characterId)]
+    }
   } else if (scope.admissionScope === undefined) {
     clearRecord(envelope.organizations)
   } else {
@@ -2578,7 +2627,9 @@ function removePartitions(envelope: EsiQueryCacheEnvelope, scope: PrivateQueryIn
 }
 
 function clearRecord(record: Record<string, unknown>) {
-  for (const key of Object.keys(record)) delete record[key]
+  for (const key of Object.keys(record)) {
+    delete record[key]
+  }
 }
 
 function deferred<T>() {
@@ -2593,16 +2644,8 @@ function deferred<T>() {
 
 function envelopeWithPrivatePartitions(): EsiQueryCacheEnvelope {
   return {
-    version: 1,
-    invalidationGeneration: 0,
-    public: {
-      [JSON.stringify(PUBLIC_KEY)]: tuple({ name: 'Public' }, NOW - 60_000, {
-        kind: 'public-esi',
-      }),
-    },
     characters: {
       7: {
-        ownerUserId: 'user-1',
         admissionRevision: 'character-revision-1',
         cache: {
           [JSON.stringify(CHARACTER_KEY)]: tuple({ name: 'Character' }, NOW - 60_000, {
@@ -2610,8 +2653,10 @@ function envelopeWithPrivatePartitions(): EsiQueryCacheEnvelope {
             characterId: 7,
           }),
         },
+        ownerUserId: 'user-1',
       },
     },
+    invalidationGeneration: 0,
     organizations: {
       [ORGANIZATION_SCOPE]: {
         ownerUserId: 'user-1',
@@ -2626,45 +2671,57 @@ function envelopeWithPrivatePartitions(): EsiQueryCacheEnvelope {
         },
       },
     },
+    public: {
+      [JSON.stringify(PUBLIC_KEY)]: tuple({ name: 'Public' }, NOW - 60_000, {
+        kind: 'public-esi',
+      }),
+    },
+    version: 1,
   }
 }
 
 function setEnvelopeSuccessTime(envelope: EsiQueryCacheEnvelope, when: number) {
-  for (const entryTuple of Object.values(envelope.public)) entryTuple[2] = when
+  for (const entryTuple of Object.values(envelope.public)) {
+    entryTuple[2] = when
+  }
   for (const partition of Object.values(envelope.characters)) {
-    for (const entryTuple of Object.values(partition.cache)) entryTuple[2] = when
+    for (const entryTuple of Object.values(partition.cache)) {
+      entryTuple[2] = when
+    }
   }
   for (const partition of Object.values(envelope.organizations)) {
-    for (const entryTuple of Object.values(partition.cache)) entryTuple[2] = when
+    for (const entryTuple of Object.values(partition.cache)) {
+      entryTuple[2] = when
+    }
   }
 }
 
 function ensurePublicQuery(queryCache: QueryCache, query: () => Promise<unknown>) {
   return queryCache.ensure({
     key: PUBLIC_KEY,
+    meta: { esiPersistence: { kind: 'public-esi' } },
     query,
     staleTime: 0,
-    meta: { esiPersistence: { kind: 'public-esi' } },
   })
 }
 
 function ensurePrivateQuery(queryCache: QueryCache, query: () => Promise<unknown>) {
   return queryCache.ensure({
     key: CHARACTER_KEY,
+    meta: { esiPersistence: { characterId: 7, kind: 'character-esi' } },
     query,
     staleTime: 0,
-    meta: { esiPersistence: { kind: 'character-esi', characterId: 7 } },
   })
 }
 
 function ensureOrganizationQuery(queryCache: QueryCache, query: () => Promise<unknown>) {
   return queryCache.ensure({
     key: ORGANIZATION_KEY,
+    meta: {
+      esiPersistence: { admissionScope: ORGANIZATION_SCOPE, kind: 'organization-esi' },
+    },
     query,
     staleTime: 0,
-    meta: {
-      esiPersistence: { kind: 'organization-esi', admissionScope: ORGANIZATION_SCOPE },
-    },
   })
 }
 
@@ -2675,9 +2732,9 @@ function ensureNonPersistedQuery(
 ) {
   return queryCache.ensure({
     key,
+    meta: { esiPersistence: { kind: 'none' } },
     query,
     staleTime: 0,
-    meta: { esiPersistence: { kind: 'none' } },
   })
 }
 
@@ -2701,11 +2758,11 @@ function staleResult(
 
 function emptyEnvelope(generation: number): EsiQueryCacheEnvelope {
   return {
-    version: 1,
-    invalidationGeneration: generation,
-    public: {},
     characters: {},
+    invalidationGeneration: generation,
     organizations: {},
+    public: {},
+    version: 1,
   }
 }
 
@@ -2722,11 +2779,11 @@ function tuple(
 
 function authenticatedSession(userId = 'user-1') {
   return {
-    authenticated: true as const,
     account: {
-      userId,
       mainCharacter: { characterId: 7, name: 'Test Pilot' },
+      userId,
     },
+    authenticated: true as const,
   }
 }
 
@@ -2742,7 +2799,6 @@ function admission(
   } = {},
 ): CacheAdmissionContext {
   return {
-    userId: overrides.userId ?? 'user-1',
     characters: [
       {
         characterId: 7,
@@ -2761,17 +2817,18 @@ function admission(
             validUntil: overrides.organizationValidUntil ?? null,
             admissionScopes: overrides.admissionScopes ?? [ORGANIZATION_SCOPE],
           },
+    userId: overrides.userId ?? 'user-1',
   }
 }
 
 function authorizationDenial(code: string) {
-  return new ApiQueryError('Denied.', { status: 403, code })
+  return new ApiQueryError('Denied.', { code, status: 403 })
 }
 
 function characterPrefetch(query: () => Promise<unknown>) {
   return {
     key: CHARACTER_KEY,
+    meta: { esiPersistence: { characterId: 7, kind: 'character-esi' as const } },
     query,
-    meta: { esiPersistence: { kind: 'character-esi' as const, characterId: 7 } },
   }
 }

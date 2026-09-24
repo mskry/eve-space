@@ -66,8 +66,8 @@ beforeEach(() => {
         characters: {
           ':characterId': {
             attributes: { $get: attributesRequest },
-            skills: { $get: skillsRequest },
             'skill-queue': { $get: skillQueueRequest },
+            skills: { $get: skillsRequest },
           },
         },
       },
@@ -84,7 +84,9 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   vi.clearAllMocks()
 })
 
@@ -100,7 +102,7 @@ describe('character skills route behavior', () => {
     expect(useAuthSession).toHaveBeenCalled()
     expect(useCharacterRoster).toHaveBeenCalled()
     expect(canRunProtectedCharacterQuery).toHaveBeenCalled()
-    expect(vi.mocked(canRunProtectedCharacterQuery).mock.calls.at(-1)).toEqual([
+    expect(vi.mocked(canRunProtectedCharacterQuery).mock.calls.at(-1)).toStrictEqual([
       {
         authenticated: true,
         authenticationReady: false,
@@ -110,16 +112,16 @@ describe('character skills route behavior', () => {
       characterId,
     ])
     await flushPromises()
-    expect(protectedRequestCounts()).toEqual([0, 0, 0])
+    expect(protectedRequestCounts()).toStrictEqual([0, 0, 0])
 
     authenticationLoading.value = false
-    await vi.waitFor(() => expect(protectedRequestCounts()).toEqual([1, 1, 1]))
+    await vi.waitFor(() => expect(protectedRequestCounts()).toStrictEqual([1, 1, 1]))
     expect(wrapper.text()).toContain('CHARACTER SKILLS')
     expect(wrapper.text()).toContain('Training Queue')
 
     expect(reauthorizationCallback).toBeTypeOf('function')
     reauthorizationCallback!()
-    await vi.waitFor(() => expect(protectedRequestCounts()).toEqual([2, 2, 2]))
+    await vi.waitFor(() => expect(protectedRequestCounts()).toStrictEqual([2, 2, 2]))
   })
 })
 
@@ -131,26 +133,26 @@ function protectedRequestCounts() {
 
 function skillsResponse() {
   return {
+    groups: [],
+    injectedSkillCount: 0,
     totalSp: 1_500_000,
     unallocatedSp: 0,
-    injectedSkillCount: 0,
-    groups: [],
   }
 }
 
 function attributesResponse() {
   return {
+    accruedRemapCooldownDate: null,
+    bonusRemaps: 1,
     charisma: 19,
     intelligence: 24,
+    lastRemapDate: null,
     memory: 21,
     perception: 27,
     willpower: 22,
-    bonusRemaps: 1,
-    accruedRemapCooldownDate: null,
-    lastRemapDate: null,
   }
 }
 
 function skillQueueResponse() {
-  return { state: 'empty', activeQueuePosition: null, entries: [] }
+  return { activeQueuePosition: null, entries: [], state: 'empty' }
 }

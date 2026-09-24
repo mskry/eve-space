@@ -2,12 +2,15 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { createFeatureExecutionMock } from '../support/mock-feature-execution.js'
 
 const mocks = vi.hoisted(() => ({
+  acquire: vi.fn(),
+  cacheDel: vi.fn(),
+  cacheGet: vi.fn(),
+  cacheSet: vi.fn(),
+  commit: vi.fn(),
   createEsiClient: vi.fn(),
   getAttributes: vi.fn(),
   getCharacterAuthorization: vi.fn(),
   getCharacterCacheAuthorization: vi.fn(),
-  acquire: vi.fn(),
-  commit: vi.fn(),
   getCommitted: vi.fn(),
   getLeaseTtl: vi.fn(),
   getRevision: vi.fn(),
@@ -15,9 +18,6 @@ const mocks = vi.hoisted(() => ({
   initialize: vi.fn(),
   release: vi.fn(),
   renew: vi.fn(),
-  cacheGet: vi.fn(),
-  cacheSet: vi.fn(),
-  cacheDel: vi.fn(),
 }))
 
 vi.mock('../../src/auth/tokens.js', () => ({
@@ -26,10 +26,10 @@ vi.mock('../../src/auth/tokens.js', () => ({
 }))
 vi.mock('../../src/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => ({
-    get: mocks.cacheGet,
-    set: mocks.cacheSet,
     del: mocks.cacheDel,
+    get: mocks.cacheGet,
     ping: vi.fn().mockResolvedValue('PONG'),
+    set: mocks.cacheSet,
   }),
   observeCacheRedisConnectionErrors: vi.fn(),
 }))
@@ -37,11 +37,11 @@ vi.mock('../../src/esi-gateway/feature-execution.js', () =>
   createFeatureExecutionMock((_definition, input) => mocks.getAttributes(input)),
 )
 
-const characterId = 1404328063
+const characterId = 1_404_328_063
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const scope = 'esi-skills.read_skills.v1'
 const now = Date.parse('2026-09-01T11:00:00.000Z')
-const lease = { key: 'lease', ownerToken: 'owner', fence: 7, ttlMs: 15_000 }
+const lease = { fence: 7, key: 'lease', ownerToken: 'owner', ttlMs: 15_000 }
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -89,28 +89,28 @@ describe('character attributes', () => {
   test('loads and maps attributes through the registered execution seam', async () => {
     mocks.getAttributes.mockResolvedValue(
       response({
+        accrued_remap_cooldown_date: '2026-10-01T12:00:00Z',
+        bonus_remaps: 2,
         charisma: 19,
         intelligence: 27,
+        last_remap_date: '2025-10-01T12:00:00Z',
         memory: 23,
         perception: 24,
         willpower: 21,
-        bonus_remaps: 2,
-        accrued_remap_cooldown_date: '2026-10-01T12:00:00Z',
-        last_remap_date: '2025-10-01T12:00:00Z',
       }),
     )
     const { characterAttributesScope, getCharacterAttributes } =
       await import('../../src/characters/attributes.js')
 
     await expect(getCharacterAttributes(characterId, subjectLifecycleId)).resolves.toMatchObject({
+      accruedRemapCooldownDate: '2026-10-01T12:00:00Z',
+      bonusRemaps: 2,
       charisma: 19,
       intelligence: 27,
+      lastRemapDate: '2025-10-01T12:00:00Z',
       memory: 23,
       perception: 24,
       willpower: 21,
-      bonusRemaps: 2,
-      accruedRemapCooldownDate: '2026-10-01T12:00:00Z',
-      lastRemapDate: '2025-10-01T12:00:00Z',
     })
     expect(characterAttributesScope).toBe(scope)
     expect(mocks.getAttributes).toHaveBeenCalledWith({ characterId, subjectLifecycleId })
@@ -124,8 +124,8 @@ describe('character attributes', () => {
     const { getCharacterAttributes } = await import('../../src/characters/attributes.js')
 
     await expect(getCharacterAttributes(characterId, subjectLifecycleId)).resolves.toMatchObject({
-      bonusRemaps: 0,
       accruedRemapCooldownDate: null,
+      bonusRemaps: 0,
       lastRemapDate: null,
     })
   })
@@ -139,7 +139,7 @@ describe('character attributes', () => {
     const first = await getCharacterAttributes(characterId, subjectLifecycleId)
     const second = await getCharacterAttributes(characterId, subjectLifecycleId)
 
-    expect(second).toEqual(first)
+    expect(second).toStrictEqual(first)
     expect(mocks.getAttributes).toHaveBeenCalledTimes(2)
   })
 })
@@ -151,16 +151,16 @@ function response<Data>(data: Data) {
     last_remap_date?: string
   }
   return {
+    cachedUntil: '',
     data: {
       ...value,
-      bonusRemaps: value.bonus_remaps ?? 0,
       accruedRemapCooldownDate: value.accrued_remap_cooldown_date ?? null,
+      bonusRemaps: value.bonus_remaps ?? 0,
       lastRemapDate: value.last_remap_date ?? null,
     },
-    cachedUntil: '',
-    validatedAt: '',
     quota: {},
     source: 'esi' as const,
     stale: false,
+    validatedAt: '',
   }
 }

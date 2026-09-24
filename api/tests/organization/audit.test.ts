@@ -6,15 +6,15 @@ import {
 } from '../../src/organization/audit.js'
 
 const validAuditEvent = {
-  organizationVersion: 1,
-  policyVersion: 1,
-  eventType: 'compliance.transitioned',
-  actorType: 'system',
   actorId: null,
-  subjectType: 'compliance',
-  subjectId: 'd88b6873-6d42-45b5-96f7-b4ecb9c99032',
-  reason: 'Fresh policy evidence changed the compliance state.',
+  actorType: 'system',
+  eventType: 'compliance.transitioned',
+  organizationVersion: 1,
   outcome: 'transitioned',
+  policyVersion: 1,
+  reason: 'Fresh policy evidence changed the compliance state.',
+  subjectId: 'd88b6873-6d42-45b5-96f7-b4ecb9c99032',
+  subjectType: 'compliance',
 } as const
 
 describe('organization audit schema', () => {
@@ -48,8 +48,8 @@ describe('organization audit schema', () => {
     expect(() =>
       organizationAuditInputSchema.parse({
         ...validAuditEvent,
-        actorType: 'user',
         actorId: null,
+        actorType: 'user',
       }),
     ).toThrow('Actor ID is required')
     expect(() =>
@@ -72,14 +72,14 @@ describe('organization audit schema', () => {
     expect(
       organizationAuditInputSchema.parse({
         ...validAuditEvent,
-        eventType: 'group.assigned',
-        subjectType: 'group',
-        groupId: '108866b8-b2e4-47f8-8310-2c29f574bf3c',
         assignmentId: '51fdf619-118a-4b4a-a089-6a8078f74bc1',
-        targetUserId: '439b0628-0380-4527-96c2-314c6ee0db64',
         assignmentSource: 'compliance',
         complianceSource: 'core.registration',
         entitlementExpiresAt: null,
+        eventType: 'group.assigned',
+        groupId: '108866b8-b2e4-47f8-8310-2c29f574bf3c',
+        subjectType: 'group',
+        targetUserId: '439b0628-0380-4527-96c2-314c6ee0db64',
       }),
     ).toMatchObject({
       assignmentSource: 'compliance',
@@ -89,36 +89,36 @@ describe('organization audit schema', () => {
     expect(() =>
       organizationAuditInputSchema.parse({
         ...validAuditEvent,
-        eventType: 'group.assigned',
-        subjectType: 'group',
-        groupId: '108866b8-b2e4-47f8-8310-2c29f574bf3c',
         assignmentId: '51fdf619-118a-4b4a-a089-6a8078f74bc1',
-        targetUserId: '439b0628-0380-4527-96c2-314c6ee0db64',
         assignmentSource: 'compliance',
+        eventType: 'group.assigned',
+        groupId: '108866b8-b2e4-47f8-8310-2c29f574bf3c',
+        subjectType: 'group',
+        targetUserId: '439b0628-0380-4527-96c2-314c6ee0db64',
       }),
     ).toThrow('Compliance source is required')
     expect(() =>
       organizationAuditInputSchema.parse({
         ...validAuditEvent,
-        eventType: 'group.revoked',
-        subjectType: 'group',
-        groupId: '108866b8-b2e4-47f8-8310-2c29f574bf3c',
         assignmentId: '51fdf619-118a-4b4a-a089-6a8078f74bc1',
-        targetUserId: '439b0628-0380-4527-96c2-314c6ee0db64',
         assignmentSource: 'manual',
         complianceSource: 'core.registration',
+        eventType: 'group.revoked',
+        groupId: '108866b8-b2e4-47f8-8310-2c29f574bf3c',
+        subjectType: 'group',
+        targetUserId: '439b0628-0380-4527-96c2-314c6ee0db64',
       }),
     ).toThrow('Manual assignment has no compliance source')
     expect(() =>
       organizationAuditInputSchema.parse({
         ...validAuditEvent,
-        eventType: 'group.assigned',
-        subjectType: 'group',
-        groupId: '108866b8-b2e4-47f8-8310-2c29f574bf3c',
         assignmentId: '51fdf619-118a-4b4a-a089-6a8078f74bc1',
-        targetUserId: '439b0628-0380-4527-96c2-314c6ee0db64',
         assignmentSource: 'manual',
+        eventType: 'group.assigned',
+        groupId: '108866b8-b2e4-47f8-8310-2c29f574bf3c',
         sectionId: 'skills',
+        subjectType: 'group',
+        targetUserId: '439b0628-0380-4527-96c2-314c6ee0db64',
       }),
     ).toThrow('Sensitive access context is not allowed')
   })
@@ -127,12 +127,12 @@ describe('organization audit schema', () => {
     expect(
       organizationAuditInputSchema.parse({
         ...validAuditEvent,
-        eventType: 'member.unblocked',
-        actorType: 'user',
         actorId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
-        subjectType: 'user',
-        reason: 'Review completed against current grants.',
+        actorType: 'user',
+        eventType: 'member.unblocked',
         outcome: 'transitioned',
+        reason: 'Review completed against current grants.',
+        subjectType: 'user',
       }),
     ).toMatchObject({ eventType: 'member.unblocked', outcome: 'transitioned' })
   })
@@ -141,17 +141,17 @@ describe('organization audit schema', () => {
     expect(() =>
       organizationAuditInputSchema.parse({
         ...validAuditEvent,
-        eventType: 'sensitive-access.decided',
-        actorType: 'user',
         actorId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
-        subjectType: 'user',
-        subjectId: '439b0628-0380-4527-96c2-314c6ee0db64',
-        reason: 'target-not-authorized',
-        outcome: 'denied',
-        targetUserId: '439b0628-0380-4527-96c2-314c6ee0db64',
-        targetCharacterId: null,
-        sectionId: 'mail',
+        actorType: 'user',
         disclosureVersion: 1,
+        eventType: 'sensitive-access.decided',
+        outcome: 'denied',
+        reason: 'target-not-authorized',
+        sectionId: 'mail',
+        subjectId: '439b0628-0380-4527-96c2-314c6ee0db64',
+        subjectType: 'user',
+        targetCharacterId: null,
+        targetUserId: '439b0628-0380-4527-96c2-314c6ee0db64',
       }),
     ).toThrow('Sensitive access audit context is invalid')
   })
@@ -159,44 +159,45 @@ describe('organization audit schema', () => {
   test('validates bounded sensitive access correlations', () => {
     const sensitiveEvent = {
       ...validAuditEvent,
-      eventType: 'sensitive-access.decided',
-      actorType: 'user',
       actorId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
-      subjectType: 'user',
-      subjectId: '439b0628-0380-4527-96c2-314c6ee0db64',
-      reason: 'authorized',
-      outcome: 'granted',
-      targetUserId: '439b0628-0380-4527-96c2-314c6ee0db64',
-      targetCharacterId: 90_000_001,
-      sectionId: 'assets',
+      actorType: 'user',
       disclosureVersion: 2,
+      eventType: 'sensitive-access.decided',
+      outcome: 'granted',
+      reason: 'authorized',
+      sectionId: 'assets',
+      subjectId: '439b0628-0380-4527-96c2-314c6ee0db64',
+      subjectType: 'user',
+      targetCharacterId: 90_000_001,
+      targetUserId: '439b0628-0380-4527-96c2-314c6ee0db64',
     } as const
 
     expect(organizationAuditInputSchema.parse(sensitiveEvent)).toMatchObject(sensitiveEvent)
     expect(
       organizationAuditInputSchema.parse({
         ...sensitiveEvent,
-        subjectType: 'deployment',
-        subjectId: '1',
-        reason: 'reviewer-blocked',
         outcome: 'denied',
-        targetUserId: null,
+        reason: 'reviewer-blocked',
+        subjectId: '1',
+        subjectType: 'deployment',
         targetCharacterId: null,
+        targetUserId: null,
       }),
-    ).toMatchObject({ reason: 'reviewer-blocked', outcome: 'denied' })
+    ).toMatchObject({ outcome: 'denied', reason: 'reviewer-blocked' })
 
     for (const invalid of [
-      { ...sensitiveEvent, actorType: 'system', actorId: null },
+      { ...sensitiveEvent, actorId: null, actorType: 'system' },
       { ...sensitiveEvent, sectionId: null },
       { ...sensitiveEvent, disclosureVersion: null },
       { ...sensitiveEvent, groupId: '108866b8-b2e4-47f8-8310-2c29f574bf3c' },
       { ...sensitiveEvent, targetUserId: null },
       { ...sensitiveEvent, subjectId: 'deployment' },
       { ...sensitiveEvent, reason: 'reviewer-blocked' },
-    ])
+    ]) {
       expect(() => organizationAuditInputSchema.parse(invalid)).toThrow(
         'Sensitive access audit context is invalid',
       )
+    }
   })
 
   test('rejects event-specific context on unrelated events', () => {
@@ -211,33 +212,33 @@ describe('organization audit schema', () => {
   test('appends validated events and validates stored rows', async () => {
     const stored = {
       ...validAuditEvent,
+      assignmentId: null,
+      assignmentSource: null,
       auditId: '35acd527-9539-44ad-aacf-9f8e45232267',
       auditSequence: 1n,
+      causationAuditId: null,
+      complianceSource: null,
       deploymentId: 1,
+      disclosureVersion: null,
+      entitlementExpiresAt: null,
       groupId: null,
-      assignmentId: null,
-      targetUserId: null,
+      occurredAt: new Date('2026-09-18T12:00:00.000Z'),
       sectionId: null,
       targetCharacterId: null,
-      disclosureVersion: null,
-      assignmentSource: null,
-      complianceSource: null,
-      entitlementExpiresAt: null,
-      causationAuditId: null,
-      occurredAt: new Date('2026-09-18T12:00:00.000Z'),
+      targetUserId: null,
     }
     const returning = vi.fn().mockResolvedValue([stored])
     const values = vi.fn(() => ({ returning }))
     const insert = vi.fn(() => ({ values }))
     const transaction = { insert } as never
 
-    await expect(appendOrganizationAuditEvent(transaction, validAuditEvent)).resolves.toEqual(
+    await expect(appendOrganizationAuditEvent(transaction, validAuditEvent)).resolves.toStrictEqual(
       stored,
     )
     expect(values).toHaveBeenCalledWith([
       expect.objectContaining({ deploymentId: 1, eventType: 'compliance.transitioned' }),
     ])
-    await expect(appendOrganizationAuditEvents(transaction, [])).resolves.toEqual([])
+    await expect(appendOrganizationAuditEvents(transaction, [])).resolves.toStrictEqual([])
   })
 
   test('rejects missing and invalid stored audit rows', async () => {

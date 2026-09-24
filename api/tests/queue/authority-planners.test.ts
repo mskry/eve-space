@@ -7,20 +7,20 @@ const sourceId = '66503848-72b8-4fa3-8af5-de056001a37e'
 const subjectLifecycleId = '35acd527-9539-44ad-aacf-9f8e45232267'
 const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
 const sourceContext = {
-  organizationVersion: 3,
-  sourceSubjectLifecycleId: subjectLifecycleId,
   authorizationGeneration: 7,
+  organizationVersion: 3,
   roleEvidenceRevision: '2026-09-21T12:00:00.000Z',
+  sourceSubjectLifecycleId: subjectLifecycleId,
 } as const
 const corporationCandidate = { sourceId, ...sourceContext }
 const derivedCandidate = {
-  organizationVersion: sourceContext.organizationVersion,
-  userId,
-  characterId: 1_404_328_063,
-  subjectLifecycleId,
   authorizationGeneration: sourceContext.authorizationGeneration,
-  sourceId: null,
+  characterId: 1_404_328_063,
+  organizationVersion: sourceContext.organizationVersion,
   roleEvidenceRevision: null,
+  sourceId: null,
+  subjectLifecycleId,
+  userId,
 } as const
 const mocks = vi.hoisted(() => ({
   selectCorporationSources: vi.fn(),
@@ -38,24 +38,24 @@ vi.mock('../../src/organization/derived-authority.js', async (importOriginal) =>
 
 const planners = [
   {
-    name: 'corporation source',
-    run: runCorporationSourcePlanner,
-    selectDue: mocks.selectCorporationSources,
     command: {
       name: 'corporation-source-evidence',
       payload: corporationCandidate,
       source: 'planner',
     } as const,
+    name: 'corporation source',
+    run: runCorporationSourcePlanner,
+    selectDue: mocks.selectCorporationSources,
   },
   {
-    name: 'derived authority',
-    run: runDerivedAuthorityPlanner,
-    selectDue: mocks.selectDerivedAuthority,
     command: {
       name: 'derived-authority',
       payload: derivedCandidate,
       source: 'planner',
     } as const,
+    name: 'derived authority',
+    run: runDerivedAuthorityPlanner,
+    selectDue: mocks.selectDerivedAuthority,
   },
 ] as const
 
@@ -70,8 +70,8 @@ describe.each(planners)('$name planner', ({ run, selectDue, command }) => {
     const subject = context(signal)
     selectDue.mockResolvedValue([command.payload])
 
-    await expect(run(subject)).resolves.toEqual({ planned: 1, reason: 'scheduled' })
-    expect(subject.producer.commands).toEqual([command])
+    await expect(run(subject)).resolves.toStrictEqual({ planned: 1, reason: 'scheduled' })
+    expect(subject.producer.commands).toStrictEqual([command])
   })
 
   test('coalesces an already active authority refresh', async () => {
@@ -79,7 +79,7 @@ describe.each(planners)('$name planner', ({ run, selectDue, command }) => {
     selectDue.mockResolvedValue([command.payload])
     await subject.producer.enqueue(command)
 
-    await expect(run(subject)).resolves.toEqual({ planned: 0, reason: 'idle' })
+    await expect(run(subject)).resolves.toStrictEqual({ planned: 0, reason: 'idle' })
     expect(subject.producer.commands).toHaveLength(1)
   })
 
@@ -87,8 +87,8 @@ describe.each(planners)('$name planner', ({ run, selectDue, command }) => {
     const subject = context(undefined, 0)
     selectDue.mockResolvedValue([command.payload])
 
-    await expect(run(subject)).resolves.toEqual({ planned: 0, reason: 'planner-paused' })
-    expect(subject.producer.commands).toEqual([])
+    await expect(run(subject)).resolves.toStrictEqual({ planned: 0, reason: 'planner-paused' })
+    expect(subject.producer.commands).toStrictEqual([])
   })
 
   test('does not query due work after cancellation', async () => {
@@ -102,11 +102,11 @@ describe.each(planners)('$name planner', ({ run, selectDue, command }) => {
 
 function context(signal?: AbortSignal, highWaterMark?: number) {
   return {
-    producer: createInMemoryQueueProducer({ highWaterMark }),
     outcomes: {
       recordAffiliation: vi.fn().mockResolvedValue(undefined),
       recordOutbox: vi.fn().mockResolvedValue(undefined),
     },
+    producer: createInMemoryQueueProducer({ highWaterMark }),
     signal,
   }
 }

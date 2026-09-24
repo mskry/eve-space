@@ -3,15 +3,15 @@ import { describe, expect, it } from 'vitest'
 import { composePlatformPages, type ResolvedContributionPage } from '../src/pages.js'
 
 const contribution: ResolvedContributionPage = {
-  moduleId: 'alpha',
   file: '/features/alpha/nuxt/src/runtime/app/pages/RecordPage.vue',
+  moduleId: 'alpha',
   page: {
+    audience: 'authenticated',
+    extensionPoint: 'character-shell',
+    file: 'src/runtime/app/pages/RecordPage.vue',
     id: 'record',
     name: 'alpha-record',
     path: '/characters/:characterId/alpha',
-    file: 'src/runtime/app/pages/RecordPage.vue',
-    extensionPoint: 'character-shell',
-    audience: 'authenticated',
     sectionId: 'skills',
   },
 }
@@ -19,19 +19,19 @@ const contribution: ResolvedContributionPage = {
 describe('platform page composition', () => {
   it('attaches a relative child with module and audience metadata', () => {
     const pages: NuxtPage[] = [
-      { name: 'character', path: '/characters/:characterId', file: '/app/CharacterPage.vue' },
+      { file: '/app/CharacterPage.vue', name: 'character', path: '/characters/:characterId' },
     ]
     composePlatformPages(pages, [contribution])
-    expect(pages[0]?.children).toEqual([
+    expect(pages[0]?.children).toStrictEqual([
       {
-        name: 'alpha-record',
-        path: 'alpha',
         file: contribution.file,
         meta: {
+          platformAudience: 'authenticated',
           platformModuleId: 'alpha',
           platformModuleSectionId: 'skills',
-          platformAudience: 'authenticated',
         },
+        name: 'alpha-record',
+        path: 'alpha',
       },
     ])
   })

@@ -488,8 +488,12 @@ export const statusSchema = zGetStatusResponse;
 }
 
 function domainFactoryTypeImports(domain: string): string {
-  if (domain === 'status') return ', type StatusDomainClient, type GetStatusOptions';
-  if (domain === 'location') return ', type GetCharactersCharacterIdLocationOptions';
+  if (domain === 'status') {
+    return ', type StatusDomainClient, type GetStatusOptions';
+  }
+  if (domain === 'location') {
+    return ', type GetCharactersCharacterIdLocationOptions';
+  }
   return '';
 }
 
@@ -499,9 +503,13 @@ function compareText(left: string, right: string): number {
 
 function argumentValue(name: string): string | undefined {
   const index = process.argv.indexOf(name);
-  if (index < 0) return undefined;
+  if (index < 0) {
+    return undefined;
+  }
   const value = process.argv[index + 1];
-  if (value === undefined) throw new Error(`${name} requires a value`);
+  if (value === undefined) {
+    throw new Error(`${name} requires a value`);
+  }
   return resolve(value);
 }
 

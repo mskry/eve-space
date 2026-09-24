@@ -15,14 +15,14 @@ describe('EsiClientConfiguration', () => {
     const configuration = new EsiClientConfiguration();
 
     expect(configuration).toMatchObject({
+      allowGenericMutations: false,
       baseUrl: DEFAULT_ESI_BASE_URL,
       compatibilityDate: PINNED_ESI_COMPATIBILITY_DATE,
+      fetch: globalThis.fetch,
       language: DEFAULT_ESI_LANGUAGE,
       requestTimeoutMs: DEFAULT_ESI_REQUEST_TIMEOUT_MS,
-      fetch: globalThis.fetch,
-      validateResponses: true,
       validateRequests: false,
-      allowGenericMutations: false,
+      validateResponses: true,
     });
     expect(configuration.token).toBeUndefined();
     expect(configuration.tokenProvider).toBeUndefined();
@@ -30,13 +30,13 @@ describe('EsiClientConfiguration', () => {
 
   it('snapshots and normalizes supported overrides', () => {
     const options = {
+      allowGenericMutations: true,
       baseUrl: 'http://localhost:3000/esi/',
       compatibilityDate: '2025-05-06',
       language: 'ja' as EsiLanguage,
       requestTimeoutMs: 30_000,
-      validateResponses: false,
       validateRequests: true,
-      allowGenericMutations: true,
+      validateResponses: false,
     };
     const configuration = new EsiClientConfiguration(options);
 
@@ -48,14 +48,14 @@ describe('EsiClientConfiguration', () => {
     options.validateRequests = false;
     options.allowGenericMutations = false;
 
-    expect(configuration.toJSON()).toEqual({
+    expect(configuration.toJSON()).toStrictEqual({
+      allowGenericMutations: true,
       baseUrl: 'http://localhost:3000/esi',
       compatibilityDate: '2025-05-06',
       language: 'ja',
       requestTimeoutMs: 30_000,
-      validateResponses: false,
       validateRequests: true,
-      allowGenericMutations: true,
+      validateResponses: false,
     });
   });
 
@@ -68,7 +68,7 @@ describe('EsiClientConfiguration', () => {
     expect(Object.keys(configuration)).not.toContain('token');
     expect(Object.prototype.hasOwnProperty.call(configuration, 'token')).toBe(false);
     expect(JSON.stringify(configuration)).not.toContain(token);
-    expect(JSON.parse(JSON.stringify(configuration))).toEqual(configuration.toJSON());
+    expect(JSON.parse(JSON.stringify(configuration))).toStrictEqual(configuration.toJSON());
     expect(() => {
       (configuration as { baseUrl: string }).baseUrl = 'https://unsafe.example';
     }).toThrow(TypeError);

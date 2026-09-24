@@ -23,19 +23,25 @@ const incompleteEnrichment = computed(() =>
 )
 
 function enrichmentLabel(key: keyof AssetCollection['enrichment']) {
-  if (key === 'types') return 'type details'
-  if (key === 'names') return 'custom names'
+  if (key === 'types') {
+    return 'type details'
+  }
+  if (key === 'names') {
+    return 'custom names'
+  }
   return 'location details'
 }
 
 function formatValidationTime(value: string) {
   const time = Date.parse(value)
-  if (!Number.isFinite(time)) return 'at an unknown time'
+  if (!Number.isFinite(time)) {
+    return 'at an unknown time'
+  }
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
-    month: 'short',
     hour: '2-digit',
     minute: '2-digit',
+    month: 'short',
     timeZone: 'UTC',
     timeZoneName: 'short',
   }).format(time)

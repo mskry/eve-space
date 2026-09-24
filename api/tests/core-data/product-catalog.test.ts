@@ -10,24 +10,24 @@ describe('core-data product catalog', () => {
     expect(() => assertCoreDataProductCatalogConfiguration()).not.toThrow()
     expect(getCoreDataProductDefinition('published-type-groups')).toMatchObject({
       method: 'publishedTypeGroups',
-      sourceAuthority: 'official-sde',
-      revisionStrategy: 'committed-sde-projection',
       networkAllowed: false,
+      revisionStrategy: 'committed-sde-projection',
+      sourceAuthority: 'official-sde',
     })
     expect(getCoreDataProductDefinition('published-skill-catalogue')).toMatchObject({
       method: 'publishedSkillCatalogue',
-      requestBound: 10_000,
       networkAllowed: false,
+      requestBound: 10_000,
     })
     expect(getCoreDataProductDefinition('published-type-details')).toMatchObject({
       method: 'publishedTypeDetails',
-      requestBound: 500,
       networkAllowed: false,
+      requestBound: 500,
     })
     expect(getCoreDataProductDefinition('static-location-labels')).toMatchObject({
       method: 'staticLocationLabels',
-      requestBound: 500,
       networkAllowed: false,
+      requestBound: 500,
     })
   })
 

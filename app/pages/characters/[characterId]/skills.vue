@@ -11,7 +11,7 @@ import type { EsiResourceState } from '../../../types/esi-resource'
 import { ApiQueryError } from '../../../utils/query-error'
 import { parseRouteId } from '../../../utils/route-id'
 
-definePageMeta({ title: 'Character Skills', layout: 'headerless' })
+definePageMeta({ layout: 'headerless', title: 'Character Skills' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
@@ -58,9 +58,13 @@ const skillQueue = skillQueueQuery.data
 const skillsMessage = computed(() => queryMessage(skillsQuery.error.value))
 const skillsAuthorizeUrl = computed(() => queryAuthorizeUrl(skillsQuery.error.value))
 const skillsStatus = computed(() => {
-  if (skillsQuery.data.value) return 'idle'
+  if (skillsQuery.data.value) {
+    return 'idle'
+  }
   const error = skillsQuery.error.value
-  if (error instanceof ApiQueryError && error.status === 404) return 'not-found'
+  if (error instanceof ApiQueryError && error.status === 404) {
+    return 'not-found'
+  }
   return queryStatus(skillsQuery)
 })
 const attributesStatus = computed(() => queryStatus(attributesQuery))
@@ -72,29 +76,29 @@ const skillQueueAuthorizeUrl = computed(() => queryAuthorizeUrl(skillQueueQuery.
 const skillsResourceState = computed<EsiResourceState>(() => {
   if (skillsStatus.value === 'loading') {
     return {
+      message: 'Decrypting trained skill archive...',
       status: 'loading',
       title: '',
-      message: 'Decrypting trained skill archive...',
     }
   }
   if (skillsStatus.value === 'scope-required') {
     return {
-      status: 'authorization-required',
-      code: 'ESI 403 / SKILLS',
-      title: 'Skills authorization required',
-      message: skillsMessage.value,
       action: skillsAuthorizeUrl.value
         ? { href: skillsAuthorizeUrl.value, label: 'AUTHORIZE THIS CHARACTER' }
         : null,
+      code: 'ESI 403 / SKILLS',
+      message: skillsMessage.value,
+      status: 'authorization-required',
+      title: 'Skills authorization required',
     }
   }
   if (skillsStatus.value === 'error' || skillsStatus.value === 'not-found') {
     return {
-      status: 'error',
       code: skillsStatus.value === 'not-found' ? '404' : 'ERR / SKILLS',
-      title: 'Skill archive unavailable',
       message: skillsMessage.value,
       retryLabel: 'RETRY UPLINK',
+      status: 'error',
+      title: 'Skill archive unavailable',
     }
   }
   return { status: 'ready' }
@@ -109,7 +113,9 @@ useCharacterReauthorization(characterId, () => {
 })
 
 function queryStatus(query: typeof skillsQuery | typeof attributesQuery | typeof skillQueueQuery) {
-  if (query.data.value) return 'idle'
+  if (query.data.value) {
+    return 'idle'
+  }
   const error = query.error.value
   if (
     error instanceof ApiQueryError &&
@@ -117,8 +123,12 @@ function queryStatus(query: typeof skillsQuery | typeof attributesQuery | typeof
   ) {
     return 'scope-required'
   }
-  if (query.status.value === 'error') return 'error'
-  if (query.asyncStatus.value === 'loading') return 'loading'
+  if (query.status.value === 'error') {
+    return 'error'
+  }
+  if (query.asyncStatus.value === 'loading') {
+    return 'loading'
+  }
   return 'idle'
 }
 

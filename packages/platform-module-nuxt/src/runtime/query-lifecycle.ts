@@ -26,15 +26,17 @@ export function canRunPlatformProtectedQuery(access: PlatformProtectedQueryAcces
     !access.authenticated ||
     !access.moduleEnabled ||
     !isPlatformQuerySubjectValid(access.subject)
-  )
+  ) {
     return false
+  }
   if (
     (access.subject.kind === 'organization' ||
       access.subject.kind === 'corporation' ||
       access.subject.kind === 'alliance') &&
     access.authorized !== true
-  )
+  ) {
     return false
+  }
   return access.subject.kind !== 'character' || access.ownsCharacter === true
 }
 
@@ -67,7 +69,9 @@ function clearAuthenticatedQueryEntries<TSession>(
   }
 
   for (const entry of queryCache.getEntries(filter)) {
-    if (entry === sessionEntry) continue
+    if (entry === sessionEntry) {
+      continue
+    }
     if (!cancelSession) {
       queryCache.cancelQueries(
         { exact: true, key: entry.key },
@@ -81,7 +85,9 @@ function clearAuthenticatedQueryEntries<TSession>(
 
 export function removePlatformModuleQueries(queryCache: QueryCache, moduleId: string) {
   for (const entry of queryCache.getEntries({ key: PLATFORM_PRIVATE_QUERY_ROOT })) {
-    if (isPlatformModuleQueryKey(entry.key, moduleId)) removeQueryEntry(queryCache, entry)
+    if (isPlatformModuleQueryKey(entry.key, moduleId)) {
+      removeQueryEntry(queryCache, entry)
+    }
   }
 }
 
@@ -91,21 +97,26 @@ export function removePlatformModuleSectionQueries(
   sectionId: string,
 ) {
   for (const entry of queryCache.getEntries({ key: PLATFORM_PRIVATE_QUERY_ROOT })) {
-    if (isPlatformModuleSectionQueryKey(entry.key, moduleId, sectionId))
+    if (isPlatformModuleSectionQueryKey(entry.key, moduleId, sectionId)) {
       removeQueryEntry(queryCache, entry)
+    }
   }
 }
 
 export function removePlatformQueryScope(queryCache: QueryCache, key: EntryKey) {
   const filter = { key }
   queryCache.cancelQueries(filter, new Error('Protected query state cleared.'))
-  for (const entry of queryCache.getEntries(filter)) queryCache.remove(entry)
+  for (const entry of queryCache.getEntries(filter)) {
+    queryCache.remove(entry)
+  }
 }
 
 export function removePlatformQuery(queryCache: QueryCache, key: EntryKey) {
-  const filter = { key, exact: true }
+  const filter = { exact: true, key }
   queryCache.cancelQueries(filter, new Error('Protected query state cleared.'))
-  for (const entry of queryCache.getEntries(filter)) queryCache.remove(entry)
+  for (const entry of queryCache.getEntries(filter)) {
+    queryCache.remove(entry)
+  }
 }
 
 export function removePlatformReviewerContributionTargetQueries(
@@ -135,7 +146,9 @@ export function prefetchPlatformProtectedQuery<
   resource: EntryKey,
   access: PlatformProtectedQueryAccess,
 ) {
-  if (!canRunPlatformProtectedQuery(access)) return Promise.resolve()
+  if (!canRunPlatformProtectedQuery(access)) {
+    return Promise.resolve()
+  }
   return prefetchQuery(queryCache, {
     ...options,
     key: platformModuleQueryKey(moduleId, access.subject, resource, access.sectionId),

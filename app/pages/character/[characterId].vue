@@ -7,7 +7,7 @@ import { publicCharacterQuery } from '../../queries/characters'
 import { ApiQueryError } from '../../utils/query-error'
 import { parseRouteId } from '../../utils/route-id'
 
-definePageMeta({ title: 'Character', layout: 'headerless' })
+definePageMeta({ layout: 'headerless', title: 'Character' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
@@ -23,15 +23,27 @@ const profile = computed(() =>
   recordAccessAllowed.value ? detailQuery.data.value?.profile : undefined,
 )
 const detailStatus = computed(() => {
-  if (!characterId.value) return 'not-found'
-  if (authLoading.value) return 'loading'
-  if (!recordAccessAllowed.value) return 'idle'
-  if (detailQuery.data.value) return 'idle'
+  if (!characterId.value) {
+    return 'not-found'
+  }
+  if (authLoading.value) {
+    return 'loading'
+  }
+  if (!recordAccessAllowed.value) {
+    return 'idle'
+  }
+  if (detailQuery.data.value) {
+    return 'idle'
+  }
   if (detailQuery.error.value instanceof ApiQueryError && detailQuery.error.value.status === 404) {
     return 'not-found'
   }
-  if (detailQuery.status.value === 'error') return 'error'
-  if (detailQuery.asyncStatus.value === 'loading') return 'loading'
+  if (detailQuery.status.value === 'error') {
+    return 'error'
+  }
+  if (detailQuery.asyncStatus.value === 'loading') {
+    return 'loading'
+  }
   return 'idle'
 })
 const detailMessage = computed(() =>
@@ -42,10 +54,10 @@ const navigation = computed<readonly RecordSectionNavigationEntry[]>(() =>
     ? []
     : [
         {
+          exact: true,
           id: 'overview',
           label: 'OVERVIEW',
           to: `/character/${characterId.value}`,
-          exact: true,
         },
       ],
 )

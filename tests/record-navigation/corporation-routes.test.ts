@@ -29,7 +29,7 @@ describe('corporation record route ownership', () => {
     expect(allianceHistory).toContain('recordAccessAllowed.value &&')
     expect(allianceHistory).toContain("corporation.value?.type === 'player_owned'")
     expect(allianceHistory).toContain("value?.type !== 'npc_owned'")
-    expect(allianceHistory).toContain("if (historyQuery.data.value) return 'idle'")
+    expect(allianceHistory).toMatch(/if \(historyQuery\.data\.value\)\s*\{\s*return 'idle'\s*\}/)
     expect(allianceHistory).toContain('historyQuery.refetch()')
     expect(allianceHistory).toContain('title="No alliance history"')
   })

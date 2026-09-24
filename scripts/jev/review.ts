@@ -26,12 +26,14 @@ export async function runJevReview<State, Judgment, Finding extends JevReviewFin
   definition: JevReviewDefinition<State, Judgment, Finding>,
 ): Promise<JevReviewResult<Finding>> {
   const concurrency = definition.concurrency ?? 4
-  if (!Number.isInteger(concurrency) || concurrency < 1)
+  if (!Number.isInteger(concurrency) || concurrency < 1) {
     throw new Error('Jev review concurrency must be a positive integer')
+  }
   const findings = await mapConcurrent(definition.states, concurrency, async (state) =>
     definition.classify(state, await definition.judge(state)),
   )
   return {
+    failed: findings.some((finding) => finding.verdict === 'report'),
     findings,
     output: formatJevReview(
       definition.findingName,
@@ -39,7 +41,6 @@ export async function runJevReview<State, Judgment, Finding extends JevReviewFin
       definition.states.length,
       findings,
     ),
-    failed: findings.some((finding) => finding.verdict === 'report'),
   }
 }
 
@@ -50,8 +51,9 @@ function formatJevReview(
   findings: readonly JevReviewFinding[],
 ) {
   const reportable = findings.filter((finding) => finding.verdict !== 'pass')
-  if (reportable.length === 0)
+  if (reportable.length === 0) {
     return `No ${findingName} findings across ${reviewedCount} reviewed ${reviewedName}.`
+  }
 
   return reportable.map(formatFinding).join('\n\n')
 }
@@ -75,7 +77,9 @@ async function mapConcurrent<Value, Result>(
   const worker = async (): Promise<void> => {
     const index = nextIndex
     nextIndex += 1
-    if (index >= values.length) return
+    if (index >= values.length) {
+      return
+    }
     results[index] = await operation(values[index]!)
     await worker()
   }

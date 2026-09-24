@@ -17,7 +17,7 @@ vi.mock('../../app/utils/api-client', () => ({ createApiClient: mocks.createApiC
 import { usePlatformHostIdentity } from '../../app/composables/usePlatformHostIdentity'
 
 const authSession = ref({ authenticated: false })
-const characters = ref([{ characterId: 9001, name: 'Primary', corporationId: 98_000_001 }])
+const characters = ref([{ characterId: 9001, corporationId: 98_000_001, name: 'Primary' }])
 const organization = ref<
   | {
       memberAccess: boolean
@@ -54,7 +54,7 @@ test('adapts host authentication, organization, and roster state for platform mo
 
   expect(mocks.createApiClient).toHaveBeenCalledWith('https://api.example.test')
   expect(mocks.organizationContextQuery).toHaveBeenCalledWith(mocks.api)
-  expect(queryOptions.key).toEqual(['organization-context'])
+  expect(queryOptions.key).toStrictEqual(['organization-context'])
   expect(queryOptions.enabled()).toBeFalsy()
   expect(identity.authenticated.value).toBe(false)
   expect(identity.organizationAuthorized.value).toBe(false)

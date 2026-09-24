@@ -48,11 +48,13 @@ describe('generated examples', () => {
     const second = renderOperationSnippets(reordered);
 
     expect(first.size).toBe(operationCount);
-    expect([...second]).toEqual([...first]);
+    expect([...second]).toStrictEqual([...first]);
 
     for (const operation of fixture.manifest.operations) {
       const snippets = first.get(operation.operationId);
-      if (snippets === undefined) throw new Error(`Missing snippets: ${operation.operationId}`);
+      if (snippets === undefined) {
+        throw new Error(`Missing snippets: ${operation.operationId}`);
+      }
 
       expect(snippets.domainMethod).toContain(
         `client.${operation.facade.domain}.${operation.facade.method}(`,
@@ -70,9 +72,9 @@ describe('generated examples', () => {
       expect(snippets.genericExecution).toContain(operation.requestType.export);
       expect(snippets.genericExecution).toContain(operation.responseType.export);
       expect(snippets.genericExecution).toContain("from '@evespace/esi-client/types';");
-      expect(syntaxDiagnostics(snippets.domainMethod)).toEqual([]);
-      expect(syntaxDiagnostics(snippets.standaloneDomainMethod)).toEqual([]);
-      expect(syntaxDiagnostics(snippets.genericExecution)).toEqual([]);
+      expect(syntaxDiagnostics(snippets.domainMethod)).toStrictEqual([]);
+      expect(syntaxDiagnostics(snippets.standaloneDomainMethod)).toStrictEqual([]);
+      expect(syntaxDiagnostics(snippets.genericExecution)).toStrictEqual([]);
 
       const combined = `${snippets.domainMethod}\n${snippets.standaloneDomainMethod}\n${snippets.genericExecution}`;
       expect(combined).not.toMatch(/Bearer\s+[A-Za-z0-9._~-]{8,}/u);
@@ -83,7 +85,9 @@ describe('generated examples', () => {
       ({ authentication }) => authentication.required,
     )) {
       const snippets = first.get(operation.operationId);
-      if (snippets === undefined) throw new Error(`Missing snippets: ${operation.operationId}`);
+      if (snippets === undefined) {
+        throw new Error(`Missing snippets: ${operation.operationId}`);
+      }
       const combined = `${snippets.domainMethod}\n${snippets.genericExecution}`;
       expect(combined).toContain('process.env.ESI_ACCESS_TOKEN');
       expect(combined).not.toMatch(/console\.[a-z]+\([^)]*(?:accessToken|token)/u);
@@ -93,7 +97,9 @@ describe('generated examples', () => {
       ({ classification }) => classification === 'mutation',
     )) {
       const snippets = first.get(operation.operationId);
-      if (snippets === undefined) throw new Error(`Missing snippets: ${operation.operationId}`);
+      if (snippets === undefined) {
+        throw new Error(`Missing snippets: ${operation.operationId}`);
+      }
       expect(snippets.domainMethod).toContain('named typed mutation expresses explicit intent');
       expect(snippets.domainMethod).toContain('Verify authorization');
       expect(snippets.genericExecution).toContain('allowGenericMutations: true');
@@ -107,7 +113,9 @@ describe('generated examples', () => {
     const rendered = renderStandaloneExamples(fixture.manifest, fixture.provenance);
 
     expect(rendered.size).toBe(representativePaths.length + domainCount);
-    for (const path of representativePaths) expect(rendered.has(path)).toBe(true);
+    for (const path of representativePaths) {
+      expect(rendered.has(path)).toBe(true);
+    }
     expect([...rendered.keys()].filter((path) => path.startsWith('domain-'))).toHaveLength(
       domainCount,
     );
@@ -116,7 +124,10 @@ describe('generated examples', () => {
       expect(source).toContain(`Specification SHA-256: ${fixture.provenance.sha256}.`);
       expect(source).not.toMatch(/Bearer\s+[A-Za-z0-9._~-]{8,}/u);
       expect(source).not.toMatch(/-----BEGIN [A-Z ]*PRIVATE KEY-----/u);
-      expect({ path, diagnostics: syntaxDiagnostics(source) }).toEqual({ path, diagnostics: [] });
+      expect({ diagnostics: syntaxDiagnostics(source), path }).toStrictEqual({
+        diagnostics: [],
+        path,
+      });
     }
 
     const authenticated = rendered.get('authenticated.ts') ?? '';
@@ -153,8 +164,8 @@ describe('generated examples', () => {
     const outputDirectory = await makeTemporaryDirectory('esi-client-examples-emitter-');
     const context = createContext(fixture, outputDirectory);
 
-    await expect(generatedExamplesEmitter.emit(context)).resolves.toEqual([
-      { target: 'examples/generated', kind: 'directory' },
+    await expect(generatedExamplesEmitter.emit(context)).resolves.toStrictEqual([
+      { kind: 'directory', target: 'examples/generated' },
     ]);
     await expect(readdir(join(outputDirectory, 'examples/generated'))).resolves.toHaveLength(
       representativePaths.length + domainCount,
@@ -167,7 +178,7 @@ describe('generated examples', () => {
     const generatedRoot = new URL('../examples/generated/', import.meta.url);
     const materializedPaths = sortedText(await readdir(generatedRoot));
 
-    expect(materializedPaths).toEqual(sortedText(rendered.keys()));
+    expect(materializedPaths).toStrictEqual(sortedText(rendered.keys()));
     await Promise.all(
       materializedPaths.map(async (path) => {
         await expect(readFile(new URL(path, generatedRoot), 'utf8')).resolves.toBe(
@@ -220,8 +231,8 @@ function createContext(fixture: ExamplesFixture, outputDirectory: string): Emitt
   return {
     compatibilityDate: fixture.provenance.compatibilityDate,
     correctedDocument: {},
-    normalizedModel: fixture.model,
     namingReviewReport: 'test naming review\n',
+    normalizedModel: fixture.model,
     operationMetadata: fixture.metadata,
     outputDirectory,
     outputPath: (target) => join(outputDirectory, target),
@@ -265,7 +276,9 @@ function reversed<Value>(values: readonly Value[]): Value[] {
   const result: Value[] = [];
   for (let index = values.length - 1; index >= 0; index -= 1) {
     const value = values[index];
-    if (value !== undefined) result.push(value);
+    if (value !== undefined) {
+      result.push(value);
+    }
   }
   return result;
 }

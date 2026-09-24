@@ -7,22 +7,22 @@ import {
 describe('ESI result metadata', () => {
   test('projects only explicitly public freshness fields', () => {
     const metadata = toEsiReadResultMetadata({
-      data: { name: 'Bandera' },
       cachedUntil: '2026-09-01T11:01:00.000Z',
-      validatedAt: '2026-09-01T11:00:00.000Z',
+      data: { name: 'Bandera' },
+      quota: { errorRemaining: 34, remaining: 12 },
+      refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-09-01T11:02:00.000Z',
       source: 'cache',
       stale: true,
-      retryAt: '2026-09-01T11:02:00.000Z',
-      refreshFailureClass: 'esi-unavailable',
-      quota: { remaining: 12, errorRemaining: 34 },
+      validatedAt: '2026-09-01T11:00:00.000Z',
     })
 
-    expect(metadata).toEqual({
+    expect(metadata).toStrictEqual({
       cachedUntil: '2026-09-01T11:01:00.000Z',
-      validatedAt: '2026-09-01T11:00:00.000Z',
-      stale: true,
       refreshFailureClass: 'esi-unavailable',
       retryAt: '2026-09-01T11:02:00.000Z',
+      stale: true,
+      validatedAt: '2026-09-01T11:00:00.000Z',
     })
   })
 
@@ -31,36 +31,36 @@ describe('ESI result metadata', () => {
       combineEsiResultMetadata([
         {
           cachedUntil: '2026-09-01T11:03:00.000Z',
-          validatedAt: '2026-09-01T11:00:00.000Z',
           stale: false,
+          validatedAt: '2026-09-01T11:00:00.000Z',
         },
         {
           cachedUntil: '2026-09-01T11:02:00.000Z',
-          validatedAt: '2026-09-01T10:58:00.000Z',
-          stale: true,
-          retryAt: '2026-09-01T11:04:00.000Z',
           refreshFailureClass: 'response-invalid',
+          retryAt: '2026-09-01T11:04:00.000Z',
+          stale: true,
+          validatedAt: '2026-09-01T10:58:00.000Z',
         },
         {
           cachedUntil: '2026-09-01T11:04:00.000Z',
-          validatedAt: '2026-09-01T10:59:00.000Z',
-          stale: true,
-          retryAt: '2026-09-01T11:05:00.000Z',
           refreshFailureClass: 'esi-cooldown',
+          retryAt: '2026-09-01T11:05:00.000Z',
+          stale: true,
+          validatedAt: '2026-09-01T10:59:00.000Z',
         },
         {
           cachedUntil: '2026-09-01T11:05:00.000Z',
-          validatedAt: '2026-09-01T11:01:00.000Z',
-          stale: false,
           retryAt: '2026-09-01T11:06:00.000Z',
+          stale: false,
+          validatedAt: '2026-09-01T11:01:00.000Z',
         },
       ]),
-    ).toEqual({
+    ).toStrictEqual({
       cachedUntil: '2026-09-01T11:02:00.000Z',
-      validatedAt: '2026-09-01T10:58:00.000Z',
-      stale: true,
-      retryAt: '2026-09-01T11:05:00.000Z',
       refreshFailureClass: 'response-invalid',
+      retryAt: '2026-09-01T11:05:00.000Z',
+      stale: true,
+      validatedAt: '2026-09-01T10:58:00.000Z',
     })
   })
 
@@ -69,15 +69,15 @@ describe('ESI result metadata', () => {
       combineEsiResultMetadata([
         {
           cachedUntil: '2026-09-01T11:02:00.000Z',
-          validatedAt: '2026-09-01T10:58:00.000Z',
-          stale: true,
           retryAt: 'later',
+          stale: true,
+          validatedAt: '2026-09-01T10:58:00.000Z',
         },
       ]),
-    ).toEqual({
+    ).toStrictEqual({
       cachedUntil: '2026-09-01T11:02:00.000Z',
-      validatedAt: '2026-09-01T10:58:00.000Z',
       stale: true,
+      validatedAt: '2026-09-01T10:58:00.000Z',
     })
   })
 })

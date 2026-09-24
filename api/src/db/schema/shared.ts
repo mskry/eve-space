@@ -4,8 +4,8 @@ import { check, timestamp } from 'drizzle-orm/pg-core'
 /** Fresh builders per call; a builder instance must not be shared between tables. */
 export function auditTimestamps() {
   return {
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
   }
 }
 

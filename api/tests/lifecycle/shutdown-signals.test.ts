@@ -15,8 +15,8 @@ describe('shutdown signal handlers', () => {
     dispose()
 
     expect(requestShutdown).toHaveBeenCalledTimes(2)
-    expect(process.listeners('SIGINT')).toEqual(beforeInterrupt)
-    expect(process.listeners('SIGTERM')).toEqual(beforeTerminate)
+    expect(process.listeners('SIGINT')).toStrictEqual(beforeInterrupt)
+    expect(process.listeners('SIGTERM')).toStrictEqual(beforeTerminate)
   })
 })
 

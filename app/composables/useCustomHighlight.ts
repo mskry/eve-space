@@ -18,7 +18,7 @@ export function useCustomHighlight(options: UseCustomHighlightOptions) {
   const { highlightName, term, selector, container } = options
 
   if (!supportsCustomHighlight()) {
-    return { supported: false as const, update: () => {}, clear: () => {} }
+    return { clear: () => {}, supported: false as const, update: () => {} }
   }
 
   const highlight = createSearchHighlight(highlightName)!
@@ -54,9 +54,11 @@ export function useCustomHighlight(options: UseCustomHighlightOptions) {
       typeof container === 'function'
         ? container()
         : ((container as Ref<HTMLElement | null> | undefined)?.value ?? document.body)
-    if (target) observer.observe(target, { childList: true, subtree: true })
+    if (target) {
+      observer.observe(target, { childList: true, subtree: true })
+    }
     onUnmounted(() => observer?.disconnect())
   }
 
-  return { supported: true as const, update, clear: () => highlight.clear() }
+  return { clear: () => highlight.clear(), supported: true as const, update }
 }

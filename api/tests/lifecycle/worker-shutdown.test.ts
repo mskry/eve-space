@@ -24,19 +24,19 @@ describe('worker shutdown coordinator', () => {
       ),
     })
     const dependencies = createDependencies({
-      getPlatform: () => platform,
       closeCacheRedis: vi.fn(async () => {
         order.push('cache')
-      }),
-      closeEsiRuntime: vi.fn(async () => {
-        order.push('runtime')
       }),
       closeCoordinationRedis: vi.fn(async () => {
         order.push('coordination')
       }),
+      closeEsiRuntime: vi.fn(async () => {
+        order.push('runtime')
+      }),
       closePostgres: vi.fn(async () => {
         order.push('postgres')
       }),
+      getPlatform: () => platform,
     })
     const shutdown = createWorkerShutdownCoordinator(dependencies)
 
@@ -44,14 +44,14 @@ describe('worker shutdown coordinator', () => {
     const second = shutdown()
 
     expect(second).toBe(first)
-    expect(order).toEqual(['platform'])
+    expect(order).toStrictEqual(['platform'])
     finishPlatform()
     await first
     const third = shutdown()
     await third
 
     expect(third).toBe(first)
-    expect(order).toEqual(['platform', 'runtime', 'cache', 'coordination', 'postgres'])
+    expect(order).toStrictEqual(['platform', 'runtime', 'cache', 'coordination', 'postgres'])
     expect(platform.close).toHaveBeenCalledOnce()
     expect(dependencies.closeEsiRuntime).toHaveBeenCalledOnce()
     expect(dependencies.closeCacheRedis).toHaveBeenCalledOnce()
@@ -75,24 +75,24 @@ describe('worker shutdown coordinator', () => {
       ),
     })
     const dependencies = createDependencies({
-      timeoutMs: 1_000,
-      getPlatform: () => platform,
       closeCacheRedis: vi.fn(async () => {
         order.push('cache')
       }),
+      getPlatform: () => platform,
+      timeoutMs: 1000,
     })
     const closing = createWorkerShutdownCoordinator(dependencies)()
 
     await vi.advanceTimersByTimeAsync(750)
     await closing
 
-    expect(platform.close).toHaveBeenCalledWith(1_000)
+    expect(platform.close).toHaveBeenCalledWith(1000)
     expect(dependencies.closeCacheRedis).toHaveBeenCalledWith(0)
     expect(dependencies.closeCoordinationRedis).toHaveBeenCalledWith(0)
     expect(dependencies.closePostgres).toHaveBeenCalledWith(0)
     expect(dependencies.recordTimeout).toHaveBeenCalledOnce()
     expect(dependencies.markFailed).toHaveBeenCalledOnce()
-    expect(order).toEqual(['platform', 'cancelled', 'cache'])
+    expect(order).toStrictEqual(['platform', 'cancelled', 'cache'])
     expect(vi.getTimerCount()).toBe(0)
   })
 
@@ -109,8 +109,6 @@ describe('worker shutdown coordinator', () => {
       }),
     })
     const dependencies = createDependencies({
-      timeoutMs: 1_000,
-      getPlatform: () => platform,
       closeCacheRedis: vi.fn(async () => {
         order.push('cache')
       }),
@@ -120,11 +118,13 @@ describe('worker shutdown coordinator', () => {
       closePostgres: vi.fn(async () => {
         order.push('postgres')
       }),
+      getPlatform: () => platform,
+      timeoutMs: 1000,
     })
     const closing = createWorkerShutdownCoordinator(dependencies)()
 
     await vi.advanceTimersByTimeAsync(999)
-    expect(order).toEqual(['platform'])
+    expect(order).toStrictEqual(['platform'])
     await vi.advanceTimersByTimeAsync(1)
     await closing
 
@@ -133,7 +133,7 @@ describe('worker shutdown coordinator', () => {
     expect(dependencies.closeCoordinationRedis).toHaveBeenCalledWith(0)
     expect(dependencies.closePostgres).toHaveBeenCalledWith(0)
     expect(dependencies.recordTimeout).toHaveBeenCalledOnce()
-    expect(order).toEqual(['platform', 'force', 'cache', 'coordination', 'postgres'])
+    expect(order).toStrictEqual(['platform', 'force', 'cache', 'coordination', 'postgres'])
     expect(vi.getTimerCount()).toBe(0)
   })
 
@@ -145,13 +145,13 @@ describe('worker shutdown coordinator', () => {
     })
     const platform = createPlatform()
     const dependencies = createDependencies({
-      timeoutMs: 1_000,
-      getStartupOperation: () => startup,
       getPlatform: () => platform,
+      getStartupOperation: () => startup,
+      timeoutMs: 1000,
     })
 
     const closing = createWorkerShutdownCoordinator(dependencies)()
-    await vi.advanceTimersByTimeAsync(1_000)
+    await vi.advanceTimersByTimeAsync(1000)
     await closing
     settleStartup()
 
@@ -176,11 +176,11 @@ describe('worker shutdown coordinator', () => {
 
   test('continues failure cleanup without a platform and across unavailable resources', async () => {
     const dependencies = createDependencies({
-      getPlatform: () => undefined,
-      closeEsiRuntime: vi.fn().mockRejectedValue(new Error('runtime unavailable')),
       closeCacheRedis: vi.fn().mockRejectedValue(new Error('cache unavailable')),
       closeCoordinationRedis: vi.fn().mockResolvedValue(undefined),
+      closeEsiRuntime: vi.fn().mockRejectedValue(new Error('runtime unavailable')),
       closePostgres: vi.fn().mockRejectedValue(new Error('postgres unavailable')),
+      getPlatform: () => undefined,
     })
 
     await createWorkerShutdownCoordinator(dependencies)()
@@ -198,25 +198,25 @@ function createDependencies(
   overrides: Partial<WorkerShutdownDependencies> = {},
 ): WorkerShutdownDependencies {
   return {
-    timeoutMs: 30_000,
-    getStartupOperation: () => undefined,
-    getPlatform: () => undefined,
-    closeEsiRuntime: vi.fn().mockResolvedValue(undefined),
     closeCacheRedis: vi.fn().mockResolvedValue(undefined),
     closeCoordinationRedis: vi.fn().mockResolvedValue(undefined),
+    closeEsiRuntime: vi.fn().mockResolvedValue(undefined),
     closePostgres: vi.fn().mockResolvedValue(undefined),
+    getPlatform: () => undefined,
+    getStartupOperation: () => undefined,
+    markFailed: vi.fn(),
     recordFailure: vi.fn(),
     recordTimeout: vi.fn(),
-    markFailed: vi.fn(),
+    timeoutMs: 30_000,
     ...overrides,
   }
 }
 
 function createPlatform(overrides: Partial<WorkerPlatform> = {}): WorkerPlatform {
   return {
-    stopped: new Promise(() => {}),
     close: vi.fn().mockResolvedValue({ drained: true, timedOut: false }),
     forceClose: vi.fn(),
+    stopped: new Promise(() => {}),
     ...overrides,
   }
 }

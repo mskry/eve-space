@@ -33,14 +33,14 @@ export async function executeEsiRequestAttempt<Result>(
     })
     const lifecycle = runRequestLifecycle({
       acquirePermit: options.acquirePermit,
-      createTransport: options.createTransport,
-      input,
-      init,
-      resolveResponse,
-      rejectResponse,
-      cancellationSignal,
       attemptSettled,
+      cancellationSignal,
       clock: options.clock,
+      createTransport: options.createTransport,
+      init,
+      input,
+      rejectResponse,
+      resolveResponse,
     })
     lifecycles.push(lifecycle)
     void lifecycle.catch(() => {})
@@ -51,17 +51,21 @@ export async function executeEsiRequestAttempt<Result>(
     .then(() => options.attempt(transport))
     .then(
       (value) => ({ kind: 'success' as const, value }),
-      (error: unknown) => ({ kind: 'failure' as const, error }),
+      (error: unknown) => ({ error, kind: 'failure' as const }),
     )
     .finally(settleAttempt)
   const lifecycleOutcomes = await Promise.allSettled(lifecycles)
 
   options.executionSignal?.throwIfAborted()
-  if (outcome.kind === 'failure') throw outcome.error
+  if (outcome.kind === 'failure') {
+    throw outcome.error
+  }
   const lifecycleFailure = lifecycleOutcomes.find(
     (candidate): candidate is PromiseRejectedResult => candidate.status === 'rejected',
   )
-  if (lifecycleFailure) throw lifecycleFailure.reason
+  if (lifecycleFailure) {
+    throw lifecycleFailure.reason
+  }
   return outcome.value
 }
 
@@ -93,25 +97,27 @@ async function runRequestLifecycle(options: RequestLifecycleOptions): Promise<vo
         { interruptible: true },
       )
       const requestTransport = yield* Effect.try({
+        catch: (error) => error,
         try: () =>
           options.createTransport({
             onResponseBodySettled: settleBody,
           }),
-        catch: (error) => error,
       })
       yield* Effect.forkScoped(renewPermit(ownedPermit.permit, ownershipController, ownershipLost))
       const requestSignal = composeSignals(options.cancellationSignal, ownershipController.signal)
       const response = yield* Effect.uninterruptible(
         Effect.gen(function* () {
           const received = yield* Effect.tryPromise({
+            catch: (error) => error,
             try: () =>
               requestTransport(options.input, {
                 ...options.init,
                 signal: requestSignal,
               }),
-            catch: (error) => error,
           })
-          if (!requestSignal?.aborted) return received
+          if (!requestSignal?.aborted) {
+            return received
+          }
           yield* Effect.promise(() => cancelResponseBody(received, requestSignal.reason))
           return yield* Effect.fail(requestSignal.reason)
         }),
@@ -119,9 +125,7 @@ async function runRequestLifecycle(options: RequestLifecycleOptions): Promise<vo
       responseDelivered = true
       options.resolveResponse(response)
       yield* Effect.uninterruptible(
-        Effect.promise(() =>
-          Promise.all([bodySettled, options.attemptSettled]).then(() => undefined),
-        ),
+        Effect.promise(() => Promise.all([bodySettled, options.attemptSettled]).then(() => {})),
       )
     }),
   )
@@ -132,10 +136,14 @@ async function runRequestLifecycle(options: RequestLifecycleOptions): Promise<vo
     runnable,
     options.cancellationSignal ? { signal: options.cancellationSignal } : undefined,
   )
-  if (Exit.isSuccess(exit)) return
+  if (Exit.isSuccess(exit)) {
+    return
+  }
 
   const error = errorFromCause(exit.cause, options.cancellationSignal)
-  if (!responseDelivered) options.rejectResponse(error)
+  if (!responseDelivered) {
+    options.rejectResponse(error)
+  }
   throw error
 }
 
@@ -178,12 +186,14 @@ const renewPermit = Effect.fnUntraced(function* (
     const renewal = yield* Effect.exit(
       Effect.uninterruptible(
         Effect.tryPromise({
-          try: () => permit.renew(),
           catch: (error) => error,
+          try: () => permit.renew(),
         }),
       ),
     )
-    if (Exit.isSuccess(renewal) && renewal.value) continue
+    if (Exit.isSuccess(renewal) && renewal.value) {
+      continue
+    }
     yield* Effect.sync(() => ownershipController.abort(ownershipLost))
     return
   }
@@ -207,14 +217,22 @@ async function cancelResponseBody(response: Response, reason: unknown) {
 }
 
 function errorFromCause(cause: Cause.Cause<unknown>, signal?: AbortSignal): unknown {
-  if (signal?.aborted) return signal.reason
-  for (const reason of cause.reasons) if (Cause.isFailReason(reason)) return reason.error
-  for (const reason of cause.reasons) if (Cause.isDieReason(reason)) return reason.defect
+  if (signal?.aborted) {
+    return signal.reason
+  }
+  for (const reason of cause.reasons) {
+    if (Cause.isFailReason(reason)) return reason.error
+  }
+  for (const reason of cause.reasons) {
+    if (Cause.isDieReason(reason)) return reason.defect
+  }
   return Cause.squash(cause)
 }
 
 function composeSignals(...signals: Array<AbortSignal | undefined>) {
   const present = signals.filter((signal): signal is AbortSignal => signal !== undefined)
-  if (present.length === 0) return undefined
+  if (present.length === 0) {
+    return
+  }
   return present.length === 1 ? present[0] : AbortSignal.any(present)
 }

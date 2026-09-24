@@ -60,7 +60,7 @@ export function searchOperations(
   options: SearchOperationsOptions = {},
 ): readonly OperationSearchResult[] {
   const limit = validateLimit(options.limit);
-  if (limit === 0) return Object.freeze([]);
+  if (limit === 0) {return Object.freeze([]);}
 
   const query = normalizeSearchText(options.query ?? '');
   const queryTokens = query === '' ? [] : query.split(' ');
@@ -69,9 +69,9 @@ export function searchOperations(
   const ranked: RankedOperation[] = [];
 
   for (const document of searchDocuments) {
-    if (!matchesFilters(document.entry, options, domain, scopes)) continue;
+    if (!matchesFilters(document.entry, options, domain, scopes)) {continue;}
     const score = query === '' ? 0 : scoreDocument(document, query, queryTokens);
-    if (score !== null) ranked.push({ document, score });
+    if (score !== null) {ranked.push({ document, score });}
   }
 
   ranked.sort(compareRankedOperations);
@@ -109,9 +109,9 @@ function appendSearchFields(
   priority: number,
 ): void {
   for (const value of values) {
-    if (value === null) continue;
+    if (value === null) {continue;}
     const text = normalizeSearchText(value);
-    if (text !== '') fields.push({ text, priority });
+    if (text !== '') {fields.push({ priority, text });}
   }
 }
 
@@ -123,14 +123,14 @@ function scoreDocument(
   let exactPriority = -1;
   let prefixPriority = -1;
   for (const field of document.fields) {
-    if (field.text === query) exactPriority = Math.max(exactPriority, field.priority);
+    if (field.text === query) {exactPriority = Math.max(exactPriority, field.priority);}
     else if (field.text.startsWith(query))
-      prefixPriority = Math.max(prefixPriority, field.priority);
+      {prefixPriority = Math.max(prefixPriority, field.priority);}
   }
-  if (exactPriority >= 0) return 400 + exactPriority;
-  if (prefixPriority >= 0) return 300 + prefixPriority;
-  if (queryTokens.every((token) => document.tokens.has(token))) return 200;
-  if (queryTokens.every((token) => document.text.includes(token))) return 100;
+  if (exactPriority >= 0) {return 400 + exactPriority;}
+  if (prefixPriority >= 0) {return 300 + prefixPriority;}
+  if (queryTokens.every((token) => document.tokens.has(token))) {return 200;}
+  if (queryTokens.every((token) => document.text.includes(token))) {return 100;}
   return null;
 }
 
@@ -140,8 +140,8 @@ function matchesFilters(
   domain: string | undefined,
   scopes: readonly string[] | undefined,
 ): boolean {
-  if (domain !== undefined && normalizeSearchText(entry.facade.domain) !== domain) return false;
-  if (options.method !== undefined && entry.http.method !== options.method) return false;
+  if (domain !== undefined && normalizeSearchText(entry.facade.domain) !== domain) {return false;}
+  if (options.method !== undefined && entry.http.method !== options.method) {return false;}
   if (
     options.authenticated !== undefined &&
     entry.authentication.required !== options.authenticated
@@ -153,21 +153,19 @@ function matchesFilters(
   }
   if (scopes !== undefined) {
     const operationScopes = new Set(entry.authentication.scopes.map(normalizeSearchText));
-    if (!scopes.every((scope) => operationScopes.has(scope))) return false;
+    if (!scopes.every((scope) => operationScopes.has(scope))) {return false;}
   }
   return true;
 }
 
 function createSearchResult(entry: SerializableOperationManifestEntry): OperationSearchResult {
   return Object.freeze({
-    operationId: entry.operationId,
+    authenticated: entry.authentication.required,
+    classification: entry.classification,
     domain: entry.facade.domain,
     facadeMethod: entry.facade.method,
-    summary: entry.summary,
     httpMethod: entry.http.method,
-    authenticated: entry.authentication.required,
-    scopes: Object.freeze([...entry.authentication.scopes]),
-    classification: entry.classification,
+    operationId: entry.operationId,
     protocol: Object.freeze({
       cache: entry.cache,
       conditionalRequestValidators: entry.conditionalRequestValidators,
@@ -175,12 +173,14 @@ function createSearchResult(entry: SerializableOperationManifestEntry): Operatio
       rateLimit: entry.rateLimit,
       requestArrayLimits: entry.requestArrayLimits,
     }),
+    scopes: Object.freeze([...entry.authentication.scopes]),
+    summary: entry.summary,
   });
 }
 
 function validateLimit(limit: number | undefined): number {
-  if (limit === undefined) return DEFAULT_SEARCH_LIMIT;
-  if (!Number.isInteger(limit)) throw new TypeError('Operation search limit must be an integer');
+  if (limit === undefined) {return DEFAULT_SEARCH_LIMIT;}
+  if (!Number.isInteger(limit)) {throw new TypeError('Operation search limit must be an integer');}
   if (limit < 0 || limit > MAX_SEARCH_LIMIT) {
     throw new RangeError(`Operation search limit must be between 0 and ${MAX_SEARCH_LIMIT}`);
   }
@@ -198,10 +198,10 @@ function normalizeSearchText(value: string): string {
 }
 
 function compareRankedOperations(left: RankedOperation, right: RankedOperation): number {
-  if (left.score !== right.score) return right.score - left.score;
+  if (left.score !== right.score) {return right.score - left.score;}
   const leftId = left.document.entry.operationId;
   const rightId = right.document.entry.operationId;
-  if (leftId < rightId) return -1;
-  if (leftId > rightId) return 1;
+  if (leftId < rightId) {return -1;}
+  if (leftId > rightId) {return 1;}
   return 0;
 }

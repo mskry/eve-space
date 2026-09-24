@@ -38,7 +38,9 @@ const characterRoutesIn = ({ path, source }: TypeScriptSource): RouteDefinition[
   const visit = (node: ts.Node) => {
     const route = toRouteDefinition(node, sourceFile)
 
-    if (route?.path.includes(CHARACTER_PARAMETER)) routes.push(route)
+    if (route?.path.includes(CHARACTER_PARAMETER)) {
+      routes.push(route)
+    }
 
     ts.forEachChild(node, visit)
   }
@@ -52,22 +54,25 @@ const toRouteDefinition = (
   node: ts.Node,
   sourceFile: ts.SourceFile,
 ): RouteDefinition | undefined => {
-  if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression))
+  if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)) {
     return undefined
+  }
 
   const method = node.expression.name.text
   const [first, ...rest] = node.arguments
 
-  if (!ROUTE_METHODS.has(method) || !first || !ts.isStringLiteralLike(first)) return undefined
+  if (!ROUTE_METHODS.has(method) || !first || !ts.isStringLiteralLike(first)) {
+    return undefined
+  }
 
   const handler = rest.findIndex(isInlineHandler)
   const middleware = handler === -1 ? rest : rest.slice(0, handler)
 
   return {
-    path: first.text,
-    method: method.toUpperCase(),
-    line: sourceFile.getLineAndCharacterOfPosition(first.getStart(sourceFile)).line + 1,
     gates: middleware.filter(ts.isIdentifier).map((argument) => argument.text),
+    line: sourceFile.getLineAndCharacterOfPosition(first.getStart(sourceFile)).line + 1,
+    method: method.toUpperCase(),
+    path: first.text,
     validatedTargets: middleware.flatMap(validatedTarget),
   }
 }
@@ -104,15 +109,19 @@ const gateViolations = (
   route: RouteDefinition,
   requiredGate: string | null,
 ): string[] => {
-  if (requiredGate === null)
+  if (requiredGate === null) {
     return route.gates.includes(OWNERSHIP_MIDDLEWARE)
       ? [`${location}: is declared public but applies ${OWNERSHIP_MIDDLEWARE}`]
       : []
+  }
 
-  if (!route.gates.includes(requiredGate))
+  if (!route.gates.includes(requiredGate)) {
     return [`${location}: must load authorization through ${requiredGate} before its handler`]
+  }
 
-  if (requiredGate !== OWNERSHIP_MIDDLEWARE) return []
+  if (requiredGate !== OWNERSHIP_MIDDLEWARE) {
+    return []
+  }
 
   const session = route.gates.indexOf(SESSION_MIDDLEWARE)
   const ownership = route.gates.indexOf(OWNERSHIP_MIDDLEWARE)

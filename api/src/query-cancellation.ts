@@ -3,7 +3,9 @@ export async function executeCancellableQuery<Result>(
   signal?: AbortSignal,
 ) {
   signal?.throwIfAborted()
-  if (!signal) return query
+  if (!signal) {
+    return query
+  }
 
   const cancel = () => query.cancel()
   signal.addEventListener('abort', cancel, { once: true })

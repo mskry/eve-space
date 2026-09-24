@@ -109,36 +109,6 @@ export function createInMemoryQueueProducer(
   const activeIdentities = new Set<string>()
   return {
     commands,
-    get plannerPaused() {
-      return plannerPaused
-    },
-    setDepth(value) {
-      depth = value
-    },
-    release(identity) {
-      activeIdentities.delete(identity)
-    },
-    async pausePlanner() {
-      plannerPaused = true
-    },
-    async resumePlanner() {
-      plannerPaused = false
-    },
-    async inspectCapacity(query) {
-      const maximum = query.highWaterMark ?? highWaterMark
-      const remainingCapacity = Math.max(0, maximum - depth)
-      if (remainingCapacity > 0) {
-        if (query.source === 'planner' && !query.preservePausedState) plannerPaused = false
-        return { status: 'accepted', depth, remainingCapacity }
-      }
-      if (query.source === 'planner') plannerPaused = true
-      return {
-        status: 'rejected',
-        depth,
-        remainingCapacity: 0,
-        reason: rejectionReason(query.source),
-      }
-    },
     async enqueue(command, publication) {
       const [result] = await this.enqueueMany([command], publication)
       return result!
@@ -162,7 +132,9 @@ export function createInMemoryQueueProducer(
           results.push({ status: 'rejected', depth, reason: 'coalesced' })
           continue
         }
-        if (identity) activeIdentities.add(identity)
+        if (identity) {
+          activeIdentities.add(identity)
+        }
         publication?.signal?.throwIfAborted()
         commands.push(command)
         results.push({ status: 'accepted', depth })
@@ -170,18 +142,60 @@ export function createInMemoryQueueProducer(
       }
       return results
     },
+    async inspectCapacity(query) {
+      const maximum = query.highWaterMark ?? highWaterMark
+      const remainingCapacity = Math.max(0, maximum - depth)
+      if (remainingCapacity > 0) {
+        if (query.source === 'planner' && !query.preservePausedState) {
+          plannerPaused = false
+        }
+        return { status: 'accepted', depth, remainingCapacity }
+      }
+      if (query.source === 'planner') {
+        plannerPaused = true
+      }
+      return {
+        status: 'rejected',
+        depth,
+        remainingCapacity: 0,
+        reason: rejectionReason(query.source),
+      }
+    },
+    async pausePlanner() {
+      plannerPaused = true
+    },
+    get plannerPaused() {
+      return plannerPaused
+    },
+    release(identity) {
+      activeIdentities.delete(identity)
+    },
+    async resumePlanner() {
+      plannerPaused = false
+    },
+    setDepth(value) {
+      depth = value
+    },
   }
 }
 
 export function rejectionReason(source: QueueSource) {
-  if (source === 'planner') return 'planner-paused' as const
-  if (source === 'outbox') return 'outbox-paused' as const
+  if (source === 'planner') {
+    return 'planner-paused' as const
+  }
+  if (source === 'outbox') {
+    return 'outbox-paused' as const
+  }
   return 'on-demand-rejected' as const
 }
 
 function inMemoryIdentity(command: QueueCommand) {
-  if (command.name === 'diagnostic' && command.source === 'on-demand') return undefined
+  if (command.name === 'diagnostic' && command.source === 'on-demand') {
+    return
+  }
   const resolved = resolveJobContract(command.name, command.payload)
-  if (resolved.contract.activeWorkDeduplication === 'none') return undefined
+  if (resolved.contract.activeWorkDeduplication === 'none') {
+    return
+  }
   return `${command.name}:${resolved.operationIdentity}`
 }

@@ -15,12 +15,12 @@ const validatedAt = '2026-08-31T12:00:00.000Z'
 
 beforeEach(() => {
   mocks.lookupAffiliations.mockResolvedValue({
-    data: [],
     cachedUntil: '2026-08-31T13:00:00.000Z',
-    validatedAt,
+    data: [],
+    quota: {},
     source: 'cache',
     stale: false,
-    quota: {},
+    validatedAt,
   })
   mocks.executeRepresentation.mockImplementation((_, input) => mocks.lookupAffiliations(input))
 })
@@ -28,29 +28,33 @@ beforeEach(() => {
 describe('character affiliation observation', () => {
   test('retains bulk-affiliation validation time and stale metadata before local persistence', async () => {
     mocks.lookupAffiliations.mockResolvedValue({
-      data: [{ characterId, corporationId: 98_000_001, allianceId: 99_000_001 }],
       cachedUntil: '2026-08-31T13:00:00.000Z',
-      validatedAt,
+      data: [{ characterId, corporationId: 98_000_001, allianceId: 99_000_001 }],
+      quota: {},
       source: 'cache',
       stale: true,
-      quota: {},
+      validatedAt,
     })
     const { observeCharacterAffiliation } = await import('../../src/characters/affiliation-sync.js')
     const controller = new AbortController()
 
-    await expect(observeCharacterAffiliation(characterId, controller.signal)).resolves.toEqual({
-      characterId,
-      corporationId: 98_000_001,
-      allianceId: 99_000_001,
+    await expect(
+      observeCharacterAffiliation(characterId, controller.signal),
+    ).resolves.toStrictEqual({
       affiliationCheckedAt: new Date(validatedAt),
       affiliationFreshUntil: new Date('2026-08-31T13:00:00.000Z'),
+      allianceId: 99_000_001,
+      characterId,
+      corporationId: 98_000_001,
       stale: true,
     })
-    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toStrictEqual({
       body: [characterId],
       signal: controller.signal,
     })
-    expect(mocks.executeRepresentation.mock.calls[0]?.[2]).toEqual({ signal: controller.signal })
+    expect(mocks.executeRepresentation.mock.calls[0]?.[2]).toStrictEqual({
+      signal: controller.signal,
+    })
     expect(mocks.lookupAffiliations).toHaveBeenCalledWith({
       body: [characterId],
       signal: controller.signal,

@@ -23,8 +23,8 @@ export type DeploymentOrganizationType = 'corporation' | 'alliance'
 export const deploymentAdmins = pgTable(
   'deployment_admins',
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
     email: text().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     passwordHash: text('password_hash').notNull(),
     ...auditTimestamps(),
   },
@@ -62,30 +62,30 @@ export const deploymentInstallationSettings = pgTable(
 export const deploymentSettings = pgTable(
   'deployment_settings',
   {
+    authorityEvidenceFreshDurationSeconds: integer('authority_evidence_fresh_duration_seconds')
+      .default(3600)
+      .notNull(),
+    derivedDirectorAuthorityEnabled: boolean('derived_director_authority_enabled')
+      .default(true)
+      .notNull(),
     id: smallint().default(1).primaryKey().notNull(),
-    organizationType: text('organization_type').$type<DeploymentOrganizationType>().notNull(),
     organizationId: bigint('organization_id', { mode: 'number' }).notNull(),
     organizationName: text('organization_name').notNull(),
     organizationTicker: text('organization_ticker').notNull(),
+    organizationType: text('organization_type').$type<DeploymentOrganizationType>().notNull(),
     organizationVersion: bigint('organization_version', { mode: 'number' }).default(1).notNull(),
-    strictRemediationDurationSeconds: integer('strict_remediation_duration_seconds')
-      .default(0)
-      .notNull(),
-    staleEvidenceGraceDurationSeconds: integer('stale_evidence_grace_duration_seconds')
-      .default(3600)
+    registrationPolicyVersion: bigint('registration_policy_version', { mode: 'number' })
+      .default(1)
       .notNull(),
     requiredRegistrationScopes: jsonb('required_registration_scopes')
       .$type<string[]>()
       .default([])
       .notNull(),
-    registrationPolicyVersion: bigint('registration_policy_version', { mode: 'number' })
-      .default(1)
-      .notNull(),
-    derivedDirectorAuthorityEnabled: boolean('derived_director_authority_enabled')
-      .default(true)
-      .notNull(),
-    authorityEvidenceFreshDurationSeconds: integer('authority_evidence_fresh_duration_seconds')
+    staleEvidenceGraceDurationSeconds: integer('stale_evidence_grace_duration_seconds')
       .default(3600)
+      .notNull(),
+    strictRemediationDurationSeconds: integer('strict_remediation_duration_seconds')
+      .default(0)
       .notNull(),
     ...auditTimestamps(),
   },
@@ -137,10 +137,10 @@ export const deploymentSettings = pgTable(
 export const adminSessions = pgTable(
   'admin_sessions',
   {
-    sessionHash: varchar('session_hash', { length: 64 }).primaryKey().notNull(),
     adminId: uuid('admin_id').notNull(),
-    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+    sessionHash: varchar('session_hash', { length: 64 }).primaryKey().notNull(),
   },
   (table) => [
     check('admin_sessions_session_hash_length_check', sql`length(session_hash) = 64`),

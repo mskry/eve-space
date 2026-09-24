@@ -55,12 +55,12 @@ describe('protected character queries', () => {
     queryServer.use(
       http.get('http://localhost/api/characters/7', () =>
         HttpResponse.json({
-          profile: { id: 7, name: 'Seven', stale: true },
           cachedUntil: '2026-09-01T10:59:00.000Z',
-          validatedAt: '2026-09-01T10:58:00.000Z',
-          stale: true,
-          retryAt: '2026-09-01T11:07:00.000Z',
+          profile: { id: 7, name: 'Seven', stale: true },
           refreshFailureClass: 'esi-unavailable',
+          retryAt: '2026-09-01T11:07:00.000Z',
+          stale: true,
+          validatedAt: '2026-09-01T10:58:00.000Z',
         }),
       ),
     )
@@ -92,10 +92,10 @@ describe('protected character queries', () => {
         HttpResponse.json({
           ...characterOverviewResponse(7, 'Seven'),
           cachedUntil: '2026-09-01T10:59:00.000Z',
-          validatedAt: '2026-09-01T10:58:00.000Z',
-          stale: true,
-          retryAt: '2026-09-01T11:07:00.000Z',
           refreshFailureClass: 'esi-unavailable',
+          retryAt: '2026-09-01T11:07:00.000Z',
+          stale: true,
+          validatedAt: '2026-09-01T10:58:00.000Z',
         }),
       ),
     )
@@ -175,33 +175,33 @@ describe('protected character queries', () => {
       })
       queryCache.ensure(historyOptions)
       queryCache.setQueryData(historyOptions.key, {
+        cachedUntil: '2026-09-01T11:01:00.000Z',
         characterId,
         history: [],
-        cachedUntil: '2026-09-01T11:01:00.000Z',
-        validatedAt: '2026-09-01T11:00:00.000Z',
         stale: false,
+        validatedAt: '2026-09-01T11:00:00.000Z',
       })
       const transactionOptions = characterFinanceTransactionsQuery({
-        apiClient: createApiClient('http://localhost'),
-        characterId,
         access: {
-          isClient: true,
           authenticated: true,
           authenticationReady: true,
+          isClient: true,
           ownsCharacter: true,
         },
-        requested: true,
+        apiClient: createApiClient('http://localhost'),
+        characterId,
         fromId: null,
+        requested: true,
       })
       queryCache.ensure(transactionOptions)
       queryCache.setQueryData(transactionOptions.key, {
+        cachedUntil: '2026-08-20T00:00:00.000Z',
         characterId,
         fromId: null,
         nextFromId: null,
-        transactions: [],
-        cachedUntil: '2026-08-20T00:00:00.000Z',
-        validatedAt: '2026-08-19T23:59:00.000Z',
         stale: false,
+        transactions: [],
+        validatedAt: '2026-08-19T23:59:00.000Z',
       })
       queryCache.ensure({
         key: PRIVATE_QUERY_KEYS.characterModuleResource(characterId, 'member-audit', 'records'),
@@ -245,12 +245,12 @@ describe('protected character queries', () => {
     queryServer.use(
       http.get('http://localhost/api/me/characters/7/wallet', () =>
         HttpResponse.json({
-          characterId: 7,
           balance: 123.45,
           cachedUntil: '2026-08-20T00:00:00.000Z',
-          validatedAt: '2026-08-19T23:59:00.000Z',
-          stale: true,
+          characterId: 7,
           refreshFailureClass: 'esi-unavailable' as const,
+          stale: true,
+          validatedAt: '2026-08-19T23:59:00.000Z',
         }),
       ),
     )
@@ -259,14 +259,14 @@ describe('protected character queries', () => {
       setup() {
         const result = useQuery(
           characterFinanceBalanceQuery({
-            apiClient,
-            characterId: 7,
             access: {
-              isClient: true,
               authenticated: true,
               authenticationReady: true,
+              isClient: true,
               ownsCharacter: true,
             },
+            apiClient,
+            characterId: 7,
           }),
         )
         return () => h('span', result.data.value?.stale ? result.data.value.validatedAt : 'loading')
@@ -284,11 +284,11 @@ describe('protected character queries', () => {
     queryServer.use(
       http.get('http://localhost/api/me/characters/7/wallet', () =>
         HttpResponse.json({
-          characterId: 8,
           balance: 123.45,
           cachedUntil: '2026-08-20T00:00:00.000Z',
-          validatedAt: '2026-08-19T23:59:00.000Z',
+          characterId: 8,
           stale: false,
+          validatedAt: '2026-08-19T23:59:00.000Z',
         }),
       ),
     )
@@ -298,14 +298,14 @@ describe('protected character queries', () => {
       setup() {
         const result = useQuery({
           ...characterFinanceBalanceQuery({
-            apiClient,
-            characterId: 7,
             access: {
-              isClient: true,
               authenticated: true,
               authenticationReady: true,
+              isClient: true,
               ownsCharacter: true,
             },
+            apiClient,
+            characterId: 7,
           }),
           retry: 0,
         })
@@ -320,8 +320,8 @@ describe('protected character queries', () => {
     await flushPromises()
 
     expect(queryError.value).toMatchObject({
-      status: 409,
       code: 'FINANCE_IDENTITY_MISMATCH',
+      status: 409,
     })
     wrapper.unmount()
   })
@@ -332,9 +332,11 @@ describe('protected character queries', () => {
       http.get('http://localhost/api/me/characters/7/wallet/transactions', () => {
         requests()
         return HttpResponse.json({
+          cachedUntil: '2026-08-20T00:01:00.000Z',
           characterId: 7,
           fromId: null,
           nextFromId: null,
+          stale: false,
           transactions: [
             {
               transactionId: 1,
@@ -350,9 +352,7 @@ describe('protected character queries', () => {
               locationId: 60_000_001,
             },
           ],
-          cachedUntil: '2026-08-20T00:01:00.000Z',
           validatedAt: '2026-08-20T00:00:00.000Z',
-          stale: false,
         })
       }),
     )
@@ -362,16 +362,16 @@ describe('protected character queries', () => {
       setup() {
         const result = useQuery(() =>
           characterFinanceTransactionsQuery({
-            apiClient,
-            characterId: 7,
             access: {
-              isClient: true,
               authenticated: true,
               authenticationReady: true,
+              isClient: true,
               ownsCharacter: true,
             },
-            requested: enabled.value,
+            apiClient,
+            characterId: 7,
             fromId: null,
+            requested: enabled.value,
           }),
         )
         return () => h('span', result.data.value?.transactions[0]?.typeName ?? 'not loaded')
@@ -397,12 +397,8 @@ describe('protected character queries', () => {
     queryServer.use(
       http.get('http://localhost/api/me/characters/7/history', () =>
         HttpResponse.json({
-          characterId: 7,
           cachedUntil: '2026-09-01T10:59:00.000Z',
-          validatedAt: '2026-09-01T10:58:00.000Z',
-          stale: true,
-          retryAt: '2026-09-01T11:07:00.000Z',
-          refreshFailureClass: 'esi-unavailable',
+          characterId: 7,
           history: [
             {
               recordId: 1,
@@ -411,6 +407,10 @@ describe('protected character queries', () => {
               corporation: { id: 10, name: 'Test Corporation' },
             },
           ],
+          refreshFailureClass: 'esi-unavailable',
+          retryAt: '2026-09-01T11:07:00.000Z',
+          stale: true,
+          validatedAt: '2026-09-01T10:58:00.000Z',
         }),
       ),
     )
@@ -462,19 +462,19 @@ describe('protected character queries', () => {
         HttpResponse.json({
           entries: [
             {
-              queuePosition: 0,
-              typeId: 3300,
-              name: 'Gunnery',
+              finishDate: '2026-08-30T12:00:00Z',
+              finishedLevel: 5,
               groupId: 255,
               groupName: 'Gunnery',
-              finishedLevel: 5,
-              levelStartSp: 256000,
-              levelEndSp: 512000,
-              trainingStartSp: 260000,
-              startDate: '2026-08-29T12:00:00Z',
-              finishDate: '2026-08-30T12:00:00Z',
+              levelEndSp: 512_000,
+              levelStartSp: 256_000,
+              name: 'Gunnery',
               primaryAttribute: 'perception',
+              queuePosition: 0,
               secondaryAttribute: 'willpower',
+              startDate: '2026-08-29T12:00:00Z',
+              trainingStartSp: 260_000,
+              typeId: 3300,
             },
           ],
         }),
@@ -500,10 +500,10 @@ describe('protected character queries', () => {
       http.get('http://localhost/api/me/characters/7/skills', () =>
         HttpResponse.json(
           {
+            authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
             code: 'EVE_REAUTH_REQUIRED',
             message: 'Authorization expired.',
             requiredScope: 'esi-skills.read_skills.v1',
-            authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
           },
           { status: 403 },
         ),
@@ -530,10 +530,10 @@ describe('protected character queries', () => {
 
     expect(error.value).toBeInstanceOf(ApiQueryError)
     expect(error.value).toMatchObject({
-      status: 403,
+      authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
       code: 'EVE_REAUTH_REQUIRED',
       requiredScope: 'esi-skills.read_skills.v1',
-      authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
+      status: 403,
     })
     wrapper.unmount()
   })
@@ -565,44 +565,44 @@ describe('protected character queries', () => {
 
 function characterOverviewResponse(characterId: number, name: string): CharacterOverview {
   return {
+    cachedUntil: '2026-09-01T11:01:00.000Z',
+    location: { message: 'Unavailable', status: 'unavailable' },
     profile: {
+      achievementScore: 0,
+      alliance: null,
+      birthday: '2020-01-01T00:00:00.000Z',
+      bloodline: 'Deteis',
+      cachedUntil: '2026-09-01T11:01:00.000Z',
+      corporation: { id: 1, memberCount: 1, name: 'Corp', ticker: 'CORP' },
+      factionId: null,
+      gender: 'Female',
       id: characterId,
       name,
-      birthday: '2020-01-01T00:00:00.000Z',
-      gender: 'Female',
       race: 'Caldari',
       raceFactionId: null,
-      bloodline: 'Deteis',
       securityStatus: 1,
-      achievementScore: 0,
-      factionId: null,
-      corporation: { id: 1, name: 'Corp', ticker: 'CORP', memberCount: 1 },
-      alliance: null,
-      cachedUntil: '2026-09-01T11:01:00.000Z',
-      validatedAt: '2026-09-01T11:00:00.000Z',
       stale: false,
+      validatedAt: '2026-09-01T11:00:00.000Z',
     },
-    location: { status: 'unavailable', message: 'Unavailable' },
-    ship: { status: 'unavailable', message: 'Unavailable' },
-    skills: { status: 'unavailable', message: 'Unavailable' },
-    cachedUntil: '2026-09-01T11:01:00.000Z',
-    validatedAt: '2026-09-01T11:00:00.000Z',
+    ship: { message: 'Unavailable', status: 'unavailable' },
+    skills: { message: 'Unavailable', status: 'unavailable' },
     stale: false,
+    validatedAt: '2026-09-01T11:00:00.000Z',
   }
 }
 
 function characterAttributesResponse() {
   return {
+    accruedRemapCooldownDate: '2026-10-01T12:00:00Z',
+    bonusRemaps: 2,
+    cachedUntil: '2026-09-01T11:01:00.000Z',
     charisma: 19,
     intelligence: 27,
+    lastRemapDate: '2025-10-01T12:00:00Z',
     memory: 23,
     perception: 24,
-    willpower: 21,
-    bonusRemaps: 2,
-    accruedRemapCooldownDate: '2026-10-01T12:00:00Z',
-    lastRemapDate: '2025-10-01T12:00:00Z',
-    cachedUntil: '2026-09-01T11:01:00.000Z',
-    validatedAt: '2026-09-01T11:00:00.000Z',
     stale: false,
+    validatedAt: '2026-09-01T11:00:00.000Z',
+    willpower: 21,
   }
 }

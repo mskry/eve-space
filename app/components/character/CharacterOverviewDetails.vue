@@ -18,8 +18,12 @@ const props = defineProps<{
 const formattedBirthday = computed(() => formatBirthday(props.profile.birthday))
 const genderSymbol = computed(() => {
   const gender = props.profile.gender.toLowerCase()
-  if (gender === 'female') return '♀'
-  if (gender === 'male') return '♂'
+  if (gender === 'female') {
+    return '♀'
+  }
+  if (gender === 'male') {
+    return '♂'
+  }
   return '—'
 })
 </script>

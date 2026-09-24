@@ -69,16 +69,21 @@ function loadPostgres17Parser() {
 }
 
 function normalizeParseResult(value: unknown): PostgresMigrationAst {
-  if (!isObject(value)) throw new PostgresMigrationParseError('result')
+  if (!isObject(value)) {
+    throw new PostgresMigrationParseError('result')
+  }
   const parserVersion = value.version
   if (
     typeof parserVersion !== 'number' ||
     !Number.isInteger(parserVersion) ||
     parserVersion < postgresVersionFloor ||
     parserVersion >= postgresVersionCeiling
-  )
+  ) {
     throw new PostgresMigrationParseError('version')
-  if (!Array.isArray(value.stmts)) throw new PostgresMigrationParseError('result')
+  }
+  if (!Array.isArray(value.stmts)) {
+    throw new PostgresMigrationParseError('result')
+  }
 
   return {
     grammarMajorVersion: postgresMajorVersion,
@@ -88,11 +93,17 @@ function normalizeParseResult(value: unknown): PostgresMigrationAst {
 }
 
 function normalizeStatement(value: unknown): PostgresAstStatement {
-  if (!isObject(value) || !isObject(value.stmt)) throw new PostgresMigrationParseError('result')
+  if (!isObject(value) || !isObject(value.stmt)) {
+    throw new PostgresMigrationParseError('result')
+  }
   const entries = Object.entries(value.stmt)
-  if (entries.length !== 1) throw new PostgresMigrationParseError('result')
+  if (entries.length !== 1) {
+    throw new PostgresMigrationParseError('result')
+  }
   const [kind, node] = entries[0]!
-  if (!kind || !isObject(node)) throw new PostgresMigrationParseError('result')
+  if (!kind || !isObject(node)) {
+    throw new PostgresMigrationParseError('result')
+  }
   return { kind, node: node as PostgresAstObject }
 }
 

@@ -27,15 +27,15 @@ interface FlattenedAssetRow {
 }
 
 export const EMPTY_ASSET_FILTERS: AssetFilterState = {
-  search: '',
-  typeIds: [],
-  groupIds: [],
+  blueprint: 'all',
   categoryIds: [],
+  flags: [],
+  groupIds: [],
   locationKeys: [],
   locationTypes: [],
-  flags: [],
+  search: '',
   singleton: 'all',
-  blueprint: 'all',
+  typeIds: [],
 }
 
 export function filterAssetHierarchy(
@@ -53,7 +53,9 @@ export function filterAssetHierarchy(
   let matchCount = 0
   for (const group of groups) {
     const result = filterAssetGroup(group, filters, searchMatches)
-    if (!result) continue
+    if (!result) {
+      continue
+    }
     filteredGroups.push(result.group)
     matchCount += result.matchCount
   }
@@ -86,15 +88,15 @@ export function hasActiveAssetFilters(filters: AssetFilterState) {
 
 export function assetFilterSignature(filters: AssetFilterState) {
   return JSON.stringify({
-    search: normalizeAssetSearch(filters.search),
-    typeIds: [...new Set(filters.typeIds)].toSorted((left, right) => left - right),
-    groupIds: [...new Set(filters.groupIds)].toSorted((left, right) => left - right),
+    blueprint: filters.blueprint,
     categoryIds: [...new Set(filters.categoryIds)].toSorted((left, right) => left - right),
+    flags: [...new Set(filters.flags)].toSorted(compareText),
+    groupIds: [...new Set(filters.groupIds)].toSorted((left, right) => left - right),
     locationKeys: [...new Set(filters.locationKeys)].toSorted(compareText),
     locationTypes: [...new Set(filters.locationTypes)].toSorted(compareText),
-    flags: [...new Set(filters.flags)].toSorted(compareText),
+    search: normalizeAssetSearch(filters.search),
     singleton: filters.singleton,
-    blueprint: filters.blueprint,
+    typeIds: [...new Set(filters.typeIds)].toSorted((left, right) => left - right),
   })
 }
 
@@ -105,16 +107,18 @@ function filterAssetGroup(
 ) {
   const rows = flattenRows(group.rows)
   const directMatches = matchingAssetIds(rows, group, filters, searchMatches)
-  if (directMatches.size === 0) return null
+  if (directMatches.size === 0) {
+    return null
+  }
 
   const included = includeAncestors(rows, directMatches)
   const filteredRows = cloneIncludedRows(rows, included)
   return {
     group: {
       ...group,
-      rows: filteredRows,
       assetCount: included.size,
       knownVolume: assetRowsKnownVolume(filteredRows),
+      rows: filteredRows,
     },
     matchCount: directMatches.size,
   }
@@ -128,7 +132,9 @@ function matchingAssetIds(
 ) {
   const matches = new Set<number>()
   for (const { row } of rows) {
-    if (matchesAsset(row.asset, group, filters, searchMatches)) matches.add(row.asset.itemId)
+    if (matchesAsset(row.asset, group, filters, searchMatches)) {
+      matches.add(row.asset.itemId)
+    }
   }
   return matches
 }
@@ -137,7 +143,9 @@ function includeAncestors(rows: readonly FlattenedAssetRow[], directMatches: Rea
   const included = new Set(directMatches)
   const parentById = new Map<number, number>()
   for (const { row, parentId } of rows) {
-    if (parentId !== null) parentById.set(row.asset.itemId, parentId)
+    if (parentId !== null) {
+      parentById.set(row.asset.itemId, parentId)
+    }
   }
   for (const itemId of directMatches) {
     let parentId = parentById.get(itemId)
@@ -179,10 +187,10 @@ function fuzzySearchMatches(groups: readonly AssetLocationGroup[], terms: readon
       })),
     )
     index = new Fuse(documents, {
-      keys: ['text'],
-      threshold: 0.35,
       ignoreLocation: true,
+      keys: ['text'],
       minMatchCharLength: 1,
+      threshold: 0.35,
     })
     searchIndexByHierarchy.set(groups, index)
   }
@@ -190,12 +198,15 @@ function fuzzySearchMatches(groups: readonly AssetLocationGroup[], terms: readon
   let matches: Set<number> | null = null
   for (const term of terms) {
     const hits = searchTermMatches(groups, index, term)
-    if (matches === null) matches = hits
-    else {
+    if (matches === null) {
+      matches = hits
+    } else {
       const previous: Set<number> = matches
       matches = new Set([...previous].filter((itemId) => hits.has(itemId)))
     }
-    if (matches.size === 0) break
+    if (matches.size === 0) {
+      break
+    }
   }
   return matches ?? new Set<number>()
 }
@@ -205,7 +216,9 @@ function searchTermMatches(
   index: Fuse<AssetSearchDocument>,
   term: string,
 ) {
-  if (skinSearchTerms.has(term)) return skinAssetMatches(groups)
+  if (skinSearchTerms.has(term)) {
+    return skinAssetMatches(groups)
+  }
   return textAssetMatches(groups, index, term)
 }
 
@@ -217,7 +230,9 @@ function textAssetMatches(
   const matches = new Set(index.search(term).map(({ item }) => item.itemId))
   for (const group of groups) {
     for (const { row } of flattenRows(group.rows)) {
-      if (searchableAssetText(row.asset, group).includes(term)) matches.add(row.asset.itemId)
+      if (searchableAssetText(row.asset, group).includes(term)) {
+        matches.add(row.asset.itemId)
+      }
     }
   }
   return matches
@@ -236,7 +251,9 @@ function skinAssetMatches(groups: readonly AssetLocationGroup[]) {
 function searchableAssetText(asset: AssetRecord, group: AssetLocationGroup) {
   const cachedByLocation = searchableTextByAsset.get(asset) ?? new Map<string, string>()
   const cached = cachedByLocation.get(group.key)
-  if (cached !== undefined) return cached
+  if (cached !== undefined) {
+    return cached
+  }
 
   const searchable = normalizeAssetSearch(
     [
@@ -264,14 +281,22 @@ function searchableAssetText(asset: AssetRecord, group: AssetLocationGroup) {
 // Only a blueprint may contribute blueprint terms; ESI leaves is_blueprint_copy unset on nearly
 // every asset, so indexing it unconditionally made "blueprint" match the whole inventory.
 function blueprintSearchText(asset: AssetRecord) {
-  if (!isBlueprintAsset(asset)) return null
+  if (!isBlueprintAsset(asset)) {
+    return null
+  }
   return asset.isBlueprintCopy === true ? 'blueprint copy bpc' : 'blueprint original bpo'
 }
 
 function matchesBlueprint(filter: AssetBlueprintFilter, asset: AssetRecord) {
-  if (filter === 'all') return true
-  if (filter === 'copy') return asset.isBlueprintCopy === true
-  if (filter === 'original') return isBlueprintAsset(asset) && asset.isBlueprintCopy !== true
+  if (filter === 'all') {
+    return true
+  }
+  if (filter === 'copy') {
+    return asset.isBlueprintCopy === true
+  }
+  if (filter === 'original') {
+    return isBlueprintAsset(asset) && asset.isBlueprintCopy !== true
+  }
   return !isBlueprintAsset(asset)
 }
 
@@ -289,14 +314,14 @@ function compareText(left: string, right: string) {
 
 function flattenRows(rows: readonly AssetHierarchyRow[]) {
   const flattened: FlattenedAssetRow[] = []
-  const pending: FlattenedAssetRow[] = rows.toReversed().map((row) => ({ row, parentId: null }))
+  const pending: FlattenedAssetRow[] = rows.toReversed().map((row) => ({ parentId: null, row }))
   while (pending.length > 0) {
     const current = pending.pop()!
     flattened.push(current)
     for (let index = current.row.children.length - 1; index >= 0; index -= 1) {
       pending.push({
-        row: current.row.children[index]!,
         parentId: current.row.asset.itemId,
+        row: current.row.children[index]!,
       })
     }
   }
@@ -311,7 +336,9 @@ function cloneIncludedRows(rows: readonly FlattenedAssetRow[], included: Readonl
 function cloneIncludedRowsById(rows: readonly FlattenedAssetRow[], included: ReadonlySet<number>) {
   const clones = new Map<number, AssetHierarchyRow>()
   for (const { row } of rows) {
-    if (!included.has(row.asset.itemId)) continue
+    if (!included.has(row.asset.itemId)) {
+      continue
+    }
     clones.set(row.asset.itemId, { ...row, children: [] })
   }
   return clones
@@ -324,7 +351,9 @@ function assembleClonedRows(
   const roots: AssetHierarchyRow[] = []
   for (const { row, parentId } of rows) {
     const clone = clones.get(row.asset.itemId)
-    if (!clone) continue
+    if (!clone) {
+      continue
+    }
     const parent = parentId === null ? undefined : clones.get(parentId)
     if (!parent) {
       roots.push(clone)

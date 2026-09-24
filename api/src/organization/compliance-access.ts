@@ -16,10 +16,10 @@ export async function loadCurrentEntitlementScope(
 ): Promise<OrganizationEntitlementScope> {
   const [account] = await database
     .select({
-      userId: users.id,
-      state: organizationAccountCompliance.state,
-      reviewDeadline: organizationAccountCompliance.reviewDeadline,
       accessValidUntil: organizationAccountCompliance.accessValidUntil,
+      reviewDeadline: organizationAccountCompliance.reviewDeadline,
+      state: organizationAccountCompliance.state,
+      userId: users.id,
     })
     .from(users)
     .innerJoin(

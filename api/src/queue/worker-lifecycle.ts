@@ -16,13 +16,17 @@ export function createActiveJobTracker() {
       } finally {
         activeJobs -= 1
         if (activeJobs === 0) {
-          for (const resolve of idleWaiters) resolve()
+          for (const resolve of idleWaiters) {
+            resolve()
+          }
           idleWaiters.clear()
         }
       }
     },
     waitForIdle(timeoutMs: number) {
-      if (activeJobs === 0) return Promise.resolve(true)
+      if (activeJobs === 0) {
+        return Promise.resolve(true)
+      }
       return new Promise<boolean>((resolve) => {
         let timer: ReturnType<typeof setTimeout>
         const onIdle = () => {
@@ -61,8 +65,12 @@ export async function startWorkerHeartbeat(
 /** Drops expired replicas; every deployment adds a hostname, so the registry would grow forever. */
 async function pruneWorkerRegistry(connection: CoordinationRedisConnection) {
   const registered = await connection.smembers(workerRegistryKey)
-  if (registered.length === 0) return
+  if (registered.length === 0) {
+    return
+  }
   const beats = await connection.mget(registered.map(workerHeartbeatKey))
   const expired = registered.filter((_, index) => beats[index] === null)
-  if (expired.length > 0) await connection.srem(workerRegistryKey, expired)
+  if (expired.length > 0) {
+    await connection.srem(workerRegistryKey, expired)
+  }
 }

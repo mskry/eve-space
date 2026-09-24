@@ -23,9 +23,13 @@ const capacityValue = computed(() =>
 )
 
 const capacityLabel = computed(() => {
-  if (props.capacity.maximum === null) return 'CAPACITY UNKNOWN'
+  if (props.capacity.maximum === null) {
+    return 'CAPACITY UNKNOWN'
+  }
   const available = props.capacity.maximum - props.capacity.installed
-  if (available === 0) return 'CAPACITY REACHED'
+  if (available === 0) {
+    return 'CAPACITY REACHED'
+  }
   return `${available} ${available === 1 ? 'SLOT' : 'SLOTS'} AVAILABLE`
 })
 
@@ -33,7 +37,9 @@ const lastCloneJumpLabel = computed(() => historicalDate(props.clones?.lastClone
 const lastStationChangeLabel = computed(() => historicalDate(props.clones?.lastStationChangeAt))
 const homeLocationLabel = computed(() => {
   const location = props.clones?.homeLocation
-  if (!location?.locationId || !location.locationType) return 'Home Station unavailable'
+  if (!location?.locationId || !location.locationType) {
+    return 'Home Station unavailable'
+  }
   return jumpCloneLocationLabel({
     locationId: location.locationId,
     locationType: location.locationType,
@@ -46,15 +52,17 @@ const capacityNote = computed(() =>
 )
 const resourceState = computed(() =>
   toCloneEsiResourceState(props.state, {
-    resourceCode: 'CLONES',
-    loadingMessage: 'Resolving Home Station and jump clone records...',
     authorizationTitle: 'Clone-state authorization required',
     errorTitle: 'Clone state unavailable',
+    loadingMessage: 'Resolving Home Station and jump clone records...',
+    resourceCode: 'CLONES',
   }),
 )
 
 function historicalDate(value: string | null | undefined) {
-  if (!value || !Number.isFinite(Date.parse(value))) return null
+  if (!value || !Number.isFinite(Date.parse(value))) {
+    return null
+  }
   return new Intl.DateTimeFormat('en-GB', {
     dateStyle: 'medium',
     timeStyle: 'short',

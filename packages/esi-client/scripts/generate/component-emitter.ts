@@ -51,7 +51,6 @@ export function createComponentEmitter<TComponent extends GeneratedOutputCompone
   }
 
   return Object.freeze({
-    name: emitterName,
     async emit(context: EmitterContext) {
       const directory = context.outputPath(target);
       await mkdir(directory, { recursive: true });
@@ -79,6 +78,7 @@ export function createComponentEmitter<TComponent extends GeneratedOutputCompone
       }
       return [{ target, kind: 'directory' as const }];
     },
+    name: emitterName,
   });
 }
 

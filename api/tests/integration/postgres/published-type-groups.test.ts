@@ -13,8 +13,8 @@ beforeAll(async () => {
   container = await new GenericContainer('postgres:17-alpine')
     .withEnvironment({
       POSTGRES_DB: 'eve_space',
-      POSTGRES_USER: 'eve_space',
       POSTGRES_PASSWORD: password,
+      POSTGRES_USER: 'eve_space',
     })
     .withExposedPorts(5432)
     .withWaitStrategy(Wait.forLogMessage(/database system is ready to accept connections/, 2))
@@ -60,29 +60,31 @@ describe('published type-groups product', () => {
   test('deduplicates, filters, omits missing rows, and returns a complete revisioned result', async () => {
     await expect(
       loadPublishedTypeGroupsProduct({ typeIds: [37, 35, 999, 34, 36, 35] }, connection),
-    ).resolves.toEqual({
+    ).resolves.toStrictEqual({
+      complete: true,
+      revision: {
+        buildNumber: 1234,
+        ingestVersion: 2,
+        ingestedAt: '2026-09-01 12:00:00.123456+00',
+      },
       rows: [
         { typeId: 34, typeName: 'Tritanium', groupId: 18, groupName: 'Mineral' },
         { typeId: 35, typeName: 'Pyerite', groupId: 18, groupName: 'Mineral' },
       ],
-      revision: {
-        buildNumber: 1234,
-        ingestVersion: 2,
-        ingestedAt: '2026-09-01 12:00:00.123456+00',
-      },
-      complete: true,
     })
   })
 
   test('returns the committed revision for an empty request', async () => {
-    await expect(loadPublishedTypeGroupsProduct({ typeIds: [] }, connection)).resolves.toEqual({
-      rows: [],
+    await expect(
+      loadPublishedTypeGroupsProduct({ typeIds: [] }, connection),
+    ).resolves.toStrictEqual({
+      complete: true,
       revision: {
         buildNumber: 1234,
         ingestVersion: 2,
         ingestedAt: '2026-09-01 12:00:00.123456+00',
       },
-      complete: true,
+      rows: [],
     })
   })
 
@@ -129,14 +131,14 @@ describe('published type-groups product', () => {
 
     release.resolve()
     await ingestion
-    await expect(loading).resolves.toEqual({
-      rows: [{ typeId: 587, typeName: 'Rifter', groupId: 25, groupName: 'Frigate' }],
+    await expect(loading).resolves.toStrictEqual({
+      complete: true,
       revision: {
         buildNumber: 1234,
         ingestVersion: 3,
         ingestedAt: '2026-09-01 12:01:00.654321+00',
       },
-      complete: true,
+      rows: [{ typeId: 587, typeName: 'Rifter', groupId: 25, groupName: 'Frigate' }],
     })
   })
 })

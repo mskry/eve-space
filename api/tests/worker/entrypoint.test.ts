@@ -20,7 +20,7 @@ function pendingPlatform(overrides: { close?: () => Promise<unknown> } = {}) {
   const close = vi.fn(
     overrides.close ?? (() => Promise.resolve({ drained: true, timedOut: false })),
   )
-  return { close, forceClose: vi.fn(), stopped, stopRunLoop }
+  return { close, forceClose: vi.fn(), stopRunLoop, stopped }
 }
 
 describe('worker entrypoint', () => {
@@ -35,8 +35,8 @@ describe('worker entrypoint', () => {
     }))
     vi.doMock('../../src/queue/platform.js', () => ({ startWorkerPlatform }))
     vi.doMock('../../src/worker/readiness.js', () => ({
-      assertWorkerStartupDependencies,
       assertWorkerDependencies,
+      assertWorkerStartupDependencies,
     }))
 
     const workerEntry = import('../../src/worker.js')
@@ -61,8 +61,8 @@ describe('worker entrypoint', () => {
     }))
     vi.doMock('../../src/queue/platform.js', () => ({ startWorkerPlatform }))
     vi.doMock('../../src/worker/readiness.js', () => ({
-      assertWorkerStartupDependencies: vi.fn().mockResolvedValue(undefined),
       assertWorkerDependencies: vi.fn().mockResolvedValue(undefined),
+      assertWorkerStartupDependencies: vi.fn().mockResolvedValue(undefined),
     }))
 
     const workerEntry = import('../../src/worker.js')
@@ -112,8 +112,10 @@ describe('worker entrypoint', () => {
 
       expect(consoleError).toHaveBeenCalledOnce()
       const serialized = String(consoleError.mock.calls[0]?.[0])
-      for (const sentinel of Object.values(sentinels)) expect(serialized).not.toContain(sentinel)
-      expect(JSON.parse(serialized)).toEqual(
+      for (const sentinel of Object.values(sentinels)) {
+        expect(serialized).not.toContain(sentinel)
+      }
+      expect(JSON.parse(serialized)).toStrictEqual(
         expect.objectContaining({
           event: 'worker.run-loop.failed',
           failureCategory: 'processing-failure',
@@ -140,12 +142,12 @@ describe('worker entrypoint', () => {
     vi.doMock('../../src/db/client.js', () => ({ sql: { end } }))
     vi.doMock('../../src/queue/platform.js', () => ({ startWorkerPlatform }))
     vi.doMock('../../src/worker/readiness.js', () => ({
-      assertWorkerStartupDependencies: vi.fn().mockResolvedValue(undefined),
       assertWorkerDependencies: vi.fn().mockResolvedValue(undefined),
+      assertWorkerStartupDependencies: vi.fn().mockResolvedValue(undefined),
     }))
 
     const workerEntry = import('../../src/worker.js')
-    await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce(), { timeout: 5_000 })
+    await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce(), { timeout: 5000 })
     process.emit('SIGTERM')
     process.emit('SIGINT')
     await workerEntry
@@ -193,8 +195,10 @@ describe('worker entrypoint', () => {
 
       expect(consoleError).toHaveBeenCalledOnce()
       const serialized = String(consoleError.mock.calls[0]?.[0])
-      for (const sentinel of Object.values(sentinels)) expect(serialized).not.toContain(sentinel)
-      expect(JSON.parse(serialized)).toEqual(
+      for (const sentinel of Object.values(sentinels)) {
+        expect(serialized).not.toContain(sentinel)
+      }
+      expect(JSON.parse(serialized)).toStrictEqual(
         expect.objectContaining({
           correlationId: expect.stringMatching(/^[0-9a-f-]{36}$/),
           event: 'worker.startup.failed',

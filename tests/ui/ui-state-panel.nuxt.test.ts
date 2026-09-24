@@ -5,15 +5,17 @@ import UiStatePanel from '../../layers/ui/app/components/ui/UiStatePanel.vue'
 const mountedWrappers: { unmount: () => void }[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
 })
 
 describe('UiStatePanel', () => {
   it('renders pending content with status semantics', async () => {
     const wrapper = await mountSuspended(UiStatePanel, {
       props: { compact: true, role: 'status' },
-      slots: { default: '<p>Loading records...</p>' },
       route: false,
+      slots: { default: '<p>Loading records...</p>' },
     })
     mountedWrappers.push(wrapper)
 
@@ -30,11 +32,11 @@ describe('UiStatePanel', () => {
         title: 'Record unavailable',
         tone: 'error',
       },
-      slots: {
-        default: '<p>The record could not be loaded.</p>',
-        action: '<button type="button">RETRY</button>',
-      },
       route: false,
+      slots: {
+        action: '<button type="button">RETRY</button>',
+        default: '<p>The record could not be loaded.</p>',
+      },
     })
     mountedWrappers.push(wrapper)
 

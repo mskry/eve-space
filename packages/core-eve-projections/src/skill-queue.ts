@@ -50,12 +50,12 @@ export function projectSkillQueueDefinitions(
   const definitions = new Map<number, SkillQueueDefinition>()
   for (const row of rows) {
     const current = definitions.get(row.typeId) ?? {
-      typeId: row.typeId,
-      name: row.typeName,
       groupId: row.groupId,
       groupName: row.groupName,
+      name: row.typeName,
       primaryAttribute: null,
       secondaryAttribute: null,
+      typeId: row.typeId,
     }
     const attribute = skillAttributeFromDogmaValue(row.attributeValue)
     definitions.set(row.typeId, {
@@ -81,9 +81,9 @@ export function projectSkillQueueEntries(
       const definition = definitionsByType.get(entry.typeId)
       return {
         ...entry,
-        name: definition?.name ?? `Unknown skill ${entry.typeId}`,
         groupId: definition?.groupId ?? null,
         groupName: definition?.groupName ?? 'Unknown',
+        name: definition?.name ?? `Unknown skill ${entry.typeId}`,
         primaryAttribute: definition?.primaryAttribute ?? null,
         secondaryAttribute: definition?.secondaryAttribute ?? null,
       }
@@ -97,13 +97,20 @@ export function resolveSkillQueueState(
   entries: readonly ProjectedSkillQueueEntry[],
   now: number,
 ): { readonly state: SkillQueueState; readonly activeQueuePosition: number | null } {
-  if (entries.length === 0) return { state: 'empty', activeQueuePosition: null }
-  if (entries.every((entry) => entry.startDate === null))
-    return { state: 'paused', activeQueuePosition: null }
+  if (entries.length === 0) {
+    return { activeQueuePosition: null, state: 'empty' }
+  }
+  if (entries.every((entry) => entry.startDate === null)) {
+    return { activeQueuePosition: null, state: 'paused' }
+  }
   const unfinished = entries.find(
     (entry) => entry.finishDate === null || Date.parse(entry.finishDate) > now,
   )
-  if (!unfinished) return { state: 'lapsed', activeQueuePosition: null }
-  if (unfinished.finishDate === null) return { state: 'paused', activeQueuePosition: null }
-  return { state: 'training', activeQueuePosition: unfinished.queuePosition }
+  if (!unfinished) {
+    return { activeQueuePosition: null, state: 'lapsed' }
+  }
+  if (unfinished.finishDate === null) {
+    return { activeQueuePosition: null, state: 'paused' }
+  }
+  return { activeQueuePosition: unfinished.queuePosition, state: 'training' }
 }

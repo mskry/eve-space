@@ -20,39 +20,45 @@ function wrapEsiResponseBody(response: Response, onSettled?: () => void) {
     return response
   }
   return new Response(wrapResponseStream(response.body, onSettled), {
+    headers: response.headers,
     status: response.status,
     statusText: response.statusText,
-    headers: response.headers,
   })
 }
 
 function wrapResponseStream(body: ReadableStream<Uint8Array>, onSettled?: () => void) {
   const reader = body.getReader()
-  if (onSettled) void reader.closed.then(onSettled, onSettled)
+  if (onSettled) {
+    void reader.closed.then(onSettled, onSettled)
+  }
   let released = false
   const release = () => {
-    if (released) return
+    if (released) {
+      return
+    }
     released = true
     reader.releaseLock()
   }
   return new ReadableStream<Uint8Array>({
+    async cancel(reason) {
+      try {
+        await reader.cancel(reason)
+      } finally {
+        release()
+      }
+    },
     async pull(controller) {
       try {
         const result = await reader.read()
         if (result.done) {
           release()
           controller.close()
-        } else controller.enqueue(result.value)
+        } else {
+          controller.enqueue(result.value)
+        }
       } catch (error) {
         release()
         controller.error(error)
-      }
-    },
-    async cancel(reason) {
-      try {
-        await reader.cancel(reason)
-      } finally {
-        release()
       }
     },
   })

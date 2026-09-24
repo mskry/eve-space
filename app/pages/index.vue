@@ -9,7 +9,7 @@ import {
 } from '../queries/organization'
 import { formatOrganizationTimestamp } from '../utils/organization-presentation'
 
-definePageMeta({ title: 'Overview', platformAudience: 'public' })
+definePageMeta({ platformAudience: 'public', title: 'Overview' })
 
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
@@ -69,10 +69,10 @@ function activityCharacters(activity: OrganizationActivities['activities'][numbe
     characterName:
       compliance.value?.characters.find((character) => character.characterId === characterId)
         ?.characterName ?? `Character ${characterId}`,
-    state: participationByCharacter.get(characterId) ?? ('eligible' as const),
     contribution:
       activity.participation.find((participation) => participation.characterId === characterId)
         ?.contribution ?? null,
+    state: participationByCharacter.get(characterId) ?? ('eligible' as const),
   }))
 }
 
@@ -82,15 +82,25 @@ function activityKind(kind: string) {
 
 function activityDestination(activity: OrganizationActivities['activities'][number]) {
   const target = activity.linkTarget
-  if (!target || !enabledModuleIds.value.has(target.moduleId)) return undefined
+  if (!target || !enabledModuleIds.value.has(target.moduleId)) {
+    return
+  }
   const page = platformPageMetadata.find(
     ({ moduleId, pageId }) => moduleId === target.moduleId && pageId === target.pageId,
   )
-  if (!page) return undefined
+  if (!page) {
+    return
+  }
   const query: Record<string, string> = {}
-  if (target.activityId) query.activityId = target.activityId
-  if (target.corporationId) query.corporationId = String(target.corporationId)
-  if (target.characterId) query.characterId = String(target.characterId)
+  if (target.activityId) {
+    query.activityId = target.activityId
+  }
+  if (target.corporationId) {
+    query.corporationId = String(target.corporationId)
+  }
+  if (target.characterId) {
+    query.characterId = String(target.characterId)
+  }
   return { name: page.pageName, query }
 }
 
@@ -107,8 +117,8 @@ function activityNumber(value: number) {
 }
 
 useHead({
-  title: 'Overview // EVE Space',
   meta: [{ name: 'description', content: 'EVE Space operations dashboard.' }],
+  title: 'Overview // EVE Space',
 })
 </script>
 

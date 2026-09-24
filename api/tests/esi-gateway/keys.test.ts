@@ -9,9 +9,9 @@ import { createEsiRepresentationIdentity } from '../../src/esi-gateway/internal/
 describe('ESI cache keys', () => {
   test('versions cache envelope keys from public normalized identities', () => {
     const identity = createEsiRepresentationIdentity({
-      operation: 'public-character',
-      inputs: { characterId: 90_000_001 },
       compatibilityDate: '2026-08-23',
+      inputs: { characterId: 90_000_001 },
+      operation: 'public-character',
       representationVersion: 'v1',
     })
     expect(cacheEnvelopeKey('epoch-3', identity)).toBe(
@@ -21,9 +21,9 @@ describe('ESI cache keys', () => {
 
   test('hashes credential-like player values', () => {
     const identity = createEsiRepresentationIdentity({
-      operation: 'public-character',
-      inputs: { characterId: 'Bearer Token Pilot' },
       compatibilityDate: '2026-08-23',
+      inputs: { characterId: 'Bearer Token Pilot' },
+      operation: 'public-character',
       representationVersion: 'v1',
     })
     expect(cacheEnvelopeKey('epoch-1', identity)).not.toContain('Bearer Token Pilot')

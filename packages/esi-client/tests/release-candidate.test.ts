@@ -110,8 +110,8 @@ async function createCandidate({
   const tarballPath = join(directory, 'package.tgz');
   const digestPath = `${tarballPath}.sha256`;
   const tarball = createTarball({
-    'package/package.json': JSON.stringify({ name, version }),
     'package/dist/root.js': 'export {};\n',
+    'package/package.json': JSON.stringify({ name, version }),
   });
   const sha256 = createHash('sha256').update(tarball).digest('hex');
   await Promise.all([

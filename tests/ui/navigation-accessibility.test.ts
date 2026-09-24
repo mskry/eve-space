@@ -29,12 +29,12 @@ describe('navigation accessibility', () => {
     let currentPath = '/characters/7'
     const scheduled: (() => void)[] = []
     const manager = createMainContentFocusManager(document, {
+      cancelScheduled: vi.fn(),
       currentPath: () => currentPath,
       schedule: (callback) => {
         scheduled.push(callback)
         return callback
       },
-      cancelScheduled: vi.fn(),
     })
 
     manager.recordNavigation('/characters/7', '/characters', {
@@ -92,13 +92,13 @@ describe('navigation accessibility', () => {
     const observe = vi.fn()
     const cancelScheduled = vi.fn()
     const manager = createMainContentFocusManager(document, {
-      currentPath: () => currentPath,
+      cancelScheduled,
       createObserver: (callback) => {
         observeReplacement = callback
         return { disconnect, observe }
       },
+      currentPath: () => currentPath,
       schedule: (callback) => callback,
-      cancelScheduled,
     })
 
     manager.recordNavigation('/settings', '/characters/7', {

@@ -1,9 +1,9 @@
 export const uiThemes = [
-  { value: 'amarr', label: 'Amarr Gold' },
-  { value: 'gallente', label: 'Gallente Green' },
-  { value: 'caldari', label: 'Caldari Steel' },
-  { value: 'high-sec', label: 'CONCORD Daylight' },
-  { value: 'minmatar', label: 'Minmatar Rust' },
+  { label: 'Amarr Gold', value: 'amarr' },
+  { label: 'Gallente Green', value: 'gallente' },
+  { label: 'Caldari Steel', value: 'caldari' },
+  { label: 'CONCORD Daylight', value: 'high-sec' },
+  { label: 'Minmatar Rust', value: 'minmatar' },
 ] as const
 
 export type UiTheme = (typeof uiThemes)[number]['value']
@@ -22,7 +22,9 @@ export function useTheme() {
 
   const theme = computed<UiTheme>({
     get: () => {
-      if (preference.value === 'void') return 'gallente'
+      if (preference.value === 'void') {
+        return 'gallente'
+      }
       return isUiTheme(preference.value) ? preference.value : 'gallente'
     },
     set: (value) => {
@@ -31,7 +33,9 @@ export function useTheme() {
   })
 
   function setTheme(value: unknown) {
-    if (isUiTheme(value)) theme.value = value
+    if (isUiTheme(value)) {
+      theme.value = value
+    }
   }
 
   return {

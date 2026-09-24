@@ -14,15 +14,17 @@ import {
 const mountedWrappers: VueWrapper[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
 })
 
 describe('organization review directory column preferences', () => {
   it('uses the same stable defaults for server and initial client rendering before restoring storage', async () => {
     const storage = preferenceStorage(
       JSON.stringify({
-        version: organizationReviewDirectoryPreferenceVersion,
         fieldIds: ['site_registered_at'],
+        version: organizationReviewDirectoryPreferenceVersion,
       }),
     )
     const getStorage = vi.fn(() => storage)
@@ -47,7 +49,7 @@ describe('organization review directory column preferences', () => {
     mountedWrappers.push(wrapper)
     await nextTick()
 
-    expect(setupValues).toEqual([
+    expect(setupValues).toStrictEqual([
       [...organizationReviewDirectoryDefaultFieldIds],
       [...organizationReviewDirectoryDefaultFieldIds],
     ])
@@ -62,14 +64,14 @@ describe('organization review directory column preferences', () => {
   it('restores a valid ordered field preference', () => {
     const storage = preferenceStorage(
       JSON.stringify({
-        version: organizationReviewDirectoryPreferenceVersion,
         fieldIds: ['blocked_since', 'groups', 'corporation'],
+        version: organizationReviewDirectoryPreferenceVersion,
       }),
     )
 
     const { preferences } = mountPreferences(() => storage)
 
-    expect(preferences.visibleFieldIds.value).toEqual([
+    expect(preferences.visibleFieldIds.value).toStrictEqual([
       'member',
       'blocked_since',
       'groups',
@@ -96,19 +98,17 @@ describe('organization review directory column preferences', () => {
       'site_registered_at',
       'actions',
     ]
-    expect(preferences.visibleFieldIds.value).toEqual(expectedFieldIds)
+    expect(preferences.visibleFieldIds.value).toStrictEqual(expectedFieldIds)
     expect(storage.setItem).toHaveBeenCalledTimes(2)
-    expect(storage.setItem).toHaveBeenLastCalledWith(
-      ORGANIZATION_REVIEW_DIRECTORY_COLUMN_PREFERENCE_STORAGE_KEY,
-      JSON.stringify({
-        version: organizationReviewDirectoryPreferenceVersion,
-        fieldIds: expectedFieldIds,
-      }),
-    )
-
     const serialized = storage.setItem.mock.lastCall?.[1]
     expect(serialized).toBeDefined()
-    expect(Object.keys(JSON.parse(serialized!))).toEqual(['version', 'fieldIds'])
+    expect(storage.setItem.mock.lastCall?.[0]).toBe(
+      ORGANIZATION_REVIEW_DIRECTORY_COLUMN_PREFERENCE_STORAGE_KEY,
+    )
+    expect(JSON.parse(serialized!)).toStrictEqual({
+      fieldIds: expectedFieldIds,
+      version: organizationReviewDirectoryPreferenceVersion,
+    })
   })
 
   it('moves optional fields in keyboard-control directions without moving locked edges', () => {
@@ -116,7 +116,7 @@ describe('organization review directory column preferences', () => {
     const { preferences } = mountPreferences(() => storage)
 
     preferences.moveField('groups', 'up')
-    expect(preferences.visibleFieldIds.value).toEqual([
+    expect(preferences.visibleFieldIds.value).toStrictEqual([
       'member',
       'corporation',
       'managed_since',
@@ -132,21 +132,23 @@ describe('organization review directory column preferences', () => {
     preferences.moveField('member', 'down')
     preferences.moveField('actions', 'up')
 
-    expect(preferences.visibleFieldIds.value).toEqual(organizationReviewDirectoryDefaultFieldIds)
+    expect(preferences.visibleFieldIds.value).toStrictEqual(
+      organizationReviewDirectoryDefaultFieldIds,
+    )
     expect(storage.setItem).toHaveBeenCalledTimes(2)
   })
 
   it('repairs locked fields and discards unknown and duplicate saved IDs', () => {
     const storage = preferenceStorage(
       JSON.stringify({
-        version: organizationReviewDirectoryPreferenceVersion,
         fieldIds: ['actions', 'groups', 'unknown', 'groups', 'member', 'site_registered_at'],
+        version: organizationReviewDirectoryPreferenceVersion,
       }),
     )
 
     const { preferences } = mountPreferences(() => storage)
 
-    expect(preferences.visibleFieldIds.value).toEqual([
+    expect(preferences.visibleFieldIds.value).toStrictEqual([
       'member',
       'groups',
       'site_registered_at',
@@ -157,21 +159,23 @@ describe('organization review directory column preferences', () => {
   it('resets a restored layout to the documented defaults and persists the reset', () => {
     const storage = preferenceStorage(
       JSON.stringify({
-        version: organizationReviewDirectoryPreferenceVersion,
         fieldIds: ['blocked_since'],
+        version: organizationReviewDirectoryPreferenceVersion,
       }),
     )
     const { preferences } = mountPreferences(() => storage)
 
     preferences.resetFields()
 
-    expect(preferences.visibleFieldIds.value).toEqual(organizationReviewDirectoryDefaultFieldIds)
+    expect(preferences.visibleFieldIds.value).toStrictEqual(
+      organizationReviewDirectoryDefaultFieldIds,
+    )
     expect(storage.setItem).toHaveBeenCalledOnce()
     expect(storage.setItem).toHaveBeenCalledWith(
       ORGANIZATION_REVIEW_DIRECTORY_COLUMN_PREFERENCE_STORAGE_KEY,
       JSON.stringify({
-        version: organizationReviewDirectoryPreferenceVersion,
         fieldIds: organizationReviewDirectoryDefaultFieldIds,
+        version: organizationReviewDirectoryPreferenceVersion,
       }),
     )
   })
@@ -182,17 +186,19 @@ describe('organization review directory column preferences', () => {
     [
       'invalid preference shape',
       JSON.stringify({
-        version: organizationReviewDirectoryPreferenceVersion,
         fieldIds: 'groups',
+        version: organizationReviewDirectoryPreferenceVersion,
       }),
     ],
-    ['an old preference version', JSON.stringify({ version: 0, fieldIds: ['groups'] })],
+    ['an old preference version', JSON.stringify({ fieldIds: ['groups'], version: 0 })],
   ])('falls back to defaults for %s', (_name, storedValue) => {
     const storage = preferenceStorage(storedValue)
 
     const { preferences } = mountPreferences(() => storage)
 
-    expect(preferences.visibleFieldIds.value).toEqual(organizationReviewDirectoryDefaultFieldIds)
+    expect(preferences.visibleFieldIds.value).toStrictEqual(
+      organizationReviewDirectoryDefaultFieldIds,
+    )
   })
 
   it('keeps defaults when storage is unavailable or throws while reading', () => {
@@ -203,10 +209,10 @@ describe('organization review directory column preferences', () => {
     })
     const throwing = mountPreferences(() => throwingStorage)
 
-    expect(unavailable.preferences.visibleFieldIds.value).toEqual(
+    expect(unavailable.preferences.visibleFieldIds.value).toStrictEqual(
       organizationReviewDirectoryDefaultFieldIds,
     )
-    expect(throwing.preferences.visibleFieldIds.value).toEqual(
+    expect(throwing.preferences.visibleFieldIds.value).toStrictEqual(
       organizationReviewDirectoryDefaultFieldIds,
     )
   })
@@ -222,7 +228,9 @@ describe('organization review directory column preferences', () => {
     expect(() => preferences.showField('site_registered_at')).not.toThrow()
     expect(() => preferences.moveField('site_registered_at', 'up')).not.toThrow()
     expect(() => preferences.resetFields()).not.toThrow()
-    expect(preferences.visibleFieldIds.value).toEqual(organizationReviewDirectoryDefaultFieldIds)
+    expect(preferences.visibleFieldIds.value).toStrictEqual(
+      organizationReviewDirectoryDefaultFieldIds,
+    )
   })
 })
 

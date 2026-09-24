@@ -10,9 +10,9 @@ const authVerificationStatus = ref<
   'idle' | 'verifying' | 'refreshing' | 'verified' | 'unavailable'
 >('verified')
 const route: { fullPath: string; meta: Record<string, unknown>; path: string } = {
-  path: '/characters/7',
   fullPath: '/characters/7?tab=wallet',
   meta: {},
+  path: '/characters/7',
 }
 
 beforeAll(async () => {

@@ -4,14 +4,14 @@ import { listJobContracts } from '../../src/queue/job-contracts.js'
 import { createInMemoryQueueProducer } from '../../src/queue/producer.js'
 
 const mocks = vi.hoisted(() => ({
-  sql: vi.fn(),
   affiliation: vi.fn(),
-  domainEvent: vi.fn(),
-  derivedAuthority: vi.fn(),
   corporationSource: vi.fn(),
+  derivedAuthority: vi.fn(),
+  domainEvent: vi.fn(),
   ownerEvidence: vi.fn(),
   planner: vi.fn(),
   resourceRefresh: vi.fn(),
+  sql: vi.fn(),
 }))
 
 vi.mock('../../src/db/client.js', () => ({ sql: mocks.sql }))
@@ -48,7 +48,9 @@ vi.mock('../../src/queue/resource-batch-processor.js', () => ({
 }))
 
 beforeEach(() => {
-  for (const operation of Object.values(mocks)) operation.mockResolvedValue(undefined)
+  for (const operation of Object.values(mocks)) {
+    operation.mockResolvedValue(undefined)
+  }
 })
 
 describe('job handlers', () => {
@@ -56,7 +58,7 @@ describe('job handlers', () => {
     const { listJobHandlerNames, verifyJobHandlers } =
       await import('../../src/queue/job-handlers.js')
     const names = listJobContracts().map(({ name }) => name)
-    expect(listJobHandlerNames()).toEqual(names)
+    expect(listJobHandlerNames()).toStrictEqual(names)
     expect(() => verifyJobHandlers()).not.toThrow()
     expect(() => verifyJobHandlers(names.slice(1))).toThrow('has no handler')
     expect(() => verifyJobHandlers([...names, 'unknown'])).toThrow('has no contract')
@@ -69,13 +71,13 @@ describe('job handlers', () => {
 
     await expect(
       executeJobHandler('diagnostic', { operationId: 'queue-diagnostic' }, context),
-    ).resolves.toEqual({ type: 'completed' })
+    ).resolves.toStrictEqual({ type: 'completed' })
 
     const retryable = new Error('database unavailable')
     mocks.sql.mockRejectedValueOnce(retryable)
     await expect(
       executeJobHandler('diagnostic', { operationId: 'queue-diagnostic' }, context),
-    ).resolves.toEqual({ type: 'retryable', error: retryable })
+    ).resolves.toStrictEqual({ error: retryable, type: 'retryable' })
 
     mocks.resourceRefresh.mockRejectedValueOnce(new Error('invalid resource response'))
     await expect(
@@ -84,23 +86,23 @@ describe('job handlers', () => {
         {
           moduleId: 'member-audit',
           resourceId: 'trained-skills',
+          subjectId: '1404328063',
           subjectKind: 'character',
           subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
-          subjectId: '1404328063',
         },
         context,
       ),
-    ).resolves.toEqual({ type: 'permanent' })
+    ).resolves.toStrictEqual({ type: 'permanent' })
 
     const retryAt = new Date('2026-09-10T12:00:30.000Z')
     mocks.affiliation.mockRejectedValueOnce(new EsiQuotaError(30, Date.now(), retryAt))
     await expect(
       executeJobHandler(
         'affiliation',
-        { operationId: 'affiliation-1', characterIds: [1] },
+        { characterIds: [1], operationId: 'affiliation-1' },
         context,
       ),
-    ).resolves.toEqual({ type: 'delayed', retryAt: retryAt.getTime() })
+    ).resolves.toStrictEqual({ retryAt: retryAt.getTime(), type: 'delayed' })
 
     mocks.resourceRefresh.mockRejectedValueOnce(
       Object.assign(new Error('ESI quota exhausted'), { retryAt }),
@@ -111,13 +113,13 @@ describe('job handlers', () => {
         {
           moduleId: 'member-audit',
           resourceId: 'trained-skills',
+          subjectId: '1404328063',
           subjectKind: 'character',
           subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
-          subjectId: '1404328063',
         },
         context,
       ),
-    ).resolves.toEqual({ type: 'delayed', retryAt: retryAt.getTime() })
+    ).resolves.toStrictEqual({ retryAt: retryAt.getTime(), type: 'delayed' })
   })
 
   test('keeps delayed classification local to handlers that support cooldowns', async () => {
@@ -129,7 +131,7 @@ describe('job handlers', () => {
 
     await expect(
       executeJobHandler('diagnostic', { operationId: 'queue-diagnostic' }, context),
-    ).resolves.toEqual({ type: 'retryable', error: failure })
+    ).resolves.toStrictEqual({ error: failure, type: 'retryable' })
   })
 
   test('rethrows shutdown cancellation without classifying it', async () => {
@@ -147,9 +149,9 @@ describe('job handlers', () => {
         {
           moduleId: 'member-audit',
           resourceId: 'trained-skills',
+          subjectId: '1404328063',
           subjectKind: 'character',
           subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
-          subjectId: '1404328063',
         },
         context,
       ),
@@ -159,11 +161,11 @@ describe('job handlers', () => {
 
 function executionContext() {
   return {
-    producer: createInMemoryQueueProducer(),
     outcomes: {
       recordAffiliation: vi.fn().mockResolvedValue(undefined),
       recordOutbox: vi.fn().mockResolvedValue(undefined),
     },
+    producer: createInMemoryQueueProducer(),
     signal: new AbortController().signal,
   }
 }

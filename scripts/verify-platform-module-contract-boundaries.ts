@@ -119,10 +119,11 @@ export function platformModuleContractBoundaryViolations() {
 }
 
 const contractViolations = platformModuleContractBoundaryViolations()
-if (contractViolations.length > 0)
+if (contractViolations.length > 0) {
   throw new Error(
     `Platform module contract boundary verification failed:\n${contractViolations.join('\n')}`,
   )
+}
 
 console.log('Platform module contract boundaries verified')
 
@@ -131,26 +132,30 @@ function validateContractFiles() {
   const files = readdirSync(contractSource)
     .filter((name) => name.endsWith('.ts'))
     .map((name) => name.slice(0, -3))
-  for (const name of files)
+  for (const name of files) {
     if (!internalModules.has(name))
       violations.push(`packages/platform-module-contract/src/${name}.ts is undeclared`)
-  for (const name of internalModules)
+  }
+  for (const name of internalModules) {
     if (!files.includes(name))
       violations.push(`packages/platform-module-contract/src/${name}.ts is missing`)
+  }
 
   const dependencies = new Map<string, string[]>()
   for (const name of files) {
     const path = join(contractSource, `${name}.ts`)
     const imports = localImports(path)
     dependencies.set(name, imports)
-    for (const imported of imports)
+    for (const imported of imports) {
       if (!allowedInternalImports[name]?.has(imported))
         violations.push(
           `packages/platform-module-contract/src/${name}.ts cannot import ${imported}.ts`,
         )
+    }
   }
-  for (const cycle of dependencyCycles(dependencies))
+  for (const cycle of dependencyCycles(dependencies)) {
     violations.push(`platform module contract dependency cycle: ${cycle.join(' -> ')}`)
+  }
   return violations
 }
 
@@ -173,21 +178,28 @@ function validateRepositoryImports() {
   const violations: string[] = []
   for (const path of walk(root)) {
     const relativePath = relative(root, path)
-    if (relativePath.startsWith('packages/platform-module-contract/src/')) continue
+    if (relativePath.startsWith('packages/platform-module-contract/src/')) {
+      continue
+    }
     const source = readFileSync(path, 'utf8')
-    for (const specifier of platformModuleContractModuleSpecifiers(path, source))
+    for (const specifier of platformModuleContractModuleSpecifiers(path, source)) {
       violations.push(...platformModuleContractImportViolations(relativePath, specifier))
+    }
   }
   return violations
 }
 
 export function platformModuleContractImportViolations(relativePath: string, specifier: string) {
   const violations: string[] = []
-  if (specifier === '@eve-space/platform-module-contract')
+  if (specifier === '@eve-space/platform-module-contract') {
     violations.push(`${relativePath}: package-root contract import is forbidden`)
-  if (specifier.includes('packages/platform-module-contract/src'))
+  }
+  if (specifier.includes('packages/platform-module-contract/src')) {
     violations.push(`${relativePath}: contract implementation-file import is forbidden`)
-  if (!specifier.startsWith('@eve-space/platform-module-contract/')) return violations
+  }
+  if (!specifier.startsWith('@eve-space/platform-module-contract/')) {
+    return violations
+  }
 
   const subpath = specifier.slice('@eve-space/platform-module-contract/'.length)
   if (!publicModules.has(subpath)) {
@@ -196,9 +208,11 @@ export function platformModuleContractImportViolations(relativePath: string, spe
   }
 
   const role = contractCallerRole(relativePath)
-  if (!role) violations.push(`${relativePath}: unregistered caller role cannot import ${subpath}`)
-  else if (!role.allowed.has(subpath))
+  if (!role) {
+    violations.push(`${relativePath}: unregistered caller role cannot import ${subpath}`)
+  } else if (!role.allowed.has(subpath)) {
     violations.push(`${relativePath}: ${role.name} cannot import ${subpath}`)
+  }
   return violations
 }
 
@@ -215,30 +229,36 @@ function contractCallerRole(relativePath: string) {
 }
 
 function featureContractCallerRole(normalizedPath: string) {
-  if (/(?:^|\/)features\/[^/]+\/module\.config\.[cm]?[jt]sx?$/.test(normalizedPath))
-    return { name: 'feature descriptors', allowed: new Set(['manifest']) }
-  if (/(?:^|\/)features\/[^/]+\/manifest\//.test(normalizedPath))
-    return { name: 'feature manifest packages', allowed: new Set(['manifest', 'publisher']) }
-  if (/(?:^|\/)features\/[^/]+\/server\//.test(normalizedPath))
-    return { name: 'feature server', allowed: featureServerModules }
-  if (/(?:^|\/)features\/[^/]+\/nuxt\//.test(normalizedPath))
-    return { name: 'feature Nuxt', allowed: new Set(['nuxt']) }
-  return undefined
+  if (/(?:^|\/)features\/[^/]+\/module\.config\.[cm]?[jt]sx?$/.test(normalizedPath)) {
+    return { allowed: new Set(['manifest']), name: 'feature descriptors' }
+  }
+  if (/(?:^|\/)features\/[^/]+\/manifest\//.test(normalizedPath)) {
+    return { allowed: new Set(['manifest', 'publisher']), name: 'feature manifest packages' }
+  }
+  if (/(?:^|\/)features\/[^/]+\/server\//.test(normalizedPath)) {
+    return { allowed: featureServerModules, name: 'feature server' }
+  }
+  if (/(?:^|\/)features\/[^/]+\/nuxt\//.test(normalizedPath)) {
+    return { allowed: new Set(['nuxt']), name: 'feature Nuxt' }
+  }
 }
 
 function platformPackageContractCallerRole(normalizedPath: string) {
-  if (normalizedPath.startsWith('packages/platform-module-nuxt/'))
-    return { name: 'platform Nuxt', allowed: platformNuxtModules }
-  if (normalizedPath.startsWith('packages/platform-module-server/'))
-    return { name: 'platform server', allowed: featureServerModules }
-  if (normalizedPath.startsWith('packages/platform-module-conformance/'))
-    return { name: 'platform module conformance', allowed: publicModules }
-  if (normalizedPath.startsWith('packages/platform-module-persistence-policy/'))
+  if (normalizedPath.startsWith('packages/platform-module-nuxt/')) {
+    return { allowed: platformNuxtModules, name: 'platform Nuxt' }
+  }
+  if (normalizedPath.startsWith('packages/platform-module-server/')) {
+    return { allowed: featureServerModules, name: 'platform server' }
+  }
+  if (normalizedPath.startsWith('packages/platform-module-conformance/')) {
+    return { allowed: publicModules, name: 'platform module conformance' }
+  }
+  if (normalizedPath.startsWith('packages/platform-module-persistence-policy/')) {
     return {
-      name: 'platform module persistence policy',
       allowed: new Set(['identifiers', 'persistence']),
+      name: 'platform module persistence policy',
     }
-  return undefined
+  }
 }
 
 function generatedRegistryContractCallerRole(normalizedPath: string) {
@@ -247,35 +267,38 @@ function generatedRegistryContractCallerRole(normalizedPath: string) {
     const filename = normalizedPath.slice(apiGeneratedPrefix.length)
     const registryName = filename.slice(0, -extname(filename).length)
     return {
-      name: 'generated API registry',
       allowed: apiGeneratedRegistryModules[registryName] ?? hostApiModules,
+      name: 'generated API registry',
     }
   }
-  if (normalizedPath.startsWith('generated/platform/'))
-    return { name: 'generated Nuxt registry', allowed: new Set(['nuxt']) }
-  return undefined
+  if (normalizedPath.startsWith('generated/platform/')) {
+    return { allowed: new Set(['nuxt']), name: 'generated Nuxt registry' }
+  }
 }
 
 function hostContractCallerRole(normalizedPath: string) {
-  if (normalizedPath.startsWith('api/')) return { name: 'API host', allowed: hostApiModules }
+  if (normalizedPath.startsWith('api/')) {
+    return { allowed: hostApiModules, name: 'API host' }
+  }
   if (
     normalizedPath.startsWith('app/') ||
     normalizedPath.startsWith('layers/') ||
     /^nuxt\.config\.[cm]?[jt]s$/.test(normalizedPath)
-  )
-    return { name: 'Nuxt host', allowed: hostNuxtModules }
-  return undefined
+  ) {
+    return { allowed: hostNuxtModules, name: 'Nuxt host' }
+  }
 }
 
 function scriptContractCallerRole(normalizedPath: string) {
   if (
     normalizedPath.startsWith('scripts/module-registry/') ||
     normalizedPath === 'scripts/generate-module-registries.ts'
-  )
-    return { name: 'registry composition scripts', allowed: publicModules }
-  if (normalizedPath.startsWith('scripts/'))
-    return { name: 'repository scripts', allowed: nonCompositionModules }
-  return undefined
+  ) {
+    return { allowed: publicModules, name: 'registry composition scripts' }
+  }
+  if (normalizedPath.startsWith('scripts/')) {
+    return { allowed: nonCompositionModules, name: 'repository scripts' }
+  }
 }
 
 function testContractCallerRole(normalizedPath: string) {
@@ -283,11 +306,12 @@ function testContractCallerRole(normalizedPath: string) {
     normalizedPath.startsWith('packages/platform-module-contract/test/') ||
     normalizedPath.startsWith('tests/fixtures/platform-module-registry-types/') ||
     /^tests\/platform\/platform-module-(?:conformance|registry)\.test\.ts$/.test(normalizedPath)
-  )
-    return { name: 'contract compiler tests', allowed: publicModules }
-  if (normalizedPath.startsWith('tests/'))
-    return { name: 'repository tests', allowed: nonCompositionModules }
-  return undefined
+  ) {
+    return { allowed: publicModules, name: 'contract compiler tests' }
+  }
+  if (normalizedPath.startsWith('tests/')) {
+    return { allowed: nonCompositionModules, name: 'repository tests' }
+  }
 }
 
 function localImports(path: string) {
@@ -300,10 +324,11 @@ function localImports(path: string) {
 }
 
 export function platformModuleContractModuleSpecifiers(path: string, source: string) {
-  if (extname(path) === '.vue')
+  if (extname(path) === '.vue') {
     return [...source.matchAll(/(?:from\s+|import\s*)['"]([^'"]+)['"]/g)].flatMap((match) =>
       match[1] ? [match[1]] : [],
     )
+  }
   return typescriptModuleSpecifiers(path, source)
 }
 
@@ -313,7 +338,9 @@ export function isPlatformModuleContractSourcePath(path: string) {
 
 function walk(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {
-    if (ignoredDirectories.has(name)) return []
+    if (ignoredDirectories.has(name)) {
+      return []
+    }
     const path = join(directory, name)
     let stats
     try {
@@ -321,7 +348,9 @@ function walk(directory: string): string[] {
     } catch {
       return []
     }
-    if (stats.isDirectory()) return walk(path)
+    if (stats.isDirectory()) {
+      return walk(path)
+    }
     return isPlatformModuleContractSourcePath(path) ? [path] : []
   })
 }
@@ -336,13 +365,19 @@ function dependencyCycles(dependencies: ReadonlyMap<string, readonly string[]>) 
       cycles.push([...path.slice(start), name])
       return
     }
-    if (visited.has(name)) return
+    if (visited.has(name)) {
+      return
+    }
     visiting.add(name)
-    for (const dependency of dependencies.get(name) ?? []) visit(dependency, [...path, name])
+    for (const dependency of dependencies.get(name) ?? []) {
+      visit(dependency, [...path, name])
+    }
     visiting.delete(name)
     visited.add(name)
   }
-  for (const name of dependencies.keys()) visit(name, [])
+  for (const name of dependencies.keys()) {
+    visit(name, [])
+  }
   return cycles
 }
 

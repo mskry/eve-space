@@ -30,8 +30,9 @@ const modelValue = defineModel<string>()
 const initialValue = computed(() => props.defaultValue ?? props.tabs[0]?.value)
 
 watchEffect(() => {
-  if (modelValue.value === undefined && initialValue.value !== undefined)
+  if (modelValue.value === undefined && initialValue.value !== undefined) {
     modelValue.value = initialValue.value
+  }
 })
 </script>
 

@@ -13,17 +13,17 @@ import {
 import { generationCheckTargets } from '../scripts/generate/check.ts';
 
 const correctedDocument = {
-  openapi: '3.1.0',
-  info: { title: 'Shadow fixture', version: '1.0.0' },
   components: {
     schemas: {
       Status: {
-        type: 'object',
         properties: { players: { type: 'integer' } },
         required: ['players'],
+        type: 'object',
       },
     },
   },
+  info: { title: 'Shadow fixture', version: '1.0.0' },
+  openapi: '3.1.0',
   paths: {
     '/status/{cluster}': {
       get: {
@@ -40,10 +40,10 @@ const correctedDocument = {
         ],
         responses: {
           '200': {
-            description: 'OK',
             content: {
               'application/json': { schema: { $ref: '#/components/schemas/Status' } },
             },
+            description: 'OK',
           },
         },
       },
@@ -60,17 +60,18 @@ describe('isolated Hey API shadow generation', () => {
         compilerArguments.indexOf('--newLine'),
         compilerArguments.indexOf('--newLine') + 2,
       ),
-    ).toEqual(['--newLine', 'lf']);
+    ).toStrictEqual(['--newLine', 'lf']);
   });
 
   it('uses only the explicit TypeScript and Zod 4 generation configuration', () => {
     const outputDirectory = join(tmpdir(), 'hey-api-config-fixture');
 
-    expect(createHeyApiGenerationConfig({ input: correctedDocument, outputDirectory })).toEqual({
+    expect(
+      createHeyApiGenerationConfig({ input: correctedDocument, outputDirectory }),
+    ).toStrictEqual({
       input: correctedDocument,
       interactive: false,
       logs: { file: false, level: 'silent' },
-      parser: { patch: { input: expect.any(Function) } },
       output: {
         clean: true,
         entryFile: true,
@@ -80,6 +81,7 @@ describe('isolated Hey API shadow generation', () => {
         source: false,
         tsConfigPath: null,
       },
+      parser: { patch: { input: expect.any(Function) } },
       plugins: [
         {
           name: '@hey-api/typescript',
@@ -130,9 +132,9 @@ describe('isolated Hey API shadow generation', () => {
         const result = await checkHeyApiShadowGeneration({ correctedDocument });
 
         expect(networkFetch).not.toHaveBeenCalled();
-        expect(result.paths).toEqual(['index.ts', 'types.gen.ts', 'zod.gen.ts']);
+        expect(result.paths).toStrictEqual(['index.ts', 'types.gen.ts', 'zod.gen.ts']);
         expect(result.fileCount).toBe(3);
-        expect(result.operationAccounting).toEqual({
+        expect(result.operationAccounting).toStrictEqual({
           generated: 1,
           reviewedExcluded: 0,
           source: 1,
@@ -163,7 +165,7 @@ describe('isolated Hey API shadow generation', () => {
         const result = await checkHeyApiShadowGeneration();
 
         expect(networkFetch).not.toHaveBeenCalled();
-        expect(result.operationAccounting).toEqual({
+        expect(result.operationAccounting).toStrictEqual({
           generated: 233,
           reviewedExcluded: 0,
           source: 233,
@@ -186,7 +188,7 @@ describe('isolated Hey API shadow generation', () => {
         'generate:shadow:check': 'node scripts/generate/hey-api-shadow.ts',
       },
     });
-    expect(generationCheckTargets).toEqual([
+    expect(generationCheckTargets).toStrictEqual([
       'src/generated',
       'llms.txt',
       'docs/generated',

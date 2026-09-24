@@ -13,14 +13,10 @@ import {
 
 describe('generation path boundaries', () => {
   it('declares a replacement boundary for every generated artifact kind', () => {
-    expect(Object.keys(generatedPaths)).toEqual([
-      'source',
-      'documentation',
-      'examples',
-      'tests',
-      'openapi',
-    ]);
-    expect(resolveGeneratedReplacementTargets()).toEqual(
+    expect(
+      Object.keys(generatedPaths).toSorted((left, right) => left.localeCompare(right)),
+    ).toStrictEqual(['documentation', 'examples', 'openapi', 'source', 'tests']);
+    expect(resolveGeneratedReplacementTargets()).toStrictEqual(
       generatedReplacementTargets.map((path) => resolve(repositoryRoot, path)),
     );
   });

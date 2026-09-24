@@ -117,11 +117,11 @@ export function useFinanceLedger(options: FinanceLedgerOptions) {
   )
   const summary = computed(() =>
     calculateFinanceSummary({
-      journal: journal.value,
-      openOrders: openOrders.value,
       contracts: contracts.value,
-      range: range.value,
+      journal: journal.value,
       now: currentTime.value,
+      openOrders: openOrders.value,
+      range: range.value,
     }),
   )
   const summaryMetrics = computed(() =>
@@ -130,10 +130,10 @@ export function useFinanceLedger(options: FinanceLedgerOptions) {
 
   const balanceState = computed(() =>
     mapCharacterFinanceResourceState({
+      authorizationLabel: 'AUTHORIZE WALLET',
       data: balance.value,
       error: options.services.balanceQuery.error.value,
       loading: options.services.balanceQuery.asyncStatus.value === 'loading',
-      authorizationLabel: 'AUTHORIZE WALLET',
     }),
   )
   const journalState = computed(() =>
@@ -227,8 +227,8 @@ export function useFinanceLedger(options: FinanceLedgerOptions) {
     summary,
     summaryMetrics,
     transactionSearchQuery,
-    transactions,
     transactionSideFilter,
+    transactions,
     transactionsState,
   }
 }

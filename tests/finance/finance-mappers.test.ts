@@ -14,38 +14,40 @@ import { ApiQueryError } from '../../app/utils/query-error'
 
 const freshness = {
   cachedUntil: '2026-09-02T13:00:00.000Z',
-  validatedAt: '2026-09-02T12:00:00.000Z',
   stale: false,
+  validatedAt: '2026-09-02T12:00:00.000Z',
 }
 
 describe('character Finance presentation mappings', () => {
   it('removes response identity and maps balance, journal, and transactions explicitly', () => {
-    expect(mapCharacterFinanceBalance({ characterId: 7, balance: 123.45, ...freshness })).toEqual({
+    expect(
+      mapCharacterFinanceBalance({ balance: 123.45, characterId: 7, ...freshness }),
+    ).toStrictEqual({
       balance: 123.45,
-      validatedAt: freshness.validatedAt,
       stale: false,
+      validatedAt: freshness.validatedAt,
     })
 
     const journal = mapCharacterFinanceJournal({
       characterId: 7,
       entries: [
         {
-          journalId: 11,
-          date: '2026-09-01T10:00:00.000Z',
           amount: null,
           balance: null,
-          referenceType: 'contract_reward',
-          description: 'Contract reward',
-          reason: null,
-          taxAmount: null,
           context: null,
+          date: '2026-09-01T10:00:00.000Z',
+          description: 'Contract reward',
+          journalId: 11,
+          reason: null,
+          referenceType: 'contract_reward',
+          taxAmount: null,
         },
       ],
       page: 2,
       totalPages: 4,
       ...freshness,
     })
-    expect(journal).toEqual({
+    expect(journal).toStrictEqual({
       entries: [
         {
           journalId: 11,
@@ -57,13 +59,15 @@ describe('character Finance presentation mappings', () => {
         },
       ],
       page: 2,
+      stale: false,
       totalPages: 4,
       validatedAt: freshness.validatedAt,
-      stale: false,
     })
 
     const transactions = mapCharacterFinanceTransactions({
       characterId: 7,
+      fromId: null,
+      nextFromId: 20,
       transactions: [
         {
           transactionId: 21,
@@ -75,15 +79,16 @@ describe('character Finance presentation mappings', () => {
           unitPrice: 4.25,
           totalPrice: 21.25,
           isBuy: true,
-          locationId: 60003760,
+          locationId: 60_003_760,
           locationName: null,
         },
       ],
-      fromId: null,
-      nextFromId: 20,
       ...freshness,
     })
-    expect(transactions).toEqual({
+    expect(transactions).toStrictEqual({
+      fromId: null,
+      nextFromId: 20,
+      stale: false,
       transactions: [
         {
           transactionId: 21,
@@ -94,54 +99,51 @@ describe('character Finance presentation mappings', () => {
           unitPrice: 4.25,
           totalPrice: 21.25,
           isBuy: true,
-          locationId: 60003760,
+          locationId: 60_003_760,
           locationName: null,
         },
       ],
-      fromId: null,
-      nextFromId: 20,
       validatedAt: freshness.validatedAt,
-      stale: false,
     })
   })
 
   it('normalizes open and historical orders into one presentation shape', () => {
     const order = {
+      durationDays: 30,
+      escrow: null,
+      expiresAt: '2026-10-01T10:00:00.000Z',
+      isBuy: true,
+      issuedAt: '2026-09-01T10:00:00.000Z',
+      locationId: 60_003_760,
+      locationName: null,
+      minimumVolume: null,
       orderId: 41,
+      price: 12,
+      range: 'station' as const,
+      regionId: 10_000_002,
       typeId: 35,
       typeName: 'Pyerite',
-      isBuy: true,
-      price: 12,
       volumeRemain: 4,
       volumeTotal: 10,
-      minimumVolume: null,
-      escrow: null,
-      range: 'station' as const,
-      locationId: 60003760,
-      locationName: null,
-      regionId: 10000002,
-      issuedAt: '2026-09-01T10:00:00.000Z',
-      durationDays: 30,
-      expiresAt: '2026-10-01T10:00:00.000Z',
     }
 
     expect(
       mapCharacterFinanceOpenOrders({ characterId: 7, orders: [order], ...freshness }).orders[0],
-    ).toEqual({
+    ).toStrictEqual({
+      escrow: null,
+      expiresAt: '2026-10-01T10:00:00.000Z',
+      isBuy: true,
+      issuedAt: '2026-09-01T10:00:00.000Z',
+      locationId: 60_003_760,
+      locationName: null,
       orderId: 41,
+      price: 12,
+      range: 'station',
+      state: null,
       typeId: 35,
       typeName: 'Pyerite',
-      isBuy: true,
-      price: 12,
       volumeRemain: 4,
       volumeTotal: 10,
-      escrow: null,
-      range: 'station',
-      locationId: 60003760,
-      locationName: null,
-      issuedAt: '2026-09-01T10:00:00.000Z',
-      expiresAt: '2026-10-01T10:00:00.000Z',
-      state: null,
     })
     expect(
       mapCharacterFinanceOrderHistory({
@@ -159,23 +161,23 @@ describe('character Finance presentation mappings', () => {
       characterId: 7,
       contracts: [
         {
-          contractId: 51,
-          type: 'item_exchange',
-          status: 'outstanding',
-          availability: 'personal',
-          role: 'assigned',
-          title: null,
-          issuedAt: '2026-09-01T10:00:00.000Z',
-          expiredAt: '2026-09-03T10:00:00.000Z',
           acceptedAt: null,
+          availability: 'personal',
+          buyout: null,
+          collateral: null,
           completedAt: null,
+          contractId: 51,
           daysToComplete: null,
-          startLocationId: null,
           endLocationId: null,
+          expiredAt: '2026-09-03T10:00:00.000Z',
+          issuedAt: '2026-09-01T10:00:00.000Z',
           price: null,
           reward: 500,
-          collateral: null,
-          buyout: null,
+          role: 'assigned',
+          startLocationId: null,
+          status: 'outstanding',
+          title: null,
+          type: 'item_exchange',
           volume: null,
         },
       ],
@@ -183,19 +185,19 @@ describe('character Finance presentation mappings', () => {
       totalPages: 1,
       ...freshness,
     })
-    expect(contracts.contracts[0]).toEqual({
-      contractId: 51,
-      type: 'item_exchange',
-      status: 'outstanding',
+    expect(contracts.contracts[0]).toStrictEqual({
       availability: 'personal',
-      role: 'assigned',
-      title: null,
-      issuedAt: '2026-09-01T10:00:00.000Z',
-      expiredAt: '2026-09-03T10:00:00.000Z',
+      collateral: null,
+      contractId: 51,
       daysToComplete: null,
+      expiredAt: '2026-09-03T10:00:00.000Z',
+      issuedAt: '2026-09-01T10:00:00.000Z',
       price: null,
       reward: 500,
-      collateral: null,
+      role: 'assigned',
+      status: 'outstanding',
+      title: null,
+      type: 'item_exchange',
       volume: null,
     })
 
@@ -205,18 +207,18 @@ describe('character Finance presentation mappings', () => {
         contractId: 51,
         items: [
           {
+            blueprint: null,
+            direction: 'included',
+            isSingleton: false,
+            quantity: 2,
             recordId: 61,
             typeId: 34,
             typeName: 'Tritanium',
-            direction: 'included',
-            quantity: 2,
-            isSingleton: false,
-            blueprint: null,
           },
         ],
         ...freshness,
       }),
-    ).toEqual({
+    ).toStrictEqual({
       items: [
         {
           recordId: 61,
@@ -227,70 +229,70 @@ describe('character Finance presentation mappings', () => {
           blueprint: null,
         },
       ],
-      validatedAt: freshness.validatedAt,
       stale: false,
+      validatedAt: freshness.validatedAt,
     })
     expect(
       mapCharacterFinanceContractBids({
+        bids: [{ bidId: 71, amount: 900, bidAt: '2026-09-02T10:00:00.000Z' }],
         characterId: 7,
         contractId: 51,
-        bids: [{ bidId: 71, amount: 900, bidAt: '2026-09-02T10:00:00.000Z' }],
         ...freshness,
       }),
-    ).toEqual({
+    ).toStrictEqual({
       bids: [{ bidId: 71, amount: 900, bidAt: '2026-09-02T10:00:00.000Z' }],
-      validatedAt: freshness.validatedAt,
       stale: false,
+      validatedAt: freshness.validatedAt,
     })
   })
 
   it('maps native, quota, and authorization failures without exposing errors or retry functions', () => {
     expect(
       mapCharacterFinanceResourceState({ data: { stale: true }, error: null, loading: true }),
-    ).toEqual({
+    ).toStrictEqual({
+      authorizationAction: null,
       authorizationRequired: false,
-      loading: true,
-      stale: true,
+      canRetry: false,
       errorCode: null,
       errorMessage: null,
-      canRetry: false,
-      authorizationAction: null,
+      loading: true,
+      stale: true,
     })
     expect(
       mapCharacterFinanceResourceState({
         data: null,
         error: new ApiQueryError('Wallet quota exhausted.', {
-          status: 429,
           retryAfterSeconds: 15,
+          status: 429,
         }),
         loading: false,
       }),
     ).toMatchObject({
+      canRetry: true,
       errorCode: 'ESI / QUOTA',
       errorMessage: 'Wallet quota exhausted. Retry after 15 seconds.',
-      canRetry: true,
     })
     expect(
       mapCharacterFinanceResourceState({
+        authorizationLabel: 'AUTHORIZE WALLET',
         error: new ApiQueryError('Authorize wallet.', {
           status: 403,
           code: 'EVE_SCOPE_REQUIRED',
           authorizeUrl: '/authorize',
         }),
         loading: false,
-        authorizationLabel: 'AUTHORIZE WALLET',
       }),
     ).toMatchObject({
-      authorizationRequired: true,
-      errorMessage: 'Authorize wallet.',
-      canRetry: false,
       authorizationAction: { href: '/authorize', label: 'AUTHORIZE WALLET' },
+      authorizationRequired: true,
+      canRetry: false,
+      errorMessage: 'Authorize wallet.',
     })
     expect(
       mapCharacterFinanceResourceState({
         error: new ApiQueryError('Reauthorize wallet.', {
-          status: 403,
           code: 'EVE_REAUTH_REQUIRED',
+          status: 403,
         }),
         loading: false,
       }),
@@ -302,13 +304,13 @@ describe('character Finance presentation mappings', () => {
     })
     expect(
       mapCharacterFinanceResourceState({ error: new Error('Failed.'), loading: false }),
-    ).toMatchObject({ errorCode: 'ESI 502 / FINANCE', errorMessage: 'Failed.', canRetry: true })
+    ).toMatchObject({ canRetry: true, errorCode: 'ESI 502 / FINANCE', errorMessage: 'Failed.' })
     expect(
       mapCharacterFinanceResourceState({ error: new Error(''), loading: false }),
     ).toMatchObject({
+      canRetry: true,
       errorCode: 'ESI 502 / FINANCE',
       errorMessage: 'This Finance resource is temporarily unavailable.',
-      canRetry: true,
     })
   })
 })

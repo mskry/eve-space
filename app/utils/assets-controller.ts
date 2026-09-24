@@ -22,7 +22,9 @@ export function createAssetWorkspaceController(options: AssetWorkspaceController
   let criteriaSignature = assetFilterSignature(EMPTY_ASSET_FILTERS)
 
   function sync(groups: readonly AssetLocationGroup[]) {
-    if (groups.length === 0) return
+    if (groups.length === 0) {
+      return
+    }
     const nextDefaults = new Set(
       groups.slice(0, initiallyExpandedLocations).map((group) => group.key),
     )
@@ -32,16 +34,22 @@ export function createAssetWorkspaceController(options: AssetWorkspaceController
       }
     }
     for (const key of nextDefaults) {
-      if (!manuallyToggledLocations.has(key)) expandedLocations.add(key)
+      if (!manuallyToggledLocations.has(key)) {
+        expandedLocations.add(key)
+      }
     }
     defaultExpandedLocations.clear()
-    for (const key of nextDefaults) defaultExpandedLocations.add(key)
+    for (const key of nextDefaults) {
+      defaultExpandedLocations.add(key)
+    }
   }
 
   function setCriteria(filters: AssetFilterState) {
     const nextSignature = assetFilterSignature(filters)
     activeFilters = hasActiveAssetFilters(filters)
-    if (nextSignature === criteriaSignature) return false
+    if (nextSignature === criteriaSignature) {
+      return false
+    }
     criteriaSignature = nextSignature
     revealLimits.clear()
     return true
@@ -49,33 +57,43 @@ export function createAssetWorkspaceController(options: AssetWorkspaceController
 
   function toggleLocation(key: string) {
     manuallyToggledLocations.add(key)
-    if (expandedLocations.has(key)) expandedLocations.delete(key)
-    else expandedLocations.add(key)
+    if (expandedLocations.has(key)) {
+      expandedLocations.delete(key)
+    } else {
+      expandedLocations.add(key)
+    }
   }
 
   function toggleContainer(itemId: number) {
-    if (expandedContainers.has(itemId)) expandedContainers.delete(itemId)
-    else expandedContainers.add(itemId)
+    if (expandedContainers.has(itemId)) {
+      expandedContainers.delete(itemId)
+    } else {
+      expandedContainers.add(itemId)
+    }
   }
 
   function visibleLocation(group: AssetLocationGroup): AssetVisibleLocation {
     const flattened = rowsForLocation(group)
     const limit = revealLimits.get(group.key) ?? revealIncrement
     return {
+      hasMore: flattened.length > limit,
       rows: flattened.slice(0, limit),
       totalVisibleRows: flattened.length,
-      hasMore: flattened.length > limit,
     }
   }
 
   function rowsForLocation(group: AssetLocationGroup) {
-    if (!activeFilters && !expandedLocations.has(group.key)) return []
+    if (!activeFilters && !expandedLocations.has(group.key)) {
+      return []
+    }
     return flattenAssetRows(group.rows, activeFilters ? 'all' : expandedContainers)
   }
 
   function showMore(group: AssetLocationGroup) {
     const visible = visibleLocation(group)
-    if (!visible.hasMore) return false
+    if (!visible.hasMore) {
+      return false
+    }
     const currentLimit = revealLimits.get(group.key) ?? revealIncrement
     revealLimits.set(group.key, Math.min(visible.totalVisibleRows, currentLimit + revealIncrement))
     return true

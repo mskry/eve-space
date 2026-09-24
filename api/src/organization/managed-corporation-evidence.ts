@@ -9,30 +9,32 @@ export function projectManagedCorporationEvidence(
     | undefined,
   now: Date,
 ) {
-  if (!state?.validatedAt)
+  if (!state?.validatedAt) {
     return {
-      freshness: 'unavailable' as const,
       evidenceAt: null,
       freshUntil: null,
+      freshness: 'unavailable' as const,
       staleSince: state?.failureStartedAt ?? null,
     }
+  }
   if (
     state.lastFailureClass ||
     !state.nextEligibleAt ||
     state.nextEligibleAt.getTime() <= now.getTime()
-  )
+  ) {
     return {
-      freshness: 'stale' as const,
       evidenceAt: state.validatedAt,
       freshUntil: null,
+      freshness: 'stale' as const,
       staleSince: state.lastFailureClass
         ? (state.failureStartedAt ?? state.validatedAt)
         : (state.nextEligibleAt ?? state.validatedAt),
     }
+  }
   return {
-    freshness: 'fresh' as const,
     evidenceAt: state.validatedAt,
     freshUntil: state.nextEligibleAt,
+    freshness: 'fresh' as const,
     staleSince: null,
   }
 }

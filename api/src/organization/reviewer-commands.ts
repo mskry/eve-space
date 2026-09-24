@@ -91,18 +91,18 @@ export async function assignOrganizationReviewerOrdinaryGroup(
       group,
       {
         actorUserId: input.actorUserId,
-        targetUserId: input.targetUserId,
-        reason,
         expiresAt: input.expiresAt ?? null,
+        reason,
+        targetUserId: input.targetUserId,
       },
     )
     return {
+      assignmentId: assignment.assignmentId,
       decision: 'assigned' as const,
+      expiresAt: assignment.expiresAt,
+      groupId: assignment.groupId,
       organizationVersion: assignment.organizationVersion,
       targetUserId: assignment.userId,
-      groupId: assignment.groupId,
-      assignmentId: assignment.assignmentId,
-      expiresAt: assignment.expiresAt,
     }
   })
 }
@@ -125,8 +125,9 @@ export async function revokeOrganizationReviewerOrdinaryGroup(
       group.groupId,
       input.assignmentId,
     )
-    if (assignment?.userId !== input.targetUserId)
+    if (assignment?.userId !== input.targetUserId) {
       throw new OrganizationReviewerCommandError('assignment-binding-invalid')
+    }
     const revoked = await revokeManualOrganizationGroupAssignmentInTransaction(
       transaction,
       organization,
@@ -135,12 +136,12 @@ export async function revokeOrganizationReviewerOrdinaryGroup(
       { actorUserId: input.actorUserId, reason },
     )
     return {
-      decision: 'revoked' as const,
-      organizationVersion: revoked.organizationVersion,
-      targetUserId: revoked.userId,
-      groupId: revoked.groupId,
       assignmentId: revoked.assignmentId,
+      decision: 'revoked' as const,
+      groupId: revoked.groupId,
+      organizationVersion: revoked.organizationVersion,
       revokedAt: revoked.revokedAt,
+      targetUserId: revoked.userId,
     }
   })
 }
@@ -155,15 +156,15 @@ export async function blockOrganizationReviewerMember(
     await requireNonReviewerTarget(transaction, input)
     const block = await blockOrganizationMemberInTransaction(transaction, organization, {
       actorUserId: input.actorUserId,
-      targetUserId: input.targetUserId,
       reason,
+      targetUserId: input.targetUserId,
     })
     return {
+      blockId: block.blockId,
+      blockedAt: block.blockedAt,
       decision: 'blocked' as const,
       organizationVersion: block.organizationVersion,
       targetUserId: block.userId,
-      blockId: block.blockId,
-      blockedAt: block.blockedAt,
     }
   })
 }
@@ -178,14 +179,14 @@ export async function unblockOrganizationReviewerMember(
     await requireNonReviewerTarget(transaction, input)
     const block = await unblockOrganizationMemberInTransaction(transaction, organization, {
       actorUserId: input.actorUserId,
-      targetUserId: input.targetUserId,
       reason,
+      targetUserId: input.targetUserId,
     })
     return {
+      blockId: block.blockId,
       decision: 'unblocked' as const,
       organizationVersion: block.organizationVersion,
       targetUserId: block.userId,
-      blockId: block.blockId,
       unblockedAt: block.unblockedAt,
     }
   })
@@ -197,18 +198,20 @@ async function authorizeCommand(
 ) {
   if (
     !currentCatalogPermission({
-      publisherPackage: input.publisherPackage,
-      moduleId: input.moduleId,
       key: input.requiredPermission,
+      moduleId: input.moduleId,
+      publisherPackage: input.publisherPackage,
     })
-  )
+  ) {
     throw new OrganizationReviewerCommandError('reviewer-permission-required')
+  }
   const organization = await lockCurrentOrganization(transaction)
   if (
     input.organizationDeploymentId !== 1 ||
     input.organizationVersion !== organization.organizationVersion
-  )
+  ) {
     throw new OrganizationReviewerCommandError('invalid-binding')
+  }
 
   const now = new Date()
   const [targetLifecycle] = await transaction
@@ -227,7 +230,9 @@ async function authorizeCommand(
       ),
     )
     .for('key share')
-  if (!targetLifecycle) throw new OrganizationReviewerCommandError('invalid-binding')
+  if (!targetLifecycle) {
+    throw new OrganizationReviewerCommandError('invalid-binding')
+  }
 
   if (
     !(await hasCurrentComplianceAccess(
@@ -236,8 +241,9 @@ async function authorizeCommand(
       input.actorUserId,
       now,
     ))
-  )
+  ) {
     throw new OrganizationReviewerCommandError('reviewer-authority-required')
+  }
   const [actorBlock] = await transaction
     .select({ id: organizationMemberBlocks.blockId })
     .from(organizationMemberBlocks)
@@ -250,7 +256,9 @@ async function authorizeCommand(
       ),
     )
     .for('key share')
-  if (actorBlock) throw new OrganizationReviewerCommandError('reviewer-authority-required')
+  if (actorBlock) {
+    throw new OrganizationReviewerCommandError('reviewer-authority-required')
+  }
   const [hrGrant] = await transaction
     .select({ id: organizationRoleGrants.grantId })
     .from(organizationRoleGrants)
@@ -271,8 +279,9 @@ async function authorizeCommand(
     'mutate',
     now,
   )
-  if (!hrGrant && !authority.director)
+  if (!hrGrant && !authority.director) {
     throw new OrganizationReviewerCommandError('reviewer-authority-required')
+  }
 
   const [permission] = await transaction
     .select({ assignmentId: organizationGroupAssignments.assignmentId })
@@ -345,7 +354,9 @@ async function authorizeCommand(
       ),
     )
     .for('key share')
-  if (!permission) throw new OrganizationReviewerCommandError('reviewer-permission-required')
+  if (!permission) {
+    throw new OrganizationReviewerCommandError('reviewer-permission-required')
+  }
   return organization
 }
 
@@ -355,9 +366,12 @@ async function loadOrdinaryGroupForUpdate(
   groupId: string,
 ) {
   const group = await loadCurrentGroupForUpdate(transaction, organizationVersion, groupId)
-  if (group.restricted) throw new OrganizationReviewerCommandError('restricted-group-not-allowed')
-  if (group.managementMode === 'compliance')
+  if (group.restricted) {
+    throw new OrganizationReviewerCommandError('restricted-group-not-allowed')
+  }
+  if (group.managementMode === 'compliance') {
     throw new OrganizationReviewerCommandError('compliance-group-not-allowed')
+  }
   const [reviewerPermission] = await transaction
     .select({
       exists: organizationReviewerPermissionExists(organizationVersion, group.groupId),
@@ -365,8 +379,9 @@ async function loadOrdinaryGroupForUpdate(
     .from(organizationGroups)
     .where(eq(organizationGroups.groupId, group.groupId))
     .limit(1)
-  if (reviewerPermission?.exists)
+  if (reviewerPermission?.exists) {
     throw new OrganizationReviewerCommandError('reviewer-permission-group-not-allowed')
+  }
   return group
 }
 
@@ -393,17 +408,21 @@ async function requireNonReviewerTarget(
     input.targetUserId,
     'read-continuity',
   )
-  if (hrGrant || authority.director || authority.organizationOwner)
+  if (hrGrant || authority.director || authority.organizationOwner) {
     throw new OrganizationReviewerCommandError('reviewer-target-not-allowed')
+  }
 }
 
 function requireDifferentTarget(input: OrganizationReviewerCommandBinding) {
-  if (input.actorUserId === input.targetUserId)
+  if (input.actorUserId === input.targetUserId) {
     throw new OrganizationReviewerCommandError('self-target-not-allowed')
+  }
 }
 
 function requireReason(reason: string) {
   const result = organizationAuditReasonSchema.safeParse(reason)
-  if (!result.success) throw new OrganizationReviewerCommandError('invalid-reason')
+  if (!result.success) {
+    throw new OrganizationReviewerCommandError('invalid-reason')
+  }
   return result.data
 }

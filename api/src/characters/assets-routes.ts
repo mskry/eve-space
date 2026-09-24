@@ -26,7 +26,7 @@ export const characterAssetsRoutes = new Hono<OwnedCharacterEnv>().get(
         200,
       )
     } catch (error) {
-      if (error instanceof CharacterAssetsPaginationError)
+      if (error instanceof CharacterAssetsPaginationError) {
         return context.json(
           {
             code: 'ESI_RESPONSE_INVALID',
@@ -34,6 +34,7 @@ export const characterAssetsRoutes = new Hono<OwnedCharacterEnv>().get(
           },
           502,
         )
+      }
       return ownedCharacterResourceError(
         context,
         classifyCharacterResourceFailure(error, {
@@ -42,9 +43,9 @@ export const characterAssetsRoutes = new Hono<OwnedCharacterEnv>().get(
         }),
         characterId,
         {
+          returnTo: `/characters/${characterId}/assets`,
           scopeMessage: 'Authorize asset access for this character.',
           unavailableMessage: 'Unable to retrieve the complete character asset collection.',
-          returnTo: `/characters/${characterId}/assets`,
         },
       )
     }

@@ -6,7 +6,9 @@ import UiAutocomplete from '../../layers/ui/app/components/ui/UiAutocomplete.vue
 const mountedWrappers: { unmount: () => void }[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   document.body.replaceChildren()
 })
 
@@ -22,10 +24,10 @@ describe('UiAutocomplete', () => {
               inputId: 'inventory-search',
               label: 'Search inventory',
               modelValue: value.value,
-              options: ['Cargo vault', 'Deep scanner'],
               'onUpdate:modelValue': (next: string) => {
                 value.value = next
               },
+              options: ['Cargo vault', 'Deep scanner'],
             }),
           ])
       },

@@ -67,8 +67,8 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
   const revokeMutation = useMutation({
     mutation: async ({ grantId, reason }: { grantId: string; reason: string }) => {
       const response = await apiClient.api.organization.roles[':grantId'].revoke.$post({
-        param: { grantId },
         json: { reason },
+        param: { grantId },
       })
       if (response.status !== 200) {
         throw await toApiQueryError(response, 'Organization role could not be revoked.')
@@ -88,8 +88,8 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
   const replaceCorporationSourceMutation = useMutation({
     mutation: async ({ corporationId, characterId }: ReplaceCorporationSourceInput) => {
       const response = await apiClient.api.organization.corporations[':corporationId'].source.$put({
-        param: { corporationId: String(corporationId) },
         json: { characterId },
+        param: { corporationId: String(corporationId) },
       })
       if (response.status !== 200 && response.status !== 201) {
         throw await toApiQueryError(response, 'Corporation source could not be replaced.')
@@ -133,7 +133,9 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
       replaceCorporationSourceMutation.asyncStatus.value === 'loading',
   )
   const errorMessage = computed(() => {
-    if (authUnavailable.value) return 'Session verification is unavailable.'
+    if (authUnavailable.value) {
+      return 'Session verification is unavailable.'
+    }
     const error =
       actionError.value ??
       grantMutation.error.value ??
@@ -148,7 +150,9 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
 
   async function initialize() {
     const [authenticated, setupState] = await Promise.all([initializeAuth(), setupQuery.refresh()])
-    if (authenticated && setupState.data?.required === false) await contextQuery.refresh()
+    if (authenticated && setupState.data?.required === false) {
+      await contextQuery.refresh()
+    }
   }
 
   async function refreshRoles() {
@@ -163,11 +167,15 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
     } catch (error) {
       const current = operationRevision === invalidationRevision.value
       if (reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)) {
-        if (current) actionError.value = error
+        if (current) {
+          actionError.value = error
+        }
       }
       throw error
     }
-    if (operationRevision !== invalidationRevision.value) return false
+    if (operationRevision !== invalidationRevision.value) {
+      return false
+    }
     await refreshRoles()
     return true
   }
@@ -180,11 +188,15 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
     } catch (error) {
       const current = operationRevision === invalidationRevision.value
       if (reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)) {
-        if (current) actionError.value = error
+        if (current) {
+          actionError.value = error
+        }
       }
       throw error
     }
-    if (operationRevision !== invalidationRevision.value) return false
+    if (operationRevision !== invalidationRevision.value) {
+      return false
+    }
     await refreshRoles()
     return true
   }
@@ -197,11 +209,15 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
     } catch (error) {
       const current = operationRevision === invalidationRevision.value
       if (reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)) {
-        if (current) actionError.value = error
+        if (current) {
+          actionError.value = error
+        }
       }
       throw error
     }
-    if (operationRevision !== invalidationRevision.value) return false
+    if (operationRevision !== invalidationRevision.value) {
+      return false
+    }
     await refreshRoles()
     return true
   }
@@ -214,11 +230,15 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
     } catch (error) {
       const current = operationRevision === invalidationRevision.value
       if (reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)) {
-        if (current) actionError.value = error
+        if (current) {
+          actionError.value = error
+        }
       }
       throw error
     }
-    if (operationRevision !== invalidationRevision.value) return false
+    if (operationRevision !== invalidationRevision.value) {
+      return false
+    }
     await refreshRoles()
     return true
   }

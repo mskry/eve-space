@@ -22,33 +22,34 @@ const apiServer = await startCorsJsonApi((request) => {
   if (url.pathname === '/auth/config') {
     return {
       body: {
+        attachUrl: `${apiOrigin}/auth/eve/attach`,
         configured: true,
         loginUrl: `${apiOrigin}/auth/eve/login`,
-        attachUrl: `${apiOrigin}/auth/eve/attach`,
       },
     }
   }
   if (url.pathname === '/auth/session') {
     return {
       body: {
-        authenticated: true,
         account: {
-          userId: 'clones-e2e-user',
           mainCharacter: { characterId, name: 'Clone Pilot' },
+          userId: 'clones-e2e-user',
         },
+        authenticated: true,
       },
     }
   }
   if (url.pathname === '/api/me/cache-admission') {
     return { body: cacheAdmissionForCharacter('clones-e2e-user', characterId) }
   }
-  if (url.pathname === '/api/admin/session') return { body: { authenticated: false } }
+  if (url.pathname === '/api/admin/session') {
+    return { body: { authenticated: false } }
+  }
   if (url.pathname === '/api/modules') {
     return {
       body: {
         enabledModuleIds: [],
         shellNavigationOrder: {
-          dashboard: [],
           character: [
             { ownerId: 'core', navigationId: 'core-character-overview' },
             { ownerId: 'core', navigationId: 'core-character-skills' },
@@ -57,31 +58,34 @@ const apiServer = await startCorsJsonApi((request) => {
             { ownerId: 'core', navigationId: 'core-character-history' },
             { ownerId: 'core', navigationId: 'core-character-mail' },
           ],
+          dashboard: [],
         },
       },
     }
   }
-  if (url.pathname === '/api/me/characters') return { body: { characters: [ownedCharacter()] } }
+  if (url.pathname === '/api/me/characters') {
+    return { body: { characters: [ownedCharacter()] } }
+  }
   if (url.pathname === `/api/me/characters/${characterId}`) {
     return {
       body: {
+        location: { message: 'Unavailable', status: 'unavailable' },
         profile: {
+          achievementScore: 0,
+          alliance: null,
+          birthday: '2020-01-01T00:00:00.000Z',
+          bloodline: 'Deteis',
+          corporation: { id: 98_000_001, memberCount: 8, name: 'Clone Research', ticker: 'CLONE' },
+          factionId: null,
+          gender: 'Female',
           id: characterId,
           name: 'Clone Pilot',
-          birthday: '2020-01-01T00:00:00.000Z',
-          gender: 'Female',
           race: 'Caldari',
           raceFactionId: null,
-          bloodline: 'Deteis',
           securityStatus: 1,
-          achievementScore: 0,
-          factionId: null,
-          corporation: { id: 98_000_001, name: 'Clone Research', ticker: 'CLONE', memberCount: 8 },
-          alliance: null,
         },
-        location: { status: 'unavailable', message: 'Unavailable' },
-        ship: { status: 'unavailable', message: 'Unavailable' },
-        skills: { status: 'unavailable', message: 'Unavailable' },
+        ship: { message: 'Unavailable', status: 'unavailable' },
+        skills: { message: 'Unavailable', status: 'unavailable' },
       },
     }
   }
@@ -91,13 +95,13 @@ const apiServer = await startCorsJsonApi((request) => {
   if (url.pathname === `/api/me/characters/${characterId}/implants`) {
     if (apiMode === 'implants-scope-required') {
       return {
-        status: 403,
         body: {
+          authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}?returnTo=%2Fcharacters%2F${characterId}%2Fclones`,
           code: 'EVE_SCOPE_REQUIRED',
           message: 'Authorize implant access for this character.',
           requiredScope: 'esi-clones.read_implants.v1',
-          authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}?returnTo=%2Fcharacters%2F${characterId}%2Fclones`,
         },
+        status: 403,
       }
     }
     return { body: activeImplants() }
@@ -107,21 +111,21 @@ const apiServer = await startCorsJsonApi((request) => {
     const typeId = Number(typeMatch[1])
     return {
       body: {
-        typeId,
-        name: implantName(typeId),
-        description: 'Public implant details without character placement.',
-        group: { id: 300, name: 'Cyberimplant' },
         category: { id: 20, name: 'Implant' },
+        description: 'Public implant details without character placement.',
         detail: {
+          bonuses: [{ attribute: 'memory', value: 3 }],
           kind: 'implant',
           slot: typeId === 2 ? 1 : 2,
-          bonuses: [{ attribute: 'memory', value: 3 }],
         },
+        group: { id: 300, name: 'Cyberimplant' },
+        name: implantName(typeId),
+        typeId,
       },
     }
   }
 
-  return { status: 404, body: { code: 'NOT_FOUND', message: 'Not found.' } }
+  return { body: { code: 'NOT_FOUND', message: 'Not found.' }, status: 404 }
 })
 
 apiOrigin = apiServer.origin
@@ -132,14 +136,14 @@ afterAll(apiServer.close)
 
 describe('character Clones production route', async () => {
   await setup({
-    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
+    browser: true,
     build: false,
+    captureServerLogs: false,
     nuxtConfig: {
       nitro: { output: { dir: fileURLToPath(new URL('../../.output-e2e', import.meta.url)) } },
     },
-    browser: true,
+    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
     server: true,
-    captureServerLogs: false,
     setupTimeout: 120_000,
   })
 
@@ -160,7 +164,7 @@ describe('character Clones production route', async () => {
     const html = await $fetch(`/characters/${characterId}/clones`)
 
     expect(html).toContain('Verifying account identity...')
-    expect(cloneResourcePaths()).toEqual([])
+    expect(cloneResourcePaths()).toStrictEqual([])
     expect(recordedPaths.some((path) => path.includes('/fatigue'))).toBe(false)
   })
 
@@ -169,11 +173,14 @@ describe('character Clones production route', async () => {
       recordedPaths.length = 0
       const page = await openPage(`/characters/${characterId}`)
       const navigation = page.getByRole('navigation', { name: 'Character record sections' })
-      const clonesLink = navigation.getByRole('link', { name: 'CLONES', exact: true })
+      const clonesLink = navigation.getByRole('link', { exact: true, name: 'CLONES' })
       await clonesLink.waitFor()
 
-      if (intent === 'hover') await clonesLink.hover()
-      else await clonesLink.focus()
+      if (intent === 'hover') {
+        await clonesLink.hover()
+      } else {
+        await clonesLink.focus()
+      }
       await expect
         .poll(() => cloneResourcePaths().toSorted((left, right) => left.localeCompare(right)))
         .toEqual(clonePaths().toSorted((left, right) => left.localeCompare(right)))
@@ -181,13 +188,13 @@ describe('character Clones production route', async () => {
       const requestsAfterIntent = cloneResourcePaths().length
       await clonesLink.click()
       await page.locator('.character-clones-workspace').waitFor()
-      const summary = page.getByRole('region', { name: 'Jump clones', exact: true })
+      const summary = page.getByRole('region', { exact: true, name: 'Jump clones' })
       await summary.waitFor()
       await summary.getByText('HOME STATION', { exact: true }).waitFor()
-      await page.getByRole('region', { name: 'Jump clones by location', exact: true }).waitFor()
+      await page.getByRole('region', { exact: true, name: 'Jump clones by location' }).waitFor()
       expect(cloneResourcePaths()).toHaveLength(requestsAfterIntent)
       expect(await clonesLink.getAttribute('aria-current')).toBe('page')
-      expect(await navigation.getByRole('link').allTextContents()).toEqual([
+      expect(await navigation.getByRole('link').allTextContents()).toStrictEqual([
         'OVERVIEW',
         'SKILLS',
         'CLONES',
@@ -206,8 +213,8 @@ describe('character Clones production route', async () => {
     const page = await openPage(`/characters/${characterId}/clones`)
 
     const storedClones = page.getByRole('region', {
-      name: 'Jump clones by location',
       exact: true,
+      name: 'Jump clones by location',
     })
     await storedClones.waitFor()
     await storedClones.getByRole('button').click()
@@ -256,10 +263,10 @@ describe('character Clones production route', async () => {
   it('contains long cards and implant popovers on desktop and mobile without overflow', async () => {
     apiMode = 'long-content'
     const page = await openPage(`/characters/${characterId}/clones`)
-    await page.setViewportSize({ width: 1180, height: 820 })
+    await page.setViewportSize({ height: 820, width: 1180 })
     const storedClones = page.getByRole('region', {
-      name: 'Jump clones by location',
       exact: true,
+      name: 'Jump clones by location',
     })
     await storedClones.getByRole('button').click()
     const cards = page.locator('.character-clones-card')
@@ -302,7 +309,7 @@ describe('character Clones production route', async () => {
 
     // The route clips overflow, so document width stays clean while a card overflows inside it.
     for (const width of [430, 390, 320]) {
-      await page.setViewportSize({ width, height: 844 })
+      await page.setViewportSize({ height: 844, width })
       await expect.poll(() => cardsOverflowing(cards)).toEqual([])
       expect(await hasHorizontalOverflow(page)).toBe(false)
     }
@@ -312,7 +319,9 @@ describe('character Clones production route', async () => {
         cards.evaluateAll((elements) => {
           const first = elements[0]?.getBoundingClientRect()
           const second = elements[1]?.getBoundingClientRect()
-          if (!first || !second) return Number.NEGATIVE_INFINITY
+          if (!first || !second) {
+            return Number.NEGATIVE_INFINITY
+          }
           return second.y - first.bottom
         }),
       )
@@ -333,20 +342,20 @@ describe('character Clones production route', async () => {
 
 function ownedCharacter() {
   return {
-    characterId,
-    name: 'Clone Pilot',
-    corporationId: 98_000_001,
-    allianceId: null,
-    isMain: true,
-    birthday: '2020-01-01T00:00:00.000Z',
-    securityStatus: 1,
-    raceFactionId: 500_001,
-    location: { solarSystemId: 30_000_142, solarSystemName: 'Jita', locationType: 'space' },
-    ship: { typeId: 670, typeName: 'Capsule', groupId: 29, name: 'Clone Capsule' },
-    walletBalance: 1_000_000,
-    totalSp: 1_800_000,
-    corporation: { id: 98_000_001, name: 'Clone Research' },
     alliance: null,
+    allianceId: null,
+    birthday: '2020-01-01T00:00:00.000Z',
+    characterId,
+    corporation: { id: 98_000_001, name: 'Clone Research' },
+    corporationId: 98_000_001,
+    isMain: true,
+    location: { locationType: 'space', solarSystemId: 30_000_142, solarSystemName: 'Jita' },
+    name: 'Clone Pilot',
+    raceFactionId: 500_001,
+    securityStatus: 1,
+    ship: { groupId: 29, name: 'Clone Capsule', typeId: 670, typeName: 'Capsule' },
+    totalSp: 1_800_000,
+    walletBalance: 1_000_000,
   }
 }
 
@@ -354,6 +363,7 @@ function cloneState() {
   const name = apiMode === 'long-content' ? longValue : 'Industry clone'
   const locationName = apiMode === 'long-content' ? longValue : 'Jita IV - Moon 4'
   return {
+    cachedUntil: '2026-09-03T11:02:00.000Z',
     homeLocation: {
       locationId: 60_000_001,
       locationType: 'station',
@@ -376,32 +386,33 @@ function cloneState() {
     ],
     lastCloneJumpAt: '2026-09-02T12:00:00Z',
     lastStationChangeAt: '2026-08-30T12:00:00Z',
-    cachedUntil: '2026-09-03T11:02:00.000Z',
-    validatedAt: '2026-09-03T11:00:00.000Z',
     stale: false,
+    validatedAt: '2026-09-03T11:00:00.000Z',
   }
 }
 
 function activeImplants() {
   return {
-    implants: [implantSummary(2)],
     cachedUntil: '2026-09-03T11:02:00.000Z',
-    validatedAt: '2026-09-03T11:00:00.000Z',
+    implants: [implantSummary(2)],
     stale: false,
+    validatedAt: '2026-09-03T11:00:00.000Z',
   }
 }
 
 function implantSummary(typeId: number) {
   return {
-    typeId,
+    bonuses: [{ attribute: 'memory', value: 3 }],
     name: implantName(typeId),
     slot: typeId === 2 ? 1 : 2,
-    bonuses: [{ attribute: 'memory', value: 3 }],
+    typeId,
   }
 }
 
 function implantName(typeId: number) {
-  if (apiMode === 'long-content') return `${longValue}${typeId}`
+  if (apiMode === 'long-content') {
+    return `${longValue}${typeId}`
+  }
   return typeId === 2 ? 'Memory Augmentation' : 'Ocular Filter'
 }
 

@@ -14,10 +14,12 @@ export function captureRegisteredEsiCallables(
 ): FeatureExecutionModule {
   return new Proxy(featureExecution, {
     get(target, property, receiver) {
-      if (property === 'createPublicEsiRead' || property === 'createCharacterEsiRead')
+      if (property === 'createPublicEsiRead' || property === 'createCharacterEsiRead') {
         return captureFactory(Reflect.get(target, property, receiver), 'read', callables)
-      if (property === 'createCharacterEsiMutation')
+      }
+      if (property === 'createCharacterEsiMutation') {
         return captureFactory(Reflect.get(target, property, receiver), 'mutation', callables)
+      }
       return Reflect.get(target, property, receiver)
     },
   })
@@ -28,12 +30,17 @@ function captureFactory(
   execution: CapturedEsiCallable['execution'],
   callables: Map<string, CapturedEsiCallable>,
 ) {
-  if (typeof factory !== 'function') throw new Error('Expected an ESI callable factory')
+  if (typeof factory !== 'function') {
+    throw new Error('Expected an ESI callable factory')
+  }
   return (definition: unknown) => {
-    if (!hasStringProperty(definition, 'name')) throw new Error('Expected a named ESI definition')
+    if (!hasStringProperty(definition, 'name')) {
+      throw new Error('Expected a named ESI definition')
+    }
     const callable: unknown = Reflect.apply(factory, undefined, [definition])
-    if (!hasFunctionProperty(callable, 'execute'))
+    if (!hasFunctionProperty(callable, 'execute')) {
       throw new Error(`Expected ${definition.name} to create an ESI callable`)
+    }
     callables.set(definition.name, {
       execution,
       ...(hasCacheSchema(definition) ? { cacheSchema: definition.cacheSchema } : {}),
@@ -44,7 +51,9 @@ function captureFactory(
 }
 
 function hasCacheSchema(value: unknown): value is { cacheSchema: OperationSchema<unknown> } {
-  if (typeof value !== 'object' || value === null || !('cacheSchema' in value)) return false
+  if (typeof value !== 'object' || value === null || !('cacheSchema' in value)) {
+    return false
+  }
   const schema = value.cacheSchema
   return (
     typeof schema === 'object' &&

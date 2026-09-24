@@ -4,20 +4,21 @@ const recordedAt = z.iso.datetime({ offset: true })
 
 const outboxRelayOutcomeSchema = z
   .object({
-    outcome: z.enum(['idle', 'published', 'partial-failure', 'failed', 'paused']),
     category: z
       .enum(['queue-unavailable', 'queue-rejected', 'invalid-event', 'unknown'])
       .nullable(),
+    outcome: z.enum(['idle', 'published', 'partial-failure', 'failed', 'paused']),
     recordedAt,
   })
   .strict()
   .superRefine((value, context) => {
     const failed = value.outcome === 'failed' || value.outcome === 'partial-failure'
-    if (failed === (value.category === null))
+    if (failed === (value.category === null)) {
       context.addIssue({
         code: 'custom',
         message: 'Relay failure outcomes and categories must correspond',
       })
+    }
   })
 
 const affiliationPlannerOutcomeSchema = z
@@ -31,11 +32,12 @@ const affiliationPlannerOutcomeSchema = z
     if (
       ((value.outcome === 'idle' || value.outcome === 'cooldown') && value.planned !== 0) ||
       (value.outcome === 'scheduled' && value.planned === 0)
-    )
+    ) {
       context.addIssue({
         code: 'custom',
         message: 'Affiliation outcome and planned count must correspond',
       })
+    }
   })
 
 export type OutboxRelayOutcome = z.infer<typeof outboxRelayOutcomeSchema>
@@ -58,7 +60,9 @@ export function decodeAffiliationPlannerOutcome(value: string | null) {
 }
 
 function decodeOutcome<Schema extends z.ZodType>(value: string | null, schema: Schema) {
-  if (!value) return null
+  if (!value) {
+    return null
+  }
   try {
     const result = schema.safeParse(JSON.parse(value))
     return result.success ? result.data : null

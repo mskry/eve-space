@@ -56,7 +56,9 @@ const indexDelegatedDefinitions = (
 ) => {
   const unresolved = declarations.filter((declaration) => declaration.definition === null)
 
-  for (const declaration of unresolved) indexDelegatedDefinition(declaration, definitions)
+  for (const declaration of unresolved) {
+    indexDelegatedDefinition(declaration, definitions)
+  }
 }
 
 const indexDelegatedDefinition = (
@@ -65,7 +67,9 @@ const indexDelegatedDefinition = (
 ) => {
   const delegate = firstDefinition(declaration.body, CALL_PATTERN, definitions)
 
-  if (delegate) definitions.set(declaration.name, { ...delegate, name: declaration.name })
+  if (delegate) {
+    definitions.set(declaration.name, { ...delegate, name: declaration.name })
+  }
 }
 
 const listTypeScriptFiles = async (root: URL, directory: string) => {
@@ -93,9 +97,9 @@ const declarationsIn = (source: string, contents: string): Declaration[] => {
     const body = contents.slice(match.index, declarations[index + 1]?.index ?? contents.length)
 
     return {
-      name: match[1],
       body,
       definition: queryDefinitionIn(match[1], source, body),
+      name: match[1],
     }
   })
 }
@@ -103,13 +107,15 @@ const declarationsIn = (source: string, contents: string): Declaration[] => {
 const queryDefinitionIn = (name: string, source: string, body: string) => {
   const request = clientRequestIn(body)
 
-  if (!request) return null
+  if (!request) {
+    return null
+  }
 
   return {
-    name,
-    source,
-    method: request.method,
-    requestPath: request.requestPath,
     excerpt: body.split('\n').slice(0, DEFINITION_LINES).join('\n').trim(),
+    method: request.method,
+    name,
+    requestPath: request.requestPath,
+    source,
   }
 }

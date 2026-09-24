@@ -34,7 +34,9 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   document.body.replaceChildren()
 })
 
@@ -42,7 +44,7 @@ describe('character Finance controllers', () => {
   it('waits for authentication loading to complete before issuing protected requests', async () => {
     const controllers = mountControllers({ authenticationReady: false })
     await settle()
-    expect(financeRequests()).toEqual([])
+    expect(financeRequests()).toStrictEqual([])
 
     controllers.authenticationReady.value = true
     await waitForRequest('/api/me/characters/7/wallet')
@@ -52,17 +54,17 @@ describe('character Finance controllers', () => {
   it('requires client authentication and exact ownership before loading balance and journal', async () => {
     const controllers = mountControllers({ authenticated: false, owned: false })
     await settle()
-    expect(financeRequests()).toEqual([])
+    expect(financeRequests()).toStrictEqual([])
 
     controllers.authenticated.value = true
     await settle()
-    expect(financeRequests()).toEqual([])
+    expect(financeRequests()).toStrictEqual([])
 
     controllers.characters.value = [{ characterId: characterIdValue }]
     await waitForRequest('/api/me/characters/7/wallet')
     await waitForRequest('/api/me/characters/7/wallet/journal')
 
-    expect(requestPaths()).toEqual([
+    expect(requestPaths()).toStrictEqual([
       '/api/me/characters/7/wallet',
       '/api/me/characters/7/wallet/journal?page=1',
     ])
@@ -83,7 +85,7 @@ describe('character Finance controllers', () => {
     expect(services.loadOlderTransactions()).toBe(true)
     await waitForRequest('/api/me/characters/7/wallet/transactions', 2)
     expect(services.transactionFromId.value).toBe(900)
-    expect(services.transactionContinuations.value).toEqual([null, 900])
+    expect(services.transactionContinuations.value).toStrictEqual([null, 900])
     expect(services.showNewerTransactions()).toBe(true)
     await settle()
     expect(services.transactionFromId.value).toBeNull()
@@ -111,17 +113,19 @@ describe('character Finance controllers', () => {
     const { ledger } = mountControllers()
     await waitForRequest('/api/me/characters/7/wallet/journal')
 
-    expect(ledger.balance.value?.balance).toBe(1_250)
+    expect(ledger.balance.value?.balance).toBe(1250)
     expect(ledger.journal.value?.entries).toHaveLength(2)
     expect(ledger.summary.value.netInRange).toBe(75)
     ledger.journalGroupFilter.value = 'Income'
-    expect(ledger.filteredJournal.value.map((entry) => entry.journalId)).toEqual([1])
+    expect(ledger.filteredJournal.value.map((entry) => entry.journalId)).toStrictEqual([1])
 
     ledger.selectService('transactions')
     await waitForRequest('/api/me/characters/7/wallet/transactions')
     ledger.transactionSideFilter.value = 'Sell'
     ledger.transactionSearchQuery.value = 'tritanium'
-    expect(ledger.filteredTransactions.value.map((entry) => entry.transactionId)).toEqual([11])
+    expect(ledger.filteredTransactions.value.map((entry) => entry.transactionId)).toStrictEqual([
+      11,
+    ])
 
     ledger.selectService('journal')
     expect(ledger.journalGroupFilter.value).toBe('Income')
@@ -142,7 +146,7 @@ describe('character Finance controllers', () => {
     expect(requestCount('/api/me/characters/7/contracts/102/bids')).toBe(0)
     expect(detail.selectedContractItemsRequested.value).toBe(true)
     expect(detail.selectedContractBidsRequested.value).toBe(false)
-    expect(detail.openedItemDetails.value).toEqual([{ contractId: 102, contractPage: 1 }])
+    expect(detail.openedItemDetails.value).toStrictEqual([{ contractId: 102, contractPage: 1 }])
     expect(
       requests
         .find((request) => request.pathname.endsWith('/contracts/102/items'))
@@ -174,7 +178,7 @@ describe('character Finance controllers', () => {
     expect(detail.contractDrawerOpen.value).toBe(false)
     expect(auctionFocus).not.toHaveBeenCalled()
     expect(detail.openedItemDetails.value).toContainEqual({ contractId: 101, contractPage: 1 })
-    expect(detail.openedBidDetails.value).toEqual([{ contractId: 101, contractPage: 1 }])
+    expect(detail.openedBidDetails.value).toStrictEqual([{ contractId: 101, contractPage: 1 }])
   })
 
   it('refreshes balance, opened services, and exposed details without activating unopened resources', async () => {
@@ -198,8 +202,8 @@ describe('character Finance controllers', () => {
     expect(requestCount('/api/me/characters/7/wallet/transactions')).toBe(0)
     expect(requestCount('/api/me/characters/7/market/orders')).toBe(0)
     expect(requestCount('/api/me/characters/7/market/orders/history')).toBe(0)
-    expect(detail.openedItemDetails.value).toEqual([{ contractId: 101, contractPage: 1 }])
-    expect(detail.openedBidDetails.value).toEqual([{ contractId: 101, contractPage: 1 }])
+    expect(detail.openedItemDetails.value).toStrictEqual([{ contractId: 101, contractPage: 1 }])
+    expect(detail.openedBidDetails.value).toStrictEqual([{ contractId: 101, contractPage: 1 }])
   })
 })
 
@@ -232,11 +236,11 @@ function mountControllers({
       })
       state.detail = useCharacterFinanceContractDetail({
         apiClient: createApiClient(apiBase),
+        changePage: state.services.changePage,
         characterId: state.characterId,
         contractPage: state.services.contractPage,
         contracts: state.ledger.contracts,
         financeAccess: state.services.financeAccess,
-        changePage: state.services.changePage,
         refreshRequestedServices: state.services.refreshRequestedServices,
       })
       return () => h('span')
@@ -274,19 +278,19 @@ function requestCount(pathname: string) {
 
 function requestCounts() {
   return {
-    wallet: requestCount('/api/me/characters/7/wallet'),
-    journal: requestCount('/api/me/characters/7/wallet/journal'),
+    bids: requestCount('/api/me/characters/7/contracts/101/bids'),
     contracts: requestCount('/api/me/characters/7/contracts'),
     items: requestCount('/api/me/characters/7/contracts/101/items'),
-    bids: requestCount('/api/me/characters/7/contracts/101/bids'),
+    journal: requestCount('/api/me/characters/7/wallet/journal'),
+    wallet: requestCount('/api/me/characters/7/wallet'),
   }
 }
 
 function metadata() {
   return {
     cachedUntil: '2026-09-02T13:00:00.000Z',
-    validatedAt: '2026-09-02T12:00:00.000Z',
     stale: false,
+    validatedAt: '2026-09-02T12:00:00.000Z',
   }
 }
 
@@ -296,8 +300,8 @@ function installFinanceHandlers() {
     http.get(`${apiBase}/api/me/characters/:characterId/wallet`, ({ request, params }) => {
       record(request)
       return HttpResponse.json({
+        balance: 1250,
         characterId: Number(params.characterId),
-        balance: 1_250,
         ...metadata(),
       })
     }),
@@ -310,26 +314,26 @@ function installFinanceHandlers() {
           page === 1
             ? [
                 {
-                  journalId: 1,
-                  date: '2026-09-01T10:00:00.000Z',
                   amount: 100,
-                  balance: 1_250,
-                  referenceType: 'agent_mission_reward',
-                  description: 'Mission reward',
-                  reason: null,
-                  taxAmount: null,
+                  balance: 1250,
                   context: null,
+                  date: '2026-09-01T10:00:00.000Z',
+                  description: 'Mission reward',
+                  journalId: 1,
+                  reason: null,
+                  referenceType: 'agent_mission_reward',
+                  taxAmount: null,
                 },
                 {
-                  journalId: 2,
-                  date: '2026-09-01T11:00:00.000Z',
                   amount: -25,
-                  balance: 1_225,
-                  referenceType: 'market_transaction',
-                  description: 'Market purchase',
-                  reason: null,
-                  taxAmount: null,
+                  balance: 1225,
                   context: null,
+                  date: '2026-09-01T11:00:00.000Z',
+                  description: 'Market purchase',
+                  journalId: 2,
+                  reason: null,
+                  referenceType: 'market_transaction',
+                  taxAmount: null,
                 },
               ]
             : [],
@@ -350,19 +354,19 @@ function installFinanceHandlers() {
           nextFromId: fromId === null ? 900 : null,
           transactions: [
             {
-              transactionId: fromId === null ? 11 : 10,
-              journalRefId: 20,
+              clientId: 90_000_001,
               date: '2026-09-01T11:00:00.000Z',
-              typeId: 34,
-              typeName: 'Tritanium',
-              quantity: 5,
-              unitPrice: 4,
-              totalPrice: 20,
               isBuy: false,
               isPersonal: true,
-              clientId: 90_000_001,
+              journalRefId: 20,
               locationId: 60_003_760,
               locationName: 'Jita IV - Moon 4',
+              quantity: 5,
+              totalPrice: 20,
+              transactionId: fromId === null ? 11 : 10,
+              typeId: 34,
+              typeName: 'Tritanium',
+              unitPrice: 4,
             },
           ],
           ...metadata(),
@@ -411,13 +415,13 @@ function installFinanceHandlers() {
           contractId: Number(params.contractId),
           items: [
             {
+              blueprint: null,
+              direction: 'included' as const,
+              isSingleton: false,
+              quantity: 1,
               recordId: Number(params.contractId) * 10,
               typeId: 34,
               typeName: 'Tritanium',
-              direction: 'included' as const,
-              quantity: 1,
-              isSingleton: false,
-              blueprint: null,
             },
           ],
           ...metadata(),
@@ -429,9 +433,9 @@ function installFinanceHandlers() {
       ({ request, params }) => {
         record(request)
         return HttpResponse.json({
+          bids: [{ bidId: 1, amount: 500, bidAt: '2026-09-01T12:00:00.000Z' }],
           characterId: Number(params.characterId),
           contractId: Number(params.contractId),
-          bids: [{ bidId: 1, amount: 500, bidAt: '2026-09-01T12:00:00.000Z' }],
           ...metadata(),
         })
       },
@@ -441,46 +445,46 @@ function installFinanceHandlers() {
 
 function financeOrder(orderId: number) {
   return {
-    orderId,
-    typeId: 35,
-    typeName: 'Pyerite',
-    isBuy: true,
-    price: 12,
-    volumeRemain: 5,
-    volumeTotal: 10,
-    minimumVolume: null,
+    durationDays: 30,
     escrow: 60,
-    range: 'station' as const,
+    expiresAt: '2026-10-01T10:00:00.000Z',
+    isBuy: true,
+    issuedAt: '2026-09-01T10:00:00.000Z',
     locationId: 60_003_760,
     locationName: 'Jita IV - Moon 4',
+    minimumVolume: null,
+    orderId,
+    price: 12,
+    range: 'station' as const,
     regionId: 10_000_002,
-    issuedAt: '2026-09-01T10:00:00.000Z',
-    durationDays: 30,
-    expiresAt: '2026-10-01T10:00:00.000Z',
+    typeId: 35,
+    typeName: 'Pyerite',
+    volumeRemain: 5,
+    volumeTotal: 10,
   }
 }
 
 function financeContracts() {
   const common = {
-    status: 'outstanding',
-    availability: 'personal',
-    role: 'assigned' as const,
-    issuedAt: '2026-09-01T10:00:00.000Z',
-    expiredAt: '2026-09-10T10:00:00.000Z',
     acceptedAt: null,
+    availability: 'personal',
+    buyout: null,
+    collateral: null,
     completedAt: null,
     daysToComplete: null,
-    startLocationId: null,
     endLocationId: null,
+    expiredAt: '2026-09-10T10:00:00.000Z',
+    issuedAt: '2026-09-01T10:00:00.000Z',
     price: 100,
     reward: null,
-    collateral: null,
-    buyout: null,
+    role: 'assigned' as const,
+    startLocationId: null,
+    status: 'outstanding',
     volume: 1,
   }
   return [
-    { ...common, contractId: 101, type: 'auction', title: 'Auction lot' },
-    { ...common, contractId: 102, type: 'courier', title: 'Courier package' },
-    { ...common, contractId: 103, type: 'loan', title: 'Loan terms' },
+    { ...common, contractId: 101, title: 'Auction lot', type: 'auction' },
+    { ...common, contractId: 102, title: 'Courier package', type: 'courier' },
+    { ...common, contractId: 103, title: 'Loan terms', type: 'loan' },
   ]
 }

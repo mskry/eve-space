@@ -4,16 +4,16 @@ import { env, getSsoConfig } from '../env.js'
 import { SsoHttpError, SsoTokenRejectedError, SsoTransportError } from './sso-errors.js'
 
 const metadataSchema = z.object({
-  issuer: z.url(),
   authorization_endpoint: z.url(),
-  token_endpoint: z.url(),
+  issuer: z.url(),
   jwks_uri: z.url(),
+  token_endpoint: z.url(),
 })
 
 const tokenResponseSchema = z.object({
   access_token: z.string().min(1),
-  refresh_token: z.string().min(1),
   expires_in: z.number().int().positive(),
+  refresh_token: z.string().min(1),
   token_type: z.string(),
 })
 
@@ -27,15 +27,17 @@ const scopesSchema = z
   .union([z.string(), z.array(z.string())])
   .optional()
   .transform((scopes) => {
-    if (!scopes) return []
+    if (!scopes) {
+      return []
+    }
     return typeof scopes === 'string' ? scopes.split(/\s+/).filter(Boolean) : scopes
   })
 
 const claimsSchema = z.looseObject({
-  sub: z.string().regex(/^CHARACTER:EVE:\d+$/),
-  owner: z.string().min(1),
   name: z.string().min(1),
+  owner: z.string().min(1),
   scp: scopesSchema,
+  sub: z.string().regex(/^CHARACTER:EVE:\d+$/),
 })
 
 const metadataUrl = 'https://login.eveonline.com/.well-known/oauth-authorization-server'
@@ -68,7 +70,9 @@ async function loadMetadata(signal?: AbortSignal) {
 }
 
 async function getEveMetadata(signal?: AbortSignal) {
-  if (cachedMetadata) return cachedMetadata
+  if (cachedMetadata) {
+    return cachedMetadata
+  }
   const metadata = await loadMetadata(signal)
   cachedMetadata ??= metadata
   return cachedMetadata
@@ -83,7 +87,9 @@ export async function createAuthorizationUrl(state: string, signal?: AbortSignal
   url.searchParams.set('client_id', config.clientId)
   url.searchParams.set('redirect_uri', config.callbackUrl)
   url.searchParams.set('state', state)
-  if (config.scopes.length) url.searchParams.set('scope', config.scopes.join(' '))
+  if (config.scopes.length) {
+    url.searchParams.set('scope', config.scopes.join(' '))
+  }
 
   return url
 }
@@ -93,16 +99,16 @@ export async function exchangeAuthorizationCode(code: string, signal?: AbortSign
   const metadata = await getEveMetadata(signal)
   const credentials = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')
   const response = await fetchSso(metadata.token_endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    signal: withSsoTimeout(tokenTimeoutMs, signal),
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
     }),
+    headers: {
+      Authorization: `Basic ${credentials}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    method: 'POST',
+    signal: withSsoTimeout(tokenTimeoutMs, signal),
   })
 
   if (!response.ok) {
@@ -117,19 +123,21 @@ export async function refreshAccessToken(refreshToken: string, signal?: AbortSig
   const metadata = await getEveMetadata(signal)
   const credentials = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')
   const response = await fetchSso(metadata.token_endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    signal: withSsoTimeout(tokenTimeoutMs, signal),
     body: new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
     }),
+    headers: {
+      Authorization: `Basic ${credentials}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    method: 'POST',
+    signal: withSsoTimeout(tokenTimeoutMs, signal),
   })
 
-  if (!response.ok) await throwRefreshError(response)
+  if (!response.ok) {
+    await throwRefreshError(response)
+  }
   return refreshResponseSchema.parse(await readJson(response))
 }
 
@@ -141,8 +149,8 @@ export async function verifyAccessToken(accessToken: string, signal?: AbortSigna
     [customFetch]: (url, options) => fetchJwks(url, options, signal),
   })
   const { payload } = await jwtVerify(accessToken, jwks, {
-    issuer: [metadata.issuer, 'https://login.eveonline.com/', 'login.eveonline.com'],
     audience: 'EVE Online',
+    issuer: [metadata.issuer, 'https://login.eveonline.com/', 'login.eveonline.com'],
   })
 
   const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud]
@@ -203,15 +211,16 @@ async function readErrorJson(response: Response) {
   try {
     return JSON.parse(body) as unknown
   } catch {
-    return undefined
+    return
   }
 }
 
 async function throwRefreshError(response: Response): Promise<never> {
   if (response.status === 400 || response.status === 401 || response.status === 403) {
     const parsed = oauthErrorSchema.safeParse(await readErrorJson(response))
-    if (parsed.success && ['invalid_grant', 'invalid_token'].includes(parsed.data.error))
+    if (parsed.success && ['invalid_grant', 'invalid_token'].includes(parsed.data.error)) {
       throw new EveSsoTokenRefreshError(response.status, true)
+    }
   } else {
     await cancelResponseBody(response)
   }
@@ -233,8 +242,8 @@ async function fetchJwks(url: string, options: Parameters<typeof fetch>[1], sign
   headers.delete('content-encoding')
   headers.delete('content-length')
   return new Response(body, {
+    headers,
     status: response.status,
     statusText: response.statusText,
-    headers,
   })
 }

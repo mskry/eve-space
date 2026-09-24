@@ -49,9 +49,13 @@ try {
   const analyzedFiles: PackedFile[] = await Promise.all(
     pack.files.map(async (file: PackedFile) => {
       const { path } = file;
-      if (!path.endsWith('.js') && !/\.d\.(?:ts|mts|cts)$/u.test(path)) return file;
+      if (!path.endsWith('.js') && !/\.d\.(?:ts|mts|cts)$/u.test(path)) {
+        return file;
+      }
       const source = await readFile(join(packageRoot, path), 'utf8');
-      if (/sourceMappingURL\s*=/.test(source)) inlineSourceMaps.push(path);
+      if (/sourceMappingURL\s*=/.test(source)) {
+        inlineSourceMaps.push(path);
+      }
       return { ...file, source };
     }),
   );
@@ -111,15 +115,15 @@ try {
   process.stdout.write(
     `${JSON.stringify(
       {
-        status: refreshBudgets ? 'refreshed' : 'within budget',
         budgetPath: 'benchmarks/package-baseline.json',
-        measurements: measurements.totals,
         budgets: Object.fromEntries(
           Object.entries(baseline.totals).map(([metric, budget]) => [metric, budget.maximum]),
         ),
-        publicEntryCount: Object.keys(measurements.publicEntries).length,
         domainEntryCount: isolation.domainEntryCount,
+        measurements: measurements.totals,
         operationExportTargets: packageBoundary.operationExportTargets,
+        publicEntryCount: Object.keys(measurements.publicEntries).length,
+        status: refreshBudgets ? 'refreshed' : 'within budget',
       },
       null,
       2,
@@ -130,8 +134,12 @@ try {
 }
 
 function collectExportTargets(value: unknown): unknown[] {
-  if (typeof value === 'string') return [value];
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return [];
+  if (typeof value === 'string') {
+    return [value];
+  }
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return [];
+  }
   return Object.values(value).flatMap(collectExportTargets);
 }
 
@@ -159,8 +167,12 @@ async function installRuntimePackages(
 
 function argumentValue(name: string): string | undefined {
   const index = process.argv.indexOf(name);
-  if (index < 0) return undefined;
+  if (index < 0) {
+    return undefined;
+  }
   const value = process.argv[index + 1];
-  if (value === undefined) throw new Error(`${name} requires a value`);
+  if (value === undefined) {
+    throw new Error(`${name} requires a value`);
+  }
   return resolve(value);
 }

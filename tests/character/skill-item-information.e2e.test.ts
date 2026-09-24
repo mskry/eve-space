@@ -24,90 +24,94 @@ const apiServer = await startCorsJsonApi((request) => {
   if (url.pathname === '/auth/config') {
     return {
       body: {
+        attachUrl: `${apiOrigin}/auth/eve/attach`,
         configured: true,
         loginUrl: `${apiOrigin}/auth/eve/login`,
-        attachUrl: `${apiOrigin}/auth/eve/attach`,
       },
     }
   }
   if (url.pathname === '/auth/session') {
     return {
       body: {
-        authenticated: true,
         account: {
-          userId: 'skill-information-e2e-user',
           mainCharacter: { characterId, name: 'Popover Pilot' },
+          userId: 'skill-information-e2e-user',
         },
+        authenticated: true,
       },
     }
   }
   if (url.pathname === '/api/me/cache-admission') {
     return { body: cacheAdmissionForCharacter('skill-information-e2e-user', characterId) }
   }
-  if (url.pathname === '/api/admin/session') return { body: { authenticated: false } }
+  if (url.pathname === '/api/admin/session') {
+    return { body: { authenticated: false } }
+  }
   if (url.pathname === '/api/modules') {
     return {
       body: {
         enabledModuleIds: [],
         shellNavigationOrder: {
-          dashboard: [],
           character: [
             { ownerId: 'core', navigationId: 'core-character-overview' },
             { ownerId: 'core', navigationId: 'core-character-skills' },
           ],
+          dashboard: [],
         },
       },
     }
   }
-  if (url.pathname === '/api/me/characters') return { body: { characters: [ownedCharacter()] } }
+  if (url.pathname === '/api/me/characters') {
+    return { body: { characters: [ownedCharacter()] } }
+  }
   if (url.pathname === `/api/me/characters/${characterId}/skills`) {
     return { body: catalogueSkills() }
   }
   if (url.pathname === `/api/me/characters/${characterId}/attributes`) {
     return {
       body: {
+        accruedRemapCooldownDate: null,
+        bonusRemaps: 1,
         charisma: 19,
         intelligence: 24,
+        lastRemapDate: null,
         memory: 21,
         perception: 27,
         willpower: 22,
-        bonusRemaps: 1,
-        accruedRemapCooldownDate: null,
-        lastRemapDate: null,
       },
     }
   }
   if (url.pathname === `/api/me/characters/${characterId}/skill-queue`) {
-    return { body: { state: 'empty', activeQueuePosition: null, entries: [] } }
+    return { body: { activeQueuePosition: null, entries: [], state: 'empty' } }
   }
   const typeMatch = url.pathname.match(/^\/api\/universe\/types\/(\d+)$/)
   if (typeMatch) {
     if (!detailAvailable) {
       return {
-        status: 503,
         body: { code: 'STATIC_DATA_UNAVAILABLE', message: 'Static data unavailable.' },
+        status: 503,
       }
     }
     const typeId = Number(typeMatch[1])
     const name = catalogueSkills().groups[0]!.skills.find((entry) => entry.typeId === typeId)!.name
     return {
       body: {
-        typeId,
-        name,
-        description: longDescription,
-        group: { id: 255, name: 'Gunnery' },
         category: { id: 16, name: 'Skill' },
+        description: longDescription,
         detail: {
           kind: 'skill',
-          rank: 3,
           primaryAttribute: 'perception',
+          rank: 3,
           secondaryAttribute: 'willpower',
         },
+        group: { id: 255, name: 'Gunnery' },
+        name,
+        typeId,
       },
     }
   }
 
-  return { status: 404, body: { code: 'NOT_FOUND', message: 'Not found.' } }
+  return { body: { code: 'NOT_FOUND', message: 'Not found.' }, status: 404 }
 })
 
 apiOrigin = apiServer.origin
@@ -118,14 +122,14 @@ afterAll(apiServer.close)
 
 describe('Skills item-information geometry', async () => {
   await setup({
-    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
+    browser: true,
     build: false,
+    captureServerLogs: false,
     nuxtConfig: {
       nitro: { output: { dir: fileURLToPath(new URL('../../.output-e2e', import.meta.url)) } },
     },
-    browser: true,
+    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
     server: true,
-    captureServerLogs: false,
     setupTimeout: 120_000,
   })
 
@@ -144,7 +148,7 @@ describe('Skills item-information geometry', async () => {
 
   it('adapts catalogue columns without hiding or splitting skill entries', async () => {
     const page = await openPage()
-    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.setViewportSize({ height: 800, width: 1280 })
     await page.locator('.skills-layout').waitFor()
 
     expect(await measureSkillsLayout(page)).toMatchObject({
@@ -159,7 +163,7 @@ describe('Skills item-information geometry', async () => {
       summaryUsesRepeatingGradient: false,
     })
 
-    await page.setViewportSize({ width: 760, height: 844 })
+    await page.setViewportSize({ height: 844, width: 760 })
     expect(await measureSkillsLayout(page)).toMatchObject({
       groupColumns: '2',
       groupVisible: true,
@@ -170,7 +174,7 @@ describe('Skills item-information geometry', async () => {
       skillVisible: true,
     })
 
-    await page.setViewportSize({ width: 520, height: 844 })
+    await page.setViewportSize({ height: 844, width: 520 })
     expect(await measureSkillsLayout(page)).toMatchObject({
       groupColumns: '1',
       groupVisible: true,
@@ -184,7 +188,7 @@ describe('Skills item-information geometry', async () => {
 
   it('flips a desktop popover into view and keeps close reachable over internal scrolling', async () => {
     const page = await openPage()
-    await page.setViewportSize({ width: 1024, height: 720 })
+    await page.setViewportSize({ height: 720, width: 1024 })
     const trigger = page.getByRole('button', {
       name: 'View item information for Surgical Strike',
     })
@@ -235,7 +239,7 @@ describe('Skills item-information geometry', async () => {
   it('keeps retry and long item content reachable within a mobile viewport', async () => {
     detailAvailable = false
     const page = await openPage()
-    await page.setViewportSize({ width: 390, height: 844 })
+    await page.setViewportSize({ height: 844, width: 390 })
     const trigger = page.getByRole('button', {
       name: 'View item information for Motion Prediction',
     })
@@ -276,28 +280,25 @@ describe('Skills item-information geometry', async () => {
 
 function ownedCharacter() {
   return {
-    characterId,
-    name: 'Popover Pilot',
-    corporationId: 98_000_001,
-    allianceId: null,
-    isMain: true,
-    birthday: '2020-01-01T00:00:00.000Z',
-    securityStatus: 1.2,
-    raceFactionId: 500_001,
-    location: { solarSystemId: 30_000_142, solarSystemName: 'Jita', locationType: 'space' },
-    ship: { typeId: 670, typeName: 'Capsule', groupId: 29, name: 'Geometry Probe' },
-    walletBalance: 1_000_000,
-    totalSp: 1_800_000,
-    corporation: { id: 98_000_001, name: 'Popover Geometry' },
     alliance: null,
+    allianceId: null,
+    birthday: '2020-01-01T00:00:00.000Z',
+    characterId,
+    corporation: { id: 98_000_001, name: 'Popover Geometry' },
+    corporationId: 98_000_001,
+    isMain: true,
+    location: { locationType: 'space', solarSystemId: 30_000_142, solarSystemName: 'Jita' },
+    name: 'Popover Pilot',
+    raceFactionId: 500_001,
+    securityStatus: 1.2,
+    ship: { groupId: 29, name: 'Geometry Probe', typeId: 670, typeName: 'Capsule' },
+    totalSp: 1_800_000,
+    walletBalance: 1_000_000,
   }
 }
 
 function catalogueSkills() {
   return {
-    totalSp: 1_800_000,
-    unallocatedSp: 0,
-    injectedSkillCount: 4,
     groups: [
       {
         groupId: 255,
@@ -311,17 +312,20 @@ function catalogueSkills() {
         ],
       },
     ],
+    injectedSkillCount: 4,
+    totalSp: 1_800_000,
+    unallocatedSp: 0,
   }
 }
 
 function skill(typeId: number, name: string) {
   return {
-    typeId,
-    name,
-    injected: true,
     activeLevel: 4,
-    trainedLevel: 4,
+    injected: true,
+    name,
     skillpoints: 450_000,
+    trainedLevel: 4,
+    typeId,
   }
 }
 
@@ -350,8 +354,9 @@ async function measureSkillsLayout(page: Page) {
       !skillList ||
       skillRows.length === 0 ||
       !summary
-    )
+    ) {
       throw new Error('Skills layout did not render.')
+    }
 
     const catalogueBox = catalogue.getBoundingClientRect()
     const queueBox = queue.getBoundingClientRect()

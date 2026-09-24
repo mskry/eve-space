@@ -2,7 +2,6 @@ import { coreOrganizationAdmissionScopes } from '@eve-space/platform-module-cont
 
 export function cacheAdmissionForCharacter(userId: string, characterId: number) {
   return {
-    userId,
     characters: [
       {
         characterId,
@@ -10,6 +9,7 @@ export function cacheAdmissionForCharacter(userId: string, characterId: number) 
       },
     ],
     organization: null,
+    userId,
   }
 }
 
@@ -19,7 +19,6 @@ export function cacheAdmissionForOrganization(
   organizationVersion = 1,
 ) {
   return {
-    userId,
     characters: [
       {
         characterId,
@@ -27,13 +26,14 @@ export function cacheAdmissionForOrganization(
       },
     ],
     organization: {
-      organizationVersion,
       admissionRevision: `organization-${organizationVersion}-revision`,
-      validUntil: null,
       admissionScopes: [
         coreOrganizationAdmissionScopes.activities,
         coreOrganizationAdmissionScopes.rosterCoverage,
       ],
+      organizationVersion,
+      validUntil: null,
     },
+    userId,
   }
 }

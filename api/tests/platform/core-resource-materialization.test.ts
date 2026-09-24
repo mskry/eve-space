@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  managedCorporations: vi.fn(),
   corporationRoster: vi.fn(),
+  managedCorporations: vi.fn(),
 }))
 
 vi.mock('../../src/organization/managed-corporations.js', () => ({
@@ -23,61 +23,61 @@ describe('core resource materialization', () => {
 
   test('materializes changed managed corporations and requests full recovery convergence', async () => {
     const database = databaseWithResults([
-      [{ validatedAt: null, lastFailureClass: 'esi-unavailable' }],
+      [{ lastFailureClass: 'esi-unavailable', validatedAt: null }],
       [{ organizationVersion: 8 }],
     ])
     mocks.managedCorporations.mockResolvedValue({
-      outcome: 'refreshed',
       addedIds: [98_000_002],
+      outcome: 'refreshed',
       removedIds: [98_000_003],
     })
 
     await expect(
       materializeCoreResourceObservation(database, {
+        authorizationGeneration: null,
+        data: [98_000_003, '98000002', 98_000_002],
         resourceId: 'managed-corporations',
         subject: allianceSubject(),
-        data: [98_000_003, '98000002', 98_000_002],
         validatedAt,
-        authorizationGeneration: null,
       }),
-    ).resolves.toEqual({
-      organizationVersion: 8,
+    ).resolves.toStrictEqual({
       affectedCorporationIds: [98_000_002, 98_000_003],
+      organizationVersion: 8,
       recomputeAllAccounts: true,
     })
     expect(mocks.managedCorporations).toHaveBeenCalledWith(database, {
-      organizationVersion: 8,
       allianceId: 99_000_001,
       corporationIds: [98_000_002, 98_000_003],
+      organizationVersion: 8,
       validatedAt,
     })
   })
 
   test('returns no convergence request for unchanged or detached alliance observations', async () => {
     const unchangedDatabase = databaseWithResults([
-      [{ validatedAt, lastFailureClass: null }],
+      [{ lastFailureClass: null, validatedAt }],
       [{ organizationVersion: 8 }],
     ])
     mocks.managedCorporations.mockResolvedValue({ outcome: 'unchanged' })
 
     await expect(
       materializeCoreResourceObservation(unchangedDatabase, {
+        authorizationGeneration: null,
+        data: [],
         resourceId: 'managed-corporations',
         subject: allianceSubject(),
-        data: [],
         validatedAt,
-        authorizationGeneration: null,
       }),
     ).resolves.toBeNull()
 
     const detachedDatabase = databaseWithResults([[], []])
     await expect(
       materializeCoreResourceObservation(detachedDatabase, {
+        authorizationGeneration: null,
+        data: [],
         resourceId: 'managed-corporations',
         subject: allianceSubject(),
-        data: [],
         validatedAt,
-        authorizationGeneration: null,
       }),
     ).resolves.toBeNull()
     expect(mocks.managedCorporations).toHaveBeenCalledOnce()
@@ -92,26 +92,26 @@ describe('core resource materialization', () => {
       const database = databaseWithResults([
         [
           {
-            validatedAt: new Date('2026-09-01T11:00:00.000Z'),
-            nextEligibleAt,
             lastFailureClass: null,
+            nextEligibleAt,
+            validatedAt: new Date('2026-09-01T11:00:00.000Z'),
           },
         ],
         [{ organizationVersion: 8 }],
       ])
       mocks.managedCorporations.mockResolvedValue({
-        outcome: 'refreshed',
         addedIds: [],
+        outcome: 'refreshed',
         removedIds: [],
       })
 
       await expect(
         materializeCoreResourceObservation(database, {
+          authorizationGeneration: null,
+          data: [98_000_001],
           resourceId: 'managed-corporations',
           subject: allianceSubject(),
-          data: [98_000_001],
           validatedAt,
-          authorizationGeneration: null,
         }),
       ).resolves.toMatchObject({ recomputeAllAccounts })
     },
@@ -119,30 +119,30 @@ describe('core resource materialization', () => {
 
   test('materializes an authorized corporation roster', async () => {
     const database = databaseWithResults([
-      [{ sourceId: 'source-1', organizationVersion: 8, characterId: 90_000_001 }],
+      [{ characterId: 90_000_001, organizationVersion: 8, sourceId: 'source-1' }],
     ])
     mocks.corporationRoster.mockResolvedValue({ outcome: 'refreshed' })
 
     await expect(
       materializeCoreResourceObservation(database, {
+        authorizationGeneration: 4,
+        data: [90_000_003, 90_000_002],
         resourceId: 'corporation-roster',
         subject: corporationSubject(),
-        data: [90_000_003, 90_000_002],
         validatedAt,
-        authorizationGeneration: 4,
       }),
-    ).resolves.toEqual({
-      organizationVersion: 8,
+    ).resolves.toStrictEqual({
       affectedCorporationIds: [],
+      organizationVersion: 8,
       recomputeAllAccounts: false,
     })
     expect(mocks.corporationRoster).toHaveBeenCalledWith(database, {
-      organizationVersion: 8,
-      corporationId: 98_000_001,
-      sourceId: 'source-1',
       characterId: 90_000_001,
-      tokenVersion: 4,
       characterIds: [90_000_002, 90_000_003],
+      corporationId: 98_000_001,
+      organizationVersion: 8,
+      sourceId: 'source-1',
+      tokenVersion: 4,
       validatedAt,
     })
   })
@@ -151,36 +151,36 @@ describe('core resource materialization', () => {
     const unauthorizedDatabase = databaseWithResults([])
     await expect(
       materializeCoreResourceObservation(unauthorizedDatabase, {
+        authorizationGeneration: null,
+        data: [],
         resourceId: 'corporation-roster',
         subject: corporationSubject(),
-        data: [],
         validatedAt,
-        authorizationGeneration: null,
       }),
     ).resolves.toBeNull()
 
     const detachedDatabase = databaseWithResults([[]])
     await expect(
       materializeCoreResourceObservation(detachedDatabase, {
+        authorizationGeneration: 4,
+        data: [],
         resourceId: 'corporation-roster',
         subject: corporationSubject(),
-        data: [],
         validatedAt,
-        authorizationGeneration: 4,
       }),
     ).resolves.toBeNull()
 
     const unchangedDatabase = databaseWithResults([
-      [{ sourceId: 'source-1', organizationVersion: 8, characterId: 90_000_001 }],
+      [{ characterId: 90_000_001, organizationVersion: 8, sourceId: 'source-1' }],
     ])
     mocks.corporationRoster.mockResolvedValue({ outcome: 'unchanged' })
     await expect(
       materializeCoreResourceObservation(unchangedDatabase, {
+        authorizationGeneration: 4,
+        data: [],
         resourceId: 'corporation-roster',
         subject: corporationSubject(),
-        data: [],
         validatedAt,
-        authorizationGeneration: 4,
       }),
     ).resolves.toBeNull()
   })
@@ -188,30 +188,30 @@ describe('core resource materialization', () => {
   test('rejects unknown resources and malformed observations', async () => {
     const database = databaseWithResults([])
     const base = {
+      authorizationGeneration: 4,
       subject: corporationSubject(),
       validatedAt,
-      authorizationGeneration: 4,
     }
 
     await expect(
       materializeCoreResourceObservation(database, {
         ...base,
-        resourceId: 'unknown',
         data: [],
+        resourceId: 'unknown',
       }),
     ).rejects.toThrow('Unknown core resource unknown')
     await expect(
       materializeCoreResourceObservation(database, {
         ...base,
-        resourceId: 'unknown',
         data: {},
+        resourceId: 'unknown',
       }),
     ).rejects.toThrow('Core organization resource data must be an ID array')
     await expect(
       materializeCoreResourceObservation(database, {
         ...base,
-        resourceId: 'unknown',
         data: [0, Number.MAX_SAFE_INTEGER + 1],
+        resourceId: 'unknown',
       }),
     ).rejects.toThrow('Core organization resource data contains an invalid ID')
   })
@@ -219,17 +219,17 @@ describe('core resource materialization', () => {
 
 function allianceSubject() {
   return {
+    allianceId: 99_000_001,
     kind: 'alliance' as const,
     lifecycleId: 'alliance-lifecycle',
-    allianceId: 99_000_001,
   }
 }
 
 function corporationSubject() {
   return {
+    corporationId: 98_000_001,
     kind: 'corporation' as const,
     lifecycleId: 'corporation-lifecycle',
-    corporationId: 98_000_001,
   }
 }
 
@@ -237,14 +237,16 @@ function databaseWithResults(results: unknown[][]) {
   return {
     delete: vi.fn(),
     insert: vi.fn(),
-    update: vi.fn(),
     select: vi.fn(() => query(results.shift() ?? [])),
+    update: vi.fn(),
   } as never
 }
 
 function query(result: unknown[]) {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'innerJoin', 'where']) builder[method] = () => builder
+  for (const method of ['from', 'innerJoin', 'where']) {
+    builder[method] = () => builder
+  }
   // oxlint-disable-next-line unicorn/no-thenable -- Drizzle query builders are awaitable.
   builder.then = (resolve: (value: unknown[]) => unknown, reject: (error: unknown) => unknown) =>
     Promise.resolve(result).then(resolve, reject)

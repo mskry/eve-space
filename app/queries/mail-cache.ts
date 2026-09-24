@@ -38,10 +38,14 @@ function updateUnreadCounts(
   for (const labelId of new Set([...previousLabels, ...nextLabels])) {
     const delta =
       Number(isUnread && nextLabels.has(labelId)) - Number(wasUnread && previousLabels.has(labelId))
-    if (delta !== 0) labelDeltas.set(labelId, delta)
+    if (delta !== 0) {
+      labelDeltas.set(labelId, delta)
+    }
   }
   const totalDelta = Number(isUnread) - Number(wasUnread)
-  if (labelDeltas.size === 0 && totalDelta === 0) return labels
+  if (labelDeltas.size === 0 && totalDelta === 0) {
+    return labels
+  }
   return {
     ...labels,
     labels: labels.labels.map((label) =>
@@ -63,13 +67,17 @@ function cachedMailState(queryCache: QueryCache, target: MailMutationTarget): Ca
     const header = queryCache
       .getQueryData<MailHeaders>(entry.key)
       ?.messages.find((candidate) => candidate.mailId === target.header.mailId)
-    if (header) return header
+    if (header) {
+      return header
+    }
   }
 
   const detail = queryCache.getQueryData<MailDetail>(
     PRIVATE_QUERY_KEYS.mailDetail(target.characterId, target.header.mailId),
   )
-  if (detail) return detail
+  if (detail) {
+    return detail
+  }
   return target.header
 }
 
@@ -92,7 +100,9 @@ function cancelPendingMailQueries(queryCache: QueryCache, characterId: number, m
     }),
   ]
   for (const entry of entries) {
-    if (entry.pending) queryCache.cancel(entry, new Error('Mail cache updated by mutation.'))
+    if (entry.pending) {
+      queryCache.cancel(entry, new Error('Mail cache updated by mutation.'))
+    }
   }
 }
 
@@ -104,7 +114,9 @@ function commitMailHeaderLabels(
   previousLabelIds: ReadonlySet<number>,
 ) {
   const page = queryCache.getQueryData<MailHeaders>(entryKey)
-  if (!page) return
+  if (!page) {
+    return
+  }
   const nextLabelIds = new Set(target.labels)
   const labelFilter = entryKey[labelFilterIndex]
   const filteredLabelIds = Array.isArray(labelFilter)
@@ -146,7 +158,9 @@ export function commitMailReadState(queryCache: QueryCache, target: MailReadTarg
   const mailKey = PRIVATE_QUERY_KEYS.mail(target.characterId)
   for (const entry of queryCache.getEntries({ key: [...mailKey, 'headers'] })) {
     const page = queryCache.getQueryData<MailHeaders>(entry.key)
-    if (!page) continue
+    if (!page) {
+      continue
+    }
     const updateReadState = (header: MailHeader) =>
       header.mailId === target.header.mailId ? { ...header, isRead: target.read } : header
     queryCache.setQueryData<MailHeaders>(entry.key, {
@@ -157,7 +171,9 @@ export function commitMailReadState(queryCache: QueryCache, target: MailReadTarg
 
   const detailKey = PRIVATE_QUERY_KEYS.mailDetail(target.characterId, target.header.mailId)
   const detail = queryCache.getQueryData<MailDetail>(detailKey)
-  if (detail) queryCache.setQueryData<MailDetail>(detailKey, { ...detail, isRead: target.read })
+  if (detail) {
+    queryCache.setQueryData<MailDetail>(detailKey, { ...detail, isRead: target.read })
+  }
 
   const labelsKey = PRIVATE_QUERY_KEYS.mailLabels(target.characterId)
   const labels = queryCache.getQueryData<MailLabels>(labelsKey)
@@ -201,10 +217,14 @@ export function commitCreatedMailLabel(
 ) {
   const key = PRIVATE_QUERY_KEYS.mailLabels(characterId)
   for (const entry of queryCache.getEntries({ exact: true, key })) {
-    if (entry.pending) queryCache.cancel(entry, new Error('Mail cache updated by mutation.'))
+    if (entry.pending) {
+      queryCache.cancel(entry, new Error('Mail cache updated by mutation.'))
+    }
   }
   const labels = queryCache.getQueryData<MailLabels>(key)
-  if (!labels) return
+  if (!labels) {
+    return
+  }
   const replacesExisting = labels.labels.some((candidate) => candidate.labelId === label.labelId)
   queryCache.setQueryData<MailLabels>(key, {
     ...labels,
@@ -225,7 +245,9 @@ export function prepareMailForReusedLabel(
     ...queryCache.getEntries({ key: [...mailKey, 'detail'] }),
   ]
   for (const entry of entries) {
-    if (entry.pending) queryCache.cancel(entry, new Error('Mail label identity was reused.'))
+    if (entry.pending) {
+      queryCache.cancel(entry, new Error('Mail label identity was reused.'))
+    }
   }
   removeMailLabelFromPayloadCaches(queryCache, mailKey, labelId)
   for (const entry of entries) {
@@ -262,11 +284,15 @@ function removeMailLabelFromPayloadCaches(
 ) {
   for (const entry of queryCache.getEntries({ key: [...mailKey, 'headers'] })) {
     const page = queryCache.getQueryData<MailHeaders>(entry.key)
-    if (!page) continue
+    if (!page) {
+      continue
+    }
     queryCache.setQueryData<MailHeaders>(entry.key, {
       ...page,
       messages: page.messages.map((header) => {
-        if (!header.labelIds.includes(labelId)) return header
+        if (!header.labelIds.includes(labelId)) {
+          return header
+        }
         return replaceMailHeaderLabels(
           header,
           header.labelIds.filter((candidate) => candidate !== labelId),
@@ -277,7 +303,9 @@ function removeMailLabelFromPayloadCaches(
 
   for (const entry of queryCache.getEntries({ key: [...mailKey, 'detail'] })) {
     const detail = queryCache.getQueryData<MailDetail>(entry.key)
-    if (!detail?.labelIds.includes(labelId)) continue
+    if (!detail?.labelIds.includes(labelId)) {
+      continue
+    }
     queryCache.setQueryData<MailDetail>(entry.key, {
       ...detail,
       labelIds: detail.labelIds.filter((candidate) => candidate !== labelId),
@@ -291,7 +319,9 @@ export function commitMailDeletion(queryCache: QueryCache, target: MailMutationT
   const mailKey = PRIVATE_QUERY_KEYS.mail(target.characterId)
   for (const entry of queryCache.getEntries({ key: [...mailKey, 'headers'] })) {
     const page = queryCache.getQueryData<MailHeaders>(entry.key)
-    if (!page) continue
+    if (!page) {
+      continue
+    }
     queryCache.setQueryData<MailHeaders>(entry.key, {
       ...page,
       messages: page.messages.filter((header) => header.mailId !== target.header.mailId),

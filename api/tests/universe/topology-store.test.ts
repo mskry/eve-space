@@ -14,15 +14,15 @@ describe('universe topology projection', () => {
       ]) as never,
     )
 
-    expect(snapshot.revision).toEqual({
+    expect(snapshot.revision).toStrictEqual({
       buildNumber: 1234,
       ingestVersion: 4,
       ingestedAt: '2026-08-26 12:00:00.000001+00',
     })
-    expect([...snapshot.systems.values()]).toEqual([
-      { id: 1, securityStatus: 0.9, neighbors: [2, 3] },
-      { id: 2, securityStatus: null, neighbors: [1] },
-      { id: 3, securityStatus: -0.4, neighbors: [] },
+    expect([...snapshot.systems.values()]).toStrictEqual([
+      { id: 1, neighbors: [2, 3], securityStatus: 0.9 },
+      { id: 2, neighbors: [1], securityStatus: null },
+      { id: 3, neighbors: [], securityStatus: -0.4 },
     ])
   })
 
@@ -46,7 +46,7 @@ function database(rows: readonly Record<string, unknown>[]) {
     vi.fn((strings: TemplateStringsArray) => {
       const statement = strings.join(' ')
       let result: unknown[] = []
-      if (statement.includes('from sde_projection_state'))
+      if (statement.includes('from sde_projection_state')) {
         result = [
           {
             build_number: '1234',
@@ -54,7 +54,9 @@ function database(rows: readonly Record<string, unknown>[]) {
             ingested_at: '2026-08-26 12:00:00.000001+00',
           },
         ]
-      else if (statement.includes('from sde_dataset_rows')) result = [...rows]
+      } else if (statement.includes('from sde_dataset_rows')) {
+        result = [...rows]
+      }
       return cancellable(result)
     }),
     { unsafe: vi.fn(() => cancellable([])) },
@@ -73,21 +75,21 @@ function cancellable<Value>(value: Value) {
 function system(id: number, securityStatus: string | null = '0.1') {
   return {
     dataset: 'mapSolarSystems',
-    key: String(id),
+    destination_system_id: null,
     id: String(id),
+    key: String(id),
     security_status: securityStatus,
     source_system_id: null,
-    destination_system_id: null,
   }
 }
 
 function stargate(id: number, sourceSystemId: number, destinationSystemId: number | null) {
   return {
     dataset: 'mapStargates',
-    key: String(id),
+    destination_system_id: destinationSystemId === null ? null : String(destinationSystemId),
     id: String(id),
+    key: String(id),
     security_status: null,
     source_system_id: String(sourceSystemId),
-    destination_system_id: destinationSystemId === null ? null : String(destinationSystemId),
   }
 }

@@ -23,40 +23,60 @@ const degraded = computed(
     props.presentation.kind === 'server-stale',
 )
 const headline = computed(() => {
-  if (props.status === 'unavailable') return 'TRANQUILITY UNREACHABLE'
-  if (props.status === 'partial') return 'CHARACTER DATA DEGRADED'
-  if (props.status === 'degraded') return 'TRANQUILITY DEGRADED'
-  if (props.status === 'stale') return 'TRANQUILITY NOT RESPONDING'
-  if (props.presentation.kind === 'restored-refresh-failed')
+  if (props.status === 'unavailable') {
+    return 'TRANQUILITY UNREACHABLE'
+  }
+  if (props.status === 'partial') {
+    return 'CHARACTER DATA DEGRADED'
+  }
+  if (props.status === 'degraded') {
+    return 'TRANQUILITY DEGRADED'
+  }
+  if (props.status === 'stale') {
+    return 'TRANQUILITY NOT RESPONDING'
+  }
+  if (props.presentation.kind === 'restored-refresh-failed') {
     return 'HISTORICAL DATA / REFRESH FAILED'
+  }
   return 'SERVER CACHE DEGRADED'
 })
 const detail = computed(() => {
-  if (props.status === 'unavailable')
+  if (props.status === 'unavailable') {
     return 'Live character updates are unavailable. Previously loaded data may be shown from cache.'
-  if (props.status === 'partial') return 'Some character data is temporarily unavailable.'
-  if (props.status === 'degraded') return 'Character data may be delayed.'
-  if (props.status === 'stale')
+  }
+  if (props.status === 'partial') {
+    return 'Some character data is temporarily unavailable.'
+  }
+  if (props.status === 'degraded') {
+    return 'Character data may be delayed.'
+  }
+  if (props.status === 'stale') {
     return 'Character data is being served from cache and may be out of date.'
-  if (props.presentation.kind === 'restored-refresh-failed')
+  }
+  if (props.presentation.kind === 'restored-refresh-failed') {
     return 'Previously loaded browser data remains available after its live refresh failed.'
+  }
   return 'The server is serving its last validated ESI representation.'
 })
 const presentationTimestamp = computed(() => {
-  if (props.presentation.kind === 'fresh' || props.presentation.kind === 'restored')
-    return undefined
-  if (props.presentation.kind === 'server-stale')
+  if (props.presentation.kind === 'fresh' || props.presentation.kind === 'restored') {
+    return
+  }
+  if (props.presentation.kind === 'server-stale') {
     return props.presentation.validatedAt ?? props.presentation.originalSuccessAt
+  }
   return props.presentation.originalSuccessAt
 })
 const presentationTimestampLabel = computed(() =>
   props.presentation.kind === 'server-stale' ? 'LAST VALIDATED' : 'ORIGINAL SUCCESS',
 )
 const presentationLabel = computed(() => {
-  if (props.presentation.kind === 'restored-refresh-failed')
+  if (props.presentation.kind === 'restored-refresh-failed') {
     return 'DATA STATE / RESTORED SNAPSHOT / REFRESH FAILED'
-  if (props.presentation.kind === 'server-stale') return 'DATA STATE / SERVER STALE'
-  return undefined
+  }
+  if (props.presentation.kind === 'server-stale') {
+    return 'DATA STATE / SERVER STALE'
+  }
 })
 const displayStatus = computed(() =>
   props.status === 'unavailable' ||

@@ -20,26 +20,26 @@ const FIRST_PLAYER_CORPORATION_ID = 2_000_000
 
 const employmentHistoryCacheSchema = z.array(
   z.object({
-    recordId: z.number(),
-    startDate: z.string(),
-    isDeleted: z.boolean(),
     corporation: z.object({
       id: z.number(),
       name: z.string(),
       isNpc: z.boolean(),
     }),
+    isDeleted: z.boolean(),
+    recordId: z.number(),
+    startDate: z.string(),
   }),
 )
 
 const employmentHistoryRead = createPublicEsiRead({
-  operation: 'employment-history',
-  name: 'employment-history-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdCorporationhistory.transport,
   cacheSchema: employmentHistoryCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdCorporationhistory.transport,
   encodeRequest: (input: { characterId: number }) => ({
     path: { character_id: input.characterId },
   }),
   map: (response) => mapEmploymentHistory(response.data),
+  name: 'employment-history-core',
+  operation: 'employment-history',
 })
 
 export async function getCharacterEmploymentHistory(
@@ -66,17 +66,20 @@ async function mapEmploymentHistory(
   return records.map((record) => {
     const resolved = names.get(record.corporation_id)
     let name = 'Unknown corporation'
-    if (record.is_deleted) name = 'Deleted corporation'
-    else if (resolved?.category === 'corporation') name = resolved.name
+    if (record.is_deleted) {
+      name = 'Deleted corporation'
+    } else if (resolved?.category === 'corporation') {
+      name = resolved.name
+    }
     return {
-      recordId: record.record_id,
-      startDate: record.start_date,
-      isDeleted: record.is_deleted ?? false,
       corporation: {
         id: record.corporation_id,
-        name,
         isNpc: isNpcCorporation(record.corporation_id),
+        name,
       },
+      isDeleted: record.is_deleted ?? false,
+      recordId: record.record_id,
+      startDate: record.start_date,
     }
   })
 }

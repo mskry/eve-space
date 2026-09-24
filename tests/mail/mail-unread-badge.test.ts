@@ -26,9 +26,9 @@ describe('mail unread badge derivation', () => {
   })
 
   it('builds a badge only for a positive count on a known character', () => {
-    expect(resolveMailUnreadBadge(7, 4)).toEqual({ count: 4, label: '4 unread mails' })
-    expect(resolveMailUnreadBadge(7, 1)).toEqual({ count: 1, label: '1 unread mail' })
-    expect(resolveMailUnreadBadge(7, 247)).toEqual({ count: 247, label: '247 unread mails' })
+    expect(resolveMailUnreadBadge(7, 4)).toStrictEqual({ count: 4, label: '4 unread mails' })
+    expect(resolveMailUnreadBadge(7, 1)).toStrictEqual({ count: 1, label: '1 unread mail' })
+    expect(resolveMailUnreadBadge(7, 247)).toStrictEqual({ count: 247, label: '247 unread mails' })
     expect(resolveMailUnreadBadge(7, 0)).toBeUndefined()
     expect(resolveMailUnreadBadge(7, undefined)).toBeUndefined()
     expect(resolveMailUnreadBadge(undefined, 4)).toBeUndefined()

@@ -40,13 +40,13 @@ const characterClonesCacheSchema = z.object({
     .nullable(),
   jumpClones: z.array(
     z.object({
+      implantTypeIds: z.array(z.number()),
       jumpCloneId: z.number(),
-      name: z.string().nullable(),
       location: z.object({
         locationId: z.number(),
         locationType: cloneLocationTypeCacheSchema,
       }),
-      implantTypeIds: z.array(z.number()),
+      name: z.string().nullable(),
     }),
   ),
   lastCloneJumpAt: z.string().nullable(),
@@ -55,25 +55,25 @@ const characterClonesCacheSchema = z.object({
 const characterImplantsCacheSchema = z.object({ implantTypeIds: z.array(z.number()) })
 
 const characterClonesRead = createCharacterEsiRead({
-  operation: 'character-clones',
-  name: 'character-clones-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdClones.transport,
   cacheSchema: characterClonesCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdClones.transport,
   encodeRequest: (input: CharacterCloneStateRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
   map: (response) => mapCharacterClonesSnapshot(response.data),
+  name: 'character-clones-core',
+  operation: 'character-clones',
 })
 
 const characterImplantsRead = createCharacterEsiRead({
-  operation: 'character-implants',
-  name: 'character-implants-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdImplants.transport,
   cacheSchema: characterImplantsCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdImplants.transport,
   encodeRequest: (input: CharacterCloneStateRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
   map: (response) => mapCharacterImplantsSnapshot(response.data),
+  name: 'character-implants-core',
+  operation: 'character-implants',
 })
 
 export const characterClonesScope = characterClonesRead.requiredScope
@@ -195,13 +195,13 @@ export async function getCharacterClones(
       stationSecurityStatuses,
     ),
     jumpClones: snapshot.data.jumpClones.map((clone) => ({
+      implants: enrichImplants(clone.implantTypeIds, implantStaticData),
       jumpCloneId: clone.jumpCloneId,
-      name: clone.name,
       location: {
         ...clone.location,
         name: locationName(clone.location, stationNames),
       },
-      implants: enrichImplants(clone.implantTypeIds, implantStaticData),
+      name: clone.name,
     })),
     lastCloneJumpAt: snapshot.data.lastCloneJumpAt,
     lastStationChangeAt: snapshot.data.lastStationChangeAt,
@@ -232,13 +232,13 @@ function mapCharacterClonesSnapshot(
         }
       : null,
     jumpClones: result.jump_clones.map((clone) => ({
+      implantTypeIds: [...new Set(clone.implants)],
       jumpCloneId: clone.jump_clone_id,
-      name: clone.name ?? null,
       location: {
         locationId: clone.location_id,
         locationType: clone.location_type,
       },
-      implantTypeIds: [...new Set(clone.implants)],
+      name: clone.name ?? null,
     })),
     lastCloneJumpAt: result.last_clone_jump_date ?? null,
     lastStationChangeAt: result.last_station_change_date ?? null,
@@ -255,15 +255,17 @@ async function loadImplantStaticData(typeIds: readonly number[]) {
   const lookupIds = [...new Set(typeIds)]
     .filter(isPositiveSafeInteger)
     .slice(0, maximumImplantTypeLookupIds)
-  if (lookupIds.length === 0) return new Map<number, ImplantStaticData>()
+  if (lookupIds.length === 0) {
+    return new Map<number, ImplantStaticData>()
+  }
 
   try {
     const rows = await db
       .select({
-        typeId: sdeTypes.typeId,
-        name: sdeTypes.name,
         attributeId: sdeTypeDogmaAttributes.attributeId,
         attributeValue: sdeTypeDogmaAttributes.value,
+        name: sdeTypes.name,
+        typeId: sdeTypes.typeId,
       })
       .from(sdeTypes)
       .leftJoin(
@@ -284,18 +286,21 @@ async function loadImplantStaticData(typeIds: readonly number[]) {
 function groupImplantStaticData(rows: readonly ImplantStaticRow[]) {
   const staticByType = new Map<number, ImplantStaticData>()
   for (const row of rows) {
-    const entry = staticByType.get(row.typeId) ?? { name: row.name, slot: null, bonuses: [] }
-    if (row.attributeId === implantSlotAttributeId && isImplantSlot(row.attributeValue))
+    const entry = staticByType.get(row.typeId) ?? { bonuses: [], name: row.name, slot: null }
+    if (row.attributeId === implantSlotAttributeId && isImplantSlot(row.attributeValue)) {
       entry.slot = row.attributeValue
+    }
 
     const attribute = row.attributeId === null ? null : implantBonusAttributeFor(row.attributeId)
-    if (attribute && isImplantBonusValue(row.attributeValue))
+    if (attribute && isImplantBonusValue(row.attributeValue)) {
       entry.bonuses.push({ attribute, value: row.attributeValue })
+    }
 
     staticByType.set(row.typeId, entry)
   }
-  for (const entry of staticByType.values())
+  for (const entry of staticByType.values()) {
     entry.bonuses.sort((left, right) => left.attribute.localeCompare(right.attribute))
+  }
   return staticByType
 }
 
@@ -307,10 +312,10 @@ function enrichImplants(
     .map((typeId) => {
       const staticData = staticByType.get(typeId)
       return {
-        typeId,
+        bonuses: staticData?.bonuses ?? [],
         name: staticData?.name ?? `Unknown implant ${typeId}`,
         slot: staticData?.slot ?? null,
-        bonuses: staticData?.bonuses ?? [],
+        typeId,
       }
     })
     .toSorted(compareImplants)
@@ -318,8 +323,12 @@ function enrichImplants(
 
 function compareImplants(left: ImplantSummary, right: ImplantSummary) {
   if (left.slot !== right.slot) {
-    if (left.slot === null) return 1
-    if (right.slot === null) return -1
+    if (left.slot === null) {
+      return 1
+    }
+    if (right.slot === null) {
+      return -1
+    }
     return left.slot - right.slot
   }
   return compareNameAndId(left.name, left.typeId, right.name, right.typeId)
@@ -330,15 +339,19 @@ function collectStationIds(snapshot: CharacterClonesSnapshot) {
   if (
     snapshot.homeLocation?.locationType === 'station' &&
     snapshot.homeLocation.locationId !== null
-  )
+  ) {
     stationIds.push(snapshot.homeLocation.locationId)
-  for (const clone of snapshot.jumpClones)
+  }
+  for (const clone of snapshot.jumpClones) {
     if (clone.location.locationType === 'station') stationIds.push(clone.location.locationId)
+  }
   return [...new Set(stationIds)]
 }
 
 async function loadStationNames(stationIds: readonly number[]) {
-  if (stationIds.length === 0) return new Map<number, string>()
+  if (stationIds.length === 0) {
+    return new Map<number, string>()
+  }
   let timeout: ReturnType<typeof setTimeout> | undefined
   try {
     const timedOut = Symbol('station-name-enrichment-timeout')
@@ -349,7 +362,9 @@ async function loadStationNames(stationIds: readonly number[]) {
         timeout.unref()
       }),
     ])
-    if (resolved === timedOut) return new Map<number, string>()
+    if (resolved === timedOut) {
+      return new Map<number, string>()
+    }
     return new Map(
       [...resolved]
         .filter(([, entry]) => entry.category === 'station')
@@ -358,12 +373,16 @@ async function loadStationNames(stationIds: readonly number[]) {
   } catch {
     return new Map<number, string>()
   } finally {
-    if (timeout) clearTimeout(timeout)
+    if (timeout) {
+      clearTimeout(timeout)
+    }
   }
 }
 
 async function loadStationSecurityStatuses(stationIds: readonly number[]) {
-  if (stationIds.length === 0) return new Map<number, number>()
+  if (stationIds.length === 0) {
+    return new Map<number, number>()
+  }
   try {
     const locations = await getStaticLocations(
       stationIds.map((id) => ({ id, type: 'station' as const })),
@@ -385,7 +404,9 @@ function enrichHomeLocation(
   namesByStation: ReadonlyMap<number, string>,
   securityByStation: ReadonlyMap<number, number>,
 ): HomeLocation | null {
-  if (!location) return null
+  if (!location) {
+    return null
+  }
   return {
     ...location,
     name: locationName(location, namesByStation),
@@ -406,7 +427,11 @@ function locationName(
 }
 
 function compareNameAndId(leftName: string, leftId: number, rightName: string, rightId: number) {
-  if (leftName < rightName) return -1
-  if (leftName > rightName) return 1
+  if (leftName < rightName) {
+    return -1
+  }
+  if (leftName > rightName) {
+    return 1
+  }
   return leftId - rightId
 }

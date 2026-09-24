@@ -56,10 +56,12 @@ export function constructOperationRequest<
     headers: Readonly<Record<string, string>>;
     body?: string;
   } = {
+    headers: Object.freeze(headers),
     method: validated.method,
     path: requestPath,
-    headers: Object.freeze(headers),
   };
-  if (body !== undefined) request.body = body;
+  if (body !== undefined) {
+    request.body = body;
+  }
   return Object.freeze(request);
 }

@@ -25,8 +25,8 @@ interface RelayOptions {
 }
 
 export const outboxRelayStore: OutboxRelayStore = {
-  claim: claimPendingDomainEvents,
   acknowledge: markDomainEventPublished,
+  claim: claimPendingDomainEvents,
   recordFailure: recordDomainEventPublishFailure,
 }
 
@@ -38,12 +38,12 @@ export async function runOutboxRelayBatch(
 ) {
   options.signal?.throwIfAborted()
   const highWaterMark = options.highWaterMark ?? env.QUEUE_HIGH_WATER_MARK
-  const admission = await producer.inspectCapacity({ source: 'outbox', highWaterMark })
+  const admission = await producer.inspectCapacity({ highWaterMark, source: 'outbox' })
   options.signal?.throwIfAborted()
   if (admission.status === 'rejected') {
     await recordRelayOutcome(outcomes, 'paused', null)
     options.signal?.throwIfAborted()
-    return { admission, claimed: 0, published: 0, failed: 0 }
+    return { admission, claimed: 0, failed: 0, published: 0 }
   }
 
   const remainingCapacity = Math.max(0, highWaterMark - admission.depth)
@@ -51,12 +51,12 @@ export async function runOutboxRelayBatch(
   if (limit === 0) {
     await recordRelayOutcome(outcomes, 'idle', null)
     options.signal?.throwIfAborted()
-    return { admission, claimed: 0, published: 0, failed: 0 }
+    return { admission, claimed: 0, failed: 0, published: 0 }
   }
 
   const claims = await store.claim({
-    limit,
     claimTtlMs: options.claimTtlMs ?? env.OUTBOX_RELAY_CLAIM_TTL_MS,
+    limit,
   })
   options.signal?.throwIfAborted()
   const publications = await Promise.all(
@@ -71,13 +71,13 @@ export async function runOutboxRelayBatch(
           failureCategory: category,
         })
         await store.recordFailure({
-          eventId,
-          claimToken: claim.claimToken,
           category,
+          claimToken: claim.claimToken,
+          eventId,
           retryDelayMs: options.retryDelayMs ?? env.OUTBOX_RELAY_RETRY_DELAY_MS,
         })
         options.signal?.throwIfAborted()
-        return { outcome: 'failed' as const, category }
+        return { category, outcome: 'failed' as const }
       }
       try {
         const produced = await producer.enqueue(
@@ -88,10 +88,14 @@ export async function runOutboxRelayBatch(
           },
           { signal: options.signal },
         )
-        if (produced.status === 'rejected') throw new RelayPublicationError('queue-rejected')
+        if (produced.status === 'rejected') {
+          throw new RelayPublicationError('queue-rejected')
+        }
         const acknowledged = await store.acknowledge(eventId, claim.claimToken)
         options.signal?.throwIfAborted()
-        if (!acknowledged) throw new RelayPublicationError('unknown')
+        if (!acknowledged) {
+          throw new RelayPublicationError('unknown')
+        }
         recordDiagnostic('outbox.relay.event-published', {
           context: {
             eventId,
@@ -99,7 +103,7 @@ export async function runOutboxRelayBatch(
             payloadVersion: claim.event.payloadVersion,
           },
         })
-        return { outcome: 'published' as const, category: null }
+        return { category: null, outcome: 'published' as const }
       } catch (error) {
         options.signal?.throwIfAborted()
         const category = categorizeRelayFailure(error)
@@ -113,13 +117,13 @@ export async function runOutboxRelayBatch(
           failureCategory: category,
         })
         await store.recordFailure({
-          eventId,
-          claimToken: claim.claimToken,
           category,
+          claimToken: claim.claimToken,
+          eventId,
           retryDelayMs: options.retryDelayMs ?? env.OUTBOX_RELAY_RETRY_DELAY_MS,
         })
         options.signal?.throwIfAborted()
-        return { outcome: 'failed' as const, category }
+        return { category, outcome: 'failed' as const }
       }
     }),
   )
@@ -128,12 +132,15 @@ export async function runOutboxRelayBatch(
   const failed = publications.length - published
   const category = publications.find((result) => result.category)?.category ?? null
   let relayOutcome: 'idle' | 'published' | 'failed' | 'partial-failure'
-  if (failed === 0) relayOutcome = published === 0 ? 'idle' : 'published'
-  else relayOutcome = published === 0 ? 'failed' : 'partial-failure'
+  if (failed === 0) {
+    relayOutcome = published === 0 ? 'idle' : 'published'
+  } else {
+    relayOutcome = published === 0 ? 'failed' : 'partial-failure'
+  }
   await recordRelayOutcome(outcomes, relayOutcome, category)
   options.signal?.throwIfAborted()
 
-  return { admission, claimed: claims.length, published, failed }
+  return { admission, claimed: claims.length, failed, published }
 }
 
 async function recordRelayOutcome(
@@ -142,8 +149,8 @@ async function recordRelayOutcome(
   category: OutboxRelayOutcome['category'],
 ) {
   const value: OutboxRelayOutcome = {
-    outcome,
     category,
+    outcome,
     recordedAt: new Date().toISOString(),
   }
   await recorder.recordOutbox(value)

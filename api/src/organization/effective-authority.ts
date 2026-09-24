@@ -49,12 +49,12 @@ interface OrganizationBoundary {
 }
 
 const currentSourceSelection = {
-  currentUserId: characters.userId,
-  currentCorporationId: characters.corporationId,
   currentAllianceId: characters.allianceId,
-  currentSubjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
   currentAuthorizationGeneration: eveTokens.tokenVersion,
+  currentCorporationId: characters.corporationId,
   currentScopes: eveTokens.scopes,
+  currentSubjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+  currentUserId: characters.userId,
 }
 
 interface EffectiveAuthoritySource {
@@ -88,15 +88,17 @@ export async function loadEffectiveOrganizationAuthority(
   if (
     options.requireComplianceAccess !== false &&
     !(await hasCurrentComplianceAccess(database, organizationVersion, userId, now))
-  )
+  ) {
     return noAuthority()
+  }
 
   const organization = await loadOrganization(database, organizationVersion)
   if (
     !organization ||
     (await hasActiveOrganizationMemberBlock(database, organizationVersion, userId))
-  )
+  ) {
     return noAuthority()
+  }
 
   const owner = await loadOwnerSource(database, organizationVersion, userId)
   const ownerSource = owner ? evaluateSource(owner, userId, organization, true, now) : null
@@ -115,24 +117,24 @@ export async function loadEffectiveOrganizationAuthority(
   )
 
   return {
-    organizationOwner,
-    explicitDirector,
-    derivedDirector,
-    director: explicitDirector || derivedDirector,
     degraded:
       ownerSource?.state === 'degraded' || derivedSources.some(({ state }) => state === 'degraded'),
-    ownerSource,
+    derivedDirector,
     derivedSources,
+    director: explicitDirector || derivedDirector,
+    explicitDirector,
+    organizationOwner,
+    ownerSource,
   }
 }
 
 async function loadOrganization(database: Database, organizationVersion: number) {
   const [organization] = await database
     .select({
-      organizationType: deploymentSettings.organizationType,
-      organizationId: deploymentSettings.organizationId,
-      organizationVersion: deploymentSettings.organizationVersion,
       derivedDirectorAuthorityEnabled: deploymentSettings.derivedDirectorAuthorityEnabled,
+      organizationId: deploymentSettings.organizationId,
+      organizationType: deploymentSettings.organizationType,
+      organizationVersion: deploymentSettings.organizationVersion,
     })
     .from(deploymentSettings)
     .where(
@@ -172,18 +174,18 @@ async function loadOwnerSource(
 ): Promise<SourceRow | null> {
   const [source] = await database
     .select({
-      sourceId: organizationAuthorityEvidence.evidenceId,
-      characterId: organizationAuthorityEvidence.characterId,
-      sourceSubjectLifecycleId: organizationAuthorityEvidence.sourceSubjectLifecycleId,
-      authorizationGeneration: organizationAuthorityEvidence.authorizationGeneration,
       authorityCorporationId: organizationAuthorityEvidence.authorityCorporationId,
-      observedAllianceId: organizationAuthorityEvidence.observedAllianceId,
+      authorizationGeneration: organizationAuthorityEvidence.authorizationGeneration,
+      characterId: organizationAuthorityEvidence.characterId,
       directorRolePresent: organizationAuthorityEvidence.directorRolePresent,
-      status: organizationAuthorityEvidence.status,
       freshUntil: organizationAuthorityEvidence.freshUntil,
       graceUntil: organizationAuthorityEvidence.graceUntil,
       invalidatedAt: organizationAuthorityEvidence.invalidatedAt,
+      observedAllianceId: organizationAuthorityEvidence.observedAllianceId,
       requiredScope: organizationAuthorityEvidence.requiredScope,
+      sourceId: organizationAuthorityEvidence.evidenceId,
+      sourceSubjectLifecycleId: organizationAuthorityEvidence.sourceSubjectLifecycleId,
+      status: organizationAuthorityEvidence.status,
       ...currentSourceSelection,
     })
     .from(organizationAuthorityEvidence)
@@ -216,18 +218,18 @@ async function loadDerivedSources(
 ): Promise<SourceRow[]> {
   return database
     .select({
-      sourceId: organizationDerivedAuthoritySources.sourceId,
-      characterId: organizationDerivedAuthoritySources.characterId,
-      sourceSubjectLifecycleId: organizationDerivedAuthoritySources.sourceSubjectLifecycleId,
-      authorizationGeneration: organizationDerivedAuthoritySources.authorizationGeneration,
       authorityCorporationId: organizationDerivedAuthoritySources.authorityCorporationId,
-      observedAllianceId: organizationDerivedAuthoritySources.observedAllianceId,
+      authorizationGeneration: organizationDerivedAuthoritySources.authorizationGeneration,
+      characterId: organizationDerivedAuthoritySources.characterId,
       directorRolePresent: organizationDerivedAuthoritySources.directorRolePresent,
-      status: organizationDerivedAuthoritySources.status,
       freshUntil: organizationDerivedAuthoritySources.freshUntil,
       graceUntil: organizationDerivedAuthoritySources.graceUntil,
       invalidatedAt: organizationDerivedAuthoritySources.invalidatedAt,
+      observedAllianceId: organizationDerivedAuthoritySources.observedAllianceId,
       requiredScope: organizationDerivedAuthoritySources.requiredScope,
+      sourceId: organizationDerivedAuthoritySources.sourceId,
+      sourceSubjectLifecycleId: organizationDerivedAuthoritySources.sourceSubjectLifecycleId,
+      status: organizationDerivedAuthoritySources.status,
       ...currentSourceSelection,
     })
     .from(organizationDerivedAuthoritySources)
@@ -259,37 +261,37 @@ function evaluateSource(
 ): EffectiveAuthoritySource {
   const decision = evaluateDerivedDirectorSource(
     {
-      enabled,
-      organization,
-      authorityCorporationId: source.authorityCorporationId,
       affiliation: {
-        corporationId: source.currentCorporationId ?? 0,
         allianceId: source.currentAllianceId,
+        corporationId: source.currentCorporationId ?? 0,
       },
-      requiredScope: source.requiredScope,
-      scopes: source.currentScopes ?? [],
-      roles: { roles: source.directorRolePresent ? ['Director'] : [] },
-      lifecycleCurrent:
-        source.currentUserId === userId &&
-        source.currentSubjectLifecycleId === source.sourceSubjectLifecycleId,
+      authorityCorporationId: source.authorityCorporationId,
       authorizationGenerationCurrent:
         source.currentAuthorizationGeneration === source.authorizationGeneration,
       blocked: false,
+      enabled,
       evidence: source,
+      lifecycleCurrent:
+        source.currentUserId === userId &&
+        source.currentSubjectLifecycleId === source.sourceSubjectLifecycleId,
+      organization,
+      requiredScope: source.requiredScope,
+      roles: { roles: source.directorRolePresent ? ['Director'] : [] },
+      scopes: source.currentScopes ?? [],
     },
     now,
   )
-  return { sourceId: source.sourceId, characterId: source.characterId, state: decision.state }
+  return { characterId: source.characterId, sourceId: source.sourceId, state: decision.state }
 }
 
 function noAuthority(): EffectiveOrganizationAuthority {
   return {
-    organizationOwner: false,
-    explicitDirector: false,
-    derivedDirector: false,
-    director: false,
     degraded: false,
-    ownerSource: null,
+    derivedDirector: false,
     derivedSources: [],
+    director: false,
+    explicitDirector: false,
+    organizationOwner: false,
+    ownerSource: null,
   }
 }

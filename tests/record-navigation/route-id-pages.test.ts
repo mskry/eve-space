@@ -30,7 +30,7 @@ describe('record route page ID gates', () => {
 
     expect(existsSync(financePath)).toBe(true)
     expect(existsSync(walletPath)).toBe(false)
-    expect(finance).toContain("definePageMeta({ title: 'Character Finance'")
+    expect(finance).toMatch(/definePageMeta\(\{[^}]*title: 'Character Finance'/)
   })
 
   it.each(routePages)('%s parses the raw route parameter without coercion', (path) => {

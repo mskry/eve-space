@@ -114,10 +114,13 @@ export function parseFacadeCatalog(
       entry.operationId,
       `Facade catalog entry ${index} operationId`,
     );
-    if (seen.has(operationId)) throw new Error(`Duplicate facade catalog entry: ${operationId}`);
+    if (seen.has(operationId)) {
+      throw new Error(`Duplicate facade catalog entry: ${operationId}`);
+    }
     seen.add(operationId);
-    if (!operationIds.has(operationId))
+    if (!operationIds.has(operationId)) {
       throw new Error(`Stale facade catalog entry: ${operationId}`);
+    }
     if (previousOperationId !== undefined && previousOperationId > operationId) {
       throw new Error(
         `Facade catalog entries must be sorted by operationId: ${previousOperationId} before ${operationId}`,
@@ -139,7 +142,9 @@ export function parseFacadeCatalog(
   const missing = [...operationIds]
     .filter((operationId) => !seen.has(operationId))
     .toSorted(compareText);
-  if (missing.length > 0) throw new Error(`Missing facade catalog entries: ${missing.join(', ')}`);
+  if (missing.length > 0) {
+    throw new Error(`Missing facade catalog entries: ${missing.join(', ')}`);
+  }
   validateFacadeCatalog(model, catalog);
   return deepFreeze(catalog);
 }
@@ -222,10 +227,14 @@ export async function resolveOperationMetadata(
 /** Derives an unreviewed candidate domain for review tooling and synthetic tests only. */
 export function defaultDomainName(operation: NormalizedOperation): string {
   const tagName = toIdentifier(operation.domainSource ?? '', '');
-  if (tagName !== '') return safeDefaultIdentifier(tagName, 'domain');
+  if (tagName !== '') {
+    return safeDefaultIdentifier(tagName, 'domain');
+  }
 
   const words = splitWords(operation.operationId);
-  if (httpMethodWords.has(words[0]?.toLowerCase())) words.shift();
+  if (httpMethodWords.has(words[0]?.toLowerCase())) {
+    words.shift();
+  }
   const operationDomain = words[0] ?? 'esi';
   return safeDefaultIdentifier(toIdentifier(operationDomain, 'esi'), 'domain');
 }
@@ -300,8 +309,12 @@ function rejectDuplicateOrStale(
   operationIds: ReadonlySet<string>,
   name: string,
 ): void {
-  if (seen.has(operationId)) throw new Error(`Duplicate ${name}: ${operationId}`);
-  if (!operationIds.has(operationId)) throw new Error(`Stale or unknown ${name}: ${operationId}`);
+  if (seen.has(operationId)) {
+    throw new Error(`Duplicate ${name}: ${operationId}`);
+  }
+  if (!operationIds.has(operationId)) {
+    throw new Error(`Stale or unknown ${name}: ${operationId}`);
+  }
   seen.add(operationId);
 }
 
@@ -341,7 +354,9 @@ function validateFacadeCatalog(
       entry.operationId,
       `Facade domain/method collision ${facadeName}`,
     );
-    if (!domains.has(entry.domain)) domains.set(entry.domain, entry.operationId);
+    if (!domains.has(entry.domain)) {
+      domains.set(entry.domain, entry.operationId);
+    }
 
     const operation = operationsById.get(entry.operationId);
     if (operation !== undefined && operationHasOptions(operation)) {
@@ -419,14 +434,20 @@ function rejectDerivedCollision(
 
 function safeDefaultIdentifier(identifier: string, prefix: string): string {
   let value = identifier;
-  if (!/^[A-Za-z]/u.test(value)) value = `${prefix}${capitalize(value)}`;
-  if (reservedIdentifiers.has(value)) value = `${prefix}${capitalize(value)}`;
+  if (!/^[A-Za-z]/u.test(value)) {
+    value = `${prefix}${capitalize(value)}`;
+  }
+  if (reservedIdentifiers.has(value)) {
+    value = `${prefix}${capitalize(value)}`;
+  }
   return value;
 }
 
 function toIdentifier(value: string, fallback: string): string {
   const words = splitWords(value);
-  if (words.length === 0) return fallback;
+  if (words.length === 0) {
+    return fallback;
+  }
   return `${words[0].toLowerCase()}${words
     .slice(1)
     .map((word) => capitalize(word.toLowerCase()))
@@ -437,8 +458,12 @@ function compareOperationIds(
   left: { readonly operationId: string },
   right: { readonly operationId: string },
 ): number {
-  if (left.operationId < right.operationId) return -1;
-  if (left.operationId > right.operationId) return 1;
+  if (left.operationId < right.operationId) {
+    return -1;
+  }
+  if (left.operationId > right.operationId) {
+    return 1;
+  }
   return 0;
 }
 

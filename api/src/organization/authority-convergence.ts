@@ -30,7 +30,9 @@ export async function invalidateCharacterAuthoritySourcesInTransaction(
     .select({ policyVersion: deploymentSettings.registrationPolicyVersion })
     .from(deploymentSettings)
     .where(eq(deploymentSettings.id, 1))
-  if (!settings) return
+  if (!settings) {
+    return
+  }
 
   const ownerSources = await transaction
     .update(organizationAuthorityEvidence)
@@ -105,8 +107,8 @@ export async function invalidateCharacterAuthoritySourcesInTransaction(
       ),
     )
     .returning({
-      sourceId: organizationDerivedAuthoritySources.sourceId,
       organizationVersion: organizationDerivedAuthoritySources.organizationVersion,
+      sourceId: organizationDerivedAuthoritySources.sourceId,
       userId: organizationDerivedAuthoritySources.userId,
     })
 
@@ -145,50 +147,50 @@ export async function invalidateCharacterAuthoritySourcesInTransaction(
       ),
     )
     .returning({
-      sourceId: organizationCorporationSources.sourceId,
       organizationVersion: organizationCorporationSources.organizationVersion,
+      sourceId: organizationCorporationSources.sourceId,
       userId: organizationCorporationSources.sourceUserId,
     })
 
   await appendOrganizationAuditEvents(transaction, [
     ...ownerSources.map((source) => ({
-      deploymentId: 1 as const,
-      organizationVersion: source.organizationVersion,
-      policyVersion: settings.policyVersion,
-      eventType: 'authority-source.invalidated' as const,
-      actorType: 'system' as const,
       actorId: null,
-      subjectType: 'authority_source' as const,
-      subjectId: source.evidenceId,
-      reason: `Organization-owner source invalidated: ${input.outcome}.`,
-      outcome: 'revoked' as const,
+      actorType: 'system' as const,
+      deploymentId: 1 as const,
+      eventType: 'authority-source.invalidated' as const,
       occurredAt: now,
+      organizationVersion: source.organizationVersion,
+      outcome: 'revoked' as const,
+      policyVersion: settings.policyVersion,
+      reason: `Organization-owner source invalidated: ${input.outcome}.`,
+      subjectId: source.evidenceId,
+      subjectType: 'authority_source' as const,
     })),
     ...derivedSources.map((source) => ({
-      deploymentId: 1 as const,
-      organizationVersion: source.organizationVersion,
-      policyVersion: settings.policyVersion,
-      eventType: 'authority-source.invalidated' as const,
-      actorType: 'system' as const,
       actorId: null,
-      subjectType: 'authority_source' as const,
-      subjectId: source.sourceId,
-      reason: `Derived Director source invalidated: ${input.outcome}.`,
-      outcome: 'revoked' as const,
+      actorType: 'system' as const,
+      deploymentId: 1 as const,
+      eventType: 'authority-source.invalidated' as const,
       occurredAt: now,
+      organizationVersion: source.organizationVersion,
+      outcome: 'revoked' as const,
+      policyVersion: settings.policyVersion,
+      reason: `Derived Director source invalidated: ${input.outcome}.`,
+      subjectId: source.sourceId,
+      subjectType: 'authority_source' as const,
     })),
     ...corporationSources.map((source) => ({
-      deploymentId: 1 as const,
-      organizationVersion: source.organizationVersion,
-      policyVersion: settings.policyVersion,
-      eventType: 'authority-source.invalidated' as const,
-      actorType: 'system' as const,
       actorId: null,
-      subjectType: 'corporation_source' as const,
-      subjectId: source.sourceId,
-      reason: `Corporation source invalidated: ${input.outcome}.`,
-      outcome: 'revoked' as const,
+      actorType: 'system' as const,
+      deploymentId: 1 as const,
+      eventType: 'authority-source.invalidated' as const,
       occurredAt: now,
+      organizationVersion: source.organizationVersion,
+      outcome: 'revoked' as const,
+      policyVersion: settings.policyVersion,
+      reason: `Corporation source invalidated: ${input.outcome}.`,
+      subjectId: source.sourceId,
+      subjectType: 'corporation_source' as const,
     })),
   ])
 }
@@ -232,7 +234,9 @@ async function convergeAffiliationAuthoritySourcesInTransaction(
   transaction: DatabaseTransaction,
   input: { userIds: readonly string[]; now?: Date },
 ) {
-  if (input.userIds.length === 0) return
+  if (input.userIds.length === 0) {
+    return
+  }
   const mismatchedDerived = await transaction
     .select({ characterId: organizationDerivedAuthoritySources.characterId })
     .from(organizationDerivedAuthoritySources)
@@ -290,8 +294,8 @@ async function convergeAffiliationAuthoritySourcesInTransaction(
     // oxlint-disable-next-line no-await-in-loop
     await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
       characterId,
-      outcome: 'affiliation-changed',
       now: input.now,
+      outcome: 'affiliation-changed',
     })
   }
 }
@@ -302,12 +306,12 @@ export async function convergeObservedAffiliationInTransaction(
   observedAt: Date,
 ) {
   await convergeCurrentManagedMemberLifecyclesInTransaction(transaction, {
-    userIds,
     now: observedAt,
+    userIds,
   })
   await convergeAffiliationAuthoritySourcesInTransaction(transaction, {
-    userIds,
     now: observedAt,
+    userIds,
   })
 }
 
@@ -317,11 +321,11 @@ export async function invalidateOrganizationAuthoritySourcesInTransaction(
 ) {
   const now = input.now ?? new Date()
   const invalidation = {
-    status: 'invalid' as const,
-    graceUntil: null,
     failureClass: 'strict:organization-replaced',
+    graceUntil: null,
     invalidatedAt: now,
     invalidationOutcome: 'organization-replaced' as const,
+    status: 'invalid' as const,
     updatedAt: now,
   }
   const ownerSources = await transaction
@@ -334,10 +338,10 @@ export async function invalidateOrganizationAuthoritySourcesInTransaction(
       ),
     )
     .returning({
-      sourceId: organizationAuthorityEvidence.evidenceId,
       organizationVersion: organizationAuthorityEvidence.organizationVersion,
-      userId: organizationAuthorityEvidence.userId,
+      sourceId: organizationAuthorityEvidence.evidenceId,
       subjectType: sql<'authority_source'>`'authority_source'`,
+      userId: organizationAuthorityEvidence.userId,
     })
   const derivedSources = await transaction
     .update(organizationDerivedAuthoritySources)
@@ -349,10 +353,10 @@ export async function invalidateOrganizationAuthoritySourcesInTransaction(
       ),
     )
     .returning({
-      sourceId: organizationDerivedAuthoritySources.sourceId,
       organizationVersion: organizationDerivedAuthoritySources.organizationVersion,
-      userId: organizationDerivedAuthoritySources.userId,
+      sourceId: organizationDerivedAuthoritySources.sourceId,
       subjectType: sql<'authority_source'>`'authority_source'`,
+      userId: organizationDerivedAuthoritySources.userId,
     })
   const corporationSources = await transaction
     .update(organizationCorporationSources)
@@ -365,26 +369,26 @@ export async function invalidateOrganizationAuthoritySourcesInTransaction(
       ),
     )
     .returning({
-      sourceId: organizationCorporationSources.sourceId,
       organizationVersion: organizationCorporationSources.organizationVersion,
-      userId: organizationCorporationSources.sourceUserId,
+      sourceId: organizationCorporationSources.sourceId,
       subjectType: sql<'corporation_source'>`'corporation_source'`,
+      userId: organizationCorporationSources.sourceUserId,
     })
   const invalidated = [...ownerSources, ...derivedSources, ...corporationSources]
   await appendOrganizationAuditEvents(
     transaction,
     invalidated.map((source) => ({
-      deploymentId: 1 as const,
-      organizationVersion: source.organizationVersion,
-      policyVersion: input.policyVersion,
-      eventType: 'authority-source.invalidated' as const,
-      actorType: 'system' as const,
       actorId: null,
-      subjectType: source.subjectType,
-      subjectId: source.sourceId,
-      reason: 'Authority source invalidated because the managed organization changed.',
-      outcome: 'revoked' as const,
+      actorType: 'system' as const,
+      deploymentId: 1 as const,
+      eventType: 'authority-source.invalidated' as const,
       occurredAt: now,
+      organizationVersion: source.organizationVersion,
+      outcome: 'revoked' as const,
+      policyVersion: input.policyVersion,
+      reason: 'Authority source invalidated because the managed organization changed.',
+      subjectId: source.sourceId,
+      subjectType: source.subjectType,
     })),
   )
 }
@@ -397,11 +401,11 @@ export async function invalidateDerivedAuthorityPolicySourcesInTransaction(
   const sources = await transaction
     .update(organizationDerivedAuthoritySources)
     .set({
-      status: 'invalid',
-      graceUntil: null,
       failureClass: 'strict:policy-disabled',
+      graceUntil: null,
       invalidatedAt: now,
       invalidationOutcome: 'policy-disabled',
+      status: 'invalid',
       updatedAt: now,
     })
     .where(
@@ -411,24 +415,24 @@ export async function invalidateDerivedAuthorityPolicySourcesInTransaction(
       ),
     )
     .returning({
-      sourceId: organizationDerivedAuthoritySources.sourceId,
       organizationVersion: organizationDerivedAuthoritySources.organizationVersion,
+      sourceId: organizationDerivedAuthoritySources.sourceId,
       userId: organizationDerivedAuthoritySources.userId,
     })
   await appendOrganizationAuditEvents(
     transaction,
     sources.map((source) => ({
-      deploymentId: 1 as const,
-      organizationVersion: source.organizationVersion,
-      policyVersion: input.policyVersion,
-      eventType: 'authority-source.invalidated' as const,
-      actorType: 'system' as const,
       actorId: null,
-      subjectType: 'authority_source' as const,
-      subjectId: source.sourceId,
-      reason: 'Derived Director authority was disabled by organization policy.',
-      outcome: 'revoked' as const,
+      actorType: 'system' as const,
+      deploymentId: 1 as const,
+      eventType: 'authority-source.invalidated' as const,
       occurredAt: now,
+      organizationVersion: source.organizationVersion,
+      outcome: 'revoked' as const,
+      policyVersion: input.policyVersion,
+      reason: 'Derived Director authority was disabled by organization policy.',
+      subjectId: source.sourceId,
+      subjectType: 'authority_source' as const,
     })),
   )
 }
@@ -452,17 +456,17 @@ export async function reconcileAuthorityPolicyDeadlinesInTransaction(
   await appendOrganizationAuditEvents(
     transaction,
     invalidated.map((source) => ({
-      deploymentId: 1 as const,
-      organizationVersion: input.organizationVersion,
-      policyVersion: input.policyVersion,
-      eventType: 'authority-source.invalidated' as const,
-      actorType: 'system' as const,
       actorId: null,
-      subjectType: source.subjectType,
-      subjectId: source.sourceId,
-      reason: 'Authority evidence expired under the updated policy deadline.',
-      outcome: 'revoked' as const,
+      actorType: 'system' as const,
+      deploymentId: 1 as const,
+      eventType: 'authority-source.invalidated' as const,
       occurredAt: input.now,
+      organizationVersion: input.organizationVersion,
+      outcome: 'revoked' as const,
+      policyVersion: input.policyVersion,
+      reason: 'Authority evidence expired under the updated policy deadline.',
+      subjectId: source.sourceId,
+      subjectType: source.subjectType,
     })),
   )
 }
@@ -496,18 +500,18 @@ function deadlineExpressions(columns: AuthorityDeadlineColumns, input: Authority
     or (${status} = 'degraded' and ${boundedGraceUntil} <= ${input.now})
   )`
   return {
+    failureClass: sql<
+      string | null
+    >`case when ${expired} then 'strict:expired' else ${failureClass} end`,
     freshUntil: boundedFreshUntil,
     graceUntil: sql<Date | null>`case
       when ${expired} then null
       when ${status} = 'degraded' then ${boundedGraceUntil}
       else null
     end`,
-    status: sql<OrganizationAuthorityEvidenceStatus>`case when ${expired} then 'invalid' else ${status} end`,
-    failureClass: sql<
-      string | null
-    >`case when ${expired} then 'strict:expired' else ${failureClass} end`,
     invalidatedAt: sql<Date | null>`case when ${expired} then ${input.now} else ${invalidatedAt} end`,
     invalidationOutcome: sql<OrganizationAuthorityInvalidationOutcome | null>`case when ${expired} then 'expired' else ${invalidationOutcome} end`,
+    status: sql<OrganizationAuthorityEvidenceStatus>`case when ${expired} then 'invalid' else ${status} end`,
     updatedAt: input.now,
   }
 }
@@ -521,13 +525,13 @@ async function clampOwnerDeadlines(
     .set(
       deadlineExpressions(
         {
-          status: organizationAuthorityEvidence.status,
-          observedAt: organizationAuthorityEvidence.observedAt,
+          failureClass: organizationAuthorityEvidence.failureClass,
           freshUntil: organizationAuthorityEvidence.freshUntil,
           graceUntil: organizationAuthorityEvidence.graceUntil,
           invalidatedAt: organizationAuthorityEvidence.invalidatedAt,
           invalidationOutcome: organizationAuthorityEvidence.invalidationOutcome,
-          failureClass: organizationAuthorityEvidence.failureClass,
+          observedAt: organizationAuthorityEvidence.observedAt,
+          status: organizationAuthorityEvidence.status,
         },
         input,
       ),
@@ -539,11 +543,11 @@ async function clampOwnerDeadlines(
       ),
     )
     .returning({
-      sourceId: organizationAuthorityEvidence.evidenceId,
-      organizationVersion: organizationAuthorityEvidence.organizationVersion,
-      userId: organizationAuthorityEvidence.userId,
       invalidatedAt: organizationAuthorityEvidence.invalidatedAt,
+      organizationVersion: organizationAuthorityEvidence.organizationVersion,
+      sourceId: organizationAuthorityEvidence.evidenceId,
       subjectType: sql<'authority_source'>`'authority_source'`,
+      userId: organizationAuthorityEvidence.userId,
     })
 }
 
@@ -556,13 +560,13 @@ async function clampDerivedDeadlines(
     .set(
       deadlineExpressions(
         {
-          status: organizationDerivedAuthoritySources.status,
-          observedAt: organizationDerivedAuthoritySources.observedAt,
+          failureClass: organizationDerivedAuthoritySources.failureClass,
           freshUntil: organizationDerivedAuthoritySources.freshUntil,
           graceUntil: organizationDerivedAuthoritySources.graceUntil,
           invalidatedAt: organizationDerivedAuthoritySources.invalidatedAt,
           invalidationOutcome: organizationDerivedAuthoritySources.invalidationOutcome,
-          failureClass: organizationDerivedAuthoritySources.failureClass,
+          observedAt: organizationDerivedAuthoritySources.observedAt,
+          status: organizationDerivedAuthoritySources.status,
         },
         input,
       ),
@@ -574,11 +578,11 @@ async function clampDerivedDeadlines(
       ),
     )
     .returning({
-      sourceId: organizationDerivedAuthoritySources.sourceId,
-      organizationVersion: organizationDerivedAuthoritySources.organizationVersion,
-      userId: organizationDerivedAuthoritySources.userId,
       invalidatedAt: organizationDerivedAuthoritySources.invalidatedAt,
+      organizationVersion: organizationDerivedAuthoritySources.organizationVersion,
+      sourceId: organizationDerivedAuthoritySources.sourceId,
       subjectType: sql<'authority_source'>`'authority_source'`,
+      userId: organizationDerivedAuthoritySources.userId,
     })
 }
 
@@ -591,13 +595,13 @@ async function clampCorporationSourceDeadlines(
     .set(
       deadlineExpressions(
         {
-          status: organizationCorporationSources.status,
-          observedAt: organizationCorporationSources.observedAt,
+          failureClass: organizationCorporationSources.failureClass,
           freshUntil: organizationCorporationSources.freshUntil,
           graceUntil: organizationCorporationSources.graceUntil,
           invalidatedAt: organizationCorporationSources.invalidatedAt,
           invalidationOutcome: organizationCorporationSources.invalidationOutcome,
-          failureClass: organizationCorporationSources.failureClass,
+          observedAt: organizationCorporationSources.observedAt,
+          status: organizationCorporationSources.status,
         },
         input,
       ),
@@ -610,10 +614,10 @@ async function clampCorporationSourceDeadlines(
       ),
     )
     .returning({
-      sourceId: organizationCorporationSources.sourceId,
-      organizationVersion: organizationCorporationSources.organizationVersion,
-      userId: organizationCorporationSources.sourceUserId,
       invalidatedAt: organizationCorporationSources.invalidatedAt,
+      organizationVersion: organizationCorporationSources.organizationVersion,
+      sourceId: organizationCorporationSources.sourceId,
       subjectType: sql<'corporation_source'>`'corporation_source'`,
+      userId: organizationCorporationSources.sourceUserId,
     })
 }

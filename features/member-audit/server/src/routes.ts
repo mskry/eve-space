@@ -11,11 +11,11 @@ import type {
 
 const actionReason = z.string().trim().min(1).max(2000)
 const groupParams = z.object({ groupId: z.uuid() })
-const groupAssignmentParams = z.object({ groupId: z.uuid(), assignmentId: z.uuid() })
+const groupAssignmentParams = z.object({ assignmentId: z.uuid(), groupId: z.uuid() })
 const assignGroupBody = z
   .object({
-    reason: actionReason,
     expiresAt: z.iso.datetime({ offset: true }).nullable().optional(),
+    reason: actionReason,
   })
   .strict()
 const actionReasonBody = z.object({ reason: actionReason }).strict()
@@ -28,14 +28,14 @@ export function memberSummaryRoutes(_capabilities: object) {
     const target = context.var.platform.reviewerTarget
     return context.json(
       {
-        organizationVersion: target.organizationVersion,
-        managedMemberLifecycleId: target.managedMemberLifecycleId,
         account: target.account,
+        block: target.block,
         characters: target.characters,
         compliance: target.compliance,
-        groups: target.groups,
-        block: target.block,
         evidence: await context.var.platform.evidenceSummary.read(),
+        groups: target.groups,
+        managedMemberLifecycleId: target.managedMemberLifecycleId,
+        organizationVersion: target.organizationVersion,
       },
       200,
     )
@@ -51,10 +51,10 @@ export function memberSkillsRoutes(_capabilities: object) {
     )
     return context.json(
       {
-        trainedSkills,
         evidence: await readReviewerEvidence<MemberAuditTrainedSkillsEvidence>(
           context.var.platform,
         ),
+        trainedSkills,
       },
       200,
     )
@@ -67,8 +67,8 @@ export function memberAssetsRoutes(_capabilities: object) {
     const status = await context.var.platform.collectionStatus.read('assets', characterId)
     return context.json(
       {
-        status,
         evidence: await readReviewerEvidence<MemberAuditAssetEvidence>(context.var.platform),
+        status,
       },
       200,
     )
@@ -86,9 +86,9 @@ export function memberWalletRoutes(_capabilities: object) {
     return context.json(
       {
         balance,
+        evidence: await readReviewerEvidence<MemberAuditWalletEvidence>(context.var.platform, 500),
         journal,
         transactions,
-        evidence: await readReviewerEvidence<MemberAuditWalletEvidence>(context.var.platform, 500),
       },
       200,
     )
@@ -104,9 +104,9 @@ export function memberMailRoutes(_capabilities: object) {
     ])
     return context.json(
       {
-        headers,
         details,
         evidence: await readReviewerEvidence<MemberAuditMailEvidence>(context.var.platform, 500),
+        headers,
       },
       200,
     )
@@ -139,8 +139,8 @@ export function memberGroupRoutes(_capabilities: object) {
         const params = context.req.valid('param')
         return context.json(
           await context.var.platform.organizationCommands.revokeOrdinaryGroup({
-            groupId: params.groupId,
             assignmentId: params.assignmentId,
+            groupId: params.groupId,
             reason: context.req.valid('json').reason,
           }),
           200,
@@ -169,8 +169,9 @@ export function memberBlockRoutes(_capabilities: object) {
 function selectedCharacterId(
   target: PlatformReviewerTargetRouteEnv['Variables']['platform']['reviewerTarget'],
 ) {
-  if (target.selection.kind !== 'character')
+  if (target.selection.kind !== 'character') {
     throw new Error('Member Audit character target is unavailable')
+  }
   return target.selection.characterId
 }
 
@@ -178,6 +179,8 @@ function readReviewerEvidence<Evidence>(
   platform: PlatformReviewerTargetRouteEnv['Variables']['platform'],
   limit?: number,
 ): Promise<Evidence> {
-  if (!platform.evidence) throw new Error('Reviewer evidence capability is unavailable')
+  if (!platform.evidence) {
+    throw new Error('Reviewer evidence capability is unavailable')
+  }
   return platform.evidence.read(limit === undefined ? undefined : { limit }) as Promise<Evidence>
 }

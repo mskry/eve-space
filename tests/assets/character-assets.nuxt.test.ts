@@ -8,21 +8,23 @@ import type { AssetCollection, AssetRecord, AssetResourceState } from '../../app
 import { queryServer } from '../support/query-server'
 
 const mountedWrappers: { unmount: () => void }[] = []
-const characterId = 7_001
+const characterId = 7001
 
 beforeAll(() => queryServer.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => queryServer.close())
 
 afterEach(async () => {
   queryServer.resetHandlers()
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   await settle()
   document.body.replaceChildren()
 })
 
 describe('Assets workspace resource states', () => {
   it('distinguishes loading, scope, rejected authorization, cooldown, and unavailable states', async () => {
-    const loading = await mountWorkspace(null, state({ phase: 'loading', initialLoading: true }))
+    const loading = await mountWorkspace(null, state({ initialLoading: true, phase: 'loading' }))
     expect(loading.get('[role="status"] h2').text()).toBe('Resolving personal inventory')
     loading.unmount()
 
@@ -41,10 +43,10 @@ describe('Assets workspace resource states', () => {
       const access = await mountWorkspace(
         null,
         state({
-          phase,
-          message,
-          statusLabel: 'ESI 403 / ASSETS',
           action: { href: `/reauthorize/${characterId}`, label: 'AUTHORIZE ASSETS' },
+          message,
+          phase,
+          statusLabel: 'ESI 403 / ASSETS',
         }),
       )
       expect(access.get('[role="alert"] h2').text()).toBe(title)
@@ -58,8 +60,8 @@ describe('Assets workspace resource states', () => {
     const cooldown = await mountWorkspace(
       null,
       state({
-        phase: 'cooldown',
         message: 'Retry after 30 seconds.',
+        phase: 'cooldown',
         retryAt: '2026-09-03T12:00:30.000Z',
       }),
     )
@@ -70,7 +72,7 @@ describe('Assets workspace resource states', () => {
 
     const unavailable = await mountWorkspace(
       null,
-      state({ phase: 'unavailable', message: 'Complete collection unavailable.', canRetry: true }),
+      state({ canRetry: true, message: 'Complete collection unavailable.', phase: 'unavailable' }),
     )
     expect(unavailable.get('[role="alert"] h2').text()).toBe('Personal inventory unavailable')
     await unavailable.get('button').trigger('click')
@@ -83,8 +85,8 @@ describe('Assets workspace resource states', () => {
         asset(1),
         asset(2, {
           locationId: 30_000_142,
-          locationType: 'solar_system',
           locationName: 'Jita',
+          locationType: 'solar_system',
           solarSystemId: 30_000_142,
           solarSystemSecurityStatus: -0.06,
         }),
@@ -109,20 +111,20 @@ describe('Assets workspace resource states', () => {
   it('renders zero, singular, and plural route jumps while omitting unavailable routes', async () => {
     const wrapper = await mountWorkspace(
       collection([
-        asset(1, { locationName: 'Same system', locationId: 60_000_001 }),
+        asset(1, { locationId: 60_000_001, locationName: 'Same system' }),
         asset(2, {
-          locationName: 'One jump',
           locationId: 60_000_002,
+          locationName: 'One jump',
           solarSystemId: 30_000_143,
         }),
         asset(3, {
-          locationName: 'Two jumps',
           locationId: 60_000_003,
+          locationName: 'Two jumps',
           solarSystemId: 30_000_144,
         }),
         asset(4, {
-          locationName: 'Route unavailable',
           locationId: 60_000_004,
+          locationName: 'Route unavailable',
           solarSystemId: 30_000_145,
         }),
       ]),
@@ -156,23 +158,23 @@ describe('Assets workspace resource states', () => {
     const wrapper = await mountWorkspace(
       collection([
         asset(1, {
-          locationName: 'Alpha unavailable',
           locationId: 60_000_001,
+          locationName: 'Alpha unavailable',
           solarSystemId: 30_000_145,
         }),
         asset(2, {
-          locationName: 'Bravo two jumps',
           locationId: 60_000_002,
+          locationName: 'Bravo two jumps',
           solarSystemId: 30_000_144,
         }),
         asset(3, {
-          locationName: 'Charlie same system',
           locationId: 60_000_003,
+          locationName: 'Charlie same system',
           solarSystemId: 30_000_142,
         }),
         asset(4, {
-          locationName: 'Delta one jump',
           locationId: 60_000_004,
+          locationName: 'Delta one jump',
           solarSystemId: 30_000_143,
         }),
       ]),
@@ -193,7 +195,9 @@ describe('Assets workspace resource states', () => {
 
     const sort = wrapper.get('button[aria-label="Sort by"]')
     expect(sort.text()).toContain('Jumps ascending')
-    expect(wrapper.findAll('.assets-location-name').map((location) => location.text())).toEqual([
+    expect(
+      wrapper.findAll('.assets-location-name').map((location) => location.text()),
+    ).toStrictEqual([
       'Charlie same system',
       'Delta one jump',
       'Bravo two jumps',
@@ -219,7 +223,9 @@ describe('Assets workspace resource states', () => {
     await settle()
 
     expect(sort.text()).toContain('Jumps descending')
-    expect(wrapper.findAll('.assets-location-name').map((location) => location.text())).toEqual([
+    expect(
+      wrapper.findAll('.assets-location-name').map((location) => location.text()),
+    ).toStrictEqual([
       'Bravo two jumps',
       'Delta one jump',
       'Charlie same system',
@@ -230,16 +236,16 @@ describe('Assets workspace resource states', () => {
   it('keeps stale retained data primary and reports refresh and partial enrichment context', async () => {
     const wrapper = await mountWorkspace(
       collection([asset(1)], {
-        stale: true,
+        enrichment: { locations: 'partial', names: 'partial', types: 'unavailable' },
         refreshFailureClass: 'esi-unavailable',
-        enrichment: { types: 'unavailable', names: 'partial', locations: 'partial' },
+        stale: true,
       }),
       state({
-        phase: 'ready',
-        stale: true,
-        refreshFailed: true,
-        message: 'Live refresh failed.',
         canRetry: true,
+        message: 'Live refresh failed.',
+        phase: 'ready',
+        refreshFailed: true,
+        stale: true,
       }),
     )
 
@@ -264,14 +270,14 @@ describe('Assets workspace resource states', () => {
 
   it('offers reauthorization when an expired authorization still has retained data', async () => {
     const wrapper = await mountWorkspace(
-      collection([asset(1)], { stale: true, refreshFailureClass: 'esi-unavailable' }),
+      collection([asset(1)], { refreshFailureClass: 'esi-unavailable', stale: true }),
       state({
-        phase: 'ready',
-        stale: true,
-        refreshFailed: true,
+        action: { href: `/reauthorize/${characterId}`, label: 'AUTHORIZE ASSETS' },
         canRetry: false,
         message: 'Authorization expired.',
-        action: { href: `/reauthorize/${characterId}`, label: 'AUTHORIZE ASSETS' },
+        phase: 'ready',
+        refreshFailed: true,
+        stale: true,
       }),
     )
 
@@ -279,7 +285,7 @@ describe('Assets workspace resource states', () => {
     const authorize = wrapper.get('.assets-notice--warning button')
     expect(authorize.text()).toBe('AUTHORIZE ASSETS')
     await authorize.trigger('click')
-    expect(wrapper.emitted('authorize')?.[0]).toEqual([
+    expect(wrapper.emitted('authorize')?.[0]).toStrictEqual([
       { href: `/reauthorize/${characterId}`, label: 'AUTHORIZE ASSETS' },
     ])
   })
@@ -319,10 +325,10 @@ describe('Assets workspace resource states', () => {
     const wrapper = await mountWorkspace(
       collection([
         asset(57_006, {
-          typeId: 57_006,
-          typeName: 'Raptor Aurora Universalis SKIN',
           categoryId: 91,
           categoryName: 'SKINs',
+          typeId: 57_006,
+          typeName: 'Raptor Aurora Universalis SKIN',
         }),
       ]),
       state(),
@@ -340,15 +346,15 @@ describe('Assets workspace inventory interactions', () => {
       props: {
         categoryOptions: [{ value: 65, label: 'Structure' }],
         filters: {
-          search: '',
-          typeIds: [999],
-          groupIds: [],
+          blueprint: 'all',
           categoryIds: [],
+          flags: [''],
+          groupIds: [],
           locationKeys: [],
           locationTypes: [],
-          flags: [''],
+          search: '',
           singleton: 'all',
-          blueprint: 'all',
+          typeIds: [999],
         },
         flagOptions: [
           { value: '', label: 'Unknown flag' },
@@ -356,11 +362,11 @@ describe('Assets workspace inventory interactions', () => {
         ],
         groupOptions: [{ value: 12, label: 'Cargo Container' }],
         locationOptions: [{ value: 'station:1', label: 'Station 1' }],
-        typeOptions: [{ value: 100, label: 'Secure Container' }],
         matchCount: 1,
-        sourceCount: 1,
         sort: 'item',
         sortOptions: [{ value: 'item', label: 'Name' }],
+        sourceCount: 1,
+        typeOptions: [{ value: 100, label: 'Secure Container' }],
       },
       route: false,
     })
@@ -389,50 +395,50 @@ describe('Assets workspace inventory interactions', () => {
         typeName: 'Secure Container',
       }),
       asset(2, {
-        customName: 'Nested probe',
-        locationId: 1,
-        locationType: 'item',
-        locationName: null,
-        parentItemId: 1,
-        locationFlag: 'FutureFlag',
-        quantity: 12,
         categoryId: 9,
         categoryName: 'Blueprint',
+        customName: 'Nested probe',
         isBlueprintCopy: true,
-        unitVolume: null,
+        locationFlag: 'FutureFlag',
+        locationId: 1,
+        locationName: null,
+        locationType: 'item',
+        parentItemId: 1,
+        quantity: 12,
         totalVolume: null,
+        unitVolume: null,
       }),
       asset(3, {
-        typeId: 999,
-        typeName: 'Unknown type 999',
-        groupId: null,
-        groupName: null,
         categoryId: null,
         categoryName: null,
-        locationId: 9_999,
-        locationType: 'other',
-        locationName: null,
+        groupId: null,
+        groupName: null,
         locationFlag: '',
+        locationId: 9999,
+        locationName: null,
+        locationType: 'other',
+        typeId: 999,
+        typeName: 'Unknown type 999',
       }),
       asset(4, {
         customName: 'Lost cargo',
         locationId: 404,
-        locationType: 'item',
         locationName: null,
+        locationType: 'item',
         parentItemId: 404,
       }),
       asset(5, {
         customName: 'Cycle alpha',
         locationId: 6,
-        locationType: 'item',
         locationName: null,
+        locationType: 'item',
         parentItemId: 6,
       }),
       asset(6, {
         customName: 'Cycle beta',
         locationId: 5,
-        locationType: 'item',
         locationName: null,
+        locationType: 'item',
         parentItemId: 5,
       }),
     ]
@@ -442,7 +448,7 @@ describe('Assets workspace inventory interactions', () => {
     expect(wrapper.get('table').attributes('class')).toContain('assets-manifest')
     expect(
       wrapper.findAll('thead th button').map((heading) => heading.text().replace(/ [<>^v]+$/, '')),
-    ).toEqual(['Name', 'Quantity', 'Group', 'Category', 'Placement', 'Volume', 'Unit vol.'])
+    ).toStrictEqual(['Name', 'Quantity', 'Group', 'Category', 'Placement', 'Volume', 'Unit vol.'])
     await wrapper.get('.assets-strip-filters').trigger('click')
     expect(wrapper.find('#assets-type-filter').exists()).toBe(true)
     expect(wrapper.find('#assets-group-filter').exists()).toBe(false)
@@ -490,8 +496,8 @@ describe('Assets workspace inventory interactions', () => {
         asset(2, {
           customName: 'Nested item',
           locationId: 1,
-          locationType: 'item',
           locationName: null,
+          locationType: 'item',
           parentItemId: 1,
         }),
       ]),
@@ -525,11 +531,11 @@ describe('Assets workspace inventory interactions', () => {
         asset(1, { customName: 'None', typeName: 'Asset Safety Wrap' }),
         asset(2, {
           customName: 'mskvites on a branch',
-          typeName: 'Amarr Shuttle',
           locationId: 1,
-          locationType: 'item',
           locationName: null,
+          locationType: 'item',
           parentItemId: 1,
+          typeName: 'Amarr Shuttle',
         }),
       ]),
       state(),
@@ -539,7 +545,7 @@ describe('Assets workspace inventory interactions', () => {
     const order = wrapper
       .findAll('.assets-hierarchy-row')
       .map((row) => row.attributes('data-asset-item-id'))
-    expect(order).toEqual(['1', '2'])
+    expect(order).toStrictEqual(['1', '2'])
     expect(wrapper.get('[data-asset-item-id="2"]').attributes('data-depth')).toBe('1')
   })
 
@@ -622,7 +628,7 @@ describe('Assets workspace inventory interactions', () => {
       wrapper
         .findAll('.assets-location-toggle')
         .map((toggle) => toggle.attributes('aria-expanded')),
-    ).toEqual(['true', ...Array.from({ length: 49 }, () => 'false')])
+    ).toStrictEqual(['true', ...Array.from({ length: 49 }, () => 'false')])
     expect(wrapper.text()).not.toContain('Location 001')
   })
 
@@ -632,12 +638,12 @@ describe('Assets workspace inventory interactions', () => {
       http.get('*/api/universe/types/100', ({ request }) => {
         requests.push(new URL(request.url).pathname)
         return HttpResponse.json({
-          typeId: 100,
-          name: 'Secure Container',
-          description: 'Public static detail only.',
-          group: { id: 12, name: 'Cargo Container' },
           category: { id: 65, name: 'Structure' },
+          description: 'Public static detail only.',
           detail: null,
+          group: { id: 12, name: 'Cargo Container' },
+          name: 'Secure Container',
+          typeId: 100,
         })
       }),
     )
@@ -646,8 +652,8 @@ describe('Assets workspace inventory interactions', () => {
         asset(1, { customName: 'Named vault', typeName: 'Secure Container' }),
         asset(2, {
           locationId: 1,
-          locationType: 'item',
           locationName: null,
+          locationType: 'item',
           parentItemId: 1,
         }),
       ]),
@@ -660,19 +666,19 @@ describe('Assets workspace inventory interactions', () => {
     expect(trigger.element.tagName).toBe('BUTTON')
     const informationIcon = trigger.get('.app-information-icon')
     expect(informationIcon.element.tagName).toBe('svg')
-    expect(informationIcon.attributes()).toMatchObject({ width: '16', height: '16' })
+    expect(informationIcon.attributes()).toMatchObject({ height: '16', width: '16' })
     await trigger.trigger('mouseenter')
     await trigger.trigger('pointerenter')
     await settle()
-    expect(requests).toEqual([])
+    expect(requests).toStrictEqual([])
 
     trigger.element.focus()
     await trigger.trigger('click')
     await vi.waitFor(() =>
       expect(document.querySelector('[role="dialog"] h2')?.textContent).toBe('Secure Container'),
     )
-    expect(requests).toEqual(['/api/universe/types/100'])
-    expect(wrapper.emitted('itemInformation')).toEqual([[1]])
+    expect(requests).toStrictEqual(['/api/universe/types/100'])
+    expect(wrapper.emitted('itemInformation')).toStrictEqual([[1]])
     const close = document.querySelector<HTMLButtonElement>(
       '[role="dialog"] button[aria-label="Close item information"]',
     )!
@@ -692,12 +698,12 @@ describe('Assets workspace inventory interactions', () => {
     const wrapper = await mountWorkspace(
       collection([
         asset(1, {
-          typeId: 60,
-          typeName: 'Asset Safety Wrap',
-          groupId: 12,
-          groupName: 'Cargo Container',
           categoryId: 65,
           categoryName: 'Structure',
+          groupId: 12,
+          groupName: 'Cargo Container',
+          typeId: 60,
+          typeName: 'Asset Safety Wrap',
         }),
       ]),
       state(),
@@ -746,16 +752,16 @@ async function settle() {
 
 function state(overrides: Partial<AssetResourceState> = {}): AssetResourceState {
   return {
-    phase: 'ready',
-    initialLoading: false,
-    refreshing: false,
-    refreshFailed: false,
-    stale: false,
-    message: null,
-    statusLabel: null,
-    canRetry: false,
-    retryAt: null,
     action: null,
+    canRetry: false,
+    initialLoading: false,
+    message: null,
+    phase: 'ready',
+    refreshFailed: false,
+    refreshing: false,
+    retryAt: null,
+    stale: false,
+    statusLabel: null,
     ...overrides,
   }
 }
@@ -766,37 +772,37 @@ function collection(
 ): AssetCollection {
   return {
     assets,
-    enrichment: { types: 'complete', names: 'complete', locations: 'complete' },
-    stale: false,
-    validatedAt: '2026-09-03T12:00:00.000Z',
+    enrichment: { locations: 'complete', names: 'complete', types: 'complete' },
     refreshFailureClass: null,
     retryAt: null,
+    stale: false,
+    validatedAt: '2026-09-03T12:00:00.000Z',
     ...overrides,
   }
 }
 
 function asset(itemId: number, overrides: Partial<AssetRecord> = {}): AssetRecord {
   return {
-    itemId,
-    typeId: 100,
-    typeName: `Inventory item ${itemId}`,
-    groupId: 12,
-    groupName: 'Cargo Container',
     categoryId: 65,
     categoryName: 'Structure',
-    unitVolume: 1.5,
-    totalVolume: 1.5,
-    quantity: 1,
-    isSingleton: true,
-    isBlueprintCopy: null,
     customName: null,
+    groupId: 12,
+    groupName: 'Cargo Container',
+    isBlueprintCopy: null,
+    isSingleton: true,
+    itemId,
+    locationFlag: 'Hangar',
     locationId: 60_003_760,
-    locationType: 'station',
     locationName: 'Jita IV - Moon 4',
+    locationType: 'station',
+    parentItemId: null,
+    quantity: 1,
     solarSystemId: 30_000_142,
     solarSystemSecurityStatus: 0.945,
-    locationFlag: 'Hangar',
-    parentItemId: null,
+    totalVolume: 1.5,
+    typeId: 100,
+    typeName: `Inventory item ${itemId}`,
+    unitVolume: 1.5,
     ...overrides,
   }
 }

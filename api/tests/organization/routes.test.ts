@@ -52,23 +52,23 @@ const mocks = vi.hoisted(() => {
     }
   } = {
     context: {
-      organizationVersion: 1,
-      state: 'compliant' as const,
-      evidenceFreshness: 'fresh' as const,
-      reviewDeadline: null,
       accessValidUntil: new Date('2027-09-01T12:00:00.000Z'),
       blocked: false,
+      evidenceFreshness: 'fresh' as const,
+      organizationVersion: 1,
+      reviewDeadline: null,
+      state: 'compliant' as const,
     },
   }
   return {
-    CorporationSourceMutationError,
     CharacterExceptionMutationError,
+    CorporationSourceMutationError,
     GroupMutationError,
     MemberBlockMutationError,
-    PermissionCatalogError,
     OwnerSourceReplacementError,
-    RoleMutationError,
+    PermissionCatalogError,
     RegistrationPolicyMutationError,
+    RoleMutationError,
     aggregateOrganizationActivities: vi.fn(),
     approveOrganizationCharacterException: vi.fn(),
     assignOrganizationGroup: vi.fn(),
@@ -77,20 +77,21 @@ const mocks = vi.hoisted(() => {
     createOrganizationPermissionBundle: vi.fn(),
     expireOrganizationCharacterException: vi.fn(),
     findSession: vi.fn(),
-    getOrganizationAccountComplianceDetails: vi.fn(),
     getOrganizationAccessContext: vi.fn(),
+    getOrganizationAccountComplianceDetails: vi.fn(),
     grantOrganizationRole: vi.fn(),
-    hasCurrentOrganizationOwnerAuthority: vi.fn(),
-    hasCurrentOrganizationManagerAuthority: vi.fn(),
     hasCurrentOrganizationHrAuthority: vi.fn(),
-    listOrganizationRosterCoverage: vi.fn(),
+    hasCurrentOrganizationManagerAuthority: vi.fn(),
+    hasCurrentOrganizationOwnerAuthority: vi.fn(),
     listCurrentOrganizationAuditHistory: vi.fn(),
     listCurrentOrganizationCharacterExceptionCandidates: vi.fn(),
-    listCurrentOrganizationGroups: vi.fn(),
-    listCurrentOrganizationPermissionBundles: vi.fn(),
     listCurrentOrganizationCharacterExceptions: vi.fn(),
+    listCurrentOrganizationGroups: vi.fn(),
     listCurrentOrganizationMemberBlocks: vi.fn(),
+    listCurrentOrganizationPermissionBundles: vi.fn(),
     listCurrentOrganizationRoles: vi.fn(),
+    listEnabledPermissionCatalog: vi.fn(),
+    listOrganizationRosterCoverage: vi.fn(),
     loadCurrentOrganizationAuthorityForUser: vi.fn(),
     loadOrganizationSession: vi.fn(
       async (
@@ -102,16 +103,15 @@ const mocks = vi.hoisted(() => {
       },
     ),
     organizationSession,
-    revokeOrganizationRole: vi.fn(),
-    revokeOrganizationCharacterException: vi.fn(),
-    revokeOrganizationGroupAssignment: vi.fn(),
+    previewEnabledPermissionProfile: vi.fn(),
     registerOrganizationCorporationSource: vi.fn(),
     replaceOrganizationOwnerSource: vi.fn(),
-    listEnabledPermissionCatalog: vi.fn(),
-    previewEnabledPermissionProfile: vi.fn(),
+    revokeOrganizationCharacterException: vi.fn(),
+    revokeOrganizationGroupAssignment: vi.fn(),
+    revokeOrganizationRole: vi.fn(),
     unblockOrganizationMember: vi.fn(),
-    updateOrganizationRegistrationPolicy: vi.fn(),
     updateOrganizationPermissionBundle: vi.fn(),
+    updateOrganizationRegistrationPolicy: vi.fn(),
   }
 })
 
@@ -138,8 +138,8 @@ vi.mock('../../src/organization/group-store.js', () => ({
   assignOrganizationGroup: mocks.assignOrganizationGroup,
   createOrganizationGroup: mocks.createOrganizationGroup,
   createOrganizationPermissionBundle: mocks.createOrganizationPermissionBundle,
-  listCurrentOrganizationPermissionBundles: mocks.listCurrentOrganizationPermissionBundles,
   listCurrentOrganizationGroups: mocks.listCurrentOrganizationGroups,
+  listCurrentOrganizationPermissionBundles: mocks.listCurrentOrganizationPermissionBundles,
   revokeOrganizationGroupAssignment: mocks.revokeOrganizationGroupAssignment,
   updateOrganizationPermissionBundle: mocks.updateOrganizationPermissionBundle,
 }))
@@ -175,8 +175,8 @@ vi.mock('../../src/organization/role-store.js', () => ({
   OrganizationRoleMutationError: mocks.RoleMutationError,
   getOrganizationAccessContext: mocks.getOrganizationAccessContext,
   grantOrganizationRole: mocks.grantOrganizationRole,
-  hasCurrentOrganizationOwnerAuthority: mocks.hasCurrentOrganizationOwnerAuthority,
   hasCurrentOrganizationHrAuthority: mocks.hasCurrentOrganizationHrAuthority,
+  hasCurrentOrganizationOwnerAuthority: mocks.hasCurrentOrganizationOwnerAuthority,
   listCurrentOrganizationRoles: mocks.listCurrentOrganizationRoles,
   loadCurrentOrganizationAuthorityForUser: mocks.loadCurrentOrganizationAuthorityForUser,
   revokeOrganizationRole: mocks.revokeOrganizationRole,
@@ -206,109 +206,109 @@ const groupId = '81974469-fdfe-4327-9f87-1df6e23badc4'
 const assignmentId = '7643fd73-6350-4307-b7cd-041b74c41ad6'
 const blockId = 'bc83840d-47c2-4c76-aed4-94d3e51407f7'
 const organizationActivityPermission = {
-  type: 'module' as const,
-  publisherPackage: '@eve-space/organization-activity-manifest',
-  moduleId: 'organization-activity',
   key: 'organization-activity.view',
+  moduleId: 'organization-activity',
+  publisherPackage: '@eve-space/organization-activity-manifest',
+  type: 'module' as const,
 }
 const grant = {
   grantId,
-  organizationVersion: 1,
-  userId: targetUserId,
-  role: 'hr_auditor',
-  reason: 'HR coverage duty.',
-  grantedByUserId: actorUserId,
   grantedAt: '2026-08-31T12:00:00.000Z',
+  grantedByUserId: actorUserId,
+  organizationVersion: 1,
+  reason: 'HR coverage duty.',
+  revocationReason: null,
   revokedAt: null,
   revokedByUserId: null,
-  revocationReason: null,
+  role: 'hr_auditor',
+  userId: targetUserId,
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.organizationSession.context = {
-    organizationVersion: 1,
-    state: 'compliant',
-    evidenceFreshness: 'fresh',
-    reviewDeadline: null,
     accessValidUntil: new Date('2027-09-01T12:00:00.000Z'),
     blocked: false,
+    evidenceFreshness: 'fresh',
+    organizationVersion: 1,
+    reviewDeadline: null,
+    state: 'compliant',
   }
   mocks.findSession.mockResolvedValue({
-    userId: actorUserId,
     mainCharacter: {
-      characterId: 1_404_328_063,
-      name: 'Owner',
-      corporationId: 98_000_001,
       allianceId: null,
+      characterId: 1_404_328_063,
+      corporationId: 98_000_001,
       isMain: true,
+      name: 'Owner',
     },
+    userId: actorUserId,
   })
   mocks.hasCurrentOrganizationOwnerAuthority.mockResolvedValue(true)
   mocks.hasCurrentOrganizationManagerAuthority.mockResolvedValue(true)
   mocks.hasCurrentOrganizationHrAuthority.mockResolvedValue(true)
   mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValue({
-    organizationOwner: true,
-    explicitDirector: false,
-    derivedDirector: false,
-    director: false,
     degraded: false,
+    derivedDirector: false,
+    derivedSources: [],
+    director: false,
+    explicitDirector: false,
+    organizationOwner: true,
     ownerSource: {
-      sourceId: 'cc83840d-47c2-4c76-aed4-94d3e51407f7',
       characterId: 1_404_328_063,
+      sourceId: 'cc83840d-47c2-4c76-aed4-94d3e51407f7',
       state: 'fresh',
     },
-    derivedSources: [],
   })
   mocks.listCurrentOrganizationGroups.mockResolvedValue({ groups: [] })
   mocks.listCurrentOrganizationPermissionBundles.mockResolvedValue({ bundles: [] })
   mocks.listEnabledPermissionCatalog.mockResolvedValue({ permissions: [], profiles: [] })
   mocks.listCurrentOrganizationMemberBlocks.mockResolvedValue({ blocks: [] })
   mocks.getOrganizationAccessContext.mockResolvedValue({
-    organization: {
-      organizationType: 'corporation',
-      organizationId: 98_000_001,
-      organizationName: 'Example Corporation',
-      organizationTicker: 'EX',
-      organizationVersion: 1,
-    },
-    isOrganizationOwner: true,
-    isBlocked: false,
-    capabilities: { reviewRegistration: true, viewRosterCoverage: true },
-    claimAvailable: false,
-    ownerStatus: 'fresh',
-    ownerFailureClass: null,
-    freshUntil: '2026-08-31T13:00:00.000Z',
-    graceUntil: null,
-    reviewDeadline: null,
     authorityCharacter: {
       characterId: 1_404_328_063,
-      name: 'Owner',
-      sourceType: 'designated-owner',
       corporationId: 98_000_001,
-      observedAt: '2026-08-31T12:00:00.000Z',
       freshUntil: '2026-08-31T13:00:00.000Z',
       graceUntil: null,
       lastCheckedAt: '2026-08-31T12:00:00.000Z',
+      name: 'Owner',
+      observedAt: '2026-08-31T12:00:00.000Z',
+      sourceType: 'designated-owner',
     },
+    capabilities: { reviewRegistration: true, viewRosterCoverage: true },
+    claimAvailable: false,
+    freshUntil: '2026-08-31T13:00:00.000Z',
+    graceUntil: null,
+    isBlocked: false,
+    isOrganizationOwner: true,
+    organization: {
+      organizationId: 98_000_001,
+      organizationName: 'Example Corporation',
+      organizationTicker: 'EX',
+      organizationType: 'corporation',
+      organizationVersion: 1,
+    },
+    ownerFailureClass: null,
+    ownerStatus: 'fresh',
+    reviewDeadline: null,
   })
   mocks.listCurrentOrganizationRoles.mockResolvedValue({
+    corporationSources: [],
+    derivedSources: [],
     grants: [grant],
     ownerSources: [],
-    derivedSources: [],
-    corporationSources: [],
   })
   mocks.getOrganizationAccountComplianceDetails.mockResolvedValue({
-    organizationVersion: 1,
-    state: 'compliant',
-    evidenceFreshness: 'fresh',
-    reviewDeadline: null,
     characters: [],
+    evidenceFreshness: 'fresh',
+    organizationVersion: 1,
+    reviewDeadline: null,
+    state: 'compliant',
   })
   mocks.aggregateOrganizationActivities.mockResolvedValue({
-    organizationVersion: 1,
-    generatedAt: '2026-09-02T12:00:00.000Z',
     activities: [],
+    generatedAt: '2026-09-02T12:00:00.000Z',
+    organizationVersion: 1,
     sources: [],
     stale: false,
   })
@@ -321,135 +321,135 @@ beforeEach(() => {
   mocks.grantOrganizationRole.mockResolvedValue(grant)
   mocks.revokeOrganizationRole.mockResolvedValue({
     ...grant,
+    revocationReason: 'Duty ended.',
     revokedAt: '2026-08-31T13:00:00.000Z',
     revokedByUserId: actorUserId,
-    revocationReason: 'Duty ended.',
   })
   mocks.createOrganizationPermissionBundle.mockResolvedValue({
     bundleId,
-    organizationVersion: 1,
     name: 'Operations',
+    organizationVersion: 1,
     permissions: [organizationActivityPermission],
   })
   mocks.updateOrganizationPermissionBundle.mockResolvedValue({
     bundleId,
-    organizationVersion: 1,
     name: 'Operations',
+    organizationVersion: 1,
     permissions: [],
   })
   mocks.createOrganizationGroup.mockResolvedValue({
-    groupId,
-    organizationVersion: 1,
-    name: 'Operations',
-    restricted: false,
-    managementMode: 'manual',
-    complianceSource: null,
     bundleIds: [bundleId],
+    complianceSource: null,
+    groupId,
+    managementMode: 'manual',
+    name: 'Operations',
+    organizationVersion: 1,
+    restricted: false,
   })
   const assignment = {
+    assignedActorType: 'user',
+    assignedAt: '2026-09-01T12:00:00.000Z',
+    assignedByUserId: actorUserId,
     assignmentId,
+    assignmentSource: 'manual',
+    expiresAt: '2026-10-01T12:00:00.000Z',
     groupId,
     organizationVersion: 1,
-    userId: targetUserId,
-    assignmentSource: 'manual',
-    assignedActorType: 'user',
-    assignedByUserId: actorUserId,
     reason: 'Operations duty.',
-    assignedAt: '2026-09-01T12:00:00.000Z',
-    expiresAt: '2026-10-01T12:00:00.000Z',
-    revokedAt: null,
-    revokedActorType: null,
-    revokedByUserId: null,
     revocationReason: null,
+    revokedActorType: null,
+    revokedAt: null,
+    revokedByUserId: null,
+    userId: targetUserId,
   }
   mocks.assignOrganizationGroup.mockResolvedValue(assignment)
   mocks.revokeOrganizationGroupAssignment.mockResolvedValue({
     ...assignment,
-    revokedAt: '2026-09-02T12:00:00.000Z',
-    revokedActorType: 'user',
-    revokedByUserId: actorUserId,
     revocationReason: 'Duty ended.',
+    revokedActorType: 'user',
+    revokedAt: '2026-09-02T12:00:00.000Z',
+    revokedByUserId: actorUserId,
   })
   const block = {
     blockId,
-    organizationVersion: 1,
-    userId: targetUserId,
-    blockedByUserId: actorUserId,
-    reason: 'Repeated policy abuse.',
     blockedAt: '2026-09-01T12:00:00.000Z',
+    blockedByUserId: actorUserId,
+    organizationVersion: 1,
+    reason: 'Repeated policy abuse.',
+    unblockReason: null,
     unblockedAt: null,
     unblockedByUserId: null,
-    unblockReason: null,
+    userId: targetUserId,
   }
   mocks.blockOrganizationMember.mockResolvedValue(block)
   mocks.unblockOrganizationMember.mockResolvedValue({
     ...block,
+    unblockReason: 'Review completed.',
     unblockedAt: '2026-09-02T12:00:00.000Z',
     unblockedByUserId: actorUserId,
-    unblockReason: 'Review completed.',
   })
   mocks.listOrganizationRosterCoverage.mockResolvedValue({
-    stale: false,
+    corporations: [],
     managedCorporations: {
-      status: 'current',
-      validatedAt: '2026-09-01T12:00:00.000Z',
       attemptedAt: '2026-09-01T12:00:00.000Z',
       lastFailureClass: null,
+      status: 'current',
+      validatedAt: '2026-09-01T12:00:00.000Z',
     },
-    corporations: [],
+    stale: false,
   })
   mocks.registerOrganizationCorporationSource.mockResolvedValue({
     replaced: false,
     source: {
-      sourceId: 'cc83840d-47c2-4c76-aed4-94d3e51407f7',
-      organizationVersion: 1,
-      corporationId: 98_000_001,
       characterId: 1_404_328_063,
-      registeredByUserId: actorUserId,
+      corporationId: 98_000_001,
+      organizationVersion: 1,
       registeredAt: '2026-09-01T12:00:00.000Z',
+      registeredByUserId: actorUserId,
+      sourceId: 'cc83840d-47c2-4c76-aed4-94d3e51407f7',
     },
   })
   mocks.replaceOrganizationOwnerSource.mockResolvedValue({
+    freshUntil: '2026-09-01T13:00:00.000Z',
     grantId,
     sourceCharacterId: 1_404_328_063,
     sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
     status: 'fresh',
-    freshUntil: '2026-09-01T13:00:00.000Z',
   })
   mocks.updateOrganizationRegistrationPolicy.mockResolvedValue({
+    authorityEvidenceFreshDurationSeconds: 3600,
+    derivedDirectorAuthorityEnabled: true,
     organizationVersion: 1,
     policyVersion: 2,
     requiredScopes: ['esi-skills.read_skills.v1'],
-    strictRemediationDurationSeconds: 0,
     staleEvidenceGraceDurationSeconds: 3600,
-    derivedDirectorAuthorityEnabled: true,
-    authorityEvidenceFreshDurationSeconds: 3600,
+    strictRemediationDurationSeconds: 0,
   })
   const exception = {
-    exceptionId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
-    organizationVersion: 1,
-    userId: targetUserId,
-    characterId: 90_000_001,
-    approverUserId: actorUserId,
-    reason: 'Approved external character.',
     approvedAt: new Date('2026-09-01T12:00:00.000Z'),
-    expiresAt: null,
+    approverUserId: actorUserId,
+    characterId: 90_000_001,
+    exceptionId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
     expiredAt: null,
+    expiresAt: null,
+    organizationVersion: 1,
+    reason: 'Approved external character.',
+    revocationReason: null,
     revokedAt: null,
     revokedByUserId: null,
-    revocationReason: null,
+    userId: targetUserId,
   }
   mocks.approveOrganizationCharacterException.mockResolvedValue(exception)
   mocks.expireOrganizationCharacterException.mockResolvedValue({
     ...exception,
-    expiresAt: new Date('2026-09-02T12:00:00.000Z'),
     expiredAt: new Date('2026-09-02T12:00:00.000Z'),
+    expiresAt: new Date('2026-09-02T12:00:00.000Z'),
   })
   mocks.revokeOrganizationCharacterException.mockResolvedValue({
     ...exception,
+    revocationReason: 'No longer required.',
     revokedAt: new Date('2026-09-02T12:00:00.000Z'),
     revokedByUserId: actorUserId,
-    revocationReason: 'No longer required.',
   })
 })
 
@@ -461,7 +461,7 @@ describe('organization compliance routes', () => {
     mocks.hasCurrentOrganizationOwnerAuthority.mockResolvedValueOnce(false)
     const unauthorized = await get('/roles')
 
-    expect([anonymous.status, success.status, invalid.status, unauthorized.status]).toEqual([
+    expect([anonymous.status, success.status, invalid.status, unauthorized.status]).toStrictEqual([
       401, 200, 400, 403,
     ])
     for (const response of [anonymous, success, invalid, unauthorized]) {
@@ -552,9 +552,9 @@ describe('organization compliance routes', () => {
 
   test('returns authoritative stale activity metadata at the response root', async () => {
     mocks.aggregateOrganizationActivities.mockResolvedValueOnce({
-      organizationVersion: 1,
-      generatedAt: '2026-09-02T12:00:00.000Z',
       activities: [],
+      generatedAt: '2026-09-02T12:00:00.000Z',
+      organizationVersion: 1,
       sources: [
         {
           sourceId: 'organization-activity:activity',
@@ -595,23 +595,23 @@ describe('organization compliance routes', () => {
 describe('organization compliance management routes', () => {
   test('updates registration policy through an audited owner mutation', async () => {
     const response = await mutate('PUT', '/registration-policy', {
-      requiredScopes: ['esi-skills.read_skills.v1'],
-      strictRemediationDurationSeconds: 0,
-      staleEvidenceGraceDurationSeconds: 3600,
-      derivedDirectorAuthorityEnabled: true,
       authorityEvidenceFreshDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
       reason: 'Require current skills authorization.',
+      requiredScopes: ['esi-skills.read_skills.v1'],
+      staleEvidenceGraceDurationSeconds: 3600,
+      strictRemediationDurationSeconds: 0,
     })
 
     expect(response.status).toBe(200)
     expect(mocks.updateOrganizationRegistrationPolicy).toHaveBeenCalledWith({
       actorUserId,
-      requiredScopes: ['esi-skills.read_skills.v1'],
-      strictRemediationDurationSeconds: 0,
-      staleEvidenceGraceDurationSeconds: 3600,
-      derivedDirectorAuthorityEnabled: true,
       authorityEvidenceFreshDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
       reason: 'Require current skills authorization.',
+      requiredScopes: ['esi-skills.read_skills.v1'],
+      staleEvidenceGraceDurationSeconds: 3600,
+      strictRemediationDurationSeconds: 0,
     })
   })
 
@@ -620,12 +620,12 @@ describe('organization compliance management routes', () => {
     mocks.organizationSession.context.accessValidUntil = null
 
     const response = await mutate('PUT', '/registration-policy', {
-      requiredScopes: [],
-      strictRemediationDurationSeconds: 0,
-      staleEvidenceGraceDurationSeconds: 3600,
-      derivedDirectorAuthorityEnabled: true,
       authorityEvidenceFreshDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
       reason: 'Remove the policy that suspended the owner.',
+      requiredScopes: [],
+      staleEvidenceGraceDurationSeconds: 3600,
+      strictRemediationDurationSeconds: 0,
     })
 
     expect(response.status).toBe(200)
@@ -638,12 +638,12 @@ describe('organization compliance management routes', () => {
     mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValueOnce(null)
 
     const response = await mutate('PUT', '/registration-policy', {
-      requiredScopes: [],
-      strictRemediationDurationSeconds: 0,
-      staleEvidenceGraceDurationSeconds: 3600,
-      derivedDirectorAuthorityEnabled: true,
       authorityEvidenceFreshDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
       reason: 'Unauthorized recovery attempt.',
+      requiredScopes: [],
+      staleEvidenceGraceDurationSeconds: 3600,
+      strictRemediationDurationSeconds: 0,
     })
 
     expect(response.status).toBe(403)
@@ -656,12 +656,12 @@ describe('organization compliance management routes', () => {
     )
 
     const response = await mutate('PUT', '/registration-policy', {
-      requiredScopes: ['esi-wallet.read_character_wallet.v1'],
-      strictRemediationDurationSeconds: 0,
-      staleEvidenceGraceDurationSeconds: 3600,
-      derivedDirectorAuthorityEnabled: true,
       authorityEvidenceFreshDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
       reason: 'Unsafe owner policy.',
+      requiredScopes: ['esi-wallet.read_character_wallet.v1'],
+      staleEvidenceGraceDurationSeconds: 3600,
+      strictRemediationDurationSeconds: 0,
     })
 
     expect(response.status).toBe(409)
@@ -673,40 +673,40 @@ describe('organization compliance management routes', () => {
   test('lists, approves, expires, and revokes external-character exceptions for HR', async () => {
     mocks.listCurrentOrganizationCharacterExceptionCandidates.mockResolvedValueOnce([
       {
-        userId: targetUserId,
+        affiliationCheckedAt: new Date('2026-09-08T12:00:00.000Z'),
         characterId: 90_000_001,
         characterName: 'External Pilot',
-        reasonCode: 'character-outside-managed-organization',
-        state: 'review_required',
         evidenceFreshness: 'fresh',
+        reasonCode: 'character-outside-managed-organization',
         reviewDeadline: new Date('2026-09-10T12:00:00.000Z'),
-        affiliationCheckedAt: new Date('2026-09-08T12:00:00.000Z'),
+        state: 'review_required',
+        userId: targetUserId,
       },
     ])
     const listed = await get('/exceptions')
     expect(listed.status).toBe(200)
-    expect(await listed.json()).toEqual({
+    expect(await listed.json()).toStrictEqual({
       exceptions: [],
       reviewCandidates: [
         expect.objectContaining({
-          userId: targetUserId,
           characterId: 90_000_001,
           state: 'review_required',
+          userId: targetUserId,
         }),
       ],
     })
 
     const approved = await request(`/members/${targetUserId}/characters/90000001/exception`, {
-      reason: 'Approved external character.',
       expiresAt: null,
+      reason: 'Approved external character.',
     })
     expect(approved.status).toBe(201)
     expect(mocks.approveOrganizationCharacterException).toHaveBeenCalledWith({
       actorUserId,
-      userId: targetUserId,
       characterId: 90_000_001,
-      reason: 'Approved external character.',
       expiresAt: null,
+      reason: 'Approved external character.',
+      userId: targetUserId,
     })
 
     const expired = await request('/exceptions/22c7e94c-9cd3-4dc0-a3af-43117426ebec/expire', {
@@ -741,8 +741,8 @@ describe('organization compliance management routes', () => {
       new mocks.CharacterExceptionMutationError('managed-corporation-evidence-stale'),
     )
     const stale = await request(`/members/${targetUserId}/characters/90000001/exception`, {
-      reason: 'Cannot rely on stale evidence.',
       expiresAt: null,
+      reason: 'Cannot rely on stale evidence.',
     })
     expect(stale.status).toBe(409)
     expect(await stale.json()).toMatchObject({ code: 'MANAGED_CORPORATION_EVIDENCE_STALE' })
@@ -766,8 +766,8 @@ describe('organization compliance management routes', () => {
     )
 
     const response = await request(`/members/${targetUserId}/characters/90000001/exception`, {
-      reason: 'Reviewed external character.',
       expiresAt: null,
+      reason: 'Reviewed external character.',
     })
 
     expect(response.status).toBe(status)
@@ -797,12 +797,12 @@ describe('organization compliance management routes', () => {
     )
 
     const response = await mutate('PUT', '/registration-policy', {
-      requiredScopes: [],
-      strictRemediationDurationSeconds: 0,
-      staleEvidenceGraceDurationSeconds: 3600,
-      derivedDirectorAuthorityEnabled: true,
       authorityEvidenceFreshDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
       reason: 'Reviewed policy update.',
+      requiredScopes: [],
+      staleEvidenceGraceDurationSeconds: 3600,
+      strictRemediationDurationSeconds: 0,
     })
 
     expect(response.status).toBe(status)
@@ -834,11 +834,11 @@ describe('organization role routes', () => {
   test('returns active role grants only to the current organization owner', async () => {
     const authorized = await get('/roles')
     expect(authorized.status).toBe(200)
-    expect(await authorized.json()).toEqual({
+    expect(await authorized.json()).toStrictEqual({
+      corporationSources: [],
+      derivedSources: [],
       grants: [grant],
       ownerSources: [],
-      derivedSources: [],
-      corporationSources: [],
     })
 
     mocks.hasCurrentOrganizationOwnerAuthority.mockResolvedValueOnce(false)
@@ -850,18 +850,18 @@ describe('organization role routes', () => {
   test('requires an authenticated current organization owner', async () => {
     mocks.findSession.mockResolvedValueOnce(null)
     const unauthenticated = await request('/roles', {
-      userId: targetUserId,
-      role: 'director',
       reason: 'Needed.',
+      role: 'director',
+      userId: targetUserId,
     })
     expect(unauthenticated.status).toBe(401)
     expect(mocks.hasCurrentOrganizationOwnerAuthority).not.toHaveBeenCalled()
 
     mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValueOnce(null)
     const unauthorized = await request('/roles', {
-      userId: targetUserId,
-      role: 'director',
       reason: 'Needed.',
+      role: 'director',
+      userId: targetUserId,
     })
     expect(unauthorized.status).toBe(403)
     expect(mocks.grantOrganizationRole).not.toHaveBeenCalled()
@@ -870,15 +870,15 @@ describe('organization role routes', () => {
   test('rejects untrusted origins and roles outside the delegated set', async () => {
     const untrusted = await request(
       '/roles',
-      { userId: targetUserId, role: 'director', reason: 'Needed.' },
+      { reason: 'Needed.', role: 'director', userId: targetUserId },
       'https://attacker.invalid',
     )
     expect(untrusted.status).toBe(403)
 
     const ownerRole = await request('/roles', {
-      userId: targetUserId,
-      role: 'organization_owner',
       reason: 'Bypass.',
+      role: 'organization_owner',
+      userId: targetUserId,
     })
     expect(ownerRole.status).toBe(400)
     expect(mocks.grantOrganizationRole).not.toHaveBeenCalled()
@@ -886,17 +886,17 @@ describe('organization role routes', () => {
 
   test('grants and revokes delegated roles with required reasons', async () => {
     const created = await request('/roles', {
-      userId: targetUserId,
-      role: 'hr_auditor',
       reason: 'HR coverage duty.',
+      role: 'hr_auditor',
+      userId: targetUserId,
     })
     expect(created.status).toBe(201)
-    expect(await created.json()).toEqual({ grant })
+    expect(await created.json()).toStrictEqual({ grant })
     expect(mocks.grantOrganizationRole).toHaveBeenCalledWith({
       actorUserId,
-      targetUserId,
-      role: 'hr_auditor',
       reason: 'HR coverage duty.',
+      role: 'hr_auditor',
+      targetUserId,
     })
 
     const revoked = await request(`/roles/${grantId}/revoke`, { reason: 'Duty ended.' })
@@ -919,9 +919,9 @@ describe('organization role routes', () => {
       )
 
       const response = await request('/roles', {
-        userId: targetUserId,
-        role: 'director',
         reason: 'Leadership duty.',
+        role: 'director',
+        userId: targetUserId,
       })
 
       expect(response.status).toBe(409)
@@ -975,13 +975,13 @@ describe('organization role routes', () => {
       new mocks.RoleMutationError('role-already-granted'),
     )
     const response = await request('/roles', {
-      userId: targetUserId,
-      role: 'director',
       reason: 'Leadership duty.',
+      role: 'director',
+      userId: targetUserId,
     })
 
     expect(response.status).toBe(409)
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toStrictEqual({
       code: 'ORGANIZATION_ROLE_EXISTS',
       message: 'This role is already active.',
     })
@@ -994,9 +994,9 @@ describe('organization role routes', () => {
     mocks.grantOrganizationRole.mockRejectedValueOnce(new mocks.RoleMutationError(errorCode))
 
     const response = await request('/roles', {
-      userId: targetUserId,
-      role: 'director',
       reason: 'Leadership duty.',
+      role: 'director',
+      userId: targetUserId,
     })
 
     expect(response.status).toBe(status)
@@ -1015,12 +1015,54 @@ describe('organization role routes', () => {
   })
 })
 
+describe('unexpected organization mutation failures', () => {
+  test.each([
+    [
+      'role grant',
+      mocks.grantOrganizationRole,
+      'POST',
+      '/roles',
+      { reason: 'Leadership duty.', role: 'director', userId: targetUserId },
+    ],
+    [
+      'registration policy',
+      mocks.updateOrganizationRegistrationPolicy,
+      'PUT',
+      '/registration-policy',
+      {
+        authorityEvidenceFreshDurationSeconds: 3600,
+        derivedDirectorAuthorityEnabled: true,
+        reason: 'Review current policy.',
+        requiredScopes: [],
+        staleEvidenceGraceDurationSeconds: 3600,
+        strictRemediationDurationSeconds: 0,
+      },
+    ],
+    [
+      'owner source replacement',
+      mocks.replaceOrganizationOwnerSource,
+      'PUT',
+      '/owner-source',
+      { characterId: 1_404_328_063, reason: 'Move authority to a current source.' },
+    ],
+  ] as const)(
+    'does not translate unexpected %s errors into a domain refusal',
+    async (_name, mutation, method, path, body) => {
+      mutation.mockRejectedValueOnce(new Error('Unexpected store failure'))
+
+      const response = await mutate(method, path, body)
+
+      expect(response.status).toBe(500)
+    },
+  )
+})
+
 describe('organization group routes', () => {
   test('lists current groups and assignments for organization managers', async () => {
     const response = await get('/groups')
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ groups: [] })
+    expect(await response.json()).toStrictEqual({ groups: [] })
     expect(mocks.listCurrentOrganizationGroups).toHaveBeenCalledOnce()
   })
 
@@ -1029,11 +1071,11 @@ describe('organization group routes', () => {
       permissions: [
         {
           ...organizationActivityPermission,
+          audiences: ['member'],
           label: 'View organization activity',
           purpose: 'View member-safe organization activity and participation.',
-          audiences: ['member'],
-          sensitivity: 'standard',
           reviewAllowed: false,
+          sensitivity: 'standard',
         },
       ],
       profiles: [],
@@ -1057,97 +1099,117 @@ describe('organization group routes', () => {
 
   test('previews an exact profile without mutating a bundle', async () => {
     mocks.previewEnabledPermissionProfile.mockResolvedValueOnce({
+      permissions: [],
       profile: {
-        publisherPackage: '@example/alpha-manifest',
-        moduleId: 'alpha',
+        audiences: ['hr'],
+        description: 'Reviewer permissions.',
         id: 'reviewer',
         label: 'Reviewer',
-        description: 'Reviewer permissions.',
-        audiences: ['hr'],
+        moduleId: 'alpha',
         permissions: ['alpha.view'],
+        publisherPackage: '@example/alpha-manifest',
       },
-      permissions: [],
     })
 
     const response = await request('/permission-profile-preview', {
-      publisherPackage: '@example/alpha-manifest',
       moduleId: 'alpha',
       profileId: 'reviewer',
+      publisherPackage: '@example/alpha-manifest',
     })
 
     expect(response.status).toBe(200)
     expect(mocks.previewEnabledPermissionProfile).toHaveBeenCalledWith({
-      publisherPackage: '@example/alpha-manifest',
       moduleId: 'alpha',
       profileId: 'reviewer',
+      publisherPackage: '@example/alpha-manifest',
     })
     expect(mocks.createOrganizationPermissionBundle).not.toHaveBeenCalled()
     expect(mocks.updateOrganizationPermissionBundle).not.toHaveBeenCalled()
   })
 
+  test('reports an unavailable permission profile without masking unexpected failures', async () => {
+    const body = {
+      moduleId: 'alpha',
+      profileId: 'reviewer',
+      publisherPackage: '@example/alpha-manifest',
+    }
+    mocks.previewEnabledPermissionProfile.mockRejectedValueOnce(
+      new mocks.PermissionCatalogError('profile-unavailable'),
+    )
+    const unavailable = await request('/permission-profile-preview', body)
+    expect(unavailable.status).toBe(404)
+    expect(await unavailable.json()).toMatchObject({ code: 'PERMISSION_PROFILE_UNAVAILABLE' })
+
+    mocks.previewEnabledPermissionProfile.mockRejectedValueOnce(
+      new Error('Unexpected store failure'),
+    )
+    const unexpected = await request('/permission-profile-preview', body)
+    expect(unexpected.status).toBe(500)
+  })
+
   test('keeps adopted bundle keys explicit when a later profile preview changes', async () => {
     const adoptedPermission = {
-      type: 'module' as const,
-      publisherPackage: '@example/alpha-manifest',
-      moduleId: 'alpha',
       key: 'alpha.read',
+      moduleId: 'alpha',
+      publisherPackage: '@example/alpha-manifest',
+      type: 'module' as const,
     }
     mocks.previewEnabledPermissionProfile
       .mockResolvedValueOnce({
+        permissions: [],
         profile: {
-          publisherPackage: '@example/alpha-manifest',
-          moduleId: 'alpha',
+          audiences: ['hr'],
+          description: 'Original reviewer permissions.',
           id: 'reviewer',
           label: 'Reviewer',
-          description: 'Original reviewer permissions.',
-          audiences: ['hr'],
+          moduleId: 'alpha',
           permissions: ['alpha.read'],
+          publisherPackage: '@example/alpha-manifest',
         },
-        permissions: [],
       })
       .mockResolvedValueOnce({
+        permissions: [],
         profile: {
-          publisherPackage: '@example/alpha-manifest',
-          moduleId: 'alpha',
+          audiences: ['hr'],
+          description: 'Changed reviewer permissions.',
           id: 'reviewer',
           label: 'Reviewer',
-          description: 'Changed reviewer permissions.',
-          audiences: ['hr'],
+          moduleId: 'alpha',
           permissions: ['alpha.manage'],
+          publisherPackage: '@example/alpha-manifest',
         },
-        permissions: [],
       })
     mocks.createOrganizationPermissionBundle.mockResolvedValueOnce({
       bundleId,
-      organizationVersion: 1,
       name: 'Adopted reviewer',
+      organizationVersion: 1,
       permissions: [{ ...adoptedPermission, reviewAllowed: false }],
     })
     mocks.listCurrentOrganizationPermissionBundles.mockResolvedValueOnce({
       bundles: [
         {
           bundleId,
-          organizationVersion: 1,
           name: 'Adopted reviewer',
+          organizationVersion: 1,
           permissions: [{ ...adoptedPermission, reviewAllowed: false, available: true }],
         },
       ],
     })
 
     await request('/permission-profile-preview', {
-      publisherPackage: '@example/alpha-manifest',
       moduleId: 'alpha',
       profileId: 'reviewer',
+      publisherPackage: '@example/alpha-manifest',
     })
     const adopted = await request('/permission-bundles', {
       name: 'Adopted reviewer',
-      reason: 'Adopt the reviewed exact keys.',
       permissions: [adoptedPermission],
+      reason: 'Adopt the reviewed exact keys.',
     })
     await request('/permission-profile-preview', {
-      publisherPackage: '@example/alpha-manifest',
       moduleId: 'alpha',
       profileId: 'reviewer',
+      publisherPackage: '@example/alpha-manifest',
     })
     const retained = await get('/permission-bundles')
 
@@ -1155,8 +1217,8 @@ describe('organization group routes', () => {
     expect(mocks.createOrganizationPermissionBundle).toHaveBeenCalledWith({
       actorUserId,
       name: 'Adopted reviewer',
-      reason: 'Adopt the reviewed exact keys.',
       permissions: [adoptedPermission],
+      reason: 'Adopt the reviewed exact keys.',
     })
     expect(await retained.json()).toMatchObject({
       bundles: [{ permissions: [{ key: 'alpha.read' }] }],
@@ -1169,8 +1231,8 @@ describe('organization group routes', () => {
   test('rejects caller-forged module review policy', async () => {
     const response = await request('/permission-bundles', {
       name: 'Operations',
-      reason: 'Create operations access.',
       permissions: [{ ...organizationActivityPermission, reviewAllowed: true }],
+      reason: 'Create operations access.',
     })
 
     expect(response.status).toBe(400)
@@ -1180,8 +1242,8 @@ describe('organization group routes', () => {
   test('updates a bundle with an empty selection for explicit cleanup', async () => {
     const response = await mutate('PUT', `/permission-bundles/${bundleId}`, {
       name: 'Operations',
-      reason: 'Remove unavailable permissions.',
       permissions: [],
+      reason: 'Remove unavailable permissions.',
       retainedUnavailableEntryIds: [],
     })
 
@@ -1190,8 +1252,8 @@ describe('organization group routes', () => {
       actorUserId,
       bundleId,
       name: 'Operations',
-      reason: 'Remove unavailable permissions.',
       permissions: [],
+      reason: 'Remove unavailable permissions.',
       retainedUnavailableEntryIds: [],
     })
   })
@@ -1199,8 +1261,8 @@ describe('organization group routes', () => {
   test('rejects duplicate retained permission entry IDs before bundle mutation', async () => {
     const response = await mutate('PUT', `/permission-bundles/${bundleId}`, {
       name: 'Operations',
-      reason: 'Retain unavailable permissions.',
       permissions: [],
+      reason: 'Retain unavailable permissions.',
       retainedUnavailableEntryIds: [retainedEntryId, retainedEntryId],
     })
 
@@ -1215,13 +1277,13 @@ describe('organization group routes', () => {
 
     const response = await mutate('PUT', `/permission-bundles/${bundleId}`, {
       name: 'Operations',
-      reason: 'Retain unavailable permissions.',
       permissions: [],
+      reason: 'Retain unavailable permissions.',
       retainedUnavailableEntryIds: [retainedEntryId],
     })
 
     expect(response.status).toBe(409)
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toStrictEqual({
       code: 'RETAINED_PERMISSION_INVALID',
       message: 'A retained permission entry is invalid or no longer unavailable.',
     })
@@ -1234,8 +1296,8 @@ describe('organization group routes', () => {
 
     const response = await request('/permission-bundles', {
       name: 'Operations',
-      reason: 'Create operations access.',
       permissions: [{ ...organizationActivityPermission, key: 'organization-activity.typo' }],
+      reason: 'Create operations access.',
     })
 
     expect(response.status).toBe(409)
@@ -1245,38 +1307,38 @@ describe('organization group routes', () => {
   test('creates permission bundles, groups, and expiring manual assignments', async () => {
     const bundle = await request('/permission-bundles', {
       name: 'Operations',
-      reason: 'Create operations access.',
       permissions: [organizationActivityPermission],
+      reason: 'Create operations access.',
     })
     expect(bundle.status).toBe(201)
     expect(mocks.createOrganizationPermissionBundle).toHaveBeenCalledWith({
       actorUserId,
       name: 'Operations',
-      reason: 'Create operations access.',
       permissions: [organizationActivityPermission],
+      reason: 'Create operations access.',
     })
 
     const group = await request('/groups', {
+      bundleIds: [bundleId],
+      complianceSource: null,
+      managementMode: 'manual',
       name: 'Operations',
       restricted: false,
-      managementMode: 'manual',
-      complianceSource: null,
-      bundleIds: [bundleId],
     })
     expect(group.status).toBe(201)
 
     const assignment = await request(`/groups/${groupId}/assignments`, {
-      userId: targetUserId,
-      reason: 'Operations duty.',
       expiresAt: '2026-10-01T12:00:00.000Z',
+      reason: 'Operations duty.',
+      userId: targetUserId,
     })
     expect(assignment.status).toBe(201)
     expect(mocks.assignOrganizationGroup).toHaveBeenCalledWith({
       actorUserId,
-      groupId,
-      targetUserId,
-      reason: 'Operations duty.',
       expiresAt: new Date('2026-10-01T12:00:00.000Z'),
+      groupId,
+      reason: 'Operations duty.',
+      targetUserId,
     })
 
     const revoked = await request(`/groups/${groupId}/assignments/${assignmentId}/revoke`, {
@@ -1285,8 +1347,8 @@ describe('organization group routes', () => {
     expect(revoked.status).toBe(200)
     expect(mocks.revokeOrganizationGroupAssignment).toHaveBeenCalledWith({
       actorUserId,
-      groupId,
       assignmentId,
+      groupId,
       reason: 'Duty ended.',
     })
   })
@@ -1295,8 +1357,8 @@ describe('organization group routes', () => {
     mocks.loadCurrentOrganizationAuthorityForUser.mockResolvedValueOnce(null)
     const unauthorized = await request('/permission-bundles', {
       name: 'Operations',
-      reason: 'Create operations access.',
       permissions: [{ type: 'service', key: 'discord.access' }],
+      reason: 'Create operations access.',
     })
     expect(unauthorized.status).toBe(403)
     expect(mocks.createOrganizationPermissionBundle).not.toHaveBeenCalled()
@@ -1305,11 +1367,11 @@ describe('organization group routes', () => {
       new mocks.GroupMutationError('owner-authority-required'),
     )
     const restricted = await request('/groups', {
+      bundleIds: [bundleId],
+      complianceSource: null,
+      managementMode: 'manual',
       name: 'Leadership',
       restricted: true,
-      managementMode: 'manual',
-      complianceSource: null,
-      bundleIds: [bundleId],
     })
     expect(restricted.status).toBe(403)
 
@@ -1317,9 +1379,9 @@ describe('organization group routes', () => {
       new mocks.GroupMutationError('compliance-group-manual-change'),
     )
     const compliance = await request(`/groups/${groupId}/assignments`, {
-      userId: targetUserId,
-      reason: 'Manual override.',
       expiresAt: null,
+      reason: 'Manual override.',
+      userId: targetUserId,
     })
     expect(compliance.status).toBe(409)
     expect(await compliance.json()).toMatchObject({ code: 'COMPLIANCE_GROUP_MANAGED' })
@@ -1327,11 +1389,11 @@ describe('organization group routes', () => {
 
   test('validates compliance source invariants before the store executes', async () => {
     const response = await request('/groups', {
+      bundleIds: [bundleId],
+      complianceSource: null,
+      managementMode: 'compliance',
       name: 'Compliance',
       restricted: false,
-      managementMode: 'compliance',
-      complianceSource: null,
-      bundleIds: [bundleId],
     })
 
     expect(response.status).toBe(400)
@@ -1343,8 +1405,8 @@ describe('organization group routes', () => {
     async (key) => {
       const response = await request('/permission-bundles', {
         name: 'Operations',
-        reason: 'Create operations access.',
         permissions: [{ ...organizationActivityPermission, key }],
+        reason: 'Create operations access.',
       })
 
       expect(response.status).toBe(201)
@@ -1356,8 +1418,8 @@ describe('organization group routes', () => {
     async (key) => {
       const response = await request('/permission-bundles', {
         name: 'Operations',
-        reason: 'Create operations access.',
         permissions: [{ ...organizationActivityPermission, key }],
+        reason: 'Create operations access.',
       })
 
       expect(response.status).toBe(400)
@@ -1366,129 +1428,129 @@ describe('organization group routes', () => {
 
   test.each([
     {
-      name: 'manager authority',
-      mock: mocks.assignOrganizationGroup,
+      body: { expiresAt: null, reason: 'Operations duty.', userId: targetUserId },
       errorCode: 'manager-authority-required',
+      mock: mocks.assignOrganizationGroup,
+      name: 'manager authority',
       path: `/groups/${groupId}/assignments`,
-      body: { userId: targetUserId, reason: 'Operations duty.', expiresAt: null },
-      status: 403,
       responseCode: 'ORGANIZATION_MANAGER_REQUIRED',
-    },
-    {
-      name: 'owner authority',
-      mock: mocks.createOrganizationPermissionBundle,
-      errorCode: 'owner-authority-required',
-      path: '/permission-bundles',
-      body: {
-        name: 'Operations',
-        reason: 'Create operations access.',
-        permissions: [organizationActivityPermission],
-      },
       status: 403,
-      responseCode: 'ORGANIZATION_OWNER_REQUIRED',
     },
     {
-      name: 'bundle name conflict',
-      mock: mocks.createOrganizationPermissionBundle,
-      errorCode: 'bundle-name-conflict',
-      path: '/permission-bundles',
       body: {
         name: 'Operations',
-        reason: 'Create operations access.',
         permissions: [organizationActivityPermission],
+        reason: 'Create operations access.',
       },
-      status: 409,
+      errorCode: 'owner-authority-required',
+      mock: mocks.createOrganizationPermissionBundle,
+      name: 'owner authority',
+      path: '/permission-bundles',
+      responseCode: 'ORGANIZATION_OWNER_REQUIRED',
+      status: 403,
+    },
+    {
+      body: {
+        name: 'Operations',
+        permissions: [organizationActivityPermission],
+        reason: 'Create operations access.',
+      },
+      errorCode: 'bundle-name-conflict',
+      mock: mocks.createOrganizationPermissionBundle,
+      name: 'bundle name conflict',
+      path: '/permission-bundles',
       responseCode: 'PERMISSION_BUNDLE_EXISTS',
-    },
-    {
-      name: 'missing bundle',
-      mock: mocks.createOrganizationGroup,
-      errorCode: 'bundle-not-found',
-      path: '/groups',
-      body: {
-        name: 'Operations',
-        restricted: false,
-        managementMode: 'manual',
-        complianceSource: null,
-        bundleIds: [bundleId],
-      },
-      status: 404,
-      responseCode: 'PERMISSION_BUNDLE_NOT_FOUND',
-    },
-    {
-      name: 'group name conflict',
-      mock: mocks.createOrganizationGroup,
-      errorCode: 'group-name-conflict',
-      path: '/groups',
-      body: {
-        name: 'Operations',
-        restricted: false,
-        managementMode: 'manual',
-        complianceSource: null,
-        bundleIds: [bundleId],
-      },
       status: 409,
-      responseCode: 'ORGANIZATION_GROUP_EXISTS',
     },
     {
-      name: 'missing group',
-      mock: mocks.assignOrganizationGroup,
-      errorCode: 'group-not-found',
-      path: `/groups/${groupId}/assignments`,
-      body: { userId: targetUserId, reason: 'Operations duty.', expiresAt: null },
-      status: 404,
-      responseCode: 'ORGANIZATION_GROUP_NOT_FOUND',
-    },
-    {
-      name: 'missing target',
-      mock: mocks.assignOrganizationGroup,
-      errorCode: 'target-not-found',
-      path: `/groups/${groupId}/assignments`,
-      body: { userId: targetUserId, reason: 'Operations duty.', expiresAt: null },
-      status: 404,
-      responseCode: 'USER_NOT_FOUND',
-    },
-    {
-      name: 'compliance source mismatch',
-      mock: mocks.createOrganizationGroup,
-      errorCode: 'compliance-source-mismatch',
-      path: '/groups',
       body: {
+        bundleIds: [bundleId],
+        complianceSource: null,
+        managementMode: 'manual',
+        name: 'Operations',
+        restricted: false,
+      },
+      errorCode: 'bundle-not-found',
+      mock: mocks.createOrganizationGroup,
+      name: 'missing bundle',
+      path: '/groups',
+      responseCode: 'PERMISSION_BUNDLE_NOT_FOUND',
+      status: 404,
+    },
+    {
+      body: {
+        bundleIds: [bundleId],
+        complianceSource: null,
+        managementMode: 'manual',
+        name: 'Operations',
+        restricted: false,
+      },
+      errorCode: 'group-name-conflict',
+      mock: mocks.createOrganizationGroup,
+      name: 'group name conflict',
+      path: '/groups',
+      responseCode: 'ORGANIZATION_GROUP_EXISTS',
+      status: 409,
+    },
+    {
+      body: { expiresAt: null, reason: 'Operations duty.', userId: targetUserId },
+      errorCode: 'group-not-found',
+      mock: mocks.assignOrganizationGroup,
+      name: 'missing group',
+      path: `/groups/${groupId}/assignments`,
+      responseCode: 'ORGANIZATION_GROUP_NOT_FOUND',
+      status: 404,
+    },
+    {
+      body: { expiresAt: null, reason: 'Operations duty.', userId: targetUserId },
+      errorCode: 'target-not-found',
+      mock: mocks.assignOrganizationGroup,
+      name: 'missing target',
+      path: `/groups/${groupId}/assignments`,
+      responseCode: 'USER_NOT_FOUND',
+      status: 404,
+    },
+    {
+      body: {
+        bundleIds: [bundleId],
+        complianceSource: 'core.registration',
+        managementMode: 'compliance',
         name: 'Compliance',
         restricted: false,
-        managementMode: 'compliance',
-        complianceSource: 'core.registration',
-        bundleIds: [bundleId],
       },
-      status: 409,
+      errorCode: 'compliance-source-mismatch',
+      mock: mocks.createOrganizationGroup,
+      name: 'compliance source mismatch',
+      path: '/groups',
       responseCode: 'COMPLIANCE_SOURCE_MISMATCH',
-    },
-    {
-      name: 'active assignment',
-      mock: mocks.assignOrganizationGroup,
-      errorCode: 'assignment-already-active',
-      path: `/groups/${groupId}/assignments`,
-      body: { userId: targetUserId, reason: 'Operations duty.', expiresAt: null },
       status: 409,
-      responseCode: 'GROUP_ASSIGNMENT_EXISTS',
     },
     {
-      name: 'missing assignment',
-      mock: mocks.revokeOrganizationGroupAssignment,
-      errorCode: 'assignment-not-found',
-      path: `/groups/${groupId}/assignments/${assignmentId}/revoke`,
-      body: { reason: 'Duty ended.' },
-      status: 404,
-      responseCode: 'GROUP_ASSIGNMENT_NOT_FOUND',
-    },
-    {
-      name: 'invalid assignment expiry',
+      body: { expiresAt: null, reason: 'Operations duty.', userId: targetUserId },
+      errorCode: 'assignment-already-active',
       mock: mocks.assignOrganizationGroup,
-      errorCode: 'invalid-expiry',
+      name: 'active assignment',
       path: `/groups/${groupId}/assignments`,
-      body: { userId: targetUserId, reason: 'Operations duty.', expiresAt: null },
-      status: 400,
+      responseCode: 'GROUP_ASSIGNMENT_EXISTS',
+      status: 409,
+    },
+    {
+      body: { reason: 'Duty ended.' },
+      errorCode: 'assignment-not-found',
+      mock: mocks.revokeOrganizationGroupAssignment,
+      name: 'missing assignment',
+      path: `/groups/${groupId}/assignments/${assignmentId}/revoke`,
+      responseCode: 'GROUP_ASSIGNMENT_NOT_FOUND',
+      status: 404,
+    },
+    {
+      body: { expiresAt: null, reason: 'Operations duty.', userId: targetUserId },
+      errorCode: 'invalid-expiry',
+      mock: mocks.assignOrganizationGroup,
+      name: 'invalid assignment expiry',
+      path: `/groups/${groupId}/assignments`,
       responseCode: 'INVALID_GROUP_EXPIRY',
+      status: 400,
     },
   ])(
     'maps $name group-store failures',
@@ -1508,7 +1570,7 @@ describe('organization member block routes', () => {
     const response = await get('/member-blocks')
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ blocks: [] })
+    expect(await response.json()).toStrictEqual({ blocks: [] })
     expect(mocks.listCurrentOrganizationMemberBlocks).toHaveBeenCalledOnce()
   })
 
@@ -1519,8 +1581,8 @@ describe('organization member block routes', () => {
     expect(blocked.status).toBe(201)
     expect(mocks.blockOrganizationMember).toHaveBeenCalledWith({
       actorUserId,
-      targetUserId,
       reason: 'Repeated policy abuse.',
+      targetUserId,
     })
 
     const unblocked = await request(`/members/${targetUserId}/unblock`, {
@@ -1529,8 +1591,8 @@ describe('organization member block routes', () => {
     expect(unblocked.status).toBe(200)
     expect(mocks.unblockOrganizationMember).toHaveBeenCalledWith({
       actorUserId,
-      targetUserId,
       reason: 'Review completed.',
+      targetUserId,
     })
   })
 
@@ -1610,27 +1672,27 @@ describe('organization corporation roster routes', () => {
 
   test('registers an owned eligible corporation data source', async () => {
     const response = await organizationRoutes.request('/corporations/98000001/source', {
-      method: 'PUT',
+      body: JSON.stringify({ characterId: 1_404_328_063 }),
       headers: {
         'Content-Type': 'application/json',
         Cookie: 'eve_space_session=session-token',
         Origin: 'http://localhost:3000',
       },
-      body: JSON.stringify({ characterId: 1_404_328_063 }),
+      method: 'PUT',
     })
 
     expect(response.status).toBe(201)
     expect(mocks.registerOrganizationCorporationSource).toHaveBeenCalledWith({
       actorUserId,
-      corporationId: 98_000_001,
       characterId: 1_404_328_063,
+      corporationId: 98_000_001,
     })
   })
 
   test('reports replacement of an existing corporation data source', async () => {
     mocks.registerOrganizationCorporationSource.mockResolvedValueOnce({
-      corporationId: 98_000_001,
       characterId: 1_404_328_063,
+      corporationId: 98_000_001,
       replaced: true,
     })
 
@@ -1663,13 +1725,13 @@ describe('organization corporation roster routes', () => {
     )
 
     const response = await organizationRoutes.request('/corporations/98000001/source', {
-      method: 'PUT',
+      body: JSON.stringify({ characterId: 1_404_328_063 }),
       headers: {
         'Content-Type': 'application/json',
         Cookie: 'eve_space_session=session-token',
         Origin: 'http://localhost:3000',
       },
-      body: JSON.stringify({ characterId: 1_404_328_063 }),
+      method: 'PUT',
     })
 
     expect(response.status).toBe(409)
@@ -1719,25 +1781,25 @@ describe('organization corporation roster routes', () => {
 
   test('returns authoritative stale roster metadata at the response root', async () => {
     mocks.listOrganizationRosterCoverage.mockResolvedValueOnce({
-      stale: true,
-      validatedAt: '2026-09-01T11:30:00.000Z',
-      refreshFailureClass: 'esi-unavailable',
+      corporations: [],
       managedCorporations: {
-        status: 'stale',
-        validatedAt: '2026-09-01T11:30:00.000Z',
         attemptedAt: '2026-09-01T12:00:00.000Z',
         lastFailureClass: 'esi-unavailable',
+        status: 'stale',
+        validatedAt: '2026-09-01T11:30:00.000Z',
       },
-      corporations: [],
+      refreshFailureClass: 'esi-unavailable',
+      stale: true,
+      validatedAt: '2026-09-01T11:30:00.000Z',
     })
 
     const response = await get('/roster-coverage')
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toMatchObject({
+      refreshFailureClass: 'esi-unavailable',
       stale: true,
       validatedAt: '2026-09-01T11:30:00.000Z',
-      refreshFailureClass: 'esi-unavailable',
     })
   })
 
@@ -1746,8 +1808,8 @@ describe('organization corporation roster routes', () => {
 
     expect(response.status).toBe(200)
     expect(mocks.listCurrentOrganizationAuditHistory).toHaveBeenCalledWith({
-      limit: 25,
       beforeAuditSequence: 90n,
+      limit: 25,
     })
     expect(response.headers.get('cache-control')).toBe('private, no-store')
   })
@@ -1782,13 +1844,13 @@ function mutate(
   origin = 'http://localhost:3000',
 ) {
   return organizationRoutes.request(path, {
-    method,
+    body: JSON.stringify(body),
     headers: {
       'Content-Type': 'application/json',
       Cookie: 'eve_space_session=session-token',
       Origin: origin,
     },
-    body: JSON.stringify(body),
+    method,
   })
 }
 
@@ -1800,17 +1862,17 @@ function get(path: string) {
 
 function effectiveOwnerAuthority(state: 'fresh' | 'degraded' | 'invalid') {
   return {
-    organizationOwner: state !== 'invalid',
-    explicitDirector: false,
-    derivedDirector: false,
-    director: false,
     degraded: state === 'degraded',
+    derivedDirector: false,
+    derivedSources: [],
+    director: false,
+    explicitDirector: false,
+    organizationOwner: state !== 'invalid',
     ownerSource: {
-      sourceId: 'cc83840d-47c2-4c76-aed4-94d3e51407f7',
       characterId: 1_404_328_063,
+      sourceId: 'cc83840d-47c2-4c76-aed4-94d3e51407f7',
       state,
     },
-    derivedSources: [],
   }
 }
 

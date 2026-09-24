@@ -8,7 +8,8 @@ export function unwrapExpression(expression: ts.Expression): ts.Expression {
     ts.isTypeAssertionExpression(value) ||
     ts.isNonNullExpression(value) ||
     ts.isSatisfiesExpression(value)
-  )
+  ) {
     value = value.expression
+  }
   return value
 }

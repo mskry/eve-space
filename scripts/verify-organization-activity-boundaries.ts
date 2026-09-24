@@ -8,26 +8,26 @@ const tiers = {
   'activity-protocol': 'representation',
   'activity-source': 'representation',
   'bounded-map': 'representation',
-  'collection-types': 'representation',
-  'collection-response': 'representation',
-  'provider-activities': 'representation',
-  snapshot: 'representation',
-  'collection-store': 'adapter',
-  'snapshot-reads': 'adapter',
   collection: 'service',
-  provider: 'service',
-  resources: 'entry',
-  routes: 'entry',
+  'collection-response': 'representation',
+  'collection-store': 'adapter',
+  'collection-types': 'representation',
+  index: 'entry',
   operations: 'representation',
   persistence: 'representation',
+  provider: 'service',
+  'provider-activities': 'representation',
+  resources: 'entry',
+  routes: 'entry',
   schema: 'entry',
-  index: 'entry',
+  snapshot: 'representation',
+  'snapshot-reads': 'adapter',
 } as const
 const allowed: Record<string, readonly string[]> = {
-  representation: ['representation'],
   adapter: ['representation', 'adapter'],
-  service: ['representation', 'adapter', 'service'],
   entry: ['representation', 'adapter', 'service', 'entry'],
+  representation: ['representation'],
+  service: ['representation', 'adapter', 'service'],
 }
 
 const sources = await Promise.all(
@@ -41,14 +41,20 @@ const sources = await Promise.all(
 for (const { file, path, source } of sources) {
   const name = basename(file, '.ts')
   const tier = tiers[name as keyof typeof tiers]
-  if (!tier) throw new Error(`Undeclared activity module: ${file}`)
+  if (!tier) {
+    throw new Error(`Undeclared activity module: ${file}`)
+  }
   for (const specifier of typescriptModuleSpecifiers(path, source)) {
-    if (!specifier.startsWith('.')) continue
+    if (!specifier.startsWith('.')) {
+      continue
+    }
     const target = basename(specifier, '.js')
     const targetTier = tiers[target as keyof typeof tiers]
-    if (!targetTier || !allowed[tier]!.includes(targetTier))
+    if (!targetTier || !allowed[tier]!.includes(targetTier)) {
       throw new Error(`Activity boundary violation: ${name} imports ${target}`)
+    }
   }
-  if (tier !== 'adapter' && /\.(?:query|transaction)\s*\(/.test(source))
+  if (tier !== 'adapter' && /\.(?:query|transaction)\s*\(/.test(source)) {
     throw new Error(`Activity storage must remain adapter-owned: ${name}`)
+  }
 }

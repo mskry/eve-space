@@ -42,14 +42,14 @@ const emit = defineEmits<{
 }>()
 
 const modeOptions: ReadonlyArray<{ label: string; value: FinanceOrderMode }> = [
-  { value: 'open', label: 'Open orders' },
-  { value: 'history', label: 'Order history' },
+  { label: 'Open orders', value: 'open' },
+  { label: 'Order history', value: 'history' },
 ]
 const filterOptions: ReadonlyArray<{ label: string; value: FinanceOrderFilter }> = [
-  { value: 'All', label: 'All' },
-  { value: 'Buy', label: 'Buy' },
-  { value: 'Sell', label: 'Sell' },
-  { value: 'Escrowed', label: 'Escrowed' },
+  { label: 'All', value: 'All' },
+  { label: 'Buy', value: 'Buy' },
+  { label: 'Sell', value: 'Sell' },
+  { label: 'Escrowed', value: 'Escrowed' },
 ]
 const selectedMode = computed<string>({
   get: () => props.mode,
@@ -60,7 +60,9 @@ const selectedFilter = computed<string>({
   set: (value) => emit('change-filter', value as FinanceOrderFilter),
 })
 const page = computed<FinancePageMetadata | null>(() => {
-  if (props.mode !== 'history' || !props.orders || !('page' in props.orders)) return null
+  if (props.mode !== 'history' || !props.orders || !('page' in props.orders)) {
+    return null
+  }
   return { page: props.orders.page, totalPages: props.orders.totalPages }
 })
 const countLabel = computed(() =>

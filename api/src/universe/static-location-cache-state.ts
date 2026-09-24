@@ -10,11 +10,11 @@ export interface StaticLocationCacheView {
 
 export class StaticLocationCacheState {
   readonly #state: StaticLocationCacheView = {
-    snapshot: undefined,
-    inFlight: undefined,
-    nextCheckAt: 0,
     failure: undefined,
     generation: 0,
+    inFlight: undefined,
+    nextCheckAt: 0,
+    snapshot: undefined,
   }
 
   read(): Readonly<StaticLocationCacheView> {
@@ -25,7 +25,9 @@ export class StaticLocationCacheState {
     generation: number,
     operation: () => Promise<StaticLocationSnapshot>,
   ): Promise<StaticLocationSnapshot> | undefined {
-    if (generation !== this.#state.generation || this.#state.inFlight) return undefined
+    if (generation !== this.#state.generation || this.#state.inFlight) {
+      return undefined
+    }
     const promise = Promise.resolve().then(operation)
     this.#state.inFlight = promise
     void promise.then(
@@ -36,7 +38,9 @@ export class StaticLocationCacheState {
   }
 
   publish(snapshot: StaticLocationSnapshot, generation: number, nextCheckAt: number) {
-    if (generation !== this.#state.generation) return false
+    if (generation !== this.#state.generation) {
+      return false
+    }
     this.#state.snapshot = snapshot
     this.#state.nextCheckAt = nextCheckAt
     this.#state.failure = undefined
@@ -44,7 +48,9 @@ export class StaticLocationCacheState {
   }
 
   retain(generation: number, failure: unknown, nextCheckAt: number) {
-    if (generation !== this.#state.generation) return false
+    if (generation !== this.#state.generation) {
+      return false
+    }
     this.#state.nextCheckAt = nextCheckAt
     this.#state.failure = failure
     return true
@@ -59,7 +65,9 @@ export class StaticLocationCacheState {
   }
 
   #clearInFlight(promise: Promise<StaticLocationSnapshot>) {
-    if (this.#state.inFlight === promise) this.#state.inFlight = undefined
+    if (this.#state.inFlight === promise) {
+      this.#state.inFlight = undefined
+    }
   }
 }
 

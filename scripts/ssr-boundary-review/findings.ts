@@ -31,25 +31,28 @@ export const classifySite = (state: SiteState, judgment: SiteJudgment): Finding 
     ? `${state.route.method} ${state.route.path} (${state.route.source})`
     : 'unresolved route mount'
   const base = {
-    location: callSite,
-    details: [`route: ${routeMount}`],
     callSite,
-    routeMount,
+    details: [`route: ${routeMount}`],
+    location: callSite,
     requirement: judgment.credentialRequirement.choice,
+    routeMount,
     signals: judgment,
   }
   const skip = skipReason(judgment)
 
-  if (skip) return { ...base, verdict: 'pass', reason: skip }
+  if (skip) {
+    return { ...base, reason: skip, verdict: 'pass' }
+  }
 
-  if (judgment.ssrSafePath.choice !== 'none')
+  if (judgment.ssrSafePath.choice !== 'none') {
     return judgment.ssrSafePath.confidence >= CLAIMED_GATE_CONFIDENCE
-      ? { ...base, verdict: 'pass', reason: `Safe path present: ${judgment.ssrSafePath.choice}.` }
+      ? { ...base, reason: `Safe path present: ${judgment.ssrSafePath.choice}.`, verdict: 'pass' }
       : {
           ...base,
-          verdict: 'review',
           reason: `Claimed safe path ${judgment.ssrSafePath.choice} is uncertain (confidence ${format(judgment.ssrSafePath.confidence)}).`,
+          verdict: 'review',
         }
+  }
 
   const cookieTrap =
     judgment.credentialsIncludeOnly > COOKIE_RELIANCE_THRESHOLD
@@ -58,27 +61,30 @@ export const classifySite = (state: SiteState, judgment: SiteJudgment): Finding 
 
   return {
     ...base,
+    reason: `Request reaches a route requiring ${judgment.credentialRequirement.choice} with no SSR gate or cookie forwarding (ssr_capable ${format(judgment.ssrCapable)}).${cookieTrap}`,
     verdict:
       CREDENTIALED_REQUIREMENTS.has(judgment.credentialRequirement.choice) &&
       judgment.credentialRequirement.confidence >= AUTO_REPORT_CONFIDENCE
         ? 'report'
         : 'review',
-    reason: `Request reaches a route requiring ${judgment.credentialRequirement.choice} with no SSR gate or cookie forwarding (ssr_capable ${format(judgment.ssrCapable)}).${cookieTrap}`,
   }
 }
 
 const skipReason = (judgment: SiteJudgment) => {
-  if (judgment.excludedPublicEndpoint > PUBLIC_EXCLUSION_THRESHOLD)
+  if (judgment.excludedPublicEndpoint > PUBLIC_EXCLUSION_THRESHOLD) {
     return 'Health, status, or authorization-configuration endpoint.'
+  }
 
-  if (judgment.ssrCapable < NOT_SSR_CAPABLE_THRESHOLD)
+  if (judgment.ssrCapable < NOT_SSR_CAPABLE_THRESHOLD) {
     return 'Cannot execute during SSR (browser-event path).'
+  }
 
   if (
     judgment.credentialRequirement.choice === 'public' &&
     judgment.credentialRequirement.confidence >= AUTO_REPORT_CONFIDENCE
-  )
+  ) {
     return 'Mounted route is public.'
+  }
 
   return null
 }

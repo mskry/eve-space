@@ -30,10 +30,10 @@ const platformModuleRuntimeQueryKey = ['public', 'modules', 'runtime'] as const
 export function usePlatformModuleRuntime() {
   const runtimeConfig = useRuntimeConfig()
   const runtimeQuery = useQuery({
-    key: platformModuleRuntimeQueryKey,
     enabled: globalThis.window !== undefined,
-    staleTime: 30_000,
+    key: platformModuleRuntimeQueryKey,
     query: ({ signal }) => loadPlatformModuleRuntimeState(runtimeConfig.public.apiBase, signal),
+    staleTime: 30_000,
   })
   const enabledModuleIds = computed(() => new Set(runtimeQuery.data.value?.enabledModuleIds ?? []))
   const enabledSectionKeys = computed(
@@ -64,7 +64,9 @@ export function usePlatformModulePersistenceLifecycle(
     enabledModuleIds,
     (currentEnabledModuleIds) => {
       for (const moduleId of previousEnabledModuleIds) {
-        if (currentEnabledModuleIds.has(moduleId)) continue
+        if (currentEnabledModuleIds.has(moduleId)) {
+          continue
+        }
         const admissionScopes = [
           ...new Set(
             platformQueryAdmissionScopes
@@ -83,9 +85,13 @@ export function usePlatformModulePersistenceLifecycle(
     enabledSectionKeys,
     (currentEnabledSectionKeys) => {
       for (const key of previousEnabledSectionKeys) {
-        if (currentEnabledSectionKeys.has(key)) continue
+        if (currentEnabledSectionKeys.has(key)) {
+          continue
+        }
         const [moduleId, sectionId] = key.split('/')
-        if (!moduleId || !sectionId || !enabledModuleIds.value.has(moduleId)) continue
+        if (!moduleId || !sectionId || !enabledModuleIds.value.has(moduleId)) {
+          continue
+        }
         const admissionScopes = [
           ...new Set(
             platformQueryAdmissionScopes
@@ -107,7 +113,9 @@ export async function loadPlatformModuleRuntimeState(apiBase: string, signal?: A
     credentials: 'include',
     signal,
   })
-  if (!response.ok) throw await toApiQueryError(response, 'Module runtime state is unavailable.')
+  if (!response.ok) {
+    throw await toApiQueryError(response, 'Module runtime state is unavailable.')
+  }
   return (await response.json()) as PlatformModuleRuntimeState
 }
 

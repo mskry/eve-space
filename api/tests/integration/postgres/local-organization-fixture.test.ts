@@ -14,8 +14,8 @@ beforeAll(async () => {
   container = await new GenericContainer('postgres:17-alpine')
     .withEnvironment({
       POSTGRES_DB: 'eve_space_fixture',
-      POSTGRES_USER: 'eve_space',
       POSTGRES_PASSWORD: password,
+      POSTGRES_USER: 'eve_space',
     })
     .withExposedPorts(5432)
     .withWaitStrategy(Wait.forLogMessage(/database system is ready to accept connections/, 2))
@@ -23,10 +23,10 @@ beforeAll(async () => {
   const databaseUrl = `postgres://eve_space:${password}@${container.getHost()}:${container.getMappedPort(5432)}/eve_space_fixture`
   connection = postgres(databaseUrl, { onnotice: () => {} })
   Object.assign(process.env, {
-    NODE_ENV: 'development',
     DATABASE_URL: databaseUrl,
     EVE_CLIENT_ID: 'fixture-client',
     EVE_CLIENT_SECRET: 'fixture-secret',
+    NODE_ENV: 'development',
     TOKEN_ENCRYPTION_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
   })
   await runStartupMigrations(connection)
@@ -50,23 +50,23 @@ test('seeds one guarded production-shaped organization fixture', async () => {
   })
 
   expect(summary).toMatchObject({
-    organizationVersion: 1,
     corporationId: 98_000_001,
     directorCharacterId: 90_000_001,
+    organizationVersion: 1,
+    seededResourceCount: 8,
     unregisteredCharacterId: 90_000_002,
     userId: expect.any(String),
-    seededResourceCount: 8,
   })
-  expect(applicationSessionToken).toEqual(expect.any(String))
+  expect(applicationSessionToken).toStrictEqual(expect.any(String))
   await expect(
     seedLocalOrganizationFixture({ deliverSession: async () => undefined }),
   ).rejects.toThrow('empty disposable database')
 
   const { ssoRoutes } = await import('../../../src/auth/routes.js')
   const signIn = await ssoRoutes.request('/local-fixture-session', {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ sessionToken: applicationSessionToken! }),
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    method: 'POST',
   })
   expect(signIn.status).toBe(303)
   expect(signIn.headers.get('set-cookie')).toContain('eve_space_session=')
@@ -136,26 +136,26 @@ test('seeds one guarded production-shaped organization fixture', async () => {
     where settings.id = 1
   `
   expect(stored).toMatchObject({
-    organizationType: 'corporation',
-    organizationId: '98000001',
+    assignmentSource: 'compliance',
+    authoritative: true,
     characterCount: 1,
+    checkpointCount: 7,
+    complianceState: 'compliant',
+    directorRolePresent: true,
     encryptedTokens: expect.stringMatching(/^[^.]+\.[^.]+\.[^.]+$/),
+    modulePermission: 'organization-activity.view',
+    organizationId: '98000001',
+    organizationType: 'corporation',
+    ownerEvidence: 'fresh',
+    roles: ['director', 'hr_auditor', 'organization_owner'],
+    rosterCount: 2,
     scopes: expect.arrayContaining([
       'esi-characters.read_corporation_roles.v1',
       'esi-corporations.read_corporation_membership.v1',
       'esi-corporations.read_projects.v1',
     ]),
-    ownerEvidence: 'fresh',
-    directorRolePresent: true,
-    roles: ['director', 'hr_auditor', 'organization_owner'],
-    complianceState: 'compliant',
-    authoritative: true,
-    assignmentSource: 'compliance',
-    modulePermission: 'organization-activity.view',
-    sourceCount: 1,
-    rosterCount: 2,
-    checkpointCount: 7,
     snapshotCount: 8,
+    sourceCount: 1,
   })
 
   const { getOrganizationAccessContext } = await import('../../../src/organization/role-store.js')
@@ -171,21 +171,21 @@ test('seeds one guarded production-shaped organization fixture', async () => {
   const { loadCacheAdmissionContext } = await import('../../../src/cache-admission/service.js')
 
   const session = await loadOrganizationSessionContext(summary.userId)
-  expect(session).toMatchObject({ state: 'compliant', blocked: false })
+  expect(session).toMatchObject({ blocked: false, state: 'compliant' })
   await expect(getOrganizationGroupPermissions(summary.userId)).resolves.toMatchObject({
     modules: ['organization-activity.view'],
   })
-  for (const audience of ['member', 'hr', 'director'] as const)
+  for (const audience of ['member', 'hr', 'director'] as const) {
     await expect(
       authorizeOrganizationContribution(summary.userId, session, {
-        publisherPackage: '@eve-space/organization-activity-manifest',
-        moduleId: 'organization-activity',
         audience,
+        moduleId: 'organization-activity',
+        publisherPackage: '@eve-space/organization-activity-manifest',
         requiredPermission: 'organization-activity.view',
       }),
     ).resolves.toMatchObject({ authorized: true })
+  }
   await expect(loadCacheAdmissionContext(summary.userId)).resolves.toMatchObject({
-    userId: summary.userId,
     characters: [
       {
         characterId: summary.directorCharacterId,
@@ -193,14 +193,15 @@ test('seeds one guarded production-shaped organization fixture', async () => {
       },
     ],
     organization: {
-      organizationVersion: 1,
       admissionRevision: expect.stringMatching(/^organization-admission:v1:sha256:[a-f0-9]{64}$/),
       admissionScopes: [
         'organization:v1:core:hr:organization.roster-coverage',
         'organization:v1:core:member:organization.activities',
         'organization:v1:organization-activity:member:organization-activity.view',
       ],
+      organizationVersion: 1,
     },
+    userId: summary.userId,
   })
   await expect(listOrganizationRosterCoverage()).resolves.toMatchObject({
     corporations: [
@@ -233,7 +234,7 @@ test('seeds one guarded production-shaped organization fixture', async () => {
   `
   expect(deploymentAdminRoles?.count).toBe(0)
   await expect(getOrganizationAccessContext(deploymentAdmin!.id)).resolves.toMatchObject({
-    isOrganizationOwner: false,
     capabilities: { reviewRegistration: false, viewRosterCoverage: false },
+    isOrganizationOwner: false,
   })
 })

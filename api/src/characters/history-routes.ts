@@ -19,16 +19,18 @@ export const characterHistoryRoutes = new Hono<OwnedCharacterEnv>().get(
     try {
       const result = await getCharacterEmploymentHistoryResult(characterId)
       return context.json({
+        cachedUntil: result.cachedUntil,
         characterId,
         history: result.data,
-        cachedUntil: result.cachedUntil,
-        validatedAt: result.validatedAt,
         stale: result.stale,
+        validatedAt: result.validatedAt,
         ...(result.retryAt ? { retryAt: result.retryAt } : {}),
         ...(result.refreshFailureClass ? { refreshFailureClass: result.refreshFailureClass } : {}),
       })
     } catch (error) {
-      if (error instanceof EsiQuotaError) return esiCooldown(context, error)
+      if (error instanceof EsiQuotaError) {
+        return esiCooldown(context, error)
+      }
       return context.json(
         { code: 'ESI_UNAVAILABLE', message: 'Employment history is temporarily unavailable.' },
         502,

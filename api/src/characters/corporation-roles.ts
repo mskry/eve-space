@@ -17,14 +17,14 @@ const characterCorporationRolesCacheSchema = z.object({
 })
 
 const characterCorporationRolesRead = createCharacterEsiRead({
-  operation: 'character-corporation-roles',
-  name: 'character-corporation-roles-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdRoles.transport,
   cacheSchema: characterCorporationRolesCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdRoles.transport,
   encodeRequest: (input: CharacterCorporationRolesRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
   map: (response) => mapCharacterCorporationRoles(response.data),
+  name: 'character-corporation-roles-core',
+  operation: 'character-corporation-roles',
 })
 
 export const characterCorporationRolesScope = characterCorporationRolesRead.requiredScope
@@ -75,9 +75,9 @@ export async function getCharacterCorporationRolesEvidence(
   return {
     ...result.data,
     authorizationGeneration: result.authorizationGeneration,
-    roleEvidenceRevision: result.validatedAt,
-    observedAt: new Date(result.validatedAt),
     freshUntil: new Date(result.cachedUntil),
+    observedAt: new Date(result.validatedAt),
+    roleEvidenceRevision: result.validatedAt,
     stale: result.stale,
   }
 }

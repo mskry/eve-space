@@ -48,15 +48,16 @@ interface CharacterMarketOrdersData {
 type CharacterMarketOrdersResult = CharacterMarketOrdersData & EsiReadResultMetadata
 
 const characterMarketOrderCacheSchema = z.object({
-  orderId: z.number(),
-  typeId: z.number(),
-  typeName: z.string(),
-  isBuy: z.boolean(),
-  price: z.number(),
-  volumeRemain: z.number(),
-  volumeTotal: z.number(),
-  minimumVolume: z.number().nullable(),
+  durationDays: z.number(),
   escrow: z.number().nullable(),
+  expiresAt: z.string(),
+  isBuy: z.boolean(),
+  issuedAt: z.string(),
+  locationId: z.number(),
+  locationName: z.string().nullable(),
+  minimumVolume: z.number().nullable(),
+  orderId: z.number(),
+  price: z.number(),
   range: z.enum([
     '1',
     '10',
@@ -71,22 +72,19 @@ const characterMarketOrderCacheSchema = z.object({
     'solarsystem',
     'station',
   ]),
-  locationId: z.number(),
-  locationName: z.string().nullable(),
   regionId: z.number(),
-  issuedAt: z.string(),
-  durationDays: z.number(),
-  expiresAt: z.string(),
+  typeId: z.number(),
+  typeName: z.string(),
+  volumeRemain: z.number(),
+  volumeTotal: z.number(),
 })
 const characterMarketOrdersCacheSchema = z.object({
   orders: z.array(characterMarketOrderCacheSchema),
 })
 
 const characterMarketOrdersRead = createCharacterEsiRead({
-  operation: 'market-orders',
-  name: 'market-orders-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdOrders.transport,
   cacheSchema: characterMarketOrdersCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdOrders.transport,
   encodeRequest: (input: CharacterMarketOrdersRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
@@ -100,6 +98,8 @@ const characterMarketOrdersRead = createCharacterEsiRead({
       orders: personalOrders.map((order) => mapMarketOrder(order, namesByType, namesByLocation)),
     }
   },
+  name: 'market-orders-core',
+  operation: 'market-orders',
 })
 
 export const marketOrdersScope = characterMarketOrdersRead.requiredScope
@@ -127,10 +127,8 @@ const characterMarketOrderHistoryCacheSchema = z.object({
 })
 
 const characterMarketOrderHistoryRead = createCharacterEsiRead({
-  operation: 'market-order-history',
-  name: 'market-order-history-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdOrdersHistory.transport,
   cacheSchema: characterMarketOrderHistoryCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdOrdersHistory.transport,
   encodeRequest: (input: CharacterMarketOrderHistoryRepresentationInput) => ({
     path: { character_id: input.characterId },
     query: { page: input.page },
@@ -149,6 +147,8 @@ const characterMarketOrderHistoryRead = createCharacterEsiRead({
       totalPages: resolveFinanceTotalPages(response.meta.pagination?.pages, input.page),
     }
   },
+  name: 'market-order-history-core',
+  operation: 'market-order-history',
 })
 
 export async function getCharacterMarketOrders(
@@ -179,21 +179,21 @@ function mapMarketOrder(
   namesByLocation: ReadonlyMap<number, string>,
 ): CharacterMarketOrder {
   return {
-    orderId: order.order_id,
-    typeId: order.type_id,
-    typeName: financeTypeName(order.type_id, namesByType),
-    isBuy: order.is_buy_order ?? false,
-    price: order.price,
-    volumeRemain: order.volume_remain,
-    volumeTotal: order.volume_total,
-    minimumVolume: order.min_volume ?? null,
+    durationDays: order.duration,
     escrow: order.escrow ?? null,
-    range: order.range,
+    expiresAt: new Date(Date.parse(order.issued) + order.duration * 86_400_000).toISOString(),
+    isBuy: order.is_buy_order ?? false,
+    issuedAt: order.issued,
     locationId: order.location_id,
     locationName: financeLocationName(order.location_id, namesByLocation),
+    minimumVolume: order.min_volume ?? null,
+    orderId: order.order_id,
+    price: order.price,
+    range: order.range,
     regionId: order.region_id,
-    issuedAt: order.issued,
-    durationDays: order.duration,
-    expiresAt: new Date(Date.parse(order.issued) + order.duration * 86_400_000).toISOString(),
+    typeId: order.type_id,
+    typeName: financeTypeName(order.type_id, namesByType),
+    volumeRemain: order.volume_remain,
+    volumeTotal: order.volume_total,
   }
 }

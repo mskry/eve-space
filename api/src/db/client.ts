@@ -8,9 +8,9 @@ export type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0
 // Raw client: kept for connectivity pings (system/health-routes.ts, system/status.ts)
 // and graceful shutdown (server.ts). All table queries go through `db`.
 export const sql = postgres(env.DATABASE_URL, {
-  max: env.DATABASE_POOL_MAX,
-  idle_timeout: 20,
   connect_timeout: 10,
+  idle_timeout: 20,
+  max: env.DATABASE_POOL_MAX,
   onnotice: () => {},
 })
 

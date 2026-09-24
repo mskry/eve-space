@@ -15,15 +15,17 @@ beforeEach(() => {
   vi.stubGlobal('watch', watch)
   vi.stubGlobal('useRoute', () => ({ query: {} }))
   vi.stubGlobal('useAuthSession', () => ({
-    authConfig: ref({ configured: false, loginUrl: '', attachUrl: '' }),
+    authConfig: ref({ attachUrl: '', configured: false, loginUrl: '' }),
     authLoading: ref(false),
-    authSession: ref({ authenticated: true, account: { userId: 'user-1' } }),
+    authSession: ref({ account: { userId: 'user-1' }, authenticated: true }),
     initializeAuth: vi.fn(),
   }))
 })
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   vi.unstubAllGlobals()
 })
 
@@ -38,12 +40,12 @@ describe('character roster state', () => {
 
     const entry = mounted.queryCache.get(PRIVATE_QUERY_KEYS.roster())
     expect(entry).toBeDefined()
-    mounted.queryCache.setEntryState(entry!, { status: 'pending', data: undefined, error: null })
+    mounted.queryCache.setEntryState(entry!, { data: undefined, error: null, status: 'pending' })
 
     expect(mounted.roster.rosterStatus.value).toBe('unavailable')
     expect(mounted.roster.rosterRetryPanel.value).toMatchObject({
-      title: 'Character list not loaded',
       message: 'No character request is in flight. Retry to load your characters.',
+      title: 'Character list not loaded',
     })
   })
 
@@ -52,15 +54,15 @@ describe('character roster state', () => {
     const entry = mounted.queryCache.get(PRIVATE_QUERY_KEYS.roster())
     expect(entry).toBeDefined()
     mounted.queryCache.setEntryState(entry!, {
-      status: 'error',
       data: undefined,
       error: new ApiQueryError('Character roster is unavailable.', { status: 503 }),
+      status: 'error',
     })
 
     expect(mounted.roster.rosterStatus.value).toBe('error')
     expect(mounted.roster.rosterRetryPanel.value).toMatchObject({
-      title: 'Characters unavailable',
       message: 'Character roster is unavailable.',
+      title: 'Characters unavailable',
     })
   })
 
@@ -79,9 +81,9 @@ describe('character roster state', () => {
     const entry = mounted.queryCache.get(PRIVATE_QUERY_KEYS.roster())
     expect(entry).toBeDefined()
     mounted.queryCache.setEntryState(entry!, {
-      status: 'error',
       data: undefined,
       error: new ApiQueryError('Character roster is unavailable.', { status: 503 }),
+      status: 'error',
     })
     entry!.asyncStatus.value = 'loading'
 
@@ -105,19 +107,19 @@ function mountRoster() {
 
 function character(characterId: number) {
   return {
-    characterId,
-    name: String(characterId),
-    corporationId: 98_000_001,
-    allianceId: null,
-    isMain: true,
-    birthday: '2020-01-01T00:00:00.000Z',
-    securityStatus: 1,
-    raceFactionId: 500_001,
-    location: null,
-    ship: null,
-    walletBalance: 0,
-    totalSp: 0,
-    corporation: { id: 98_000_001, name: 'Corporation' },
     alliance: null,
+    allianceId: null,
+    birthday: '2020-01-01T00:00:00.000Z',
+    characterId,
+    corporation: { id: 98_000_001, name: 'Corporation' },
+    corporationId: 98_000_001,
+    isMain: true,
+    location: null,
+    name: String(characterId),
+    raceFactionId: 500_001,
+    securityStatus: 1,
+    ship: null,
+    totalSp: 0,
+    walletBalance: 0,
   }
 }

@@ -10,19 +10,19 @@ import { readActivitySnapshots } from './snapshot-reads.js'
 import type { ActivitySnapshotPersistence } from './persistence.js'
 
 const activityParams = z.object({
-  kind: z.enum(['project', 'job', 'campaign']),
   activityId: z.uuid(),
+  kind: z.enum(['project', 'job', 'campaign']),
 })
 const detailQuery = z.object({ corporationId: z.coerce.number().int().positive().optional() })
 const publicResourceIds = {
-  project: 'corporation-projects',
-  job: 'public-jobs',
   campaign: 'campaigns',
+  job: 'public-jobs',
+  project: 'corporation-projects',
 } as const
 const characterResourceIds = {
-  project: 'character-projects',
-  job: 'character-jobs',
   campaign: 'character-campaigns',
+  job: 'character-jobs',
+  project: 'character-projects',
 } as const
 
 interface ActivityRouteCapabilities {
@@ -37,8 +37,9 @@ export function activityRoutes(capabilities: ActivityRouteCapabilities) {
     async (context) => {
       const { kind, activityId } = context.req.valid('param')
       const { corporationId } = context.req.valid('query')
-      if (kind === 'project' && !corporationId)
+      if (kind === 'project' && !corporationId) {
         return context.json({ message: 'A corporation is required for project detail.' }, 400)
+      }
       const resourceId = publicResourceIds[kind]
       const platform = context.var.platform
       let source = await readActivitySnapshots(
@@ -46,8 +47,8 @@ export function activityRoutes(capabilities: ActivityRouteCapabilities) {
         platform.organization.organizationVersion,
         resourceId,
         kind === 'project'
-          ? { kind: 'corporation', corporationId: corporationId! }
-          : { kind: 'deployment', deploymentId: 1 },
+          ? { corporationId: corporationId!, kind: 'corporation' }
+          : { deploymentId: 1, kind: 'deployment' },
         activityId,
       )
       if (
@@ -61,17 +62,19 @@ export function activityRoutes(capabilities: ActivityRouteCapabilities) {
           { ...capabilities, collectionStatus: platform.collectionStatus },
           platform.organization.organizationVersion,
           'corporation-jobs',
-          { kind: 'corporation', corporationId },
+          { corporationId, kind: 'corporation' },
           activityId,
         )
-        if (corporationSource.snapshots.length > 0) source = corporationSource
+        if (corporationSource.snapshots.length > 0) {
+          source = corporationSource
+        }
       }
       return context.json(
         {
-          organizationVersion: platform.organization.organizationVersion,
-          resource: source.status,
           activity: source.snapshots.find((snapshot) => snapshot.id === activityId) ?? null,
           objectives: source.snapshots.filter((snapshot) => snapshot.campaignId === activityId),
+          organizationVersion: platform.organization.organizationVersion,
+          resource: source.status,
           ...collectionFreshness(source.status),
         },
         200,
@@ -92,17 +95,16 @@ export function participationRoutes(capabilities: ActivityRouteCapabilities) {
         { ...capabilities, collectionStatus: platform.collectionStatus },
         platform.organization.organizationVersion,
         characterResourceIds[kind],
-        { kind: 'character', characterId },
+        { characterId, kind: 'character' },
         activityId,
       )
       return context.json(
         {
-          characterId,
-          resource: source.status,
           activity:
             kind === 'job'
               ? (source.snapshots.find((snapshot) => snapshot.id === activityId) ?? null)
               : null,
+          characterId,
           participation: source.snapshots
             .filter((snapshot) => snapshot.id === activityId || snapshot.campaignId === activityId)
             .map((snapshot) => ({
@@ -110,6 +112,7 @@ export function participationRoutes(capabilities: ActivityRouteCapabilities) {
               contributed: snapshot.contributed,
               committed: snapshot.committed,
             })),
+          resource: source.status,
           ...collectionFreshness(source.status),
         },
         200,
@@ -119,7 +122,9 @@ export function participationRoutes(capabilities: ActivityRouteCapabilities) {
 }
 
 function collectionFreshness(status: PlatformCollectionStatus) {
-  if (status.status !== 'stale') return { stale: false as const }
+  if (status.status !== 'stale') {
+    return { stale: false as const }
+  }
   return {
     stale: true as const,
     ...(status.validatedAt ? { validatedAt: status.validatedAt } : {}),

@@ -28,8 +28,12 @@ export function createBrowserQueryPersistenceNotifications(
 
   const receive = (value: unknown) => {
     const notification = parseInvalidationNotification(value)
-    if (!notification || disposed) return
-    for (const subscription of subscriptions) subscription(notification)
+    if (!notification || disposed) {
+      return
+    }
+    for (const subscription of subscriptions) {
+      subscription(notification)
+    }
   }
 
   if (BroadcastChannelConstructor !== undefined) {
@@ -38,7 +42,9 @@ export function createBrowserQueryPersistenceNotifications(
     channel.addEventListener('message', onMessage)
     return {
       dispose() {
-        if (disposed) return
+        if (disposed) {
+          return
+        }
         disposed = true
         subscriptions.clear()
         channel.removeEventListener('message', onMessage)
@@ -50,7 +56,9 @@ export function createBrowserQueryPersistenceNotifications(
         }
       },
       subscribe(subscription) {
-        if (disposed) return () => undefined
+        if (disposed) {
+          return () => {}
+        }
         subscriptions.add(subscription)
         return () => subscriptions.delete(subscription)
       },
@@ -58,7 +66,9 @@ export function createBrowserQueryPersistenceNotifications(
   }
 
   const onStorage = (event: StorageEvent) => {
-    if (event.key !== INVALIDATION_STORAGE_KEY || event.newValue === null) return
+    if (event.key !== INVALIDATION_STORAGE_KEY || event.newValue === null) {
+      return
+    }
     try {
       receive(JSON.parse(event.newValue))
     } catch {
@@ -68,13 +78,17 @@ export function createBrowserQueryPersistenceNotifications(
   browserWindow?.addEventListener('storage', onStorage)
   return {
     dispose() {
-      if (disposed) return
+      if (disposed) {
+        return
+      }
       disposed = true
       subscriptions.clear()
       browserWindow?.removeEventListener('storage', onStorage)
     },
     publish(notification) {
-      if (disposed) return
+      if (disposed) {
+        return
+      }
       try {
         browserWindow?.localStorage.removeItem(INVALIDATION_STORAGE_KEY)
         browserWindow?.localStorage.setItem(INVALIDATION_STORAGE_KEY, JSON.stringify(notification))
@@ -83,7 +97,9 @@ export function createBrowserQueryPersistenceNotifications(
       }
     },
     subscribe(subscription) {
-      if (disposed) return () => undefined
+      if (disposed) {
+        return () => {}
+      }
       subscriptions.add(subscription)
       return () => subscriptions.delete(subscription)
     },
@@ -94,7 +110,7 @@ export function createSilentQueryPersistenceNotifications(): QueryPersistenceNot
   return {
     dispose() {},
     publish() {},
-    subscribe: () => () => undefined,
+    subscribe: () => () => {},
   }
 }
 
@@ -110,28 +126,36 @@ function parseInvalidationNotification(value: unknown): QueryPersistenceNotifica
 }
 
 function parseInvalidationScope(value: unknown): PrivateQueryInvalidationScope | null {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return null
+  }
   const record = value as Record<string, unknown>
-  if (record.kind === 'all' && hasExactKeys(record, ['kind'])) return { kind: 'all' }
+  if (record.kind === 'all' && hasExactKeys(record, ['kind'])) {
+    return { kind: 'all' }
+  }
   if (record.kind === 'character') {
-    if (hasExactKeys(record, ['kind'])) return { kind: 'character' }
+    if (hasExactKeys(record, ['kind'])) {
+      return { kind: 'character' }
+    }
     if (
       hasExactKeys(record, ['kind', 'characterId']) &&
       typeof record.characterId === 'number' &&
       Number.isSafeInteger(record.characterId) &&
       record.characterId > 0
     ) {
-      return { kind: 'character', characterId: record.characterId }
+      return { characterId: record.characterId, kind: 'character' }
     }
   }
   if (record.kind === 'organization') {
-    if (hasExactKeys(record, ['kind'])) return { kind: 'organization' }
+    if (hasExactKeys(record, ['kind'])) {
+      return { kind: 'organization' }
+    }
     if (
       hasExactKeys(record, ['kind', 'admissionScope']) &&
       typeof record.admissionScope === 'string' &&
       record.admissionScope.length > 0
     ) {
-      return { kind: 'organization', admissionScope: record.admissionScope }
+      return { admissionScope: record.admissionScope, kind: 'organization' }
     }
   }
   return null

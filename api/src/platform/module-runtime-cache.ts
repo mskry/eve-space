@@ -21,7 +21,9 @@ export async function loadCachedModuleRuntimeState(
   loadCacheTtlMs: () => Promise<number>,
 ): Promise<ModuleRuntimeState> {
   const now = Date.now()
-  if (runtimeStateCache && runtimeStateCache.expiresAt > now) return runtimeStateCache.value
+  if (runtimeStateCache && runtimeStateCache.expiresAt > now) {
+    return runtimeStateCache.value
+  }
 
   const generation = runtimeStateGeneration
   const load = runtimeStateLoad ?? (runtimeStateLoad = { generation, promise: loadState() })
@@ -30,17 +32,24 @@ export async function loadCachedModuleRuntimeState(
   try {
     loaded = await Promise.all([load.promise, loadCacheTtlMs()])
   } catch (error) {
-    if (runtimeStateLoad === load) runtimeStateLoad = undefined
-    if (load.generation === runtimeStateGeneration) throw error
+    if (runtimeStateLoad === load) {
+      runtimeStateLoad = undefined
+    }
+    if (load.generation === runtimeStateGeneration) {
+      throw error
+    }
     return loadCachedModuleRuntimeState(loadState, loadCacheTtlMs)
   }
 
-  if (runtimeStateLoad === load) runtimeStateLoad = undefined
-  if (load.generation !== runtimeStateGeneration)
+  if (runtimeStateLoad === load) {
+    runtimeStateLoad = undefined
+  }
+  if (load.generation !== runtimeStateGeneration) {
     return loadCachedModuleRuntimeState(loadState, loadCacheTtlMs)
+  }
 
   const [value, cacheTtlMs] = loaded
-  runtimeStateCache = { value, expiresAt: Date.now() + cacheTtlMs }
+  runtimeStateCache = { expiresAt: Date.now() + cacheTtlMs, value }
   return value
 }
 

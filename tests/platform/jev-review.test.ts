@@ -17,8 +17,11 @@ const run = promisify(execFile)
 const originalApiKey = process.env.TYPESAFE_API_KEY
 
 afterEach(() => {
-  if (originalApiKey === undefined) delete process.env.TYPESAFE_API_KEY
-  else process.env.TYPESAFE_API_KEY = originalApiKey
+  if (originalApiKey === undefined) {
+    delete process.env.TYPESAFE_API_KEY
+  } else {
+    process.env.TYPESAFE_API_KEY = originalApiKey
+  }
   vi.restoreAllMocks()
   vi.useRealTimers()
 })
@@ -43,7 +46,7 @@ describe('Jev review change discovery', () => {
       await mkdir(join(root, 'layers'), { recursive: true })
       await writeFile(join(root, 'layers/untracked.vue'), '<template><main /></template>\n')
 
-      await expect(changedRepositoryFiles(root, 'HEAD')).resolves.toEqual([
+      await expect(changedRepositoryFiles(root, 'HEAD')).resolves.toStrictEqual([
         'app/staged.ts',
         'layers/untracked.vue',
       ])
@@ -51,7 +54,7 @@ describe('Jev review change discovery', () => {
         'baseline = true',
       )
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 
@@ -75,12 +78,12 @@ describe('Jev review change discovery', () => {
 
       const revision = await mergeBaseRevision(root, 'main')
 
-      await expect(changedRepositoryFiles(root, 'main')).resolves.toEqual([])
+      await expect(changedRepositoryFiles(root, 'main')).resolves.toStrictEqual([])
       await expect(repositoryFileAtRevision(root, revision, 'mapping.ts')).resolves.toBe(
         'export const version = 1\n',
       )
     } finally {
-      await rm(root, { recursive: true, force: true })
+      await rm(root, { force: true, recursive: true })
     }
   })
 })
@@ -91,18 +94,18 @@ describe('Jev client', () => {
     vi.useFakeTimers()
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response('busy', { status: 529 }))
-      .mockResolvedValueOnce(Response.json({ answers: { fit: { type: 'noul', noul: 0.9 } } }))
+      .mockResolvedValueOnce(Response.json({ answers: { fit: { noul: 0.9, type: 'noul' } } }))
 
     const evaluation = evaluateSystemOne(
       createJevClient(),
       { source: 'example' },
       {
-        fit: { type: 'noul', instructions: 'Does this fit?' },
+        fit: { instructions: 'Does this fit?', type: 'noul' },
       },
     )
     await vi.runAllTimersAsync()
 
-    await expect(evaluation).resolves.toEqual({ fit: { type: 'noul', noul: 0.9 } })
+    await expect(evaluation).resolves.toStrictEqual({ fit: { noul: 0.9, type: 'noul' } })
     expect(fetch).toHaveBeenCalledTimes(2)
   })
 
@@ -115,7 +118,7 @@ describe('Jev client', () => {
         createJevClient(),
         {},
         {
-          fit: { type: 'noul', instructions: 'Does this fit?' },
+          fit: { instructions: 'Does this fit?', type: 'noul' },
         },
       ),
     ).rejects.toThrow('did not contain an answers object')
@@ -128,10 +131,14 @@ describe('Jev review runner', () => {
     let maximumActive = 0
     const verdicts: JevReviewVerdict[] = ['pass', 'review', 'report', 'pass']
     const result = await runJevReview({
-      findingName: 'test seam',
-      reviewedName: 'candidate(s)',
-      states: verdicts,
+      classify: (state, judgment) => ({
+        verdict: judgment,
+        location: `${state}-candidate`,
+        details: [`state: ${state}`],
+        reason: `${state} reason`,
+      }),
       concurrency: 2,
+      findingName: 'test seam',
       judge: async (verdict) => {
         active += 1
         maximumActive = Math.max(maximumActive, active)
@@ -139,16 +146,12 @@ describe('Jev review runner', () => {
         active -= 1
         return verdict
       },
-      classify: (state, judgment) => ({
-        verdict: judgment,
-        location: `${state}-candidate`,
-        details: [`state: ${state}`],
-        reason: `${state} reason`,
-      }),
+      reviewedName: 'candidate(s)',
+      states: verdicts,
     })
 
     expect(maximumActive).toBe(2)
-    expect(result.findings.map(({ verdict }) => verdict)).toEqual(verdicts)
+    expect(result.findings.map(({ verdict }) => verdict)).toStrictEqual(verdicts)
     expect(result.output).not.toContain('[PASS]')
     expect(result.output).toContain('[REVIEW] review-candidate')
     expect(result.output).toContain('state: report')
@@ -157,15 +160,15 @@ describe('Jev review runner', () => {
 
   it('does not fail for review-only findings', async () => {
     const result = await runJevReview({
-      findingName: 'test seam',
-      reviewedName: 'candidate(s)',
-      states: ['review' as const],
-      judge: async (verdict) => verdict,
       classify: (state, judgment) => ({
         verdict: judgment,
         location: state,
         reason: 'Needs review',
       }),
+      findingName: 'test seam',
+      judge: async (verdict) => verdict,
+      reviewedName: 'candidate(s)',
+      states: ['review' as const],
     })
 
     expect(result.failed).toBe(false)
@@ -174,11 +177,11 @@ describe('Jev review runner', () => {
   it('does not call Jev and returns a clean summary when there are no states', async () => {
     const judge = vi.fn()
     const result = await runJevReview({
+      classify: () => ({ verdict: 'pass', location: '', reason: '' }),
       findingName: 'test seam',
+      judge,
       reviewedName: 'candidate(s)',
       states: [],
-      judge,
-      classify: () => ({ verdict: 'pass', location: '', reason: '' }),
     })
 
     expect(judge).not.toHaveBeenCalled()

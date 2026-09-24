@@ -42,8 +42,8 @@ const reviewerTargetRoute = new Hono<PlatformReviewerTargetRouteEnv>().get(
     // @ts-expect-error reviewer targets are immutable data, not generic lookups
     void platform.reviewerTarget.load
     return context.json({
-      targetUserId: platform.reviewerTarget.account.userId,
       managedMemberLifecycleId: platform.reviewerTarget.managedMemberLifecycleId,
+      targetUserId: platform.reviewerTarget.account.userId,
     })
   },
 )
@@ -62,14 +62,14 @@ const groupCommandRoute = new Hono<
 >().post('/groups', async (context) => {
   const commands = context.var.platform.organizationCommands
   const input: PlatformAssignOrdinaryGroupInput = {
+    expiresAt: null,
     groupId: 'group-1',
     reason: 'Reviewed access decision',
-    expiresAt: null,
   }
   const result: PlatformAssignOrdinaryGroupResult = await commands.assignOrdinaryGroup(input)
   await commands.revokeOrdinaryGroup({
-    groupId: result.groupId,
     assignmentId: result.assignmentId,
+    groupId: result.groupId,
     reason: 'Reviewed revocation',
   })
   // @ts-expect-error this route did not declare the block command
@@ -102,63 +102,63 @@ const commandlessReviewerRoute = new Hono<PlatformReviewerTargetRouteEnv>().get(
     return context.json({ status: 'ok' as const })
   },
 )
-const ownership = { publisherPackage: '@example/test-manifest', moduleId: 'test' } as const
+const ownership = { moduleId: 'test', publisherPackage: '@example/test-manifest' } as const
 const organization = { ...ownership, audience: 'member', requiredPermission: 'test.view' } as const
 const reviewerOrganization = {
   ...ownership,
   audience: 'hr',
+  exposure: 'standard',
   requiredPermission: 'test.review',
   sectionId: 'overview',
   target: 'managed-organization-account',
-  exposure: 'standard',
 } as const
 const reviewerSearchOrganization = {
   ...ownership,
-  audience: 'hr',
-  requiredPermission: 'member-audit.search',
   additionalRequiredPermissions: ['member-audit.summary.read'],
-  target: 'managed-organization-account-search',
+  audience: 'hr',
   exposure: 'standard',
+  requiredPermission: 'member-audit.search',
+  target: 'managed-organization-account-search',
 } as const
 const groupCommandOrganization = {
   ...ownership,
   audience: 'hr',
+  exposure: 'standard',
+  organizationCommands: ['assign-ordinary-group', 'revoke-ordinary-group'],
   requiredPermission: 'member-audit.groups.manage',
   sectionId: 'access-management',
   target: 'managed-organization-account',
-  exposure: 'standard',
-  organizationCommands: ['assign-ordinary-group', 'revoke-ordinary-group'],
 } as const
 const blockCommandOrganization = {
   ...ownership,
   audience: 'director',
+  exposure: 'standard',
+  organizationCommands: ['block-member', 'unblock-member'],
   requiredPermission: 'member-audit.members.block',
   sectionId: 'access-management',
   target: 'managed-organization-account',
-  exposure: 'standard',
-  organizationCommands: ['block-member', 'unblock-member'],
 } as const
 const reviewerContribution = {
-  publisherPackage: '@example/test-manifest',
-  moduleId: 'test',
+  audience: 'hr',
   contributionId: 'overview',
+  description: 'Review an account.',
+  icon: 'overview',
+  label: 'Overview',
+  moduleId: 'test',
+  order: 10,
+  panelExport: './reviewer/overview',
+  panelPackage: '@example/test-nuxt',
+  publisherPackage: '@example/test-manifest',
+  requiredPermission: 'test.review',
   routeId: 'test-review',
   routePath: '/api/modules/test/accounts/:userId',
   sectionId: 'overview',
-  audience: 'hr',
-  requiredPermission: 'test.review',
   target: 'managed-organization-account',
-  panelPackage: '@example/test-nuxt',
-  panelExport: './reviewer/overview',
-  label: 'Overview',
-  description: 'Review an account.',
-  icon: 'overview',
-  order: 10,
 } as const satisfies PlatformInstalledReviewerContributionDescriptor
 const reviewerContributionOrganization = {
   ...reviewerOrganization,
-  routeId: 'test-review',
   namespace: '/test/accounts/:userId',
+  routeId: 'test-review',
 } as const
 
 const composedAuthenticatedRoute = platformModuleRouteComposers['authenticated-session'](
@@ -208,8 +208,8 @@ type ReviewerSearch = InferResponseType<typeof reviewerSearchClient.search.$get,
 const authenticatedStatus: AuthenticatedStatus = { status: 'ok' }
 const ownedCharacter: OwnedCharacter = { characterId: 9001 }
 const reviewerTarget: ReviewerTarget = {
-  targetUserId: 'user-1',
   managedMemberLifecycleId: 'managed-lifecycle-1',
+  targetUserId: 'user-1',
 }
 const reviewerContributionResponse: ReviewerContribution = reviewerTarget
 const reviewerSearch: ReviewerSearch = { hasSearch: true }

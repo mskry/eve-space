@@ -7,15 +7,15 @@ const configuration = zCorporationsProjectsDetail.shape.configuration;
 describe('corporation project configuration', () => {
   it.each([
     { manual: {} },
-    { earn_loyalty_point: { corporations: [{ corporation_id: 98000001 }] } },
-    { unknown: { type: 'future-project', data: { target: 42 } } },
+    { earn_loyalty_point: { corporations: [{ corporation_id: 98_000_001 }] } },
+    { unknown: { data: { target: 42 }, type: 'future-project' } },
   ])('accepts a single declared variant: %j', (value) => {
-    expect(configuration.parse(value)).toEqual(value);
+    expect(configuration.parse(value)).toStrictEqual(value);
   });
 
   it.each([
     {},
-    { manual: {}, earn_loyalty_point: {} },
+    { earn_loyalty_point: {}, manual: {} },
     { manual: null },
     { earn_loyalty_point: { corporations: [{ corporation_id: 'invalid' }] } },
     { unknown: { data: {} } },

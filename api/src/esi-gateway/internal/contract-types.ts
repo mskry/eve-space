@@ -109,9 +109,9 @@ export type ResolvedMutation<Options> = Options extends {
 const hour = 60 * 60_000
 
 export const retry = {
-  kind: 'idempotent',
   attempts: 3,
   initialDelayMilliseconds: 500,
+  kind: 'idempotent',
   maximumDelayMilliseconds: 10_000,
 } as const satisfies EsiRetryContract
 
@@ -138,36 +138,37 @@ export function defineContract<
   const metadata = esiOperationMetadata[operation]
   const generated = getGeneratedEsiOperationFacts(operation)
   const expectedClassification = options.mutation ? 'mutation' : 'read'
-  if (generated.classification !== expectedClassification)
+  if (generated.classification !== expectedClassification) {
     throw new Error(
       `ESI operation ${operation} is classified as ${generated.classification} by the SDK but configured as ${expectedClassification}`,
     )
+  }
   const contract: EsiOperationContract = {
     audit: {
       esiOperationId: metadata.esiOperationId,
       reviewedDate: esiMetadataReview.resolvedCompatibilityDate,
     },
-    representationVersion: options.representationVersion ?? 'v1',
     authorization: resolveAuthorization(operation, generated.authenticationScopes),
+    cache:
+      options.cache.kind === 'shared'
+        ? { ...options.cache, revalidate: generated.supportsConditionalRequests }
+        : options.cache,
+    compatibility: {
+      minimumDate: metadata.minimumCompatibilityDate,
+    },
+    freshness: options.freshness ?? metadata.cache,
     identity: resolveIdentity(
       operation,
       options.identity,
       generated.requestArrayLimits,
       generated.maximumBatchSize,
     ),
-    freshness: options.freshness ?? metadata.cache,
-    cache:
-      options.cache.kind === 'shared'
-        ? { ...options.cache, revalidate: generated.supportsConditionalRequests }
-        : options.cache,
-    rateGroup: generated.rateLimit,
-    retry: options.retry,
-    compatibility: {
-      minimumDate: metadata.minimumCompatibilityDate,
-    },
-    responseValidation: options.responseValidation ?? { kind: 'enabled' },
-    resourceRevision: options.resourceRevision,
     mutation: options.mutation,
+    rateGroup: generated.rateLimit,
+    representationVersion: options.representationVersion ?? 'v1',
+    resourceRevision: options.resourceRevision,
+    responseValidation: options.responseValidation ?? { kind: 'enabled' },
+    retry: options.retry,
   }
   return contract as ResolvedCoreEsiOperationContract<
     ResolvedIdentity<Options['identity']>,
@@ -178,22 +179,23 @@ export function defineContract<
 
 export function sharedPublicCache(): EsiCacheConfiguration {
   return {
-    kind: 'shared',
     collapse: true,
-    stale: { kind: 'bounded', milliseconds: hour },
+    kind: 'shared',
     retentionMilliseconds: hour,
+    stale: { kind: 'bounded', milliseconds: hour },
   }
 }
 
 export function sharedPrivateCache(retentionMilliseconds?: number): EsiCacheConfiguration {
-  if (retentionMilliseconds === undefined)
+  if (retentionMilliseconds === undefined) {
     return {
-      kind: 'shared',
       collapse: true,
-      stale: { kind: 'none' },
+      kind: 'shared',
       retentionMilliseconds: 0,
       runtimeRetention: 'private',
+      stale: { kind: 'none' },
     }
+  }
   return {
     kind: 'shared',
     collapse: true,
@@ -214,12 +216,17 @@ function resolveIdentity(
   requestArrayLimits: readonly { readonly maximumItems: number }[],
   maximumBatchSize: number | null,
 ): EsiIdentityContract {
-  if (identity.kind === 'ordered') return identity
+  if (identity.kind === 'ordered') {
+    return identity
+  }
   if (identity.kind === 'mixed') {
     const setFields = identity.fields.filter((field) => field.kind === 'set')
-    if (setFields.length === 0) return identity as EsiIdentityContract
-    if (setFields.length !== requestArrayLimits.length)
+    if (setFields.length === 0) {
+      return identity as EsiIdentityContract
+    }
+    if (setFields.length !== requestArrayLimits.length) {
       throw new Error(`Mixed ESI identity for ${operation} does not match generated array limits`)
+    }
     let limitIndex = 0
     return {
       ...identity,
@@ -230,14 +237,18 @@ function resolveIdentity(
       ),
     }
   }
-  if (maximumBatchSize === null)
+  if (maximumBatchSize === null) {
     throw new Error(`Set-like ESI operation ${operation} is missing a generated batch limit`)
+  }
   return { ...identity, maximumItems: maximumBatchSize }
 }
 
 function resolveAuthorization(operation: string, scopes: readonly string[]) {
-  if (scopes.length === 0) return { kind: 'public' } as const
-  if (scopes.length !== 1)
+  if (scopes.length === 0) {
+    return { kind: 'public' } as const
+  }
+  if (scopes.length !== 1) {
     throw new Error(`ESI operation ${operation} does not declare exactly one authorization scope`)
+  }
   return { kind: 'character', scope: scopes[0]! } as const
 }

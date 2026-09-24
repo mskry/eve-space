@@ -10,7 +10,7 @@ const maximumSnapshots = 10_000
 const maximumRequests = 10_000
 const maximumRecordEntries = 10_000
 const resourceIdSchema = z.string().min(1).max(100)
-const cursorTokenSchema = z.string().min(1).max(4_096)
+const cursorTokenSchema = z.string().min(1).max(4096)
 const instantSchema = z.iso.datetime({ offset: true })
 const cursorSchema = z.strictObject({
   after: z.optional(cursorTokenSchema),
@@ -18,69 +18,66 @@ const cursorSchema = z.strictObject({
   initialAfter: z.optional(cursorTokenSchema),
 })
 const activitySnapshotSchema = z.strictObject({
+  campaignId: z.uuid().nullable(),
+  committed: z.boolean().nullable(),
+  contributed: z.number().nullable(),
+  corporationId: z.number().int().positive().nullable(),
+  deadline: z.nullable(instantSchema),
+  description: z.string().max(100_000).nullable(),
+  eligibility: z.enum(['unrestricted', 'restricted', 'unknown']),
   id: z.uuid(),
   kind: z.enum(['project', 'job', 'campaign', 'objective']),
-  campaignId: z.uuid().nullable(),
-  corporationId: z.number().int().positive().nullable(),
-  title: z.string().max(1_000),
-  description: z.string().max(100_000).nullable(),
   objective: z.string().max(10_000).nullable(),
-  state: z.string().max(100),
   progress: z.strictObject({ current: z.number(), desired: z.number() }).nullable(),
   reward: z.strictObject({ initial: z.number(), remaining: z.number() }).nullable(),
-  deadline: z.nullable(instantSchema),
-  eligibility: z.enum(['unrestricted', 'restricted', 'unknown']),
-  contributed: z.number().nullable(),
-  committed: z.boolean().nullable(),
+  state: z.string().max(100),
+  title: z.string().max(1000),
 })
 const boundedPathSchema = z
-  .record(z.string().min(1).max(100), z.union([z.string().max(4_096), z.number().int()]))
+  .record(z.string().min(1).max(100), z.union([z.string().max(4096), z.number().int()]))
   .refine((value) => Object.keys(value).length <= 32)
 const collectionRequestSchema = z.strictObject({
+  cursor: z.optional(cursorSchema),
+  cursorKey: z.string().min(1).max(100).optional(),
+  list: z.string().min(1).max(100).optional(),
   operation: z.enum(activityOperationIds),
   path: boundedPathSchema,
-  list: z.string().min(1).max(100).optional(),
-  cursorKey: z.string().min(1).max(100).optional(),
-  cursor: z.optional(cursorSchema),
   replace: z.boolean(),
   snapshot: z.optional(activitySnapshotSchema),
   validatedAt: z.optional(instantSchema),
 })
 const checkpointSchema = z.strictObject({
-  retainedIds: z.array(z.uuid()).max(maximumSnapshots).readonly().optional(),
-  retainedCampaignIds: z.array(z.uuid()).max(maximumSnapshots).readonly().optional(),
-  initialized: z.boolean(),
-  requests: z.array(collectionRequestSchema).max(maximumRequests).readonly(),
   cursors: z
     .record(z.string().min(1).max(100), cursorSchema)
     .refine((value) => Object.keys(value).length <= maximumRecordEntries),
+  initialized: z.boolean(),
+  requests: z.array(collectionRequestSchema).max(maximumRequests).readonly(),
+  retainedCampaignIds: z.array(z.uuid()).max(maximumSnapshots).readonly().optional(),
+  retainedIds: z.array(z.uuid()).max(maximumSnapshots).readonly().optional(),
 })
 export const readActivityCheckpointOperation = definePlatformPersistenceOperation({
   id: 'read-activity-checkpoint',
-  method: 'readActivityCheckpoint',
-  revision: 1,
-  mode: 'read',
   inputSchema: z.strictObject({
     resourceId: resourceIdSchema,
     subjectLifecycleId: z.uuid(),
     organizationVersion: z.number().int().nonnegative(),
     authorizationGeneration: z.number().int().min(-1),
   }),
+  maximumInputBytes: 1024,
+  maximumOutputBytes: platformPersistencePayloadMaximumBytes,
+  method: 'readActivityCheckpoint',
+  mode: 'read',
   outputSchema: z
     .strictObject({
       checkpoint: checkpointSchema,
       revision: z.number().int().nonnegative(),
     })
     .nullable(),
-  maximumInputBytes: 1_024,
-  maximumOutputBytes: platformPersistencePayloadMaximumBytes,
+  revision: 1,
 })
 
 export const readActivitySnapshotsOperation = definePlatformPersistenceOperation({
   id: 'read-activity-snapshots',
-  method: 'readActivitySnapshots',
-  revision: 1,
-  mode: 'read',
   inputSchema: z.strictObject({
     resourceId: resourceIdSchema,
     subjectLifecycleId: z.uuid(),
@@ -88,16 +85,16 @@ export const readActivitySnapshotsOperation = definePlatformPersistenceOperation
     authorizationGeneration: z.number().int().min(-1),
     activityId: z.uuid().nullable(),
   }),
-  outputSchema: z.array(activitySnapshotSchema).max(100),
-  maximumInputBytes: 1_024,
+  maximumInputBytes: 1024,
   maximumOutputBytes: platformPersistencePayloadMaximumBytes,
+  method: 'readActivitySnapshots',
+  mode: 'read',
+  outputSchema: z.array(activitySnapshotSchema).max(100),
+  revision: 1,
 })
 
 export const materializeActivityObservationOperation = definePlatformPersistenceOperation({
   id: 'materialize-activity-observation',
-  method: 'materializeActivityObservation',
-  revision: 1,
-  mode: 'write',
   inputSchema: z.strictObject({
     resourceId: resourceIdSchema,
     subjectLifecycleId: z.uuid(),
@@ -116,18 +113,21 @@ export const materializeActivityObservationOperation = definePlatformPersistence
       )
       .max(maximumSnapshots),
   }),
+  maximumInputBytes: platformPersistencePayloadMaximumBytes,
+  maximumOutputBytes: 1024,
+  method: 'materializeActivityObservation',
+  mode: 'write',
   outputSchema: z.discriminatedUnion('outcome', [
     z.strictObject({ outcome: z.literal('applied'), revision: z.number().int().positive() }),
     z.strictObject({ outcome: z.literal('obsolete') }),
   ]),
-  maximumInputBytes: platformPersistencePayloadMaximumBytes,
-  maximumOutputBytes: 1_024,
+  revision: 1,
 })
 
 const organizationActivityPersistenceOperations = {
+  'materialize-activity-observation': materializeActivityObservationOperation,
   'read-activity-checkpoint': readActivityCheckpointOperation,
   'read-activity-snapshots': readActivitySnapshotsOperation,
-  'materialize-activity-observation': materializeActivityObservationOperation,
 } as const
 
 export type ActivityCheckpointPersistence = PlatformPersistenceMethodsFor<

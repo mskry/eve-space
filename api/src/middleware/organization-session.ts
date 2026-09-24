@@ -38,9 +38,9 @@ export async function loadOrganizationSessionContext(
   if (!selected.projected || isComplianceProjectionDue(selected.context, now)) {
     await recomputeOrganizationAccountCompliance({
       deploymentId: 1,
+      now,
       organizationVersion: selected.context.organizationVersion,
       userId,
-      now,
     })
     selected = await selectOrganizationSessionContext(userId)
   }
@@ -52,12 +52,12 @@ async function selectOrganizationSessionContext(
 ): Promise<{ context: OrganizationSessionContext; projected: boolean }> {
   const [organization] = await db
     .select({
+      accessValidUntil: organizationAccountCompliance.accessValidUntil,
+      evidenceFreshness: organizationAccountCompliance.evidenceFreshness,
       organizationVersion: deploymentSettings.organizationVersion,
       projectedUserId: organizationAccountCompliance.userId,
-      state: organizationAccountCompliance.state,
-      evidenceFreshness: organizationAccountCompliance.evidenceFreshness,
       reviewDeadline: organizationAccountCompliance.reviewDeadline,
-      accessValidUntil: organizationAccountCompliance.accessValidUntil,
+      state: organizationAccountCompliance.state,
     })
     .from(deploymentSettings)
     .leftJoin(
@@ -73,7 +73,9 @@ async function selectOrganizationSessionContext(
       ),
     )
     .where(eq(deploymentSettings.id, 1))
-  if (!organization) throw new Error('Deployment organization is not configured')
+  if (!organization) {
+    throw new Error('Deployment organization is not configured')
+  }
   const [block] = await db
     .select({ blockId: organizationMemberBlocks.blockId })
     .from(organizationMemberBlocks)
@@ -87,12 +89,12 @@ async function selectOrganizationSessionContext(
     )
   return {
     context: {
-      organizationVersion: organization.organizationVersion,
-      state: organization.state ?? 'pending',
-      evidenceFreshness: organization.evidenceFreshness ?? 'unavailable',
-      reviewDeadline: organization.reviewDeadline,
       accessValidUntil: organization.accessValidUntil,
       blocked: Boolean(block),
+      evidenceFreshness: organization.evidenceFreshness ?? 'unavailable',
+      organizationVersion: organization.organizationVersion,
+      reviewDeadline: organization.reviewDeadline,
+      state: organization.state ?? 'pending',
     },
     projected: Boolean(organization.projectedUserId),
   }

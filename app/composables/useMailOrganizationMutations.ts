@@ -45,8 +45,11 @@ interface DeleteMailLabelTarget {
 
 function replacePendingMail(target: ShallowRef<Set<number>>, mailId: number, pending: boolean) {
   const next = new Set(target.value)
-  if (pending) next.add(mailId)
-  else next.delete(mailId)
+  if (pending) {
+    next.add(mailId)
+  } else {
+    next.delete(mailId)
+  }
   target.value = next
 }
 
@@ -106,22 +109,31 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
 
   function replaceReadStateOverride(mailId: number, read: boolean | undefined) {
     const next = new Map(readStateOverrides.value)
-    if (read === undefined) next.delete(mailId)
-    else next.set(mailId, read)
+    if (read === undefined) {
+      next.delete(mailId)
+    } else {
+      next.set(mailId, read)
+    }
     readStateOverrides.value = next
   }
 
   function replaceDeletedMail(mailId: number, deleted: boolean) {
     const next = new Set(deletedMailIds.value)
-    if (deleted) next.add(mailId)
-    else next.delete(mailId)
+    if (deleted) {
+      next.add(mailId)
+    } else {
+      next.delete(mailId)
+    }
     deletedMailIds.value = next
   }
 
   function replaceLabelOverride(mailId: number, labels: readonly number[] | undefined) {
     const next = new Map(labelOverrides.value)
-    if (labels === undefined) next.delete(mailId)
-    else next.set(mailId, [...labels])
+    if (labels === undefined) {
+      next.delete(mailId)
+    } else {
+      next.set(mailId, [...labels])
+    }
     labelOverrides.value = next
   }
 
@@ -148,7 +160,9 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     } catch (error) {
       const current =
         generation === operationGeneration && readOperationVersions.get(mailId) === version
-      if (current) replaceReadStateOverride(mailId, previousOverride)
+      if (current) {
+        replaceReadStateOverride(mailId, previousOverride)
+      }
       return failedOutcome(target.characterId, error, current)
     } finally {
       if (generation === operationGeneration && readOperationVersions.get(mailId) === version) {
@@ -183,7 +197,9 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     } catch (error) {
       const current =
         generation === operationGeneration && deleteOperationVersions.get(mailId) === version
-      if (current) replaceDeletedMail(mailId, false)
+      if (current) {
+        replaceDeletedMail(mailId, false)
+      }
       return failedOutcome(target.characterId, error, current)
     } finally {
       if (generation === operationGeneration && deleteOperationVersions.get(mailId) === version) {
@@ -217,13 +233,17 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
       localLabelCommits.set(mailId, target.labels)
       commitMailLabels(queryCache, target)
       queueMicrotask(() => {
-        if (localLabelCommits.get(mailId) === target.labels) localLabelCommits.delete(mailId)
+        if (localLabelCommits.get(mailId) === target.labels) {
+          localLabelCommits.delete(mailId)
+        }
       })
       return { success: true }
     } catch (error) {
       const current =
         generation === operationGeneration && labelOperationVersions.get(mailId) === version
-      if (current) replaceLabelOverride(mailId, previousOverride)
+      if (current) {
+        replaceLabelOverride(mailId, previousOverride)
+      }
       return failedOutcome(target.characterId, error, current)
     } finally {
       if (generation === operationGeneration && labelOperationVersions.get(mailId) === version) {
@@ -233,7 +253,9 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
   }
 
   async function createMailLabel(target: CreateMailLabelTarget): Promise<MailMutationOutcome> {
-    if (createLabelPending.value) return { success: false }
+    if (createLabelPending.value) {
+      return { success: false }
+    }
     const operationGeneration = generation
     const version = ++createLabelVersion
     createLabelPending.value = true
@@ -279,7 +301,9 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     replacePendingMail(deleteLabelPendingIds, target.labelId, true)
     try {
       await deleteLabelMutation.mutateAsync(target)
-      if (generation !== operationGeneration) return { invalidated: true, success: false }
+      if (generation !== operationGeneration) {
+        return { invalidated: true, success: false }
+      }
       deletedLabelIds.value = new Set([...deletedLabelIds.value, target.labelId])
       commitMailLabelDeletion(queryCache, target.characterId, target.labelId)
       createdLabels.value = createdLabels.value.filter((label) => label.labelId !== target.labelId)
@@ -326,7 +350,9 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     const reconciled = createdLabels.value.filter(
       (label) => label.labelId === null || !retrievedIds.has(label.labelId),
     )
-    if (reconciled.length !== createdLabels.value.length) createdLabels.value = reconciled
+    if (reconciled.length !== createdLabels.value.length) {
+      createdLabels.value = reconciled
+    }
   }
 
   function markLabelUndeletable(labelId: number) {
@@ -334,7 +360,9 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
   }
 
   function retireReusedDeletedLabel(characterId: number, labelId: number) {
-    if (!deletedLabelIds.value.has(labelId)) return
+    if (!deletedLabelIds.value.has(labelId)) {
+      return
+    }
     prepareMailForReusedLabel(queryCache, characterId, labelId)
     const retainedDeletedIds = new Set(deletedLabelIds.value)
     retainedDeletedIds.delete(labelId)
@@ -369,7 +397,7 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     error: unknown,
     current: boolean,
   ): MailMutationOutcome {
-    reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'character', characterId }, error)
+    reportPrivateQueryAuthorizationDenial(queryCache, { characterId, kind: 'character' }, error)
     return current ? { error, success: false } : { invalidated: true, success: false }
   }
 
@@ -378,12 +406,12 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     createLabelPending,
     createMailLabel,
     createdLabels,
-    deleteMailLabel,
     deleteLabelPendingIds,
     deleteMail,
+    deleteMailLabel,
+    deletePendingIds,
     deletedLabelIds,
     deletedMailIds,
-    deletePendingIds,
     labelOverrides,
     labelPendingIds,
     markLabelUndeletable,
@@ -392,8 +420,8 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     reconcileCreatedLabels,
     reconcileLabelState,
     reconcileReadState,
-    retireReusedDeletedLabel,
     resetMailMutations,
+    retireReusedDeletedLabel,
     setMailRead,
     undeletableLabelIds,
   }

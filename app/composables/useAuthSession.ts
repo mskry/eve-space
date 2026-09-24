@@ -27,7 +27,9 @@ export function useAuthSession(apiClient: ApiClient, { autoLoad = true } = {}) {
   const logoutMutation = useMutation({
     mutation: async () => {
       const response = await apiClient.auth.logout.$post()
-      if (!response.ok) throw await toApiQueryError(response, 'Logout failed.')
+      if (!response.ok) {
+        throw await toApiQueryError(response, 'Logout failed.')
+      }
     },
   })
 
@@ -44,15 +46,23 @@ export function useAuthSession(apiClient: ApiClient, { autoLoad = true } = {}) {
     () => authVerificationStatus.value === 'idle' || authVerificationStatus.value === 'verifying',
   )
   const authFeedback = computed(() => {
-    if (route.query.auth === 'cancelled') return 'EVE login was cancelled.'
-    if (route.query.auth === 'error') return 'EVE login could not be completed.'
-    if (route.query.auth === 'success') return 'Character authorization completed.'
+    if (route.query.auth === 'cancelled') {
+      return 'EVE login was cancelled.'
+    }
+    if (route.query.auth === 'error') {
+      return 'EVE login could not be completed.'
+    }
+    if (route.query.auth === 'success') {
+      return 'Character authorization completed.'
+    }
     return ''
   })
   const authFeedbackIsError = computed(() => route.query.auth !== 'success')
 
   async function initializeAuth(force = false) {
-    if (!import.meta.client) return false
+    if (!import.meta.client) {
+      return false
+    }
     const loadConfig = force ? configQuery.refetch : configQuery.refresh
     await Promise.all([loadConfig(), initialization.initialize(force)])
     return authSession.value.authenticated

@@ -14,7 +14,8 @@ export function getEsiResponseErrorMetadata(error: unknown): EsiResponseMetadata
     error instanceof EsiResponseParseError ||
     error instanceof EsiResponseValidationError ||
     error instanceof EsiTransportError
-  )
+  ) {
     return error.metadata
+  }
   return undefined
 }

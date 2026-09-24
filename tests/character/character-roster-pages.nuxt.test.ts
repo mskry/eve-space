@@ -103,7 +103,9 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   vi.clearAllMocks()
 })
 
@@ -112,13 +114,13 @@ describe('character roster page states', () => {
     rosterRetryPanel.value = null
     rosterStatus.value = 'loading'
     const wrapper = await mountSuspended(CharacterPage, {
-      route: false,
       global: {
         stubs: {
           NuxtLink: RouterLinkStub,
           NuxtPage: { template: '<div data-testid="character-child">Character detail</div>' },
         },
       },
+      route: false,
     })
     mountedWrappers.push(wrapper)
 
@@ -126,7 +128,7 @@ describe('character roster page states', () => {
     admissionOwnership.value = true
     await nextTick()
     expect(wrapper.find('[data-testid="character-child"]').exists()).toBe(true)
-    expect(characters.value).toEqual([])
+    expect(characters.value).toStrictEqual([])
     expect(wrapper.text()).not.toContain('Resolving character authorization')
     admissionOwnership.value = false
     await nextTick()
@@ -135,8 +137,8 @@ describe('character roster page states', () => {
 
   it('renders the parked roster retry panel on the roster page', async () => {
     const wrapper = await mountSuspended(CharactersPage, {
-      route: false,
       global: { stubs: { NuxtLink: RouterLinkStub } },
+      route: false,
     })
     mountedWrappers.push(wrapper)
 
@@ -146,8 +148,8 @@ describe('character roster page states', () => {
 
   it('keeps an unavailable roster out of the character-not-found branch', async () => {
     const wrapper = await mountSuspended(CharacterPage, {
-      route: false,
       global: { stubs: { NuxtLink: RouterLinkStub } },
+      route: false,
     })
     mountedWrappers.push(wrapper)
 

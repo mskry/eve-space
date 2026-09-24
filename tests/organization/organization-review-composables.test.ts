@@ -23,7 +23,7 @@ describe('organization HR review', () => {
     queryServer.use(
       http.get('http://localhost/api/admin/setup', () => {
         setupRequests += 1
-        return HttpResponse.json({ required: false, available: true })
+        return HttpResponse.json({ available: true, required: false })
       }),
       http.get('http://localhost/api/organization/context', () => {
         contextRequests += 1
@@ -31,8 +31,8 @@ describe('organization HR review', () => {
       }),
       http.get('http://localhost/api/organization/exceptions', () =>
         HttpResponse.json({
-          reviewCandidates: [{ userId: 'candidate-user', characterId: 90_000_001 }],
           exceptions: [{ exceptionId: 'exception-1', characterId: 90_000_002 }],
+          reviewCandidates: [{ userId: 'candidate-user', characterId: 90_000_001 }],
         }),
       ),
       http.get('http://localhost/api/organization/audit', ({ request }) => {
@@ -87,9 +87,15 @@ describe('organization HR review', () => {
     await review.initialize()
     await flushPromises()
 
-    expect({ contextRequests, setupRequests }).toEqual({ contextRequests: 1, setupRequests: 1 })
+    expect({ contextRequests, setupRequests }).toStrictEqual({
+      contextRequests: 1,
+      setupRequests: 1,
+    })
     await vi.waitFor(() => expect(wrapper.text()).toBe('true:1:1'))
-    expect(review.auditEvents.value.map(({ auditId }) => auditId)).toEqual(['audit-3', 'audit-2'])
+    expect(review.auditEvents.value.map(({ auditId }) => auditId)).toStrictEqual([
+      'audit-3',
+      'audit-2',
+    ])
     expect(review.hasOlderAuditEvents.value).toBe(true)
     expect(review.auditLoading.value).toBe(false)
     expect(review.loading.value).toBe(false)
@@ -99,9 +105,9 @@ describe('organization HR review', () => {
     auth.authSession.value = { authenticated: false }
     auth.authUnavailable.value = true
     expect(review.canReview.value).toBe(false)
-    expect(review.reviewCandidates.value).toEqual([])
-    expect(review.exceptions.value).toEqual([])
-    expect(review.auditEvents.value).toEqual([])
+    expect(review.reviewCandidates.value).toStrictEqual([])
+    expect(review.exceptions.value).toStrictEqual([])
+    expect(review.auditEvents.value).toStrictEqual([])
     expect(review.hasOlderAuditEvents.value).toBe(false)
     expect(review.errorMessage.value).toBe('Session verification is unavailable.')
     auth.authSession.value = { authenticated: true }
@@ -113,22 +119,24 @@ describe('organization HR review', () => {
     ) => void
     observeAuditPage(undefined)
     observeAuditPage(auditPage(['audit-2', 'audit-1']))
-    expect(review.auditEvents.value.map(({ auditId }) => auditId)).toEqual([
+    expect(review.auditEvents.value.map(({ auditId }) => auditId)).toStrictEqual([
       'audit-3',
       'audit-2',
       'audit-1',
     ])
 
     await review.approveException({
-      userId: 'candidate-user',
       characterId: 90_000_001,
-      reason: 'Approved for review coverage.',
       expiresAt: null,
+      reason: 'Approved for review coverage.',
+      userId: 'candidate-user',
     })
     await review.decideException('exception-1', 'revoke', 'No longer required.')
 
-    expect(approvalRequests).toEqual([{ reason: 'Approved for review coverage.', expiresAt: null }])
-    expect(decisionRequests).toEqual([{ reason: 'No longer required.' }])
+    expect(approvalRequests).toStrictEqual([
+      { expiresAt: null, reason: 'Approved for review coverage.' },
+    ])
+    expect(decisionRequests).toStrictEqual([{ reason: 'No longer required.' }])
     expect(invalidateQueries).toHaveBeenCalledTimes(2)
 
     queryServer.use(
@@ -149,10 +157,10 @@ describe('organization HR review', () => {
     )
     await expect(
       review.approveException({
-        userId: 'candidate-user',
         characterId: 90_000_001,
-        reason: 'Rejected request.',
         expiresAt: null,
+        reason: 'Rejected request.',
+        userId: 'candidate-user',
       }),
     ).rejects.toThrow('Approval rejected.')
     await expect(
@@ -166,13 +174,13 @@ describe('organization HR review', () => {
   it('clears accumulated review state on same-route organization invalidation', async () => {
     queryServer.use(
       http.get('http://localhost/api/admin/setup', () =>
-        HttpResponse.json({ required: false, available: true }),
+        HttpResponse.json({ available: true, required: false }),
       ),
       http.get('http://localhost/api/organization/context', () =>
         HttpResponse.json(organizationContext(true)),
       ),
       http.get('http://localhost/api/organization/exceptions', () =>
-        HttpResponse.json({ reviewCandidates: [], exceptions: [] }),
+        HttpResponse.json({ exceptions: [], reviewCandidates: [] }),
       ),
       http.get('http://localhost/api/organization/audit', () =>
         HttpResponse.json({
@@ -198,7 +206,7 @@ describe('organization HR review', () => {
 
     void invalidatePrivateQueryScope(queryCache, { kind: 'organization' })
 
-    expect(review.auditEvents.value).toEqual([])
+    expect(review.auditEvents.value).toStrictEqual([])
     expect(review.hasOlderAuditEvents.value).toBe(false)
     expect(review.invalidationRevision.value).toBe(revision + 1)
     wrapper.unmount()
@@ -209,13 +217,13 @@ describe('organization HR review', () => {
     const decisionCanFinish = new Promise<void>((resolve) => (finishDecision = resolve))
     queryServer.use(
       http.get('http://localhost/api/admin/setup', () =>
-        HttpResponse.json({ required: false, available: true }),
+        HttpResponse.json({ available: true, required: false }),
       ),
       http.get('http://localhost/api/organization/context', () =>
         HttpResponse.json(organizationContext(true)),
       ),
       http.get('http://localhost/api/organization/exceptions', () =>
-        HttpResponse.json({ reviewCandidates: [], exceptions: [] }),
+        HttpResponse.json({ exceptions: [], reviewCandidates: [] }),
       ),
       http.get('http://localhost/api/organization/audit', () =>
         HttpResponse.json({ events: [], nextBeforeAuditSequence: null }),
@@ -255,7 +263,7 @@ describe('organization HR review', () => {
     let reviewRequests = 0
     queryServer.use(
       http.get('http://localhost/api/admin/setup', () =>
-        HttpResponse.json({ required: false, available: true }),
+        HttpResponse.json({ available: true, required: false }),
       ),
       http.get('http://localhost/api/organization/context', () => {
         contextRequests += 1
@@ -263,7 +271,7 @@ describe('organization HR review', () => {
       }),
       http.get('http://localhost/api/organization/exceptions', () => {
         reviewRequests += 1
-        return HttpResponse.json({ reviewCandidates: [], exceptions: [] })
+        return HttpResponse.json({ exceptions: [], reviewCandidates: [] })
       }),
       http.get('http://localhost/api/organization/audit', () => {
         reviewRequests += 1
@@ -292,7 +300,7 @@ describe('organization HR review', () => {
     expect(contextRequests).toBe(1)
     expect(reviewRequests).toBe(0)
     expect(review.canReview.value).toBe(false)
-    expect(review.auditEvents.value).toEqual([])
+    expect(review.auditEvents.value).toStrictEqual([])
     wrapper.unmount()
   })
 })
@@ -302,12 +310,12 @@ describe('organization roster coverage', () => {
 
   it('loads roster coverage for an authenticated reviewer', async () => {
     const coverage = {
-      managedCorporations: { status: 'current' },
       corporations: [{ corporationId: 98_000_001, unregisteredCharacters: [] }],
+      managedCorporations: { status: 'current' },
     }
     queryServer.use(
       http.get('http://localhost/api/admin/setup', () =>
-        HttpResponse.json({ required: false, available: true }),
+        HttpResponse.json({ available: true, required: false }),
       ),
       http.get('http://localhost/api/organization/context', () =>
         HttpResponse.json(organizationContext(true)),
@@ -332,7 +340,7 @@ describe('organization roster coverage', () => {
     await flushPromises()
 
     await vi.waitFor(() => expect(wrapper.text()).toBe('1'))
-    expect(roster.coverage.value).toEqual(coverage)
+    expect(roster.coverage.value).toStrictEqual(coverage)
     expect(roster.loading.value).toBe(false)
     expect(roster.errorMessage.value).toBe('')
 
@@ -348,7 +356,7 @@ describe('organization roster coverage', () => {
     let coverageRequests = 0
     queryServer.use(
       http.get('http://localhost/api/admin/setup', () =>
-        HttpResponse.json({ required: true, available: true }),
+        HttpResponse.json({ available: true, required: true }),
       ),
       http.get('http://localhost/api/organization/context', () => {
         contextRequests += 1
@@ -356,7 +364,7 @@ describe('organization roster coverage', () => {
       }),
       http.get('http://localhost/api/organization/roster-coverage', () => {
         coverageRequests += 1
-        return HttpResponse.json({ managedCorporations: {}, corporations: [] })
+        return HttpResponse.json({ corporations: [], managedCorporations: {} })
       }),
     )
     const initializeAuth = vi.fn().mockResolvedValue(true)
@@ -383,14 +391,14 @@ describe('organization roster coverage', () => {
     let coverageRequests = 0
     queryServer.use(
       http.get('http://localhost/api/admin/setup', () =>
-        HttpResponse.json({ required: false, available: true }),
+        HttpResponse.json({ available: true, required: false }),
       ),
       http.get('http://localhost/api/organization/context', () =>
         HttpResponse.json(organizationContext(false)),
       ),
       http.get('http://localhost/api/organization/roster-coverage', () => {
         coverageRequests += 1
-        return HttpResponse.json({ managedCorporations: {}, corporations: [] })
+        return HttpResponse.json({ corporations: [], managedCorporations: {} })
       }),
     )
     const initializeAuth = vi.fn().mockResolvedValue(true)
@@ -415,7 +423,7 @@ describe('organization roster coverage', () => {
   it('presents organization context failures', async () => {
     queryServer.use(
       http.get('http://localhost/api/admin/setup', () =>
-        HttpResponse.json({ required: false, available: true }),
+        HttpResponse.json({ available: true, required: false }),
       ),
       http.get('http://localhost/api/organization/context', () =>
         HttpResponse.json(
@@ -461,51 +469,51 @@ function stubNuxtCompositionGlobals(initializeAuth: () => Promise<boolean>) {
 
 function organizationContext(canReview: boolean) {
   return {
-    organization: {
-      organizationType: 'corporation',
-      organizationId: 98_000_001,
-      organizationName: 'Example Corporation',
-      organizationTicker: 'EX',
-      organizationVersion: 1,
-    },
-    isOrganizationOwner: false,
-    isBlocked: false,
-    memberAccess: canReview,
+    authorityCharacter: null,
     capabilities: {
       reviewRegistration: canReview,
       viewRosterCoverage: canReview,
     },
     claimAvailable: false,
-    ownerStatus: 'fresh',
-    ownerFailureClass: null,
     freshUntil: '2026-09-10T13:00:00.000Z',
     graceUntil: null,
+    isBlocked: false,
+    isOrganizationOwner: false,
+    memberAccess: canReview,
+    organization: {
+      organizationId: 98_000_001,
+      organizationName: 'Example Corporation',
+      organizationTicker: 'EX',
+      organizationType: 'corporation',
+      organizationVersion: 1,
+    },
+    ownerFailureClass: null,
+    ownerStatus: 'fresh',
     reviewDeadline: null,
-    authorityCharacter: null,
   }
 }
 
 function auditEvent(auditId: string) {
   return {
+    actorId: 'reviewer-user',
+    actorType: 'user',
+    assignmentId: null,
+    assignmentSource: null,
     auditId,
     auditSequence: auditId,
-    organizationVersion: 1,
-    policyVersion: 1,
-    eventType: 'exception.approved',
-    actorType: 'user',
-    actorId: 'reviewer-user',
-    subjectType: 'exception',
-    subjectId: 'exception-1',
-    reason: 'Reviewed.',
-    outcome: 'granted',
-    groupId: null,
-    assignmentId: null,
-    targetUserId: null,
-    assignmentSource: null,
+    causationAuditId: null,
     complianceSource: null,
     entitlementExpiresAt: null,
-    causationAuditId: null,
+    eventType: 'exception.approved',
+    groupId: null,
     occurredAt: '2026-09-08T10:00:00.000Z',
+    organizationVersion: 1,
+    outcome: 'granted',
+    policyVersion: 1,
+    reason: 'Reviewed.',
+    subjectId: 'exception-1',
+    subjectType: 'exception',
+    targetUserId: null,
   }
 }
 

@@ -15,5 +15,5 @@ export function useThing(apiClient) {
       characterId: 2,
     }),
   )
-  return { spreadQuery, grantMutation, returnedQuery }
+  return { grantMutation, returnedQuery, spreadQuery }
 }

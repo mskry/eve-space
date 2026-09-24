@@ -94,7 +94,9 @@ export function useMailCompositionDraft(options: MailDraftOptions) {
   )
   const localMailingListSuggestions = computed<MailRecipient[]>(() => {
     const needle = recipientInput.value.trim().toLocaleLowerCase()
-    if (!needle) return []
+    if (!needle) {
+      return []
+    }
     return options.mailbox.mailingLists.value
       .filter((list) => list.name.toLocaleLowerCase().includes(needle))
       .map((list) => ({
@@ -109,7 +111,9 @@ export function useMailCompositionDraft(options: MailDraftOptions) {
     const available = new Map<string, MailRecipient>()
     for (const recipient of [...localMailingListSuggestions.value, ...remoteSuggestions.value]) {
       const key = mailRecipientKey(recipient)
-      if (!selected.has(key)) available.set(key, recipient)
+      if (!selected.has(key)) {
+        available.set(key, recipient)
+      }
     }
     return [...available.values()]
   })
@@ -153,7 +157,9 @@ export function useMailCompositionDraft(options: MailDraftOptions) {
   function openSeeded(nextMode: Exclude<MailCompositionMode, 'new'>) {
     const detail = currentDetail()
     const characterId = options.characterId.value
-    if (!detail || !characterId) return
+    if (!detail || !characterId) {
+      return
+    }
     if (nextMode === 'reply' && !addressableMailParty(detail.sender)) {
       feedback.value = replyUnavailableReason.value
       options.showToast({
@@ -209,14 +215,21 @@ export function useMailCompositionDraft(options: MailDraftOptions) {
       addRecipient({ id: local.mailingListId, name: local.name, type: 'mailing_list' })
       return
     }
-    if (!queryEnabled()) return
+    if (!queryEnabled()) {
+      return
+    }
     feedback.value = ''
-    if (exactName.value === name) void resolveQuery.refetch()
-    else exactName.value = name
+    if (exactName.value === name) {
+      void resolveQuery.refetch()
+    } else {
+      exactName.value = name
+    }
   }
 
   function requestClose() {
-    if (!open.value || options.sending.value) return
+    if (!open.value || options.sending.value) {
+      return
+    }
     if (!dirty.value) {
       resetDraft()
       return
@@ -226,7 +239,9 @@ export function useMailCompositionDraft(options: MailDraftOptions) {
       confirmLabel: 'Discard draft',
       description: 'The recipients, subject, and message body will be permanently discarded.',
       onClose: () => {
-        if (!discarded) open.value = true
+        if (!discarded) {
+          open.value = true
+        }
       },
       onConfirm: () => {
         discarded = true
@@ -238,7 +253,9 @@ export function useMailCompositionDraft(options: MailDraftOptions) {
   }
 
   watch(recipientInput, (value) => {
-    if (searchTimer) clearTimeout(searchTimer)
+    if (searchTimer) {
+      clearTimeout(searchTimer)
+    }
     const normalized = value.trim()
     if (normalized.length < MAIL_RECIPIENT_SEARCH_MIN_LENGTH) {
       searchQuery.value = ''
@@ -252,10 +269,15 @@ export function useMailCompositionDraft(options: MailDraftOptions) {
   watch(
     () => resolveQuery.data.value,
     (result) => {
-      if (!result || exactName.value === null) return
+      if (!result || exactName.value === null) {
+        return
+      }
       const recipient = result.recipients[0]
-      if (recipient) addRecipient(recipient)
-      else feedback.value = `No mail recipient named "${exactName.value}" was found.`
+      if (recipient) {
+        addRecipient(recipient)
+      } else {
+        feedback.value = `No mail recipient named "${exactName.value}" was found.`
+      }
       exactName.value = null
     },
   )
@@ -263,7 +285,9 @@ export function useMailCompositionDraft(options: MailDraftOptions) {
   watch(
     () => resolveQuery.error.value,
     (error) => {
-      if (!error || exactName.value === null) return
+      if (!error || exactName.value === null) {
+        return
+      }
       feedback.value =
         error instanceof Error ? error.message : 'The recipient could not be resolved.'
       exactName.value = null
@@ -280,7 +304,9 @@ export function useMailCompositionDraft(options: MailDraftOptions) {
     dirty,
     dispose() {
       scopeActive = false
-      if (searchTimer) clearTimeout(searchTimer)
+      if (searchTimer) {
+        clearTimeout(searchTimer)
+      }
     },
     feedback,
     isCurrent: (operationGeneration: number) => scopeActive && operationGeneration === generation,

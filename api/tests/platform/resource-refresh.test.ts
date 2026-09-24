@@ -8,9 +8,9 @@ const mocks = vi.hoisted(() => ({
   execute: vi.fn(),
   loadState: vi.fn(),
   materializeCoreResourceObservation: vi.fn(),
-  recordSuccess: vi.fn(),
   recomputeAllAccounts: vi.fn(),
   recomputeManagedCorporations: vi.fn(),
+  recordSuccess: vi.fn(),
   resolveEligibility: vi.fn(),
   transaction: vi.fn(),
   upsertState: vi.fn(),
@@ -56,18 +56,18 @@ import {
 const identity = {
   moduleId: 'member-audit',
   resourceId: 'trained-skills',
+  subjectId: '1404328063',
   subjectKind: 'character',
   subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
-  subjectId: '1404328063',
 } as const
 const managedAuthority = {
+  disclosureVersion: 1,
+  managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
   organizationDeploymentId: 1 as const,
   organizationVersion: 7,
-  targetUserId: '00000000-0000-4000-8000-000000000002',
-  managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
-  sectionId: 'skills',
-  disclosureVersion: 1,
   sectionActivationVersion: 1,
+  sectionId: 'skills',
+  targetUserId: '00000000-0000-4000-8000-000000000002',
 }
 
 describe('local resource observations', () => {
@@ -80,11 +80,11 @@ describe('local resource observations', () => {
     )
     mocks.loadState.mockResolvedValue(null)
     mocks.resolveEligibility.mockResolvedValue({
-      status: 'eligible',
-      due: true,
       authorizationGeneration: 4,
+      due: true,
       managedAuthority: null,
       nextEligibleAt: null,
+      status: 'eligible',
     })
     mocks.recordSuccess.mockResolvedValue(undefined)
     mocks.createRoutinePersistence.mockReturnValue(scopedRoutinePersistence())
@@ -94,9 +94,9 @@ describe('local resource observations', () => {
     const materialize = vi.fn(async () => undefined)
     await applyInstalledResourceObservation({
       ...observation(materialize),
-      outcome: 'complete',
-      data: { cursor: 'opaque' },
       complete: false,
+      data: { cursor: 'opaque' },
+      outcome: 'complete',
     })
     expect(materialize).toHaveBeenCalledOnce()
     expect(mocks.recordSuccess).not.toHaveBeenCalled()
@@ -107,9 +107,9 @@ describe('local resource observations', () => {
     mocks.transaction.mockResolvedValue([{ version: 3 }])
     await applyInstalledResourceObservation({
       ...observation(materialize),
-      outcome: 'complete',
       data: {},
       organizationVersion: 2,
+      outcome: 'complete',
     })
     expect(materialize).not.toHaveBeenCalled()
     expect(mocks.recordSuccess).not.toHaveBeenCalled()
@@ -118,21 +118,21 @@ describe('local resource observations', () => {
   test('rejects an in-flight observation after its managed authority changes', async () => {
     const materialize = vi.fn(async () => undefined)
     mocks.resolveEligibility.mockResolvedValue({
-      status: 'eligible',
-      due: true,
       authorizationGeneration: 4,
+      due: true,
       managedAuthority: {
         ...managedAuthority,
         managedMemberLifecycleId: '00000000-0000-4000-8000-000000000099',
       },
       nextEligibleAt: null,
+      status: 'eligible',
     })
 
     await applyInstalledResourceObservation({
       ...observation(materialize),
+      data: {},
       managedAuthority,
       outcome: 'complete',
-      data: {},
     })
 
     expect(materialize).not.toHaveBeenCalled()
@@ -163,8 +163,8 @@ describe('local resource observations', () => {
 
     await applyInstalledResourceObservation({
       ...observation(materialize),
-      outcome: 'complete',
       data: { score: 10 },
+      outcome: 'complete',
     })
 
     expect(materialize).toHaveBeenCalledOnce()
@@ -176,12 +176,12 @@ describe('local resource observations', () => {
     )
     expect(materialize).toHaveBeenCalledWith(
       expect.objectContaining({
+        authorizationGeneration: 4,
         data: { score: 10 },
         validatedAt: '2026-08-26T14:58:00.000Z',
-        authorizationGeneration: 4,
       }),
     )
-    expect(Object.keys(materialize.mock.calls[0]![0].capabilities)).toEqual([
+    expect(Object.keys(materialize.mock.calls[0]![0].capabilities)).toStrictEqual([
       'logger',
       'persistence',
     ])
@@ -192,12 +192,12 @@ describe('local resource observations', () => {
   test('locks the declared section before rechecking eligibility and writing', async () => {
     await applyInstalledResourceObservation({
       ...observation(vi.fn().mockResolvedValue(undefined)),
+      data: {},
+      outcome: 'complete',
       resource: {
         ...observation(vi.fn()).resource,
         sectionId: 'skills',
       },
-      outcome: 'complete',
-      data: {},
     })
 
     const sectionLockIndex = mocks.transaction.mock.calls.findIndex(([strings]) =>
@@ -220,9 +220,9 @@ describe('local resource observations', () => {
 
     await applyInstalledResourceObservation({
       ...input,
-      resource: declaredPersistenceResource(input.resource),
-      outcome: 'complete',
       data: { score: 10 },
+      outcome: 'complete',
+      resource: declaredPersistenceResource(input.resource),
       signal: controller.signal,
     })
 
@@ -240,9 +240,9 @@ describe('local resource observations', () => {
     const obsoleteInput = observation(vi.fn(async () => ({ outcome: 'obsolete' as const })))
     await applyInstalledResourceObservation({
       ...obsoleteInput,
-      resource: declaredPersistenceResource(obsoleteInput.resource),
-      outcome: 'complete',
       data: { score: 10 },
+      outcome: 'complete',
+      resource: declaredPersistenceResource(obsoleteInput.resource),
     })
     expect(mocks.recordSuccess).not.toHaveBeenCalled()
 
@@ -257,9 +257,9 @@ describe('local resource observations', () => {
     await expect(
       applyInstalledResourceObservation({
         ...caughtInput,
-        resource: declaredPersistenceResource(caughtInput.resource),
-        outcome: 'complete',
         data: { score: 10 },
+        outcome: 'complete',
+        resource: declaredPersistenceResource(caughtInput.resource),
       }),
     ).rejects.toBe(failure)
     expect(mocks.recordSuccess).not.toHaveBeenCalled()
@@ -305,9 +305,9 @@ describe('local resource observations', () => {
 
     await expect(
       processInstalledResourceRefresh(identity, {
-        signal: controller.signal,
         executeOperation,
         recordFailure,
+        signal: controller.signal,
       }),
     ).rejects.toBe(controller.signal.reason)
     expect(recordFailure).not.toHaveBeenCalled()
@@ -319,6 +319,7 @@ describe('local resource observations', () => {
 
     await expect(
       processInstalledResourceRefresh(identity, {
+        applyObservation: vi.fn().mockRejectedValue(new Error('database')),
         executeOperation: vi.fn().mockResolvedValue({
           outcome: 'loaded',
           resource: input.resource,
@@ -334,7 +335,6 @@ describe('local resource observations', () => {
             quota: {},
           },
         }),
-        applyObservation: vi.fn().mockRejectedValue(new Error('database')),
         recordFailure,
       }),
     ).rejects.toBeInstanceOf(PlatformResourcePersistenceError)
@@ -350,8 +350,8 @@ describe('local resource observations', () => {
 
   test('materializes core observations and recomputes every account when required', async () => {
     mocks.materializeCoreResourceObservation.mockResolvedValue({
-      organizationVersion: 8,
       affectedCorporationIds: [],
+      organizationVersion: 8,
       recomputeAllAccounts: true,
     })
 
@@ -360,8 +360,8 @@ describe('local resource observations', () => {
     expect(mocks.recordSuccess).toHaveBeenCalledOnce()
     expect(mocks.recomputeAllAccounts).toHaveBeenCalledWith(expect.anything(), {
       deploymentId: 1,
-      organizationVersion: 8,
       now: expect.any(Date),
+      organizationVersion: 8,
       rotateManagedMemberLifecycles: false,
     })
     expect(mocks.recomputeManagedCorporations).not.toHaveBeenCalled()
@@ -369,13 +369,13 @@ describe('local resource observations', () => {
 
   test('rotates managed-member intervals when alliance authority recovers after a gap', async () => {
     mocks.loadState.mockResolvedValue({
-      validatedAt: new Date('2026-08-26T13:00:00.000Z'),
-      nextEligibleAt: new Date('2026-08-26T14:00:00.000Z'),
       lastFailureClass: null,
+      nextEligibleAt: new Date('2026-08-26T14:00:00.000Z'),
+      validatedAt: new Date('2026-08-26T13:00:00.000Z'),
     })
     mocks.materializeCoreResourceObservation.mockResolvedValue({
-      organizationVersion: 8,
       affectedCorporationIds: [],
+      organizationVersion: 8,
       recomputeAllAccounts: true,
     })
 
@@ -383,26 +383,26 @@ describe('local resource observations', () => {
 
     expect(mocks.recomputeAllAccounts).toHaveBeenCalledWith(expect.anything(), {
       deploymentId: 1,
-      organizationVersion: 8,
       now: expect.any(Date),
+      organizationVersion: 8,
       rotateManagedMemberLifecycles: true,
     })
   })
 
   test('recomputes only accounts affected by a core corporation observation', async () => {
     mocks.materializeCoreResourceObservation.mockResolvedValue({
-      organizationVersion: 9,
       affectedCorporationIds: [98_000_001, 98_000_002],
+      organizationVersion: 9,
       recomputeAllAccounts: false,
     })
 
     await applyInstalledResourceObservation(coreObservation())
 
     expect(mocks.recomputeManagedCorporations).toHaveBeenCalledWith(expect.anything(), {
-      deploymentId: 1,
-      organizationVersion: 9,
       corporationIds: [98_000_001, 98_000_002],
+      deploymentId: 1,
       now: expect.any(Date),
+      organizationVersion: 9,
     })
   })
 
@@ -419,8 +419,8 @@ describe('local resource observations', () => {
     ).rejects.toThrow('ESI representation validation time is invalid')
 
     mocks.materializeCoreResourceObservation.mockResolvedValue({
-      organizationVersion: 10,
       affectedCorporationIds: [],
+      organizationVersion: 10,
       recomputeAllAccounts: false,
     })
     await applyInstalledResourceObservation(coreObservation())
@@ -453,36 +453,36 @@ describe('local resource observations', () => {
 
 function observation(materialize: PlatformSingleRequestResourceImplementation['materialize']) {
   const implementation = {
+    map: vi.fn(),
+    materialize,
     mode: 'single-request',
     operation: 'skills',
     request: vi.fn(),
-    map: vi.fn(),
-    materialize,
   } satisfies PlatformSingleRequestResourceImplementation
   return {
+    authorizationGeneration: 4,
     identity,
+    managedAuthority: null,
     resource: {
-      moduleId: identity.moduleId,
-      resourceId: identity.resourceId,
-      operationId: 'skills',
-      subjectKind: 'character' as const,
-      materializationIntervalSeconds: 900,
       eligibility: { kind: 'current-owned-character' as const },
       implementation,
+      materializationIntervalSeconds: 900,
+      moduleId: identity.moduleId,
+      operationId: 'skills',
+      resourceId: identity.resourceId,
+      subjectKind: 'character' as const,
     },
     subject: {
-      kind: 'character' as const,
       characterId: 1_404_328_063,
+      kind: 'character' as const,
       lifecycleId: identity.subjectLifecycleId,
     },
-    authorizationGeneration: 4,
-    managedAuthority: null,
     validatedAt: '2026-08-26T14:58:00.000Z',
   }
 }
 const scopedRoutinePersistenceValue = {
-  persistence: { writeSnapshot: vi.fn().mockResolvedValue({ outcome: 'applied' }) },
   close: vi.fn(),
+  persistence: { writeSnapshot: vi.fn().mockResolvedValue({ outcome: 'applied' }) },
 }
 
 function scopedRoutinePersistence(failure?: unknown) {
@@ -496,8 +496,8 @@ function declaredPersistenceResource<Resource extends object>(resource: Resource
   return {
     ...resource,
     persistence: {
-      projection: [],
       materialization: [{ operationId: 'write-snapshot' }],
+      projection: [],
     },
   }
 }
@@ -506,17 +506,17 @@ function coreObservation() {
   const input = observation(vi.fn())
   return {
     ...input,
+    data: { corporationIds: [98_000_001] },
+    outcome: 'complete' as const,
     resource: {
       ...input.resource,
       moduleId: 'core',
       resourceId: 'managed-corporations',
     },
     subject: {
-      kind: 'alliance' as const,
       allianceId: 99_000_001,
+      kind: 'alliance' as const,
       lifecycleId: input.subject.lifecycleId,
     },
-    outcome: 'complete' as const,
-    data: { corporationIds: [98_000_001] },
   }
 }

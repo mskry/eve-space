@@ -3,7 +3,7 @@ import { useQuery } from '@pinia/colada'
 import { corporationAllianceHistoryQuery } from '../../../queries/corporations'
 import { buildHistoryTimeline } from '../../../utils/history-timeline'
 
-definePageMeta({ title: 'Corporation Alliance History', layout: 'headerless' })
+definePageMeta({ layout: 'headerless', title: 'Corporation Alliance History' })
 
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
@@ -17,9 +17,15 @@ const historyQuery = useQuery(() => ({
     corporation.value?.type === 'player_owned',
 }))
 const historyStatus = computed(() => {
-  if (historyQuery.data.value) return 'idle'
-  if (historyQuery.status.value === 'error') return 'error'
-  if (historyQuery.asyncStatus.value === 'loading') return 'loading'
+  if (historyQuery.data.value) {
+    return 'idle'
+  }
+  if (historyQuery.status.value === 'error') {
+    return 'error'
+  }
+  if (historyQuery.asyncStatus.value === 'loading') {
+    return 'loading'
+  }
   return 'idle'
 })
 const historyMessage = computed(() =>
@@ -31,20 +37,22 @@ const searchableHistory = computed(() =>
   buildHistoryTimeline(
     recordAccessAllowed.value ? (historyQuery.data.value?.history ?? []) : [],
   ).map((entry) => ({
-    recordId: entry.recordId,
-    startDate: entry.startDate,
     endDate: entry.endDate,
-    isDeleted: entry.isDeleted,
     entityId: entry.allianceId,
     entityName:
       entry.allianceName ?? (entry.allianceId ? `Alliance ${entry.allianceId}` : 'No alliance'),
+    isDeleted: entry.isDeleted,
+    recordId: entry.recordId,
+    startDate: entry.startDate,
   })),
 )
 
 watch(
   corporation,
   (value) => {
-    if (value?.type !== 'npc_owned' || corporationId.value === undefined) return
+    if (value?.type !== 'npc_owned' || corporationId.value === undefined) {
+      return
+    }
     return navigateTo(`/corporation/${corporationId.value}`, { replace: true })
   },
   { immediate: true },

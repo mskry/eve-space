@@ -1,24 +1,24 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  selectResults: [] as unknown[][],
   affectedUsers: [] as { userId: string }[],
-  services: [] as { permissionKey: string; reviewAllowed?: boolean }[],
-  inserts: [] as unknown[],
-  deletes: 0,
   appendAudit: vi.fn(),
   appendAudits: vi.fn(),
   appendEvent: vi.fn(),
   convergeGroups: vi.fn(),
   convergeManagedMemberLifecycle: vi.fn(),
+  deletes: 0,
+  inserts: [] as unknown[],
+  selectResults: [] as unknown[][],
+  services: [] as { permissionKey: string; reviewAllowed?: boolean }[],
 }))
 
 vi.mock('../../src/db/client.js', () => ({
   db: {
+    selectDistinct: vi.fn(() => query(mocks.affectedUsers)),
     transaction: vi.fn(async (callback: (transaction: unknown) => unknown) =>
       callback(transaction()),
     ),
-    selectDistinct: vi.fn(() => query(mocks.affectedUsers)),
   },
 }))
 vi.mock('../../src/organization/audit.js', () => ({
@@ -58,18 +58,18 @@ describe('organization compliance persistence', () => {
 
   test('ignores users or organization versions that are no longer current', async () => {
     mocks.selectResults.push([])
-    await expect(recompute()).resolves.toEqual({ outcome: 'obsolete' })
+    await expect(recompute()).resolves.toStrictEqual({ outcome: 'obsolete' })
 
     mocks.selectResults.push([{ organizationVersion: 4 }], [])
-    await expect(recompute()).resolves.toEqual({ outcome: 'obsolete' })
+    await expect(recompute()).resolves.toStrictEqual({ outcome: 'obsolete' })
     expect(mocks.inserts).toHaveLength(0)
   })
 
   test('persists and emits only a material compliance transition', async () => {
     givenEvaluationState({ previous: [] })
     await expect(recompute()).resolves.toMatchObject({
+      evaluation: { evidenceFreshness: 'fresh', issues: [], state: 'compliant' },
       outcome: 'changed',
-      evaluation: { state: 'compliant', evidenceFreshness: 'fresh', issues: [] },
     })
     expect(mocks.inserts).toHaveLength(1)
     expect(mocks.deletes).toBe(1)
@@ -81,9 +81,9 @@ describe('organization compliance persistence', () => {
     expect(mocks.appendEvent).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        type: 'organization.compliance-transitioned',
         aggregateId: userId,
         payload: expect.objectContaining({ state: 'compliant', userId }),
+        type: 'organization.compliance-transitioned',
       }),
     )
 
@@ -107,23 +107,23 @@ describe('organization compliance persistence', () => {
   test('reconciles normalized violations while preserving their first observation', async () => {
     const firstObservedAt = new Date('2026-09-01T11:30:00.000Z')
     givenEvaluationState({
-      corporationId: 98000002,
+      corporationId: 98_000_002,
       previous: [compliantProjection()],
       previousIssues: [
         {
-          issueKey: 'character:1404328063:external',
-          issueCode: 'character-outside-managed-organization',
-          characterId: 1404328063,
-          requiredScope: null,
+          characterId: 1_404_328_063,
           firstObservedAt,
+          issueCode: 'character-outside-managed-organization',
+          issueKey: 'character:1404328063:external',
           lastObservedAt: firstObservedAt,
+          requiredScope: null,
         },
       ],
     })
 
     await expect(recompute()).resolves.toMatchObject({
+      evaluation: { reviewDeadline: firstObservedAt, state: 'suspended' },
       outcome: 'changed',
-      evaluation: { state: 'suspended', reviewDeadline: firstObservedAt },
     })
     expect(mocks.inserts).toHaveLength(2)
     expect(mocks.deletes).toBe(1)
@@ -133,18 +133,18 @@ describe('organization compliance persistence', () => {
     const auditId = 'cb05479f-36dd-4ec5-91a6-0b90cb8a1149'
     mocks.appendAudit.mockResolvedValue({ auditId })
     mocks.services.push({ permissionKey: 'discord.member' })
-    givenEvaluationState({ corporationId: 98000002, previous: [compliantProjection()] })
+    givenEvaluationState({ corporationId: 98_000_002, previous: [compliantProjection()] })
 
     await expect(recompute()).resolves.toMatchObject({
-      outcome: 'changed',
       evaluation: { state: 'suspended' },
+      outcome: 'changed',
     })
     expect(mocks.appendAudits).toHaveBeenCalledWith(expect.anything(), [
       expect.objectContaining({
-        eventType: 'entitlement.revoked',
-        subjectType: 'external_service',
-        subjectId: 'discord.member',
         causationAuditId: auditId,
+        eventType: 'entitlement.revoked',
+        subjectId: 'discord.member',
+        subjectType: 'external_service',
       }),
     ])
   })
@@ -157,14 +157,14 @@ describe('organization compliance persistence', () => {
       { permissionKey: 'discord.leadership', reviewAllowed: false },
     )
     givenEvaluationState({
-      corporationId: 98000002,
+      corporationId: 98_000_002,
       previous: [compliantProjection()],
       strictRemediationDurationSeconds: 3600,
     })
 
     await expect(recompute()).resolves.toMatchObject({
-      outcome: 'changed',
       evaluation: { state: 'review_required' },
+      outcome: 'changed',
     })
     expect(mocks.appendAudits).toHaveBeenCalledWith(expect.anything(), [
       expect.objectContaining({ subjectId: 'discord.leadership' }),
@@ -181,16 +181,16 @@ describe('organization compliance persistence', () => {
       previous: [
         {
           ...compliantProjection(),
-          state: 'review_required',
-          reviewDeadline: new Date('2026-09-01T11:00:00.000Z'),
           accessValidUntil: new Date('2026-09-01T11:00:00.000Z'),
+          reviewDeadline: new Date('2026-09-01T11:00:00.000Z'),
+          state: 'review_required',
         },
       ],
     })
 
     await expect(recompute()).resolves.toMatchObject({
-      outcome: 'changed',
       evaluation: { state: 'compliant' },
+      outcome: 'changed',
     })
     expect(mocks.appendAudits).toHaveBeenCalledWith(
       expect.anything(),
@@ -208,7 +208,7 @@ describe('organization compliance persistence', () => {
       { permissionKey: 'discord.leadership', reviewAllowed: false },
     )
     givenEvaluationState({
-      corporationId: 98000002,
+      corporationId: 98_000_002,
       previous: [
         {
           ...compliantProjection(),
@@ -218,8 +218,8 @@ describe('organization compliance persistence', () => {
     })
 
     await expect(recompute()).resolves.toMatchObject({
-      outcome: 'changed',
       evaluation: { state: 'suspended' },
+      outcome: 'changed',
     })
     expect(mocks.appendAudits).toHaveBeenCalledWith(
       expect.anything(),
@@ -237,7 +237,7 @@ describe('organization compliance persistence', () => {
       { permissionKey: 'discord.leadership', reviewAllowed: false },
     )
     givenEvaluationState({
-      corporationId: 98000002,
+      corporationId: 98_000_002,
       previous: [
         {
           ...compliantProjection(),
@@ -248,8 +248,8 @@ describe('organization compliance persistence', () => {
     })
 
     await expect(recompute()).resolves.toMatchObject({
-      outcome: 'changed',
       evaluation: { state: 'review_required' },
+      outcome: 'changed',
     })
     expect(mocks.appendAudits).toHaveBeenCalledTimes(1)
     expect(mocks.appendAudits).toHaveBeenCalledWith(expect.anything(), [
@@ -266,9 +266,9 @@ describe('organization compliance persistence', () => {
 
     await expect(
       recomputeComplianceForManagedCorporation({
+        corporationId: 98_000_001,
         deploymentId: 1,
         organizationVersion: 4,
-        corporationId: 98000001,
       }),
     ).resolves.toBeUndefined()
     expect(mocks.inserts).toHaveLength(1)
@@ -276,7 +276,6 @@ describe('organization compliance persistence', () => {
 
   test('ends managed-member eligibility when alliance authority is stale', async () => {
     givenEvaluationState({
-      organizationType: 'alliance',
       managedCollectionRows: [
         {
           validatedAt: evidenceAt,
@@ -285,6 +284,7 @@ describe('organization compliance persistence', () => {
           failureStartedAt: null,
         },
       ],
+      organizationType: 'alliance',
       previous: [],
     })
 
@@ -300,9 +300,9 @@ describe('organization compliance persistence', () => {
 function recompute() {
   return recomputeOrganizationAccountCompliance({
     deploymentId: 1,
+    now,
     organizationVersion: 4,
     userId,
-    now,
   })
 }
 
@@ -317,26 +317,26 @@ function givenEvaluationState(input: {
   mocks.selectResults.push(
     [
       {
-        organizationVersion: 4,
         organizationType: input.organizationType ?? 'corporation',
+        organizationVersion: 4,
         policyVersion: 2,
         requiredScopes: [],
-        strictRemediationDurationSeconds: input.strictRemediationDurationSeconds ?? 0,
         staleEvidenceGraceDurationSeconds: 3600,
+        strictRemediationDurationSeconds: input.strictRemediationDurationSeconds ?? 0,
       },
     ],
     [{ userId }],
     [
       {
-        characterId: 1404328063,
-        corporationId: input.corporationId ?? 98000001,
         affiliationCheckedAt: evidenceAt,
-        nextAffiliationCheck: new Date('2027-09-01T12:15:00.000Z'),
         affiliationResolutionState: 'resolved',
+        characterId: 1_404_328_063,
+        corporationId: input.corporationId ?? 98_000_001,
+        nextAffiliationCheck: new Date('2027-09-01T12:15:00.000Z'),
         scopes: [],
       },
     ],
-    [{ corporationId: 98000001 }],
+    [{ corporationId: 98_000_001 }],
     input.managedCollectionRows ?? [],
     [],
     input.previous,
@@ -346,39 +346,39 @@ function givenEvaluationState(input: {
 
 function compliantProjection() {
   return {
-    deploymentId: 1,
-    organizationVersion: 4,
-    userId,
-    state: 'compliant',
-    evidenceFreshness: 'fresh',
-    evidenceAt,
-    reviewDeadline: null,
     accessValidUntil: new Date('2027-09-01T12:15:00.000Z'),
-    establishedCompliantAt: now,
     authoritative: true,
-    invalidatedAt: null,
-    evaluatedAt: now,
     createdAt: now,
+    deploymentId: 1,
+    establishedCompliantAt: now,
+    evaluatedAt: now,
+    evidenceAt,
+    evidenceFreshness: 'fresh',
+    invalidatedAt: null,
+    organizationVersion: 4,
+    reviewDeadline: null,
+    state: 'compliant',
     updatedAt: now,
+    userId,
   }
 }
 
 function transaction() {
   return {
-    select() {
-      return query(mocks.selectResults.shift() ?? [])
-    },
-    selectDistinct() {
-      return query(mocks.services)
+    delete() {
+      mocks.deletes += 1
+      return query([])
     },
     insert() {
       const values: unknown[] = []
       mocks.inserts.push(values)
       return query([], values)
     },
-    delete() {
-      mocks.deletes += 1
-      return query([])
+    select() {
+      return query(mocks.selectResults.shift() ?? [])
+    },
+    selectDistinct() {
+      return query(mocks.services)
     },
   }
 }
@@ -394,8 +394,9 @@ function query(result: unknown[], insertedValues?: unknown[]) {
     'for',
     'orderBy',
     'onConflictDoUpdate',
-  ])
+  ]) {
     builder[method] = () => builder
+  }
   builder.values = (values: unknown) => {
     insertedValues?.push(values)
     return builder

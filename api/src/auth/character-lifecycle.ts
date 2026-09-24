@@ -19,11 +19,11 @@ import { encryptTokens } from './security.js'
 import { hasActiveSession, saveSession, type CharacterSummary } from './session-store.js'
 
 const characterSelection = {
-  characterId: characters.characterId,
-  name: characters.name,
-  corporationId: characters.corporationId,
   allianceId: characters.allianceId,
+  characterId: characters.characterId,
+  corporationId: characters.corporationId,
   isMain: characters.isMain,
+  name: characters.name,
 }
 
 const ownedCharacterSelection = {
@@ -70,27 +70,32 @@ export async function saveLogin(
     let userId: string
     if (!existingCharacter) {
       const [user] = await transaction.insert(users).values({}).returning({ id: users.id })
-      if (!user) throw new Error('Failed to create user')
+      if (!user) {
+        throw new Error('Failed to create user')
+      }
       userId = user.id
       await transaction.insert(characters).values(characterValues(input, userId, true))
       await createCharacterSubjectLifecycle(transaction, input.characterId)
     } else {
       userId = existingCharacter.userId
-      if (!(await lockUserRow(transaction, userId))) throw new Error('User is missing')
+      if (!(await lockUserRow(transaction, userId))) {
+        throw new Error('User is missing')
+      }
       if (existingCharacter.ownerHash !== input.ownerHash) {
         await invalidateCharacterOwnerMismatch(transaction, existingCharacter, organizationVersion)
         return true
       }
-      if (organizationVersion)
+      if (organizationVersion) {
         await recomputeOrganizationAccountCompliance(
           {
             deploymentId: 1,
+            now: input.affiliationCheckedAt ?? new Date(),
             organizationVersion,
             userId,
-            now: input.affiliationCheckedAt ?? new Date(),
           },
           transaction,
         )
+      }
       await updateCharacterIdentity(transaction, input)
     }
 
@@ -100,14 +105,15 @@ export async function saveLogin(
       scopes,
       ...token,
     })
-    if (existingCharacter)
+    if (existingCharacter) {
       await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
         characterId: input.characterId,
         outcome: 'authorization-generation-changed',
       })
+    }
     await replaceCharacterReviewerDisclosureAcceptances(transaction, {
-      characterId: input.characterId,
       authorizationGeneration,
+      characterId: input.characterId,
       disclosures: input.reviewerUseDisclosures ?? [],
     })
     if (existingCharacter) {
@@ -120,25 +126,28 @@ export async function saveLogin(
       )
     } else {
       await appendDomainEvent(transaction, {
-        type: 'character.attached',
-        payloadVersion: 1,
         aggregateId: String(input.characterId),
-        payload: { userId, characterId: input.characterId },
+        payload: { characterId: input.characterId, userId },
+        payloadVersion: 1,
+        type: 'character.attached',
       })
     }
     await saveSession(transaction, {
+      expiresAt: input.sessionExpiresAt,
       sessionToken: input.sessionToken,
       userId,
-      expiresAt: input.sessionExpiresAt,
     })
-    if (organizationVersion)
+    if (organizationVersion) {
       await recomputeOrganizationAccountCompliance(
         { deploymentId: 1, organizationVersion, userId },
         transaction,
       )
+    }
     return false
   })
-  if (ownerMismatch) throw new CharacterOwnershipError()
+  if (ownerMismatch) {
+    throw new CharacterOwnershipError()
+  }
 }
 
 export async function attachCharacter(
@@ -150,12 +159,15 @@ export async function attachCharacter(
     await setAuthTransactionLockTimeout(transaction)
     await lockCharacter(transaction, input.characterId)
     const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
-    if (!(await lockUserRow(transaction, input.userId))) throw new CharacterOwnershipError()
+    if (!(await lockUserRow(transaction, input.userId))) {
+      throw new CharacterOwnershipError()
+    }
     if (
       input.sessionToken &&
       !(await hasActiveSession(transaction, input.sessionToken, input.userId))
-    )
+    ) {
       throw new CharacterOwnershipError()
+    }
     const [existingCharacter] = await transaction
       .select(authorizationCharacterSelection)
       .from(characters)
@@ -166,21 +178,24 @@ export async function attachCharacter(
       await invalidateCharacterOwnerMismatch(transaction, existingCharacter, organizationVersion)
       return true
     }
-    if (existingCharacter && existingCharacter.userId !== input.userId)
+    if (existingCharacter && existingCharacter.userId !== input.userId) {
       throw new CharacterTransferApprovalRequiredError()
+    }
 
-    if (organizationVersion)
+    if (organizationVersion) {
       await recomputeOrganizationAccountCompliance(
         {
           deploymentId: 1,
+          now: input.affiliationCheckedAt ?? new Date(),
           organizationVersion,
           userId: input.userId,
-          now: input.affiliationCheckedAt ?? new Date(),
         },
         transaction,
       )
-    if (existingCharacter) await updateCharacterIdentity(transaction, input)
-    else {
+    }
+    if (existingCharacter) {
+      await updateCharacterIdentity(transaction, input)
+    } else {
       await transaction.insert(characters).values(characterValues(input, input.userId, false))
       await createCharacterSubjectLifecycle(transaction, input.characterId)
     }
@@ -196,8 +211,8 @@ export async function attachCharacter(
       outcome: 'authorization-generation-changed',
     })
     await replaceCharacterReviewerDisclosureAcceptances(transaction, {
-      characterId: input.characterId,
       authorizationGeneration,
+      characterId: input.characterId,
       disclosures: input.reviewerUseDisclosures ?? [],
     })
     if (existingCharacter) {
@@ -210,20 +225,23 @@ export async function attachCharacter(
       )
     } else {
       await appendDomainEvent(transaction, {
-        type: 'character.attached',
-        payloadVersion: 1,
         aggregateId: String(input.characterId),
-        payload: { userId: input.userId, characterId: input.characterId },
+        payload: { characterId: input.characterId, userId: input.userId },
+        payloadVersion: 1,
+        type: 'character.attached',
       })
     }
-    if (organizationVersion)
+    if (organizationVersion) {
       await recomputeOrganizationAccountCompliance(
         { deploymentId: 1, organizationVersion, userId: input.userId },
         transaction,
       )
+    }
     return false
   })
-  if (ownerMismatch) throw new CharacterTransferApprovalRequiredError()
+  if (ownerMismatch) {
+    throw new CharacterTransferApprovalRequiredError()
+  }
 }
 
 export async function reauthorizeCharacter(
@@ -233,20 +251,24 @@ export async function reauthorizeCharacter(
     sessionToken?: string
   },
 ) {
-  if (input.characterId !== input.expectedCharacterId)
+  if (input.characterId !== input.expectedCharacterId) {
     throw new ReauthorizationCharacterMismatchError()
+  }
 
   const token = prepareToken(input)
   const result = await db.transaction(async (transaction) => {
     await setAuthTransactionLockTimeout(transaction)
     await lockCharacter(transaction, input.characterId)
     const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
-    if (!(await lockUserRow(transaction, input.userId))) throw new CharacterOwnershipError()
+    if (!(await lockUserRow(transaction, input.userId))) {
+      throw new CharacterOwnershipError()
+    }
     if (
       input.sessionToken &&
       !(await hasActiveSession(transaction, input.sessionToken, input.userId))
-    )
+    ) {
       throw new CharacterOwnershipError()
+    }
     const [ownedCharacter] = await transaction
       .select({
         ...authorizationCharacterSelection,
@@ -262,21 +284,24 @@ export async function reauthorizeCharacter(
         and(eq(characters.characterId, input.characterId), eq(characters.userId, input.userId)),
       )
 
-    if (!ownedCharacter) throw new CharacterOwnershipError()
+    if (!ownedCharacter) {
+      throw new CharacterOwnershipError()
+    }
     if (ownedCharacter.ownerHash !== input.ownerHash) {
       await invalidateCharacterOwnerMismatch(transaction, ownedCharacter, organizationVersion)
       return { outcome: 'owner-mismatch' as const }
     }
-    if (organizationVersion)
+    if (organizationVersion) {
       await recomputeOrganizationAccountCompliance(
         {
           deploymentId: 1,
+          now: input.affiliationCheckedAt ?? new Date(),
           organizationVersion,
           userId: input.userId,
-          now: input.affiliationCheckedAt ?? new Date(),
         },
         transaction,
       )
+    }
     const affiliationCheckedAt = await updateCharacterIdentity(transaction, input)
     const scopes = normalizeScopeSet(input.scopes)
     const authorizationGeneration = await saveCharacterToken(transaction, {
@@ -289,8 +314,8 @@ export async function reauthorizeCharacter(
       outcome: 'authorization-generation-changed',
     })
     await replaceCharacterReviewerDisclosureAcceptances(transaction, {
-      characterId: input.characterId,
       authorizationGeneration,
+      characterId: input.characterId,
       disclosures: input.reviewerUseDisclosures ?? [],
     })
     await appendScopeChangeEvent(
@@ -300,19 +325,22 @@ export async function reauthorizeCharacter(
       ownedCharacter.scopes ?? [],
       scopes,
     )
-    if (organizationVersion)
+    if (organizationVersion) {
       await recomputeOrganizationAccountCompliance(
         { deploymentId: 1, organizationVersion, userId: input.userId },
         transaction,
       )
+    }
     return {
-      outcome: 'reauthorized' as const,
       affiliationCheckedAt,
-      subjectLifecycleId: ownedCharacter.subjectLifecycleId,
       authorizationGeneration,
+      outcome: 'reauthorized' as const,
+      subjectLifecycleId: ownedCharacter.subjectLifecycleId,
     }
   })
-  if (result.outcome === 'owner-mismatch') throw new CharacterOwnershipError()
+  if (result.outcome === 'owner-mismatch') {
+    throw new CharacterOwnershipError()
+  }
   return result
 }
 
@@ -349,14 +377,20 @@ export async function setMainCharacter(
 ): Promise<CharacterSummary | null> {
   return db.transaction(async (transaction) => {
     await setAuthTransactionLockTimeout(transaction)
-    if (!(await lockUserRow(transaction, userId))) return null
+    if (!(await lockUserRow(transaction, userId))) {
+      return null
+    }
 
     const [target] = await transaction
       .select(characterSelection)
       .from(characters)
       .where(ownedCharacterFilter(userId, characterId))
-    if (!target) return null
-    if (target.isMain) return target
+    if (!target) {
+      return null
+    }
+    if (target.isMain) {
+      return target
+    }
 
     const [previousMain] = await transaction
       .select({ characterId: characters.characterId })
@@ -370,14 +404,14 @@ export async function setMainCharacter(
       .where(ownedCharacterFilter(userId, characterId))
     if (previousMain) {
       await appendDomainEvent(transaction, {
-        type: 'character.main-changed',
-        payloadVersion: 1,
         aggregateId: userId,
         payload: {
-          userId,
-          previousMainCharacterId: previousMain.characterId,
           newMainCharacterId: characterId,
+          previousMainCharacterId: previousMain.characterId,
+          userId,
         },
+        payloadVersion: 1,
+        type: 'character.main-changed',
       })
     }
     return { ...target, isMain: true }
@@ -393,7 +427,9 @@ export async function deleteCharacter(
     await setAuthTransactionLockTimeout(transaction)
     await lockCharacter(transaction, characterId)
     const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
-    if (!(await lockUserRow(transaction, userId))) return 'not-found' as const
+    if (!(await lockUserRow(transaction, userId))) {
+      return 'not-found' as const
+    }
 
     const [target] = await transaction
       .select({
@@ -412,10 +448,16 @@ export async function deleteCharacter(
           eq(platformSubjectLifecycles.subjectLifecycleId, subjectLifecycleId),
         ),
       )
-    if (!target) return 'not-found' as const
-    if (target.isMain) return 'main-character' as const
+    if (!target) {
+      return 'not-found' as const
+    }
+    if (target.isMain) {
+      return 'main-character' as const
+    }
     const blocker = await findCharacterDetachmentBlocker(transaction, characterId)
-    if (blocker) return blocker
+    if (blocker) {
+      return blocker
+    }
 
     await enqueueInstalledResourceLifecyclePurges(transaction, subjectLifecycleId)
     await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
@@ -427,18 +469,21 @@ export async function deleteCharacter(
       .delete(characters)
       .where(ownedCharacterFilter(userId, characterId))
       .returning({ characterId: characters.characterId })
-    if (!deleted) return 'not-found' as const
+    if (!deleted) {
+      return 'not-found' as const
+    }
     await appendDomainEvent(transaction, {
-      type: 'character.detached',
-      payloadVersion: 1,
       aggregateId: String(characterId),
-      payload: { userId, characterId },
+      payload: { characterId, userId },
+      payloadVersion: 1,
+      type: 'character.detached',
     })
-    if (organizationVersion)
+    if (organizationVersion) {
       await recomputeOrganizationAccountCompliance(
         { deploymentId: 1, organizationVersion, userId },
         transaction,
       )
+    }
     return 'deleted' as const
   })
 }
@@ -472,16 +517,16 @@ class CharacterOwnershipError extends Error {
 function characterValues(input: CharacterAuthorizationInput, userId: string, isMain: boolean) {
   const affiliationObservedAt = input.affiliationCheckedAt ?? new Date()
   return {
-    characterId: input.characterId,
-    userId,
-    ownerHash: input.ownerHash,
-    name: input.characterName,
-    corporationId: input.corporationId,
-    allianceId: input.allianceId,
     affiliationCheckedAt: affiliationObservedAt,
     affiliationResolutionState: 'resolved' as const,
-    nextAffiliationCheck: nextActiveAffiliationCheck(affiliationObservedAt),
+    allianceId: input.allianceId,
+    characterId: input.characterId,
+    corporationId: input.corporationId,
     isMain,
+    name: input.characterName,
+    nextAffiliationCheck: nextActiveAffiliationCheck(affiliationObservedAt),
+    ownerHash: input.ownerHash,
+    userId,
   }
 }
 
@@ -496,23 +541,25 @@ async function appendScopeChangeEvent(
   const next = new Set(normalizeScopeSet(nextScopes))
   const addedScopes = [...next].filter((scope) => !previous.has(scope))
   const removedScopes = [...previous].filter((scope) => !next.has(scope))
-  if (addedScopes.length === 0 && removedScopes.length === 0) return
+  if (addedScopes.length === 0 && removedScopes.length === 0) {
+    return
+  }
 
   await appendDomainEvent(transaction, {
-    type: 'character.scopes-changed',
-    payloadVersion: 1,
     aggregateId: String(characterId),
-    payload: { userId, characterId, addedScopes, removedScopes },
+    payload: { addedScopes, characterId, removedScopes, userId },
+    payloadVersion: 1,
+    type: 'character.scopes-changed',
   })
 }
 
 function prepareToken(input: CharacterAuthorizationInput) {
   return {
+    accessTokenExpiresAt: new Date(Date.now() + input.expiresIn * 1000),
     encryptedTokens: encryptTokens({
       accessToken: input.accessToken,
       refreshToken: input.refreshToken,
     }),
-    accessTokenExpiresAt: new Date(Date.now() + input.expiresIn * 1000),
   }
 }
 
@@ -528,10 +575,10 @@ async function updateCharacterIdentity(
   const [updated] = await transaction
     .update(characters)
     .set({
-      corporationId: input.corporationId,
-      allianceId: input.allianceId,
       affiliationCheckedAt: affiliationObservedAt,
       affiliationResolutionState: 'resolved',
+      allianceId: input.allianceId,
+      corporationId: input.corporationId,
       nextAffiliationCheck: nextActiveAffiliationCheck(affiliationObservedAt),
       updatedAt: new Date(),
     })
@@ -545,13 +592,17 @@ async function updateCharacterIdentity(
       ),
     )
     .returning({ affiliationCheckedAt: characters.affiliationCheckedAt })
-  if (updated?.affiliationCheckedAt) return updated.affiliationCheckedAt
+  if (updated?.affiliationCheckedAt) {
+    return updated.affiliationCheckedAt
+  }
 
   const [current] = await transaction
     .select({ affiliationCheckedAt: characters.affiliationCheckedAt })
     .from(characters)
     .where(eq(characters.characterId, input.characterId))
-  if (!current?.affiliationCheckedAt) throw new Error('Character affiliation is missing')
+  if (!current?.affiliationCheckedAt) {
+    throw new Error('Character affiliation is missing')
+  }
   return current.affiliationCheckedAt
 }
 
@@ -564,8 +615,9 @@ async function invalidateCharacterOwnerMismatch(
     .select({ subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId })
     .from(platformSubjectLifecycles)
     .where(eq(platformSubjectLifecycles.characterId, character.characterId))
-  if (lifecycle)
+  if (lifecycle) {
     await enqueueInstalledResourceLifecyclePurges(transaction, lifecycle.subjectLifecycleId)
+  }
   await transaction.delete(eveTokens).where(eq(eveTokens.characterId, character.characterId))
   await invalidateCharacterAuthoritySourcesInTransaction(transaction, {
     characterId: character.characterId,
@@ -578,15 +630,16 @@ async function invalidateCharacterOwnerMismatch(
     character.scopes ?? [],
     [],
   )
-  if (organizationVersion)
+  if (organizationVersion) {
     await recomputeOrganizationAccountCompliance(
       { deploymentId: 1, organizationVersion, userId: character.userId },
       transaction,
     )
+  }
 }
 
 function nextActiveAffiliationCheck(observedAt: Date) {
-  return new Date(observedAt.getTime() + env.AFFILIATION_ACTIVE_INTERVAL_SECONDS * 1_000)
+  return new Date(observedAt.getTime() + env.AFFILIATION_ACTIVE_INTERVAL_SECONDS * 1000)
 }
 
 async function createCharacterSubjectLifecycle(
@@ -596,12 +649,14 @@ async function createCharacterSubjectLifecycle(
   const [lifecycle] = await transaction
     .insert(platformSubjectLifecycles)
     .values({
-      subjectKind: 'character',
-      subjectId: String(characterId),
       characterId,
+      subjectId: String(characterId),
+      subjectKind: 'character',
     })
     .returning({ subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId })
-  if (!lifecycle) throw new Error('Failed to create character subject lifecycle')
+  if (!lifecycle) {
+    throw new Error('Failed to create character subject lifecycle')
+  }
   return lifecycle.subjectLifecycleId
 }
 

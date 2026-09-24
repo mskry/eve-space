@@ -45,16 +45,24 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
       sendMutation.asyncStatus.value === 'loading' || cspaMutation.asyncStatus.value === 'loading',
   )
   const sendDisabledReason = computed(() => {
-    if (deliveryUnknown.value)
+    if (deliveryUnknown.value) {
       return 'Check Sent mail before taking another action on this message.'
-    if (sending.value) return 'Sending mail...'
-    if (options.draft.recipients.value.length === 0) return 'Add at least one recipient.'
-    if (options.draft.recipients.value.length > MAIL_RECIPIENT_LIMIT)
+    }
+    if (sending.value) {
+      return 'Sending mail...'
+    }
+    if (options.draft.recipients.value.length === 0) {
+      return 'Add at least one recipient.'
+    }
+    if (options.draft.recipients.value.length > MAIL_RECIPIENT_LIMIT) {
       return `Mail accepts at most ${MAIL_RECIPIENT_LIMIT} recipients.`
-    if (options.draft.subject.value.length > MAIL_SUBJECT_LIMIT)
+    }
+    if (options.draft.subject.value.length > MAIL_SUBJECT_LIMIT) {
       return `Subject exceeds the ${MAIL_SUBJECT_LIMIT}-character limit.`
-    if (options.draft.body.value.length > MAIL_BODY_LIMIT)
+    }
+    if (options.draft.body.value.length > MAIL_BODY_LIMIT) {
       return `Body exceeds the ${MAIL_BODY_LIMIT}-character limit.`
+    }
     return ''
   })
 
@@ -73,7 +81,9 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
 
   async function send() {
     const characterId = options.characterId.value
-    if (!characterId || sendDisabledReason.value) return
+    if (!characterId || sendDisabledReason.value) {
+      return
+    }
     const operationGeneration = options.draft.captureGeneration()
     options.draft.feedback.value = ''
     chargeRecoveryAvailable.value = false
@@ -92,7 +102,9 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
         characterId,
         recipientIds: characterRecipients,
       })
-      if (!options.draft.isCurrent(operationGeneration)) return
+      if (!options.draft.isCurrent(operationGeneration)) {
+        return
+      }
       if (approvedCost === 0) {
         await submitMail(characterId, 0, operationGeneration, submission)
         return
@@ -104,9 +116,13 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
         submission,
       )
     } catch (error) {
-      if (!reportFailure(characterId, operationGeneration, error)) return
+      if (!reportFailure(characterId, operationGeneration, error)) {
+        return
+      }
       showAuthorizationToast(error, 'Mail charge authorization required')
-      if (!options.draft.isCurrent(operationGeneration)) return
+      if (!options.draft.isCurrent(operationGeneration)) {
+        return
+      }
       options.draft.feedback.value = 'The recipient charge could not be determined.'
       options.openConfirmDialog({
         confirmLabel: 'Send without approval',
@@ -124,7 +140,9 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
 
   async function recoverCharge() {
     const characterId = options.characterId.value
-    if (!characterId || sendDisabledReason.value) return
+    if (!characterId || sendDisabledReason.value) {
+      return
+    }
     const operationGeneration = options.draft.captureGeneration()
     const submission = currentSubmission(options.draft)
     const characterRecipients = characterRecipientIds(submission.recipients)
@@ -141,7 +159,9 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
         characterId,
         recipientIds: characterRecipients,
       })
-      if (!options.draft.isCurrent(operationGeneration)) return
+      if (!options.draft.isCurrent(operationGeneration)) {
+        return
+      }
       if (approvedCost === 0) {
         options.draft.feedback.value =
           'No recipient charge applies. The message was refused for another reason.'
@@ -154,7 +174,9 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
         submission,
       )
     } catch (error) {
-      if (!reportFailure(characterId, operationGeneration, error)) return
+      if (!reportFailure(characterId, operationGeneration, error)) {
+        return
+      }
       options.draft.feedback.value = 'The recipient charge could not be determined.'
       showAuthorizationToast(error, 'Mail charge authorization required')
     }
@@ -184,7 +206,9 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
     operationGeneration: number,
     submission: MailSubmission,
   ) {
-    if (!options.draft.isCurrent(operationGeneration)) return
+    if (!options.draft.isCurrent(operationGeneration)) {
+      return
+    }
     try {
       await sendMutation.mutateAsync({
         apiClient: options.apiClient,
@@ -192,14 +216,18 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
         characterId,
         ...submission,
       })
-      if (!options.draft.isCurrent(operationGeneration)) return
+      if (!options.draft.isCurrent(operationGeneration)) {
+        return
+      }
       options.draft.resetDraft()
       options.showToast({
         description: 'The message was accepted by EVE.',
         title: 'Mail sent',
       })
     } catch (error) {
-      if (reportFailure(characterId, operationGeneration, error)) handleSendFailure(error)
+      if (reportFailure(characterId, operationGeneration, error)) {
+        handleSendFailure(error)
+      }
     }
   }
 
@@ -242,8 +270,9 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
     if (
       !(error instanceof ApiQueryError) ||
       (error.code !== 'EVE_SCOPE_REQUIRED' && error.code !== 'EVE_REAUTH_REQUIRED')
-    )
+    ) {
       return
+    }
     options.showToast({
       ...(error.authorizeUrl
         ? { actionHref: error.authorizeUrl, actionLabel: 'Authorize character' }
@@ -257,7 +286,7 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
   // Reporting a denial can synchronously reset the draft, so currency is read first.
   function reportFailure(characterId: number, operationGeneration: number, error: unknown) {
     const current = options.draft.isCurrent(operationGeneration)
-    reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'character', characterId }, error)
+    reportPrivateQueryAuthorizationDenial(queryCache, { characterId, kind: 'character' }, error)
     return current
   }
 

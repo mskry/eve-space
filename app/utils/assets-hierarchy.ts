@@ -36,19 +36,25 @@ export function isSkinAsset(asset: AssetRecord) {
 
 // Blueprints serve only the bp/bpc image variations; the icon variation does not exist for them.
 export function assetImageKind(asset: AssetRecord) {
-  if (!isBlueprintAsset(asset)) return 'type-icon' as const
+  if (!isBlueprintAsset(asset)) {
+    return 'type-icon' as const
+  }
   return asset.isBlueprintCopy === true ? ('type-bpc' as const) : ('type-bp' as const)
 }
 
 export function assetBlueprintLabel(asset: AssetRecord) {
-  if (!isBlueprintAsset(asset)) return null
+  if (!isBlueprintAsset(asset)) {
+    return null
+  }
   return asset.isBlueprintCopy === true ? 'BPC' : 'BPO'
 }
 
 const placementOverrides: Record<string, string> = { Cargo: 'Cargo Hold' }
 
 export function assetPlacementLabel(flag: string) {
-  if (!flag) return 'Unknown'
+  if (!flag) {
+    return 'Unknown'
+  }
   return (
     placementOverrides[flag] ??
     flag
@@ -59,9 +65,15 @@ export function assetPlacementLabel(flag: string) {
 }
 
 export function assetLocationLabel(asset: AssetRecord) {
-  if (asset.locationName) return asset.locationName
-  if (asset.locationType === 'station') return `Station ${asset.locationId}`
-  if (asset.locationType === 'solar_system') return `Solar system ${asset.locationId}`
+  if (asset.locationName) {
+    return asset.locationName
+  }
+  if (asset.locationType === 'station') {
+    return `Station ${asset.locationId}`
+  }
+  if (asset.locationType === 'solar_system') {
+    return `Solar system ${asset.locationId}`
+  }
   return `Location ${asset.locationId}`
 }
 
@@ -70,13 +82,15 @@ export function flattenAssetRows(
   expanded: ReadonlySet<number> | 'all',
 ) {
   const flattened: Array<{ row: AssetHierarchyRow; depth: number }> = []
-  const pending = rows.toReversed().map((row) => ({ row, depth: 0 }))
+  const pending = rows.toReversed().map((row) => ({ depth: 0, row }))
   while (pending.length > 0) {
     const current = pending.pop()!
     flattened.push(current)
-    if (expanded !== 'all' && !expanded.has(current.row.asset.itemId)) continue
+    if (expanded !== 'all' && !expanded.has(current.row.asset.itemId)) {
+      continue
+    }
     for (let index = current.row.children.length - 1; index >= 0; index -= 1) {
-      pending.push({ row: current.row.children[index]!, depth: current.depth + 1 })
+      pending.push({ depth: current.depth + 1, row: current.row.children[index]! })
     }
   }
   return flattened
@@ -94,7 +108,9 @@ export function assetRowsKnownVolume(rows: readonly AssetHierarchyRow[]) {
     ) {
       total += row.asset.totalVolume
     }
-    for (const child of row.children) pending.push(child)
+    for (const child of row.children) {
+      pending.push(child)
+    }
   }
   return total
 }
@@ -154,8 +170,12 @@ function indexAssetRelationships(
   const issuesById = new Map<number, Set<AssetHierarchyIssue>>()
 
   for (const asset of assets) {
-    if (duplicateIds.has(asset.itemId)) addIssue(issuesById, asset.itemId, 'duplicate')
-    if (asset.locationType !== 'item') continue
+    if (duplicateIds.has(asset.itemId)) {
+      addIssue(issuesById, asset.itemId, 'duplicate')
+    }
+    if (asset.locationType !== 'item') {
+      continue
+    }
 
     const parentId = asset.parentItemId
     if (parentId === asset.itemId) {
@@ -168,7 +188,7 @@ function indexAssetRelationships(
       parentById.set(asset.itemId, parentId)
     }
   }
-  return { parentById, rootPlacements, issuesById }
+  return { issuesById, parentById, rootPlacements }
 }
 
 function buildHierarchyRows(
@@ -189,7 +209,9 @@ function buildHierarchyRows(
   for (const [childId, parentId] of parentById) {
     rowsById.get(parentId)?.children.push(rowsById.get(childId)!)
   }
-  for (const row of rowsById.values()) row.children.sort(compareRows)
+  for (const row of rowsById.values()) {
+    row.children.sort(compareRows)
+  }
   return rowsById
 }
 
@@ -201,13 +223,16 @@ function groupHierarchyRoots(
 ) {
   const groupsByKey = new Map<string, AssetLocationGroup>()
   for (const asset of assets) {
-    if (parentById.has(asset.itemId)) continue
+    if (parentById.has(asset.itemId)) {
+      continue
+    }
     const row = rowsById.get(asset.itemId)!
     const rootPlacement = rootPlacements.get(asset.itemId)
     const group = rootPlacement ? exceptionalGroup(rootPlacement.placement) : locationGroup(asset)
     const existing = groupsByKey.get(group.key)
-    if (existing) existing.rows.push(row)
-    else {
+    if (existing) {
+      existing.rows.push(row)
+    } else {
       groupsByKey.set(group.key, group)
       group.rows.push(row)
     }
@@ -230,10 +255,16 @@ function breakCycles(
 ) {
   const states = new Map<number, VisitState>()
   for (const asset of assets) {
-    if (states.get(asset.itemId) === 'complete') continue
+    if (states.get(asset.itemId) === 'complete') {
+      continue
+    }
     const { path, cycleIds } = traceParentPath(asset.itemId, parentById, states)
-    if (cycleIds) breakCycle(cycleIds, parentById, rootPlacements, issuesById)
-    for (const itemId of path) states.set(itemId, 'complete')
+    if (cycleIds) {
+      breakCycle(cycleIds, parentById, rootPlacements, issuesById)
+    }
+    for (const itemId of path) {
+      states.set(itemId, 'complete')
+    }
   }
 }
 
@@ -247,14 +278,16 @@ function traceParentPath(
   let currentId: number | undefined = startId
   while (currentId !== undefined && states.get(currentId) !== 'complete') {
     const cycleStart = positions.get(currentId)
-    if (cycleStart !== undefined) return { path, cycleIds: path.slice(cycleStart) }
+    if (cycleStart !== undefined) {
+      return { cycleIds: path.slice(cycleStart), path }
+    }
 
     positions.set(currentId, path.length)
     path.push(currentId)
     states.set(currentId, 'visiting')
     currentId = parentById.get(currentId)
   }
-  return { path, cycleIds: null }
+  return { cycleIds: null, path }
 }
 
 function breakCycle(
@@ -264,10 +297,14 @@ function breakCycle(
   issuesById: Map<number, Set<AssetHierarchyIssue>>,
 ) {
   let breakId = cycleIds[0]!
-  for (const cycleId of cycleIds) breakId = Math.min(breakId, cycleId)
+  for (const cycleId of cycleIds) {
+    breakId = Math.min(breakId, cycleId)
+  }
   parentById.delete(breakId)
   rootPlacements.set(breakId, { placement: 'broken-cycle' })
-  for (const cycleId of cycleIds) addIssue(issuesById, cycleId, 'cycle')
+  for (const cycleId of cycleIds) {
+    addIssue(issuesById, cycleId, 'cycle')
+  }
 }
 
 function addIssue(
@@ -281,18 +318,20 @@ function addIssue(
 }
 
 function locationGroup(asset: AssetRecord): AssetLocationGroup {
-  if (asset.locationType === 'item') return exceptionalGroup('unresolved-container')
+  if (asset.locationType === 'item') {
+    return exceptionalGroup('unresolved-container')
+  }
   return {
+    assetCount: 0,
     key: `location:${asset.locationType}:${asset.locationId}`,
+    knownVolume: 0,
     label: assetLocationLabel(asset),
     locationId: asset.locationId,
     locationType: asset.locationType,
-    solarSystemId: asset.solarSystemId,
-    solarSystemSecurityStatus: asset.solarSystemSecurityStatus,
     placement: 'location',
     rows: [],
-    assetCount: 0,
-    knownVolume: 0,
+    solarSystemId: asset.solarSystemId,
+    solarSystemSecurityStatus: asset.solarSystemSecurityStatus,
   }
 }
 
@@ -321,9 +360,15 @@ function compareRows(left: AssetHierarchyRow, right: AssetHierarchyRow) {
 }
 
 function compareNullableText(left: string | null, right: string | null) {
-  if (left === null && right === null) return 0
-  if (left === null) return 1
-  if (right === null) return -1
+  if (left === null && right === null) {
+    return 0
+  }
+  if (left === null) {
+    return 1
+  }
+  if (right === null) {
+    return -1
+  }
   return left.localeCompare(right, 'en')
 }
 
@@ -346,7 +391,9 @@ function countRows(rows: readonly AssetHierarchyRow[]) {
   while (pending.length > 0) {
     const row = pending.pop()!
     count += 1
-    for (const child of row.children) pending.push(child)
+    for (const child of row.children) {
+      pending.push(child)
+    }
   }
   return count
 }

@@ -47,9 +47,15 @@ export function isPlatformModuleId(value: string) {
 
 export function platformModuleIdIssues(value: string): readonly PlatformModuleIdIssue[] {
   const issues: PlatformModuleIdIssue[] = []
-  if (!platformModuleIdPattern.test(value)) issues.push('syntax')
-  if (value.length > platformModuleIdMaxLength) issues.push('too-long')
-  if (isReservedPlatformModuleId(value)) issues.push('reserved')
+  if (!platformModuleIdPattern.test(value)) {
+    issues.push('syntax')
+  }
+  if (value.length > platformModuleIdMaxLength) {
+    issues.push('too-long')
+  }
+  if (isReservedPlatformModuleId(value)) {
+    issues.push('reserved')
+  }
   return issues
 }
 
@@ -93,12 +99,18 @@ export function isPlatformPackageExport(value: string) {
 }
 
 export function isPlatformSemanticVersion(value: string) {
-  if (value.length > platformSemanticVersionRangeMaxLength) return false
+  if (value.length > platformSemanticVersionRangeMaxLength) {
+    return false
+  }
   const buildSeparator = value.indexOf('+')
-  if (buildSeparator !== value.lastIndexOf('+')) return false
+  if (buildSeparator !== value.lastIndexOf('+')) {
+    return false
+  }
   const versionAndPrerelease = buildSeparator < 0 ? value : value.slice(0, buildSeparator)
   const build = buildSeparator < 0 ? undefined : value.slice(buildSeparator + 1)
-  if (build !== undefined && !platformSemanticVersionIdentifiersPattern.test(build)) return false
+  if (build !== undefined && !platformSemanticVersionIdentifiersPattern.test(build)) {
+    return false
+  }
 
   const prereleaseSeparator = versionAndPrerelease.indexOf('-')
   const core =
@@ -118,8 +130,9 @@ export function isPlatformSemanticVersionRange(value: string) {
     value.length === 0 ||
     value.length > platformSemanticVersionRangeMaxLength ||
     value.trim() !== value
-  )
+  ) {
     return false
+  }
   return value.split('||').every((alternative) => {
     const comparators = alternative.trim().split(/\s+/)
     return (
@@ -136,53 +149,71 @@ export function platformPersistenceOperationIdIssues(
   value: string,
 ): readonly PlatformPersistenceOperationIdIssue[] {
   const issues: PlatformPersistenceOperationIdIssue[] = []
-  if (!platformPersistenceOperationIdPattern.test(value)) issues.push('syntax')
-  if (value.length > platformPersistenceOperationIdMaxLength) issues.push('too-long')
+  if (!platformPersistenceOperationIdPattern.test(value)) {
+    issues.push('syntax')
+  }
+  if (value.length > platformPersistenceOperationIdMaxLength) {
+    issues.push('too-long')
+  }
   return issues
 }
 
 export function parsePlatformModuleId(value: string): PlatformModuleId {
-  if (!isPlatformModuleId(value)) throw new Error(`Invalid platform module ID ${value}`)
+  if (!isPlatformModuleId(value)) {
+    throw new Error(`Invalid platform module ID ${value}`)
+  }
   return value as PlatformModuleId
 }
 
 export function parsePlatformContributionId(value: string): PlatformContributionId {
-  if (!isPlatformContributionId(value)) throw new Error(`Invalid platform contribution ID ${value}`)
+  if (!isPlatformContributionId(value)) {
+    throw new Error(`Invalid platform contribution ID ${value}`)
+  }
   return value as PlatformContributionId
 }
 
 export function parsePlatformExportName(value: string): PlatformExportName {
-  if (!isPlatformExportName(value)) throw new Error(`Invalid platform export name ${value}`)
+  if (!isPlatformExportName(value)) {
+    throw new Error(`Invalid platform export name ${value}`)
+  }
   return value as PlatformExportName
 }
 
 export function parsePlatformMigrationFilename(value: string): PlatformMigrationFilename {
-  if (!isPlatformMigrationFilename(value))
+  if (!isPlatformMigrationFilename(value)) {
     throw new Error(`Invalid platform migration filename ${value}`)
+  }
   return value as PlatformMigrationFilename
 }
 
 export function parsePlatformPermissionKey(value: string): PlatformPermissionKey {
-  if (!isPlatformPermissionKey(value)) throw new Error(`Invalid platform permission key ${value}`)
+  if (!isPlatformPermissionKey(value)) {
+    throw new Error(`Invalid platform permission key ${value}`)
+  }
   return value as PlatformPermissionKey
 }
 
 export function parsePlatformPersistenceOperationId(value: string): PlatformPersistenceOperationId {
-  if (!isPlatformPersistenceOperationId(value))
+  if (!isPlatformPersistenceOperationId(value)) {
     throw new Error(`Invalid platform persistence operation ID ${value}`)
+  }
   return value as PlatformPersistenceOperationId
 }
 
 function isWildcardSemanticVersion(value: string) {
   const segments = value.split('.')
-  if (segments.length < 1 || segments.length > 3) return false
+  if (segments.length < 1 || segments.length > 3) {
+    return false
+  }
   let wildcardFound = false
   for (const segment of segments) {
     if (segment === 'x' || segment === 'X' || segment === '*') {
       wildcardFound = true
       continue
     }
-    if (wildcardFound || !/^(?:0|[1-9]\d*)$/.test(segment)) return false
+    if (wildcardFound || !/^(?:0|[1-9]\d*)$/.test(segment)) {
+      return false
+    }
   }
   return wildcardFound
 }

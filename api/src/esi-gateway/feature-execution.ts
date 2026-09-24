@@ -144,8 +144,6 @@ export function createPublicEsiRead<
     definePublicEsiRepresentation(definition),
   )
   return Object.freeze({
-    operation: representation.operation,
-    requiredScope: null,
     execute: async (input: Input) => {
       const signal = publicExecutionSignal(input)
       return toEsiReadResult(
@@ -154,6 +152,8 @@ export function createPublicEsiRead<
         ).executeRepresentation(representation, input, signal ? { signal } : undefined),
       )
     },
+    operation: representation.operation,
+    requiredScope: null,
   }) as RegisteredPublicEsiRead<Operation, Input, Result>
 }
 
@@ -162,9 +162,9 @@ export type { EsiResultMetadata } from './internal/types.js'
 
 export function toEsiReadResultMetadata(result: EsiReadResult<unknown>): EsiReadResultMetadata {
   return {
-    validatedAt: result.validatedAt,
     cachedUntil: result.cachedUntil,
     stale: result.stale,
+    validatedAt: result.validatedAt,
     ...(result.retryAt ? { retryAt: result.retryAt } : {}),
     ...(result.refreshFailureClass ? { refreshFailureClass: result.refreshFailureClass } : {}),
   }
@@ -190,8 +190,6 @@ export function createCharacterEsiRead<
     defineCharacterEsiRepresentation(definition),
   )
   return Object.freeze({
-    operation: representation.operation,
-    requiredScope,
     execute: async (input: Input) => {
       const execution = await (
         await getProductionEsiExecutionRuntime()
@@ -204,6 +202,8 @@ export function createCharacterEsiRead<
         authorizationGeneration: execution.authorizationGeneration,
       }
     },
+    operation: representation.operation,
+    requiredScope,
   }) as RegisteredCharacterEsiRead<Operation, Input, Result>
 }
 
@@ -219,8 +219,6 @@ export function createCharacterEsiMutation<
   const requiredScope = getRequiredCharacterScope(definition.operation)
   const representation = registerCallableEsiRepresentation(defineCharacterEsiMutation(definition))
   return Object.freeze({
-    operation: representation.operation,
-    requiredScope,
     execute: (input: Input) =>
       getProductionEsiExecutionRuntime().then((runtime) =>
         runtime.executeMutationRepresentation(representation, input, {
@@ -228,18 +226,23 @@ export function createCharacterEsiMutation<
           ...(input.signal ? { signal: input.signal } : {}),
         }),
       ),
+    operation: representation.operation,
+    requiredScope,
   }) as RegisteredCharacterEsiMutation<Operation, Input, Result>
 }
 
 function getRequiredCharacterScope(operation: EsiOperation) {
   const authorization = getEsiOperationContract(operation)?.authorization
-  if (authorization?.kind !== 'character')
+  if (authorization?.kind !== 'character') {
     throw new Error(`ESI operation ${operation} does not declare character authorization`)
+  }
   return authorization.scope
 }
 
 function publicExecutionSignal(input: unknown) {
-  if (typeof input !== 'object' || input === null || !('signal' in input)) return undefined
+  if (typeof input !== 'object' || input === null || !('signal' in input)) {
+    return
+  }
   return (input as { readonly signal?: AbortSignal }).signal
 }
 

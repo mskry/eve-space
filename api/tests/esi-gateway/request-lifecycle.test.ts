@@ -12,10 +12,10 @@ describe('Effect ESI request lifecycle', () => {
     await expect(
       executeEsiRequestAttempt({
         acquirePermit,
-        createTransport: vi.fn(),
         attempt: async () => {
           throw failure
         },
+        createTransport: vi.fn(),
       }),
     ).rejects.toBe(failure)
     expect(acquirePermit).not.toHaveBeenCalled()
@@ -29,19 +29,19 @@ describe('Effect ESI request lifecycle', () => {
     const observation = deferred<void>()
     let settleBody!: () => void
     const pending = executeEsiRequestAttempt({
-      clock,
       acquirePermit: async () => requestPermit({ release, renew }),
+      attempt: async (transport) => {
+        await transport('https://esi.evetech.net/latest/status')
+        await observation.promise
+        return 'complete'
+      },
+      clock,
       createTransport: ({ onResponseBodySettled }) => {
         settleBody = onResponseBodySettled
         return async () => {
           headers.resolve()
           return new Response('{}')
         }
-      },
-      attempt: async (transport) => {
-        await transport('https://esi.evetech.net/latest/status')
-        await observation.promise
-        return 'complete'
       },
     })
 
@@ -66,16 +66,16 @@ describe('Effect ESI request lifecycle', () => {
 
     const pending = executeEsiRequestAttempt({
       acquirePermit: async () => requestPermit({ release }),
+      attempt: async (transport) => {
+        await transport('https://esi.evetech.net/latest/status')
+        throw sdkFailure
+      },
       createTransport:
         ({ onResponseBodySettled }) =>
         async () => {
           onResponseBodySettled()
           return new Response(null, { status: 204 })
         },
-      attempt: async (transport) => {
-        await transport('https://esi.evetech.net/latest/status')
-        throw sdkFailure
-      },
     })
 
     await expect(pending).rejects.toBe(sdkFailure)
@@ -97,8 +97,8 @@ describe('Effect ESI request lifecycle', () => {
     await expect(
       executeEsiRequestAttempt({
         acquirePermit: async () => requestPermit({ release }),
-        createTransport: factory(failure),
         attempt: (transport) => transport('https://esi.evetech.net/latest/status'),
+        createTransport: factory(failure),
       }),
     ).rejects.toBe(failure)
     expect(release).toHaveBeenCalledOnce()
@@ -111,18 +111,18 @@ describe('Effect ESI request lifecycle', () => {
     const release = vi.fn().mockResolvedValue(undefined)
     let settleBody!: () => void
     const pending = executeEsiRequestAttempt({
-      clock,
       acquirePermit: async () => requestPermit({ release, renew }),
+      attempt: async (transport) => {
+        await transport('https://esi.evetech.net/latest/status')
+        return 'complete'
+      },
+      clock,
       createTransport:
         ({ onResponseBodySettled }) =>
         async () => {
           settleBody = onResponseBodySettled
           return new Response('{}')
         },
-      attempt: async (transport) => {
-        await transport('https://esi.evetech.net/latest/status')
-        return 'complete'
-      },
     })
 
     await vi.waitFor(() => expect(settleBody).toBeTypeOf('function'))
@@ -147,8 +147,12 @@ describe('Effect ESI request lifecycle', () => {
       const release = vi.fn().mockResolvedValue(undefined)
       let transportSignal: AbortSignal | undefined
       const pending = executeEsiRequestAttempt({
-        clock,
         acquirePermit: async () => requestPermit({ release, renew }),
+        attempt: async (transport) => {
+          const response = await transport('https://esi.evetech.net/latest/status')
+          return response.text()
+        },
+        clock,
         createTransport:
           ({ onResponseBodySettled }) =>
           async (_input, init) => {
@@ -167,10 +171,6 @@ describe('Effect ESI request lifecycle', () => {
             })
             return new Response(body)
           },
-        attempt: async (transport) => {
-          const response = await transport('https://esi.evetech.net/latest/status')
-          return response.text()
-        },
       })
       const caught = pending.catch((error: unknown) => error)
 
@@ -178,8 +178,8 @@ describe('Effect ESI request lifecycle', () => {
       await advance(clock, 50)
 
       await expect(caught).resolves.toMatchObject({
-        name: 'AbortError',
         message: 'ESI concurrency permit ownership lost',
+        name: 'AbortError',
       })
       expect(transportSignal?.aborted).toBe(true)
       expect(release).toHaveBeenCalledOnce()
@@ -194,13 +194,13 @@ describe('Effect ESI request lifecycle', () => {
     const createTransport = vi.fn()
     let acquisitionSignal: AbortSignal | undefined
     const pending = executeEsiRequestAttempt({
-      executionSignal: controller.signal,
       acquirePermit: (signal) => {
         acquisitionSignal = signal
         return grant.promise
       },
-      createTransport,
       attempt: (transport) => transport('https://esi.evetech.net/latest/status'),
+      createTransport,
+      executionSignal: controller.signal,
     })
 
     await vi.waitFor(() => expect(acquisitionSignal).toBeDefined())
@@ -221,10 +221,10 @@ describe('Effect ESI request lifecycle', () => {
 
     await expect(
       executeEsiRequestAttempt({
-        executionSignal: controller.signal,
         acquirePermit,
-        createTransport: vi.fn(),
         attempt: vi.fn(),
+        createTransport: vi.fn(),
+        executionSignal: controller.signal,
       }),
     ).rejects.toBe(cancellation)
     expect(acquirePermit).not.toHaveBeenCalled()
@@ -239,10 +239,6 @@ describe('Effect ESI request lifecycle', () => {
     const release = vi.fn().mockResolvedValue(undefined)
     const pending = executeEsiRequestAttempt({
       acquirePermit: async () => requestPermit({ release }),
-      createTransport: () => async () => {
-        transportStarted.resolve()
-        return response.promise
-      },
       attempt: async (transport) => {
         const request = transport('https://esi.evetech.net/latest/status', {
           signal: controller.signal,
@@ -255,6 +251,10 @@ describe('Effect ESI request lifecycle', () => {
             }),
           ),
         ])
+      },
+      createTransport: () => async () => {
+        transportStarted.resolve()
+        return response.promise
       },
     })
     const caught = pending.catch((error: unknown) => error)
@@ -281,6 +281,18 @@ describe('Effect ESI request lifecycle', () => {
     let transportSignal: AbortSignal | undefined
     const pending = executeEsiRequestAttempt({
       acquirePermit: async () => requestPermit({ release }),
+      attempt: async (transport) => {
+        const response = await transport('https://esi.evetech.net/latest/status', {
+          signal: controller.signal,
+        })
+        try {
+          return await response.text()
+        } catch (error) {
+          await cooldownRecorded.promise
+          events.push('cooldown recorded')
+          throw error
+        }
+      },
       createTransport:
         ({ onResponseBodySettled }) =>
         async (_input, init) => {
@@ -302,29 +314,17 @@ describe('Effect ESI request lifecycle', () => {
             { status: 429 },
           )
         },
-      attempt: async (transport) => {
-        const response = await transport('https://esi.evetech.net/latest/status', {
-          signal: controller.signal,
-        })
-        try {
-          return await response.text()
-        } catch (error) {
-          await cooldownRecorded.promise
-          events.push('cooldown recorded')
-          throw error
-        }
-      },
     })
     const caught = pending.catch((error: unknown) => error)
     await vi.waitFor(() => expect(transportSignal).toBeDefined())
 
     controller.abort(timeout)
-    await vi.waitFor(() => expect(events).toEqual(['body cancelled']))
+    await vi.waitFor(() => expect(events).toStrictEqual(['body cancelled']))
     expect(release).not.toHaveBeenCalled()
 
     cooldownRecorded.resolve()
     await expect(caught).resolves.toBe(timeout)
-    expect(events).toEqual(['body cancelled', 'cooldown recorded', 'permit released'])
+    expect(events).toStrictEqual(['body cancelled', 'cooldown recorded', 'permit released'])
     expect(release).toHaveBeenCalledOnce()
   })
 })
@@ -334,9 +334,9 @@ function requestPermit(
 ): EsiRequestPermit {
   return {
     coordinationAvailable: true,
-    ttlMs: 100,
-    renew: async () => true,
     release: async () => {},
+    renew: async () => true,
+    ttlMs: 100,
     ...overrides,
   }
 }
@@ -356,5 +356,5 @@ function deferred<Value>() {
     resolve = resolvePromise
     reject = rejectPromise
   })
-  return { promise, resolve, reject }
+  return { promise, reject, resolve }
 }

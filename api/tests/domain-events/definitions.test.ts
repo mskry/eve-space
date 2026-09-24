@@ -23,131 +23,134 @@ const eventId = '98a782d2-e042-47d7-9659-03b218121a1a'
 
 describe('domain event registry', () => {
   test('registers every initial event at payload version 1', () => {
-    expect(listDomainEventDefinitions()).toEqual([
-      { type: 'character.attached', payloadVersion: 1, aggregateType: 'character' },
-      { type: 'character.detached', payloadVersion: 1, aggregateType: 'character' },
-      { type: 'character.main-changed', payloadVersion: 1, aggregateType: 'user' },
-      { type: 'character.scopes-changed', payloadVersion: 1, aggregateType: 'character' },
-      { type: 'character.affiliation-observed', payloadVersion: 1, aggregateType: 'character' },
-      { type: 'organization.changed', payloadVersion: 1, aggregateType: 'deployment' },
-      { type: 'organization.member-blocked', payloadVersion: 1, aggregateType: 'user' },
-      { type: 'organization.member-unblocked', payloadVersion: 1, aggregateType: 'user' },
+    expect(listDomainEventDefinitions()).toStrictEqual([
+      { aggregateType: 'character', payloadVersion: 1, type: 'character.attached' },
+      { aggregateType: 'character', payloadVersion: 1, type: 'character.detached' },
+      { aggregateType: 'user', payloadVersion: 1, type: 'character.main-changed' },
+      { aggregateType: 'character', payloadVersion: 1, type: 'character.scopes-changed' },
+      { aggregateType: 'character', payloadVersion: 1, type: 'character.affiliation-observed' },
+      { aggregateType: 'deployment', payloadVersion: 1, type: 'organization.changed' },
+      { aggregateType: 'user', payloadVersion: 1, type: 'organization.member-blocked' },
+      { aggregateType: 'user', payloadVersion: 1, type: 'organization.member-unblocked' },
       {
+        aggregateType: 'deployment',
+        payloadVersion: 1,
         type: 'organization.managed-corporation-added',
-        payloadVersion: 1,
-        aggregateType: 'deployment',
       },
       {
+        aggregateType: 'deployment',
+        payloadVersion: 1,
         type: 'organization.managed-corporation-removed',
-        payloadVersion: 1,
-        aggregateType: 'deployment',
       },
       {
-        type: 'organization.compliance-transitioned',
-        payloadVersion: 1,
         aggregateType: 'user',
+        payloadVersion: 1,
+        type: 'organization.compliance-transitioned',
       },
     ])
   })
 
   test('normalizes scopes deterministically during producer validation', () => {
-    expect(normalizeScopeSet(['scope-z', 'scope-a', 'scope-z'])).toEqual(['scope-a', 'scope-z'])
+    expect(normalizeScopeSet(['scope-z', 'scope-a', 'scope-z'])).toStrictEqual([
+      'scope-a',
+      'scope-z',
+    ])
     const event = validateDomainEventInput({
-      type: 'character.scopes-changed',
-      payloadVersion: 1,
       aggregateId: '1404328063',
       payload: {
-        userId,
-        characterId: 1404328063,
         addedScopes: [' scope-z ', 'scope-a', 'scope-z'],
+        characterId: 1_404_328_063,
         removedScopes: [],
+        userId,
       },
+      payloadVersion: 1,
+      type: 'character.scopes-changed',
     })
     expect(event).toMatchObject({ payload: { addedScopes: ['scope-a', 'scope-z'] } })
   })
 
   test.each([
     {
-      type: 'character.detached',
-      payloadVersion: 1,
       aggregateId: '1404328063',
       payload: characterLifecyclePayload(),
+      payloadVersion: 1,
+      type: 'character.detached',
     },
     {
-      type: 'character.main-changed',
-      payloadVersion: 1,
       aggregateId: userId,
-      payload: { userId, previousMainCharacterId: 1, newMainCharacterId: 2 },
+      payload: { newMainCharacterId: 2, previousMainCharacterId: 1, userId },
+      payloadVersion: 1,
+      type: 'character.main-changed',
     },
     {
-      type: 'character.scopes-changed',
-      payloadVersion: 1,
       aggregateId: '1404328063',
       payload: {
-        userId,
-        characterId: 1404328063,
         addedScopes: ['scope-z', 'scope-a'],
+        characterId: 1_404_328_063,
         removedScopes: ['scope-old'],
+        userId,
       },
+      payloadVersion: 1,
+      type: 'character.scopes-changed',
     },
     {
-      type: 'organization.changed',
-      payloadVersion: 1,
       aggregateId: '1',
       payload: {
         actorAdminId: userId,
-        previousOrganizationType: 'corporation',
-        previousOrganizationId: 98_000_001,
-        previousOrganizationVersion: 1,
-        organizationType: 'alliance',
         organizationId: 99_000_001,
+        organizationType: 'alliance',
         organizationVersion: 2,
+        previousOrganizationId: 98_000_001,
+        previousOrganizationType: 'corporation',
+        previousOrganizationVersion: 1,
       },
+      payloadVersion: 1,
+      type: 'organization.changed',
     },
   ] as const)('validates $type v$payloadVersion', (input) => {
     expect(validateDomainEventInput(input)).toMatchObject({
-      type: input.type,
-      payloadVersion: 1,
       aggregateId: input.aggregateId,
+      payloadVersion: 1,
+      type: input.type,
     })
   })
 
   test('rejects unsupported versions and invalid event semantics', () => {
     expect(() =>
       validateDomainEventInput({
-        type: 'character.attached',
-        payloadVersion: 2,
         aggregateId: '1404328063',
         payload: characterLifecyclePayload(),
+        payloadVersion: 2,
+        type: 'character.attached',
       }),
     ).toThrow(DomainEventValidationError)
     expect(() =>
       validateDomainEventInput({
-        type: 'character.main-changed',
-        payloadVersion: 1,
         aggregateId: userId,
-        payload: { userId, previousMainCharacterId: 1, newMainCharacterId: 1 },
+        payload: { newMainCharacterId: 1, previousMainCharacterId: 1, userId },
+        payloadVersion: 1,
+        type: 'character.main-changed',
       }),
     ).toThrow(DomainEventValidationError)
     expect(() =>
       validateDomainEventInput({
-        type: 'character.scopes-changed',
-        payloadVersion: 1,
         aggregateId: '1404328063',
-        payload: { userId, characterId: 1404328063, addedScopes: [], removedScopes: [] },
+        payload: { addedScopes: [], characterId: 1_404_328_063, removedScopes: [], userId },
+        payloadVersion: 1,
+        type: 'character.scopes-changed',
       }),
     ).toThrow(DomainEventValidationError)
     expect(() =>
       validateDomainEventInput({
-        type: 'character.scopes-changed',
-        payloadVersion: 1,
         aggregateId: '1404328063',
         payload: {
-          userId,
-          characterId: 1404328063,
           addedScopes: ['same'],
+          characterId: 1_404_328_063,
           removedScopes: ['same'],
+          userId,
         },
+        payloadVersion: 1,
+        type: 'character.scopes-changed',
       }),
     ).toThrow(DomainEventValidationError)
   })
@@ -208,15 +211,15 @@ describe('outbox operation guards', () => {
     const database = { transaction }
 
     await expect(
-      claimPendingDomainEvents({ limit: 0, claimTtlMs: 1 }, database as never),
+      claimPendingDomainEvents({ claimTtlMs: 1, limit: 0 }, database as never),
     ).rejects.toThrow('Too small')
     await expect(
-      listPublishedDomainEventIdsForRedrive({ from: new Date(1), to: new Date(1), limit: 1 }, {
+      listPublishedDomainEventIdsForRedrive({ from: new Date(1), limit: 1, to: new Date(1) }, {
         select: vi.fn(),
       } as never),
     ).rejects.toThrow('Re-drive start must be before its end')
     await expect(
-      listPublishedDomainEventIdsForRedrive({ from: new Date(1), to: new Date(2), limit: 1_001 }, {
+      listPublishedDomainEventIdsForRedrive({ from: new Date(1), limit: 1001, to: new Date(2) }, {
         select: vi.fn(),
       } as never),
     ).rejects.toThrow('Too big')
@@ -226,9 +229,9 @@ describe('outbox operation guards', () => {
     await expect(
       recordDomainEventPublishFailure(
         {
-          eventId,
-          claimToken: eventId,
           category: 'raw-error' as never,
+          claimToken: eventId,
+          eventId,
           retryDelayMs: 1,
         },
         { update: vi.fn() } as never,
@@ -246,10 +249,10 @@ describe('outbox operation guards', () => {
       appendDomainEvent(
         { insert } as never,
         {
-          type: 'character.attached',
-          payloadVersion: 1,
           aggregateId: '1404328063',
           payload: { ...characterLifecyclePayload(), clientSecret: 'no' },
+          payloadVersion: 1,
+          type: 'character.attached',
         } as never,
       ),
     ).rejects.toThrow(DomainEventValidationError)
@@ -258,18 +261,18 @@ describe('outbox operation guards', () => {
 })
 
 function characterLifecyclePayload() {
-  return { userId, characterId: 1404328063 }
+  return { characterId: 1_404_328_063, userId }
 }
 
 function storedAttachedEvent() {
   return {
+    aggregateId: '1404328063',
+    aggregateType: 'character',
     eventId,
     eventSequence: 1n,
     eventType: 'character.attached',
-    payloadVersion: 1,
-    aggregateType: 'character',
-    aggregateId: '1404328063',
-    payload: characterLifecyclePayload(),
     occurredAt: new Date('2026-08-23T12:00:00.000Z'),
+    payload: characterLifecyclePayload(),
+    payloadVersion: 1,
   }
 }

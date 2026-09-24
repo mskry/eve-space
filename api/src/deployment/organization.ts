@@ -15,9 +15,9 @@ export async function resolveDeploymentOrganization(
 ): Promise<DeploymentOrganization> {
   if (type === 'alliance') {
     const alliance = (await getAlliancePublicResult(id)).data
-    return { type, id, name: alliance.name, ticker: alliance.ticker }
+    return { id, name: alliance.name, ticker: alliance.ticker, type }
   }
 
   const corporation = await getCorporationPublic(id)
-  return { type, id, name: corporation.name, ticker: corporation.ticker }
+  return { id, name: corporation.name, ticker: corporation.ticker, type }
 }

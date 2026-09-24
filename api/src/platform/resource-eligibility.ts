@@ -81,7 +81,9 @@ export function managedCollectionAuthorityEquals(
   left: PlatformManagedCollectionAuthority | null | undefined,
   right: PlatformManagedCollectionAuthority | null | undefined,
 ) {
-  if (!left || !right) return left == null && right == null
+  if (!left || !right) {
+    return left == null && right == null
+  }
   return (
     left.organizationDeploymentId === right.organizationDeploymentId &&
     left.organizationVersion === right.organizationVersion &&
@@ -153,7 +155,9 @@ export async function resolveInstalledResourceEligibility(
   const resource = resources.find(
     ({ moduleId, resourceId }) => moduleId === parsed.moduleId && resourceId === parsed.resourceId,
   )
-  if (resource?.subjectKind !== parsed.subjectKind) return { status: 'resource-unavailable' }
+  if (resource?.subjectKind !== parsed.subjectKind) {
+    return { status: 'resource-unavailable' }
+  }
 
   const connection = options.connection ?? sql
   const [row] = await connection<ClassificationRow[]>`
@@ -199,12 +203,15 @@ export async function selectDueInstalledResources(
   options: SelectDueResourcesOptions,
 ): Promise<readonly DueInstalledResource[]> {
   options.signal?.throwIfAborted()
-  if (!isPositiveSafeInteger(options.limit))
+  if (!isPositiveSafeInteger(options.limit)) {
     throw new Error('Resource planning limit must be a positive safe integer')
+  }
   const resources = (options.resources ?? platformResources).filter(
     ({ scheduled }) => scheduled !== false,
   )
-  if (resources.length === 0) return []
+  if (resources.length === 0) {
+    return []
+  }
 
   const connection = options.connection ?? sql
   const rows = await connection<ClassificationRow[]>`
@@ -246,16 +253,17 @@ export async function selectDueInstalledResources(
 
   return rows.map((row) => {
     const classification = parseClassification(row)
-    if (classification.status !== 'eligible' || !classification.due)
+    if (classification.status !== 'eligible' || !classification.due) {
       throw new Error('Resource classifier returned a non-due planning row')
+    }
     assertRegisteredEsiOperation(row.operationId)
     const due: DueInstalledResource = {
       identity: platformCollectionStateIdentitySchema.parse({
         moduleId: row.moduleId,
         resourceId: row.resourceId,
+        subjectId: row.subjectId,
         subjectKind: row.subjectKind,
         subjectLifecycleId: row.subjectLifecycleId,
-        subjectId: row.subjectId,
       }),
       operationId: row.operationId,
     }
@@ -281,30 +289,36 @@ function parseClassification(row: ClassificationRow): PlatformResourceEligibilit
     lastFailureClass: parseFailureClass(row.lastFailureClass),
     managedAuthority: parseManagedAuthority(row),
   }
-  if (row.eligibilityStatus === 'disabled' || row.eligibilityStatus === 'suppressed')
-    return { status: row.eligibilityStatus, dueReason: null, schedulingKey: null, ...state }
+  if (row.eligibilityStatus === 'disabled' || row.eligibilityStatus === 'suppressed') {
+    return { dueReason: null, schedulingKey: null, status: row.eligibilityStatus, ...state }
+  }
   if (row.eligibilityStatus === 'authorization-required') {
-    if (!row.requiredScope)
+    if (!row.requiredScope) {
       throw new Error('Resource classifier omitted the required authorization scope')
+    }
     return {
-      status: 'authorization-required',
-      requiredScope: row.requiredScope,
       dueReason: null,
+      requiredScope: row.requiredScope,
       schedulingKey: null,
+      status: 'authorization-required',
       ...state,
     }
   }
-  if (row.eligibilityStatus !== 'eligible')
+  if (row.eligibilityStatus !== 'eligible') {
     throw new Error(`Resource classifier returned invalid eligibility ${row.eligibilityStatus}`)
-  if (!row.dueReason || !platformResourceDueReasons.includes(row.dueReason as never))
+  }
+  if (!row.dueReason || !platformResourceDueReasons.includes(row.dueReason as never)) {
     throw new Error(`Resource classifier returned invalid due reason ${String(row.dueReason)}`)
+  }
   const schedulingKey = toDate(row.schedulingKey)
-  if (!schedulingKey) throw new Error('Resource classifier omitted the scheduling key')
+  if (!schedulingKey) {
+    throw new Error('Resource classifier omitted the scheduling key')
+  }
   return {
-    status: 'eligible',
     due: row.dueReason !== 'future',
     dueReason: row.dueReason as PlatformResourceDueReason,
     schedulingKey,
+    status: 'eligible',
     ...state,
   }
 }
@@ -319,9 +333,12 @@ function parseManagedAuthority(row: ClassificationRow): PlatformManagedCollectio
     row.disclosureVersion,
     row.sectionActivationVersion,
   ]
-  if (values.every((value) => value === null)) return null
-  if (values.includes(null))
+  if (values.every((value) => value === null)) {
+    return null
+  }
+  if (values.includes(null)) {
     throw new Error('Resource classifier returned incomplete managed authority')
+  }
   const organizationVersion = Number(row.organizationVersion)
   if (
     row.organizationDeploymentId !== 1 ||
@@ -331,38 +348,48 @@ function parseManagedAuthority(row: ClassificationRow): PlatformManagedCollectio
     !row.authoritySectionId ||
     !isPositiveSafeInteger(row.disclosureVersion!) ||
     !isPositiveSafeInteger(row.sectionActivationVersion!)
-  )
+  ) {
     throw new Error('Resource classifier returned invalid managed authority')
+  }
   return {
+    disclosureVersion: row.disclosureVersion!,
+    managedMemberLifecycleId: row.managedMemberLifecycleId,
     organizationDeploymentId: 1,
     organizationVersion,
-    targetUserId: row.targetUserId,
-    managedMemberLifecycleId: row.managedMemberLifecycleId,
-    sectionId: row.authoritySectionId,
-    disclosureVersion: row.disclosureVersion!,
     sectionActivationVersion: row.sectionActivationVersion!,
+    sectionId: row.authoritySectionId,
+    targetUserId: row.targetUserId,
   }
 }
 
 function parseAuthorizationCharacterId(value: number | string | null | undefined) {
-  if (value == null) return null
+  if (value == null) {
+    return null
+  }
   const parsed = Number(value)
-  if (!isPositiveSafeInteger(parsed))
+  if (!isPositiveSafeInteger(parsed)) {
     throw new Error(`Resource classifier returned invalid authorization character ${value}`)
+  }
   return parsed
 }
 
 function toDate(value: Date | string | null) {
-  if (value === null) return null
+  if (value === null) {
+    return null
+  }
   const parsed = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(parsed.getTime()))
-    throw new Error(`Resource classifier returned invalid time ${value}`)
+  if (Number.isNaN(parsed.getTime())) {
+    throw new TypeError(`Resource classifier returned invalid time ${value}`)
+  }
   return parsed
 }
 
 function parseFailureClass(value: string | null) {
-  if (value === null) return null
-  if (!platformCollectionFailureClasses.includes(value as never))
+  if (value === null) {
+    return null
+  }
+  if (!platformCollectionFailureClasses.includes(value as never)) {
     throw new Error(`Resource classifier returned invalid failure class ${value}`)
+  }
   return value as PlatformCollectionFailureClass
 }

@@ -41,9 +41,9 @@ export function useCharacterFinanceServices(options: CharacterFinanceServicesOpt
   const transactionRangeIndex = ref(0)
 
   const financeAccess = computed<ProtectedCharacterQueryAccess>(() => ({
-    isClient,
     authenticated: options.authenticated.value,
     authenticationReady: options.authenticationReady.value,
+    isClient,
     ownsCharacter: ownsCharacter.value,
   }))
   const transactionFromId = computed(
@@ -52,77 +52,95 @@ export function useCharacterFinanceServices(options: CharacterFinanceServicesOpt
 
   const balanceQuery = useQuery(() =>
     characterFinanceBalanceQuery({
+      access: financeAccess.value,
       apiClient: options.apiClient,
       characterId: options.characterId.value ?? 0,
-      access: financeAccess.value,
     }),
   )
   const journalQuery = useQuery(() =>
     characterFinanceJournalQuery({
+      access: financeAccess.value,
       apiClient: options.apiClient,
       characterId: options.characterId.value ?? 0,
-      access: financeAccess.value,
-      requested: journalRequested.value,
       page: journalPage.value,
+      requested: journalRequested.value,
     }),
   )
   const transactionQuery = useQuery(() =>
     characterFinanceTransactionsQuery({
+      access: financeAccess.value,
       apiClient: options.apiClient,
       characterId: options.characterId.value ?? 0,
-      access: financeAccess.value,
-      requested: transactionsRequested.value,
       fromId: transactionFromId.value,
+      requested: transactionsRequested.value,
     }),
   )
   const openOrdersQuery = useQuery(() =>
     characterFinanceOpenOrdersQuery({
+      access: financeAccess.value,
       apiClient: options.apiClient,
       characterId: options.characterId.value ?? 0,
-      access: financeAccess.value,
       requested: openOrdersRequested.value,
     }),
   )
   const orderHistoryQuery = useQuery(() =>
     characterFinanceOrderHistoryQuery({
+      access: financeAccess.value,
       apiClient: options.apiClient,
       characterId: options.characterId.value ?? 0,
-      access: financeAccess.value,
-      requested: orderHistoryRequested.value,
       page: orderHistoryPage.value,
+      requested: orderHistoryRequested.value,
     }),
   )
   const contractsQuery = useQuery(() =>
     characterFinanceContractsQuery({
+      access: financeAccess.value,
       apiClient: options.apiClient,
       characterId: options.characterId.value ?? 0,
-      access: financeAccess.value,
-      requested: contractsRequested.value,
       page: contractPage.value,
+      requested: contractsRequested.value,
     }),
   )
 
   function activateService(service: CharacterFinanceService) {
-    if (service === 'transactions') transactionsRequested.value = true
-    if (service === 'orders') openOrdersRequested.value = true
-    if (service === 'contracts') contractsRequested.value = true
+    if (service === 'transactions') {
+      transactionsRequested.value = true
+    }
+    if (service === 'orders') {
+      openOrdersRequested.value = true
+    }
+    if (service === 'contracts') {
+      contractsRequested.value = true
+    }
   }
 
   function activateOrderMode(mode: FinanceOrderMode) {
-    if (mode === 'history') orderHistoryRequested.value = true
+    if (mode === 'history') {
+      orderHistoryRequested.value = true
+    }
   }
 
   function changePage(resource: CharacterFinancePageResource, nextPage: number) {
-    if (!isPositiveSafeInteger(nextPage)) return false
-    if (resource === 'journal') journalPage.value = nextPage
-    if (resource === 'order-history') orderHistoryPage.value = nextPage
-    if (resource === 'contracts') contractPage.value = nextPage
+    if (!isPositiveSafeInteger(nextPage)) {
+      return false
+    }
+    if (resource === 'journal') {
+      journalPage.value = nextPage
+    }
+    if (resource === 'order-history') {
+      orderHistoryPage.value = nextPage
+    }
+    if (resource === 'contracts') {
+      contractPage.value = nextPage
+    }
     return true
   }
 
   function loadOlderTransactions() {
     const nextFromId = transactionQuery.data.value?.nextFromId
-    if (nextFromId === null || nextFromId === undefined) return false
+    if (nextFromId === null || nextFromId === undefined) {
+      return false
+    }
     transactionContinuations.value = [
       ...transactionContinuations.value.slice(0, transactionRangeIndex.value + 1),
       nextFromId,
@@ -132,18 +150,30 @@ export function useCharacterFinanceServices(options: CharacterFinanceServicesOpt
   }
 
   function showNewerTransactions() {
-    if (transactionRangeIndex.value === 0) return false
+    if (transactionRangeIndex.value === 0) {
+      return false
+    }
     transactionRangeIndex.value -= 1
     return true
   }
 
   function refreshRequestedServices() {
     const refreshes: Promise<unknown>[] = [balanceQuery.refetch()]
-    if (journalRequested.value) refreshes.push(journalQuery.refetch())
-    if (transactionsRequested.value) refreshes.push(transactionQuery.refetch())
-    if (openOrdersRequested.value) refreshes.push(openOrdersQuery.refetch())
-    if (orderHistoryRequested.value) refreshes.push(orderHistoryQuery.refetch())
-    if (contractsRequested.value) refreshes.push(contractsQuery.refetch())
+    if (journalRequested.value) {
+      refreshes.push(journalQuery.refetch())
+    }
+    if (transactionsRequested.value) {
+      refreshes.push(transactionQuery.refetch())
+    }
+    if (openOrdersRequested.value) {
+      refreshes.push(openOrdersQuery.refetch())
+    }
+    if (orderHistoryRequested.value) {
+      refreshes.push(orderHistoryQuery.refetch())
+    }
+    if (contractsRequested.value) {
+      refreshes.push(contractsQuery.refetch())
+    }
     return Promise.all(refreshes)
   }
 

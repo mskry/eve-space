@@ -10,24 +10,24 @@ const snapshotSchema = z.strictObject({
 
 export const readConformanceSnapshotOperation = definePlatformPersistenceOperation({
   id: 'read-conformance-snapshot',
-  method: 'readConformanceSnapshot',
-  revision: 1,
-  mode: 'read',
   inputSchema: z.strictObject({ characterId: z.number().int().positive() }),
-  outputSchema: z.union([snapshotSchema, z.null()]),
   maximumInputBytes: 64,
-  maximumOutputBytes: 1_024,
+  maximumOutputBytes: 1024,
+  method: 'readConformanceSnapshot',
+  mode: 'read',
+  outputSchema: z.union([snapshotSchema, z.null()]),
+  revision: 1,
 })
 
 export const upsertConformanceSnapshotOperation = definePlatformPersistenceOperation({
   id: 'upsert-conformance-snapshot',
-  method: 'upsertConformanceSnapshot',
-  revision: 1,
-  mode: 'write',
   inputSchema: snapshotSchema,
-  outputSchema: z.strictObject({ applied: z.literal(true) }),
-  maximumInputBytes: 1_024,
+  maximumInputBytes: 1024,
   maximumOutputBytes: 64,
+  method: 'upsertConformanceSnapshot',
+  mode: 'write',
+  outputSchema: z.strictObject({ applied: z.literal(true) }),
+  revision: 1,
 })
 
 const conformancePersistenceOperations = {

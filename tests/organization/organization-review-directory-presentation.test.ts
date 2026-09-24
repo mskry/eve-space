@@ -14,17 +14,17 @@ import {
 } from '../../app/utils/organization-review-directory-presentation'
 
 const auditStateLabels = {
-  'not-enabled': 'Not enabled',
   'authorization-required': 'Authorization required',
-  unavailable: 'Unavailable',
-  'never-collected': 'Never collected',
-  stale: 'Stale',
   current: 'Current',
+  'never-collected': 'Never collected',
+  'not-enabled': 'Not enabled',
+  stale: 'Stale',
+  unavailable: 'Unavailable',
 } satisfies Record<PlatformReviewerDirectoryAuditState, string>
 
 const complianceStateLabels = {
-  pending: 'Registration pending',
   compliant: 'Compliant',
+  pending: 'Registration pending',
   review_required: 'Review required',
   suspended: 'Access suspended',
 } satisfies Record<PlatformReviewerDirectoryComplianceState, string>
@@ -35,9 +35,9 @@ describe('organization review directory presentation', () => {
 
     expect(
       formatOrganizationReviewDirectoryDate(timestamp, { locale: 'en-GB', timeZone: 'UTC' }),
-    ).toEqual({
-      dateTime: timestamp,
+    ).toStrictEqual({
       compactLabel: '18 Sept 2026, 14:35',
+      dateTime: timestamp,
       exactLabel: 'Friday, 18 September 2026 at 14:35:42 UTC',
     })
     expect(
@@ -47,12 +47,12 @@ describe('organization review directory presentation', () => {
   })
 
   it.each([
-    { timestamp: null, compactLabel: 'Not recorded' },
-    { timestamp: 'not-a-date', compactLabel: 'Unavailable' },
+    { compactLabel: 'Not recorded', timestamp: null },
+    { compactLabel: 'Unavailable', timestamp: 'not-a-date' },
   ])('does not fabricate a datetime for $timestamp', ({ timestamp, compactLabel }) => {
-    expect(formatOrganizationReviewDirectoryDate(timestamp)).toEqual({
-      dateTime: null,
+    expect(formatOrganizationReviewDirectoryDate(timestamp)).toStrictEqual({
       compactLabel,
+      dateTime: null,
       exactLabel: null,
     })
   })
@@ -65,15 +65,15 @@ describe('organization review directory presentation', () => {
           organizationReviewDirectoryAuditStateLabel(state),
         ]),
       ),
-    ).toEqual(auditStateLabels)
+    ).toStrictEqual(auditStateLabels)
   })
 
   it.each(platformReviewerDirectoryComplianceStates)(
     'presents the %s compliance state as human-readable text',
     (state) => {
-      expect(organizationReviewDirectoryAccess(state, { blocked: false })).toEqual({
-        state,
+      expect(organizationReviewDirectoryAccess(state, { blocked: false })).toStrictEqual({
         label: complianceStateLabels[state],
+        state,
       })
     },
   )
@@ -86,24 +86,24 @@ describe('organization review directory presentation', () => {
           blocked: true,
           blockedAt: '2026-09-18T14:35:42.000Z',
         }),
-      ).toEqual({ state: 'blocked', label: 'Access blocked' })
+      ).toStrictEqual({ label: 'Access blocked', state: 'blocked' })
     },
   )
 
   it.each([
-    { visibleLimit: 0, visibleCount: 0, remainingCount: 4 },
-    { visibleLimit: 2, visibleCount: 2, remainingCount: 2 },
-    { visibleLimit: 4, visibleCount: 4, remainingCount: 0 },
-    { visibleLimit: 6, visibleCount: 4, remainingCount: 0 },
+    { remainingCount: 4, visibleCount: 0, visibleLimit: 0 },
+    { remainingCount: 2, visibleCount: 2, visibleLimit: 2 },
+    { remainingCount: 0, visibleCount: 4, visibleLimit: 4 },
+    { remainingCount: 0, visibleCount: 4, visibleLimit: 6 },
   ])(
     'shows $visibleCount groups and reports $remainingCount remaining for a $visibleLimit limit',
     ({ remainingCount, visibleCount, visibleLimit }) => {
       const groups = directoryGroups()
       const result = organizationReviewDirectoryGroupOverflow(groups, visibleLimit)
 
-      expect(result.visibleGroups).toEqual(groups.slice(0, visibleCount))
+      expect(result.visibleGroups).toStrictEqual(groups.slice(0, visibleCount))
       expect(result.remainingCount).toBe(remainingCount)
-      expect(groups.map(({ name }) => name)).toEqual(['Alpha', 'Bravo', 'Charlie', 'Delta'])
+      expect(groups.map(({ name }) => name)).toStrictEqual(['Alpha', 'Bravo', 'Charlie', 'Delta'])
     },
   )
 
@@ -112,9 +112,9 @@ describe('organization review directory presentation', () => {
 
     const result = organizationReviewDirectoryGroupOverflow(groups)
 
-    expect(result.visibleGroups.map(({ name }) => name)).toEqual(['Alpha', 'Bravo'])
+    expect(result.visibleGroups.map(({ name }) => name)).toStrictEqual(['Alpha', 'Bravo'])
     expect(result.remainingCount).toBe(2)
-    expect(groups.map(({ name }) => name)).toEqual(['Alpha', 'Bravo', 'Charlie', 'Delta'])
+    expect(groups.map(({ name }) => name)).toStrictEqual(['Alpha', 'Bravo', 'Charlie', 'Delta'])
   })
 })
 

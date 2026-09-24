@@ -180,8 +180,8 @@ export function createDeclarationCompilerArguments(
 }
 
 export const heyApiSourceComponent: GeneratedSourceComponent = Object.freeze({
-  name: 'hey-api',
   emit: emitHeyApiSource,
+  name: 'hey-api',
 });
 
 async function emitDeclaration(sourcePath: string): Promise<string> {
@@ -209,7 +209,9 @@ async function emitDeclaration(sourcePath: string): Promise<string> {
 
 function canonicalJson(value: unknown): string {
   return JSON.stringify(value, (_key, current: unknown) => {
-    if (!isObject(current)) return current;
+    if (!isObject(current)) {
+      return current;
+    }
     return Object.fromEntries(
       Object.entries(current).toSorted(([left], [right]) => compareText(left, right)),
     );
@@ -281,9 +283,13 @@ function assertDeterministicSnapshots(
   for (const path of [...allPaths].toSorted(compareText)) {
     const firstContent = first.get(path);
     const secondContent = second.get(path);
-    if (firstContent === undefined) differences.push(`only second run emitted ${path}`);
-    else if (secondContent === undefined) differences.push(`only first run emitted ${path}`);
-    else if (!firstContent.equals(secondContent)) differences.push(`bytes changed for ${path}`);
+    if (firstContent === undefined) {
+      differences.push(`only second run emitted ${path}`);
+    } else if (secondContent === undefined) {
+      differences.push(`only first run emitted ${path}`);
+    } else if (!firstContent.equals(secondContent)) {
+      differences.push(`bytes changed for ${path}`);
+    }
   }
   if (differences.length > 0) {
     throw new Error(`Hey API shadow generation is not deterministic:\n${formatList(differences)}`);
@@ -404,7 +410,9 @@ function assertSymbols(
 
 function requiredArtifact(files: ReadonlyMap<string, Buffer>, path: string): Buffer {
   const content = files.get(path);
-  if (content === undefined) throw new Error(`Hey API shadow output is missing ${path}`);
+  if (content === undefined) {
+    throw new Error(`Hey API shadow output is missing ${path}`);
+  }
   return content;
 }
 

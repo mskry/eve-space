@@ -46,22 +46,31 @@ export class EsiResourceRevisionRegistry {
     principal = authorization?.principal,
   ): Promise<EsiResourceRevision | undefined | null> {
     signal?.throwIfAborted()
-    if (!policy.resourceRevision) return undefined
-    if (authorization?.kind !== 'character')
+    if (!policy.resourceRevision) {
+      return undefined
+    }
+    if (authorization?.kind !== 'character') {
       throw new Error('Revision-sensitive ESI operation is missing character authorization')
+    }
     const namespace = policy.resourceRevision.namespace
-    if (!principal) throw new Error('Revision-sensitive ESI operation is missing a principal')
+    if (!principal) {
+      throw new Error('Revision-sensitive ESI operation is missing a principal')
+    }
     const keys = this.#keys(namespace, principal)
 
     const needsRepair = await this.#needsRepair(keys)
     signal?.throwIfAborted()
-    if (needsRepair === undefined) return null
+    if (needsRepair === undefined) {
+      return null
+    }
 
     try {
       const value = needsRepair
         ? await this.coordination.incrementResourceRevision(namespace, principal)
         : await this.coordination.getResourceRevision(namespace, principal)
-      if (needsRepair) await this.#clearRepair(keys)
+      if (needsRepair) {
+        await this.#clearRepair(keys)
+      }
       signal?.throwIfAborted()
       return { namespace, value }
     } catch {
@@ -73,7 +82,9 @@ export class EsiResourceRevisionRegistry {
 
   /** Advances the revision after a mutation, retrying before it gives up and marks a repair. */
   async advance(policy: EsiOperationContract, principal: string) {
-    if (!policy.resourceRevision) return
+    if (!policy.resourceRevision) {
+      return
+    }
     const namespace = policy.resourceRevision.namespace
     const keys = this.#keys(namespace, principal)
     for (let attempt = 1; attempt <= advanceAttempts; attempt += 1) {
@@ -99,18 +110,20 @@ export class EsiResourceRevisionRegistry {
 
   #keys(namespace: string, principal: string) {
     return {
-      unrepaired: `${namespace}:${principal}`,
       repair: cacheResourceRevisionRepairKey(namespace, principal),
+      unrepaired: `${namespace}:${principal}`,
     }
   }
 
   async #needsRepair(keys: { unrepaired: string; repair: string }) {
-    if (this.unrepaired.has(keys.unrepaired)) return true
+    if (this.unrepaired.has(keys.unrepaired)) {
+      return true
+    }
     try {
       return (await this.cache.get(keys.repair)) !== null
     } catch {
       recordEsiCoordinationFailure()
-      return undefined
+      return
     }
   }
 

@@ -10,13 +10,13 @@ export function setAuthCookie(
   path = '/',
 ) {
   setCookie(context, name, value, {
-    path,
     httpOnly: true,
-    secure: usesSecureAuthCookies(),
-    sameSite: 'Lax',
-    priority: 'High',
     maxAge,
+    path,
     prefix: authCookiePrefix(path),
+    priority: 'High',
+    sameSite: 'Lax',
+    secure: usesSecureAuthCookies(),
   })
 }
 
@@ -27,13 +27,15 @@ export function readAuthCookie(context: Context, name: string, path = '/') {
 export function deleteAuthCookie(context: Context, name: string, path = '/') {
   deleteCookie(context, name, {
     path,
-    secure: usesSecureAuthCookies(),
     prefix: authCookiePrefix(path),
+    secure: usesSecureAuthCookies(),
   })
 }
 
 function authCookiePrefix(path: string) {
-  if (!usesSecureAuthCookies()) return undefined
+  if (!usesSecureAuthCookies()) {
+    return
+  }
   return path === '/' ? 'host' : 'secure'
 }
 

@@ -44,7 +44,9 @@ export function useCharacterFinanceContractDetail(options: CharacterFinanceContr
   const contractDrawerOpen = computed({
     get: () => selectedContract.value !== undefined,
     set: (open: boolean) => {
-      if (!open) closeContractDrawer()
+      if (!open) {
+        closeContractDrawer()
+      }
     },
   })
   const selectedContractItemsRequested = computed(() => {
@@ -65,22 +67,22 @@ export function useCharacterFinanceContractDetail(options: CharacterFinanceContr
 
   const contractItemsQuery = useQuery(() =>
     characterFinanceContractItemsQuery({
+      access: options.financeAccess.value,
       apiClient: options.apiClient,
       characterId: options.characterId.value ?? 0,
-      access: options.financeAccess.value,
-      requested: selectedContractItemsRequested.value,
       contractId: selectedContractId.value ?? 0,
       contractPage: options.contractPage.value,
+      requested: selectedContractItemsRequested.value,
     }),
   )
   const contractBidsQuery = useQuery(() =>
     characterFinanceContractBidsQuery({
+      access: options.financeAccess.value,
       apiClient: options.apiClient,
       characterId: options.characterId.value ?? 0,
-      access: options.financeAccess.value,
-      requested: selectedContractBidsRequested.value,
       contractId: selectedContractId.value ?? 0,
       contractPage: options.contractPage.value,
+      requested: selectedContractBidsRequested.value,
     }),
   )
 
@@ -123,7 +125,9 @@ export function useCharacterFinanceContractDetail(options: CharacterFinanceContr
     const contract = options.contracts.value?.contracts.find(
       (candidate) => candidate.contractId === contractId,
     )
-    if (!contract) return false
+    if (!contract) {
+      return false
+    }
     contractTrigger.value = trigger ?? undefined
     selectedContractId.value = contractId
     if (financeContractHasItems(contract.type)) {
@@ -147,7 +151,9 @@ export function useCharacterFinanceContractDetail(options: CharacterFinanceContr
     contractTrigger.value = undefined
     if (restoreFocus && trigger?.isConnected) {
       void nextTick(() => {
-        if (trigger.isConnected) trigger.focus()
+        if (trigger.isConnected) {
+          trigger.focus()
+        }
       })
     }
   }
@@ -168,23 +174,23 @@ export function useCharacterFinanceContractDetail(options: CharacterFinanceContr
     const refreshes: Promise<unknown>[] = []
     for (const { contractId, contractPage } of openedItemDetails.value) {
       const query = characterFinanceContractItemsQuery({
+        access: options.financeAccess.value,
         apiClient: options.apiClient,
         characterId,
-        access: options.financeAccess.value,
-        requested: true,
         contractId,
         contractPage,
+        requested: true,
       })
       refreshes.push(queryCache.fetch(queryCache.ensure(query)))
     }
     for (const { contractId, contractPage } of openedBidDetails.value) {
       const query = characterFinanceContractBidsQuery({
+        access: options.financeAccess.value,
         apiClient: options.apiClient,
         characterId,
-        access: options.financeAccess.value,
-        requested: true,
         contractId,
         contractPage,
+        requested: true,
       })
       refreshes.push(queryCache.fetch(queryCache.ensure(query)))
     }
@@ -198,7 +204,9 @@ export function useCharacterFinanceContractDetail(options: CharacterFinanceContr
   watch(
     options.contractPage,
     () => {
-      if (selectedContractId.value !== undefined) closeContractDrawer(false)
+      if (selectedContractId.value !== undefined) {
+        closeContractDrawer(false)
+      }
     },
     { flush: 'sync' },
   )
@@ -222,9 +230,9 @@ export function useCharacterFinanceContractDetail(options: CharacterFinanceContr
     contractItems,
     contractItemsQuery,
     contractItemsState,
+    openContractDrawer,
     openedBidDetails,
     openedItemDetails,
-    openContractDrawer,
     refreshOpenedDetails,
     refreshRequestedFinance,
     selectedContract,

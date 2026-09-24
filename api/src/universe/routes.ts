@@ -14,7 +14,6 @@ const routeSystemId = z
   .positive('Solar system IDs must be positive safe integers.')
 const universeRouteRequest = z
   .object({
-    originSystemId: routeSystemId,
     destinationSystemIds: z
       .array(routeSystemId)
       .min(1, 'At least one destination solar system ID is required.')
@@ -23,13 +22,15 @@ const universeRouteRequest = z
         `At most ${maximumUniverseRouteDestinations} destination solar system IDs are allowed.`,
       )
       .superRefine((ids, context) => {
-        if (new Set(ids).size !== ids.length)
+        if (new Set(ids).size !== ids.length) {
           context.addIssue({
             code: 'custom',
             message: 'Destination solar system IDs must be unique.',
           })
+        }
       })
       .transform((ids) => ids.toSorted((left, right) => left - right)),
+    originSystemId: routeSystemId,
     policy: z.object({ kind: z.literal('shortest') }).strict(),
   })
   .strict()

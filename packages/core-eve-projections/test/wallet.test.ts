@@ -5,59 +5,59 @@ describe('wallet projection', () => {
   test('allows only reviewed context fields', () => {
     expect(
       projectWalletJournalEntry({
-        id: 1,
-        date: '2026-09-17T10:00:00Z',
-        ref_type: 'market_transaction',
-        description: 'Safe description',
         context_id: 7,
         context_id_type: 'character_id',
+        date: '2026-09-17T10:00:00Z',
+        description: 'Safe description',
+        id: 1,
+        ref_type: 'market_transaction',
       }),
-    ).toMatchObject({ journalId: 1, context: null })
+    ).toMatchObject({ context: null, journalId: 1 })
   })
 
   test('keeps personal safe fields, fallbacks, and deterministic ordering', () => {
     const projected = projectWalletTransactions(
       [
         {
-          transaction_id: 2,
-          journal_ref_id: 20,
           date: '2026-09-16T10:00:00Z',
-          type_id: 35,
-          quantity: 2,
-          unit_price: 3,
           is_buy: true,
           is_personal: true,
+          journal_ref_id: 20,
           location_id: 60_003_760,
+          quantity: 2,
+          transaction_id: 2,
+          type_id: 35,
+          unit_price: 3,
         },
         {
-          transaction_id: 3,
-          journal_ref_id: 30,
           date: '2026-09-17T10:00:00Z',
-          type_id: 34,
-          quantity: 1,
-          unit_price: 4,
           is_buy: false,
           is_personal: true,
+          journal_ref_id: 30,
           location_id: 60_003_761,
+          quantity: 1,
+          transaction_id: 3,
+          type_id: 34,
+          unit_price: 4,
         },
         {
-          transaction_id: 4,
-          journal_ref_id: 40,
           date: '2026-09-18T10:00:00Z',
-          type_id: 36,
-          quantity: 1,
-          unit_price: 5,
           is_buy: false,
           is_personal: false,
+          journal_ref_id: 40,
           location_id: 60_003_762,
+          quantity: 1,
+          transaction_id: 4,
+          type_id: 36,
+          unit_price: 5,
         },
       ],
       new Map([[34, 'Tritanium']]),
       new Map([[60_003_761, 'Jita IV - Moon 4']]),
     )
 
-    expect(projected.map(({ transactionId }) => transactionId)).toEqual([3, 2])
-    expect(projected[0]).toMatchObject({ typeName: 'Tritanium', totalPrice: 4 })
-    expect(projected[1]).toMatchObject({ typeName: 'Unknown type 35', locationName: null })
+    expect(projected.map(({ transactionId }) => transactionId)).toStrictEqual([3, 2])
+    expect(projected[0]).toMatchObject({ totalPrice: 4, typeName: 'Tritanium' })
+    expect(projected[1]).toMatchObject({ locationName: null, typeName: 'Unknown type 35' })
   })
 })

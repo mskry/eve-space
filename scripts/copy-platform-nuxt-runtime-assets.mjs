@@ -9,6 +9,6 @@ const destination = resolve(
   'packages/platform-module-nuxt/dist/runtime/app/components',
 )
 
-rmSync(destination, { recursive: true, force: true })
+rmSync(destination, { force: true, recursive: true })
 mkdirSync(dirname(destination), { recursive: true })
 cpSync(source, destination, { recursive: true })

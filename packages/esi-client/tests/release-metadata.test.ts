@@ -23,7 +23,7 @@ describe('ESI client release metadata', () => {
 
   it('accepts an annotated stable unpublished tag on origin/main', async () => {
     const options = await releaseOptions();
-    await expect(validateReleaseMetadata(options)).resolves.toEqual({
+    await expect(validateReleaseMetadata(options)).resolves.toStrictEqual({
       commit,
       packageName: '@evespace/esi-client',
       tag,
@@ -97,11 +97,19 @@ async function releaseOptions({
     repositoryRoot,
     runGit: async (arguments_: readonly string[]) => {
       const command = arguments_.join(' ');
-      if (command.startsWith('cat-file -t ')) return objectType;
-      if (command.endsWith('^{}')) return commit;
-      if (command === 'rev-parse HEAD') return commit;
+      if (command.startsWith('cat-file -t ')) {
+        return objectType;
+      }
+      if (command.endsWith('^{}')) {
+        return commit;
+      }
+      if (command === 'rev-parse HEAD') {
+        return commit;
+      }
       if (command.startsWith('merge-base --is-ancestor ')) {
-        if (!onMain) throw new Error('not an ancestor');
+        if (!onMain) {
+          throw new Error('not an ancestor');
+        }
         return '';
       }
       throw new Error(`Unexpected git command: ${command}`);

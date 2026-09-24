@@ -22,17 +22,17 @@ describe('shared descriptor execution', () => {
     const configuration = new EsiClientConfiguration({
       baseUrl: 'https://esi.example/api/',
       compatibilityDate: '2026-01-02',
-      language: 'ja',
       fetch,
+      language: 'ja',
     });
     const descriptor = operation<{ readonly body: { readonly name: string } }>({
       method: 'POST',
-      requestBody: { required: true, mediaType: 'application/json' },
+      requestBody: { mediaType: 'application/json', required: true },
     });
 
     const result = await executeOperation(configuration, descriptor, { body: { name: 'Venture' } });
 
-    expect(result.data).toEqual({ id: 7 });
+    expect(result.data).toStrictEqual({ id: 7 });
     expect(result.meta.status).toBe(200);
     expect(result.meta.headers['x-request-id']).toBe('request-1');
     expect(result.meta.requestId).toBe('request-1');
@@ -40,7 +40,7 @@ describe('shared descriptor execution', () => {
     const [url, init] = onlyFetchCall(fetch);
     const headers = new Headers(init?.headers);
     expect(url).toBe('https://esi.example/api/items');
-    expect(init).toMatchObject({ method: 'POST', body: '{"name":"Venture"}' });
+    expect(init).toMatchObject({ body: '{"name":"Venture"}', method: 'POST' });
     expect(headers.get('accept')).toBe('application/json');
     expect(headers.get('accept-language')).toBe('ja');
     expect(headers.get('x-compatibility-date')).toBe('2026-01-02');
@@ -89,7 +89,7 @@ describe('shared descriptor execution', () => {
     const tokenProvider = vi.fn<() => Promise<string>>(async () => 'public-operation-secret');
     const fetch = jsonFetch({ ok: true });
 
-    await executeOperation(new EsiClientConfiguration({ tokenProvider, fetch }), operation(), {});
+    await executeOperation(new EsiClientConfiguration({ fetch, tokenProvider }), operation(), {});
 
     expect(tokenProvider).not.toHaveBeenCalled();
     expect(new Headers(onlyFetchCall(fetch)[1]?.headers).has('authorization')).toBe(false);
@@ -99,8 +99,8 @@ describe('shared descriptor execution', () => {
     const events: string[] = [];
     const requestSchema = schema<OperationRequestArguments>((value) => {
       events.push('validate');
-      expect(value).toEqual({});
-      return { success: true, data: {} };
+      expect(value).toStrictEqual({});
+      return { data: {}, success: true };
     });
     const tokenProvider = vi.fn<() => Promise<string>>(async () => {
       events.push('token');
@@ -114,12 +114,12 @@ describe('shared descriptor execution', () => {
     const descriptor = authenticatedOperation({ requestSchema });
 
     await executeOperation(
-      new EsiClientConfiguration({ tokenProvider, fetch, validateRequests: true }),
+      new EsiClientConfiguration({ fetch, tokenProvider, validateRequests: true }),
       descriptor,
       {},
     );
 
-    expect(events).toEqual(['validate', 'token', 'fetch']);
+    expect(events).toStrictEqual(['validate', 'token', 'fetch']);
     expect(tokenProvider).toHaveBeenCalledTimes(1);
     expect(fetch).toHaveBeenCalledTimes(1);
   });
@@ -133,7 +133,7 @@ describe('shared descriptor execution', () => {
 
     await expect(
       executeOperation(
-        new EsiClientConfiguration({ tokenProvider, fetch, requestTimeoutMs: 5 }),
+        new EsiClientConfiguration({ fetch, requestTimeoutMs: 5, tokenProvider }),
         authenticatedOperation(),
         {},
       ),
@@ -151,7 +151,7 @@ describe('shared descriptor execution', () => {
     const fetch = jsonFetch({ unreachable: true });
     const controller = new AbortController();
     const promise = executeOperation(
-      new EsiClientConfiguration({ tokenProvider, fetch }),
+      new EsiClientConfiguration({ fetch, tokenProvider }),
       authenticatedOperation(),
       {},
       { signal: controller.signal },
@@ -161,8 +161,8 @@ describe('shared descriptor execution', () => {
 
     await expect(promise).rejects.toMatchObject({
       code: 'ESI_TRANSPORT_ERROR',
-      reason: 'network',
       phase: 'request',
+      reason: 'network',
     });
     expect(fetch).not.toHaveBeenCalled();
     resolveToken?.('late-secret');
@@ -187,8 +187,8 @@ describe('shared descriptor execution', () => {
 
   it('validates requests only by policy or force flag and uses parsed arguments', async () => {
     const requestSchema = schema<OperationRequestArguments>(() => ({
-      success: true,
       data: { query: { page: 3 } },
+      success: true,
     }));
     const descriptor = operation({
       parameters: [
@@ -226,11 +226,11 @@ describe('shared descriptor execution', () => {
     const fetch = jsonFetch({ unreachable: true });
     const signal: AbortSignal = {
       aborted: false,
-      reason: undefined,
-      onabort: null,
       addEventListener() {},
-      removeEventListener() {},
       dispatchEvent: () => true,
+      onabort: null,
+      reason: undefined,
+      removeEventListener() {},
       throwIfAborted() {},
     };
 
@@ -243,7 +243,7 @@ describe('shared descriptor execution', () => {
 
     await expect(promise).rejects.toMatchObject({
       code: 'ESI_REQUEST_VALIDATION_ERROR',
-      issues: [{ path: ['signal'], code: 'invalid_type' }],
+      issues: [{ code: 'invalid_type', path: ['signal'] }],
     });
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -273,19 +273,19 @@ describe('shared descriptor execution', () => {
 
   it('selects the status-specific response schema and returns validated JSON', async () => {
     const exact = schema<{ readonly selected: string }>(() => ({
-      success: true,
       data: { selected: 'exact' },
+      success: true,
     }));
     const fetch = vi.fn<typeof globalThis.fetch>(async () =>
       Response.json({ selected: 'wire' }, { status: 201 }),
     );
     const descriptor = operation({
-      successResponses: [{ status: 201, body: 'json', schema: exact }],
+      successResponses: [{ body: 'json', schema: exact, status: 201 }],
     });
 
     const result = await executeOperation(new EsiClientConfiguration({ fetch }), descriptor, {});
 
-    expect(result.data).toEqual({ selected: 'exact' });
+    expect(result.data).toStrictEqual({ selected: 'exact' });
     expect(exact.safeParse).toHaveBeenCalledWith({ selected: 'wire' });
   });
 
@@ -307,14 +307,14 @@ describe('shared descriptor execution', () => {
       descriptor,
       {},
     );
-    expect(result.data).toEqual({ value: 'unvalidated' });
+    expect(result.data).toStrictEqual({ value: 'unvalidated' });
     expect(responseSchema.safeParse).toHaveBeenCalledTimes(1);
   });
 
   it.each([
-    ['declared 200 no-content', 200, [{ status: 200, body: 'none' }] as const],
-    ['actual 204', 204, [{ status: 204, body: 'json', schema: passthroughSchema }] as const],
-    ['actual 205', 205, [{ status: 205, body: 'json', schema: passthroughSchema }] as const],
+    ['declared 200 no-content', 200, [{ body: 'none', status: 200 }] as const],
+    ['actual 204', 204, [{ body: 'json', schema: passthroughSchema, status: 204 }] as const],
+    ['actual 205', 205, [{ body: 'json', schema: passthroughSchema, status: 205 }] as const],
   ])('returns undefined without parsing JSON for %s', async (_name, status, successResponses) => {
     const json = vi.fn<() => Promise<never>>(async () => {
       throw new Error('JSON must not be parsed');
@@ -338,7 +338,7 @@ describe('shared descriptor execution', () => {
       },
     });
     const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(body));
-    const descriptor = operation({ successResponses: [{ status: 200, body: 'none' }] });
+    const descriptor = operation({ successResponses: [{ body: 'none', status: 200 }] });
 
     await executeOperation(new EsiClientConfiguration({ fetch }), descriptor, {});
 
@@ -348,7 +348,7 @@ describe('shared descriptor execution', () => {
   it('throws a structured parse error for a successful non-JSON body', async () => {
     const fetch = vi.fn<typeof globalThis.fetch>(
       async () =>
-        new Response('not JSON', { status: 200, headers: { 'x-request-id': 'parse-request' } }),
+        new Response('not JSON', { headers: { 'x-request-id': 'parse-request' }, status: 200 }),
     );
 
     const promise = executeOperation(new EsiClientConfiguration({ fetch }), operation(), {});
@@ -356,8 +356,8 @@ describe('shared descriptor execution', () => {
     await expect(promise).rejects.toBeInstanceOf(EsiResponseParseError);
     await expect(promise).rejects.toMatchObject({
       code: 'ESI_RESPONSE_PARSE_ERROR',
-      status: 200,
       metadata: { headers: { 'x-request-id': 'parse-request' } },
+      status: 200,
     });
   });
 
@@ -368,8 +368,8 @@ describe('shared descriptor execution', () => {
       executeOperation(new EsiClientConfiguration({ fetch, requestTimeoutMs: 5 }), operation(), {}),
     ).rejects.toMatchObject({
       code: 'ESI_TRANSPORT_ERROR',
-      reason: 'timeout',
       phase: 'request',
+      reason: 'timeout',
     });
     expect(fetch).toHaveBeenCalledTimes(1);
   });
@@ -383,10 +383,10 @@ describe('shared descriptor execution', () => {
     await expect(
       executeOperation(new EsiClientConfiguration({ fetch }), operation(), {}),
     ).rejects.toMatchObject({
-      code: 'ESI_TRANSPORT_ERROR',
-      reason: 'network',
-      phase: 'request',
       cause: failure,
+      code: 'ESI_TRANSPORT_ERROR',
+      phase: 'request',
+      reason: 'network',
     });
   });
 
@@ -404,7 +404,7 @@ describe('shared descriptor execution', () => {
 
     await expect(
       executeOperation(new EsiClientConfiguration({ fetch, requestTimeoutMs: 5 }), operation(), {}),
-    ).rejects.toMatchObject({ reason: 'timeout', phase: 'request' });
+    ).rejects.toMatchObject({ phase: 'request', reason: 'timeout' });
     expect(observedSignal?.aborted).toBe(true);
     expect(fetch).toHaveBeenCalledTimes(1);
   });
@@ -413,7 +413,7 @@ describe('shared descriptor execution', () => {
     const controller = new AbortController();
     const fetch = vi.fn<typeof globalThis.fetch>(() => new Promise(() => undefined));
     const promise = executeOperation(
-      new EsiClientConfiguration({ fetch, requestTimeoutMs: 1_000 }),
+      new EsiClientConfiguration({ fetch, requestTimeoutMs: 1000 }),
       operation(),
       {},
       { signal: controller.signal },
@@ -423,8 +423,8 @@ describe('shared descriptor execution', () => {
 
     await expect(promise).rejects.toMatchObject({
       code: 'ESI_TRANSPORT_ERROR',
-      reason: 'network',
       phase: 'request',
+      reason: 'network',
     });
   });
 
@@ -440,8 +440,8 @@ describe('shared descriptor execution', () => {
 
     await expect(promise).rejects.toBeInstanceOf(EsiTransportError);
     await expect(promise).rejects.toMatchObject({
-      reason: 'network',
       phase: 'response',
+      reason: 'network',
       status: 200,
     });
   });
@@ -454,7 +454,7 @@ describe('shared descriptor execution', () => {
 
     await expect(
       executeOperation(new EsiClientConfiguration({ fetch, requestTimeoutMs: 5 }), operation(), {}),
-    ).rejects.toMatchObject({ reason: 'timeout', phase: 'response', status: 200 });
+    ).rejects.toMatchObject({ phase: 'response', reason: 'timeout', status: 200 });
   });
 
   it('handles a rejected reader cancellation after a response timeout', async () => {
@@ -462,14 +462,14 @@ describe('shared descriptor execution', () => {
       throw new Error('stream cancellation failed');
     });
     const body = new ReadableStream<Uint8Array>({
-      pull: () => new Promise(() => undefined),
       cancel,
+      pull: () => new Promise(() => undefined),
     });
     const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(body, { status: 200 }));
 
     await expect(
       executeOperation(new EsiClientConfiguration({ fetch, requestTimeoutMs: 5 }), operation(), {}),
-    ).rejects.toMatchObject({ reason: 'timeout', phase: 'response', status: 200 });
+    ).rejects.toMatchObject({ phase: 'response', reason: 'timeout', status: 200 });
     expect(cancel).toHaveBeenCalledOnce();
   });
 
@@ -481,12 +481,12 @@ describe('shared descriptor execution', () => {
 
     await expect(
       executeOperation(new EsiClientConfiguration({ fetch, requestTimeoutMs: 5 }), operation(), {}),
-    ).rejects.toMatchObject({ reason: 'timeout', phase: 'response', status: 503 });
+    ).rejects.toMatchObject({ phase: 'response', reason: 'timeout', status: 503 });
   });
 
   it('returns a dedicated not-modified outcome with metadata', async () => {
     const fetch = vi.fn<typeof globalThis.fetch>(
-      async () => new Response(null, { status: 304, headers: { ETag: 'revision-2' } }),
+      async () => new Response(null, { headers: { ETag: 'revision-2' }, status: 304 }),
     );
 
     const promise = executeOperation(new EsiClientConfiguration({ fetch }), operation(), {});
@@ -494,8 +494,8 @@ describe('shared descriptor execution', () => {
     await expect(promise).rejects.toBeInstanceOf(EsiNotModifiedError);
     await expect(promise).rejects.toMatchObject({
       code: 'ESI_NOT_MODIFIED',
-      status: 304,
       metadata: { cache: { etag: 'revision-2' } },
+      status: 304,
     });
   });
 
@@ -514,16 +514,16 @@ describe('shared descriptor execution', () => {
     const secret = 'http-token-secret';
     const fetch = vi.fn<typeof globalThis.fetch>(
       async () =>
-        new Response(JSON.stringify({ error: `Bearer ${secret}`, detail: 'x'.repeat(30_000) }), {
-          status: 403,
+        new Response(JSON.stringify({ detail: 'x'.repeat(30_000), error: `Bearer ${secret}` }), {
           headers: { 'x-request-id': 'http-request' },
+          status: 403,
         }),
     );
 
     let thrown: unknown;
     try {
       await executeOperation(
-        new EsiClientConfiguration({ token: secret, fetch }),
+        new EsiClientConfiguration({ fetch, token: secret }),
         authenticatedOperation(),
         {},
       );
@@ -532,7 +532,7 @@ describe('shared descriptor execution', () => {
     }
 
     expect(thrown).toBeInstanceOf(EsiHttpError);
-    expect(thrown).toMatchObject({ status: 403, bodyTruncated: true });
+    expect(thrown).toMatchObject({ bodyTruncated: true, status: 403 });
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(thrown)).not.toContain(secret);
     expect(JSON.stringify(thrown)).not.toContain('authorization');
@@ -545,9 +545,9 @@ describe('shared descriptor execution', () => {
     try {
       await executeOperation(
         new EsiClientConfiguration({
-          token: secret,
           fetch: async () =>
             Response.json({ value: 'bad' }, { headers: { 'cache-control': 'public, max-age=30' } }),
+          token: secret,
         }),
         descriptor,
         {},
@@ -560,14 +560,14 @@ describe('shared descriptor execution', () => {
     expect(JSON.stringify(thrown)).not.toContain(secret);
     expect(JSON.stringify(thrown)).not.toContain('authorization');
     expect(thrown).toMatchObject({
-      issues: [{ path: ['body', '[REDACTED]'], code: 'invalid_[REDACTED]' }],
+      issues: [{ code: 'invalid_[REDACTED]', path: ['body', '[REDACTED]'] }],
       metadata: { cache: { maxAgeSeconds: 30 } },
     });
   });
 });
 
 const passthroughSchema: OperationSchema = {
-  safeParse: (value: unknown) => ({ success: true, data: value }),
+  safeParse: (value: unknown) => ({ data: value, success: true }),
 };
 
 function operation<TArguments extends OperationRequestArguments = OperationRequestArguments>(
@@ -577,19 +577,19 @@ function operation<TArguments extends OperationRequestArguments = OperationReque
 ): OperationExecutionDescriptor<TArguments> {
   const { responseSchema = passthroughSchema, ...descriptorOverrides } = overrides;
   return {
-    operationId: 'get_items',
-    method: 'GET',
-    path: '/items',
-    parameters: [],
-    requestBody: null,
     authentication: null,
+    method: 'GET',
+    operationId: 'get_items',
+    parameters: [],
+    path: '/items',
     protocol: {
-      cache: { responseHeaders: [], extensions: {} },
+      cache: { extensions: {}, responseHeaders: [] },
       conditionalRequestValidators: [],
+      maximumBatchSize: null,
       rateLimit: { kind: 'legacy-only' },
       requestArrayLimits: [],
-      maximumBatchSize: null,
     },
+    requestBody: null,
     successResponses: [{ status: 200, body: 'json', schema: responseSchema }],
     ...descriptorOverrides,
   };
@@ -616,7 +616,6 @@ function schema<T>(
 
 function failingSchema<T = unknown>(secret: string): OperationSchema<T> {
   return schema<T>(() => ({
-    success: false,
     error: {
       issues: [
         {
@@ -626,6 +625,7 @@ function failingSchema<T = unknown>(secret: string): OperationSchema<T> {
         },
       ],
     },
+    success: false,
   }));
 }
 
@@ -637,6 +637,8 @@ function onlyFetchCall(
   fetch: ReturnType<typeof vi.fn<typeof globalThis.fetch>>,
 ): [string | URL | Request, RequestInit | undefined] {
   const call = fetch.mock.calls[0];
-  if (call === undefined) throw new Error('Expected fetch to be called');
+  if (call === undefined) {
+    throw new Error('Expected fetch to be called');
+  }
   return [call[0], call[1]];
 }

@@ -28,19 +28,19 @@ const searchTokens = computed(() => searchTerm.value.toLowerCase().split(/\s+/).
 const searching = computed(() => searchTokens.value.length > 0)
 const levelFilter = ref<'all' | 'untrained' | 'progress' | 'v'>('all')
 const levelFilters = [
-  { value: 'all', label: 'ALL' },
-  { value: 'untrained', label: 'UNTRAINED' },
-  { value: 'progress', label: 'IN PROGRESS' },
-  { value: 'v', label: 'AT V' },
+  { label: 'ALL', value: 'all' },
+  { label: 'UNTRAINED', value: 'untrained' },
+  { label: 'IN PROGRESS', value: 'progress' },
+  { label: 'AT V', value: 'v' },
 ] as const
 const queuedOnly = ref(false)
 const revealedSkillNameId = ref<number | null>(null)
 const groups = computed(() => props.skills.groups)
 const fuseOptions = {
-  keys: ['name'],
-  threshold: 0.18,
   ignoreLocation: true,
+  keys: ['name'],
   minMatchCharLength: 2,
+  threshold: 0.18,
 }
 const indexedSkills = computed(() => indexSkills(groups.value))
 const skillIndex = computed(() => new Fuse(indexedSkills.value, fuseOptions))
@@ -64,10 +64,14 @@ function intersectTokens<Item, Id>(
       matched = hits
     } else {
       const intersection = new Set<Id>()
-      for (const id of matched) if (hits.has(id)) intersection.add(id)
+      for (const id of matched) {
+        if (hits.has(id)) intersection.add(id)
+      }
       matched = intersection
     }
-    if (matched.size === 0) break
+    if (matched.size === 0) {
+      break
+    }
   }
   return matched ?? new Set<Id>()
 }
@@ -75,8 +79,8 @@ function intersectTokens<Item, Id>(
 const searchMatches = computed(() =>
   searching.value
     ? {
-        skillIds: intersectTokens(skillIndex.value, searchTokens.value, (skill) => skill.typeId),
         groupKeys: intersectTokens(groupIndex.value, searchTokens.value, (group) => group.key),
+        skillIds: intersectTokens(skillIndex.value, searchTokens.value, (skill) => skill.typeId),
       }
     : null,
 )
@@ -86,10 +90,18 @@ const queuedFilterDisabled = computed(
   () => !queuedOnly.value && (props.skillQueueStatus !== 'idle' || !hasQueuedSkills.value),
 )
 const queuedFilterLabel = computed(() => {
-  if (queuedOnly.value) return 'Show all catalogue skills'
-  if (props.skillQueueStatus === 'loading') return 'Skill queue is loading'
-  if (props.skillQueueStatus === 'scope-required') return 'Skill queue authorization required'
-  if (props.skillQueueStatus === 'error') return 'Skill queue unavailable'
+  if (queuedOnly.value) {
+    return 'Show all catalogue skills'
+  }
+  if (props.skillQueueStatus === 'loading') {
+    return 'Skill queue is loading'
+  }
+  if (props.skillQueueStatus === 'scope-required') {
+    return 'Skill queue authorization required'
+  }
+  if (props.skillQueueStatus === 'error') {
+    return 'Skill queue unavailable'
+  }
   return hasQueuedSkills.value ? 'Show queued skills only' : 'No queued skills available'
 })
 const filteredSkills = computed(() =>
@@ -120,7 +132,9 @@ function revealTruncatedSkillName(typeId: number, event: MouseEvent) {
 }
 
 function hideSkillName(typeId: number) {
-  if (revealedSkillNameId.value === typeId) revealedSkillNameId.value = null
+  if (revealedSkillNameId.value === typeId) {
+    revealedSkillNameId.value = null
+  }
 }
 
 const rows = computed(() =>
@@ -163,7 +177,9 @@ let announcementTimer: ReturnType<typeof setTimeout> | undefined
 watch(
   resultAnnouncement,
   (announcement) => {
-    if (announcementTimer) clearTimeout(announcementTimer)
+    if (announcementTimer) {
+      clearTimeout(announcementTimer)
+    }
     if (!searching.value) {
       announcedResult.value = announcement
       return
@@ -175,13 +191,15 @@ watch(
   { immediate: true },
 )
 onUnmounted(() => {
-  if (announcementTimer) clearTimeout(announcementTimer)
+  if (announcementTimer) {
+    clearTimeout(announcementTimer)
+  }
 })
 
 useCustomHighlight({
   highlightName: 'skill-search',
-  term: searchTerm,
   selector: '.skill-row-name, .skill-group-chip-name',
+  term: searchTerm,
 })
 
 function skillLevelCells(skill: IndexedSkill) {

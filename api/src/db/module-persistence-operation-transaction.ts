@@ -37,12 +37,14 @@ export function createStandaloneModulePersistenceOperationInvoker(
   ) => {
     const result = await connection.begin(async (transaction) => {
       options.signal?.throwIfAborted()
-      if (options.readOnly) await transaction`set transaction read only`
+      if (options.readOnly) {
+        await transaction`set transaction read only`
+      }
       await transaction`set local role ${transaction(names.runtimeRoleName)}`
       await transaction`
         select set_config('search_path', ${`pg_catalog, ${names.schemaName}`}, true)
       `
-      if (options.statementTimeoutMilliseconds !== undefined)
+      if (options.statementTimeoutMilliseconds !== undefined) {
         await transaction`
           select set_config(
             'statement_timeout',
@@ -50,6 +52,7 @@ export function createStandaloneModulePersistenceOperationInvoker(
             true
           )
         `
+      }
       options.signal?.throwIfAborted()
       return execute(transaction)
     })
@@ -81,7 +84,9 @@ export function createTransactionScopedModulePersistenceOperationInvoker(
     const [session] = await transaction<{ role: string; searchPath: string }[]>`
       select current_user as role, current_setting('search_path') as "searchPath"
     `
-    if (!session) throw new Error('Unable to capture platform transaction settings')
+    if (!session) {
+      throw new Error('Unable to capture platform transaction settings')
+    }
     const result = await transaction.savepoint(async (scope) => {
       await scope`set local role ${scope(names.runtimeRoleName)}`
       await scope`
@@ -98,27 +103,32 @@ export function createTransactionScopedModulePersistenceOperationInvoker(
     runInTransaction,
     {
       assertActive: () => {
-        if (!active) throw new Error('Module persistence operation is no longer active')
+        if (!active) {
+          throw new Error('Module persistence operation is no longer active')
+        }
       },
       expectedMode: 'write',
       ...(signal ? { signal } : {}),
     },
   )
   return {
+    close() {
+      active = false
+    },
     async invoke(operation, input) {
       try {
-        if (!active) throw scopedOperationError(operation, 'inactive')
-        if (usedOperations.has(operation.operationId))
+        if (!active) {
+          throw scopedOperationError(operation, 'inactive')
+        }
+        if (usedOperations.has(operation.operationId)) {
           throw scopedOperationError(operation, 'repeated')
+        }
         usedOperations.add(operation.operationId)
         return await invokeOperation(operation, input)
       } catch (error) {
         failure ??= { error }
         throw error
       }
-    },
-    close() {
-      active = false
     },
     suppressedFailure: () => failure,
   }

@@ -13,9 +13,6 @@ import { skillGroupIconNames } from '../../app/utils/skill-group-icons'
 
 const mountedWrappers: { unmount: () => void }[] = []
 const skills = {
-  totalSp: 1_500_000,
-  unallocatedSp: 12_000,
-  injectedSkillCount: 3,
   groups: [
     {
       groupId: 1,
@@ -94,12 +91,12 @@ const skills = {
       ],
     },
   ],
+  injectedSkillCount: 3,
+  totalSp: 1_500_000,
+  unallocatedSp: 12_000,
 } satisfies CharacterSkills
 const uninjectedSkills = {
   ...skills,
-  totalSp: 0,
-  unallocatedSp: 0,
-  injectedSkillCount: 0,
   groups: skills.groups.map((group) => ({
     ...group,
     trainedSp: 0,
@@ -111,22 +108,24 @@ const uninjectedSkills = {
       skillpoints: 0,
     })),
   })),
+  injectedSkillCount: 0,
+  totalSp: 0,
+  unallocatedSp: 0,
 } satisfies CharacterSkills
 const attributes = {
+  accruedRemapCooldownDate: null,
+  bonusRemaps: 1,
   charisma: 19,
   intelligence: 24,
+  lastRemapDate: null,
   memory: 21,
   perception: 27,
   willpower: 22,
-  bonusRemaps: 1,
-  accruedRemapCooldownDate: null,
-  lastRemapDate: null,
 } satisfies CharacterAttributes
 
 function trainingQueue(): CharacterSkillQueue {
   const now = Date.now()
   return {
-    state: 'training',
     activeQueuePosition: 0,
     entries: [
       {
@@ -166,7 +165,7 @@ function trainingQueue(): CharacterSkillQueue {
         groupId: 2,
         groupName: 'Gunnery',
         finishedLevel: 3,
-        levelStartSp: 8_000,
+        levelStartSp: 8000,
         levelEndSp: 45_255,
         trainingStartSp: null,
         startDate: new Date(now + 86_400_000).toISOString(),
@@ -175,11 +174,14 @@ function trainingQueue(): CharacterSkillQueue {
         secondaryAttribute: 'willpower',
       },
     ],
+    state: 'training',
   }
 }
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   vi.useRealTimers()
 })
 
@@ -297,7 +299,6 @@ describe('character Skills components', () => {
             {
               groupId: 1,
               name: 'Armor',
-              trainedSp: 0,
               skills: [
                 {
                   typeId: 50,
@@ -316,6 +317,7 @@ describe('character Skills components', () => {
                   skillpoints: 0,
                 },
               ],
+              trainedSp: 0,
             },
           ],
         },
@@ -386,7 +388,7 @@ describe('character Skills components', () => {
     expect(status.classes()).not.toContain('is-visible')
     expect(announcement.attributes('aria-live')).toBe('polite')
     expect(announcement.text()).toBe('6 CATALOGUE SKILLS ACROSS 4 GROUPS')
-    expect(wrapper.findAll('.skill-group-chip-count').map((chip) => chip.text())).toEqual([
+    expect(wrapper.findAll('.skill-group-chip-count').map((chip) => chip.text())).toStrictEqual([
       '1',
       '3',
       '1',
@@ -397,7 +399,7 @@ describe('character Skills components', () => {
     expect(status.classes()).toContain('is-visible')
     expect(status.text()).toBe('3 SKILLS / 3 GROUPS')
     expect(announcement.text()).toBe('3 CATALOGUE SKILLS ACROSS 3 GROUPS')
-    expect(wrapper.findAll('.skill-group-chip-count').map((chip) => chip.text())).toEqual([
+    expect(wrapper.findAll('.skill-group-chip-count').map((chip) => chip.text())).toStrictEqual([
       '1',
       '1',
       '1',
@@ -420,7 +422,7 @@ describe('character Skills components', () => {
     await vi.waitFor(() =>
       expect(announcement.text()).toBe('2 CATALOGUE SKILLS MATCHED ACROSS 1 GROUP'),
     )
-    expect(wrapper.findAll('.skill-group-chip-count').map((chip) => chip.text())).toEqual([
+    expect(wrapper.findAll('.skill-group-chip-count').map((chip) => chip.text())).toStrictEqual([
       '0',
       '2',
       '0',
@@ -447,7 +449,7 @@ describe('character Skills components', () => {
     expect(queuedOnly.attributes('aria-pressed')).toBe('true')
     expect(status.text()).toBe('3 SKILLS / 2 GROUPS')
     expect(announcement.text()).toBe('3 CATALOGUE SKILLS ACROSS 2 GROUPS')
-    expect(wrapper.findAll('.skill-group-chip-count').map((chip) => chip.text())).toEqual([
+    expect(wrapper.findAll('.skill-group-chip-count').map((chip) => chip.text())).toStrictEqual([
       '0',
       '2',
       '0',
@@ -542,8 +544,8 @@ describe('character Skills components', () => {
     const skillQueue = trainingQueue()
     skillQueue.entries = skillQueue.entries.map((entry) => ({
       ...entry,
-      startDate: null,
       finishDate: null,
+      startDate: null,
     }))
     const wrapper = await mountSuspended(CharacterSkillsQueue, {
       props: {
@@ -582,7 +584,7 @@ describe('character Skills components', () => {
     expect(wrapper.findAll('.skill-attribute-cells > div')).toHaveLength(5)
     expect(
       wrapper.findAll('.skill-attribute-cells img').map((image) => image.attributes('src')),
-    ).toEqual([
+    ).toStrictEqual([
       '/images/eve-attributes/perception.png',
       '/images/eve-attributes/memory.png',
       '/images/eve-attributes/willpower.png',

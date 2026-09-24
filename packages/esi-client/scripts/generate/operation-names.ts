@@ -6,7 +6,11 @@ export function operationSchemaName(operationId: string): string {
   let identifier = words
     .map((word) => `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`)
     .join('');
-  if (identifier === '') identifier = 'Operation';
-  if (!/^[A-Za-z_$]/u.test(identifier)) identifier = `Operation${identifier}`;
+  if (identifier === '') {
+    identifier = 'Operation';
+  }
+  if (!/^[A-Za-z_$]/u.test(identifier)) {
+    identifier = `Operation${identifier}`;
+  }
   return identifier;
 }

@@ -143,14 +143,14 @@ export async function emitGeneratedDocumentation(
   await Promise.all(writes);
 
   return [
-    { target: documentationTargets.generated, kind: 'directory' },
-    ...documentationTargets.llms.map((target) => ({ target, kind: 'file' as const })),
+    { kind: 'directory', target: documentationTargets.generated },
+    ...documentationTargets.llms.map((target) => ({ kind: 'file' as const, target })),
   ];
 }
 
 export const generatedDocumentationEmitter: GeneratedOutputEmitter = Object.freeze({
-  name: 'generated-documentation',
   emit: emitGeneratedDocumentation,
+  name: 'generated-documentation',
 });
 
 function renderLlmsText(
@@ -207,41 +207,43 @@ Generic mutations are disabled by default and require both client enablement and
 
 function renderConceptPage(slug: string, title: string, provenance: ArtifactProvenance): string {
   const bodies: Record<string, string> = {
+    auth: `Public operations need no authentication. Authenticated operation references list every required OAuth scope.
+
+Configure either \`token\` or an asynchronous \`tokenProvider\`; do not configure both. Token providers are resolved only for authenticated requests. Credentials and authorization headers are excluded from the serializable registry, response metadata, and structured errors.`,
+    client: `Create a public client with \`new EsiClient()\`. The pinned compatibility date, standard ESI base URL, English language, 10,000 millisecond request timeout, response validation, and the global \`fetch\` implementation are defaults.
+
+Constructor options include \`baseUrl\`, \`compatibilityDate\`, \`language\`, \`requestTimeoutMs\`, \`token\` or \`tokenProvider\`, \`fetch\`, \`validateResponses\`, \`validateRequests\`, and \`allowGenericMutations\`. Configuration is immutable. The positive-integer timeout starts after token-provider resolution and spans the configured fetch plus response-body consumption. Operation options can override the compatibility date where the registry declares support.`,
+    'custom-fetch': `Pass a custom \`fetch\` implementation to compose application headers, coordination, or telemetry with SDK execution. The SDK calls it once per operation and supplies the final URL, method, headers, body, and a composed \`AbortSignal\` that includes the SDK deadline and any caller cancellation.
+
+Custom wrappers must forward and observe \`init.signal\`, retain resources such as distributed permits until the response body closes, errors, or is cancelled, and return the original response stream semantics. A wrapper that ignores cancellation may continue background work after the public SDK promise has been bounded. Do not add a competing independent timeout around the same attempt.`,
+    errors: `SDK failures extend \`EsiError\` and expose a stable \`code\`, \`operationId\`, message, and an allowlisted \`toJSON()\` result. \`EsiTransportError\` distinguishes timeout and network failures during the request or response phase. \`EsiNotModifiedError\` represents status 304 with immutable response metadata and no response body. Validation errors add \`direction\` and structured \`issues\`. HTTP and parse failures add status and response metadata; HTTP failures may include a bounded parsed ESI body.
+
+Use \`classifyEsiFailure(error)\` for policy-neutral failure facts: \`transient\`, \`throttled\`, \`not-modified\`, \`invalid-response\`, \`permanent\`, or \`unknown\`. Classification never retries or implies idempotency. Error serialization excludes credentials, authorization headers, token-provider values, response bodies from transport and not-modified errors, and original causes.`,
     installation: `Install the SDK and its required Zod 4 peer with your package manager:
 
 \`pnpm add @evespace/esi-client zod\`
 
 The package is ESM-only and requires Node.js 24.20 or newer. Import \`EsiClient\` from the package root, or use a documented domain, \`types\`, \`zod\`, or \`operations\` subpath for a narrower dependency surface.`,
-    client: `Create a public client with \`new EsiClient()\`. The pinned compatibility date, standard ESI base URL, English language, 10,000 millisecond request timeout, response validation, and the global \`fetch\` implementation are defaults.
-
-Constructor options include \`baseUrl\`, \`compatibilityDate\`, \`language\`, \`requestTimeoutMs\`, \`token\` or \`tokenProvider\`, \`fetch\`, \`validateResponses\`, \`validateRequests\`, and \`allowGenericMutations\`. Configuration is immutable. The positive-integer timeout starts after token-provider resolution and spans the configured fetch plus response-body consumption. Operation options can override the compatibility date where the registry declares support.`,
-    auth: `Public operations need no authentication. Authenticated operation references list every required OAuth scope.
-
-Configure either \`token\` or an asynchronous \`tokenProvider\`; do not configure both. Token providers are resolved only for authenticated requests. Credentials and authorization headers are excluded from the serializable registry, response metadata, and structured errors.`,
-    validation: `Successful JSON responses are validated by generated Zod 4 schemas by default. Natural TypeScript exports are available from \`@evespace/esi-client/types\`; matching natural Zod exports are available from \`@evespace/esi-client/zod\`. Known object fields are checked while unknown response fields are preserved for forward compatibility. Date and date-time values remain JSON strings.
-
-Typed request validation is opt-in with \`validateRequests: true\`. Generic \`callOperation\` arguments are always validated before network activity. Response validation can be disabled explicitly with \`validateResponses: false\`.`,
     'metadata-pagination': `Normal domain methods return validated bare data. Call \`client.<domain>.withMetadata().<method>(...)\` for an \`EsiResponse<T>\` envelope containing status, bounded original response headers, request ID, pagination, cache validators and an unambiguous \`maxAgeSeconds\`, legacy ESI error-limit metadata, route-group rate-limit metadata, and a delta-seconds \`retryAfterSeconds\`. Generic execution always returns this envelope.
 
 Generic execution performs exactly one request. For offset pagination, pass the documented page parameter and inspect \`meta.pagination.pages\`. For cursor pagination, pass the documented cursor and inspect the cursor metadata or response headers. The SDK does not automatically traverse pages.`,
-    errors: `SDK failures extend \`EsiError\` and expose a stable \`code\`, \`operationId\`, message, and an allowlisted \`toJSON()\` result. \`EsiTransportError\` distinguishes timeout and network failures during the request or response phase. \`EsiNotModifiedError\` represents status 304 with immutable response metadata and no response body. Validation errors add \`direction\` and structured \`issues\`. HTTP and parse failures add status and response metadata; HTTP failures may include a bounded parsed ESI body.
-
-Use \`classifyEsiFailure(error)\` for policy-neutral failure facts: \`transient\`, \`throttled\`, \`not-modified\`, \`invalid-response\`, \`permanent\`, or \`unknown\`. Classification never retries or implies idempotency. Error serialization excludes credentials, authorization headers, token-provider values, response bodies from transport and not-modified errors, and original causes.`,
-    'operation-discovery': `Import \`searchOperations\` and \`describeOperation\` from \`@evespace/esi-client/operations\`. Search results include a concise \`protocol\` projection, while descriptions expose the complete serializable operation contract.
-
-Protocol facts are generated from the corrected pinned OpenAPI document: declared conditional validators, cache extensions, route-group limits or an explicit \`legacy-only\` marker, bounded request arrays, and an unambiguous maximum batch size when one exists. Missing declarations remain explicit; inspecting them performs no network or policy side effect. Executable registry descriptors expose the same facts through \`transport.protocol\`.`,
-    'custom-fetch': `Pass a custom \`fetch\` implementation to compose application headers, coordination, or telemetry with SDK execution. The SDK calls it once per operation and supplies the final URL, method, headers, body, and a composed \`AbortSignal\` that includes the SDK deadline and any caller cancellation.
-
-Custom wrappers must forward and observe \`init.signal\`, retain resources such as distributed permits until the response body closes, errors, or is cancelled, and return the original response stream semantics. A wrapper that ignores cancellation may continue background work after the public SDK promise has been bounded. Do not add a competing independent timeout around the same attempt.`,
-    'standalone-domains': `Import a \`create<Domain>Client\` factory from \`@evespace/esi-client/domains/<domain>\` when an aggregate \`EsiClient\` is unnecessary. Standalone factories accept the same client options, including \`requestTimeoutMs\`, authentication, validation, and custom fetch configuration.
-
-Standalone methods return bare data by default and expose the same metadata-enabled view, structured errors, generated protocol descriptors, one-attempt behavior, and transport deadline as the aggregate client. A standalone import narrows runtime and declaration reach but does not reduce installed package size.`,
     'mutation-safety': `Named typed mutation methods are explicit caller intent and execute after normal validation and authentication checks.
 
 Generic mutation execution is denied unless the client is constructed with \`allowGenericMutations: true\` and that call passes \`{ confirmMutation: true }\`. Missing either gate fails before network activity. Reviewed read-like POST operations are classified as reads in each operation reference and do not require generic mutation confirmation.`,
+    'operation-discovery': `Import \`searchOperations\` and \`describeOperation\` from \`@evespace/esi-client/operations\`. Search results include a concise \`protocol\` projection, while descriptions expose the complete serializable operation contract.
+
+Protocol facts are generated from the corrected pinned OpenAPI document: declared conditional validators, cache extensions, route-group limits or an explicit \`legacy-only\` marker, bounded request arrays, and an unambiguous maximum batch size when one exists. Missing declarations remain explicit; inspecting them performs no network or policy side effect. Executable registry descriptors expose the same facts through \`transport.protocol\`.`,
+    'standalone-domains': `Import a \`create<Domain>Client\` factory from \`@evespace/esi-client/domains/<domain>\` when an aggregate \`EsiClient\` is unnecessary. Standalone factories accept the same client options, including \`requestTimeoutMs\`, authentication, validation, and custom fetch configuration.
+
+Standalone methods return bare data by default and expose the same metadata-enabled view, structured errors, generated protocol descriptors, one-attempt behavior, and transport deadline as the aggregate client. A standalone import narrows runtime and declaration reach but does not reduce installed package size.`,
+    validation: `Successful JSON responses are validated by generated Zod 4 schemas by default. Natural TypeScript exports are available from \`@evespace/esi-client/types\`; matching natural Zod exports are available from \`@evespace/esi-client/zod\`. Known object fields are checked while unknown response fields are preserved for forward compatibility. Date and date-time values remain JSON strings.
+
+Typed request validation is opt-in with \`validateRequests: true\`. Generic \`callOperation\` arguments are always validated before network activity. Response validation can be disabled explicitly with \`validateResponses: false\`.`,
   };
   const body = bodies[slug];
-  if (body === undefined) throw new Error(`Missing documentation concept body: ${slug}`);
+  if (body === undefined) {
+    throw new Error(`Missing documentation concept body: ${slug}`);
+  }
   return markdownDocument(
     provenance,
     `# ${title}
@@ -423,7 +425,9 @@ function renderParameters(operation: SerializableOperationManifestEntry): string
       `| body | body | ${operation.requestBody.required ? 'yes' : 'no'} | ${tableText(contentSchema)} | ${tableText(operation.requestBody.description ?? '')} |`,
     );
   }
-  if (rows.length === 0) return 'This operation has no caller-supplied parameters.';
+  if (rows.length === 0) {
+    return 'This operation has no caller-supplied parameters.';
+  }
   return `| Name | Placement | Required | Schema | Description |\n| --- | --- | --- | --- | --- |\n${rows.join('\n')}`;
 }
 
@@ -438,7 +442,9 @@ function renderResponses(operation: SerializableOperationManifestEntry): string 
 }
 
 function renderRequestSchemas(operation: SerializableOperationManifestEntry): string {
-  if (operation.requestSchemas.length === 0) return 'none.';
+  if (operation.requestSchemas.length === 0) {
+    return 'none.';
+  }
   return `${operation.requestSchemas
     .map(
       ({ group, schema }) => `\`${group}\` uses \`${schema.module}\` export \`${schema.export}\``,
@@ -499,7 +505,9 @@ function renderRequestArrayPath(
   location: SerializableOperationManifestEntry['requestArrayLimits'][number]['location'],
   path: readonly string[],
 ): string {
-  if (path.length === 0) return `${location}:$`;
+  if (path.length === 0) {
+    return `${location}:$`;
+  }
   return `${location}:$.${path.join('.')}`;
 }
 
@@ -572,7 +580,9 @@ function domainMethodArguments(operation: SerializableOperationManifestEntry): s
   const signatureArguments: string[] = [];
   for (const match of operation.http.path.matchAll(/\{([^{}]+)\}/gu)) {
     const parameter = pathParameters.get(match[1]);
-    if (parameter !== undefined) signatureArguments.push(facadeParameterName(parameter.name));
+    if (parameter !== undefined) {
+      signatureArguments.push(facadeParameterName(parameter.name));
+    }
   }
   const nonPathParameters = operation.parameters.filter(({ placement }) => placement !== 'path');
   const hasOptions =
@@ -589,20 +599,38 @@ function domainMethodArguments(operation: SerializableOperationManifestEntry): s
 }
 
 function schemaSummary(schema: unknown): string {
-  if (schema === true) return 'any JSON value';
-  if (schema === false) return 'no value';
-  if (schema === null || typeof schema !== 'object' || Array.isArray(schema)) return 'JSON value';
+  if (schema === true) {
+    return 'any JSON value';
+  }
+  if (schema === false) {
+    return 'no value';
+  }
+  if (schema === null || typeof schema !== 'object' || Array.isArray(schema)) {
+    return 'JSON value';
+  }
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- typeof narrows to object, not an indexable record
   const record = schema as Record<string, unknown>;
-  if (typeof record.$ref === 'string') return `reference ${record.$ref}`;
-  if (Array.isArray(record.type)) return (record.type as readonly string[]).join(' | ');
-  if (record.type === 'array') return `array<${schemaSummary(record.items)}>`;
+  if (typeof record.$ref === 'string') {
+    return `reference ${record.$ref}`;
+  }
+  if (Array.isArray(record.type)) {
+    return (record.type as readonly string[]).join(' | ');
+  }
+  if (record.type === 'array') {
+    return `array<${schemaSummary(record.items)}>`;
+  }
   if (typeof record.type === 'string') {
     return typeof record.format === 'string' ? `${record.type} (${record.format})` : record.type;
   }
-  if (Array.isArray(record.oneOf)) return 'oneOf';
-  if (Array.isArray(record.anyOf)) return 'anyOf';
-  if (Array.isArray(record.allOf)) return 'allOf';
+  if (Array.isArray(record.oneOf)) {
+    return 'oneOf';
+  }
+  if (Array.isArray(record.anyOf)) {
+    return 'anyOf';
+  }
+  if (Array.isArray(record.allOf)) {
+    return 'allOf';
+  }
   return 'JSON value';
 }
 
@@ -641,6 +669,26 @@ function validateManifest(
   manifest: SerializableOperationManifest,
   provenance: ArtifactProvenance,
 ): void {
+  validateManifestProvenance(manifest, provenance);
+  const operationPaths = new Map<string, string>();
+  for (const operation of manifest.operations) {
+    validateManifestEntry(operation);
+    const fileName = operationFileName(operation.operationId);
+    const pathKey = fileName.toLowerCase();
+    const priorId = operationPaths.get(pathKey);
+    if (priorId !== undefined) {
+      throw new Error(
+        `Documentation operation path collision: ${priorId} and ${operation.operationId}`,
+      );
+    }
+    operationPaths.set(pathKey, operation.operationId);
+  }
+}
+
+function validateManifestProvenance(
+  manifest: SerializableOperationManifest,
+  provenance: ArtifactProvenance,
+): void {
   // The leading underscore is part of the generated manifest's provenance contract.
   // oxlint-disable-next-line eslint/no-underscore-dangle
   const generatedProvenance = manifest?._generated;
@@ -654,26 +702,19 @@ function validateManifest(
   ) {
     throw new Error('Invalid or mismatched serializable operation manifest');
   }
-  const operationPaths = new Map<string, string>();
-  for (const operation of manifest.operations) {
-    if (
-      operation === null ||
-      typeof operation !== 'object' ||
-      typeof operation.operationId !== 'string' ||
-      typeof operation.facade?.domain !== 'string' ||
-      typeof operation.facade?.method !== 'string'
-    ) {
-      throw new Error('Invalid serializable operation manifest entry');
-    }
-    const fileName = operationFileName(operation.operationId);
-    const pathKey = fileName.toLowerCase();
-    const priorId = operationPaths.get(pathKey);
-    if (priorId !== undefined) {
-      throw new Error(
-        `Documentation operation path collision: ${priorId} and ${operation.operationId}`,
-      );
-    }
-    operationPaths.set(pathKey, operation.operationId);
+}
+
+function validateManifestEntry(
+  operation: SerializableOperationManifest['operations'][number],
+): void {
+  if (
+    operation === null ||
+    typeof operation !== 'object' ||
+    typeof operation.operationId !== 'string' ||
+    typeof operation.facade?.domain !== 'string' ||
+    typeof operation.facade?.method !== 'string'
+  ) {
+    throw new Error('Invalid serializable operation manifest entry');
   }
 }
 

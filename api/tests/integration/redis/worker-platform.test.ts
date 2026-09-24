@@ -34,7 +34,9 @@ afterEach(async () => {
 })
 
 afterAll(async () => {
-  if (containerRunning) await container.stop()
+  if (containerRunning) {
+    await container.stop()
+  }
 })
 
 describe('durable worker platform', () => {
@@ -46,8 +48,9 @@ describe('durable worker platform', () => {
     platforms.push(platform)
     const handle = await openQueue()
     try {
-      for (const schedulerId of ['diagnostic-planner', 'outbox-relay', 'domain-event-retention'])
+      for (const schedulerId of ['diagnostic-planner', 'outbox-relay', 'domain-event-retention']) {
         expect(await handle.queue.getJobScheduler(schedulerId)).toBeDefined()
+      }
       const { probeQueueStatus } = await import('../../../src/queue/status.js')
       await expect(probeQueueStatus()).resolves.toMatchObject({
         latestSchedulerOutcome: 'registered',
@@ -75,7 +78,7 @@ describe('durable worker platform', () => {
           payload: { operationId: 'queue-diagnostic' },
           source: 'on-demand',
         }),
-      ).resolves.toMatchObject({ status: 'rejected', reason: 'on-demand-rejected' })
+      ).resolves.toMatchObject({ reason: 'on-demand-rejected', status: 'rejected' })
 
       await handle.queue.drain(true)
       const plannerProducer = createBullMqQueueProducer({ handle, highWaterMark: 2 })
@@ -92,7 +95,7 @@ describe('durable worker platform', () => {
           payload: { operationId: 'queue-diagnostic' },
           source: 'planner',
         }),
-      ).resolves.toMatchObject({ status: 'rejected', reason: 'coalesced' })
+      ).resolves.toMatchObject({ reason: 'coalesced', status: 'rejected' })
     } finally {
       await handle.queue.drain(true)
       await handle.close()
@@ -140,8 +143,8 @@ describe('durable worker platform', () => {
     const handle = await openQueue()
     try {
       await handle.queue.add('affiliation', {
-        operationId: 'affiliation-1',
         characterIds: [1],
+        operationId: 'affiliation-1',
       })
       await waitFor(async () =>
         (await handle.queue.getJobs(['delayed'])).some((job) => job.name === 'affiliation'),
@@ -311,8 +314,8 @@ describe('durable worker platform', () => {
     const recovered = await openQueue()
     try {
       await expect(recovered.queue.getJobCounts('waiting', 'delayed')).resolves.toMatchObject({
-        waiting: 1,
         delayed: 1,
+        waiting: 1,
       })
     } finally {
       await recovered.queue.drain(true)
@@ -340,7 +343,7 @@ describe('durable worker platform', () => {
     await enqueueDiagnostic('on-demand')
     await jobActive
 
-    const closing = platform.close(5_000)
+    const closing = platform.close(5000)
     let closed = false
     void closing.then(() => {
       closed = true
@@ -349,7 +352,7 @@ describe('durable worker platform', () => {
     expect(closed).toBe(false)
 
     releaseJob()
-    await expect(closing).resolves.toEqual({ drained: true, timedOut: false })
+    await expect(closing).resolves.toStrictEqual({ drained: true, timedOut: false })
   })
 
   test('aborts active response consumption when graceful drain reaches its deadline', async () => {
@@ -401,7 +404,7 @@ describe('durable worker platform', () => {
     await responseAborted
     expect(closed).toBe(false)
     await responseUnwound
-    await expect(closing).resolves.toEqual({ drained: false, timedOut: true })
+    await expect(closing).resolves.toStrictEqual({ drained: false, timedOut: true })
   })
 
   test('completes obsolete scalar and batch lifecycle work before private resource effects', async () => {
@@ -414,25 +417,25 @@ describe('durable worker platform', () => {
     const batchRequest = vi.fn()
     const classify = vi.fn()
     const resource = {
-      moduleId: 'worker-test',
-      resourceId: 'wallet-balance',
-      operationId: 'wallet-balance',
       batch: { mode: 'change-hint', operationId: 'universe-resolve-names' },
-      subjectKind: 'character',
-      materializationIntervalSeconds: 900,
       eligibility: { kind: 'current-owned-character' },
       implementation: {
-        operation: 'wallet-balance',
-        request,
+        batch: {
+          classify,
+          mode: 'change-hint',
+          operation: 'universe-resolve-names',
+          request: batchRequest,
+        },
         map,
         materialize,
-        batch: {
-          operation: 'universe-resolve-names',
-          mode: 'change-hint',
-          request: batchRequest,
-          classify,
-        },
+        operation: 'wallet-balance',
+        request,
       },
+      materializationIntervalSeconds: 900,
+      moduleId: 'worker-test',
+      operationId: 'wallet-balance',
+      resourceId: 'wallet-balance',
+      subjectKind: 'character',
     } as const
     vi.doMock('../../../src/auth/tokens.js', async (importOriginal) => ({
       ...(await importOriginal<typeof import('../../../src/auth/tokens.js')>()),
@@ -459,9 +462,9 @@ describe('durable worker platform', () => {
     const identity = {
       moduleId: resource.moduleId,
       resourceId: resource.resourceId,
+      subjectId: '90000001',
       subjectKind: resource.subjectKind,
       subjectLifecycleId: '11111111-1111-4111-8111-111111111111',
-      subjectId: '90000001',
     }
     try {
       await handle.queue.add('resource-refresh', identity)
@@ -471,8 +474,8 @@ describe('durable worker platform', () => {
         subjectKind: resource.subjectKind,
         subjects: [
           {
-            subjectLifecycleId: identity.subjectLifecycleId,
             subjectId: identity.subjectId,
+            subjectLifecycleId: identity.subjectLifecycleId,
           },
         ],
       })
@@ -494,7 +497,7 @@ describe('durable worker platform', () => {
         (await handle.queue.getJobs(['failed', 'waiting', 'delayed', 'prioritized'])).filter(
           (job) => job.name === 'resource-refresh' || job.name === 'resource-batch',
         ),
-      ).toEqual([])
+      ).toStrictEqual([])
     } finally {
       await handle.close()
     }
@@ -515,8 +518,8 @@ describe('durable worker platform', () => {
       .spyOn(Worker.prototype, 'pause')
       .mockReturnValue(new Promise<void>(() => {}))
     const startedAt = Date.now()
-    await expect(platform.close(1_000)).resolves.toEqual({ drained: false, timedOut: true })
-    expect(Date.now() - startedAt).toBeLessThan(3_000)
+    await expect(platform.close(1000)).resolves.toStrictEqual({ drained: false, timedOut: true })
+    expect(Date.now() - startedAt).toBeLessThan(3000)
     expect(workerClose).toHaveBeenCalledWith(true)
     platform.forceClose()
     expect(workerClose).toHaveBeenCalledOnce()
@@ -583,7 +586,9 @@ async function countJobs(queue: Queue, state: 'waiting' | 'completed' | 'failed'
 async function waitFor(condition: () => Promise<boolean>, timeoutMs = 10_000) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
-    if (await condition()) return
+    if (await condition()) {
+      return
+    }
     await new Promise((resolve) => setTimeout(resolve, 100))
   }
   throw new Error('Timed out waiting for queue state')

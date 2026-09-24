@@ -1,31 +1,61 @@
 import type { PlatformModuleManifest } from '@eve-space/platform-module-contract/manifest'
 
 const manifest = {
+  defaultEnabled: true,
+  icon: 'corporation',
   id: 'conformance',
+  nuxt: {
+    navigation: [
+      {
+        id: 'conformance-activity-navigation',
+        label: 'Conformance activity',
+        description: 'Production-shaped module conformance activity',
+        to: '/conformance/:characterId',
+        audience: 'owned-character',
+        placement: 'dashboard',
+        order: 90,
+        pageName: 'eve-conformance-activity',
+      },
+    ],
+    package: '@eve-space/conformance-nuxt',
+    pages: [
+      {
+        id: 'conformance-activity-page',
+        name: 'eve-conformance-activity',
+        path: '/conformance/:characterId',
+        file: 'src/runtime/app/pages/ConformanceActivityPage.vue',
+        extensionPoint: 'root',
+        audience: 'owned-character',
+      },
+    ],
+  },
   release: {
+    hostContractRange: '^1.0.0',
     publisherPackage: '@eve-space/conformance-manifest',
     version: '0.1.0',
-    hostContractRange: '^1.0.0',
   },
-  icon: 'corporation',
-  defaultEnabled: true,
   server: {
-    package: '@eve-space/conformance-server',
-    routes: [
+    activityProviders: [
       {
-        id: 'conformance-character-status',
-        namespace: '/conformance/characters/:characterId',
-        exportName: 'conformanceRoutes',
-        authorization: 'owned-character',
+        id: 'conformance-activity',
+        exportName: 'conformanceActivityProvider',
         audience: 'member',
         requiredPermission: 'conformance.view',
-        persistenceOperations: [],
+        persistenceOperations: [{ operationId: 'read-conformance-snapshot' }],
+        freshness: { staleAfterSeconds: 300 },
+      },
+    ],
+    esiOperations: [
+      {
+        id: 'conformance-status-operation',
+        exportName: 'conformanceStatusOperation',
       },
     ],
     migrations: [
       { name: 'conformance-001-initial.sql' },
       { name: 'conformance-002-persistence-operations.sql' },
     ],
+    package: '@eve-space/conformance-server',
     persistenceOperations: [
       {
         id: 'read-conformance-snapshot',
@@ -73,45 +103,15 @@ const manifest = {
         exportName: 'conformanceCollectionResource',
       },
     ],
-    esiOperations: [
+    routes: [
       {
-        id: 'conformance-status-operation',
-        exportName: 'conformanceStatusOperation',
-      },
-    ],
-    activityProviders: [
-      {
-        id: 'conformance-activity',
-        exportName: 'conformanceActivityProvider',
+        id: 'conformance-character-status',
+        namespace: '/conformance/characters/:characterId',
+        exportName: 'conformanceRoutes',
+        authorization: 'owned-character',
         audience: 'member',
         requiredPermission: 'conformance.view',
-        persistenceOperations: [{ operationId: 'read-conformance-snapshot' }],
-        freshness: { staleAfterSeconds: 300 },
-      },
-    ],
-  },
-  nuxt: {
-    package: '@eve-space/conformance-nuxt',
-    pages: [
-      {
-        id: 'conformance-activity-page',
-        name: 'eve-conformance-activity',
-        path: '/conformance/:characterId',
-        file: 'src/runtime/app/pages/ConformanceActivityPage.vue',
-        extensionPoint: 'root',
-        audience: 'owned-character',
-      },
-    ],
-    navigation: [
-      {
-        id: 'conformance-activity-navigation',
-        label: 'Conformance activity',
-        description: 'Production-shaped module conformance activity',
-        to: '/conformance/:characterId',
-        audience: 'owned-character',
-        placement: 'dashboard',
-        order: 90,
-        pageName: 'eve-conformance-activity',
+        persistenceOperations: [],
       },
     ],
   },

@@ -14,15 +14,21 @@ export async function getUniverseTopology(): Promise<UniverseTopologySnapshot> {
   while (true) {
     const current = universeTopologyState.read()
     if (performance.now() < current.nextCheckAt) {
-      if (current.snapshot) return current.snapshot
+      if (current.snapshot) {
+        return current.snapshot
+      }
       throw current.failure ?? new UniverseTopologyUnavailableError()
     }
-    if (current.inFlight) return current.inFlight
+    if (current.inFlight) {
+      return current.inFlight
+    }
 
     const inFlight = universeTopologyState.begin(current.generation, () =>
       refreshUniverseTopology(universeTopologyState, current.snapshot, current.generation),
     )
-    if (inFlight) return inFlight
+    if (inFlight) {
+      return inFlight
+    }
   }
 }
 
@@ -38,7 +44,9 @@ async function refreshUniverseTopology(
   const nextCheckAt = () => performance.now() + universeTopologyRevisionCheckIntervalMilliseconds
   if (current) {
     const reusable = await reuseCurrentTopology(state, current, generation, nextCheckAt)
-    if (reusable) return reusable
+    if (reusable) {
+      return reusable
+    }
   }
 
   try {
@@ -46,7 +54,9 @@ async function refreshUniverseTopology(
     assertTopologyStateTransition(state.publish(snapshot, generation, nextCheckAt()))
     return snapshot
   } catch (error) {
-    if (error instanceof UniverseTopologyLoadSupersededError) throw error
+    if (error instanceof UniverseTopologyLoadSupersededError) {
+      throw error
+    }
     assertTopologyStateTransition(state.fail(generation, error, nextCheckAt()))
     throw error
   }
@@ -65,13 +75,17 @@ async function reuseCurrentTopology(
     assertTopologyStateTransition(state.retain(generation, error, nextCheckAt()))
     return current
   }
-  if (!sdeProjectionRevisionsEqual(current.revision, activeRevision)) return undefined
+  if (!sdeProjectionRevisionsEqual(current.revision, activeRevision)) {
+    return undefined
+  }
   assertTopologyStateTransition(state.publish(current, generation, nextCheckAt()))
   return current
 }
 
 function assertTopologyStateTransition(accepted: boolean) {
-  if (!accepted) throw new UniverseTopologyLoadSupersededError()
+  if (!accepted) {
+    throw new UniverseTopologyLoadSupersededError()
+  }
 }
 
 class UniverseTopologyLoadSupersededError extends Error {

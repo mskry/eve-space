@@ -11,9 +11,9 @@ import {
 
 describe('organization presentation', () => {
   it('presents each compliance state and evidence freshness', () => {
-    expect(organizationComplianceLabels).toEqual({
-      pending: 'Registration pending',
+    expect(organizationComplianceLabels).toStrictEqual({
       compliant: 'Compliant',
+      pending: 'Registration pending',
       review_required: 'Review required',
       suspended: 'Access suspended',
     })

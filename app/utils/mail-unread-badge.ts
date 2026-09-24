@@ -12,7 +12,9 @@ export function resolveMailUnreadCount(
   characterId: number | undefined,
   labels: MailUnreadSource | undefined | null,
 ) {
-  if (characterId === undefined || labels?.characterId !== characterId) return undefined
+  if (characterId === undefined || labels?.characterId !== characterId) {
+    return
+  }
   return labels.totalUnreadCount ?? undefined
 }
 
@@ -20,7 +22,9 @@ export function resolveMailUnreadBadge(
   characterId: number | undefined,
   count: number | undefined,
 ): MailUnreadBadge | undefined {
-  if (characterId === undefined || count === undefined || count <= 0) return undefined
+  if (characterId === undefined || count === undefined || count <= 0) {
+    return undefined
+  }
   return { count, label: `${count} unread ${count === 1 ? 'mail' : 'mails'}` }
 }
 

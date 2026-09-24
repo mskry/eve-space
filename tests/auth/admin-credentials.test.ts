@@ -16,6 +16,6 @@ describe('administrator credentials', () => {
   })
 
   it('rejects a long near-match with repeated domain separators', () => {
-    expect(isOwnerEmail(`owner@${'segment.'.repeat(5_000)}@`)).toBe(false)
+    expect(isOwnerEmail(`owner@${'segment.'.repeat(5000)}@`)).toBe(false)
   })
 })

@@ -26,32 +26,32 @@ import type {
   EvidenceMaterializationPersistence,
 } from './persistence.js'
 
-const financePageSize = 2_500
+const financePageSize = 2500
 const projectionBatchSize = 500
-const maximumJournalPages = 1_000
+const maximumJournalPages = 1000
 const journalEntrySchema = z.object({
-  id: z.number().int().positive(),
-  date: z.iso.datetime({ offset: true }),
   amount: z.number().optional(),
   balance: z.number().optional(),
-  ref_type: z.string().min(1).max(100),
-  description: z.string().max(100_000),
-  reason: z.string().max(100_000).optional(),
-  tax: z.number().optional(),
   context_id: z.number().int().positive().optional(),
   context_id_type: z.string().max(100).optional(),
+  date: z.iso.datetime({ offset: true }),
+  description: z.string().max(100_000),
+  id: z.number().int().positive(),
+  reason: z.string().max(100_000).optional(),
+  ref_type: z.string().min(1).max(100),
+  tax: z.number().optional(),
 })
 const journalPageSchema = z.array(journalEntrySchema).max(financePageSize)
 const transactionSchema = z.object({
-  transaction_id: z.number().int().positive(),
-  journal_ref_id: z.number().int().positive(),
   date: z.iso.datetime({ offset: true }),
-  type_id: z.number().int().positive(),
-  quantity: z.number().int().positive(),
-  unit_price: z.number().nonnegative(),
   is_buy: z.boolean(),
   is_personal: z.boolean(),
+  journal_ref_id: z.number().int().positive(),
   location_id: z.number().int().positive(),
+  quantity: z.number().int().positive(),
+  transaction_id: z.number().int().positive(),
+  type_id: z.number().int().positive(),
+  unit_price: z.number().nonnegative(),
 })
 const transactionPageSchema = z.array(transactionSchema).max(financePageSize)
 const journalCheckpointSchema = z.object({
@@ -90,10 +90,8 @@ export const walletBalanceResource: PlatformSingleRequestResourceImplementation<
   CurrentSnapshotPersistence,
   EvidenceMaintenancePersistence
 > = {
-  mode: 'single-request',
-  operation: 'wallet-balance',
-  request(subject) {
-    return { path: { character_id: subject.characterId } }
+  maintain(context) {
+    return maintainEvidence('wallet-balance', context, false)
   },
   map({ data }) {
     return { kind: 'wallet-balance', balance: z.number().parse(data) }
@@ -101,8 +99,10 @@ export const walletBalanceResource: PlatformSingleRequestResourceImplementation<
   async materialize(context) {
     return materializeWalletBalance(context)
   },
-  maintain(context) {
-    return maintainEvidence('wallet-balance', context, false)
+  mode: 'single-request',
+  operation: 'wallet-balance',
+  request(subject) {
+    return { path: { character_id: subject.characterId } }
   },
 }
 
@@ -118,8 +118,6 @@ export const walletJournalResource: PlatformBoundedCollectionResourceImplementat
   EvidenceMaterializationPersistence,
   EvidenceMaintenancePersistence
 > = {
-  mode: 'bounded-collection',
-  operation: 'wallet-journal',
   async collect(context) {
     const collection = await startEvidenceCollection(
       { sectionId: 'wallet', resourceId: 'wallet-journal' },
@@ -172,12 +170,14 @@ export const walletJournalResource: PlatformBoundedCollectionResourceImplementat
       },
     }
   },
-  materialize(context) {
-    return materializeEvidenceObservation(context)
-  },
   maintain(context) {
     return maintainEvidence('wallet-journal', context, false)
   },
+  materialize(context) {
+    return materializeEvidenceObservation(context)
+  },
+  mode: 'bounded-collection',
+  operation: 'wallet-journal',
 }
 
 export const walletTransactionsResource: PlatformBoundedCollectionResourceImplementation<
@@ -192,8 +192,6 @@ export const walletTransactionsResource: PlatformBoundedCollectionResourceImplem
   EvidenceMaterializationPersistence,
   EvidenceMaintenancePersistence
 > = {
-  mode: 'bounded-collection',
-  operation: 'wallet-transactions',
   async collect(context) {
     const collection = await startEvidenceCollection(
       { sectionId: 'wallet', resourceId: 'wallet-transactions' },
@@ -208,8 +206,9 @@ export const walletTransactionsResource: PlatformBoundedCollectionResourceImplem
     const projected = await projectTransactionPage(page, context)
     const complete = page.length < financePageSize
     const nextFromId = complete ? null : Math.min(...page.map((entry) => entry.transaction_id))
-    if (!complete && nextFromId === checkpoint.fromId)
+    if (!complete && nextFromId === checkpoint.fromId) {
       throw new Error('Wallet transaction continuation did not advance')
+    }
     return {
       complete,
       data: {
@@ -230,12 +229,14 @@ export const walletTransactionsResource: PlatformBoundedCollectionResourceImplem
       },
     }
   },
-  materialize(context) {
-    return materializeEvidenceObservation(context)
-  },
   maintain(context) {
     return maintainEvidence('wallet-transactions', context, false)
   },
+  materialize(context) {
+    return materializeEvidenceObservation(context)
+  },
+  mode: 'bounded-collection',
+  operation: 'wallet-transactions',
 }
 
 async function projectTransactionPage(
@@ -277,26 +278,27 @@ async function materializeWalletBalance(
     context.organizationVersion !== authority?.organizationVersion ||
     context.authorizationGeneration === null ||
     authority.sectionId !== 'wallet'
-  )
+  ) {
     return { outcome: 'obsolete' }
+  }
   const result = await context.capabilities.persistence.materializeCurrentSnapshot({
-    resourceId: 'wallet-balance',
-    organizationVersion: authority.organizationVersion,
-    targetUserId: authority.targetUserId,
-    managedMemberLifecycleId: authority.managedMemberLifecycleId,
+    authorizationGeneration: context.authorizationGeneration,
     characterId: context.subject.characterId,
     characterLifecycleId: context.subject.lifecycleId,
-    authorizationGeneration: context.authorizationGeneration,
     disclosureVersion: authority.disclosureVersion,
-    sectionActivationVersion: authority.sectionActivationVersion,
+    dtoRevision: 1,
+    managedMemberLifecycleId: authority.managedMemberLifecycleId,
     observationId: createObservationId(
       'wallet-balance',
       context.subject.lifecycleId,
       context.validatedAt,
     ),
-    dtoRevision: 1,
-    validatedAt: context.validatedAt,
+    organizationVersion: authority.organizationVersion,
+    resourceId: 'wallet-balance',
+    sectionActivationVersion: authority.sectionActivationVersion,
     snapshot: context.data,
+    targetUserId: authority.targetUserId,
+    validatedAt: context.validatedAt,
   })
   return result.outcome === 'obsolete' ? { outcome: 'obsolete' } : undefined
 }

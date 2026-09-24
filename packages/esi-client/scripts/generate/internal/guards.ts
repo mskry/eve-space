@@ -15,7 +15,9 @@ export function assertRecord(
   value: unknown,
   context: string,
 ): asserts value is Record<string, unknown> {
-  if (!isObject(value)) throw new Error(`${context} must be an object`);
+  if (!isObject(value)) {
+    throw new Error(`${context} must be an object`);
+  }
 }
 
 export function rejectUnknownKeys(
@@ -30,7 +32,9 @@ export function rejectUnknownKeys(
 }
 
 export function describeValue(value: unknown): string {
-  if (typeof value === 'string') return value;
+  if (typeof value === 'string') {
+    return value;
+  }
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
     return String(value);
   }

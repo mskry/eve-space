@@ -4,8 +4,8 @@ import { skillPointsPerMinute, skillPointsRequiredForLevel } from '../../app/uti
 describe('skill training formulas', () => {
   it.each([
     [1, 250],
-    [2, 1_414],
-    [3, 8_000],
+    [2, 1414],
+    [3, 8000],
     [4, 45_254],
     [5, 256_000],
   ] as const)('calculates rank 1 level %s as %s SP', (level, expected) => {
@@ -13,7 +13,7 @@ describe('skill training formulas', () => {
   })
 
   it.each([
-    [1, 4_000],
+    [1, 4000],
     [2, 22_627],
     [3, 128_000],
     [4, 724_077],

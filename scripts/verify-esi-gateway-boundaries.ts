@@ -30,5 +30,6 @@ const violations = [
   ...esiGatewayExternalInternalViolations(scriptSources),
 ].toSorted((left, right) => left.localeCompare(right))
 
-if (violations.length > 0)
+if (violations.length > 0) {
   throw new Error(`ESI gateway boundary verification failed:\n${violations.join('\n')}`)
+}

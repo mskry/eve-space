@@ -27,11 +27,11 @@ export interface SessionLifetime {
 export async function findSession(sessionToken: string): Promise<SessionAccount | null> {
   const [record] = await db
     .select({
-      userId: users.id,
-      characterId: characters.characterId,
-      name: characters.name,
-      corporationId: characters.corporationId,
       allianceId: characters.allianceId,
+      characterId: characters.characterId,
+      corporationId: characters.corporationId,
+      name: characters.name,
+      userId: users.id,
     })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
@@ -40,15 +40,17 @@ export async function findSession(sessionToken: string): Promise<SessionAccount 
       and(eq(sessions.sessionHash, hashToken(sessionToken)), gt(sessions.expiresAt, new Date())),
     )
 
-  if (!record) return null
+  if (!record) {
+    return null
+  }
   return {
-    userId: record.userId,
     mainCharacter: {
-      characterId: record.characterId,
-      name: record.name,
-      corporationId: record.corporationId,
       allianceId: record.allianceId,
+      characterId: record.characterId,
+      corporationId: record.corporationId,
+      name: record.name,
     },
+    userId: record.userId,
   }
 }
 
@@ -57,8 +59,8 @@ export async function renewSession(
   lifetime: SessionLifetime,
   now = new Date(),
 ): Promise<Date | null> {
-  const idleExpiry = new Date(now.getTime() + lifetime.idleSeconds * 1_000)
-  const renewalThreshold = new Date(idleExpiry.getTime() - lifetime.renewalIntervalSeconds * 1_000)
+  const idleExpiry = new Date(now.getTime() + lifetime.idleSeconds * 1000)
+  const renewalThreshold = new Date(idleExpiry.getTime() - lifetime.renewalIntervalSeconds * 1000)
   const renewedExpiry = sql`least(${idleExpiry.toISOString()}::timestamptz, ${sessions.createdAt} + make_interval(secs => ${lifetime.absoluteSeconds}))`
   const [record] = await db
     .update(sessions)
@@ -84,9 +86,9 @@ export async function saveSession(
   input: { sessionToken: string; userId: string; expiresAt: Date },
 ) {
   await transaction.insert(sessions).values({
+    expiresAt: input.expiresAt,
     sessionHash: hashToken(input.sessionToken),
     userId: input.userId,
-    expiresAt: input.expiresAt,
   })
 }
 

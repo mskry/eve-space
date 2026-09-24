@@ -106,19 +106,25 @@ interface PackageResolutionContext {
 function readInstalledModuleSelections(root: string): readonly InstalledModuleSelection[] {
   const path = join(root, 'features/installed-modules.json')
   const installed = readJson(path)
-  if (!isRecord(installed) || Object.keys(installed).some((key) => key !== 'modules'))
+  if (!isRecord(installed) || Object.keys(installed).some((key) => key !== 'modules')) {
     throw new Error('features/installed-modules.json must contain module package-export records')
-  if (!Array.isArray(installed.modules))
-    throw new Error('features/installed-modules.json must contain module package-export records')
+  }
+  if (!Array.isArray(installed.modules)) {
+    throw new TypeError(
+      'features/installed-modules.json must contain module package-export records',
+    )
+  }
 
   const selections = installed.modules.map((value, index) => parseSelection(value, index))
   const moduleIds = new Set<string>()
   const manifestPackages = new Set<string>()
   for (const selection of selections) {
-    if (moduleIds.has(selection.moduleId))
+    if (moduleIds.has(selection.moduleId)) {
       throw new Error(`Duplicate installed module selection ${selection.moduleId}`)
-    if (manifestPackages.has(selection.manifest.package))
+    }
+    if (manifestPackages.has(selection.manifest.package)) {
       throw new Error(`Duplicate installed manifest package ${selection.manifest.package}`)
+    }
     moduleIds.add(selection.moduleId)
     manifestPackages.add(selection.manifest.package)
   }
@@ -145,16 +151,16 @@ export function resolveInstalledModuleReleases(
       selection.manifest.export,
     )
     return {
-      selection,
-      resolved,
       declaration: readJson(resolved.package.entryPath),
+      resolved,
+      selection,
     }
   })
   const candidates: PlatformModuleCandidate[] = manifestResolutions.map(
     ({ selection, declaration }) => ({
+      declaration,
       expectedModuleId: selection.moduleId,
       expectedPublisherPackage: selection.manifest.package,
-      declaration,
     }),
   )
   const compiled = compilePlatformModules(candidates, coreModuleValidationAuthorities)
@@ -164,7 +170,9 @@ export function resolveInstalledModuleReleases(
   )
   const releases = manifests.map((manifest) => {
     const manifestResolution = resolutionsByModuleId.get(manifest.id)
-    if (!manifestResolution) throw new Error(`Missing resolved manifest package for ${manifest.id}`)
+    if (!manifestResolution) {
+      throw new Error(`Missing resolved manifest package for ${manifest.id}`)
+    }
     const server = resolvePackage(apiContext, manifest.server.package, '.')
     const nuxt = resolvePackage(rootContext, manifest.nuxt.package, '.')
     assertReleaseVersions(
@@ -178,10 +186,11 @@ export function resolveInstalledModuleReleases(
         platformModuleHostContractVersion,
         manifest.release.hostContractRange,
       )
-    )
+    ) {
       throw new Error(
         `Module ${manifest.id} requires host contract ${manifest.release.hostContractRange}; host provides ${platformModuleHostContractVersion}`,
       )
+    }
     const migrations = resolveMigrations(manifest, server, options.validateArtifacts !== false)
     const nuxtPages = resolveNuxtPages(manifest, nuxt.package, options.validateArtifacts !== false)
     if (options.validateArtifacts !== false) {
@@ -191,18 +200,18 @@ export function resolveInstalledModuleReleases(
       assertNuxtInventory(manifest, nuxt.package.entryPath)
     }
     return {
-      moduleId: manifest.id,
-      publisherPackage: manifest.release.publisherPackage,
-      version: manifest.release.version,
-      manifestExport: manifestResolution.selection.manifest.export,
       manifest,
+      manifestExport: manifestResolution.selection.manifest.export,
+      migrations,
+      moduleId: manifest.id,
+      nuxtPages,
       packages: {
         manifest: manifestResolution.resolved.package,
-        server: server.package,
         nuxt: nuxt.package,
+        server: server.package,
       },
-      migrations,
-      nuxtPages,
+      publisherPackage: manifest.release.publisherPackage,
+      version: manifest.release.version,
     } satisfies ResolvedInstalledModuleRelease
   })
   validateDeploymentDependencies(root, releases)
@@ -211,19 +220,30 @@ export function resolveInstalledModuleReleases(
 
 function parseSelection(value: unknown, index: number): InstalledModuleSelection {
   const path = `features/installed-modules.json modules[${index}]`
-  if (!isRecord(value) || hasUnknownKeys(value, ['moduleId', 'manifest']))
+  if (!isRecord(value) || hasUnknownKeys(value, ['moduleId', 'manifest'])) {
     throw new Error(`${path} must be a module package-export record`)
-  if (typeof value.moduleId !== 'string' || !isPlatformModuleId(value.moduleId))
+  }
+  if (typeof value.moduleId !== 'string' || !isPlatformModuleId(value.moduleId)) {
     throw new Error(`${path}.moduleId must be a valid platform module ID`)
-  if (!isRecord(value.manifest) || hasUnknownKeys(value.manifest, ['package', 'export']))
+  }
+  if (!isRecord(value.manifest) || hasUnknownKeys(value.manifest, ['package', 'export'])) {
     throw new Error(`${path}.manifest must contain package and export`)
-  if (typeof value.manifest.package !== 'string' || !isPlatformPackageName(value.manifest.package))
+  }
+  if (
+    typeof value.manifest.package !== 'string' ||
+    !isPlatformPackageName(value.manifest.package)
+  ) {
     throw new Error(`${path}.manifest.package must be a valid package name`)
-  if (typeof value.manifest.export !== 'string' || !isPlatformPackageExport(value.manifest.export))
+  }
+  if (
+    typeof value.manifest.export !== 'string' ||
+    !isPlatformPackageExport(value.manifest.export)
+  ) {
     throw new Error(`${path}.manifest.export must be a valid package export`)
+  }
   return {
+    manifest: { export: value.manifest.export, package: value.manifest.package },
     moduleId: value.moduleId,
-    manifest: { package: value.manifest.package, export: value.manifest.export },
   }
 }
 
@@ -233,7 +253,7 @@ function packageContext(
   importer: string,
   lockfile: Lockfile,
 ): PackageResolutionContext {
-  return { lockfile, lockRoot, hostRoot, importer }
+  return { hostRoot, importer, lockRoot, lockfile }
 }
 
 function resolvePackage(
@@ -247,29 +267,32 @@ function resolvePackage(
     root = realpathSync(packageRootLink)
   } catch (error) {
     const dependency = dependencyLock(context, packageName)
-    if (!dependency?.version.startsWith('link:'))
+    if (!dependency?.version.startsWith('link:')) {
       throw new Error(`Package ${packageName} cannot be resolved from ${context.importer}`, {
         cause: error,
       })
+    }
     root = realpathSync(resolve(context.lockRoot, context.importer, dependency.version.slice(5)))
   }
   const packageJsonPath = join(root, 'package.json')
   const packageJson = readPackageJson(packageJsonPath)
-  if (packageJson.name !== packageName)
+  if (packageJson.name !== packageName) {
     throw new Error(
       `Resolved package ${packageName} declares changed ownership ${String(packageJson.name)}`,
     )
-  if (typeof packageJson.version !== 'string' || !isPlatformSemanticVersion(packageJson.version))
+  }
+  if (typeof packageJson.version !== 'string' || !isPlatformSemanticVersion(packageJson.version)) {
     throw new Error(`Resolved package ${packageName} must declare a semantic version`)
+  }
   const entryPath = resolvePackageExport(root, packageJson.exports, exportPath, packageName)
   const lock = resolveLockIdentity(context, packageName, packageJson.version, root)
   return {
     package: {
-      name: packageName,
-      version: packageJson.version,
-      integrity: lock.integrity,
-      root,
       entryPath,
+      integrity: lock.integrity,
+      name: packageName,
+      root,
+      version: packageJson.version,
       workspace: lock.workspace,
     } satisfies ResolvedModulePackage,
     packageJson,
@@ -283,39 +306,60 @@ function resolvePackageExport(
   packageName: string,
 ) {
   const target = packageExportTarget(exportsValue, exportPath)
-  if (!target)
+  if (!target) {
     throw new Error(
       `Package ${packageName} does not export ${exportPath === '.' ? 'its root' : exportPath}`,
     )
-  if (!target.startsWith('./') || target.split('/').includes('..'))
+  }
+  if (!target.startsWith('./') || target.split('/').includes('..')) {
     throw new Error(`Package ${packageName} export ${exportPath} escapes its package root`)
+  }
   const path = resolve(packageRoot, target)
-  if (!isPathInside(packageRoot, path))
+  if (!isPathInside(packageRoot, path)) {
     throw new Error(`Package ${packageName} export ${exportPath} escapes its package root`)
+  }
   return path
 }
 
 function packageExportTarget(exportsValue: unknown, exportPath: string): string | undefined {
-  if (exportPath === '.' && (typeof exportsValue === 'string' || isConditionalExport(exportsValue)))
+  if (
+    exportPath === '.' &&
+    (typeof exportsValue === 'string' || isConditionalExport(exportsValue))
+  ) {
     return conditionalExportTarget(exportsValue)
-  if (!isRecord(exportsValue)) return undefined
+  }
+  if (!isRecord(exportsValue)) {
+    return undefined
+  }
   const exact = conditionalExportTarget(exportsValue[exportPath])
-  if (exact) return exact
+  if (exact) {
+    return exact
+  }
   for (const [key, value] of Object.entries(exportsValue)) {
     const marker = key.indexOf('*')
-    if (marker < 0 || !exportPath.startsWith(key.slice(0, marker))) continue
+    if (marker < 0 || !exportPath.startsWith(key.slice(0, marker))) {
+      continue
+    }
     const suffix = key.slice(marker + 1)
-    if (!exportPath.endsWith(suffix)) continue
+    if (!exportPath.endsWith(suffix)) {
+      continue
+    }
     const wildcard = exportPath.slice(marker, exportPath.length - suffix.length)
     const target = conditionalExportTarget(value)
-    if (target?.includes('*')) return target.replace('*', wildcard)
+    if (target?.includes('*')) {
+      return target.replace('*', wildcard)
+    }
   }
   return undefined
 }
 
 function conditionalExportTarget(value: unknown): string | undefined {
-  if (typeof value === 'string') return value
-  if (!isRecord(value)) return undefined
+  if (typeof value === 'string') {
+    return value
+  }
+  if (!isRecord(value)) {
+    return undefined
+  }
   return conditionalExportTarget(value.import) ?? conditionalExportTarget(value.default)
 }
 
@@ -330,20 +374,22 @@ function resolveLockIdentity(
   packageRoot: string,
 ) {
   const dependency = dependencyLock(context, packageName)
-  if (!dependency || typeof dependency.version !== 'string')
+  if (!dependency || typeof dependency.version !== 'string') {
     throw new Error(`Package ${packageName} must be a direct dependency of ${context.importer}`)
+  }
   if (dependency.version.startsWith('link:')) {
     const lockedRoot = realpathSync(
       resolve(context.lockRoot, context.importer, dependency.version.slice(5)),
     )
-    if (lockedRoot !== packageRoot)
+    if (lockedRoot !== packageRoot) {
       throw new Error(
         `Workspace lockfile target for ${packageName} differs from the resolved package`,
       )
+    }
     return { integrity: 'workspace', workspace: true }
   }
   const archiveReference = fileArchiveReference(dependency.version)
-  if (archiveReference)
+  if (archiveReference) {
     return resolveFileArchiveLockIdentity(
       context.lockfile,
       packageName,
@@ -351,11 +397,13 @@ function resolveLockIdentity(
       dependency.version,
       archiveReference,
     )
+  }
   const lockedVersion = semanticVersionPrefix(dependency.version)
-  if (lockedVersion !== packageVersion)
+  if (lockedVersion !== packageVersion) {
     throw new Error(
       `Lockfile version for ${packageName} is ${lockedVersion || dependency.version}; package declares ${packageVersion}`,
     )
+  }
   const packageKey = Object.keys(context.lockfile.packages ?? {})
     .filter(
       (key) =>
@@ -366,8 +414,9 @@ function resolveLockIdentity(
   const integrity = packageKey
     ? context.lockfile.packages?.[packageKey]?.resolution?.integrity
     : undefined
-  if (typeof integrity !== 'string' || !integrity.startsWith('sha'))
+  if (typeof integrity !== 'string' || !integrity.startsWith('sha')) {
     throw new Error(`Lockfile integrity for ${packageName}@${packageVersion} is missing`)
+  }
   return { integrity, workspace: false }
 }
 
@@ -394,19 +443,23 @@ function resolveFileArchiveLockIdentity(
           )
         })
   ).filter((key) => Object.hasOwn(snapshots, key))
-  if (candidates.length !== 1)
+  if (candidates.length !== 1) {
     throw new Error(`Lockfile archive identity for ${packageName} is missing or ambiguous`)
+  }
 
   const locked = packages[candidates[0]!]
-  if (locked?.resolution?.tarball !== archiveReference)
+  if (locked?.resolution?.tarball !== archiveReference) {
     throw new Error(`Lockfile archive identity for ${packageName} does not match its dependency`)
-  if (locked?.version !== packageVersion)
+  }
+  if (locked?.version !== packageVersion) {
     throw new Error(
       `Lockfile archive version for ${packageName} does not match package version ${packageVersion}`,
     )
+  }
   const integrity = locked.resolution?.integrity
-  if (typeof integrity !== 'string' || !integrity.startsWith('sha'))
+  if (typeof integrity !== 'string' || !integrity.startsWith('sha')) {
     throw new Error(`Lockfile integrity for ${packageName}@${packageVersion} is missing`)
+  }
   return { integrity, workspace: false }
 }
 
@@ -428,10 +481,14 @@ function resolveMigrations(
       exportPath,
       server.package.name,
     )
-    if (validateArtifacts) assertRegularPackageFile(server.package, path, `migration ${name}`)
-    return { name, exportPath, path }
+    if (validateArtifacts) {
+      assertRegularPackageFile(server.package, path, `migration ${name}`)
+    }
+    return { exportPath, name, path }
   })
-  if (!validateArtifacts) return migrations
+  if (!validateArtifacts) {
+    return migrations
+  }
   const migrationDirectory = join(server.package.root, 'migrations')
   const actual = existsSync(migrationDirectory)
     ? readdirSync(migrationDirectory)
@@ -441,10 +498,11 @@ function resolveMigrations(
   const expected = migrations
     .map(({ name }) => name)
     .toSorted((left, right) => left.localeCompare(right))
-  if (!arraysEqual(actual, expected))
+  if (!arraysEqual(actual, expected)) {
     throw new Error(
       `Module ${manifest.id} migration artifacts differ from its manifest (missing: ${expected.filter((name) => !actual.includes(name)).join(', ') || 'none'}; extra: ${actual.filter((name) => !expected.includes(name)).join(', ') || 'none'})`,
     )
+  }
   return migrations
 }
 
@@ -456,9 +514,12 @@ function resolveNuxtPages(
   return Object.fromEntries(
     manifest.nuxt.pages.map((page) => {
       const path = resolve(nuxt.root, page.file)
-      if (!isPathInside(nuxt.root, path))
+      if (!isPathInside(nuxt.root, path)) {
         throw new Error(`Nuxt page ${manifest.id}/${page.id} escapes package ${nuxt.name}`)
-      if (validateArtifacts) assertRegularPackageFile(nuxt, path, `Nuxt page ${page.id}`)
+      }
+      if (validateArtifacts) {
+        assertRegularPackageFile(nuxt, path, `Nuxt page ${page.id}`)
+      }
       return [page.id, path]
     }),
   )
@@ -477,23 +538,27 @@ function assertExecutableInventory(manifest: PlatformModuleManifest, entryPath: 
   const actual = [...collectRuntimeExports(entryPath)]
     .filter((name) => name !== 'default')
     .toSorted((left, right) => left.localeCompare(right))
-  if (!arraysEqual(actual, expected))
+  if (!arraysEqual(actual, expected)) {
     throw new Error(
       `Module ${manifest.id} server exports differ from its executable inventory (missing: ${expected.filter((name) => !actual.includes(name)).join(', ') || 'none'}; extra: ${actual.filter((name) => !expected.includes(name)).join(', ') || 'none'})`,
     )
+  }
 }
 
 function assertNuxtInventory(manifest: PlatformModuleManifest, entryPath: string) {
   const actual = [...collectRuntimeExports(entryPath)].toSorted((left, right) =>
     left.localeCompare(right),
   )
-  if (!arraysEqual(actual, ['default']))
+  if (!arraysEqual(actual, ['default'])) {
     throw new Error(`Module ${manifest.id} Nuxt package must export exactly one default module`)
+  }
 }
 
 function collectRuntimeExports(path: string, visited = new Set<string>()): Set<string> {
   const realPath = runtimeExportRealPath(path)
-  if (visited.has(realPath)) return new Set()
+  if (visited.has(realPath)) {
+    return new Set()
+  }
   visited.add(realPath)
   const source = ts.createSourceFile(
     realPath,
@@ -517,10 +582,15 @@ function runtimeExportRealPath(path: string) {
 }
 
 function runtimeExportNames(statement: ts.Statement, realPath: string, visited: Set<string>) {
-  if (ts.isExportAssignment(statement)) return statement.isExportEquals ? [] : ['default']
-  if (ts.isExportDeclaration(statement))
+  if (ts.isExportAssignment(statement)) {
+    return statement.isExportEquals ? [] : ['default']
+  }
+  if (ts.isExportDeclaration(statement)) {
     return exportDeclarationRuntimeNames(statement, realPath, visited)
-  if (!statement.modifiers?.some(({ kind }) => kind === ts.SyntaxKind.ExportKeyword)) return []
+  }
+  if (!statement.modifiers?.some(({ kind }) => kind === ts.SyntaxKind.ExportKeyword)) {
+    return []
+  }
   return exportedStatementNames(statement)
 }
 
@@ -529,25 +599,35 @@ function exportDeclarationRuntimeNames(
   realPath: string,
   visited: Set<string>,
 ) {
-  if (declaration.exportClause && ts.isNamedExports(declaration.exportClause))
+  if (declaration.exportClause && ts.isNamedExports(declaration.exportClause)) {
     return declaration.exportClause.elements.map(({ name }) => name.text)
-  if (declaration.exportClause || !declaration.moduleSpecifier) return []
+  }
+  if (declaration.exportClause || !declaration.moduleSpecifier) {
+    return []
+  }
   const target = stringLiteral(declaration.moduleSpecifier)
-  if (!target?.startsWith('.'))
+  if (!target?.startsWith('.')) {
     throw new Error(`Runtime export ${realPath} re-exports outside its package`)
+  }
   const nested = resolve(dirname(realPath), target)
   return [...collectRuntimeExports(nested, visited)].filter((name) => name !== 'default')
 }
 
 function exportedStatementNames(statement: ts.Statement) {
   const names: string[] = []
-  if (statement.modifiers?.some(({ kind }) => kind === ts.SyntaxKind.DefaultKeyword))
+  if (statement.modifiers?.some(({ kind }) => kind === ts.SyntaxKind.DefaultKeyword)) {
     names.push('default')
+  }
   const declarationName = runtimeDeclarationName(statement)
-  if (declarationName) names.push(declarationName)
-  if (!ts.isVariableStatement(statement)) return names
-  for (const declaration of statement.declarationList.declarations)
+  if (declarationName) {
+    names.push(declarationName)
+  }
+  if (!ts.isVariableStatement(statement)) {
+    return names
+  }
+  for (const declaration of statement.declarationList.declarations) {
     if (ts.isIdentifier(declaration.name)) names.push(declaration.name.text)
+  }
   return names
 }
 
@@ -558,9 +638,9 @@ function runtimeDeclarationName(statement: ts.Statement) {
     ts.isInterfaceDeclaration(statement) ||
     ts.isTypeAliasDeclaration(statement) ||
     ts.isEnumDeclaration(statement)
-  )
+  ) {
     return statement.name?.text
-  return undefined
+  }
 }
 
 function assertRegularPackageFile(
@@ -568,11 +648,13 @@ function assertRegularPackageFile(
   path: string,
   label: string,
 ) {
-  if (!existsSync(path) || !lstatSync(path).isFile())
+  if (!existsSync(path) || !lstatSync(path).isFile()) {
     throw new Error(`Package ${packageArtifact.name} is missing ${label}`)
+  }
   const realPath = realpathSync(path)
-  if (!isPathInside(packageArtifact.root, realPath))
+  if (!isPathInside(packageArtifact.root, realPath)) {
     throw new Error(`Package ${packageArtifact.name} ${label} escapes its package root`)
+  }
 }
 
 function assertManifestPackage(
@@ -580,24 +662,28 @@ function assertManifestPackage(
   packageName: string,
   manifestExport: string,
 ) {
-  if (packageJson.sideEffects !== false)
+  if (packageJson.sideEffects !== false) {
     throw new Error(`Manifest package ${packageName} must declare sideEffects false`)
+  }
   const targets = allExportTargets(packageJson.exports)
-  if (targets.length !== 1 || !packageExportTarget(packageJson.exports, manifestExport))
+  if (targets.length !== 1 || !packageExportTarget(packageJson.exports, manifestExport)) {
     throw new Error(`Manifest package ${packageName} must export only ${manifestExport}`)
-  if (!Array.isArray(packageJson.files) || packageJson.files.length !== 1)
+  }
+  if (!Array.isArray(packageJson.files) || packageJson.files.length !== 1) {
     throw new Error(`Manifest package ${packageName} must publish only its canonical manifest`)
+  }
 }
 
 function assertReleaseVersions(
   manifest: PlatformModuleManifest,
   ...packages: readonly ResolvedModulePackage[]
 ) {
-  for (const artifact of packages)
+  for (const artifact of packages) {
     if (artifact.version !== manifest.release.version)
       throw new Error(
         `Module ${manifest.id} release ${manifest.release.version} does not match ${artifact.name}@${artifact.version}`,
       )
+  }
 }
 
 function validateDeploymentDependencies(
@@ -614,22 +700,25 @@ function validateDeploymentDependencies(
   assertDependenciesPresent('root manifest', rootDependencies, expectedManifest)
   assertDependenciesPresent('API server', apiDependencies, expectedServer)
   assertDependenciesPresent('root Nuxt', rootDependencies, expectedNuxt)
-  for (const packageName of [...expectedManifest, ...expectedNuxt])
+  for (const packageName of [...expectedManifest, ...expectedNuxt]) {
     if (apiDependencies.has(packageName))
       throw new Error(`API dependencies must not include module package ${packageName}`)
-  for (const packageName of expectedServer)
+  }
+  for (const packageName of expectedServer) {
     if (rootDependencies.has(packageName))
       throw new Error(`Root dependencies must not include module server package ${packageName}`)
+  }
 }
 
 function assertDependenciesPresent(label: string, actual: Set<string>, expected: Set<string>) {
   const missing = [...expected]
     .filter((name) => !actual.has(name))
     .toSorted((left, right) => left.localeCompare(right))
-  if (missing.length > 0)
+  if (missing.length > 0) {
     throw new Error(
       `${label} dependencies are missing installed module packages: ${missing.join(', ')}`,
     )
+  }
 }
 
 function dependencyNames(packageJson: PackageJson) {
@@ -638,13 +727,17 @@ function dependencyNames(packageJson: PackageJson) {
 
 function readLockfile(root: string): Lockfile {
   const value: unknown = parseYaml(readFileSync(join(root, 'pnpm-lock.yaml'), 'utf8'))
-  if (!isRecord(value)) throw new Error('pnpm-lock.yaml must contain an object')
+  if (!isRecord(value)) {
+    throw new Error('pnpm-lock.yaml must contain an object')
+  }
   return value as Lockfile
 }
 
 function readPackageJson(path: string): PackageJson {
   const value = readJson(path)
-  if (!isRecord(value)) throw new Error(`${path} must contain a JSON object`)
+  if (!isRecord(value)) {
+    throw new Error(`${path} must contain a JSON object`)
+  }
   return value
 }
 
@@ -658,7 +751,9 @@ function readJson(path: string): unknown {
 
 function semanticVersionSatisfies(version: string, range: string) {
   const parsedVersion = parseSemanticVersion(version)
-  if (!parsedVersion) return false
+  if (!parsedVersion) {
+    return false
+  }
   return range.split('||').some((alternative) =>
     alternative
       .trim()
@@ -669,10 +764,14 @@ function semanticVersionSatisfies(version: string, range: string) {
 
 function satisfiesComparator(version: SemanticVersion, comparator: string) {
   const match = /^(\^|~|<=|>=|<|>|=)?(.+)$/.exec(comparator)
-  if (!match?.[2]) return false
+  if (!match?.[2]) {
+    return false
+  }
   const operator = match[1] ?? '='
   const requested = parseSemanticVersion(match[2])
-  if (!requested) return satisfiesWildcard(version, match[2], operator)
+  if (!requested) {
+    return satisfiesWildcard(version, match[2], operator)
+  }
   const compared = compareSemanticVersion(version, requested)
   if (operator === '^') {
     return satisfiesUpperBound(version, compared, caretUpperBound(requested))
@@ -685,8 +784,12 @@ function satisfiesComparator(version: SemanticVersion, comparator: string) {
 }
 
 function caretUpperBound(version: SemanticVersion): SemanticVersion {
-  if (version.major > 0) return { major: version.major + 1, minor: 0, patch: 0, prerelease: [] }
-  if (version.minor > 0) return { major: 0, minor: version.minor + 1, patch: 0, prerelease: [] }
+  if (version.major > 0) {
+    return { major: version.major + 1, minor: 0, patch: 0, prerelease: [] }
+  }
+  if (version.minor > 0) {
+    return { major: 0, minor: version.minor + 1, patch: 0, prerelease: [] }
+  }
   return { major: 0, minor: 0, patch: version.patch + 1, prerelease: [] }
 }
 
@@ -720,10 +823,14 @@ interface SemanticVersion {
 
 function parseSemanticVersion(value: string): SemanticVersion | undefined {
   const buildSeparator = value.indexOf('+')
-  if (buildSeparator !== value.lastIndexOf('+')) return undefined
+  if (buildSeparator !== value.lastIndexOf('+')) {
+    return undefined
+  }
   const versionAndPrerelease = buildSeparator < 0 ? value : value.slice(0, buildSeparator)
   const build = buildSeparator < 0 ? undefined : value.slice(buildSeparator + 1)
-  if (build !== undefined && !semanticVersionLooseIdentifiersPattern.test(build)) return undefined
+  if (build !== undefined && !semanticVersionLooseIdentifiersPattern.test(build)) {
+    return undefined
+  }
 
   const prereleaseSeparator = versionAndPrerelease.indexOf('-')
   const core =
@@ -732,11 +839,16 @@ function parseSemanticVersion(value: string): SemanticVersion | undefined {
       : versionAndPrerelease.slice(0, prereleaseSeparator)
   const prerelease =
     prereleaseSeparator < 0 ? undefined : versionAndPrerelease.slice(prereleaseSeparator + 1)
-  if (prerelease !== undefined && !semanticVersionLooseIdentifiersPattern.test(prerelease))
+  if (prerelease !== undefined && !semanticVersionLooseIdentifiersPattern.test(prerelease)) {
     return undefined
+  }
   const coreParts = core.split('.')
-  if (coreParts.length !== 3 || !coreParts.every((part) => semanticVersionNumberPattern.test(part)))
+  if (
+    coreParts.length !== 3 ||
+    !coreParts.every((part) => semanticVersionNumberPattern.test(part))
+  ) {
     return undefined
+  }
   return {
     major: Number(coreParts[0]),
     minor: Number(coreParts[1]),
@@ -747,35 +859,56 @@ function parseSemanticVersion(value: string): SemanticVersion | undefined {
 
 function compareSemanticVersion(left: SemanticVersion, right: SemanticVersion) {
   const core = left.major - right.major || left.minor - right.minor || left.patch - right.patch
-  if (core !== 0) return Math.sign(core)
+  if (core !== 0) {
+    return Math.sign(core)
+  }
   return comparePrerelease(left.prerelease, right.prerelease)
 }
 
 function comparePrerelease(left: readonly string[], right: readonly string[]) {
-  if (left.length === 0) return right.length === 0 ? 0 : 1
-  if (right.length === 0) return -1
+  if (left.length === 0) {
+    return right.length === 0 ? 0 : 1
+  }
+  if (right.length === 0) {
+    return -1
+  }
   for (let index = 0; index < Math.max(left.length, right.length); index++) {
     const compared = comparePrereleasePart(left[index], right[index])
-    if (compared !== 0) return compared
+    if (compared !== 0) {
+      return compared
+    }
   }
   return 0
 }
 
 function comparePrereleasePart(left: string | undefined, right: string | undefined) {
-  if (left === undefined) return -1
-  if (right === undefined) return 1
-  if (left === right) return 0
+  if (left === undefined) {
+    return -1
+  }
+  if (right === undefined) {
+    return 1
+  }
+  if (left === right) {
+    return 0
+  }
   const leftNumber = /^\d+$/.test(left) ? Number(left) : undefined
   const rightNumber = /^\d+$/.test(right) ? Number(right) : undefined
-  if (leftNumber !== undefined && rightNumber !== undefined)
+  if (leftNumber !== undefined && rightNumber !== undefined) {
     return Math.sign(leftNumber - rightNumber)
-  if (leftNumber !== undefined) return -1
-  if (rightNumber !== undefined) return 1
+  }
+  if (leftNumber !== undefined) {
+    return -1
+  }
+  if (rightNumber !== undefined) {
+    return 1
+  }
   return left < right ? -1 : 1
 }
 
 function satisfiesWildcard(version: SemanticVersion, requested: string, operator: string) {
-  if (operator !== '=') return false
+  if (operator !== '=') {
+    return false
+  }
   const parts = requested.split('.')
   const actual = [version.major, version.minor, version.patch]
   return parts.every((part, index) =>
@@ -788,17 +921,25 @@ function semanticVersionPrefix(value: string) {
 }
 
 function fileArchiveReference(value: string) {
-  if (!value.startsWith('file:')) return undefined
+  if (!value.startsWith('file:')) {
+    return
+  }
   const archiveEnd = value.lastIndexOf('.tgz')
-  if (archiveEnd < 5) return undefined
+  if (archiveEnd < 5) {
+    return
+  }
   const end = archiveEnd + 4
   const suffix = value.slice(end)
   return suffix === '' || suffix.startsWith('(') ? value.slice(0, end) : undefined
 }
 
 function allExportTargets(value: unknown): string[] {
-  if (typeof value === 'string') return [value]
-  if (!isRecord(value)) return []
+  if (typeof value === 'string') {
+    return [value]
+  }
+  if (!isRecord(value)) {
+    return []
+  }
   return Object.values(value).flatMap(allExportTargets)
 }
 

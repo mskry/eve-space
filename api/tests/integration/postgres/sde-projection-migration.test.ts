@@ -62,11 +62,11 @@ describe('SDE projection migrations', () => {
       from sde_projection_state
     `
 
-    expect(type).toEqual({ name: 'Gunnery', description: null })
+    expect(type).toStrictEqual({ description: null, name: 'Gunnery' })
     expect(initialBuild).toMatchObject({ build_number: String(buildNumber), ingest_version: 1 })
-    expect(projectionState).toEqual({
-      singleton: true,
+    expect(projectionState).toStrictEqual({
       active_build_number: String(buildNumber),
+      singleton: true,
     })
     expect(needsReload(initialBuild)).toBe(true)
 

@@ -19,7 +19,7 @@ describe('organization authority', () => {
     let contextRequests = 0
     queryServer.use(
       http.get('http://localhost/api/admin/setup', () =>
-        HttpResponse.json({ required: true, available: true }),
+        HttpResponse.json({ available: true, required: true }),
       ),
       http.get('http://localhost/api/organization/context', () => {
         contextRequests += 1
@@ -57,7 +57,7 @@ describe('organization authority', () => {
     const context = organizationOwnerContext()
     queryServer.use(
       http.get('http://localhost/api/admin/setup', () =>
-        HttpResponse.json({ required: false, available: true }),
+        HttpResponse.json({ available: true, required: false }),
       ),
       http.get('http://localhost/api/organization/context', () => HttpResponse.json(context)),
       http.get('http://localhost/api/organization/roles', () =>
@@ -107,16 +107,16 @@ describe('organization authority', () => {
     expect(authority.loading.value).toBe(false)
 
     await authority.grantRole({
-      userId: 'new-user',
-      role: 'hr_auditor',
       reason: 'Coverage test',
+      role: 'hr_auditor',
+      userId: 'new-user',
     })
-    expect(grantRequests).toEqual([
-      { userId: 'new-user', role: 'hr_auditor', reason: 'Coverage test' },
+    expect(grantRequests).toStrictEqual([
+      { reason: 'Coverage test', role: 'hr_auditor', userId: 'new-user' },
     ])
 
     await authority.revokeRole('grant-1', 'No longer required')
-    expect(revokeRequests).toEqual([{ reason: 'No longer required' }])
+    expect(revokeRequests).toStrictEqual([{ reason: 'No longer required' }])
     expect(invalidateQueries).toHaveBeenCalledTimes(2)
     expect(authority.mutationPending.value).toBe(false)
     expect(authority.errorMessage.value).toBe('')
@@ -124,7 +124,7 @@ describe('organization authority', () => {
     authSession.value = { authenticated: false }
     authUnavailable.value = true
     expect(authority.authorityContext.value).toBeUndefined()
-    expect(authority.roleGrants.value).toEqual([])
+    expect(authority.roleGrants.value).toStrictEqual([])
     expect(authority.errorMessage.value).toBe('Session verification is unavailable.')
     wrapper.unmount()
   })
@@ -135,7 +135,7 @@ describe('organization authority', () => {
     const context = organizationOwnerContext()
     queryServer.use(
       http.get('http://localhost/api/admin/setup', () =>
-        HttpResponse.json({ required: false, available: true }),
+        HttpResponse.json({ available: true, required: false }),
       ),
       http.get('http://localhost/api/organization/context', () => HttpResponse.json(context)),
       http.get('http://localhost/api/organization/roles', () =>
@@ -167,9 +167,9 @@ describe('organization authority', () => {
     const { wrapper } = mountWithQueryPlugins(Root)
     const revision = authority.invalidationRevision.value
     const grant = authority.grantRole({
-      userId: 'new-user',
-      role: 'hr_auditor',
       reason: 'Coverage test',
+      role: 'hr_auditor',
+      userId: 'new-user',
     })
     await vi.waitFor(() => expect(authority.mutationPending.value).toBe(true))
 
@@ -213,7 +213,7 @@ describe('organization authority', () => {
     const revision = authority.invalidationRevision.value
 
     await expect(
-      authority.grantRole({ userId: 'new-user', role: 'hr_auditor', reason: 'Coverage test' }),
+      authority.grantRole({ reason: 'Coverage test', role: 'hr_auditor', userId: 'new-user' }),
     ).rejects.toThrow('Organization owner authority is required.')
 
     expect(authority.invalidationRevision.value).toBe(revision + 1)
@@ -225,44 +225,44 @@ describe('organization authority', () => {
 function roleGrant() {
   return {
     grantId: 'grant-1',
-    userId: 'role-user',
-    role: 'director' as const,
-    reason: 'Leadership duty.',
-    grantedByUserId: 'owner-user',
     grantedAt: '2026-08-31T12:00:00.000Z',
+    grantedByUserId: 'owner-user',
     mainCharacterId: 1_404_328_063,
     mainCharacterName: 'Director',
+    reason: 'Leadership duty.',
+    role: 'director' as const,
+    userId: 'role-user',
   }
 }
 
 function organizationRoles() {
   return {
+    corporationSources: [],
+    derivedSources: [],
     grants: [roleGrant()],
     ownerSources: [],
-    derivedSources: [],
-    corporationSources: [],
   }
 }
 
 function organizationOwnerContext() {
   return {
+    authorityCharacter: null,
+    capabilities: { reviewRegistration: true, viewRosterCoverage: true },
+    claimAvailable: false,
+    freshUntil: '2026-09-01T13:00:00.000Z',
+    graceUntil: null,
+    isBlocked: false,
+    isOrganizationOwner: true,
+    memberAccess: true,
     organization: {
-      organizationType: 'corporation' as const,
       organizationId: 98_000_001,
       organizationName: 'Example Corporation',
       organizationTicker: 'EX',
+      organizationType: 'corporation' as const,
       organizationVersion: 1,
     },
-    isOrganizationOwner: true,
-    isBlocked: false,
-    memberAccess: true,
-    capabilities: { reviewRegistration: true, viewRosterCoverage: true },
-    claimAvailable: false,
-    ownerStatus: 'fresh' as const,
     ownerFailureClass: null,
-    freshUntil: '2026-09-01T13:00:00.000Z',
-    graceUntil: null,
+    ownerStatus: 'fresh' as const,
     reviewDeadline: null,
-    authorityCharacter: null,
   }
 }

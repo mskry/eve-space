@@ -78,7 +78,9 @@ function validateEsiQueryCall(
   node: ts.Node,
   scopes: readonly InstalledScope[],
 ) {
-  if (!ts.isCallExpression(node) || !ts.isIdentifier(node.expression)) return []
+  if (!ts.isCallExpression(node) || !ts.isIdentifier(node.expression)) {
+    return []
+  }
 
   const callName = node.expression.text
   if (source.kind === 'module') {
@@ -87,7 +89,9 @@ function validateEsiQueryCall(
   if (callName === 'defineQueryOptions') {
     return [`${source.path} must use defineEsiQueryOptions for query definitions`]
   }
-  if (callName !== 'defineEsiQueryOptions') return []
+  if (callName !== 'defineEsiQueryOptions') {
+    return []
+  }
 
   const declaration = node.arguments[0]
   return !declaration || !containsProperty(declaration, 'esiPersistence')
@@ -178,8 +182,9 @@ function containsProperty(node: ts.Node, propertyName: string) {
       ts.isPropertyAssignment(candidate) &&
       ts.isIdentifier(candidate.name) &&
       candidate.name.text === propertyName
-    )
+    ) {
       found = true
+    }
   })
   return found
 }
@@ -193,8 +198,9 @@ function findStringProperty(node: ts.Node, propertyName: string) {
       ts.isIdentifier(candidate.name) &&
       candidate.name.text === propertyName &&
       ts.isStringLiteral(candidate.initializer)
-    )
+    ) {
       value = candidate.initializer.text
+    }
   })
   return value
 }
@@ -212,10 +218,16 @@ function findPlatformQueryAuthorization(node: ts.Node) {
       subjectKind = findStringProperty(candidate.initializer, 'kind')
     }
   })
-  if (subjectKind === 'character') return 'owned-character'
-  if (subjectKind === 'organization' || subjectKind === 'corporation' || subjectKind === 'alliance')
+  if (subjectKind === 'character') {
+    return 'owned-character'
+  }
+  if (
+    subjectKind === 'organization' ||
+    subjectKind === 'corporation' ||
+    subjectKind === 'alliance'
+  ) {
     return 'authenticated-session'
-  return undefined
+  }
 }
 
 function findEsiPersistenceKind(node: ts.Node) {
@@ -280,6 +292,7 @@ if (isEntryPoint) {
     ...esiQueryPersistenceViolations(sources, scopes),
     ...queryAutoRefetchViolations(sources),
   ]
-  if (violations.length)
+  if (violations.length) {
     throw new Error(`ESI query persistence verification failed:\n${violations.join('\n')}`)
+  }
 }

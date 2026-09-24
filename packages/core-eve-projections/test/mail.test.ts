@@ -4,14 +4,14 @@ import { projectMailRecipients, projectMailSender, sanitizeMailBody } from '../s
 describe('mail projection', () => {
   test('projects resolved and deterministic unknown parties', () => {
     const parties = {
+      mailingListNames: new Map([[9, 'Operations']]),
       universeNames: new Map([
         [7, { name: 'Pilot', category: 'character' }],
         [8, { name: 'Wrong kind', category: 'alliance' }],
       ]),
-      mailingListNames: new Map([[9, 'Operations']]),
     }
-    expect(projectMailSender(7, parties)).toEqual({ id: 7, type: 'character', name: 'Pilot' })
-    expect(projectMailSender(10, parties)).toEqual({ id: 10, type: 'unknown', name: null })
+    expect(projectMailSender(7, parties)).toStrictEqual({ id: 7, name: 'Pilot', type: 'character' })
+    expect(projectMailSender(10, parties)).toStrictEqual({ id: 10, name: null, type: 'unknown' })
     expect(
       projectMailRecipients(
         [
@@ -20,9 +20,9 @@ describe('mail projection', () => {
         ],
         parties,
       ),
-    ).toEqual([
-      { id: 8, type: 'corporation', name: null },
-      { id: 9, type: 'mailing_list', name: 'Operations' },
+    ).toStrictEqual([
+      { id: 8, name: null, type: 'corporation' },
+      { id: 9, name: 'Operations', type: 'mailing_list' },
     ])
   })
 

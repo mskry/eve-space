@@ -2,13 +2,13 @@ import { describe, expect, test, vi } from 'vitest'
 import { repairPlatformCollectionState } from '../../src/platform/collection-state-repair.js'
 
 const resource = {
-  moduleId: 'test-feature',
-  resourceId: 'wallet-journal',
-  subjectKind: 'character',
-  operationId: 'wallet-balance',
-  materializationIntervalSeconds: 900,
   eligibility: { kind: 'current-owned-character' },
   implementation: () => Promise.resolve({}),
+  materializationIntervalSeconds: 900,
+  moduleId: 'test-feature',
+  operationId: 'wallet-balance',
+  resourceId: 'wallet-journal',
+  subjectKind: 'character',
 } as const
 
 describe('platform collection-state repair', () => {
@@ -21,11 +21,11 @@ describe('platform collection-state repair', () => {
 
     await expect(
       repairPlatformCollectionState({
-        characterId: 1404328063,
+        characterId: 1_404_328_063,
         connection: connection as never,
-        resources: [resource, { ...resource, resourceId: 'skills', operationId: 'skills' }],
+        resources: [resource, { ...resource, operationId: 'skills', resourceId: 'skills' }],
       }),
-    ).resolves.toEqual({ repairedResources: 2 })
+    ).resolves.toStrictEqual({ repairedResources: 2 })
 
     expect(calls).toHaveLength(2)
     expect(calls[0]?.text).toContain("'authorization-required'")
@@ -34,11 +34,11 @@ describe('platform collection-state repair', () => {
     )
     for (const call of calls) {
       expect(call.values).toContain('1404328063')
-      expect(call.values[0]).toEqual(expect.stringContaining('"module_id":"test-feature"'))
-      expect(call.values[0]).toEqual(
+      expect(call.values[0]).toStrictEqual(expect.stringContaining('"module_id":"test-feature"'))
+      expect(call.values[0]).toStrictEqual(
         expect.stringContaining('"required_scope":"esi-wallet.read_character_wallet.v1"'),
       )
-      expect(call.values[0]).toEqual(
+      expect(call.values[0]).toStrictEqual(
         expect.stringContaining('"required_scope":"esi-skills.read_skills.v1"'),
       )
     }
@@ -50,7 +50,7 @@ describe('platform collection-state repair', () => {
 
     await expect(
       repairPlatformCollectionState({ connection: connection as never, resources }),
-    ).resolves.toEqual({ repairedResources: 0 })
+    ).resolves.toStrictEqual({ repairedResources: 0 })
     expect(connection).not.toHaveBeenCalled()
   })
 
@@ -59,14 +59,14 @@ describe('platform collection-state repair', () => {
     const resources = [
       {
         ...resource,
-        sectionId: 'wallet',
         eligibility: { kind: 'current-managed-member-character' as const },
+        sectionId: 'wallet',
       },
     ]
 
     await expect(
       repairPlatformCollectionState({ connection: connection as never, resources }),
-    ).resolves.toEqual({ repairedResources: 0 })
+    ).resolves.toStrictEqual({ repairedResources: 0 })
     expect(connection).not.toHaveBeenCalled()
   })
 

@@ -15,14 +15,18 @@ export async function maintainEvidence(
   context: EvidenceMaintenanceContext,
   purgeRetention: boolean,
 ) {
-  if (purgeRetention && context.purgeRetention) await purgeExpiredEvidence(context)
+  if (purgeRetention && context.purgeRetention) {
+    await purgeExpiredEvidence(context)
+  }
   const stores = typeof storeOrStores === 'string' ? [storeOrStores] : storeOrStores
   const purges: WithoutLimit<EvidencePurgeInput>[] = []
   for (const store of stores) {
-    for (const authority of context.invalidAuthorities)
+    for (const authority of context.invalidAuthorities) {
       purges.push({ mode: 'authority', store, ...authority })
-    for (const targetUserId of context.purgeAccountIds)
+    }
+    for (const targetUserId of context.purgeAccountIds) {
       purges.push({ mode: 'account', store, targetUserId })
+    }
   }
   for (const purge of purges) {
     context.signal?.throwIfAborted()
@@ -33,18 +37,22 @@ export async function maintainEvidence(
 
 async function purgeExpiredEvidence(context: EvidenceMaintenanceContext) {
   const now = new Date(context.now)
-  if (Number.isNaN(now.getTime())) throw new Error('Evidence maintenance time is invalid')
-  const transientCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1_000).toISOString()
+  if (Number.isNaN(now.getTime())) {
+    throw new TypeError('Evidence maintenance time is invalid')
+  }
+  const transientCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
   const purges: WithoutLimit<EvidencePurgeInput>[] = []
   for (const store of [
     'wallet-journal',
     'wallet-transactions',
     'mail-headers',
     'mail-contents',
-  ] as const)
-    purges.push({ mode: 'retention', store, cutoff: context.now })
-  for (const store of ['continuations', 'staging', 'promotions'] as const)
-    purges.push({ mode: 'retention', store, cutoff: transientCutoff })
+  ] as const) {
+    purges.push({ cutoff: context.now, mode: 'retention', store })
+  }
+  for (const store of ['continuations', 'staging', 'promotions'] as const) {
+    purges.push({ cutoff: transientCutoff, mode: 'retention', store })
+  }
   for (const purge of purges) {
     // oxlint-disable-next-line no-await-in-loop -- Retention stores share promotion and staging rows.
     await purgeAllBatches(context, purge)
@@ -58,7 +66,9 @@ async function purgeAllBatches(
   context.signal?.throwIfAborted()
   const { remaining } = await context.capabilities.persistence.purgeEvidence({
     ...input,
-    limit: 1_000,
+    limit: 1000,
   } as EvidencePurgeInput)
-  if (remaining) await purgeAllBatches(context, input)
+  if (remaining) {
+    await purgeAllBatches(context, input)
+  }
 }

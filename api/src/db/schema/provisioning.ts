@@ -8,10 +8,10 @@ import { moduleIdCheck } from './shared.js'
 export const schemaMigrations = pgTable(
   'schema_migrations',
   {
+    appliedAt: timestamp('applied_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    contentSha256: text('content_sha256'),
     module: text().default('core').notNull(),
     name: text().notNull(),
-    contentSha256: text('content_sha256'),
-    appliedAt: timestamp('applied_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.module, table.name], name: 'schema_migrations_pkey' }),
@@ -26,7 +26,7 @@ export const moduleSchemaProvisioning = pgTable(
   'module_schema_provisioning',
   {
     moduleId: text('module_id').primaryKey().notNull(),
-    provisionedAt: timestamp('provisioned_at', { withTimezone: true, mode: 'date' })
+    provisionedAt: timestamp('provisioned_at', { mode: 'date', withTimezone: true })
       .defaultNow()
       .notNull(),
   },
@@ -36,12 +36,12 @@ export const moduleSchemaProvisioning = pgTable(
 export const modulePersistenceContract = pgTable(
   'module_persistence_contract',
   {
-    singleton: boolean().default(true).primaryKey().notNull(),
     contractFingerprint: text('contract_fingerprint').notNull(),
     operationCount: integer('operation_count').notNull(),
     reconciledAt: timestamp('reconciled_at', { withTimezone: true, mode: 'date' })
       .defaultNow()
       .notNull(),
+    singleton: boolean().default(true).primaryKey().notNull(),
   },
   (table) => [
     check('module_persistence_contract_singleton_check', sql`${table.singleton}`),
@@ -56,17 +56,17 @@ export const modulePersistenceContract = pgTable(
 export const modulePersistenceOperationAttestations = pgTable(
   'module_persistence_operation_attestations',
   {
-    moduleId: text('module_id').notNull(),
-    operationId: text('operation_id').notNull(),
-    revision: integer().notNull(),
-    mode: text().notNull(),
-    migrationName: text('migration_name').notNull(),
-    schemaName: text('schema_name').notNull(),
-    routineName: text('routine_name').notNull(),
-    definitionFingerprint: text('definition_fingerprint').notNull(),
     attestedAt: timestamp('attested_at', { withTimezone: true, mode: 'date' })
       .defaultNow()
       .notNull(),
+    definitionFingerprint: text('definition_fingerprint').notNull(),
+    migrationName: text('migration_name').notNull(),
+    mode: text().notNull(),
+    moduleId: text('module_id').notNull(),
+    operationId: text('operation_id').notNull(),
+    revision: integer().notNull(),
+    routineName: text('routine_name').notNull(),
+    schemaName: text('schema_name').notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.moduleId, table.operationId] }),

@@ -14,12 +14,14 @@ const client = createJevClient()
 const changedFiles = await changedRepositoryFiles(root, base)
 const states = await collectDomainEventEvidence(root, changedFiles)
 const review = await runJevReview({
+  classify: classifyDomainEvent,
   findingName: 'domain-event semantic',
+  judge: (state) => judgeDomainEvent(client, state),
   reviewedName: 'producer(s)',
   states,
-  judge: (state) => judgeDomainEvent(client, state),
-  classify: classifyDomainEvent,
 })
 
 process.stdout.write(`${review.output}\n`)
-if (review.failed) process.exitCode = 1
+if (review.failed) {
+  process.exitCode = 1
+}

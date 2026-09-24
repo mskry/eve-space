@@ -10,11 +10,11 @@ interface UniverseTopologyStateView {
 
 export class UniverseTopologyState {
   readonly #state: UniverseTopologyStateView = {
-    snapshot: undefined,
-    inFlight: undefined,
-    nextCheckAt: 0,
     failure: undefined,
     generation: 0,
+    inFlight: undefined,
+    nextCheckAt: 0,
+    snapshot: undefined,
   }
 
   read(): Readonly<UniverseTopologyStateView> {
@@ -25,7 +25,9 @@ export class UniverseTopologyState {
     generation: number,
     operation: () => Promise<UniverseTopologySnapshot>,
   ): Promise<UniverseTopologySnapshot> | undefined {
-    if (generation !== this.#state.generation || this.#state.inFlight) return undefined
+    if (generation !== this.#state.generation || this.#state.inFlight) {
+      return undefined
+    }
     const promise = Promise.resolve().then(operation)
     this.#state.inFlight = promise
     void promise.then(
@@ -36,7 +38,9 @@ export class UniverseTopologyState {
   }
 
   publish(snapshot: UniverseTopologySnapshot, generation: number, nextCheckAt: number) {
-    if (generation !== this.#state.generation) return false
+    if (generation !== this.#state.generation) {
+      return false
+    }
     this.#state.snapshot = snapshot
     this.#state.nextCheckAt = nextCheckAt
     this.#state.failure = undefined
@@ -44,14 +48,18 @@ export class UniverseTopologyState {
   }
 
   retain(generation: number, failure: unknown, nextCheckAt: number) {
-    if (generation !== this.#state.generation) return false
+    if (generation !== this.#state.generation) {
+      return false
+    }
     this.#state.nextCheckAt = nextCheckAt
     this.#state.failure = failure
     return true
   }
 
   fail(generation: number, failure: unknown, nextCheckAt: number) {
-    if (generation !== this.#state.generation) return false
+    if (generation !== this.#state.generation) {
+      return false
+    }
     this.#state.snapshot = undefined
     this.#state.nextCheckAt = nextCheckAt
     this.#state.failure = failure
@@ -67,7 +75,9 @@ export class UniverseTopologyState {
   }
 
   #clearInFlight(promise: Promise<UniverseTopologySnapshot>) {
-    if (this.#state.inFlight === promise) this.#state.inFlight = undefined
+    if (this.#state.inFlight === promise) {
+      this.#state.inFlight = undefined
+    }
   }
 }
 

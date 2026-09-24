@@ -13,32 +13,31 @@ import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
 
 const sourceAsset = {
-  itemId: 10,
-  typeId: 100,
-  typeName: 'Secure Container',
-  groupId: 12,
-  groupName: 'Cargo Container',
   categoryId: 65,
   categoryName: 'Structure',
-  unitVolume: 1.5,
-  totalVolume: 1.5,
-  quantity: 1,
-  isSingleton: true,
-  isBlueprintCopy: null,
   customName: null as string | null,
+  groupId: 12,
+  groupName: 'Cargo Container',
+  isBlueprintCopy: null,
+  isSingleton: true,
+  itemId: 10,
+  locationFlag: 'Hangar',
   locationId: 123,
-  locationType: 'station' as const,
   locationName: 'Jita IV - Moon 4',
+  locationType: 'station' as const,
+  parentItemId: null,
+  quantity: 1,
   solarSystemId: 30_000_142,
   solarSystemSecurityStatus: 0.9,
-  locationFlag: 'Hangar',
-  parentItemId: null,
+  totalVolume: 1.5,
+  typeId: 100,
+  typeName: 'Secure Container',
+  unitVolume: 1.5,
 }
 
 describe('character Assets mapper', () => {
   it('strips source identity and preserves every nullable, unknown, and enrichment field', () => {
     const mapped = mapCharacterAssets({
-      characterId: 7,
       assets: [
         {
           itemId: 10,
@@ -63,15 +62,16 @@ describe('character Assets mapper', () => {
           parentItemId: null,
         },
       ],
-      enrichment: { types: 'unavailable', names: 'partial', locations: 'complete' },
       cachedUntil: '2026-09-03T13:00:00.000Z',
-      validatedAt: '2026-09-03T12:00:00.000Z',
-      stale: true,
+      characterId: 7,
+      enrichment: { locations: 'complete', names: 'partial', types: 'unavailable' },
       refreshFailureClass: 'esi-unavailable',
       retryAt: null,
+      stale: true,
+      validatedAt: '2026-09-03T12:00:00.000Z',
     })
 
-    expect(mapped).toEqual({
+    expect(mapped).toStrictEqual({
       assets: [
         {
           itemId: 10,
@@ -96,43 +96,43 @@ describe('character Assets mapper', () => {
           parentItemId: null,
         },
       ],
-      enrichment: { types: 'unavailable', names: 'partial', locations: 'complete' },
-      validatedAt: '2026-09-03T12:00:00.000Z',
-      stale: true,
+      enrichment: { locations: 'complete', names: 'partial', types: 'unavailable' },
       refreshFailureClass: 'esi-unavailable',
       retryAt: null,
+      stale: true,
+      validatedAt: '2026-09-03T12:00:00.000Z',
     })
     expect(mapped).not.toHaveProperty('characterId')
     expect(mapped).not.toHaveProperty('cachedUntil')
     expect(
       mapCharacterAssets({
-        characterId: 7,
         assets: [],
-        enrichment: { types: 'complete', names: 'complete', locations: 'complete' },
         cachedUntil: '2026-09-03T13:00:00.000Z',
-        validatedAt: '2026-09-03T12:00:00.000Z',
+        characterId: 7,
+        enrichment: { locations: 'complete', names: 'complete', types: 'complete' },
         stale: false,
+        validatedAt: '2026-09-03T12:00:00.000Z',
       }).refreshFailureClass,
     ).toBeNull()
   })
 
   it('treats the ESI unnamed sentinel as no custom name', () => {
     const mapped = mapCharacterAssets({
-      characterId: 7,
       assets: [
         { ...sourceAsset, itemId: 1, customName: 'None' },
         { ...sourceAsset, itemId: 2, customName: '   ' },
         { ...sourceAsset, itemId: 4, customName: '&nbsp;' },
         { ...sourceAsset, itemId: 3, customName: '  Cargo vault  ' },
       ],
-      enrichment: { types: 'complete', names: 'complete', locations: 'complete' },
       cachedUntil: '2026-09-03T13:00:00.000Z',
-      validatedAt: '2026-09-03T12:00:00.000Z',
-      stale: false,
+      characterId: 7,
+      enrichment: { locations: 'complete', names: 'complete', types: 'complete' },
       refreshFailureClass: null,
+      stale: false,
+      validatedAt: '2026-09-03T12:00:00.000Z',
     })
 
-    expect(mapped.assets.map((asset) => asset.customName)).toEqual([
+    expect(mapped.assets.map((asset) => asset.customName)).toStrictEqual([
       null,
       null,
       null,
@@ -144,120 +144,120 @@ describe('character Assets mapper', () => {
     expect(
       mapCharacterAssetsResourceState({
         data: null,
-        loading: false,
         error: new ApiQueryError('Grant access.', {
           status: 403,
           code: 'EVE_SCOPE_REQUIRED',
           authorizeUrl: '/reauthorize/7',
         }),
+        loading: false,
       }),
     ).toMatchObject({
-      phase: 'access-required',
-      canRetry: false,
       action: {
         href: '/reauthorize/7',
         label: 'AUTHORIZE ASSETS FOR THIS CHARACTER',
       },
+      canRetry: false,
+      phase: 'access-required',
     })
     expect(
       mapCharacterAssetsResourceState({
         data: null,
-        loading: false,
         error: new ApiQueryError('Authorization rejected.', {
           status: 401,
           code: 'EVE_REAUTH_REQUIRED',
           authorizeUrl: '/reauthorize/7',
         }),
+        loading: false,
       }),
     ).toMatchObject({
-      phase: 'authorization-rejected',
-      canRetry: false,
       action: {
         href: '/reauthorize/7',
         label: 'AUTHORIZE ASSETS FOR THIS CHARACTER',
       },
+      canRetry: false,
+      phase: 'authorization-rejected',
     })
     expect(
       mapCharacterAssetsResourceState({
         data: null,
-        loading: false,
         error: new ApiQueryError('Cooling down.', {
           status: 429,
           code: 'ESI_COOLDOWN',
           retryAfterSeconds: 30,
           retryAt: '2026-09-03T12:00:30.000Z',
         }),
+        loading: false,
       }),
     ).toMatchObject({
-      phase: 'cooldown',
-      message: 'Cooling down. Retry after 30 seconds.',
       canRetry: false,
+      message: 'Cooling down. Retry after 30 seconds.',
+      phase: 'cooldown',
       retryAt: '2026-09-03T12:00:30.000Z',
     })
     expect(
       mapCharacterAssetsResourceState({
         data: null,
-        loading: false,
         error: new Error(''),
+        loading: false,
       }),
     ).toMatchObject({
-      phase: 'unavailable',
-      message: 'This character asset collection is temporarily unavailable.',
       canRetry: true,
+      message: 'This character asset collection is temporarily unavailable.',
+      phase: 'unavailable',
     })
     expect(
       mapCharacterAssetsResourceState({
         data: null,
-        loading: false,
         error: null,
+        loading: false,
         parked: true,
       }),
     ).toMatchObject({
-      phase: 'unavailable',
-      message: 'Character assets are not loaded. Retry to request them again.',
-      statusLabel: 'IDLE / ASSETS',
       canRetry: true,
       initialLoading: false,
+      message: 'Character assets are not loaded. Retry to request them again.',
+      phase: 'unavailable',
       refreshing: false,
+      statusLabel: 'IDLE / ASSETS',
     })
     expect(
       mapCharacterAssetsResourceState({
         data: {
           assets: [],
-          enrichment: { types: 'complete', names: 'complete', locations: 'complete' },
-          stale: true,
-          validatedAt: '2026-09-03T12:00:00.000Z',
+          enrichment: { locations: 'complete', names: 'complete', types: 'complete' },
           refreshFailureClass: 'esi-unavailable',
           retryAt: null,
+          stale: true,
+          validatedAt: '2026-09-03T12:00:00.000Z',
         },
-        loading: false,
         error: new Error('Refresh failed.'),
+        loading: false,
       }),
     ).toMatchObject({
+      canRetry: true,
+      message: 'Refresh failed.',
       phase: 'ready',
       refreshFailed: true,
       stale: true,
-      message: 'Refresh failed.',
-      canRetry: true,
     })
     expect(
       mapCharacterAssetsResourceState({
         data: {
           assets: [],
-          enrichment: { types: 'complete', names: 'complete', locations: 'complete' },
-          stale: true,
-          validatedAt: '2026-09-03T12:00:00.000Z',
+          enrichment: { locations: 'complete', names: 'complete', types: 'complete' },
           refreshFailureClass: 'esi-cooldown',
           retryAt: '2026-09-03T12:00:30.000Z',
+          stale: true,
+          validatedAt: '2026-09-03T12:00:00.000Z',
         },
-        loading: false,
         error: null,
+        loading: false,
       }),
     ).toMatchObject({
-      phase: 'ready',
-      stale: true,
       canRetry: false,
+      phase: 'ready',
       retryAt: '2026-09-03T12:00:30.000Z',
+      stale: true,
     })
   })
 })
@@ -274,23 +274,23 @@ describe('character Assets adapter', () => {
     )
     const mounted = mountAdapter()
     await settle()
-    expect(requestedIds).toEqual([7])
+    expect(requestedIds).toStrictEqual([7])
     expect(mounted.adapter.assets.value?.assets[0]?.itemId).toBe(70)
 
     mounted.characterId.value = 8
     await settle()
-    expect(requestedIds).toEqual([7])
+    expect(requestedIds).toStrictEqual([7])
 
     mounted.characters.value = [{ characterId: 7 }, { characterId: 8 }]
     await settle()
-    expect(requestedIds).toEqual([7, 8])
+    expect(requestedIds).toStrictEqual([7, 8])
     expect(mounted.adapter.assets.value?.assets[0]?.itemId).toBe(80)
 
     mounted.authenticated.value = false
     mounted.characterId.value = 9
     mounted.characters.value = [{ characterId: 9 }]
     await settle()
-    expect(requestedIds).toEqual([7, 8])
+    expect(requestedIds).toStrictEqual([7, 8])
     mounted.unmount()
   })
 
@@ -314,9 +314,9 @@ describe('character Assets adapter', () => {
 
     expect(mounted.adapter.assets.value?.assets[0]?.itemId).toBe(70)
     expect(mounted.adapter.state.value).toMatchObject({
+      message: 'Refresh failed.',
       phase: 'ready',
       refreshFailed: true,
-      message: 'Refresh failed.',
     })
     mounted.unmount()
   })
@@ -361,11 +361,11 @@ describe('character Assets adapter', () => {
         return HttpResponse.json({
           originSystemId: body.originSystemId,
           policy: { kind: 'shortest' },
-          sdeBuildNumber: 1234,
           routes: body.destinationSystemIds.map((destinationSystemId) => ({
             destinationSystemId,
             jumps: 0,
           })),
+          sdeBuildNumber: 1234,
         })
       }),
     )
@@ -373,13 +373,13 @@ describe('character Assets adapter', () => {
     mounted.characters.value = [{ characterId: 7, location: { solarSystemId: 30_000_142 } }]
     await settle()
 
-    expect(requestedOrigins).toEqual([30_000_142])
+    expect(requestedOrigins).toStrictEqual([30_000_142])
     expect(mounted.adapter.routeJumpsBySystemId.value.get(30_000_142)).toBe(0)
 
     mounted.characters.value = [{ characterId: 7, location: { solarSystemId: 30_000_143 } }]
     await settle()
 
-    expect(requestedOrigins).toEqual([30_000_142, 30_000_143])
+    expect(requestedOrigins).toStrictEqual([30_000_142, 30_000_143])
     expect(mounted.adapter.assets.value?.assets[0]?.itemId).toBe(70)
     expect(mounted.adapter.state.value.phase).toBe('ready')
     expect(mounted.adapter.routeJumpsBySystemId.value.size).toBe(0)
@@ -432,7 +432,6 @@ async function settle() {
 
 function response(characterId: number) {
   return {
-    characterId,
     assets: [
       {
         itemId: characterId * 10,
@@ -448,7 +447,7 @@ function response(characterId: number) {
         isSingleton: false,
         isBlueprintCopy: null,
         customName: null,
-        locationId: 60003760,
+        locationId: 60_003_760,
         locationType: 'station',
         locationName: 'Jita IV - Moon 4',
         solarSystemId: 30_000_142,
@@ -457,9 +456,10 @@ function response(characterId: number) {
         parentItemId: null,
       },
     ],
-    enrichment: { types: 'complete', names: 'complete', locations: 'complete' },
     cachedUntil: '2026-09-03T13:00:00.000Z',
-    validatedAt: '2026-09-03T12:00:00.000Z',
+    characterId,
+    enrichment: { locations: 'complete', names: 'complete', types: 'complete' },
     stale: false,
+    validatedAt: '2026-09-03T12:00:00.000Z',
   }
 }

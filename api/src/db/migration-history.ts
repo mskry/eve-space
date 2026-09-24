@@ -12,7 +12,9 @@ export function assertCoreMigrationHistory(
   const manifestByName = new Map(manifest.map((migration) => [migration.name, migration]))
   const rowsByName = new Map(rows.map((row) => [row.name, row]))
   const unknown = rows.find(({ name }) => !manifestByName.has(name))
-  if (unknown) throw historyError('unknown migration', unknown.name)
+  if (unknown) {
+    throw historyError('unknown migration', unknown.name)
+  }
 
   let foundGap = false
   for (const migration of manifest) {
@@ -21,10 +23,15 @@ export function assertCoreMigrationHistory(
       foundGap = true
       continue
     }
-    if (foundGap) throw historyError('non-prefix migration', row.name)
-    if (row.contentSha256 === null) throw historyError('missing content identity', row.name)
-    if (row.contentSha256 !== migration.sha256)
+    if (foundGap) {
+      throw historyError('non-prefix migration', row.name)
+    }
+    if (row.contentSha256 === null) {
+      throw historyError('missing content identity', row.name)
+    }
+    if (row.contentSha256 !== migration.sha256) {
       throw historyError('content identity mismatch', row.name)
+    }
   }
 }
 

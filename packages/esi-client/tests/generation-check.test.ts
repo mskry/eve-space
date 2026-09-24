@@ -8,7 +8,7 @@ import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 describe('non-mutating generated output check', () => {
   it('checks source, documentation, examples, tests, and OpenAPI generated targets', () => {
-    expect(generationCheckTargets).toEqual([
+    expect(generationCheckTargets).toStrictEqual([
       'src/generated',
       'llms.txt',
       'docs/generated',

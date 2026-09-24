@@ -24,7 +24,7 @@ describe('organization module boundaries', () => {
     (sourceModule, sourceTier, importedModule, importedTier) => {
       expect(
         organizationImportViolations([source(sourceModule, `import './${importedModule}.js'`)]),
-      ).toEqual([
+      ).toStrictEqual([
         `api/src/organization/${sourceModule}.ts: ${sourceTier} module ${sourceModule} cannot import ${importedTier} module ${importedModule}`,
       ])
     },
@@ -44,7 +44,24 @@ describe('organization module boundaries', () => {
         source('compliance-repair', "import './compliance.js'"),
         source('routes', "import './group-store.js'"),
       ]),
-    ).toEqual([])
+    ).toStrictEqual([])
+  })
+
+  it('allows application modules to import dependencies outside the organization directory', () => {
+    expect(
+      organizationImportViolations([source('compliance', "import { eq } from 'drizzle-orm'")]),
+    ).toStrictEqual([])
+  })
+
+  it('sorts multiple boundary violations by their diagnostic text', () => {
+    expect(
+      organizationImportViolations([
+        source('context', "import './routes.js'\nimport './audit.js'"),
+      ]),
+    ).toStrictEqual([
+      'api/src/organization/context.ts: adapter module context cannot import observability module audit',
+      'api/src/organization/context.ts: adapter module context cannot import transport module routes',
+    ])
   })
 
   it('keeps pure policy inside the organization policy boundary', () => {
@@ -52,7 +69,7 @@ describe('organization module boundaries', () => {
       organizationImportViolations([
         source('authority-policy', "import type { Roles } from '../characters/roles.js'"),
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'api/src/organization/authority-policy.ts: policy module authority-policy cannot import outside organization: ../characters/roles.js',
     ])
   })
@@ -62,7 +79,7 @@ describe('organization module boundaries', () => {
       organizationImportViolations([
         source('sensitive-access-audit', "import './reviewer-commands.js'"),
       ]),
-    ).toEqual([
+    ).toStrictEqual([
       'api/src/organization/sensitive-access-audit.ts: observability module sensitive-access-audit cannot import application module reviewer-commands',
     ])
   })
@@ -74,7 +91,7 @@ describe('organization module boundaries', () => {
         organizationImportViolations([
           source('access-policy', `import runtime from '${specifier}'`),
         ]),
-      ).toEqual([
+      ).toStrictEqual([
         `api/src/organization/access-policy.ts: policy module access-policy cannot import outside organization: ${specifier}`,
       ])
     },
@@ -86,11 +103,11 @@ describe('organization module boundaries', () => {
         source('compliance', "import './group-store.js'"),
         source('group-store', "import './compliance.js'"),
       ]),
-    ).toEqual(['Organization dependency cycle: compliance -> group-store -> compliance'])
+    ).toStrictEqual(['Organization dependency cycle: compliance -> group-store -> compliance'])
   })
 
   it('requires new modules to declare their tier', () => {
-    expect(organizationImportViolations([source('new-module', '')])).toEqual([
+    expect(organizationImportViolations([source('new-module', '')])).toStrictEqual([
       'api/src/organization/new-module.ts: Organization module new-module has no declared tier',
     ])
   })

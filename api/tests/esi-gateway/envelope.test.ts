@@ -26,42 +26,42 @@ describe('ESI cache envelopes', () => {
   test('validates cache metadata while preserving the original envelope fields', () => {
     const parsed = parseEnvelope(
       serializedEnvelope({
-        authorization: { kind: 'character', principal: 'character-1', generation: 3 },
-        resourceRevision: { namespace: 'mailbox', value: 4 },
+        authorization: { generation: 3, kind: 'character', principal: 'character-1' },
         futureField: 'preserved',
+        resourceRevision: { namespace: 'mailbox', value: 4 },
       }),
       cachedNameSchema,
     )
 
-    expect(parsed).toEqual({
-      success: true,
+    expect(parsed).toStrictEqual({
       envelope: expect.objectContaining({
         data: { name: 'cached' },
         authorization: { kind: 'character', principal: 'character-1', generation: 3 },
         resourceRevision: { namespace: 'mailbox', value: 4 },
         futureField: 'preserved',
       }),
+      success: true,
     })
   })
 
   test('distinguishes obsolete versions from malformed envelopes', () => {
-    expect(parseEnvelope(serializedEnvelope({ version: 2 }), unknownSchema)).toEqual({
-      success: false,
-      reason: 'versionMismatch',
+    expect(parseEnvelope(serializedEnvelope({ version: 2 }), unknownSchema)).toStrictEqual({
       found: 2,
-    })
-    expect(parseEnvelope(serializedEnvelope({ version: undefined }), unknownSchema)).toEqual({
-      success: false,
       reason: 'versionMismatch',
-      found: undefined,
-    })
-    expect(parseEnvelope('{', unknownSchema)).toEqual({
       success: false,
+    })
+    expect(parseEnvelope(serializedEnvelope({ version: undefined }), unknownSchema)).toStrictEqual({
+      found: undefined,
+      reason: 'versionMismatch',
+      success: false,
+    })
+    expect(parseEnvelope('{', unknownSchema)).toStrictEqual({
       reason: 'malformedJson',
+      success: false,
     })
     expect(
       parseEnvelope(serializedEnvelope({ freshUntil: now + 1, staleUntil: now }), unknownSchema),
-    ).toEqual({ success: false, reason: 'incoherentFreshnessWindow' })
+    ).toStrictEqual({ reason: 'incoherentFreshnessWindow', success: false })
 
     for (const serialized of [
       'null',
@@ -69,14 +69,15 @@ describe('ESI cache envelopes', () => {
       serializedEnvelope({ validatedAt: 'not-a-date' }),
       serializedEnvelope({ fence: -1 }),
       serializedEnvelope({
-        authorization: { kind: 'character', principal: '', generation: 1 },
+        authorization: { generation: 1, kind: 'character', principal: '' },
       }),
       serializedEnvelope({ resourceRevision: { namespace: 'mailbox', value: -1 } }),
-    ])
-      expect(parseEnvelope(serialized, unknownSchema)).toEqual({
-        success: false,
+    ]) {
+      expect(parseEnvelope(serialized, unknownSchema)).toStrictEqual({
         reason: 'invalidShape',
+        success: false,
       })
+    }
   })
 
   test('rejects an invalid representation payload without exposing validation details', () => {
@@ -87,7 +88,7 @@ describe('ESI cache envelopes', () => {
 
     const parsed = parseEnvelope(serialized, schema)
 
-    expect(parsed).toEqual({ success: false, reason: 'invalidPayload' })
+    expect(parsed).toStrictEqual({ reason: 'invalidPayload', success: false })
     expect(JSON.stringify(parsed)).not.toContain('private-cache-value')
   })
 
@@ -96,27 +97,27 @@ describe('ESI cache envelopes', () => {
       data: { name: 'Bandera' },
       fence: 3,
       maximumRetentionMs,
+      metadata: {
+        cache: { etag: '"v1"', expires: '2026-08-20T12:01:00.000Z', lastModified: 'yesterday' },
+        headers: {},
+        pagination: { pages: 7 },
+        status: 200,
+      },
+      now,
       policy,
       representationVersion: 'v1',
-      now,
-      metadata: {
-        status: 200,
-        headers: {},
-        cache: { expires: '2026-08-20T12:01:00.000Z', etag: '"v1"', lastModified: 'yesterday' },
-        pagination: { pages: 7 },
-      },
     })
 
     expect(envelope).toMatchObject({
-      version: 3,
-      representationVersion: 'v1',
-      freshUntil: now + 60_000,
-      staleUntil: now + 3_660_000,
-      retainUntil: now + 60_000 + retentionMilliseconds,
       etag: '"v1"',
+      fence: 3,
+      freshUntil: now + 60_000,
       lastModified: 'yesterday',
       pagination: { pages: 7 },
-      fence: 3,
+      representationVersion: 'v1',
+      retainUntil: now + 60_000 + retentionMilliseconds,
+      staleUntil: now + 3_660_000,
+      version: 3,
     })
     expect(isEnvelopeFresh(envelope, now + 59_999)).toBe(true)
     expect(isEnvelopeFresh(envelope, now + 60_000)).toBe(false)
@@ -129,22 +130,22 @@ describe('ESI cache envelopes', () => {
       data: 1,
       fence: 1,
       maximumRetentionMs,
+      metadata: {
+        cache: { cacheControl: 'private, max-age=42', maxAgeSeconds: 42 },
+        headers: { date: '2026-08-20T11:59:50.000Z' },
+        status: 200,
+      },
+      now,
       policy,
       representationVersion: 'v1',
-      now,
-      metadata: {
-        status: 200,
-        headers: { date: '2026-08-20T11:59:50.000Z' },
-        cache: { cacheControl: 'private, max-age=42', maxAgeSeconds: 42 },
-      },
     })
     const fallback = createCacheEnvelope({
       data: 1,
       fence: 1,
       maximumRetentionMs,
+      now,
       policy,
       representationVersion: 'v1',
-      now,
     })
 
     expect(fromCacheControl.freshUntil).toBe(now + 32_000)
@@ -161,14 +162,14 @@ describe('ESI cache envelopes', () => {
         data: 1,
         fence: 1,
         maximumRetentionMs,
+        metadata: {
+          cache: { cacheControl, ...(maxAgeSeconds === undefined ? {} : { maxAgeSeconds }) },
+          headers: {},
+          status: 200,
+        },
+        now,
         policy,
         representationVersion: 'v1',
-        now,
-        metadata: {
-          status: 200,
-          headers: {},
-          cache: { cacheControl, ...(maxAgeSeconds === undefined ? {} : { maxAgeSeconds }) },
-        },
       })
 
       expect(envelope.freshUntil).toBe(now + expectedOffset)
@@ -178,7 +179,7 @@ describe('ESI cache envelopes', () => {
   test('projects route quota from typed SDK metadata', () => {
     expect(
       getEsiQuota({
-        status: 200,
+        errorLimit: { remaining: 99, reset: 45 },
         headers: {
           'x-ratelimit-group': 'raw-group',
           'x-ratelimit-limit': 'not-a-number',
@@ -186,15 +187,15 @@ describe('ESI cache envelopes', () => {
           'x-ratelimit-used': '1.5',
         },
         routeRateLimit: { group: 'typed-group', limit: 100, remaining: 98, used: 2 },
-        errorLimit: { remaining: 99, reset: 45 },
+        status: 200,
       }),
     ).toStrictEqual({
+      errorRemaining: 99,
+      errorResetSeconds: 45,
       group: 'typed-group',
       limit: '100',
       remaining: 98,
       used: 2,
-      errorRemaining: 99,
-      errorResetSeconds: 45,
     })
   })
 
@@ -204,17 +205,17 @@ describe('ESI cache envelopes', () => {
       data: 1,
       fence: 1,
       maximumRetentionMs,
+      now,
       policy: resolver,
       representationVersion: 'v1',
-      now,
     })
     const runtimeOnly = createCacheEnvelope({
       data: 1,
       fence: 1,
       maximumRetentionMs,
+      now,
       policy: { ...resolver, freshness: { kind: 'runtime-only' } },
       representationVersion: 'v1',
-      now,
     })
 
     expect(resolved.freshUntil).toBe(now + 3_600_000)
@@ -226,68 +227,77 @@ describe('ESI cache envelopes', () => {
 
   test('preserves validators and representation scope after a 304', () => {
     const original = createCacheEnvelope({
+      authorization: { generation: 3, kind: 'character', principal: 'character-1' },
       data: { name: 'Bandera' },
       fence: 4,
       maximumRetentionMs,
+      metadata: {
+        cache: { etag: '"old"', lastModified: 'old' },
+        headers: { 'x-ratelimit-remaining': '99' },
+        pagination: { pages: 3 },
+        status: 200,
+      },
+      now,
       policy,
       representationVersion: 'v1',
-      authorization: { kind: 'character', principal: 'character-1', generation: 3 },
       resourceRevision: { namespace: 'mailbox', value: 7 },
-      now,
-      metadata: {
-        status: 200,
-        headers: { 'x-ratelimit-remaining': '99' },
-        cache: { etag: '"old"', lastModified: 'old' },
-        pagination: { pages: 3 },
-      },
     })
     const refreshed = updateNotModifiedEnvelope({
+      authorization: { generation: 4, kind: 'character', principal: 'character-1' },
       envelope: original,
-      metadata: {
-        status: 304,
-        headers: { 'x-ratelimit-remaining': '98' },
-        cache: { cacheControl: 'max-age=10', maxAgeSeconds: 10, etag: '"new"' },
-      },
-      policy,
       fence: 5,
       maximumRetentionMs,
-      authorization: { kind: 'character', principal: 'character-1', generation: 4 },
-      now: now + 1_000,
+      metadata: {
+        cache: { cacheControl: 'max-age=10', etag: '"new"', maxAgeSeconds: 10 },
+        headers: { 'x-ratelimit-remaining': '98' },
+        status: 304,
+      },
+      now: now + 1000,
+      policy,
     })
 
-    expect(toRevalidation(original)).toEqual({ ifNoneMatch: '"old"', ifModifiedSince: 'old' })
-    expect(toRevalidation(original, false)).toEqual({})
+    expect(toRevalidation(original)).toStrictEqual({ ifModifiedSince: 'old', ifNoneMatch: '"old"' })
+    expect(toRevalidation(original, false)).toStrictEqual({})
     expect(refreshed).toMatchObject({
+      authorization: { generation: 4, kind: 'character', principal: 'character-1' },
       data: original.data,
       etag: '"new"',
-      lastModified: 'old',
-      freshUntil: now + 11_000,
-      representationVersion: 'v1',
-      authorization: { kind: 'character', principal: 'character-1', generation: 4 },
-      resourceRevision: { namespace: 'mailbox', value: 7 },
-      pagination: { pages: 3 },
       fence: 5,
+      freshUntil: now + 11_000,
+      lastModified: 'old',
+      pagination: { pages: 3 },
+      representationVersion: 'v1',
+      resourceRevision: { namespace: 'mailbox', value: 7 },
     })
     expect(refreshed).not.toHaveProperty('quota')
-    expect(getEsiQuota({ status: 304, headers: {}, routeRateLimit: { remaining: 98 } })).toEqual({
+    expect(
+      getEsiQuota({ headers: {}, routeRateLimit: { remaining: 98 }, status: 304 }),
+    ).toStrictEqual({
+      errorRemaining: undefined,
+      errorResetSeconds: undefined,
+      group: undefined,
+      limit: undefined,
       remaining: 98,
+      used: undefined,
     })
   })
 
   test('retains private validators behind an outage-only stale window and bounds L1 by recency', () => {
     const walletPolicy = getEsiOperationContract('wallet-balance')
     const privateCache = sharedPrivateCache(maximumRetentionMs)
-    if (privateCache.kind === 'none') throw new Error('Expected shared private caching')
+    if (privateCache.kind === 'none') {
+      throw new Error('Expected shared private caching')
+    }
     const privateEnvelope = createCacheEnvelope({
       data: 5,
       fence: 1,
       maximumRetentionMs,
+      now,
       policy: {
         ...walletPolicy,
         cache: { ...privateCache, revalidate: true },
       },
       representationVersion: 'v1',
-      now,
     })
     const cache = new BoundedEsiL1Cache(2)
     cache.set('first', privateEnvelope)
@@ -312,22 +322,22 @@ describe('ESI cache envelopes', () => {
       data: { body: 'untrusted' },
       fence: 1,
       maximumRetentionMs,
+      metadata: {
+        cache: { cacheControl: 'max-age=30', maxAgeSeconds: 30 },
+        headers: {},
+        status: 200,
+      },
+      now,
       policy: getEsiOperationContract('mail-message'),
       representationVersion: 'v1',
       resourceRevision: { namespace: 'mailbox', value: 4 },
-      now,
-      metadata: {
-        status: 200,
-        headers: {},
-        cache: { cacheControl: 'max-age=30', maxAgeSeconds: 30 },
-      },
     })
 
     expect(envelope).toMatchObject({
       freshUntil: now + 30_000,
-      staleUntil: now + 30_000,
-      retainUntil: now + 30_000,
       resourceRevision: { namespace: 'mailbox', value: 4 },
+      retainUntil: now + 30_000,
+      staleUntil: now + 30_000,
     })
   })
 
@@ -340,17 +350,17 @@ describe('ESI cache envelopes', () => {
       data: 1,
       fence: 1,
       maximumRetentionMs,
+      now: beforeBoundary,
       policy: dailyPolicy,
       representationVersion: 'v1',
-      now: beforeBoundary,
     })
     const at = createCacheEnvelope({
       data: 1,
       fence: 1,
       maximumRetentionMs,
+      now: atBoundary,
       policy: dailyPolicy,
       representationVersion: 'v1',
-      now: atBoundary,
     })
 
     expect(before.freshUntil).toBe(atBoundary)
@@ -360,8 +370,9 @@ describe('ESI cache envelopes', () => {
   test('caps configured private retention at the maximum retention deadline', () => {
     const walletPolicy = getEsiOperationContract('wallet-balance')
     const privateCache = sharedPrivateCache(120_000)
-    if (walletPolicy.cache.kind === 'none' || privateCache.kind === 'none')
+    if (walletPolicy.cache.kind === 'none' || privateCache.kind === 'none') {
       throw new Error('Wallet balance must use shared private caching')
+    }
     const privatePolicy = {
       ...walletPolicy,
       cache: { ...privateCache, revalidate: walletPolicy.cache.revalidate },
@@ -370,14 +381,14 @@ describe('ESI cache envelopes', () => {
       data: 1,
       fence: 1,
       maximumRetentionMs: 30_000,
+      metadata: {
+        cache: { cacheControl: 'max-age=60', maxAgeSeconds: 60 },
+        headers: {},
+        status: 200,
+      },
+      now,
       policy: privatePolicy,
       representationVersion: 'v1',
-      now,
-      metadata: {
-        status: 200,
-        headers: {},
-        cache: { cacheControl: 'max-age=60', maxAgeSeconds: 60 },
-      },
     })
 
     expect(privateCache.retentionMilliseconds).toBe(120_000)
@@ -388,14 +399,14 @@ describe('ESI cache envelopes', () => {
 
 function serializedEnvelope(overrides: Record<string, unknown> = {}) {
   return JSON.stringify({
-    version: ESI_CACHE_ENVELOPE_VERSION,
-    representationVersion: 'v1',
     data: { name: 'cached' },
-    freshUntil: now + 60_000,
-    staleUntil: now + 60_000,
-    retainUntil: now + 60_000,
-    validatedAt: new Date(now).toISOString(),
     fence: 1,
+    freshUntil: now + 60_000,
+    representationVersion: 'v1',
+    retainUntil: now + 60_000,
+    staleUntil: now + 60_000,
+    validatedAt: new Date(now).toISOString(),
+    version: ESI_CACHE_ENVELOPE_VERSION,
     ...overrides,
   })
 }

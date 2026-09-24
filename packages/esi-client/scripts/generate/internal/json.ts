@@ -7,8 +7,12 @@ import { compareText } from './text.ts';
  * stable regardless of the key order the source document happened to use.
  */
 export function sortJsonValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortJsonValue);
-  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) {
+    return value.map(sortJsonValue);
+  }
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
   return Object.fromEntries(
     Object.entries(value)
       .toSorted(([left], [right]) => compareText(left, right))
@@ -27,7 +31,9 @@ export function hashText(value: string): string {
 export function deepFreeze<T>(value: T): T {
   if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
     Object.freeze(value);
-    for (const entry of Object.values(value)) deepFreeze(entry);
+    for (const entry of Object.values(value)) {
+      deepFreeze(entry);
+    }
   }
   return value;
 }

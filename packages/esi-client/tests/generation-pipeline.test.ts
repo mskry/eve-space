@@ -28,7 +28,7 @@ function emitter(
   emit: (context: EmitterContext) => Promise<readonly GeneratedOutputClaim[]>,
   name = 'test-emitter',
 ): GeneratedOutputEmitter {
-  return { name, emit };
+  return { emit, name };
 }
 
 async function writeTargets(
@@ -36,7 +36,9 @@ async function writeTargets(
   skip?: string,
 ): Promise<readonly GeneratedOutputClaim[]> {
   for (const target of emittedTargets) {
-    if (target.path === skip) continue;
+    if (target.path === skip) {
+      continue;
+    }
     const path = context.outputPath(target.path);
     if (target.kind === 'file') {
       await mkdir(dirname(path), { recursive: true });
@@ -48,7 +50,7 @@ async function writeTargets(
   }
   return emittedTargets
     .filter(({ path }) => path !== skip)
-    .map(({ path, kind }) => ({ target: path, kind }));
+    .map(({ path, kind }) => ({ kind, target: path }));
 }
 
 describe('generated artifact emission', () => {
@@ -59,7 +61,7 @@ describe('generated artifact emission', () => {
       [emitter((current) => writeTargets(current))],
       emittedTargets,
     );
-    expect(produced).toEqual(emittedTargets.map(({ path }) => path));
+    expect(produced).toStrictEqual(emittedTargets.map(({ path }) => path));
   });
 
   it('rejects a claim set missing a declared target', async () => {
@@ -81,7 +83,7 @@ describe('generated artifact emission', () => {
         [
           emitter(async (current) => [
             ...(await writeTargets(current)),
-            { target: 'src/runtime.ts', kind: 'file' as const },
+            { kind: 'file' as const, target: 'src/runtime.ts' },
           ]),
         ],
         emittedTargets,
@@ -97,7 +99,7 @@ describe('generated artifact emission', () => {
         [
           emitter(async (current) => [
             ...(await writeTargets(current)),
-            { target: 'llms.txt', kind: 'file' as const },
+            { kind: 'file' as const, target: 'llms.txt' },
           ]),
         ],
         emittedTargets,
@@ -113,7 +115,7 @@ describe('generated artifact emission', () => {
         [
           emitter(async (current) => {
             await writeTargets(current, 'examples/generated');
-            return emittedTargets.map(({ path, kind }) => ({ target: path, kind }));
+            return emittedTargets.map(({ path, kind }) => ({ kind, target: path }));
           }),
         ],
         emittedTargets,
@@ -129,7 +131,7 @@ describe('generated artifact emission', () => {
         [
           emitter(async (current) => {
             await writeTargets(current);
-            return [{ target: 'llms.txt', kind: 'directory' as const }];
+            return [{ kind: 'directory' as const, target: 'llms.txt' }];
           }),
         ],
         emittedTargets,
@@ -175,13 +177,13 @@ async function makeTrees(): Promise<{ staged: string; project: string }> {
   }
   await mkdir(join(project, 'src'), { recursive: true });
   await writeFile(join(project, 'src/maintained.ts'), 'maintained\n');
-  return { staged, project };
+  return { project, staged };
 }
 
 async function expectNoDebris(project: string): Promise<void> {
   for (const directory of ['.', 'src', 'docs', 'examples', 'tests', 'openapi']) {
     const entries = await readdir(join(project, directory));
-    expect(entries.filter((entry) => entry.includes('esi-client-'))).toEqual([]);
+    expect(entries.filter((entry) => entry.includes('esi-client-'))).toStrictEqual([]);
   }
 }
 
@@ -238,7 +240,9 @@ describe('atomic generated-path replacement', () => {
           if (phase === 'install' && destination.endsWith(join('docs', 'generated'))) {
             throw new Error('replacement failed');
           }
-          if (phase === 'restore') throw new Error('restore failed');
+          if (phase === 'restore') {
+            throw new Error('restore failed');
+          }
           await rename(source, destination);
         },
       }),
@@ -269,7 +273,9 @@ describe('atomic generated-path replacement', () => {
 
     const failure = await replaceGeneratedPathsAtomically(staged, project, targets, {
       removePath: async (path) => {
-        if (path.includes('esi-client-backup-')) throw new Error('backup removal failed');
+        if (path.includes('esi-client-backup-')) {
+          throw new Error('backup removal failed');
+        }
         await rm(path, { force: true, recursive: true });
       },
     }).catch((error: unknown) => error);
@@ -280,7 +286,9 @@ describe('atomic generated-path replacement', () => {
       const file = target.kind === 'file' ? path : join(path, 'generated.txt');
       await expect(readFile(file, 'utf8')).resolves.toBe(`new ${target.path}\n`);
     }
-    if (!(failure instanceof AggregateError)) throw failure;
+    if (!(failure instanceof AggregateError)) {
+      throw failure;
+    }
     expect(failure.message).toBe('Generated output was installed, but replacement cleanup failed');
   });
 
@@ -296,7 +304,9 @@ describe('atomic generated-path replacement', () => {
       },
     }).catch((error: unknown) => error);
 
-    if (!(failure instanceof Error)) throw failure;
+    if (!(failure instanceof Error)) {
+      throw failure;
+    }
     expect(failure.message).not.toContain('was installed');
     for (const target of generatedTargets) {
       const path = join(project, target.path);
@@ -315,7 +325,6 @@ describe('project root isolation', () => {
       writeFile(
         join(projectRoot, 'openapi/config/naming-overrides.json'),
         `${JSON.stringify({
-          schemaVersion: 2,
           operations: [
             {
               operationId: 'get_items',
@@ -324,20 +333,21 @@ describe('project root isolation', () => {
               reviewed: true,
             },
           ],
+          schemaVersion: 2,
         })}\n`,
       ),
       writeFile(
         join(projectRoot, 'openapi/config/safety-overrides.json'),
-        `${JSON.stringify({ schemaVersion: 1, overrides: [] })}\n`,
+        `${JSON.stringify({ overrides: [], schemaVersion: 1 })}\n`,
       ),
       writeFile(
         join(projectRoot, 'openapi/config/exclusions.json'),
-        `${JSON.stringify({ schemaVersion: 1, exclusions: [] })}\n`,
+        `${JSON.stringify({ exclusions: [], schemaVersion: 1 })}\n`,
       ),
     ]);
     const document = {
-      openapi: '3.1.0',
       info: { title: 'Invalid policy fixture', version: '1.0.0' },
+      openapi: '3.1.0',
       paths: {
         '/items': {
           get: {
@@ -363,7 +373,7 @@ describe('project root isolation', () => {
         projectRoot,
       ),
     ).rejects.toThrow('Invalid x-rate-limit window-size for get_items');
-    await expect(readdir(workspace)).resolves.toEqual([]);
+    await expect(readdir(workspace)).resolves.toStrictEqual([]);
   });
 
   it('reads configuration from the given project root, not the package root', async () => {
@@ -374,20 +384,20 @@ describe('project root isolation', () => {
     // this would be ignored and preparation would succeed.
     await writeFile(
       join(projectRoot, 'openapi/config/naming-overrides.json'),
-      `${JSON.stringify({ schemaVersion: 2, operations: [] })}\n`,
+      `${JSON.stringify({ operations: [], schemaVersion: 2 })}\n`,
     );
     await writeFile(
       join(projectRoot, 'openapi/config/safety-overrides.json'),
-      `${JSON.stringify({ schemaVersion: 1, overrides: [] })}\n`,
+      `${JSON.stringify({ overrides: [], schemaVersion: 1 })}\n`,
     );
     await writeFile(
       join(projectRoot, 'openapi/config/exclusions.json'),
-      `${JSON.stringify({ schemaVersion: 1, exclusions: [] })}\n`,
+      `${JSON.stringify({ exclusions: [], schemaVersion: 1 })}\n`,
     );
 
     const document = {
-      openapi: '3.1.0',
       info: { title: 'Project root fixture', version: '1.0.0' },
+      openapi: '3.1.0',
       paths: {
         '/items': {
           get: { operationId: 'get_items', responses: { '204': { description: 'No content' } } },

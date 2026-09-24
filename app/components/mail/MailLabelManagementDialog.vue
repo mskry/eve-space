@@ -24,8 +24,12 @@ const keyedMailLabels = createKeyedMailLabels()
 const labelEntries = computed(() => keyedMailLabels(props.labels))
 const trimmedName = computed(() => name.value.trim())
 const nameError = computed(() => {
-  if (trimmedName.value.length === 0) return 'Enter a label name between 1 and 40 characters.'
-  if (trimmedName.value.length > 40) return 'Label names can contain at most 40 characters.'
+  if (trimmedName.value.length === 0) {
+    return 'Enter a label name between 1 and 40 characters.'
+  }
+  if (trimmedName.value.length > 40) {
+    return 'Label names can contain at most 40 characters.'
+  }
   return ''
 })
 

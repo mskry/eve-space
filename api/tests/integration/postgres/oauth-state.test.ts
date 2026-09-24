@@ -9,9 +9,9 @@ let connection: postgres.Sql
 let oauthStateStore: typeof import('../../../src/auth/oauth-state-store.js')
 let dbClient: typeof import('../../../src/db/client.js')
 const databasePassword = randomUUID()
-const characterId = 1404328063
+const characterId = 1_404_328_063
 const reviewerUseDisclosures = [
-  { moduleId: 'member-audit', sectionId: 'wallet', disclosureVersion: 3 },
+  { disclosureVersion: 3, moduleId: 'member-audit', sectionId: 'wallet' },
 ] as const
 
 beforeAll(async () => {
@@ -77,13 +77,13 @@ describe('OAuth state return path persistence', () => {
       order by conname
     `
 
-    expect(column).toEqual({
-      data_type: 'character varying',
+    expect(column).toStrictEqual({
       character_maximum_length: 512,
-      is_nullable: 'YES',
       column_default: null,
+      data_type: 'character varying',
+      is_nullable: 'YES',
     })
-    expect(constraints.map(({ conname }) => conname)).toEqual(
+    expect(constraints.map(({ conname }) => conname)).toStrictEqual(
       expect.arrayContaining([
         'oauth_states_character_id_fkey',
         'oauth_states_context_check',
@@ -123,11 +123,11 @@ describe('OAuth state return path persistence', () => {
     const returnPath = `/characters/${characterId}/mail?label=7`
 
     await oauthStateStore.storeOAuthState(state, {
-      intent: 'reauthorize',
-      userId,
       characterId,
+      intent: 'reauthorize',
       returnPath,
       reviewerUseDisclosures,
+      userId,
     })
     const [stored] = await connection<
       { state_hash: string; return_path: string | null; reviewer_use_disclosures: unknown }[]
@@ -135,18 +135,18 @@ describe('OAuth state return path persistence', () => {
       select state_hash, return_path, reviewer_use_disclosures from oauth_states
     `
 
-    expect(stored).toEqual({
-      state_hash: hashState(state),
+    expect(stored).toStrictEqual({
       return_path: returnPath,
       reviewer_use_disclosures: reviewerUseDisclosures,
+      state_hash: hashState(state),
     })
     expect(stored?.state_hash).not.toBe(state)
-    await expect(oauthStateStore.consumeOAuthState(state)).resolves.toEqual({
-      intent: 'reauthorize',
-      userId,
+    await expect(oauthStateStore.consumeOAuthState(state)).resolves.toStrictEqual({
       characterId,
+      intent: 'reauthorize',
       returnPath,
       reviewerUseDisclosures,
+      userId,
     })
     await expect(oauthStateStore.consumeOAuthState(state)).resolves.toBeNull()
     const [remaining] = await connection<{ count: number }[]>`
@@ -165,7 +165,7 @@ describe('OAuth state return path persistence', () => {
       reviewerUseDisclosures: [],
     })
 
-    await expect(oauthStateStore.consumeOAuthState(state)).resolves.toEqual({
+    await expect(oauthStateStore.consumeOAuthState(state)).resolves.toStrictEqual({
       intent: 'login',
       returnPath,
       reviewerUseDisclosures: [],
@@ -181,17 +181,21 @@ describe('OAuth state return path persistence', () => {
     }
     await oauthStateStore.storeOAuthState('inspectable-state', context)
 
-    await expect(oauthStateStore.findOAuthState('inspectable-state')).resolves.toEqual(context)
-    await expect(oauthStateStore.findOAuthState('inspectable-state')).resolves.toEqual(context)
+    await expect(oauthStateStore.findOAuthState('inspectable-state')).resolves.toStrictEqual(
+      context,
+    )
+    await expect(oauthStateStore.findOAuthState('inspectable-state')).resolves.toStrictEqual(
+      context,
+    )
   })
 
   test('preserves legacy omitted paths and stores null for other intents', async () => {
     const userId = await insertOwnedCharacter()
     await oauthStateStore.storeOAuthState('legacy-reauthorization', {
-      intent: 'reauthorize',
-      userId,
       characterId,
+      intent: 'reauthorize',
       reviewerUseDisclosures: [],
+      userId,
     })
     await oauthStateStore.storeOAuthState('login-state', {
       intent: 'login',
@@ -201,26 +205,43 @@ describe('OAuth state return path persistence', () => {
       select intent, return_path from oauth_states order by intent
     `
 
-    expect(rows).toEqual([
+    expect([...rows]).toStrictEqual([
       { intent: 'login', return_path: null },
       { intent: 'reauthorize', return_path: null },
     ])
-    await expect(oauthStateStore.consumeOAuthState('legacy-reauthorization')).resolves.toEqual({
-      intent: 'reauthorize',
-      userId,
+    await expect(
+      oauthStateStore.consumeOAuthState('legacy-reauthorization'),
+    ).resolves.toStrictEqual({
       characterId,
+      intent: 'reauthorize',
       reviewerUseDisclosures: [],
+      userId,
     })
+  })
+
+  test('round-trips an attachment state once for its signed-in user', async () => {
+    const userId = await insertOwnedCharacter()
+    const context = {
+      intent: 'attach' as const,
+      reviewerUseDisclosures: [],
+      userId,
+    }
+    await oauthStateStore.storeOAuthState('attachment-state', context)
+
+    await expect(oauthStateStore.consumeOAuthState('attachment-state')).resolves.toStrictEqual(
+      context,
+    )
+    await expect(oauthStateStore.consumeOAuthState('attachment-state')).resolves.toBeNull()
   })
 
   test('allows exactly one concurrent consumer', async () => {
     const userId = await insertOwnedCharacter()
     const context = {
-      intent: 'reauthorize' as const,
-      userId,
       characterId,
+      intent: 'reauthorize' as const,
       returnPath: `/characters/${characterId}/mail`,
       reviewerUseDisclosures: [],
+      userId,
     }
     await oauthStateStore.storeOAuthState('concurrent-state', context)
 
@@ -230,7 +251,7 @@ describe('OAuth state return path persistence', () => {
     ])
 
     expect(results.filter((result) => result === null)).toHaveLength(1)
-    expect(results.filter((result) => result !== null)).toEqual([context])
+    expect(results.filter((result) => result !== null)).toStrictEqual([context])
   })
 
   test('round-trips a single-use organization-owner claim context', async () => {
@@ -247,12 +268,12 @@ describe('OAuth state return path persistence', () => {
       on conflict do nothing
     `
     const context = {
-      intent: 'claim-organization-owner' as const,
-      userId,
       characterId,
+      intent: 'claim-organization-owner' as const,
       organizationId: 1_000_166,
       organizationVersion: 1,
       reviewerUseDisclosures: [],
+      userId,
     }
     await oauthStateStore.storeOAuthState('owner-claim-state', context)
 
@@ -267,17 +288,17 @@ describe('OAuth state return path persistence', () => {
       from oauth_states
       where intent = 'claim-organization-owner'
     `
-    expect(stored).toEqual({
-      state_hash: hashState('owner-claim-state'),
+    expect(stored).toStrictEqual({
       organization_id: '1000166',
       organization_version: '1',
+      state_hash: hashState('owner-claim-state'),
     })
 
     const results = await Promise.all([
       oauthStateStore.consumeOAuthState('owner-claim-state'),
       oauthStateStore.consumeOAuthState('owner-claim-state'),
     ])
-    expect(results.filter(Boolean)).toEqual([context])
+    expect(results.filter(Boolean)).toStrictEqual([context])
     expect(results.filter((result) => result === null)).toHaveLength(1)
   })
 
@@ -296,19 +317,19 @@ describe('OAuth state return path persistence', () => {
       values (${destinationCharacterId}, ${destinationUserId}, 'destination-owner', 'Destination Pilot', 1000166, true)
     `
     const approvalId = await insertTransferApproval({
-      sourceUserId,
-      sourceSubjectLifecycleId: sourceLifecycle!.subject_lifecycle_id,
-      destinationUserId,
       destinationMainCharacterId: destinationCharacterId,
+      destinationUserId,
+      sourceSubjectLifecycleId: sourceLifecycle!.subject_lifecycle_id,
+      sourceUserId,
     })
     const context = {
-      intent: 'transfer' as const,
       approvalId,
-      sourceUserId,
-      sourceSubjectLifecycleId: sourceLifecycle!.subject_lifecycle_id,
-      userId: destinationUserId,
       characterId,
+      intent: 'transfer' as const,
       reviewerUseDisclosures: [],
+      sourceSubjectLifecycleId: sourceLifecycle!.subject_lifecycle_id,
+      sourceUserId,
+      userId: destinationUserId,
     }
 
     await oauthStateStore.storeOAuthState('transfer-state', context)
@@ -326,13 +347,15 @@ describe('OAuth state return path persistence', () => {
       where intent = 'transfer'
     `
 
-    expect(stored).toEqual({
+    expect(stored).toStrictEqual({
       state_hash: hashState('transfer-state'),
       transfer_approval_id: approvalId,
-      transfer_source_user_id: sourceUserId,
       transfer_source_subject_lifecycle_id: sourceLifecycle!.subject_lifecycle_id,
+      transfer_source_user_id: sourceUserId,
     })
-    await expect(oauthStateStore.consumeOAuthState('transfer-state')).resolves.toEqual(context)
+    await expect(oauthStateStore.consumeOAuthState('transfer-state')).resolves.toStrictEqual(
+      context,
+    )
     await expect(oauthStateStore.consumeOAuthState('transfer-state')).resolves.toBeNull()
   })
 
@@ -351,10 +374,10 @@ describe('OAuth state return path persistence', () => {
       values (${destinationCharacterId}, ${destinationUserId}, 'destination-owner', 'Destination Pilot', 1000166, true)
     `
     const approvalId = await insertTransferApproval({
-      sourceUserId,
-      sourceSubjectLifecycleId: sourceLifecycle!.subject_lifecycle_id,
-      destinationUserId,
       destinationMainCharacterId: destinationCharacterId,
+      destinationUserId,
+      sourceSubjectLifecycleId: sourceLifecycle!.subject_lifecycle_id,
+      sourceUserId,
     })
     const administratorId = randomUUID()
     const auditId = randomUUID()

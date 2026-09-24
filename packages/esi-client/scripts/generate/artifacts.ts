@@ -90,7 +90,9 @@ export function createProvenanceHeader(
     const comment = lines.map((line) => `// ${line}`).join('\n');
     return `${comment}\n`;
   }
-  if (format === 'markdown') return `<!--\n${lines.join('\n')}\n-->\n`;
+  if (format === 'markdown') {
+    return `<!--\n${lines.join('\n')}\n-->\n`;
+  }
   throw new Error(`Unsupported provenance header format: ${String(format)}`);
 }
 
@@ -229,8 +231,9 @@ function validateOperationClassifications(
     }
   }
   for (const operationId of [...generatedIds, ...excludedById.keys()]) {
-    if (!sourceIds.has(operationId))
+    if (!sourceIds.has(operationId)) {
       throw new Error(`Operation accounting contains stale ID: ${operationId}`);
+    }
   }
 }
 

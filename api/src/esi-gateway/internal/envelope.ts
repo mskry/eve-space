@@ -34,9 +34,9 @@ const parseableTimestampSchema = z.string().refine((value) => !Number.isNaN(Date
 })
 
 const authorizationSchema = z.object({
+  generation: z.number().int().nonnegative(),
   kind: z.literal('character'),
   principal: z.string().min(1),
-  generation: z.number().int().nonnegative(),
 }) satisfies z.ZodType<EsiCacheAuthorization>
 
 const resourceRevisionSchema = z.object({
@@ -49,18 +49,18 @@ const paginationSchema = z.object({
 })
 
 const envelopeMetadataSchema = z.object({
-  version: z.literal(ESI_CACHE_ENVELOPE_VERSION),
-  representationVersion: z.string(),
-  freshUntil: z.number(),
-  staleUntil: z.number(),
-  retainUntil: z.number(),
-  validatedAt: parseableTimestampSchema,
-  fence: z.number().int().nonnegative(),
+  authorization: authorizationSchema.optional(),
   etag: z.string().optional(),
+  fence: z.number().int().nonnegative(),
+  freshUntil: z.number(),
   lastModified: z.string().optional(),
   pagination: paginationSchema.optional(),
-  authorization: authorizationSchema.optional(),
+  representationVersion: z.string(),
   resourceRevision: resourceRevisionSchema.optional(),
+  retainUntil: z.number(),
+  staleUntil: z.number(),
+  validatedAt: parseableTimestampSchema,
+  version: z.literal(ESI_CACHE_ENVELOPE_VERSION),
 }) satisfies z.ZodType<Omit<EsiCacheEnvelope<unknown>, 'data'>>
 
 /**
@@ -101,22 +101,22 @@ export function createCacheEnvelope<Data>(options: {
       : freshUntil
   const staleUntil = Math.min(declaredStaleUntil, retainUntil)
   return {
-    version: ESI_CACHE_ENVELOPE_VERSION,
-    representationVersion: options.representationVersion,
+    authorization: options.authorization,
     data: options.data,
-    freshUntil,
-    staleUntil,
-    retainUntil,
-    validatedAt: new Date(now).toISOString(),
     etag: options.metadata?.cache?.etag,
+    fence: options.fence,
+    freshUntil,
     lastModified: options.metadata?.cache?.lastModified,
     pagination:
       options.metadata?.pagination?.pages === undefined
         ? undefined
         : { pages: options.metadata.pagination.pages },
-    authorization: options.authorization,
+    representationVersion: options.representationVersion,
     resourceRevision: options.resourceRevision,
-    fence: options.fence,
+    retainUntil,
+    staleUntil,
+    validatedAt: new Date(now).toISOString(),
+    version: ESI_CACHE_ENVELOPE_VERSION,
   }
 }
 
@@ -128,14 +128,20 @@ export function parseEnvelope<Data>(
   try {
     raw = JSON.parse(serialized) as unknown
   } catch {
-    return { success: false, reason: 'malformedJson' }
+    return { reason: 'malformedJson', success: false }
   }
-  if (!isRecord(raw)) return { success: false, reason: 'invalidShape' }
-  if (raw.version !== ESI_CACHE_ENVELOPE_VERSION)
-    return { success: false, reason: 'versionMismatch', found: raw.version }
-  if (!isValidEnvelope(raw)) return { success: false, reason: 'invalidShape' }
-  if (raw.freshUntil > raw.staleUntil || raw.staleUntil > raw.retainUntil)
-    return { success: false, reason: 'incoherentFreshnessWindow' }
+  if (!isRecord(raw)) {
+    return { reason: 'invalidShape', success: false }
+  }
+  if (raw.version !== ESI_CACHE_ENVELOPE_VERSION) {
+    return { found: raw.version, reason: 'versionMismatch', success: false }
+  }
+  if (!isValidEnvelope(raw)) {
+    return { reason: 'invalidShape', success: false }
+  }
+  if (raw.freshUntil > raw.staleUntil || raw.staleUntil > raw.retainUntil) {
+    return { reason: 'incoherentFreshnessWindow', success: false }
+  }
   return validateEnvelopeData(raw, dataSchema)
 }
 
@@ -144,8 +150,10 @@ export function validateEnvelopeData<Data>(
   dataSchema: OperationSchema<Data>,
 ): EsiCacheEnvelopeParseResult<Data> {
   const parsed = dataSchema.safeParse(envelope.data)
-  if (!parsed.success) return { success: false, reason: 'invalidPayload' }
-  return { success: true, envelope: { ...envelope, data: parsed.data } }
+  if (!parsed.success) {
+    return { reason: 'invalidPayload', success: false }
+  }
+  return { envelope: { ...envelope, data: parsed.data }, success: true }
 }
 
 export function updateNotModifiedEnvelope<Data>(options: {
@@ -160,30 +168,30 @@ export function updateNotModifiedEnvelope<Data>(options: {
   const now = options.now ?? Date.now()
   const metadata: EsiResponseMetadata = {
     ...options.metadata,
-    status: options.metadata?.status ?? 304,
-    headers: options.metadata?.headers ?? {},
     cache: {
       ...options.metadata?.cache,
       etag: options.metadata?.cache?.etag ?? options.envelope.etag,
       lastModified: options.metadata?.cache?.lastModified ?? options.envelope.lastModified,
     },
+    headers: options.metadata?.headers ?? {},
     pagination: {
       ...options.metadata?.pagination,
       pages: options.metadata?.pagination?.pages ?? options.envelope.pagination?.pages,
     },
+    status: options.metadata?.status ?? 304,
   }
 
   // A 304 preserves representation identity while allowing authorization generation rebinding.
   return createCacheEnvelope({
-    data: options.envelope.data,
-    metadata,
-    policy: options.policy,
-    representationVersion: options.envelope.representationVersion,
     authorization: options.authorization ?? options.envelope.authorization,
-    resourceRevision: options.envelope.resourceRevision,
+    data: options.envelope.data,
     fence: options.fence ?? options.envelope.fence,
     maximumRetentionMs: options.maximumRetentionMs,
+    metadata,
     now,
+    policy: options.policy,
+    representationVersion: options.envelope.representationVersion,
+    resourceRevision: options.envelope.resourceRevision,
   })
 }
 
@@ -191,7 +199,9 @@ export function toRevalidation(
   envelope: EsiCacheEnvelope<unknown> | undefined,
   revalidate = true,
 ): EsiRevalidation {
-  if (!revalidate) return {}
+  if (!revalidate) {
+    return {}
+  }
   return {
     ...(envelope?.etag ? { ifNoneMatch: envelope.etag } : {}),
     ...(envelope?.lastModified ? { ifModifiedSince: envelope.lastModified } : {}),
@@ -211,8 +221,12 @@ export function isEnvelopeStaleUsable(envelope: EsiCacheEnvelope<unknown>, now =
 }
 
 export function getEsiQuota(metadata: EsiResponseMetadata | undefined): EsiQuota {
-  if (!metadata) return {}
+  if (!metadata) {
+    return {}
+  }
   return {
+    errorRemaining: metadata.errorLimit?.remaining,
+    errorResetSeconds: metadata.errorLimit?.reset,
     group: metadata.routeRateLimit?.group,
     limit:
       metadata.routeRateLimit?.limit === undefined
@@ -220,8 +234,6 @@ export function getEsiQuota(metadata: EsiResponseMetadata | undefined): EsiQuota
         : String(metadata.routeRateLimit.limit),
     remaining: metadata.routeRateLimit?.remaining,
     used: metadata.routeRateLimit?.used,
-    errorRemaining: metadata.errorLimit?.remaining,
-    errorResetSeconds: metadata.errorLimit?.reset,
   }
 }
 
@@ -231,15 +243,23 @@ function resolveFreshUntil(
   now: number,
 ) {
   const expires = metadata?.cache?.expires ? Date.parse(metadata.cache.expires) : Number.NaN
-  if (Number.isFinite(expires) && expires > now) return expires
+  if (Number.isFinite(expires) && expires > now) {
+    return expires
+  }
 
   const responseDate = metadata?.headers.date ? Date.parse(metadata.headers.date) : Number.NaN
   const reference = Number.isFinite(responseDate) ? responseDate : now
   const maxAgeSeconds = metadata?.cache?.maxAgeSeconds
-  if (maxAgeSeconds !== undefined) return reference + maxAgeSeconds * 1_000
+  if (maxAgeSeconds !== undefined) {
+    return reference + maxAgeSeconds * 1000
+  }
 
-  if (fallback.kind === 'relative') return now + fallback.seconds * 1_000
-  if (fallback.kind !== 'daily-utc') return now
+  if (fallback.kind === 'relative') {
+    return now + fallback.seconds * 1000
+  }
+  if (fallback.kind !== 'daily-utc') {
+    return now
+  }
 
   const date = new Date(reference)
   let boundary = Date.UTC(
@@ -249,7 +269,9 @@ function resolveFreshUntil(
     fallback.hour,
     fallback.minute,
   )
-  if (boundary <= reference) boundary += 86_400_000
+  if (boundary <= reference) {
+    boundary += 86_400_000
+  }
   return boundary
 }
 

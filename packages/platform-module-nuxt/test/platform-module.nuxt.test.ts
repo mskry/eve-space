@@ -12,11 +12,11 @@ const apiServer = await startCorsJsonApi((request) => ({
         enabledModuleIds: alphaEnabled ? ['alpha'] : [],
         enabledSections: [],
         shellNavigationOrder: {
+          character: alphaEnabled ? [{ ownerId: 'alpha', navigationId: 'alpha-default-icon' }] : [],
           dashboard:
             alphaEnabled && dashboardOrderComplete
               ? [{ ownerId: 'alpha', navigationId: 'alpha-icon-override' }]
               : [],
-          character: alphaEnabled ? [{ ownerId: 'alpha', navigationId: 'alpha-default-icon' }] : [],
         },
       },
 }))
@@ -27,8 +27,8 @@ afterAll(apiServer.close)
 describe('platform Nuxt module fixture', async () => {
   const rootDir = fileURLToPath(new URL('./fixtures/basic', import.meta.url))
   await setup({
-    rootDir,
     browser: true,
+    rootDir,
     server: true,
     setupTimeout: 120_000,
   })
@@ -88,7 +88,7 @@ describe('platform Nuxt module fixture', async () => {
   ])('keeps synthetic reviewer panels inside the $width px viewport', async ({ height, width }) => {
     const page = await createPage('/')
     await page.setViewportSize({ height, width })
-    await page.getByRole('button', { name: 'Load reviewer panel', exact: true }).click()
+    await page.getByRole('button', { exact: true, name: 'Load reviewer panel' }).click()
     await page.getByTestId('alpha-reviewer-panel').waitFor({ state: 'visible' })
 
     expect(
@@ -137,11 +137,11 @@ describe('platform Nuxt module fixture', async () => {
     dashboardOrderComplete = true
     apiServer.setAllowedOrigin(useTestContext().url)
     const page = await createPage('/')
-    await page.getByRole('link', { name: 'Alpha', exact: true }).waitFor({ state: 'visible' })
+    await page.getByRole('link', { exact: true, name: 'Alpha' }).waitFor({ state: 'visible' })
 
     alphaEnabled = false
     await page.reload({ waitUntil: 'networkidle' })
-    await page.getByRole('link', { name: 'Alpha', exact: true }).waitFor({ state: 'hidden' })
+    await page.getByRole('link', { exact: true, name: 'Alpha' }).waitFor({ state: 'hidden' })
     const disabledPage = await page.goto(new URL('/characters/7/alpha', page.url()).href, {
       waitUntil: 'networkidle',
     })
@@ -153,11 +153,13 @@ describe('platform Nuxt module fixture', async () => {
     dashboardOrderComplete = false
     apiServer.setAllowedOrigin(useTestContext().url)
     const page = await createPage('/')
-    const link = page.getByRole('link', { name: 'Alpha override', exact: true })
+    const link = page.getByRole('link', { exact: true, name: 'Alpha override' })
 
     await link.waitFor({ state: 'visible' })
     expect(await link.isVisible()).toBe(true)
-    expect(await page.locator('[data-testid="character-navigation"] a').allTextContents()).toEqual([
+    expect(
+      await page.locator('[data-testid="character-navigation"] a').allTextContents(),
+    ).toStrictEqual([
       'Overview',
       'Skills',
       'Clones',
@@ -185,7 +187,7 @@ describe('platform Nuxt module fixture', async () => {
     expect(navigation).toContain('"navigationId":"alpha-icon-override"')
     expect(navigation).toContain('"icon":"settings"')
     expect(navigation).toContain(
-      '{"moduleId":"alpha","pageId":"alpha-record","pageName":"eve-alpha-record","audience":"authenticated"}',
+      '{"audience":"authenticated","moduleId":"alpha","pageId":"alpha-record","pageName":"eve-alpha-record"}',
     )
     expect(pageMetaTypes).toContain('platformAudience?: PlatformNavigationAudience')
     expect(queryAdmissionScopes).toContain(

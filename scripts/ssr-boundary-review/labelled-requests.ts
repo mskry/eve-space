@@ -36,14 +36,16 @@ const toLabelledRequest = (cells: readonly string[]): LabelledRequest[] => {
   const name = QUERY_NAME_PATTERN.exec(consumer)?.[1]
   const mounted = ROUTE_PATTERN.exec(route)
 
-  if (!name || !mounted) return []
+  if (!name || !mounted) {
+    return []
+  }
 
   return [
     {
-      name,
-      method: mounted[1],
-      requestPath: mounted[2],
       credentialRequirement: credentialRequirementOf(access),
+      method: mounted[1],
+      name,
+      requestPath: mounted[2],
       ssrGated: !/ssr-capable|supports public ssr/i.test(trigger),
       trigger,
     },

@@ -96,12 +96,6 @@ export function renderDomainClientArtifacts(
     domains.push({
       binderName: `bind${className}`,
       className,
-      descriptorSource: renderDescriptorModule(entries, indexed.modelsByPointer, provenance),
-      domain,
-      entries,
-      factoryName,
-      fileName,
-      metadataClassName,
       contractSource: renderDomainContractModule(
         domain,
         className,
@@ -109,7 +103,12 @@ export function renderDomainClientArtifacts(
         entries,
         provenance,
       ),
+      descriptorSource: renderDescriptorModule(entries, indexed.modelsByPointer, provenance),
+      domain,
       domainSource: renderDomainModule(domain, className, provenance),
+      entries,
+      factoryName,
+      fileName,
       implementationSource: renderDomainImplementationModule(
         domain,
         className,
@@ -117,6 +116,7 @@ export function renderDomainClientArtifacts(
         entries,
         provenance,
       ),
+      metadataClassName,
     });
   }
   validateGeneratedNames(domains);
@@ -182,8 +182,8 @@ export async function emitDomainClientSource(
 }
 
 export const domainClientSourceComponent: GeneratedSourceComponent = Object.freeze({
-  name: 'domain-clients',
   emit: emitDomainClientSource,
+  name: 'domain-clients',
 });
 
 export async function emitDomainClientTests(
@@ -204,8 +204,8 @@ export async function emitDomainClientTests(
 }
 
 export const domainClientTestsComponent: GeneratedTestComponent = Object.freeze({
-  name: 'domain-client-contracts',
   emit: emitDomainClientTests,
+  name: 'domain-client-contracts',
 });
 
 function indexOperations(
@@ -319,7 +319,9 @@ function createOptionFields(
   const fields: OptionField[] = [];
   const names = new Map<string, string>();
   for (const parameter of parameters) {
-    if (parameter.placement === 'path') continue;
+    if (parameter.placement === 'path') {
+      continue;
+    }
     const name = facadeParameterName(parameter.name);
     addOptionField(
       fields,
@@ -420,7 +422,9 @@ function renderDescriptorModule(
     typeImports.add(entry.requestTypeName);
     typeImports.add(entry.responseTypeName);
     zodImports.add(`z${entry.operation.operationId}Response`);
-    if (entry.operation.requestBody !== null) zodImports.add(`z${entry.operation.operationId}Body`);
+    if (entry.operation.requestBody !== null) {
+      zodImports.add(`z${entry.operation.operationId}Body`);
+    }
     for (const [placement, suffix] of [
       ['header', 'Headers'],
       ['path', 'Path'],
@@ -460,7 +464,9 @@ function renderDescriptor(
   );
   const responses = entry.operation.successResponses.map((response) => {
     const status = response.status === '2XX' ? "'2XX'" : String(Number(response.status));
-    if (response.noContent) return `    { status: ${status}, body: 'none' },`;
+    if (response.noContent) {
+      return `    { status: ${status}, body: 'none' },`;
+    }
     return `    { status: ${status}, body: 'json', schema: z${entry.operation.operationId}Response },`;
   });
   const authentication = renderAuthentication(entry.operation);
@@ -494,7 +500,9 @@ function renderRequestSchemaLayers(entry: OperationEntry): string {
     ['query', 'query', 'Query'],
   ] as const) {
     const parameters = entry.parameters.filter((parameter) => parameter.placement === placement);
-    if (parameters.length === 0) continue;
+    if (parameters.length === 0) {
+      continue;
+    }
     layers.push(
       `  ${group}: { required: ${parameters.some(({ required }) => required)}, schema: z${entry.operation.operationId}${suffix} },`,
     );
@@ -519,8 +527,12 @@ function renderParameterDescriptor(
     `required: ${parameter.required}`,
     `schema: ${renderParameterSchema(schema, modelsByPointer, operationId)}`,
   ];
-  if (parameter.style !== null) properties.push(`style: ${JSON.stringify(parameter.style)}`);
-  if (parameter.explode !== null) properties.push(`explode: ${parameter.explode}`);
+  if (parameter.style !== null) {
+    properties.push(`style: ${JSON.stringify(parameter.style)}`);
+  }
+  if (parameter.explode !== null) {
+    properties.push(`explode: ${parameter.explode}`);
+  }
   if (parameter.placement === 'query' && parameter.allowReserved !== null) {
     properties.push(`allowReserved: ${parameter.allowReserved}`);
   }
@@ -536,7 +548,9 @@ function resolveParameterSchema(
   if (!isObject(schema)) {
     throw new Error(`Invalid parameter schema for operation ${operationId}`);
   }
-  if (typeof schema.$ref !== 'string') return schema;
+  if (typeof schema.$ref !== 'string') {
+    return schema;
+  }
   if (active.has(schema.$ref)) {
     throw new Error(`Recursive parameter schema reference for operation ${operationId}`);
   }
@@ -578,7 +592,9 @@ function renderParameterSchema(
 
 function renderAuthentication(operation: NormalizedOperation): string {
   const authentication = resolveOperationAuthentication(operation);
-  if (authentication === null) return 'null';
+  if (authentication === null) {
+    return 'null';
+  }
   return `{ scopes: [${authentication.scopes.map((scope) => JSON.stringify(scope)).join(', ')}] }`;
 }
 
@@ -744,8 +760,12 @@ function renderOptionsInterface(entry: OperationEntry): string {
 }
 
 function optionFieldType(entry: OperationEntry, field: OptionField): string {
-  if (field.kind === 'compatibilityDate') return 'string';
-  if (field.kind === 'body') return `${entry.argumentsTypeName}['body']`;
+  if (field.kind === 'compatibilityDate') {
+    return 'string';
+  }
+  if (field.kind === 'body') {
+    return `${entry.argumentsTypeName}['body']`;
+  }
   const group = field.kind === 'header' ? 'headers' : field.kind;
   return `NonNullable<${entry.argumentsTypeName}[${JSON.stringify(group)}]>[${JSON.stringify(field.wireName)}]`;
 }
@@ -769,7 +789,9 @@ function renderContractMethod(entry: OperationEntry, metadata: boolean): string 
 function renderRegularMethod(entry: OperationEntry): string {
   const parameters = renderMethodParameters(entry);
   const methodArguments = entry.pathParameters.map(({ identifier }) => identifier);
-  if (entry.optionFields.length > 0) methodArguments.push('options');
+  if (entry.optionFields.length > 0) {
+    methodArguments.push('options');
+  }
   return `${entry.metadata.method}(${parameters.join(', ')}): Promise<${entry.responseTypeName}> {
   return this.#metadata.${entry.metadata.method}(${methodArguments.join(', ')}).then((response) => response.data);
 }`;
@@ -802,7 +824,9 @@ function renderRequestArguments(entry: OperationEntry): string {
   }
   for (const placement of ['query', 'header'] as const) {
     const fields = entry.optionFields.filter(({ kind }) => kind === placement);
-    if (fields.length === 0) continue;
+    if (fields.length === 0) {
+      continue;
+    }
     groups.push(
       `${placement === 'header' ? 'headers' : placement}: { ${fields
         .map(
@@ -812,7 +836,9 @@ function renderRequestArguments(entry: OperationEntry): string {
     );
   }
   const body = entry.optionFields.find(({ kind }) => kind === 'body');
-  if (body !== undefined) groups.push(`body: options?.[${JSON.stringify(body.name)}]`);
+  if (body !== undefined) {
+    groups.push(`body: options?.[${JSON.stringify(body.name)}]`);
+  }
   return groups.length === 0 ? '{}' : `{ ${groups.join(', ')} }`;
 }
 
@@ -872,7 +898,9 @@ function renderContractDomain(domain: RenderedDomainClientArtifact): RenderedCon
   for (const entry of domain.entries) {
     operationImports.add(entry.requestTypeName);
     operationImports.add(entry.responseTypeName);
-    if (entry.optionFields.length > 0) imported.add(entry.optionsName);
+    if (entry.optionFields.length > 0) {
+      imported.add(entry.optionsName);
+    }
     assertions.push(...renderContractAssertions(domain, entry));
     coverage.push(`  readonly ${JSON.stringify(entry.operation.operationId)}: {
     readonly domain: ${JSON.stringify(domain.domain)};
@@ -1055,7 +1083,9 @@ function validateGeneratedNames(domains: readonly RenderedDomainClientArtifact[]
     classNames.set(domain.className, domain.domain);
     const optionNames = new Set<string>();
     for (const entry of domain.entries) {
-      if (entry.optionFields.length === 0) continue;
+      if (entry.optionFields.length === 0) {
+        continue;
+      }
       if (optionNames.has(entry.optionsName)) {
         throw new Error(`Domain options type collision in ${domain.domain}: ${entry.optionsName}`);
       }

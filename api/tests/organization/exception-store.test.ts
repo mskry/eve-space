@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  selectResults: [] as unknown[][],
-  insertResults: [] as unknown[][],
-  updateResults: [] as unknown[][],
   appendAudit: vi.fn(),
   appendAudits: vi.fn(),
-  recompute: vi.fn(),
   hasComplianceAccess: vi.fn(),
+  insertResults: [] as unknown[][],
+  recompute: vi.fn(),
+  selectResults: [] as unknown[][],
   transaction: vi.fn(),
+  updateResults: [] as unknown[][],
 }))
 
 vi.mock('../../src/db/client.js', () => ({
@@ -58,30 +58,30 @@ describe('organization character exception store', () => {
     const rows = [{ exceptionId }]
     mocks.selectResults.push(rows)
 
-    await expect(listCurrentOrganizationCharacterExceptions()).resolves.toEqual(rows)
+    await expect(listCurrentOrganizationCharacterExceptions()).resolves.toStrictEqual(rows)
   })
 
   test('lists discoverable external-character review candidates', async () => {
     const rows = [
       {
-        userId,
+        affiliationCheckedAt: new Date('2026-09-08T12:00:00.000Z'),
         characterId: 90_000_001,
         characterName: 'External Pilot',
-        reasonCode: 'character-outside-managed-organization',
-        state: 'review_required',
         evidenceFreshness: 'fresh',
+        reasonCode: 'character-outside-managed-organization',
         reviewDeadline: new Date('2026-09-10T12:00:00.000Z'),
-        affiliationCheckedAt: new Date('2026-09-08T12:00:00.000Z'),
+        state: 'review_required',
+        userId,
       },
     ]
     mocks.selectResults.push(rows)
 
-    await expect(listCurrentOrganizationCharacterExceptionCandidates()).resolves.toEqual(rows)
+    await expect(listCurrentOrganizationCharacterExceptionCandidates()).resolves.toStrictEqual(rows)
   })
 
   test('approves an external character exception and recomputes compliance', async () => {
     const now = Date.now()
-    const exception = { exceptionId, userId, characterId: 90_000_001 }
+    const exception = { characterId: 90_000_001, exceptionId, userId }
     mocks.selectResults.push(
       [organization()],
       [{ grantId: 'grant-1' }],
@@ -89,10 +89,10 @@ describe('organization character exception store', () => {
       [{ userId }],
       [
         {
-          corporationId: 98_000_002,
           affiliationCheckedAt: new Date(now - 1000),
-          nextAffiliationCheck: new Date(now + 60_000),
           affiliationResolutionState: 'resolved',
+          corporationId: 98_000_002,
+          nextAffiliationCheck: new Date(now + 60_000),
         },
       ],
       [],
@@ -103,12 +103,12 @@ describe('organization character exception store', () => {
     await expect(
       approveOrganizationCharacterException({
         actorUserId,
-        userId,
         characterId: 90_000_001,
-        reason: 'Approved external character',
         expiresAt: new Date(now + 120_000),
+        reason: 'Approved external character',
+        userId,
       }),
-    ).resolves.toEqual(exception)
+    ).resolves.toStrictEqual(exception)
     expect(mocks.appendAudit).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ eventType: 'exception.approved', subjectId: exceptionId }),
@@ -126,10 +126,10 @@ describe('organization character exception store', () => {
     await expect(
       approveOrganizationCharacterException({
         actorUserId,
-        userId,
         characterId: 90_000_001,
-        reason: 'Cannot bypass suspended access',
         expiresAt: null,
+        reason: 'Cannot bypass suspended access',
+        userId,
       }),
     ).rejects.toMatchObject({ code: 'hr-authority-required' })
   })
@@ -151,7 +151,7 @@ describe('organization character exception store', () => {
         exceptionId,
         reason: 'No longer required',
       }),
-    ).resolves.toEqual(exception)
+    ).resolves.toStrictEqual(exception)
     expect(mocks.appendAudit).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ eventType: 'exception.revoked' }),
@@ -166,7 +166,7 @@ describe('organization character exception store', () => {
       [organization()],
       [{ grantId: 'grant-1' }],
       [],
-      [{ userId, approvedAt }],
+      [{ approvedAt, userId }],
       [{ id: userId }],
     )
     mocks.updateResults.push([exception])
@@ -177,7 +177,7 @@ describe('organization character exception store', () => {
         exceptionId,
         reason: 'Manual expiry',
       }),
-    ).resolves.toEqual(exception)
+    ).resolves.toStrictEqual(exception)
     expect(mocks.appendAudit).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ eventType: 'exception.expired', reason: 'Manual expiry' }),
@@ -193,37 +193,40 @@ describe('organization character exception store', () => {
     mocks.selectResults.push([organization()], expired, expired)
     mocks.updateResults.push(expired)
 
-    await expect(expireOrganizationCharacterExceptions(now, 5000)).resolves.toEqual(expired)
+    await expect(expireOrganizationCharacterExceptions(now, 5000)).resolves.toStrictEqual(expired)
     expect(mocks.appendAudits).toHaveBeenCalledWith(
       expect.anything(),
       expect.arrayContaining([
-        expect.objectContaining({ eventType: 'exception.expired', actorType: 'system' }),
+        expect.objectContaining({ actorType: 'system', eventType: 'exception.expired' }),
       ]),
     )
     expect(mocks.recompute).toHaveBeenCalledTimes(2)
-    expect(mocks.recompute.mock.calls.map(([input]) => input.userId)).toEqual([actorUserId, userId])
+    expect(mocks.recompute.mock.calls.map(([input]) => input.userId)).toStrictEqual([
+      actorUserId,
+      userId,
+    ])
   })
 
   test('returns immediately when no exceptions are due', async () => {
     mocks.selectResults.push([organization()], [])
 
-    await expect(expireOrganizationCharacterExceptions()).resolves.toEqual([])
+    await expect(expireOrganizationCharacterExceptions()).resolves.toStrictEqual([])
     expect(mocks.appendAudits).not.toHaveBeenCalled()
   })
 })
 
 function organization() {
   return {
+    organizationType: 'corporation',
     organizationVersion: 8,
     policyVersion: 3,
-    organizationType: 'corporation',
   }
 }
 
 function transaction() {
   return {
-    select: vi.fn(() => query(mocks.selectResults.shift() ?? [])),
     insert: vi.fn(() => insertQuery(mocks.insertResults.shift() ?? [])),
+    select: vi.fn(() => query(mocks.selectResults.shift() ?? [])),
     update: vi.fn(() => updateQuery(mocks.updateResults.shift() ?? [])),
   }
 }

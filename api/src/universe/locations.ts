@@ -6,21 +6,21 @@ import type {
 import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
 
 const universeSolarSystemRead = createPublicEsiRead({
-  operation: 'universe-solar-system',
-  name: 'universe-solar-system-core',
-  descriptor: operationRegistry.GetUniverseSystemsSystemId.transport,
   cacheSchema: operationRegistry.GetUniverseSystemsSystemId.responseSchema,
+  descriptor: operationRegistry.GetUniverseSystemsSystemId.transport,
   encodeRequest: (input: { systemId: number }) => ({ path: { system_id: input.systemId } }),
   map: (response): GetUniverseSystemsSystemIdResponse => response.data,
+  name: 'universe-solar-system-core',
+  operation: 'universe-solar-system',
 })
 
 const universeStationRead = createPublicEsiRead({
-  operation: 'universe-station',
-  name: 'universe-station-core',
-  descriptor: operationRegistry.GetUniverseStationsStationId.transport,
   cacheSchema: operationRegistry.GetUniverseStationsStationId.responseSchema,
+  descriptor: operationRegistry.GetUniverseStationsStationId.transport,
   encodeRequest: (input: { stationId: number }) => ({ path: { station_id: input.stationId } }),
   map: (response): GetUniverseStationsStationIdResponse => response.data,
+  name: 'universe-station-core',
+  operation: 'universe-station',
 })
 
 export function getUniverseSolarSystem(systemId: number) {

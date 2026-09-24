@@ -132,9 +132,9 @@ describe('character transfer approvals', () => {
         [
           {
             action: 'created',
+            occurredAt: now,
             outcome: 'created',
             reason: 'Repair split account',
-            occurredAt: now,
           },
         ],
       )
@@ -151,29 +151,29 @@ describe('character transfer approvals', () => {
   test('omits private approval bindings and secrets from inspection DTOs', async () => {
     mocks.dbSelectResults.push(
       [approval()],
-      [{ action: 'created', outcome: 'created', reason: 'Repair split account', occurredAt: now }],
+      [{ action: 'created', occurredAt: now, outcome: 'created', reason: 'Repair split account' }],
     )
 
-    await expect(inspectCharacterTransferApproval('approval-1')).resolves.toEqual({
+    await expect(inspectCharacterTransferApproval('approval-1')).resolves.toStrictEqual({
       approval: {
         approvalId: 'approval-1',
         character: { characterId, name: 'Moving Pilot' },
-        destinationMain: { characterId: destinationMainCharacterId, name: 'Destination Pilot' },
-        sourceCharacterCount: 1,
-        reason: 'Repair split account',
-        status: 'pending',
-        createdAt: now,
-        expiresAt: new Date('2026-09-11T12:15:00.000Z'),
         consumedAt: null,
-        revokedAt: null,
+        createdAt: now,
+        destinationMain: { characterId: destinationMainCharacterId, name: 'Destination Pilot' },
+        expiresAt: new Date('2026-09-11T12:15:00.000Z'),
+        reason: 'Repair split account',
         revocationReason: null,
+        revokedAt: null,
+        sourceCharacterCount: 1,
+        status: 'pending',
       },
       audit: [
         {
           action: 'created',
+          occurredAt: now,
           outcome: 'created',
           reason: 'Repair split account',
-          occurredAt: now,
         },
       ],
     })
@@ -197,17 +197,17 @@ describe('character transfer approvals', () => {
     mocks.transactionSelectResults.push([approval()])
     mocks.transactionUpdateResults.push([
       approval({
+        revocationReason: 'Approval no longer needed',
         revokedAt,
         revokedByAdministratorId: administratorId,
-        revocationReason: 'Approval no longer needed',
       }),
     ])
 
     await expect(revoke()).resolves.toMatchObject({
       approvalId: 'approval-1',
-      status: 'revoked',
-      revokedAt,
       revocationReason: 'Approval no longer needed',
+      revokedAt,
+      status: 'revoked',
     })
     expect(mocks.insertValues).toContainEqual(
       expect.objectContaining({
@@ -239,13 +239,13 @@ describe('character transfer approvals', () => {
   })
 
   test.each([
-    ['a changed source owner', [{ userId: 'other-user', subjectLifecycleId: 'lifecycle-1' }]],
+    ['a changed source owner', [{ subjectLifecycleId: 'lifecycle-1', userId: 'other-user' }]],
     [
       'a changed source lifecycle',
-      [{ userId: sourceUserId, subjectLifecycleId: 'other-lifecycle' }],
+      [{ subjectLifecycleId: 'other-lifecycle', userId: sourceUserId }],
     ],
-    ['a missing destination main', [{ userId: sourceUserId, subjectLifecycleId: 'lifecycle-1' }]],
-    ['a changed administrator', [{ userId: sourceUserId, subjectLifecycleId: 'lifecycle-1' }]],
+    ['a missing destination main', [{ subjectLifecycleId: 'lifecycle-1', userId: sourceUserId }]],
+    ['a changed administrator', [{ subjectLifecycleId: 'lifecycle-1', userId: sourceUserId }]],
   ] as const)('does not load a binding after %s', async (description, source) => {
     mocks.transactionSelectResults.push(
       [approval()],
@@ -264,17 +264,17 @@ describe('character transfer approvals', () => {
   test('loads a valid transfer start binding after revalidating its identities', async () => {
     mocks.transactionSelectResults.push(
       [approval()],
-      [{ userId: sourceUserId, subjectLifecycleId: 'lifecycle-1' }],
+      [{ subjectLifecycleId: 'lifecycle-1', userId: sourceUserId }],
       [{ characterId: destinationMainCharacterId }],
       [{ administratorId }],
     )
 
-    await expect(loadForStart()).resolves.toEqual({
+    await expect(loadForStart()).resolves.toStrictEqual({
       approvalId: 'approval-1',
-      sourceUserId,
-      sourceSubjectLifecycleId: 'lifecycle-1',
-      userId: destinationUserId,
       characterId,
+      sourceSubjectLifecycleId: 'lifecycle-1',
+      sourceUserId,
+      userId: destinationUserId,
     })
     expect(mocks.hashToken).toHaveBeenCalledWith('approval-secret')
   })
@@ -282,7 +282,7 @@ describe('character transfer approvals', () => {
   test('returns unavailable when the preview candidate no longer exists', async () => {
     mocks.transactionSelectResults.push([])
 
-    await expect(preview()).resolves.toEqual({ eligible: false, blocker: 'unavailable' })
+    await expect(preview()).resolves.toStrictEqual({ blocker: 'unavailable', eligible: false })
     expect(mocks.lockCharacter).not.toHaveBeenCalled()
   })
 
@@ -291,9 +291,9 @@ describe('character transfer approvals', () => {
     queueCandidates(candidate({ destinationUserId: sourceUserId }))
 
     await expect(preview()).resolves.toMatchObject({
-      eligible: false,
       blocker: 'same-account',
       character: { characterId },
+      eligible: false,
     })
     expect(mocks.lockCharacter).toHaveBeenCalledWith(transaction, characterId)
     expect(mocks.lockTransferUsers).toHaveBeenCalledWith(transaction, [sourceUserId, sourceUserId])
@@ -303,16 +303,16 @@ describe('character transfer approvals', () => {
     queueCandidates()
     queueCandidates()
     mocks.insertResults.push([
-      { previewId: 'preview-1', expiresAt: new Date('2026-09-11T12:05:00.000Z') },
+      { expiresAt: new Date('2026-09-11T12:05:00.000Z'), previewId: 'preview-1' },
     ])
 
-    await expect(preview()).resolves.toEqual({
-      eligible: true,
-      previewId: 'preview-1',
+    await expect(preview()).resolves.toStrictEqual({
       character: { characterId, name: 'Moving Pilot' },
       destinationMain: { characterId: destinationMainCharacterId, name: 'Destination Pilot' },
-      sourceCharacterCount: 1,
+      eligible: true,
       expiresAt: new Date('2026-09-11T12:05:00.000Z'),
+      previewId: 'preview-1',
+      sourceCharacterCount: 1,
     })
     expect(mocks.insertValues).toContainEqual(
       expect.objectContaining({
@@ -354,14 +354,14 @@ describe('character transfer approvals', () => {
     await expect(
       createCharacterTransferApproval({ administratorId, previewId: 'preview-1' }),
     ).resolves.toMatchObject({
-      secret: 'approval-secret',
       approval: { approvalId: 'approval-created', status: 'pending' },
+      secret: 'approval-secret',
     })
     expect(mocks.hashToken).toHaveBeenCalledWith('approval-secret')
     expect(mocks.insertValues).toContainEqual(
       expect.objectContaining({
-        linkSecretHash: 'hash:approval-secret',
         approvedByAdministratorId: administratorId,
+        linkSecretHash: 'hash:approval-secret',
       }),
     )
     expect(mocks.insertValues).toContainEqual(
@@ -385,8 +385,8 @@ function revoke() {
 function loadForStart() {
   return loadTransferApprovalForStart({
     approvalId: 'approval-1',
-    secret: 'approval-secret',
     destinationUserId,
+    secret: 'approval-secret',
   })
 }
 
@@ -413,8 +413,8 @@ function approval(overrides: Record<string, unknown> = {}) {
     expiresAt: new Date('2026-09-11T12:15:00.000Z'),
     linkSecretHash: 'hash:approval-secret',
     reason: 'Repair split account',
-    revokedAt: null,
     revocationReason: null,
+    revokedAt: null,
     sourceCharacterCount: 1,
     sourceSubjectLifecycleId: 'lifecycle-1',
     sourceUserId,
@@ -424,7 +424,6 @@ function approval(overrides: Record<string, unknown> = {}) {
 
 function previewRecord(overrides: Record<string, unknown> = {}) {
   return {
-    previewId: 'preview-1',
     administratorId,
     characterId,
     characterName: 'Moving Pilot',
@@ -432,6 +431,7 @@ function previewRecord(overrides: Record<string, unknown> = {}) {
     destinationMainCharacterName: 'Destination Pilot',
     destinationUserId,
     expiresAt: new Date('2026-09-11T12:05:00.000Z'),
+    previewId: 'preview-1',
     reason: 'Repair split account',
     sourceCharacterCount: 1,
     sourceSubjectLifecycleId: 'lifecycle-1',
@@ -448,10 +448,10 @@ function candidate(overrides: Record<string, unknown> = {}) {
     destinationMainCharacterId,
     destinationMainCharacterName: 'Destination Pilot',
     destinationUserId,
+    sourceCharacterCount: 1,
     sourceIsMain: false,
     sourceSubjectLifecycleId: 'lifecycle-1',
     sourceUserId,
-    sourceCharacterCount: 1,
     ...overrides,
   }
 }

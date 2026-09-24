@@ -19,13 +19,13 @@ describe('build gates', () => {
       export type Local = import('./local').Local;
     `;
 
-    expect(findUnexpectedRuntimeImports(source)).toEqual([
+    expect(findUnexpectedRuntimeImports(source)).toStrictEqual([
       'static-package',
       'exported-package',
       'dynamic-package',
       'commonjs-package',
     ]);
-    expect(findRuntimeImports(source)).toEqual([
+    expect(findRuntimeImports(source)).toStrictEqual([
       'static-package',
       'exported-package',
       'zod',
@@ -45,13 +45,13 @@ describe('build gates', () => {
       } from 'multiline-package';
     `;
 
-    expect(findRuntimeImports(source)).toEqual([
+    expect(findRuntimeImports(source)).toStrictEqual([
       'compact-package',
       'exported-compact-package',
       'side-effect-package',
       'multiline-package',
     ]);
-    expect(findUnexpectedRuntimeImports(source)).toEqual(findRuntimeImports(source));
+    expect(findUnexpectedRuntimeImports(source)).toStrictEqual(findRuntimeImports(source));
   });
 
   it('uses a shell only for Windows command scripts', () => {
@@ -69,7 +69,7 @@ describe('build gates', () => {
     };
     const output = `ℹ tsdown build output\n${JSON.stringify(packed)}\n`;
 
-    expect(parsePnpmPackJson(output)).toEqual(packed);
+    expect(parsePnpmPackJson(output)).toStrictEqual(packed);
   });
 
   it.each(['[warn] pnpm pack failed\n', '{}'])('rejects malformed pack output: %j', (output) => {
@@ -77,7 +77,7 @@ describe('build gates', () => {
   });
 
   it('keeps aggregate validation complete and dependency ordered', () => {
-    expect(packageJson.scripts.validate.split(' && ')).toEqual([
+    expect(packageJson.scripts.validate.split(' && ')).toStrictEqual([
       'pnpm generate:check',
       'pnpm docs:check',
       'pnpm format:check',
@@ -88,7 +88,7 @@ describe('build gates', () => {
       'pnpm build',
       'pnpm run package:check -- --built',
     ]);
-    expect(packageJson.scripts.typecheck.split(' && ')).toEqual([
+    expect(packageJson.scripts.typecheck.split(' && ')).toStrictEqual([
       'tsc --project tsconfig.json --noEmit',
       'tsc --project tsconfig.test.json --noEmit',
     ]);
@@ -98,6 +98,11 @@ describe('build gates', () => {
     );
     expect(packageJson.scripts.validate).not.toContain('budgets:refresh');
     expect(Object.hasOwn(packageJson.scripts, 'preexamples:check')).toBe(false);
-    expect(packageValidationSteps).toEqual(['publint', 'attw', 'smoke:package', 'pack:inspect']);
+    expect(packageValidationSteps).toStrictEqual([
+      'publint',
+      'attw',
+      'smoke:package',
+      'pack:inspect',
+    ]);
   });
 });

@@ -30,15 +30,15 @@ import { corporationRoutes } from '../../src/corporations/routes.js'
 let testTime = new Date('2026-08-22T12:00:00.000Z').getTime()
 const metadata = {
   cachedUntil: '2026-08-22T12:01:00.000Z',
-  validatedAt: '2026-08-22T12:00:00.000Z',
   stale: false,
+  validatedAt: '2026-08-22T12:00:00.000Z',
 }
 
 function request(path: string, address?: string) {
   const environment = address
     ? {
         incoming: {
-          socket: { remoteAddress: address, remotePort: 1, remoteFamily: 'IPv4' },
+          socket: { remoteAddress: address, remoteFamily: 'IPv4', remotePort: 1 },
         },
       }
     : undefined
@@ -68,7 +68,7 @@ describe('corporation routes', () => {
 
       expect(response.status).toBe(404)
       expect(response.headers.get('cache-control')).toBe('private, no-store')
-      await expect(response.json()).resolves.toEqual({
+      await expect(response.json()).resolves.toStrictEqual({
         code: 'CORPORATION_NOT_FOUND',
         message: 'Corporation not found.',
       })
@@ -96,7 +96,7 @@ describe('corporation routes', () => {
 
     expect(response.status).toBe(502)
     expect(response.headers.get('cache-control')).toBe('private, no-store')
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       message: 'Corporation data is temporarily unavailable.',
     })
   })
@@ -111,10 +111,10 @@ describe('corporation routes', () => {
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toMatchObject({
       corporation: { corporationId: 1, name: 'Retained corporation' },
+      refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-08-22T12:05:00.000Z',
       stale: true,
       validatedAt: '2026-08-22T11:55:00.000Z',
-      retryAt: '2026-08-22T12:05:00.000Z',
-      refreshFailureClass: 'esi-unavailable',
     })
   })
 
@@ -126,7 +126,7 @@ describe('corporation routes', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toBe('private, no-store')
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       corporationId: 1,
       history,
       ...metadata,
@@ -142,10 +142,10 @@ describe('corporation routes', () => {
     await expect(response.json()).resolves.toMatchObject({
       corporationId: 1,
       history: [],
+      refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-08-22T12:05:00.000Z',
       stale: true,
       validatedAt: '2026-08-22T11:55:00.000Z',
-      retryAt: '2026-08-22T12:05:00.000Z',
-      refreshFailureClass: 'esi-unavailable',
     })
   })
 
@@ -157,7 +157,7 @@ describe('corporation routes', () => {
       const response = await request('/1/alliance-history')
 
       expect(response.status).toBe(404)
-      await expect(response.json()).resolves.toEqual({
+      await expect(response.json()).resolves.toStrictEqual({
         code: 'CORPORATION_NOT_FOUND',
         message: 'Corporation not found.',
       })
@@ -170,7 +170,7 @@ describe('corporation routes', () => {
     const response = await request('/1/alliance-history')
 
     expect(response.status).toBe(502)
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toStrictEqual({
       message: 'Alliance history is temporarily unavailable.',
     })
   })
@@ -200,7 +200,7 @@ describe('corporation routes', () => {
   })
 
   test('bounds retained direct-peer limit state', async () => {
-    for (let index = 0; index <= 1_000; index += 1) {
+    for (let index = 0; index <= 1000; index += 1) {
       await request(`/${30_000 + index}`, `198.51.100.${index}`)
     }
 
@@ -219,16 +219,16 @@ describe('corporation routes', () => {
 })
 
 function result<Data>(data: Data) {
-  return { data, source: 'cache' as const, quota: {}, ...metadata }
+  return { data, quota: {}, source: 'cache' as const, ...metadata }
 }
 
 function staleResult<Data>(data: Data) {
   return {
     ...result(data),
     cachedUntil: '2026-08-22T11:56:00.000Z',
-    validatedAt: '2026-08-22T11:55:00.000Z',
-    stale: true,
-    retryAt: '2026-08-22T12:05:00.000Z',
     refreshFailureClass: 'esi-unavailable' as const,
+    retryAt: '2026-08-22T12:05:00.000Z',
+    stale: true,
+    validatedAt: '2026-08-22T11:55:00.000Z',
   }
 }

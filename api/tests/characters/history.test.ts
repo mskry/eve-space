@@ -11,22 +11,22 @@ vi.mock('../../src/esi-gateway/feature-execution.js', () =>
 )
 vi.mock('../../src/universe/resolution-cache.js', () => ({
   readUniverseNames: () => ({ fresh: new Map(), stale: new Map(), suppressed: new Set() }),
-  writeUniverseNames: vi.fn(),
   suppressUniverseNameIds: vi.fn(),
+  writeUniverseNames: vi.fn(),
 }))
 
 const employmentHistoryFixture = [
   {
+    corporation: { id: 2, isNpc: true, name: 'Second Corporation' },
+    isDeleted: false,
     recordId: 2,
     startDate: '2020-01-01T00:00:00Z',
-    isDeleted: false,
-    corporation: { id: 2, name: 'Second Corporation', isNpc: true },
   },
   {
+    corporation: { id: 1, isNpc: true, name: 'First Corporation' },
+    isDeleted: false,
     recordId: 1,
     startDate: '2024-01-01T00:00:00Z',
-    isDeleted: false,
-    corporation: { id: 1, name: 'First Corporation', isNpc: true },
   },
 ]
 
@@ -38,18 +38,18 @@ describe('character employment history service', () => {
   test('maps history using callable employment and name reads', async () => {
     const { getCharacterEmploymentHistory } = await import('../../src/characters/history.js')
 
-    await expect(getCharacterEmploymentHistory(90_000_101)).resolves.toEqual([
+    await expect(getCharacterEmploymentHistory(90_000_101)).resolves.toStrictEqual([
       {
+        corporation: { id: 2, isNpc: true, name: 'Second Corporation' },
+        isDeleted: false,
         recordId: 2,
         startDate: '2020-01-01T00:00:00Z',
-        isDeleted: false,
-        corporation: { id: 2, name: 'Second Corporation', isNpc: true },
       },
       {
+        corporation: { id: 1, isNpc: true, name: 'First Corporation' },
+        isDeleted: false,
         recordId: 1,
         startDate: '2024-01-01T00:00:00Z',
-        isDeleted: false,
-        corporation: { id: 1, name: 'First Corporation', isNpc: true },
       },
     ])
     expect(mocks.executeRepresentation.mock.calls[0]?.[0]).toMatchObject({
@@ -69,30 +69,30 @@ describe('character employment history service', () => {
   test('preserves stale read metadata for route callers', async () => {
     mocks.executeRepresentation.mockResolvedValue({
       ...response(employmentHistoryFixture),
+      refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-08-20T12:05:00.000Z',
       stale: true,
       validatedAt: '2026-08-20T11:55:00.000Z',
-      retryAt: '2026-08-20T12:05:00.000Z',
-      refreshFailureClass: 'esi-unavailable',
     })
     const { getCharacterEmploymentHistoryResult } = await import('../../src/characters/history.js')
 
     await expect(getCharacterEmploymentHistoryResult(90_000_101)).resolves.toMatchObject({
       data: employmentHistoryFixture,
+      refreshFailureClass: 'esi-unavailable',
+      retryAt: '2026-08-20T12:05:00.000Z',
       stale: true,
       validatedAt: '2026-08-20T11:55:00.000Z',
-      retryAt: '2026-08-20T12:05:00.000Z',
-      refreshFailureClass: 'esi-unavailable',
     })
   })
 })
 
 function response<Data>(data: Data) {
   return {
-    data,
     cachedUntil: '2026-08-20T12:01:00.000Z',
-    validatedAt: '',
+    data,
     quota: {},
     source: 'esi' as const,
     stale: false,
+    validatedAt: '',
   }
 }

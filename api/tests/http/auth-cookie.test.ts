@@ -41,7 +41,7 @@ describe('authentication cookies', () => {
     expect(session).not.toContain('Secure')
     expect(state).toMatch(/^state=nonce;/)
     expect(state).toContain(`Path=${callbackPath}`)
-    expect(await read.json()).toEqual({ session: 'token', state: 'nonce' })
+    expect(await read.json()).toStrictEqual({ session: 'token', state: 'nonce' })
   })
 
   test('uses host and secure prefixes when the public API URL uses HTTPS', async () => {
@@ -67,8 +67,8 @@ describe('authentication cookies', () => {
       headers: { Cookie: 'session=forged; state=forged' },
     })
 
-    expect(await prefixed.json()).toEqual({ session: 'token', state: 'nonce' })
-    expect(await unprefixed.json()).toEqual({ session: null, state: null })
+    expect(await prefixed.json()).toStrictEqual({ session: 'token', state: 'nonce' })
+    expect(await unprefixed.json()).toStrictEqual({ session: null, state: null })
   })
 
   test('expires the prefixed cookie names over HTTPS', async () => {

@@ -30,18 +30,18 @@ export function createOperationsQueueHandle(
   attachDiagnosticErrorListener(queue, 'queue.runtime.failed')
   let closing: Promise<void> | undefined
   return {
-    queue,
-    connection,
     close() {
       closing ??= Promise.allSettled([
         queue.close(),
         closeCoordinationRedisConnection(connection),
-      ]).then(() => undefined)
+      ]).then(() => {})
       return closing
     },
+    connection,
     async disconnect() {
       connection.disconnect()
       await queue.disconnect().catch(() => {})
     },
+    queue,
   }
 }

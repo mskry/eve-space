@@ -6,13 +6,13 @@ const scope = z.string().trim().min(1)
 const scopeSet = z.array(scope).transform(normalizeScopeSet)
 
 const characterLifecyclePayloadSchema = z
-  .object({ userId: z.uuid(), characterId: positiveIdentifier })
+  .object({ characterId: positiveIdentifier, userId: z.uuid() })
   .strict()
 const characterMainChangedPayloadSchema = z
   .object({
-    userId: z.uuid(),
-    previousMainCharacterId: positiveIdentifier,
     newMainCharacterId: positiveIdentifier,
+    previousMainCharacterId: positiveIdentifier,
+    userId: z.uuid(),
   })
   .strict()
   .refine((payload) => payload.previousMainCharacterId !== payload.newMainCharacterId, {
@@ -20,10 +20,10 @@ const characterMainChangedPayloadSchema = z
   })
 const characterScopesChangedPayloadSchema = z
   .object({
-    userId: z.uuid(),
-    characterId: positiveIdentifier,
     addedScopes: scopeSet,
+    characterId: positiveIdentifier,
     removedScopes: scopeSet,
+    userId: z.uuid(),
   })
   .strict()
   .superRefine((payload, context) => {
@@ -37,18 +37,18 @@ const characterScopesChangedPayloadSchema = z
   })
 
 const characterAffiliationObservedPayloadSchema = z
-  .object({ userId: z.uuid(), characterId: positiveIdentifier })
+  .object({ characterId: positiveIdentifier, userId: z.uuid() })
   .strict()
 
 const organizationChangedPayloadSchema = z
   .object({
     actorAdminId: z.uuid(),
-    previousOrganizationType: z.enum(['corporation', 'alliance']),
-    previousOrganizationId: positiveIdentifier,
-    previousOrganizationVersion: positiveIdentifier,
-    organizationType: z.enum(['corporation', 'alliance']),
     organizationId: positiveIdentifier,
+    organizationType: z.enum(['corporation', 'alliance']),
     organizationVersion: positiveIdentifier,
+    previousOrganizationId: positiveIdentifier,
+    previousOrganizationType: z.enum(['corporation', 'alliance']),
+    previousOrganizationVersion: positiveIdentifier,
   })
   .strict()
   .refine(
@@ -63,27 +63,27 @@ const organizationChangedPayloadSchema = z
 
 const organizationMemberBlockPayloadSchema = z
   .object({
+    blockId: z.uuid(),
     organizationVersion: positiveIdentifier,
     userId: z.uuid(),
-    blockId: z.uuid(),
   })
   .strict()
 
 const managedCorporationPayloadSchema = z
   .object({
+    corporationId: positiveIdentifier,
     deploymentId: z.literal(1),
     organizationVersion: positiveIdentifier,
-    corporationId: positiveIdentifier,
   })
   .strict()
 
 const complianceTransitionPayloadSchema = z
   .object({
     deploymentId: z.literal(1),
-    organizationVersion: positiveIdentifier,
-    userId: z.uuid(),
-    state: z.enum(['pending', 'compliant', 'review_required', 'suspended']),
     evidenceFreshness: z.enum(['fresh', 'stale', 'unavailable']),
+    organizationVersion: positiveIdentifier,
+    state: z.enum(['pending', 'compliant', 'review_required', 'suspended']),
+    userId: z.uuid(),
   })
   .strict()
 
@@ -214,33 +214,33 @@ export class RelayPublicationError extends Error {
 
 const eventInputEnvelope = z
   .object({
-    type: z.string(),
-    payloadVersion: z.number().int().positive(),
     aggregateId: z.string().trim().min(1).max(255),
-    payload: z.unknown(),
     occurredAt: z.date().optional(),
+    payload: z.unknown(),
+    payloadVersion: z.number().int().positive(),
+    type: z.string(),
   })
   .strict()
 
 const storedEnvelope = z
   .object({
+    aggregateId: z.string().min(1),
+    aggregateType: z.string(),
     eventId: z.uuid(),
     eventSequence: z.bigint().positive(),
     eventType: z.string(),
-    payloadVersion: z.number().int().positive(),
-    aggregateType: z.string(),
-    aggregateId: z.string().min(1),
-    payload: z.unknown(),
     occurredAt: z.date(),
+    payload: z.unknown(),
+    payloadVersion: z.number().int().positive(),
   })
   .strict()
 
 export function listDomainEventDefinitions() {
   return Object.entries(domainEventRegistry).flatMap(([type, definition]) =>
     Object.keys(definition.versions).map((version) => ({
-      type: type as DomainEventType,
-      payloadVersion: Number(version),
       aggregateType: definition.aggregateType,
+      payloadVersion: Number(version),
+      type: type as DomainEventType,
     })),
   )
 }
@@ -252,9 +252,9 @@ export function validateDomainEventInput(input: unknown): ValidatedDomainEventIn
   const payload = parseSafely(definition.payloadSchema, envelope.payload)
   return {
     ...envelope,
-    type: envelope.type,
     aggregateType: definition.aggregateType,
     payload,
+    type: envelope.type,
   } as ValidatedDomainEventInput
 }
 
@@ -262,7 +262,9 @@ export function validateStoredDomainEvent(input: unknown): DomainEventEnvelope {
   const envelope = parseSafely(storedEnvelope, input)
   assertSecretFreePayload(envelope.payload)
   const definition = getDomainEventDefinition(envelope.eventType, envelope.payloadVersion)
-  if (envelope.aggregateType !== definition.aggregateType) throw new DomainEventValidationError()
+  if (envelope.aggregateType !== definition.aggregateType) {
+    throw new DomainEventValidationError()
+  }
   const payload = parseSafely(definition.payloadSchema, envelope.payload)
   return { ...envelope, payload } as DomainEventEnvelope
 }
@@ -271,31 +273,44 @@ export function assertSecretFreePayload(payload: unknown) {
   const visited = new WeakSet<object>()
 
   function inspect(value: unknown, key?: string) {
-    if (key && containsSensitiveMarker(key)) throw new DomainEventValidationError()
-    if (typeof value !== 'object' || value === null || visited.has(value)) return
+    if (key && containsSensitiveMarker(key)) {
+      throw new DomainEventValidationError()
+    }
+    if (typeof value !== 'object' || value === null || visited.has(value)) {
+      return
+    }
 
     visited.add(value)
     if (Array.isArray(value)) {
-      for (const item of value) inspect(item)
+      for (const item of value) {
+        inspect(item)
+      }
       return
     }
-    for (const [childKey, childValue] of Object.entries(value)) inspect(childValue, childKey)
+    for (const [childKey, childValue] of Object.entries(value)) {
+      inspect(childValue, childKey)
+    }
   }
 
   inspect(payload)
 }
 
 export function categorizeRelayFailure(error: unknown): RelayFailureCategory {
-  if (error instanceof RelayPublicationError) return error.category
-  if (error instanceof DomainEventValidationError) return 'invalid-event'
+  if (error instanceof RelayPublicationError) {
+    return error.category
+  }
+  if (error instanceof DomainEventValidationError) {
+    return 'invalid-event'
+  }
   if (
     typeof error === 'object' &&
     error !== null &&
     'code' in error &&
     typeof error.code === 'string' &&
     ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN'].includes(error.code)
-  )
+  ) {
     return 'queue-unavailable'
+  }
   return 'unknown'
 }
 
@@ -307,13 +322,17 @@ function getDomainEventDefinition(type: string, version: number) {
     >
   )[type]
   const payloadSchema = definition?.versions[version]
-  if (!definition || !payloadSchema) throw new DomainEventValidationError()
+  if (!definition || !payloadSchema) {
+    throw new DomainEventValidationError()
+  }
   return { aggregateType: definition.aggregateType, payloadSchema }
 }
 
 function parseSafely<Schema extends z.ZodType>(schema: Schema, input: unknown): z.output<Schema> {
   const result = schema.safeParse(input)
-  if (!result.success) throw new DomainEventValidationError()
+  if (!result.success) {
+    throw new DomainEventValidationError()
+  }
   return result.data
 }
 

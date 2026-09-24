@@ -10,7 +10,9 @@ export async function loadFinanceLocationNames(locationIds: readonly number[]) {
   const resolvableIds = [...new Set(locationIds)].filter(
     (id) => isPositiveSafeInteger(id) && id < upwellStructureIdFloor,
   )
-  if (resolvableIds.length === 0) return new Map<number, string>()
+  if (resolvableIds.length === 0) {
+    return new Map<number, string>()
+  }
 
   // A location label is presentational enrichment for a record the caller already loaded.
   // Resolution runs inside the resilience load callback, where throwing would classify as a

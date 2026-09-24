@@ -1,7 +1,7 @@
 import { BoundedEsiL1Cache } from './l1-cache.js'
 import type { BoundedStringSetPort, RuntimeLocalQuotaStatePort } from './runtime-ports.js'
 
-const maximumUnrepairedRevisions = 1_000
+const maximumUnrepairedRevisions = 1000
 
 export function createEsiExecutionRuntimeState(l1Capacity: number) {
   return new EsiExecutionRuntimeState(l1Capacity)
@@ -13,10 +13,10 @@ class EsiExecutionRuntimeState {
   namespaceValidatedAt = 0
   namespaceInitialization: Promise<string> | undefined
   readonly localQuota: RuntimeLocalQuotaStatePort = {
-    operationCooldowns: new Map(),
+    globalCooldownUntil: 0,
     groupCooldowns: new Map(),
     inFlight: new Map(),
-    globalCooldownUntil: 0,
+    operationCooldowns: new Map(),
   }
   readonly unrepairedResourceRevisions: BoundedStringSetPort = new BoundedStringSet(
     maximumUnrepairedRevisions,
@@ -28,7 +28,9 @@ class EsiExecutionRuntimeState {
   }
 
   markErrorCompleted(error: unknown) {
-    if (typeof error === 'object' && error) this.#completedErrors.add(error)
+    if (typeof error === 'object' && error) {
+      this.#completedErrors.add(error)
+    }
   }
 
   isErrorCompleted(error: unknown) {
@@ -62,11 +64,15 @@ class BoundedStringSet implements BoundedStringSetPort {
   add(value: string) {
     this.#values.delete(value)
     this.#values.add(value)
-    if (this.#values.size <= this.capacity) return
+    if (this.#values.size <= this.capacity) {
+      return
+    }
     // Losing a repair marker could expose stale private data, so overflow fails closed for all keys.
     this.#overflowed = true
     const oldest = this.#values.values().next().value
-    if (oldest !== undefined) this.#values.delete(oldest)
+    if (oldest !== undefined) {
+      this.#values.delete(oldest)
+    }
   }
 
   delete(value: string) {

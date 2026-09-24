@@ -78,21 +78,30 @@ async function runStep(
   dependencies: ApiShutdownDependencies,
 ) {
   const result = await waitForShutdownOperation(operation(), deadline.signal)
-  if (result.status !== 'rejected') return
+  if (result.status !== 'rejected') {
+    return
+  }
   dependencies.recordFailure(component, result.reason)
   dependencies.markFailed()
 }
 
 function closeHttpServer(server: ApiHttpServer | undefined, signal: AbortSignal): Promise<void> {
-  if (!server) return Promise.resolve()
+  if (!server) {
+    return Promise.resolve()
+  }
   return new Promise<void>((resolve, reject) => {
     let settled = false
     const finish = (error?: Error) => {
-      if (settled) return
+      if (settled) {
+        return
+      }
       settled = true
       signal.removeEventListener('abort', forceClose)
-      if (error) reject(error)
-      else resolve()
+      if (error) {
+        reject(error)
+      } else {
+        resolve()
+      }
     }
     const forceClose = () => {
       server.closeAllConnections()
@@ -101,7 +110,9 @@ function closeHttpServer(server: ApiHttpServer | undefined, signal: AbortSignal)
     signal.addEventListener('abort', forceClose, { once: true })
     try {
       server.close(finish)
-      if (signal.aborted) forceClose()
+      if (signal.aborted) {
+        forceClose()
+      }
     } catch (error) {
       finish(error instanceof Error ? error : new Error('HTTP server close failed'))
     }

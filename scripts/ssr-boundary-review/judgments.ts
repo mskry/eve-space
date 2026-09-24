@@ -22,23 +22,24 @@ export const judgeSite = async (client: JevClient, state: SiteState): Promise<Si
   const answers = await evaluateSystemOne(client, toState(state), ssrBoundaryQuestions)
 
   return {
-    ssrCapable: answers.ssr_capable.noul,
     credentialRequirement: {
       choice: answers.credential_requirement.choice,
       confidence: answers.credential_requirement.confidence,
     },
+    credentialsIncludeOnly: answers.credentials_include_only.noul,
+    excludedPublicEndpoint: answers.excluded_public_endpoint.noul,
+    ssrCapable: answers.ssr_capable.noul,
     ssrSafePath: {
       choice: answers.ssr_safe_path.choice,
       confidence: answers.ssr_safe_path.confidence,
     },
-    credentialsIncludeOnly: answers.credentials_include_only.noul,
-    excludedPublicEndpoint: answers.excluded_public_endpoint.noul,
   }
 }
 
 const toState = ({ site, rootMiddleware, route }: SiteState): EntryType => ({
-  call_site: { file: site.file, line: site.line, entry: site.entry, code: site.excerpt },
+  call_site: { code: site.excerpt, entry: site.entry, file: site.file, line: site.line },
   local_helpers: site.localHelpers ?? 'No local helper definitions were captured.',
+  policy: ssrBoundaryPolicy,
   query_definition: site.definitionExcerpt
     ? { source: site.definitionSource, code: site.definitionExcerpt }
     : 'This call site does not compose a shared query definition.',
@@ -54,5 +55,4 @@ const toState = ({ site, rootMiddleware, route }: SiteState): EntryType => ({
         code: route.excerpt,
       }
     : 'No mounted route definition was located for this call site.',
-  policy: ssrBoundaryPolicy,
 })

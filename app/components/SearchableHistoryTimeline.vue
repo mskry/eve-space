@@ -31,7 +31,9 @@ const scroller = useTemplateRef('scroller')
 const search = ref('')
 const searchTerm = computed(() => search.value.trim())
 const matches = computed(() => {
-  if (!searchTerm.value) return new Set<number>()
+  if (!searchTerm.value) {
+    return new Set<number>()
+  }
   return new Set(
     props.entries
       .filter(
@@ -47,20 +49,24 @@ const firstMatch = computed(
 )
 
 watch(firstMatch, async (recordId) => {
-  if (recordId === undefined) return
+  if (recordId === undefined) {
+    return
+  }
   await nextTick()
   const target = scroller.value?.viewport?.querySelector<HTMLElement>(
     `[data-record-id="${recordId}"]`,
   )
-  if (target) scroller.value?.scrollToElement(target, 12)
+  if (target) {
+    scroller.value?.scrollToElement(target, 12)
+  }
 })
 
 function formatHistoryDate(value: string) {
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: 'short',
-    year: 'numeric',
     timeZone: 'UTC',
+    year: 'numeric',
   }).format(new Date(value))
 }
 </script>

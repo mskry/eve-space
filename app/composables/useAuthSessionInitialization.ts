@@ -54,21 +54,29 @@ export function useAuthSessionInitialization(apiClient: ApiClient) {
   }
 
   async function initialize(force = false): Promise<AuthSession | undefined> {
-    if (import.meta.server) return
+    if (import.meta.server) {
+      return
+    }
     const entry = queryCache.ensure(options)
     const requiresVerification =
       authVerification.state.value.status === 'idle' ||
       authVerification.state.value.status === 'unavailable'
     try {
-      if (entry.pending) await entry.pending.refreshCall
-      else if (force || requiresVerification) await queryCache.fetch(entry)
-      else await queryCache.refresh(entry)
+      if (entry.pending) {
+        await entry.pending.refreshCall
+      } else if (force || requiresVerification) {
+        await queryCache.fetch(entry)
+      } else {
+        await queryCache.refresh(entry)
+      }
     } catch {
       return
     }
-    if (authVerification.state.value.status !== 'verified' || entry.pending) return
+    if (authVerification.state.value.status !== 'verified' || entry.pending) {
+      return
+    }
     return queryCache.getQueryData<AuthSession>(options.key)
   }
 
-  return { options, initialize, verification: authVerification }
+  return { initialize, options, verification: authVerification }
 }

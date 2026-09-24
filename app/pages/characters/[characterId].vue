@@ -10,7 +10,7 @@ import {
 } from '../../utils/view-transition'
 import { composeRecordPageTitle } from '../../utils/page-title'
 
-definePageMeta({ title: 'Characters', layout: 'headerless' })
+definePageMeta({ layout: 'headerless', title: 'Characters' })
 
 const route = useRoute()
 const router = useRouter()
@@ -49,11 +49,15 @@ const reauthorizeStatus = computed<ReauthorizeStatus>(() => {
   return status === 'success' || status === 'cancelled' || status === 'error' ? status : ''
 })
 const reauthorizeFeedback = computed(() => {
-  if (reauthorizeFeedbackStatus.value === 'success') return 'Character authorization refreshed.'
-  if (reauthorizeFeedbackStatus.value === 'cancelled')
+  if (reauthorizeFeedbackStatus.value === 'success') {
+    return 'Character authorization refreshed.'
+  }
+  if (reauthorizeFeedbackStatus.value === 'cancelled') {
     return 'Character reauthorization was cancelled.'
-  if (reauthorizeFeedbackStatus.value === 'error')
+  }
+  if (reauthorizeFeedbackStatus.value === 'error') {
     return 'Character reauthorization could not be completed.'
+  }
   return ''
 })
 const reauthorizeFeedbackIsError = computed(
@@ -66,17 +70,21 @@ const characterPageKey = computed(
 function routeLocationWithoutReauthorization() {
   const query = { ...route.query }
   delete query.reauthorize
-  return { path: route.path, query, hash: route.hash }
+  return { hash: route.hash, path: route.path, query }
 }
 
 watch(characterId, (id, previousId) => {
-  if (id !== previousId) reauthorizeFeedbackStatus.value = ''
+  if (id !== previousId) {
+    reauthorizeFeedbackStatus.value = ''
+  }
 })
 
 watch(
   [authLoading, () => authSession.value.authenticated, reauthorizeStatus],
   async ([loading, sessionAuthenticated, callbackStatus]) => {
-    if (loading || !sessionAuthenticated || !callbackStatus || callbackProcessing.value) return
+    if (loading || !sessionAuthenticated || !callbackStatus || callbackProcessing.value) {
+      return
+    }
 
     callbackProcessing.value = true
     reauthorizeFeedbackStatus.value = callbackStatus

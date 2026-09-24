@@ -26,7 +26,7 @@ export class OrganizationRegistrationPolicyMutationError extends Error {
   }
 }
 
-export async function updateOrganizationRegistrationPolicy(input: {
+interface RegistrationPolicyInput {
   actorUserId: string
   requiredScopes: string[]
   strictRemediationDurationSeconds: number
@@ -34,14 +34,18 @@ export async function updateOrganizationRegistrationPolicy(input: {
   derivedDirectorAuthorityEnabled: boolean
   authorityEvidenceFreshDurationSeconds: number
   reason: string
-}) {
+}
+
+export async function updateOrganizationRegistrationPolicy(input: RegistrationPolicyInput) {
   return db.transaction(async (transaction) => {
     const [current] = await transaction
       .select()
       .from(deploymentSettings)
       .where(eq(deploymentSettings.id, 1))
       .for('update')
-    if (!current) throw new Error('Deployment organization is not configured')
+    if (!current) {
+      throw new Error('Deployment organization is not configured')
+    }
     if (
       !(await hasCurrentOrganizationOwnerAuthorityInTransaction(
         transaction,
@@ -50,67 +54,57 @@ export async function updateOrganizationRegistrationPolicy(input: {
         'mutate',
         { requireComplianceAccess: false },
       ))
-    )
+    ) {
       throw new OrganizationRegistrationPolicyMutationError('owner-authority-required')
+    }
 
     const requiredScopes = normalizeScopeSet(input.requiredScopes.map((scope) => scope.trim()))
-    if (
-      requiredScopes.some((scope) => !scope || scope.length > 200) ||
-      !Number.isInteger(input.strictRemediationDurationSeconds) ||
-      input.strictRemediationDurationSeconds < 0 ||
-      input.strictRemediationDurationSeconds > maximumStrictRemediationDurationSeconds ||
-      !Number.isInteger(input.staleEvidenceGraceDurationSeconds) ||
-      input.staleEvidenceGraceDurationSeconds < 0 ||
-      input.staleEvidenceGraceDurationSeconds > maximumStaleEvidenceGraceDurationSeconds ||
-      !Number.isInteger(input.authorityEvidenceFreshDurationSeconds) ||
-      input.authorityEvidenceFreshDurationSeconds < minimumAuthorityEvidenceFreshDurationSeconds ||
-      input.authorityEvidenceFreshDurationSeconds > maximumAuthorityEvidenceFreshDurationSeconds ||
-      !input.reason.trim()
-    )
+    if (invalidRegistrationPolicy(input, requiredScopes)) {
       throw new OrganizationRegistrationPolicyMutationError('invalid-policy')
+    }
 
-    const unchanged =
-      JSON.stringify(current.requiredRegistrationScopes) === JSON.stringify(requiredScopes) &&
-      current.strictRemediationDurationSeconds === input.strictRemediationDurationSeconds &&
-      current.staleEvidenceGraceDurationSeconds === input.staleEvidenceGraceDurationSeconds &&
-      current.derivedDirectorAuthorityEnabled === input.derivedDirectorAuthorityEnabled &&
-      current.authorityEvidenceFreshDurationSeconds === input.authorityEvidenceFreshDurationSeconds
-    if (unchanged) return toPolicy(current)
+    if (registrationPolicyUnchanged(current, input, requiredScopes)) {
+      return toPolicy(current)
+    }
 
     const now = new Date()
     const registrationPolicyVersion = current.registrationPolicyVersion + 1
     const [updated] = await transaction
       .update(deploymentSettings)
       .set({
-        requiredRegistrationScopes: requiredScopes,
-        strictRemediationDurationSeconds: input.strictRemediationDurationSeconds,
-        staleEvidenceGraceDurationSeconds: input.staleEvidenceGraceDurationSeconds,
-        derivedDirectorAuthorityEnabled: input.derivedDirectorAuthorityEnabled,
         authorityEvidenceFreshDurationSeconds: input.authorityEvidenceFreshDurationSeconds,
+        derivedDirectorAuthorityEnabled: input.derivedDirectorAuthorityEnabled,
         registrationPolicyVersion,
+        requiredRegistrationScopes: requiredScopes,
+        staleEvidenceGraceDurationSeconds: input.staleEvidenceGraceDurationSeconds,
+        strictRemediationDurationSeconds: input.strictRemediationDurationSeconds,
         updatedAt: now,
       })
       .where(eq(deploymentSettings.id, 1))
       .returning()
-    if (!updated) throw new Error('Failed to update organization registration policy')
-    if (current.derivedDirectorAuthorityEnabled && !updated.derivedDirectorAuthorityEnabled)
+    if (!updated) {
+      throw new Error('Failed to update organization registration policy')
+    }
+    if (current.derivedDirectorAuthorityEnabled && !updated.derivedDirectorAuthorityEnabled) {
       await invalidateDerivedAuthorityPolicySourcesInTransaction(transaction, {
+        now,
         organizationVersion: current.organizationVersion,
         policyVersion: registrationPolicyVersion,
-        now,
       })
+    }
     if (
       updated.authorityEvidenceFreshDurationSeconds <
         current.authorityEvidenceFreshDurationSeconds ||
       updated.staleEvidenceGraceDurationSeconds < current.staleEvidenceGraceDurationSeconds
-    )
+    ) {
       await reconcileAuthorityPolicyDeadlinesInTransaction(transaction, {
+        freshDurationSeconds: updated.authorityEvidenceFreshDurationSeconds,
+        now,
         organizationVersion: current.organizationVersion,
         policyVersion: registrationPolicyVersion,
-        freshDurationSeconds: updated.authorityEvidenceFreshDurationSeconds,
         staleGraceDurationSeconds: updated.staleEvidenceGraceDurationSeconds,
-        now,
       })
+    }
     if (
       !(await hasCurrentOrganizationOwnerAuthorityInTransaction(
         transaction,
@@ -119,26 +113,27 @@ export async function updateOrganizationRegistrationPolicy(input: {
         'mutate',
         { requireComplianceAccess: false },
       ))
-    )
+    ) {
       throw new OrganizationRegistrationPolicyMutationError('owner-policy-noncompliant')
+    }
 
     await appendOrganizationAuditEvent(transaction, {
-      deploymentId: 1,
-      organizationVersion: current.organizationVersion,
-      policyVersion: registrationPolicyVersion,
-      eventType: 'registration-policy.changed',
-      actorType: 'user',
       actorId: input.actorUserId,
-      subjectType: 'deployment',
-      subjectId: '1',
-      reason: input.reason,
-      outcome: 'transitioned',
+      actorType: 'user',
+      deploymentId: 1,
+      eventType: 'registration-policy.changed',
       occurredAt: now,
+      organizationVersion: current.organizationVersion,
+      outcome: 'transitioned',
+      policyVersion: registrationPolicyVersion,
+      reason: input.reason,
+      subjectId: '1',
+      subjectType: 'deployment',
     })
     await recomputeAllOrganizationAccountsInTransaction(transaction, {
       deploymentId: 1,
-      organizationVersion: current.organizationVersion,
       now,
+      organizationVersion: current.organizationVersion,
     })
     const [actorCompliance] = await transaction
       .select({ state: organizationAccountCompliance.state })
@@ -150,20 +145,51 @@ export async function updateOrganizationRegistrationPolicy(input: {
           eq(organizationAccountCompliance.userId, input.actorUserId),
         ),
       )
-    if (actorCompliance?.state !== 'compliant')
+    if (actorCompliance?.state !== 'compliant') {
       throw new OrganizationRegistrationPolicyMutationError('owner-policy-noncompliant')
+    }
     return toPolicy(updated)
   })
 }
 
+function invalidRegistrationPolicy(input: RegistrationPolicyInput, requiredScopes: string[]) {
+  return (
+    requiredScopes.some((scope) => !scope || scope.length > 200) ||
+    !Number.isInteger(input.strictRemediationDurationSeconds) ||
+    input.strictRemediationDurationSeconds < 0 ||
+    input.strictRemediationDurationSeconds > maximumStrictRemediationDurationSeconds ||
+    !Number.isInteger(input.staleEvidenceGraceDurationSeconds) ||
+    input.staleEvidenceGraceDurationSeconds < 0 ||
+    input.staleEvidenceGraceDurationSeconds > maximumStaleEvidenceGraceDurationSeconds ||
+    !Number.isInteger(input.authorityEvidenceFreshDurationSeconds) ||
+    input.authorityEvidenceFreshDurationSeconds < minimumAuthorityEvidenceFreshDurationSeconds ||
+    input.authorityEvidenceFreshDurationSeconds > maximumAuthorityEvidenceFreshDurationSeconds ||
+    !input.reason.trim()
+  )
+}
+
+function registrationPolicyUnchanged(
+  current: typeof deploymentSettings.$inferSelect,
+  input: RegistrationPolicyInput,
+  requiredScopes: string[],
+) {
+  return (
+    JSON.stringify(current.requiredRegistrationScopes) === JSON.stringify(requiredScopes) &&
+    current.strictRemediationDurationSeconds === input.strictRemediationDurationSeconds &&
+    current.staleEvidenceGraceDurationSeconds === input.staleEvidenceGraceDurationSeconds &&
+    current.derivedDirectorAuthorityEnabled === input.derivedDirectorAuthorityEnabled &&
+    current.authorityEvidenceFreshDurationSeconds === input.authorityEvidenceFreshDurationSeconds
+  )
+}
+
 function toPolicy(settings: typeof deploymentSettings.$inferSelect) {
   return {
+    authorityEvidenceFreshDurationSeconds: settings.authorityEvidenceFreshDurationSeconds,
+    derivedDirectorAuthorityEnabled: settings.derivedDirectorAuthorityEnabled,
     organizationVersion: settings.organizationVersion,
     policyVersion: settings.registrationPolicyVersion,
     requiredScopes: settings.requiredRegistrationScopes,
-    strictRemediationDurationSeconds: settings.strictRemediationDurationSeconds,
     staleEvidenceGraceDurationSeconds: settings.staleEvidenceGraceDurationSeconds,
-    derivedDirectorAuthorityEnabled: settings.derivedDirectorAuthorityEnabled,
-    authorityEvidenceFreshDurationSeconds: settings.authorityEvidenceFreshDurationSeconds,
+    strictRemediationDurationSeconds: settings.strictRemediationDurationSeconds,
   }
 }

@@ -17,16 +17,16 @@ describe('API request logging', () => {
 
       const serializedEvent = String(consoleInfo.mock.calls[0]?.[0])
       const event = JSON.parse(serializedEvent)
-      expect(event).toEqual(
+      expect(event).toStrictEqual(
         expect.objectContaining({
           level: 'info',
           msg: 'request completed',
-          requestId: expect.stringMatching(/^[0-9a-f-]{36}$/),
           req: {
             method: 'GET',
-            url: '/api/modules/not-installed',
             remoteAddress: '203.0.113.10',
+            url: '/api/modules/not-installed',
           },
+          requestId: expect.stringMatching(/^[0-9a-f-]{36}$/),
           res: { statusCode: 404 },
           responseTime: expect.any(Number),
           time: expect.any(String),
@@ -55,7 +55,7 @@ describe('API request logging', () => {
 
         const serializedEvent = String(consoleInfo.mock.calls[0]?.[0])
         const event = JSON.parse(serializedEvent)
-        expect(event.req).toEqual({ method: 'GET', url: '[redacted]' })
+        expect(event.req).toStrictEqual({ method: 'GET', url: '[redacted]' })
         expect(serializedEvent).not.toContain('private-value')
         expect(serializedEvent).not.toContain('authorization=Bearer')
       } finally {

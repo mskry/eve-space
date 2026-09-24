@@ -134,21 +134,21 @@ function declaredReadFunctionSql() {
 
 async function persistenceRoutineDescriptor(migration: string, sql: string) {
   const canonical = await canonicalizePersistenceRoutineSql({
+    mode: 'read',
     moduleId: 'alpha',
     operationId: 'read-snapshot',
     revision: 1,
-    mode: 'read',
     sql,
   })
   return {
+    definitionFingerprint: canonical.definitionFingerprint,
+    migration,
+    mode: 'read' as const,
     moduleId: 'alpha',
     operationId: 'read-snapshot',
     revision: 1,
-    mode: 'read' as const,
-    migration,
-    schemaName: canonical.identity.schemaName,
     routineName: canonical.identity.routineName,
-    definitionFingerprint: canonical.definitionFingerprint,
+    schemaName: canonical.identity.schemaName,
   }
 }
 
@@ -158,20 +158,22 @@ async function installAlphaPersistence(connection: postgres.Sql) {
   const operation = await persistenceRoutineDescriptor(migrationName, sql)
   const options = {
     installed: [{ moduleId: 'alpha', name: migrationName }],
-    persistenceOperations: [operation],
     loadModuleSql: async () => sql,
+    persistenceOperations: [operation],
   } as const
   await runStartupMigrations(connection, options)
   return { migrationName, operation, options }
 }
 
 async function waitForBackendLock(connection: postgres.Sql, pid: number) {
-  const deadline = Date.now() + 5_000
+  const deadline = Date.now() + 5000
   while (Date.now() < deadline) {
     const [activity] = await connection<{ wait_event_type: string | null }[]>`
       select wait_event_type from pg_stat_activity where pid = ${pid}
     `
-    if (activity?.wait_event_type === 'Lock') return
+    if (activity?.wait_event_type === 'Lock') {
+      return
+    }
     await new Promise((resolve) => setTimeout(resolve, 10))
   }
   throw new Error('Module migration did not reach the expected lock')
@@ -210,51 +212,51 @@ async function runtimePersistenceOperations(migration: string, sql: string) {
   const definitions = [
     definePlatformPersistenceOperation({
       id: 'read-records',
-      method: 'readRecords',
-      revision: 1,
-      mode: 'read',
       inputSchema: z.object({}).strict(),
-      outputSchema: z.object({ count: z.number().int().nonnegative() }).strict(),
       maximumInputBytes: 64,
       maximumOutputBytes: 64,
+      method: 'readRecords',
+      mode: 'read',
+      outputSchema: z.object({ count: z.number().int().nonnegative() }).strict(),
+      revision: 1,
     }),
     definePlatformPersistenceOperation({
       id: 'write-record',
-      method: 'writeRecord',
-      revision: 1,
-      mode: 'write',
       inputSchema: z.object({ value: z.string().min(1).max(100) }).strict(),
-      outputSchema: z.object({ applied: z.literal(true) }).strict(),
       maximumInputBytes: 256,
       maximumOutputBytes: 64,
+      method: 'writeRecord',
+      mode: 'write',
+      outputSchema: z.object({ applied: z.literal(true) }).strict(),
+      revision: 1,
     }),
   ] as const
   return Promise.all(
     definitions.map(async (definition) => {
       const canonical = await canonicalizePersistenceRoutineSql({
+        mode: definition.mode,
         moduleId: 'alpha',
         operationId: definition.id,
         revision: definition.revision,
-        mode: definition.mode,
         sql,
       })
       return {
+        definition,
+        definitionFingerprint: canonical.definitionFingerprint,
+        grants: {
+          activityProviders: [],
+          resourceMaterializations: [],
+          resourceProjections: [],
+          routes: [],
+        },
+        method: definition.method,
+        migration,
+        mode: definition.mode,
         moduleId: 'alpha',
         operationId: definition.id,
-        method: definition.method,
         revision: definition.revision,
-        mode: definition.mode,
-        migration,
-        schemaName: canonical.identity.schemaName,
         routineName: canonical.identity.routineName,
-        definitionFingerprint: canonical.definitionFingerprint,
-        definition,
-        grants: {
-          routes: [],
-          activityProviders: [],
-          resourceProjections: [],
-          resourceMaterializations: [],
-        },
+        schemaName: canonical.identity.schemaName,
       }
     }),
   )
@@ -267,10 +269,10 @@ describe('multi-process safety', () => {
       await import('../../../src/worker/readiness.js')
 
     try {
-      await expect(checkWorkerReadiness(connection)).resolves.toEqual({
+      await expect(checkWorkerReadiness(connection)).resolves.toStrictEqual({
         healthy: false,
-        reason: `Missing migration core/${expectedWorkerMigration}`,
         missing: { module: 'core', name: expectedWorkerMigration },
+        reason: `Missing migration core/${expectedWorkerMigration}`,
       })
     } finally {
       await connection.end()
@@ -291,13 +293,13 @@ describe('multi-process safety', () => {
         from schema_migrations
         order by applied_at, name
       `
-      expect(applied.map((migration) => migration.name)).toEqual(
+      expect(applied.map((migration) => migration.name)).toStrictEqual(
         migrations.map((migration) => migration.name),
       )
-      expect(new Set(applied.map((migration) => migration.module))).toEqual(new Set(['core']))
-      expect(applied.map(({ name, contentSha256 }) => ({ name, sha256: contentSha256 }))).toEqual(
-        migrations.map(({ name, sha256 }) => ({ name, sha256 })),
-      )
+      expect(new Set(applied.map((migration) => migration.module))).toStrictEqual(new Set(['core']))
+      expect(
+        applied.map(({ name, contentSha256 }) => ({ name, sha256: contentSha256 })),
+      ).toStrictEqual(migrations.map(({ name, sha256 }) => ({ name, sha256 })))
 
       const { checkWorkerReadiness, expectedWorkerMigration } =
         await import('../../../src/worker/readiness.js')
@@ -308,8 +310,8 @@ describe('multi-process safety', () => {
       await runStartupMigrations(inspector, {
         installed: [],
         moduleIds: [],
-        persistenceOperations: [],
         persistenceContractFingerprint: persistenceRequirement.contractFingerprint,
+        persistenceOperations: [],
       })
       const [beforeReadiness] = await inspector<{ attested_at: Date; reconciled_at: Date }[]>`
         select
@@ -324,14 +326,14 @@ describe('multi-process safety', () => {
           [],
           persistenceRequirement,
         ),
-      ).resolves.toEqual({ healthy: true })
+      ).resolves.toStrictEqual({ healthy: true })
       const [afterReadiness] = await inspector<{ attested_at: Date; reconciled_at: Date }[]>`
         select
           max(attested_at) as attested_at,
           (select reconciled_at from module_persistence_contract) as reconciled_at
         from module_persistence_operation_attestations
       `
-      expect(afterReadiness).toEqual(beforeReadiness)
+      expect(afterReadiness).toStrictEqual(beforeReadiness)
     } finally {
       await Promise.all([first.end(), second.end(), inspector.end()])
     }
@@ -378,10 +380,10 @@ describe('multi-process safety', () => {
           ) as "appliedMigrations"
       `
 
-      expect(result).toEqual({
+      expect(result).toStrictEqual({
+        appliedMigrations: migrations.map(({ name }) => name),
         functionExists: true,
         usesValidationFunction: true,
-        appliedMigrations: migrations.map(({ name }) => name),
       })
       const missingIdentities = await connection<{ count: number }[]>`
         select count(*)::integer as count
@@ -495,7 +497,7 @@ describe('multi-process safety', () => {
         order by module
       `
       expect(table?.exists).toBe(true)
-      expect(owners.map(({ module }) => module)).toEqual(['alpha', 'core'])
+      expect(owners.map(({ module }) => module)).toStrictEqual(['alpha', 'core'])
     } finally {
       await connection.end()
     }
@@ -538,7 +540,9 @@ describe('multi-process safety', () => {
         values ('character', ${String(characterId)}, ${characterId})
         returning subject_lifecycle_id
       `
-      if (!lifecycle) throw new Error('Failed to create test character lifecycle')
+      if (!lifecycle) {
+        throw new Error('Failed to create test character lifecycle')
+      }
       await connection`
         insert into sde_groups (group_id, category_id, name, published)
         values (18, 4, 'Mineral', true), (19, 4, 'Hidden Group', false)
@@ -562,31 +566,31 @@ describe('multi-process safety', () => {
       const { loadPublishedTypeGroupsProduct } =
         await import('../../../src/core-data/published-type-groups-adapter.js')
       const ownedReads = createOwnedCharacterCoreReads({
-        userId: ownerId,
         characterId,
         subjectLifecycleId: lifecycle.subject_lifecycle_id,
+        userId: ownerId,
       })
       const nonOwnerReads = createOwnedCharacterCoreReads({
-        userId: otherId,
         characterId,
         subjectLifecycleId: lifecycle.subject_lifecycle_id,
+        userId: otherId,
       })
-      await expect(ownedReads.loadAffiliation()).resolves.toEqual({
-        characterId,
-        corporationId: 98_000_001,
+      await expect(ownedReads.loadAffiliation()).resolves.toStrictEqual({
         allianceId: 99_000_001,
+        characterId,
         checkedAt: '2026-08-25T12:00:00.000Z',
+        corporationId: 98_000_001,
         resolutionState: 'resolved',
       })
       await expect(nonOwnerReads.loadAffiliation()).resolves.toBeNull()
       await expect(
         loadPublishedTypeGroupsProduct({ typeIds: [37, 36, 35, 34] }, connection),
       ).resolves.toMatchObject({
+        complete: true,
         rows: [
           { typeId: 34, typeName: 'Tritanium', groupId: 18, groupName: 'Mineral' },
           { typeId: 37, typeName: 'Isogen', groupId: 18, groupName: 'Mineral' },
         ],
-        complete: true,
       })
 
       await connection`delete from characters where character_id = ${characterId}`
@@ -626,7 +630,7 @@ describe('multi-process safety', () => {
             and column_name = 'value'
         ) as exists
       `
-      expect(applied).toEqual([
+      expect([...applied]).toStrictEqual([
         { module: 'alpha', name: 'alpha-001-initial.sql' },
         { module: 'alpha', name: 'alpha-002-value.sql' },
       ])
@@ -671,12 +675,12 @@ describe('multi-process safety', () => {
       const applied = await connection<{ name: string }[]>`
         select name from schema_migrations where module = 'alpha' order by name
       `
-      expect(state).toEqual({
+      expect(state).toStrictEqual({
         first_exists: true,
-        probe_exists: false,
         last_exists: false,
+        probe_exists: false,
       })
-      expect(applied).toEqual([{ name: 'alpha-001-initial.sql' }])
+      expect([...applied]).toStrictEqual([{ name: 'alpha-001-initial.sql' }])
     } finally {
       await connection.end()
     }
@@ -701,9 +705,9 @@ describe('multi-process safety', () => {
 
       expect(failure).toBeInstanceOf(ModuleMigrationValidationError)
       expect(failure).toMatchObject({
-        moduleId: 'beta',
-        migrationName: 'beta-001-concurrent.sql',
         category: 'prohibited-operation',
+        migrationName: 'beta-001-concurrent.sql',
+        moduleId: 'beta',
       })
       expect(String(failure)).not.toContain(sqlByName.get('beta-001-concurrent.sql'))
 
@@ -727,10 +731,10 @@ describe('multi-process safety', () => {
             where module_id in ('alpha', 'beta')
           ) as provisioned
       `
-      expect(state).toEqual({
+      expect(state).toStrictEqual({
         alpha_schema_exists: false,
-        beta_schema_exists: false,
         applied: 0,
+        beta_schema_exists: false,
         provisioned: 0,
       })
     } finally {
@@ -769,13 +773,13 @@ describe('multi-process safety', () => {
         await expect(
           runModuleMigrationSets(connection, [
             {
-              moduleId: 'alpha',
               migrations: [
                 {
                   name: `alpha-${name.replaceAll(' ', '-')}.sql`,
                   sql: `create table alpha_policy_probe (id integer); ${operation};`,
                 },
               ],
+              moduleId: 'alpha',
             },
           ]),
         ).rejects.toMatchObject({ category })
@@ -803,7 +807,7 @@ describe('multi-process safety', () => {
           exists (select 1 from pg_extension where extname = 'hstore') as extension_exists,
           exists (select 1 from users where id = ${userId}) as user_exists
       `
-      expect(state).toEqual({
+      expect(state).toStrictEqual({
         alpha_applied: 0,
         alpha_schema_exists: false,
         beta_login: false,
@@ -826,8 +830,8 @@ describe('multi-process safety', () => {
     try {
       await runStartupMigrations(connection, {
         installed: [{ moduleId: 'alpha', name: migrationName }],
-        persistenceOperations: [operation],
         loadModuleSql: async () => sql,
+        persistenceOperations: [operation],
       })
       const [metadata] = await connection<
         {
@@ -887,9 +891,9 @@ describe('multi-process safety', () => {
         where module_id = 'alpha' and operation_id = 'read-snapshot'
       `
 
-      expect(metadata).toEqual({
-        direct_table_access: false,
+      expect(metadata).toStrictEqual({
         direct_sequence_access: false,
+        direct_table_access: false,
         owner: 'eve_module_alpha_migrate',
         parallel: 'u',
         public_execute: false,
@@ -898,8 +902,8 @@ describe('multi-process safety', () => {
         settings: ['search_path=pg_catalog, eve_module_alpha, pg_temp'],
         volatility: 's',
       })
-      expect(invocation?.result).toEqual({ marker: 'kept' })
-      expect(attestation).toEqual({
+      expect(invocation?.result).toStrictEqual({ marker: 'kept' })
+      expect(attestation).toStrictEqual({
         definition_fingerprint: operation.definitionFingerprint,
         migration_name: migrationName,
         mode: 'read',
@@ -912,13 +916,13 @@ describe('multi-process safety', () => {
       await expect(
         runStartupMigrations(connection, {
           installed: [{ moduleId: 'alpha', name: migrationName }],
-          persistenceOperations: [operation],
           loadModuleSql: async () => sql,
+          persistenceOperations: [operation],
         }),
       ).rejects.toMatchObject({
+        failure: 'grants',
         moduleId: 'alpha',
         operationId: 'read-snapshot',
-        failure: 'grants',
       })
     } finally {
       await connection.end()
@@ -945,9 +949,9 @@ describe('multi-process safety', () => {
       })
 
       await expect(runStartupMigrations(connection, options)).rejects.toMatchObject({
+        failure: 'definition',
         moduleId: 'alpha',
         operationId: operation.operationId,
-        failure: 'definition',
       })
     } finally {
       await connection.end()
@@ -963,9 +967,9 @@ describe('multi-process safety', () => {
         alter function eve_module_alpha.persist_read_snapshot(jsonb) owner to eve_space
       `
       await expect(runStartupMigrations(connection, options)).rejects.toMatchObject({
+        failure: 'metadata',
         moduleId: 'alpha',
         operationId: operation.operationId,
-        failure: 'metadata',
       })
 
       await connection`
@@ -977,9 +981,9 @@ describe('multi-process safety', () => {
         set search_path to pg_catalog, pg_temp
       `
       await expect(runStartupMigrations(connection, options)).rejects.toMatchObject({
+        failure: 'metadata',
         moduleId: 'alpha',
         operationId: operation.operationId,
-        failure: 'metadata',
       })
     } finally {
       await connection.end()
@@ -1004,9 +1008,9 @@ describe('multi-process safety', () => {
         `)
       })
       await expect(runStartupMigrations(connection, options)).rejects.toMatchObject({
+        failure: 'signature',
         moduleId: 'alpha',
         operationId: operation.operationId,
-        failure: 'signature',
       })
 
       await connection.begin(async (transaction) => {
@@ -1042,9 +1046,9 @@ describe('multi-process safety', () => {
       `
 
       await expect(runStartupMigrations(connection, options)).rejects.toMatchObject({
+        failure: 'metadata',
         moduleId: 'alpha',
         operationId: operation.operationId,
-        failure: 'metadata',
       })
     } finally {
       await connection.end()
@@ -1062,8 +1066,8 @@ describe('multi-process safety', () => {
         runStartupMigrations(connection, {
           installed: [],
           moduleIds: [],
-          persistenceOperations: [],
           persistenceContractFingerprint: contractFingerprint,
+          persistenceOperations: [],
         }),
       ).resolves.toBeUndefined()
 
@@ -1083,7 +1087,7 @@ describe('multi-process safety', () => {
             as routine_exists,
           to_regnamespace('eve_module_alpha') is not null as schema_exists
       `
-      expect(retained).toEqual({
+      expect(retained).toStrictEqual({
         attested: true,
         migrated: true,
         routine_exists: true,
@@ -1097,7 +1101,7 @@ describe('multi-process safety', () => {
           contractFingerprint,
           operations: [],
         }),
-      ).resolves.toEqual({ healthy: true })
+      ).resolves.toStrictEqual({ healthy: true })
     } finally {
       await connection.end()
     }
@@ -1174,15 +1178,15 @@ describe('multi-process safety', () => {
     try {
       const failure = await runStartupMigrations(connection, {
         installed: [{ moduleId: 'alpha', name: migrationName }],
-        persistenceOperations: [operation],
         loadModuleSql: async () => sql,
+        persistenceOperations: [operation],
       }).catch((error: unknown) => error)
 
       expect(failure).toBeInstanceOf(ModulePersistenceRoutineProvisioningError)
       expect(failure).toMatchObject({
+        failure: 'definition',
         moduleId: 'alpha',
         operationId: 'read-snapshot',
-        failure: 'definition',
       })
       const [state] = await connection<
         { applied: boolean; attested: boolean; routine_exists: boolean; schema_exists: boolean }[]
@@ -1200,7 +1204,7 @@ describe('multi-process safety', () => {
             as routine_exists,
           to_regnamespace('eve_module_alpha') is not null as schema_exists
       `
-      expect(state).toEqual({
+      expect(state).toStrictEqual({
         applied: false,
         attested: false,
         routine_exists: false,
@@ -1238,11 +1242,11 @@ describe('multi-process safety', () => {
           { moduleId: 'alpha', name: initialMigration },
           { moduleId: 'alpha', name: routineMigration },
         ],
-        persistenceOperations: [operation],
         loadModuleSql: async ({ name }) =>
           name === initialMigration
             ? 'create table routine_gate (id bigint primary key);'
             : routineSql,
+        persistenceOperations: [operation],
       })
       await waitForBackendLock(observer, backend!.pid)
 
@@ -1287,8 +1291,8 @@ describe('multi-process safety', () => {
     try {
       await runStartupMigrations(connection, {
         installed: [{ moduleId: 'alpha', name: migrationName }],
-        persistenceOperations: operations,
         loadModuleSql: async () => migrationSql,
+        persistenceOperations: operations,
       })
       await blocker`begin`
       await blocker`alter table eve_module_alpha.routine_records add column timeout_gate boolean`
@@ -1336,8 +1340,8 @@ describe('multi-process safety', () => {
     try {
       await runStartupMigrations(connection, {
         installed: [{ moduleId: 'alpha', name: migrationName }],
-        persistenceOperations: operations,
         loadModuleSql: async () => migrationSql,
+        persistenceOperations: operations,
       })
 
       await connection.begin(async (transaction) => {
@@ -1361,7 +1365,7 @@ describe('multi-process safety', () => {
             current_user as role,
             (select count(*)::integer from eve_module_alpha.routine_records) as count
         `
-        expect(state).toEqual({ count: 0, role: 'eve_space' })
+        expect(state).toStrictEqual({ count: 0, role: 'eve_space' })
       })
     } finally {
       await connection.end()
@@ -1414,18 +1418,18 @@ describe('multi-process safety', () => {
         from eve_module_alpha.execution_trace
         order by ordinal
       `
-      expect(trace).toEqual([
+      expect([...trace]).toStrictEqual([
         {
-          ordinal: 1,
           executing_role: 'eve_module_alpha_migrate',
-          search_path: 'eve_module_alpha',
+          ordinal: 1,
           query_text: firstSql,
+          search_path: 'eve_module_alpha',
         },
         {
-          ordinal: 2,
           executing_role: 'eve_module_alpha_migrate',
-          search_path: 'eve_module_alpha',
+          ordinal: 2,
           query_text: secondSql,
+          search_path: 'eve_module_alpha',
         },
       ])
     } finally {
@@ -1442,7 +1446,6 @@ describe('multi-process safety', () => {
 
       const failure = await runModuleMigrationSets(connection, [
         {
-          moduleId: 'alpha',
           migrations: [
             {
               name: migrationName,
@@ -1452,6 +1455,7 @@ describe('multi-process safety', () => {
               `,
             },
           ],
+          moduleId: 'alpha',
         },
       ]).catch((error: unknown) => error)
 
@@ -1466,14 +1470,14 @@ describe('multi-process safety', () => {
           to_regclass('eve_module_alpha.authority_rollback_probe') is not null as probe_exists,
           to_regnamespace('eve_module_alpha') is not null as schema_exists
       `
-      expect(state).toEqual({ applied: false, probe_exists: false, schema_exists: false })
+      expect(state).toStrictEqual({ applied: false, probe_exists: false, schema_exists: false })
     } finally {
       await connection.end()
     }
   })
 
   test('restores the session lock timeout it overrode while migrating', async () => {
-    const connection = postgres(databaseUrl, { max: 1, connection: { lock_timeout: 7_000 } })
+    const connection = postgres(databaseUrl, { connection: { lock_timeout: 7000 }, max: 1 })
 
     try {
       await runStartupMigrations(connection, {
@@ -1513,7 +1517,7 @@ describe('multi-process safety', () => {
       const records = await connection<{ value: string }[]>`
         select value from eve_module_alpha.alpha_records
       `
-      expect(records).toEqual([{ value: 'updated' }])
+      expect([...records]).toStrictEqual([{ value: 'updated' }])
     } finally {
       await connection.end()
     }
@@ -1529,14 +1533,14 @@ describe('multi-process safety', () => {
     try {
       await runStartupMigrations(connection, {
         installed,
-        moduleIds: ['alpha', 'beta', 'empty-module'],
         loadModuleSql: loadIsolationMigrationSql,
+        moduleIds: ['alpha', 'beta', 'empty-module'],
       })
 
       const provisioned = await connection<{ module_id: string }[]>`
         select module_id from module_schema_provisioning order by module_id
       `
-      expect(provisioned).toEqual([
+      expect([...provisioned]).toStrictEqual([
         { module_id: 'alpha' },
         { module_id: 'beta' },
         { module_id: 'empty-module' },
@@ -1556,7 +1560,7 @@ describe('multi-process safety', () => {
             operations: [],
           },
         ),
-      ).resolves.toEqual({ healthy: true })
+      ).resolves.toStrictEqual({ healthy: true })
 
       const [security] = await connection<
         {
@@ -1661,23 +1665,23 @@ describe('multi-process safety', () => {
         migration_alpha_create: true,
         migration_beta_usage: false,
         migration_inherit_option: false,
+        migration_rolbypassrls: false,
         migration_rolcanlogin: false,
         migration_rolcreatedb: false,
         migration_rolcreaterole: false,
         migration_rolinherit: false,
         migration_rolreplication: false,
         migration_rolsuper: false,
-        migration_rolbypassrls: false,
         migration_set_option: true,
-        runtime_sequence_access: false,
-        runtime_table_access: false,
+        rolbypassrls: false,
         rolcanlogin: false,
         rolcreatedb: false,
         rolcreaterole: false,
         rolinherit: false,
         rolreplication: false,
         rolsuper: false,
-        rolbypassrls: false,
+        runtime_sequence_access: false,
+        runtime_table_access: false,
         set_option: true,
       })
       expect(security?.schema_owner).toBe('eve_space')
@@ -1686,13 +1690,14 @@ describe('multi-process safety', () => {
         'select * from eve_module_alpha.alpha_records',
         'select * from eve_module_beta.beta_records',
         'select * from public.users',
-      ])
+      ]) {
         await expect(
           connection.begin(async (transaction) => {
             await transaction`set local role eve_module_alpha_runtime`
             await transaction.unsafe(statement)
           }),
         ).rejects.toMatchObject({ code: '42501' })
+      }
 
       const [migrationIdentity] = await connection<{ role_name: string }[]>`
         select role_name from eve_module_alpha.alpha_migration_identity
@@ -1727,9 +1732,9 @@ describe('multi-process safety', () => {
       `
 
       await expect(runStartupMigrations(connection, options)).rejects.toMatchObject({
+        failure: 'authority',
         moduleId: 'alpha',
         operationId: 'catalog',
-        failure: 'authority',
       })
       const [authority] = await connection<{ can_read: boolean }[]>`
         select has_table_privilege(
@@ -1777,14 +1782,14 @@ describe('multi-process safety', () => {
             session_user,
             (select count(*)::integer from public.users) as user_count
         `
-        return { restricted, restored }
+        return { restored, restricted }
       })
 
-      expect(recovered.restricted).toEqual({
+      expect(recovered.restricted).toStrictEqual({
         current_user: 'eve_module_alpha_runtime',
         session_user: 'eve_space',
       })
-      expect(recovered.restored).toEqual({
+      expect(recovered.restored).toStrictEqual({
         current_user: 'eve_space',
         session_user: 'eve_space',
         user_count: 0,
@@ -1840,11 +1845,11 @@ describe('multi-process safety', () => {
         where namespace.nspname = 'eve_module_alpha'
       `
 
-      expect(relations).toEqual([
+      expect([...relations]).toStrictEqual([
         { name: 'legacy_records', owner: 'eve_module_alpha_migrate' },
         { name: 'legacy_records_id_seq', owner: 'eve_module_alpha_migrate' },
       ])
-      expect(state).toEqual({
+      expect(state).toStrictEqual({
         routine_owner: 'eve_module_alpha_migrate',
         schema_owner: 'eve_space',
         type_owner: 'eve_module_alpha_migrate',
@@ -1860,11 +1865,11 @@ describe('multi-process safety', () => {
     try {
       await runStartupMigrations(connection, {
         installed: [],
-        moduleIds: ['alpha', 'beta'],
         moduleDefinitions: [
           { moduleId: 'alpha', defaultEnabled: true },
           { moduleId: 'beta', defaultEnabled: false },
         ],
+        moduleIds: ['alpha', 'beta'],
         moduleSectionDefinitions: [],
       })
       await connection`
@@ -1886,11 +1891,11 @@ describe('multi-process safety', () => {
 
       await runStartupMigrations(connection, {
         installed: [],
-        moduleIds: ['beta', 'delta'],
         moduleDefinitions: [
           { moduleId: 'beta', defaultEnabled: true },
           { moduleId: 'delta', defaultEnabled: true },
         ],
+        moduleIds: ['beta', 'delta'],
         moduleSectionDefinitions: [],
       })
 
@@ -1899,25 +1904,25 @@ describe('multi-process safety', () => {
         from deployment_modules
         order by module_id
       `
-      expect(modules).toEqual([
+      expect([...modules]).toStrictEqual([
         {
-          module_id: 'alpha',
           enabled: false,
+          module_id: 'alpha',
           updated_at: new Date('2026-08-24T12:00:00Z'),
         },
         {
-          module_id: 'beta',
           enabled: false,
+          module_id: 'beta',
           updated_at: expect.any(Date),
         },
         {
+          enabled: true,
           module_id: 'core',
-          enabled: true,
           updated_at: expect.any(Date),
         },
         {
-          module_id: 'delta',
           enabled: true,
+          module_id: 'delta',
           updated_at: expect.any(Date),
         },
       ])
@@ -1928,49 +1933,49 @@ describe('multi-process safety', () => {
         from deployment_shell_navigation_order
         order by position
       `
-      expect(navigation).toEqual([
+      expect([...navigation]).toStrictEqual([
         {
-          owner_id: 'core',
           navigation_id: 'core-overview',
+          owner_id: 'core',
           position: 0,
           updated_at: new Date('2026-08-24T10:00:00Z'),
         },
         {
-          owner_id: 'alpha',
           navigation_id: 'alpha-audit',
+          owner_id: 'alpha',
           position: 1,
           updated_at: new Date('2026-08-24T10:00:00Z'),
         },
       ])
 
       const definitions = [
-        { moduleId: 'beta', defaultEnabled: true },
-        { moduleId: 'delta', defaultEnabled: true },
+        { defaultEnabled: true, moduleId: 'beta' },
+        { defaultEnabled: true, moduleId: 'delta' },
       ] as const
       const defaults = [
         {
-          ownerId: 'core',
           navigationId: 'core-overview',
-          placement: 'dashboard',
           order: 10,
+          ownerId: 'core',
+          placement: 'dashboard',
         },
         {
-          ownerId: 'alpha',
           navigationId: 'alpha-audit',
-          placement: 'dashboard',
           order: 20,
+          ownerId: 'alpha',
+          placement: 'dashboard',
         },
         {
-          ownerId: 'beta',
           navigationId: 'beta-audit',
-          placement: 'dashboard',
           order: 30,
+          ownerId: 'beta',
+          placement: 'dashboard',
         },
         {
-          ownerId: 'delta',
           navigationId: 'delta-audit',
-          placement: 'dashboard',
           order: 40,
+          ownerId: 'delta',
+          placement: 'dashboard',
         },
       ] as const
       await expect(
@@ -1978,31 +1983,33 @@ describe('multi-process safety', () => {
       ).resolves.toBeNull()
       await expect(
         setInstalledModuleEnabled('beta', true, connection, definitions),
-      ).resolves.toMatchObject({ moduleId: 'beta', enabled: true, defaultEnabled: true })
-      await expect(loadModuleRuntimeState(connection, definitions, defaults)).resolves.toEqual({
+      ).resolves.toMatchObject({ defaultEnabled: true, enabled: true, moduleId: 'beta' })
+      await expect(
+        loadModuleRuntimeState(connection, definitions, defaults),
+      ).resolves.toStrictEqual({
         enabledModuleIds: ['beta', 'delta'],
         enabledSections: [],
         shellNavigationOrder: {
+          character: [],
           dashboard: [
             { ownerId: 'core', navigationId: 'core-overview' },
             { ownerId: 'beta', navigationId: 'beta-audit' },
             { ownerId: 'delta', navigationId: 'delta-audit' },
           ],
-          character: [],
         },
       })
 
       const savedOrder = {
+        character: [],
         dashboard: [
           { ownerId: 'delta', navigationId: 'delta-audit' },
           { ownerId: 'core', navigationId: 'core-overview' },
           { ownerId: 'beta', navigationId: 'beta-audit' },
         ],
-        character: [],
       }
       await expect(
         saveInstalledShellNavigationOrder(savedOrder, connection, definitions, defaults),
-      ).resolves.toEqual(savedOrder)
+      ).resolves.toStrictEqual(savedOrder)
       const retained = await connection<{ count: number }[]>`
         select count(*)::integer as count
         from deployment_shell_navigation_order
@@ -2042,7 +2049,7 @@ describe('multi-process safety', () => {
           to_regrole('eve_module_gamma_migrate') is not null as migration_role_exists,
           to_regnamespace('eve_module_gamma') is not null as schema_exists
       `
-      expect(state).toEqual({
+      expect(state).toStrictEqual({
         migration_role_exists: false,
         provisioned: false,
         role_exists: false,
@@ -2080,10 +2087,10 @@ describe('multi-process safety', () => {
     const contender = postgres(databaseUrl)
     const moduleId = 'alpha'
     const migration = {
-      moduleId,
       migrations: [
         { name: 'alpha-001-initial.sql', sql: 'create table alpha_lock_probe (id integer);' },
       ],
+      moduleId,
     }
 
     try {
@@ -2106,7 +2113,7 @@ describe('multi-process safety', () => {
           ) as applied,
           to_regclass('alpha_lock_probe') is not null as table_exists
       `
-      expect(state).toEqual({ applied: 0, table_exists: false })
+      expect(state).toStrictEqual({ applied: 0, table_exists: false })
     } finally {
       await holder`
         select pg_advisory_unlock(
@@ -2134,7 +2141,7 @@ describe('multi-process safety', () => {
 
       expect(first?.planner_schedule_offset_ms).toBeGreaterThanOrEqual(0)
       expect(first?.planner_schedule_offset_ms).toBeLessThan(60_000)
-      expect(second).toEqual(first)
+      expect(second).toStrictEqual(first)
     } finally {
       await connection.end()
     }
@@ -2192,10 +2199,10 @@ describe('multi-process safety', () => {
             where name = '001_baseline.sql'
           ) as migration_count
       `
-      expect(objects).toEqual({
-        table_exists: false,
+      expect(objects).toStrictEqual({
         function_exists: false,
         migration_count: 0,
+        table_exists: false,
       })
     } finally {
       await connection.end()
@@ -2258,7 +2265,7 @@ describe('multi-process safety', () => {
 
   test('persists one rotated refresh token across independent token-service instances', async () => {
     const connection = postgres(databaseUrl)
-    const characterId = 1404328063
+    const characterId = 1_404_328_063
     const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
     const scope = 'esi-wallet.read_character_wallet.v1'
     await runMigrations(connection)
@@ -2288,7 +2295,9 @@ describe('multi-process safety', () => {
       from platform_subject_lifecycles
       where character_id = ${characterId}
     `
-    if (!lifecycle) throw new Error('Character lifecycle is missing')
+    if (!lifecycle) {
+      throw new Error('Character lifecycle is missing')
+    }
 
     let releaseRefresh: () => void
     const refreshReleased = new Promise<void>((resolve) => {
@@ -2303,8 +2312,8 @@ describe('multi-process safety', () => {
       await refreshReleased
       return {
         access_token: 'rotated-access-token',
-        refresh_token: 'rotated-refresh-token',
         expires_in: 1200,
+        refresh_token: 'rotated-refresh-token',
         token_type: 'Bearer',
       }
     })
@@ -2339,7 +2348,7 @@ describe('multi-process safety', () => {
       )
       releaseRefresh!()
 
-      await expect(Promise.all([first, second])).resolves.toEqual([
+      await expect(Promise.all([first, second])).resolves.toStrictEqual([
         'rotated-access-token',
         'rotated-access-token',
       ])
@@ -2354,7 +2363,7 @@ describe('multi-process safety', () => {
         select encrypted_tokens, token_version from eve_tokens where character_id = ${characterId}
       `
       expect(stored?.token_version).toBe(1)
-      expect(decryptTokens(stored!.encrypted_tokens)).toEqual({
+      expect(decryptTokens(stored!.encrypted_tokens)).toStrictEqual({
         accessToken: 'rotated-access-token',
         refreshToken: 'rotated-refresh-token',
       })

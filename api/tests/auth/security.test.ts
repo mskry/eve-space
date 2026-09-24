@@ -88,7 +88,7 @@ describe('encrypted tokens', () => {
     expect(Buffer.from(initializationVector!, 'base64url')).toHaveLength(12)
     expect(Buffer.from(authenticationTag!, 'base64url')).toHaveLength(16)
     expect(Buffer.from(ciphertext!, 'base64url').length).toBeGreaterThan(0)
-    expect(decryptTokens(encrypted)).toEqual(tokens)
+    expect(decryptTokens(encrypted)).toStrictEqual(tokens)
   })
 
   test.each([

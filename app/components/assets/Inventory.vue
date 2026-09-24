@@ -55,14 +55,14 @@ const columns: { key: AssetSortKey; label: string; numeric?: boolean }[] = [
   { key: 'unitVolume', label: 'Unit vol.', numeric: true },
 ]
 const sortOptions = [
-  { value: 'jumpsAscending', label: 'Jumps ascending' },
-  { value: 'jumpsDescending', label: 'Jumps descending' },
-  ...columns.map((column) => ({ value: column.key, label: column.label })),
+  { label: 'Jumps ascending', value: 'jumpsAscending' },
+  { label: 'Jumps descending', value: 'jumpsDescending' },
+  ...columns.map((column) => ({ label: column.label, value: column.key })),
 ]
 const identityProperties = {
-  type: { id: 'typeId', label: 'typeName' },
-  group: { id: 'groupId', label: 'groupName' },
   category: { id: 'categoryId', label: 'categoryName' },
+  group: { id: 'groupId', label: 'groupName' },
+  type: { id: 'typeId', label: 'typeName' },
 } as const
 
 const filters = ref<AssetFilterState>({ ...EMPTY_ASSET_FILTERS })
@@ -81,8 +81,9 @@ const sortedGroups = computed(() => {
       : compareLocationGroups
     return filtered.value.groups.toSorted(compare)
   }
-  if (sortKey.value === 'jumpsDescending')
+  if (sortKey.value === 'jumpsDescending') {
     return filtered.value.groups.toSorted(compareLocationGroups)
+  }
   return filtered.value.groups
 })
 const totalLocationPages = computed(() =>
@@ -96,7 +97,9 @@ const paginatedGroups = computed(() =>
 )
 const activeFilters = computed(() => hasActiveAssetFilters(filters.value))
 const hasNearestFirstRouteRanks = computed(() => {
-  if (!props.routeRankBySystemId || !props.routeJumpsBySystemId) return false
+  if (!props.routeRankBySystemId || !props.routeJumpsBySystemId) {
+    return false
+  }
   let previousJumps = -1
   let unavailableReached = false
   for (const [systemId] of [...props.routeRankBySystemId].toSorted(
@@ -107,7 +110,9 @@ const hasNearestFirstRouteRanks = computed(() => {
       unavailableReached = true
       continue
     }
-    if (unavailableReached || jumps < previousJumps) return false
+    if (unavailableReached || jumps < previousJumps) {
+      return false
+    }
     previousJumps = jumps
   }
   return true
@@ -134,12 +139,12 @@ const categoryOptions = computed(() =>
   optionsByIdentity(props.collection?.assets ?? [], 'category'),
 )
 const locationOptions = computed(() =>
-  hierarchy.value.map((group) => ({ value: group.key, label: group.label })),
+  hierarchy.value.map((group) => ({ label: group.label, value: group.key })),
 )
 const flagOptions = computed(() =>
   [...new Set((props.collection?.assets ?? []).map((asset) => asset.locationFlag))]
     .toSorted((left, right) => left.localeCompare(right, 'en'))
-    .map((flag) => ({ value: flag, label: flag || 'Unknown flag' })),
+    .map((flag) => ({ label: flag || 'Unknown flag', value: flag })),
 )
 const sortModel = computed<string>({
   get: () => sortKey.value,
@@ -162,7 +167,9 @@ watch(
 watch(
   filters,
   (value) => {
-    if (controller.value.setCriteria(value)) triggerRef(controller)
+    if (controller.value.setCriteria(value)) {
+      triggerRef(controller)
+    }
     locationPage.value = 1
   },
   { deep: true },
@@ -183,7 +190,7 @@ function isLocationExpanded(key: string) {
 function visibleLocation(group: (typeof filtered.value.groups)[number]) {
   // Sort the tree, not the flattened list: flat sorting detaches children from their container.
   const rows = controller.value.rowsForLocation({ ...group, rows: sortHierarchy(group.rows) })
-  return { rows, totalVisibleRows: rows.length, hasMore: false }
+  return { hasMore: false, rows, totalVisibleRows: rows.length }
 }
 
 function sortHierarchy(rows: readonly AssetHierarchyRow[]): AssetHierarchyRow[] {
@@ -205,8 +212,9 @@ function toggleContainer(itemId: number) {
 }
 
 function toggleSort(key: AssetSortKey) {
-  if (sortKey.value === key) sortDescending.value = !sortDescending.value
-  else {
+  if (sortKey.value === key) {
+    sortDescending.value = !sortDescending.value
+  } else {
     sortKey.value = key
     sortDescending.value = false
   }
@@ -214,31 +222,41 @@ function toggleSort(key: AssetSortKey) {
 }
 
 function sortIndicator(key: AssetSortKey) {
-  if (sortKey.value !== key) return '<>'
+  if (sortKey.value !== key) {
+    return '<>'
+  }
   return sortDescending.value ? 'v' : '^'
 }
 
 function ariaSort(key: AssetSortKey): 'ascending' | 'descending' | undefined {
-  if (sortKey.value !== key) return undefined
+  if (sortKey.value !== key) {
+    return undefined
+  }
   return sortDescending.value ? 'descending' : 'ascending'
 }
 
 function authorize() {
-  if (props.state.action) emit('authorize', props.state.action)
+  if (props.state.action) {
+    emit('authorize', props.state.action)
+  }
 }
 
 function compareRows(left: AssetHierarchyRow, right: AssetHierarchyRow) {
   const leftValue = sortValue(left)
   const rightValue = sortValue(right)
   let order: number
-  if (leftValue === null && rightValue === null) order = left.asset.itemId - right.asset.itemId
-  else if (leftValue === null) order = 1
-  else if (rightValue === null) order = -1
-  else
+  if (leftValue === null && rightValue === null) {
+    order = left.asset.itemId - right.asset.itemId
+  } else if (leftValue === null) {
+    order = 1
+  } else if (rightValue === null) {
+    order = -1
+  } else {
     order =
       typeof leftValue === 'number' && typeof rightValue === 'number'
         ? leftValue - rightValue
         : String(leftValue).localeCompare(String(rightValue), 'en')
+  }
   const resolved = order || left.asset.itemId - right.asset.itemId
   return sortDescending.value ? -resolved : resolved
 }
@@ -246,10 +264,15 @@ function compareRows(left: AssetHierarchyRow, right: AssetHierarchyRow) {
 function compareLocationGroups(left: AssetLocationGroup, right: AssetLocationGroup) {
   const leftJumps = routeJumps(left)
   const rightJumps = routeJumps(right)
-  if (leftJumps === null && rightJumps === null)
+  if (leftJumps === null && rightJumps === null) {
     return left.label.localeCompare(right.label, 'en') || left.key.localeCompare(right.key, 'en')
-  if (leftJumps === null) return 1
-  if (rightJumps === null) return -1
+  }
+  if (leftJumps === null) {
+    return 1
+  }
+  if (rightJumps === null) {
+    return -1
+  }
   const jumpOrder =
     sortKey.value === 'jumpsDescending' ? rightJumps - leftJumps : leftJumps - rightJumps
   return (
@@ -262,10 +285,15 @@ function compareLocationGroups(left: AssetLocationGroup, right: AssetLocationGro
 function compareLocationRouteRanks(left: AssetLocationGroup, right: AssetLocationGroup) {
   const leftRank = routeRank(left)
   const rightRank = routeRank(right)
-  if (leftRank === null && rightRank === null)
+  if (leftRank === null && rightRank === null) {
     return left.label.localeCompare(right.label, 'en') || left.key.localeCompare(right.key, 'en')
-  if (leftRank === null) return 1
-  if (rightRank === null) return -1
+  }
+  if (leftRank === null) {
+    return 1
+  }
+  if (rightRank === null) {
+    return -1
+  }
   return (
     leftRank - rightRank ||
     left.label.localeCompare(right.label, 'en') ||
@@ -291,13 +319,24 @@ function sortValue(row: AssetHierarchyRow) {
     sortKey.value === 'item' ||
     sortKey.value === 'jumpsAscending' ||
     sortKey.value === 'jumpsDescending'
-  )
+  ) {
     return asset.customName?.trim() || asset.typeName
-  if (sortKey.value === 'quantity') return asset.quantity
-  if (sortKey.value === 'group') return asset.groupName
-  if (sortKey.value === 'category') return asset.categoryName
-  if (sortKey.value === 'placement') return asset.locationFlag
-  if (sortKey.value === 'totalVolume') return asset.totalVolume
+  }
+  if (sortKey.value === 'quantity') {
+    return asset.quantity
+  }
+  if (sortKey.value === 'group') {
+    return asset.groupName
+  }
+  if (sortKey.value === 'category') {
+    return asset.categoryName
+  }
+  if (sortKey.value === 'placement') {
+    return asset.locationFlag
+  }
+  if (sortKey.value === 'totalVolume') {
+    return asset.totalVolume
+  }
   return asset.unitVolume
 }
 
@@ -307,10 +346,12 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
   for (const asset of assets) {
     const id = asset[properties.id]
     const label = asset[properties.label]
-    if (id !== null && label !== null && !options.has(id)) options.set(id, label)
+    if (id !== null && label !== null && !options.has(id)) {
+      options.set(id, label)
+    }
   }
   return [...options]
-    .map(([value, label]) => ({ value, label }))
+    .map(([value, label]) => ({ label, value }))
     .toSorted(
       (left, right) => left.label.localeCompare(right.label, 'en') || left.value - right.value,
     )

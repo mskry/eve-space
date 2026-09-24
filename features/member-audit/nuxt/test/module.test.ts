@@ -52,7 +52,7 @@ test('exports seven lazy reviewer panels and no feature-owned page', async () =>
 
   expect(
     Object.keys(packageJson.exports).toSorted((left, right) => left.localeCompare(right)),
-  ).toEqual(
+  ).toStrictEqual(
     ['.', ...reviewerPanels.map(([id]) => `./reviewer/${id}`)].toSorted((left, right) =>
       left.localeCompare(right),
     ),
@@ -127,7 +127,7 @@ describe('reviewer state presentation', () => {
   test('binds query resources and access to the selected contribution target', () => {
     const props = reviewerProps()
 
-    expect(memberAuditReviewerQueryOptions(props, reviewerQuery)).toEqual({
+    expect(memberAuditReviewerQueryOptions(props, reviewerQuery)).toStrictEqual({
       access: { ...props.queryAccess, sectionId: props.sectionId },
       query: reviewerQuery,
       resource: [
@@ -193,7 +193,7 @@ describe('reviewer state presentation', () => {
         ],
         { status: 'ready' },
       ),
-    ).toEqual({ status: 'ready' })
+    ).toStrictEqual({ status: 'ready' })
   })
 
   test('distinguishes stale and authorization-required evidence', () => {
@@ -207,10 +207,10 @@ describe('reviewer state presentation', () => {
       collectionState(
         [
           {
+            requiredScope: 'esi-mail.read_mail.v1',
             resourceId: 'mail-headers',
             status: 'authorization-required',
             validatedAt: null,
-            requiredScope: 'esi-mail.read_mail.v1',
           },
         ],
         { status: 'ready' },
@@ -232,7 +232,7 @@ describe('reviewer state presentation', () => {
         status: 'ready',
       }),
     ).toMatchObject({ status: 'unavailable' })
-    expect(collectionState([], { status: 'loading', title: 'Loading' })).toEqual({
+    expect(collectionState([], { status: 'loading', title: 'Loading' })).toStrictEqual({
       status: 'loading',
       title: 'Loading',
     })
@@ -240,11 +240,11 @@ describe('reviewer state presentation', () => {
 
   test('identifies account and character targets', () => {
     const base = {
-      moduleId: 'member-audit',
       contributionId: 'overview',
-      routeId: 'member-summary',
+      moduleId: 'member-audit',
       organizationVersion: 4,
       queryAccess: { authenticated: true, authorized: true, moduleEnabled: true },
+      routeId: 'member-summary',
     }
     expect(
       targetLabel({
@@ -252,8 +252,8 @@ describe('reviewer state presentation', () => {
         target: {
           kind: 'managed-organization-account',
           managedMemberLifecycleId: 'lifecycle',
-          userId: 'user-id',
           sectionActivationVersion: 1,
+          userId: 'user-id',
         },
       }),
     ).toBe('Member user-id')
@@ -261,14 +261,14 @@ describe('reviewer state presentation', () => {
       targetLabel({
         ...base,
         target: {
-          kind: 'managed-organization-character',
-          managedMemberLifecycleId: 'lifecycle',
-          userId: 'user-id',
+          authorizationGeneration: 2,
           characterId: 90_000_001,
           characterLifecycleId: 'character-lifecycle',
-          authorizationGeneration: 2,
           disclosureVersion: 1,
+          kind: 'managed-organization-character',
+          managedMemberLifecycleId: 'lifecycle',
           sectionActivationVersion: 1,
+          userId: 'user-id',
         },
       }),
     ).toBe('Character 90000001')
@@ -295,8 +295,8 @@ describe('reviewer state presentation', () => {
       hasWalletEvidence({ balance: null, journal: [{ journalId: 1 }], transactions: [] }),
     ).toBe(true)
 
-    expect(hasMailEvidence({ headers: [], contents: [] })).toBe(false)
-    expect(hasMailEvidence({ headers: [], contents: [{ mailId: 1 }] })).toBe(true)
+    expect(hasMailEvidence({ contents: [], headers: [] })).toBe(false)
+    expect(hasMailEvidence({ contents: [{ mailId: 1 }], headers: [] })).toBe(true)
   })
 })
 
@@ -304,10 +304,8 @@ function reviewerProps(
   access: Partial<PlatformReviewerPanelProps['queryAccess']> = {},
 ): PlatformReviewerPanelProps {
   return {
-    moduleId: 'member-audit',
     contributionId: 'overview',
-    routeId: 'member-summary',
-    sectionId: 'overview',
+    moduleId: 'member-audit',
     organizationVersion: 4,
     queryAccess: {
       authenticated: true,
@@ -315,6 +313,8 @@ function reviewerProps(
       moduleEnabled: true,
       ...access,
     },
+    routeId: 'member-summary',
+    sectionId: 'overview',
     target: {
       kind: 'managed-organization-account',
       managedMemberLifecycleId: 'lifecycle',

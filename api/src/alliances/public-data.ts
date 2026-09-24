@@ -10,20 +10,20 @@ export interface PublicAllianceResult {
 }
 
 const publicAllianceCacheSchema = z.object({
+  executorCorporationId: z.number().nullable(),
   name: z.string(),
   ticker: z.string(),
-  executorCorporationId: z.number().nullable(),
 })
 
 const publicAllianceRead = createPublicEsiRead({
-  operation: 'public-alliance',
-  name: 'public-alliance-core',
-  descriptor: operationRegistry.GetAlliancesAllianceId.transport,
   cacheSchema: publicAllianceCacheSchema,
+  descriptor: operationRegistry.GetAlliancesAllianceId.transport,
   encodeRequest: (input: { allianceId: number }) => ({
     path: { alliance_id: input.allianceId },
   }),
   map: (response): PublicAllianceResult => mapPublicAlliance(response.data),
+  name: 'public-alliance-core',
+  operation: 'public-alliance',
 })
 
 export function getAlliancePublicResult(allianceId: number) {
@@ -32,8 +32,8 @@ export function getAlliancePublicResult(allianceId: number) {
 
 function mapPublicAlliance(alliance: GetAlliancesAllianceIdResponse): PublicAllianceResult {
   return {
+    executorCorporationId: alliance.executor_corporation_id ?? null,
     name: alliance.name,
     ticker: alliance.ticker,
-    executorCorporationId: alliance.executor_corporation_id ?? null,
   }
 }

@@ -30,11 +30,11 @@ const emit = defineEmits<{
 }>()
 
 const filterOptions: ReadonlyArray<{ label: string; value: FinanceJournalGroupFilter }> = [
-  { value: 'All', label: 'All' },
-  { value: 'Income', label: 'Income' },
-  { value: 'Expense', label: 'Expense' },
-  { value: 'Market', label: 'Market' },
-  { value: 'Contracts', label: 'Contracts' },
+  { label: 'All', value: 'All' },
+  { label: 'Income', value: 'Income' },
+  { label: 'Expense', value: 'Expense' },
+  { label: 'Market', value: 'Market' },
+  { label: 'Contracts', value: 'Contracts' },
 ]
 const selectedFilter = computed<string>({
   get: () => props.filter,
@@ -49,12 +49,16 @@ const countLabel = computed(() =>
 )
 
 function amountClass(amount: number | null) {
-  if (amount === null) return undefined
+  if (amount === null) {
+    return
+  }
   return amount >= 0 ? 'is-income' : 'is-expense'
 }
 
 function formatJournalAmount(amount: number | null) {
-  if (amount === null) return 'UNAVAILABLE'
+  if (amount === null) {
+    return 'UNAVAILABLE'
+  }
   return `${amount > 0 ? '+' : ''}${formatFinanceIsk(amount, 2, 0)} ISK`
 }
 </script>

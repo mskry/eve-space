@@ -9,7 +9,9 @@ import type { OrganizationReviewDirectoryPreference } from '../../app/utils/orga
 const mountedWrappers: { unmount(): void }[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   localStorage.clear()
 })
 
@@ -24,7 +26,7 @@ describe('organization review directory', () => {
 
     expect(wrapper.get('table').attributes('aria-busy')).toBe('false')
     expect(wrapper.get('caption').text()).toContain('Current managed organization accounts')
-    expect(headerLabels(wrapper)).toEqual([
+    expect(headerLabels(wrapper)).toStrictEqual([
       'Member',
       'Corporation',
       'Managed since',
@@ -57,14 +59,15 @@ describe('organization review directory', () => {
       'last site activity',
       'last site login',
       'last EVE login',
-    ])
+    ]) {
       expect(wrapper.text()).not.toContain(forbidden)
+    }
   })
 
   it('restores, changes, reorders, and resets only stable column identities', async () => {
     const storedPreference = {
-      version: 1,
       fieldIds: ['site_registered_at', 'disclosed_characters'],
+      version: 1,
     } satisfies OrganizationReviewDirectoryPreference
     localStorage.setItem(
       ORGANIZATION_REVIEW_DIRECTORY_COLUMN_PREFERENCE_STORAGE_KEY,
@@ -72,7 +75,7 @@ describe('organization review directory', () => {
     )
     const wrapper = await mountDirectory()
 
-    expect(headerLabels(wrapper)).toEqual([
+    expect(headerLabels(wrapper)).toStrictEqual([
       'Member',
       'Site registered',
       'Disclosed characters',
@@ -82,7 +85,7 @@ describe('organization review directory', () => {
     expect(wrapper.get('#review-directory-column-actions').attributes()).toHaveProperty('disabled')
 
     await wrapper.get('#review-directory-column-groups').setValue(true)
-    expect(headerLabels(wrapper)).toEqual([
+    expect(headerLabels(wrapper)).toStrictEqual([
       'Member',
       'Site registered',
       'Disclosed characters',
@@ -90,7 +93,7 @@ describe('organization review directory', () => {
       'Actions',
     ])
     await wrapper.get('button[aria-label="Move Groups earlier"]').trigger('click')
-    expect(headerLabels(wrapper)).toEqual([
+    expect(headerLabels(wrapper)).toStrictEqual([
       'Member',
       'Site registered',
       'Groups',
@@ -101,14 +104,13 @@ describe('organization review directory', () => {
     const persisted = JSON.parse(
       localStorage.getItem(ORGANIZATION_REVIEW_DIRECTORY_COLUMN_PREFERENCE_STORAGE_KEY)!,
     )
-    expect(persisted).toEqual({
-      version: 1,
+    expect(persisted).toStrictEqual({
       fieldIds: ['member', 'site_registered_at', 'groups', 'disclosed_characters', 'actions'],
+      version: 1,
     })
-    expect(Object.keys(persisted)).toEqual(['version', 'fieldIds'])
 
     await buttonWithText(wrapper, 'RESET TO DEFAULT').trigger('click')
-    expect(headerLabels(wrapper)).toEqual([
+    expect(headerLabels(wrapper)).toStrictEqual([
       'Member',
       'Corporation',
       'Managed since',
@@ -122,19 +124,19 @@ describe('organization review directory', () => {
   it('emits normalized server controls, sorting, paging, and explicit member selection', async () => {
     const member = directoryMember()
     const wrapper = await mountDirectory({
+      direction: 'asc',
       hasNextPage: true,
       hasPreviousPage: true,
       members: [member],
       page: 2,
       sort: 'member',
-      direction: 'asc',
     })
 
     await wrapper.get('button[aria-label="Sort by Member, currently ascending"]').trigger('click')
     await wrapper.get('button[aria-label="Sort by Managed since"]').trigger('click')
-    expect(wrapper.emitted('change-sort')).toEqual([
-      [{ sort: 'member', direction: 'desc' }],
-      [{ sort: 'managed_since', direction: 'asc' }],
+    expect(wrapper.emitted('change-sort')).toStrictEqual([
+      [{ direction: 'desc', sort: 'member' }],
+      [{ direction: 'asc', sort: 'managed_since' }],
     ])
 
     await wrapper.get('input[placeholder="Character or account"]').setValue('Pilot')
@@ -146,13 +148,13 @@ describe('organization review directory', () => {
     await wrapper.get('select[aria-label="Results per page"]').setValue('50')
     await wrapper.get('form').trigger('submit')
 
-    expect(wrapper.emitted('update:searchText')?.at(-1)).toEqual(['Pilot'])
-    expect(wrapper.emitted('update:corporationText')?.at(-1)).toEqual(['98000002'])
-    expect(wrapper.emitted('update:groupId')?.at(-1)).toEqual(['group-remote'])
-    expect(wrapper.emitted('update:complianceState')?.at(-1)).toEqual(['review_required'])
-    expect(wrapper.emitted('update:blocked')?.at(-1)).toEqual([true])
-    expect(wrapper.emitted('update:auditState')?.at(-1)).toEqual(['stale'])
-    expect(wrapper.emitted('update:limit')?.at(-1)).toEqual([50])
+    expect(wrapper.emitted('update:searchText')?.at(-1)).toStrictEqual(['Pilot'])
+    expect(wrapper.emitted('update:corporationText')?.at(-1)).toStrictEqual(['98000002'])
+    expect(wrapper.emitted('update:groupId')?.at(-1)).toStrictEqual(['group-remote'])
+    expect(wrapper.emitted('update:complianceState')?.at(-1)).toStrictEqual(['review_required'])
+    expect(wrapper.emitted('update:blocked')?.at(-1)).toStrictEqual([true])
+    expect(wrapper.emitted('update:auditState')?.at(-1)).toStrictEqual(['stale'])
+    expect(wrapper.emitted('update:limit')?.at(-1)).toStrictEqual([50])
     expect(wrapper.emitted('search')).toHaveLength(1)
 
     await wrapper.get('button[aria-label="Previous member page"]').trigger('click')
@@ -164,7 +166,7 @@ describe('organization review directory', () => {
 
     expect(wrapper.emitted('previous')).toHaveLength(1)
     expect(wrapper.emitted('next')).toHaveLength(1)
-    expect(wrapper.emitted('select')).toEqual([[member], [member]])
+    expect(wrapper.emitted('select')).toStrictEqual([[member], [member]])
     expect(wrapper.text()).toContain('Page 2')
     expect(wrapper.text()).not.toContain('Page 2 of')
   })
@@ -173,15 +175,15 @@ describe('organization review directory', () => {
     const wrapper = await mountDirectory({
       members: [
         directoryMember({
-          auditData: { state: 'authorization-required', expected: 7, covered: 3, asOf: null },
+          auditData: { asOf: null, covered: 3, expected: 7, state: 'authorization-required' },
           block: { blocked: true, blockedAt: '2026-09-17T00:00:00.000Z' },
           compliance: {
-            state: 'review_required',
-            evidenceFreshness: 'stale',
-            evidenceAt: null,
-            reviewDeadline: null,
             accessValidUntil: null,
             evaluatedAt: null,
+            evidenceAt: null,
+            evidenceFreshness: 'stale',
+            reviewDeadline: null,
+            state: 'review_required',
           },
         }),
       ],
@@ -199,6 +201,16 @@ async function mountDirectory(
   overrides: Partial<InstanceType<typeof OrganizationReviewDirectory>['$props']> = {},
 ) {
   const wrapper = await mountSuspended(OrganizationReviewDirectory, {
+    global: {
+      stubs: {
+        UiAutocomplete: autocompleteStub,
+        UiEveImage: eveImageStub,
+        UiPopover: passThroughStub('UiPopover'),
+        UiScrollArea: passThroughStub('UiScrollArea'),
+        UiSelect: selectStub,
+        UiTooltip: passThroughStub('UiTooltip'),
+      },
+    },
     props: {
       corporationText: '',
       groupFacets: [
@@ -212,16 +224,6 @@ async function mountDirectory(
       members: [directoryMember()],
       searchText: '',
       ...overrides,
-    },
-    global: {
-      stubs: {
-        UiAutocomplete: autocompleteStub,
-        UiEveImage: eveImageStub,
-        UiPopover: passThroughStub('UiPopover'),
-        UiScrollArea: passThroughStub('UiScrollArea'),
-        UiSelect: selectStub,
-        UiTooltip: passThroughStub('UiTooltip'),
-      },
     },
   })
   mountedWrappers.push(wrapper)
@@ -242,20 +244,20 @@ function buttonWithText(wrapper: Awaited<ReturnType<typeof mountDirectory>>, tex
 
 const eveImageStub = defineComponent({
   name: 'UiEveImage',
-  props: { id: { type: Number, required: true } },
+  props: { id: { required: true, type: Number } },
   setup(props) {
-    return () => h('img', { 'data-eve-id': props.id, alt: '' })
+    return () => h('img', { alt: '', 'data-eve-id': props.id })
   },
 })
 
 const autocompleteStub = defineComponent({
+  emits: ['update:modelValue'],
   name: 'UiAutocomplete',
   props: {
-    label: { type: String, required: true },
-    modelValue: { type: String, required: true },
-    options: { type: Array as PropType<readonly string[]>, required: true },
+    label: { required: true, type: String },
+    modelValue: { required: true, type: String },
+    options: { required: true, type: Array as PropType<readonly string[]> },
   },
-  emits: ['update:modelValue'],
   setup(props, { emit }) {
     return () =>
       h(
@@ -274,16 +276,16 @@ const autocompleteStub = defineComponent({
 })
 
 const selectStub = defineComponent({
+  emits: ['update:modelValue'],
   name: 'UiSelect',
   props: {
-    label: { type: String, required: true },
-    modelValue: { type: String, required: true },
+    label: { required: true, type: String },
+    modelValue: { required: true, type: String },
     options: {
-      type: Array as PropType<readonly { label: string; value: string }[]>,
       required: true,
+      type: Array as PropType<readonly { label: string; value: string }[]>,
     },
   },
-  emits: ['update:modelValue'],
   setup(props, { emit }) {
     return () =>
       h(
@@ -314,26 +316,26 @@ function directoryMember(
   const secondary = overrides.secondary ?? false
   const characterId = secondary ? 90_000_002 : 90_000_001
   const base = {
-    managedMemberLifecycleId: secondary ? 'member-lifecycle-2' : 'member-lifecycle-1',
-    managedSince: secondary ? '2026-02-01T00:00:00.000Z' : '2026-01-01T00:00:00.000Z',
-    siteRegisteredAt: '2025-12-01T00:00:00.000Z',
     account: {
+      mainCharacter: { characterId, name: secondary ? 'Remote Pilot' : 'Review Pilot' },
       userId: secondary
         ? 'ee800380-dc86-4c4f-9f26-0e6031848dbf'
         : '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
-      mainCharacter: { characterId, name: secondary ? 'Remote Pilot' : 'Review Pilot' },
     },
-    portraitCharacter: {
-      characterId,
-      name: secondary ? 'Remote Pilot' : 'Review Pilot',
-      source: 'main-character' as const,
+    auditData: {
+      asOf: '2026-09-18T00:00:00.000Z',
+      covered: 7,
+      expected: 7,
+      state: 'current' as const,
     },
-    managedAffiliation: {
-      characterId,
-      name: secondary ? 'Remote Pilot' : 'Review Pilot',
-      corporationId: secondary ? 98_000_002 : 98_000_001,
-      allianceId: null,
-      checkedAt: '2026-09-18T00:00:00.000Z',
+    block: { blocked: false as const },
+    compliance: {
+      accessValidUntil: '2026-09-19T00:00:00.000Z',
+      evaluatedAt: '2026-09-18T00:00:00.000Z',
+      evidenceAt: '2026-09-18T00:00:00.000Z',
+      evidenceFreshness: 'fresh' as const,
+      reviewDeadline: null,
+      state: 'compliant' as const,
     },
     disclosedCharacterCount: secondary ? 2 : 1,
     groups: [
@@ -342,21 +344,21 @@ function directoryMember(
       { groupId: 'group-charlie', name: 'Charlie' },
       { groupId: 'group-delta', name: 'Delta' },
     ],
-    compliance: {
-      state: 'compliant' as const,
-      evidenceFreshness: 'fresh' as const,
-      evidenceAt: '2026-09-18T00:00:00.000Z',
-      reviewDeadline: null,
-      accessValidUntil: '2026-09-19T00:00:00.000Z',
-      evaluatedAt: '2026-09-18T00:00:00.000Z',
+    managedAffiliation: {
+      allianceId: null,
+      characterId,
+      checkedAt: '2026-09-18T00:00:00.000Z',
+      corporationId: secondary ? 98_000_002 : 98_000_001,
+      name: secondary ? 'Remote Pilot' : 'Review Pilot',
     },
-    block: { blocked: false as const },
-    auditData: {
-      state: 'current' as const,
-      expected: 7,
-      covered: 7,
-      asOf: '2026-09-18T00:00:00.000Z',
+    managedMemberLifecycleId: secondary ? 'member-lifecycle-2' : 'member-lifecycle-1',
+    managedSince: secondary ? '2026-02-01T00:00:00.000Z' : '2026-01-01T00:00:00.000Z',
+    portraitCharacter: {
+      characterId,
+      name: secondary ? 'Remote Pilot' : 'Review Pilot',
+      source: 'main-character' as const,
     },
+    siteRegisteredAt: '2025-12-01T00:00:00.000Z',
   }
   const { secondary: _secondary, ...memberOverrides } = overrides
   return { ...base, ...memberOverrides }

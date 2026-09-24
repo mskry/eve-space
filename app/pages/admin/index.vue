@@ -23,12 +23,13 @@ const organizationMutation = useMutation({
   mutation: async () => {
     const response = await apiClient.api.admin.organization.$put({
       json: {
-        organizationType: organizationType.value,
         organizationId: organizationId.value,
+        organizationType: organizationType.value,
       },
     })
-    if (response.status !== 200)
+    if (response.status !== 200) {
       throw await toApiQueryError(response, 'Organization could not be updated.')
+    }
     return response.json()
   },
   onSuccess: async ({ organization }) => {
@@ -47,7 +48,9 @@ const organizationMutation = useMutation({
 const logoutMutation = useMutation({
   mutation: async () => {
     const response = await apiClient.api.admin.logout.$post()
-    if (!response.ok) throw await toApiQueryError(response, 'Administrator logout failed.')
+    if (!response.ok) {
+      throw await toApiQueryError(response, 'Administrator logout failed.')
+    }
   },
   onSuccess: async () => {
     queryCache.setQueryData(ADMIN_QUERY_KEYS.session, { authenticated: false })

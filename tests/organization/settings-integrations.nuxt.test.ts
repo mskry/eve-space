@@ -45,7 +45,9 @@ beforeEach(() => {
 })
 
 afterEach(async () => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   clearQueryCache()
   queryServer.resetHandlers()
   await flushPromises()
@@ -67,8 +69,8 @@ describe('SettingsIntegrations', () => {
     await wrapper.get('.role-grant-form').trigger('submit')
     await flushPromises()
 
-    expect(grantRequests).toEqual([
-      { userId: 'target-user', role: 'hr_auditor', reason: 'Required for audits' },
+    expect(grantRequests).toStrictEqual([
+      { reason: 'Required for audits', role: 'hr_auditor', userId: 'target-user' },
     ])
     expect(wrapper.get('[aria-live="polite"]').text()).toBe('Organization role granted.')
     expect(wrapper.get('#role-user-id').element).toHaveProperty('value', '')
@@ -78,7 +80,7 @@ describe('SettingsIntegrations', () => {
     await wrapper.get('.role-revoke-form').trigger('submit')
     await flushPromises()
 
-    expect(revokeRequests).toEqual([{ reason: 'Access changed' }])
+    expect(revokeRequests).toStrictEqual([{ reason: 'Access changed' }])
     expect(wrapper.find('.role-revoke-form').exists()).toBe(false)
     expect(wrapper.get('[aria-live="polite"]').text()).toBe('Organization role revoked.')
   })
@@ -116,11 +118,11 @@ describe('SettingsIntegrations', () => {
   it('offers any attached character when an existing owner source is invalid', async () => {
     context = {
       ...ownerContext(),
-      isOrganizationOwner: false,
       claimAvailable: true,
-      ownerStatus: 'invalid',
-      ownerFailureClass: 'strict:not-director',
       freshUntil: '2026-09-01T11:00:00.000Z',
+      isOrganizationOwner: false,
+      ownerFailureClass: 'strict:not-director',
+      ownerStatus: 'invalid',
     }
     const wrapper = await mountSettingsIntegrations()
 
@@ -188,7 +190,7 @@ describe('SettingsIntegrations', () => {
     await wrapper.get('.authority-source-remediation').trigger('submit')
     await flushPromises()
 
-    expect(ownerReplacementRequests).toEqual([
+    expect(ownerReplacementRequests).toStrictEqual([
       { characterId: 1_404_328_063, reason: 'Restore verified authority' },
     ])
 
@@ -198,8 +200,8 @@ describe('SettingsIntegrations', () => {
     await wrapper.findAll('.authority-source-remediation').at(-1)!.trigger('submit')
     await flushPromises()
 
-    expect(corporationReplacementRequests).toEqual([
-      { corporationId: 98_000_001, characterId: 1_404_328_063 },
+    expect(corporationReplacementRequests).toStrictEqual([
+      { characterId: 1_404_328_063, corporationId: 98_000_001 },
     ])
   })
 })
@@ -231,20 +233,20 @@ function installHandlers() {
   queryServer.use(
     http.get('http://localhost:8788/auth/config', () =>
       HttpResponse.json({
+        attachUrl: '/auth/eve/attach',
         configured: true,
         loginUrl: '/auth/eve/login',
-        attachUrl: '/auth/eve/attach',
       }),
     ),
     http.get('http://localhost:8788/auth/session', () =>
       HttpResponse.json(
         sessionAuthenticated
           ? {
-              authenticated: true,
               account: {
-                userId: 'owner-user',
                 mainCharacter: { characterId: 1_404_328_063, name: 'Authority Pilot' },
+                userId: 'owner-user',
               },
+              authenticated: true,
             }
           : { authenticated: false },
       ),
@@ -253,7 +255,7 @@ function installHandlers() {
       HttpResponse.json(cacheAdmissionForOrganization('owner-user', 1_404_328_063)),
     ),
     http.get('http://localhost:8788/api/admin/setup', () =>
-      HttpResponse.json({ required: false, available: true }),
+      HttpResponse.json({ available: true, required: false }),
     ),
     http.get('http://localhost:8788/api/organization/context', () => HttpResponse.json(context)),
     http.get('http://localhost:8788/api/organization/roles', () =>
@@ -299,8 +301,8 @@ function installHandlers() {
       async ({ params, request }) => {
         const body = (await request.json()) as { characterId: number }
         corporationReplacementRequests.push({
-          corporationId: Number(params.corporationId),
           characterId: body.characterId,
+          corporationId: Number(params.corporationId),
         })
         return HttpResponse.json({ source: authorityRoles().corporationSources[0] })
       },
@@ -309,24 +311,24 @@ function installHandlers() {
       return HttpResponse.json({
         characters: [
           {
-            characterId: 1_404_328_063,
-            name: 'Authority Pilot',
-            corporationId: 98_000_001,
+            alliance: null,
             allianceId: null,
-            isMain: true,
             birthday: '2020-01-01T00:00:00.000Z',
-            securityStatus: 1.2,
-            raceFactionId: 500_001,
+            characterId: 1_404_328_063,
+            corporation: { id: 98_000_001, name: 'Example Corporation' },
+            corporationId: 98_000_001,
+            isMain: true,
             location: {
+              locationType: 'space',
               solarSystemId: 30_000_142,
               solarSystemName: 'Jita',
-              locationType: 'space',
             },
-            ship: { typeId: 670, typeName: 'Capsule', groupId: 29, name: 'Authority' },
-            walletBalance: 1_000,
+            name: 'Authority Pilot',
+            raceFactionId: 500_001,
+            securityStatus: 1.2,
+            ship: { groupId: 29, name: 'Authority', typeId: 670, typeName: 'Capsule' },
             totalSp: 5_000_000,
-            corporation: { id: 98_000_001, name: 'Example Corporation' },
-            alliance: null,
+            walletBalance: 1000,
           },
         ],
       })
@@ -336,64 +338,87 @@ function installHandlers() {
 
 function ownerContext(): OrganizationContext {
   return {
-    organization: {
-      organizationType: 'corporation',
-      organizationId: 98_000_001,
-      organizationName: 'Example Corporation',
-      organizationTicker: 'EX',
-      organizationVersion: 1,
-    },
-    isOrganizationOwner: true,
-    isBlocked: false,
-    memberAccess: true,
-    capabilities: { reviewRegistration: true, viewRosterCoverage: true },
-    claimAvailable: false,
-    ownerStatus: 'fresh',
-    ownerFailureClass: null,
-    freshUntil: '2026-09-01T13:00:00.000Z',
-    graceUntil: null,
-    reviewDeadline: null,
     authorityCharacter: {
       characterId: 1_404_328_063,
       corporationId: 98_000_001,
-      name: 'Authority Pilot',
-      sourceType: 'designated-owner',
-      observedAt: '2026-09-01T12:00:00.000Z',
       freshUntil: '2026-09-01T13:00:00.000Z',
       graceUntil: null,
       lastCheckedAt: '2026-09-01T12:00:00.000Z',
+      name: 'Authority Pilot',
+      observedAt: '2026-09-01T12:00:00.000Z',
+      sourceType: 'designated-owner',
     },
+    capabilities: { reviewRegistration: true, viewRosterCoverage: true },
+    claimAvailable: false,
+    freshUntil: '2026-09-01T13:00:00.000Z',
+    graceUntil: null,
+    isBlocked: false,
+    isOrganizationOwner: true,
+    memberAccess: true,
+    organization: {
+      organizationId: 98_000_001,
+      organizationName: 'Example Corporation',
+      organizationTicker: 'EX',
+      organizationType: 'corporation',
+      organizationVersion: 1,
+    },
+    ownerFailureClass: null,
+    ownerStatus: 'fresh',
+    reviewDeadline: null,
   }
 }
 
 function emptyRoles(): OrganizationRoles {
   return {
+    corporationSources: [],
+    derivedSources: [],
     grants: [roleGrant()],
     ownerSources: [],
-    derivedSources: [],
-    corporationSources: [],
   }
 }
 
 function authorityRoles(): OrganizationRoles {
   const shared = {
-    userId: 'owner-user',
+    authorizationGeneration: 3,
     characterId: 1_404_328_063,
     characterName: 'Authority Pilot',
-    sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
-    authorizationGeneration: 3,
-    observedCorporationId: 98_000_001,
-    observedAllianceId: null,
-    requiredScope: 'esi-characters.read_corporation_roles.v1',
-    roleEvidenceRevision: '2026-09-01T12:00:00.000Z',
-    observedAt: '2026-09-01T12:00:00.000Z',
+    failureClass: 'transient:esi-unavailable',
     freshUntil: '2026-09-01T13:00:00.000Z',
     graceUntil: '2026-09-01T14:00:00.000Z',
-    failureClass: 'transient:esi-unavailable',
     invalidatedAt: null,
     invalidationOutcome: null,
+    observedAllianceId: null,
+    observedAt: '2026-09-01T12:00:00.000Z',
+    observedCorporationId: 98_000_001,
+    requiredScope: 'esi-characters.read_corporation_roles.v1',
+    roleEvidenceRevision: '2026-09-01T12:00:00.000Z',
+    sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+    userId: 'owner-user',
   }
   return {
+    corporationSources: [
+      {
+        ...shared,
+        sourceId: '72f03848-72b8-4fa3-8af5-de056001a37e',
+        corporationId: 98_000_001,
+        origin: 'designated-corporation',
+        status: 'degraded',
+        registeredAt: '2026-09-01T12:00:00.000Z',
+        revokedAt: null,
+        remediationAction: 'replace-corporation-source',
+      },
+    ],
+    derivedSources: [
+      {
+        ...shared,
+        sourceId: '66503848-72b8-4fa3-8af5-de056001a37e',
+        role: 'director',
+        origin: 'eve-derived',
+        authorityCorporationId: 98_000_001,
+        status: 'degraded',
+        remediationAction: null,
+      },
+    ],
     grants: [roleGrant()],
     ownerSources: [
       {
@@ -408,41 +433,18 @@ function authorityRoles(): OrganizationRoles {
         remediationAction: 'replace-or-reauthorize-owner-source',
       },
     ],
-    derivedSources: [
-      {
-        ...shared,
-        sourceId: '66503848-72b8-4fa3-8af5-de056001a37e',
-        role: 'director',
-        origin: 'eve-derived',
-        authorityCorporationId: 98_000_001,
-        status: 'degraded',
-        remediationAction: null,
-      },
-    ],
-    corporationSources: [
-      {
-        ...shared,
-        sourceId: '72f03848-72b8-4fa3-8af5-de056001a37e',
-        corporationId: 98_000_001,
-        origin: 'designated-corporation',
-        status: 'degraded',
-        registeredAt: '2026-09-01T12:00:00.000Z',
-        revokedAt: null,
-        remediationAction: 'replace-corporation-source',
-      },
-    ],
   }
 }
 
 function roleGrant(): OrganizationRoles['grants'][number] {
   return {
     grantId: 'grant-1',
-    userId: 'role-user',
-    role: 'director',
-    reason: 'Leadership duty.',
-    grantedByUserId: 'owner-user',
     grantedAt: '2026-08-31T12:00:00.000Z',
+    grantedByUserId: 'owner-user',
     mainCharacterId: 1_404_328_063,
     mainCharacterName: 'Director Pilot',
+    reason: 'Leadership duty.',
+    role: 'director',
+    userId: 'role-user',
   }
 }

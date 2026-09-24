@@ -64,7 +64,9 @@ describe('documentation consistency validation', () => {
   it('rejects provenance that differs from openapi/generated/provenance', async () => {
     const inspection = await inspectDocumentationConsistency();
     const path = inspection.examples.keys().next().value;
-    if (path === undefined) throw new Error('Expected a generated example');
+    if (path === undefined) {
+      throw new Error('Expected a generated example');
+    }
     const examples = replaceArtifact(inspection.examples, path, (content) =>
       content.replace(inspection.provenance.sha256, '0'.repeat(64)),
     );
@@ -96,7 +98,9 @@ describe('documentation consistency validation', () => {
   ])('rejects a generated %s', async (_name, credential) => {
     const inspection = await inspectDocumentationConsistency();
     const path = inspection.examples.keys().next().value;
-    if (path === undefined) throw new Error('Expected a generated example');
+    if (path === undefined) {
+      throw new Error('Expected a generated example');
+    }
     const examples = replaceArtifact(
       inspection.examples,
       path,
@@ -116,7 +120,9 @@ function replaceArtifact(
 ): ReadonlyMap<string, string> {
   const result = new Map(artifacts);
   const content = result.get(path);
-  if (content === undefined) throw new Error(`Missing test artifact: ${path}`);
+  if (content === undefined) {
+    throw new Error(`Missing test artifact: ${path}`);
+  }
   result.set(path, transform(content));
   return result;
 }

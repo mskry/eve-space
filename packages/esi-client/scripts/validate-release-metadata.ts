@@ -70,10 +70,14 @@ export async function validateReleaseMetadata({
 
   const tagReference = `refs/tags/${tag}`;
   const objectType = await runGit(['cat-file', '-t', tagReference]);
-  if (objectType !== 'tag') throw new Error(`Release tag ${tag} must be annotated`);
+  if (objectType !== 'tag') {
+    throw new Error(`Release tag ${tag} must be annotated`);
+  }
   const commit = await runGit(['rev-parse', `${tagReference}^{}`]);
   const head = await runGit(['rev-parse', 'HEAD']);
-  if (commit !== head) throw new Error(`Release tag ${tag} must identify the checked-out commit`);
+  if (commit !== head) {
+    throw new Error(`Release tag ${tag} must identify the checked-out commit`);
+  }
   try {
     await runGit(['merge-base', '--is-ancestor', commit, 'origin/main']);
   } catch {
@@ -107,15 +111,21 @@ export async function validateReleaseMetadata({
 const entryPath = process.argv[1];
 if (entryPath !== undefined && import.meta.url === pathToFileURL(resolve(entryPath)).href) {
   const tag = argumentValue('--tag') ?? process.env.GITHUB_REF_NAME;
-  if (tag === undefined) throw new Error('--tag or GITHUB_REF_NAME is required');
+  if (tag === undefined) {
+    throw new Error('--tag or GITHUB_REF_NAME is required');
+  }
   const metadata = await validateReleaseMetadata({ tag });
   process.stdout.write(`${JSON.stringify(metadata, null, 2)}\n`);
 }
 
 function argumentValue(name: string): string | undefined {
   const index = process.argv.indexOf(name);
-  if (index < 0) return undefined;
+  if (index < 0) {
+    return undefined;
+  }
   const value = process.argv[index + 1];
-  if (value === undefined) throw new Error(`${name} requires a value`);
+  if (value === undefined) {
+    throw new Error(`${name} requires a value`);
+  }
   return value;
 }

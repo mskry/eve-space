@@ -15,22 +15,24 @@ const dryRun = commandArguments[0] === '--dry-run'
 const qualityProcess = /(?:nuxt|vitest|sonar|pnpm)/i
 
 const steps = [
-  { name: 'frontend-coverage', arguments: ['test:frontend:coverage'] },
-  { name: 'api-coverage', arguments: ['test:api:coverage'] },
+  { arguments: ['test:frontend:coverage'], name: 'frontend-coverage' },
+  { arguments: ['test:api:coverage'], name: 'api-coverage' },
   {
-    name: 'postgres-coverage',
     arguments: ['--filter', '@eve-space/api', 'test:postgres:coverage'],
+    name: 'postgres-coverage',
   },
-  { name: 'module-coverage', arguments: ['test:modules:coverage'] },
-  { name: 'registry-coverage', arguments: ['test:registry:coverage'] },
-  { name: 'redis-tests', arguments: ['test:redis'] },
-  { name: 'sonar-analysis', arguments: ['sonar'] },
+  { arguments: ['test:modules:coverage'], name: 'module-coverage' },
+  { arguments: ['test:registry:coverage'], name: 'registry-coverage' },
+  { arguments: ['test:redis'], name: 'redis-tests' },
+  { arguments: ['sonar'], name: 'sonar-analysis' },
 ] as const
 
-if (commandArguments.length > (dryRun ? 1 : 0))
+if (commandArguments.length > (dryRun ? 1 : 0)) {
   throw new Error('Usage: run-sonar-quality.ts [--dry-run]')
-if (!Number.isFinite(sampleIntervalMs) || sampleIntervalMs < 1_000)
+}
+if (!Number.isFinite(sampleIntervalMs) || sampleIntervalMs < 1000) {
   throw new Error('QUALITY_SAMPLE_INTERVAL_MS must be at least 1000')
+}
 
 const logPath = resolve(logDirectory, `sonar-${fileTimestamp(new Date())}.jsonl`)
 let checkpointWrites = Promise.resolve()
@@ -46,7 +48,9 @@ process.exitCode = exitCode
 
 async function runQualitySteps(index = 0): Promise<number> {
   const step = steps[index]
-  if (!step) return 0
+  if (!step) {
+    return 0
+  }
   const startedAt = Date.now()
   console.log(`\n[quality:sonar] ${step.name}`)
   await recordCheckpoint('step-start', step.name)
@@ -55,7 +59,9 @@ async function runQualitySteps(index = 0): Promise<number> {
     durationMs: Date.now() - startedAt,
     status,
   })
-  if (status !== 0) return status
+  if (status !== 0) {
+    return status
+  }
   return runQualitySteps(index + 1)
 }
 
@@ -97,19 +103,25 @@ function forwardSignals(pid: number | undefined) {
   const handlers = signals.map((signal) => {
     const handler = () => terminateProcessGroup(pid, signal)
     process.on(signal, handler)
-    return { signal, handler }
+    return { handler, signal }
   })
   return () => {
-    for (const { signal, handler } of handlers) process.off(signal, handler)
+    for (const { signal, handler } of handlers) {
+      process.off(signal, handler)
+    }
   }
 }
 
 function terminateProcessGroup(pid: number | undefined, signal: NodeJS.Signals) {
-  if (!pid) return
+  if (!pid) {
+    return
+  }
   try {
     process.kill(process.platform === 'win32' ? pid : -pid, signal)
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error
+    if ((error as NodeJS.ErrnoException).code !== 'ESRCH') {
+      throw error
+    }
   }
 }
 
@@ -132,7 +144,9 @@ function recordCheckpoint(
 }
 
 async function qualityProcesses() {
-  if (process.platform === 'win32') return []
+  if (process.platform === 'win32') {
+    return []
+  }
   try {
     const { stdout } = await executeFile('ps', ['-Ao', 'pid=,ppid=,%cpu=,%mem=,etime=,command='])
     return stdout
@@ -149,24 +163,28 @@ async function qualityProcesses() {
 
 function parseProcess(line: string) {
   const match = /^(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+(\S+)\s+(\S.*)$/.exec(line.trim())
-  if (!match) return null
+  if (!match) {
+    return null
+  }
   return {
-    pid: Number(match[1]),
-    parentPid: Number(match[2]),
-    cpuPercent: Number(match[3]),
-    memoryPercent: Number(match[4]),
-    elapsed: match[5],
     command: match[6],
+    cpuPercent: Number(match[3]),
+    elapsed: match[5],
+    memoryPercent: Number(match[4]),
+    parentPid: Number(match[2]),
+    pid: Number(match[1]),
   }
 }
 
 function pnpmCommand(arguments_: readonly string[]) {
   const pnpmPath = process.env.npm_execpath
-  if (!pnpmPath) throw new Error('This command must run through pnpm')
-  if (['.js', '.cjs', '.mjs'].includes(extname(pnpmPath))) {
-    return { executable: process.execPath, arguments: [pnpmPath, ...arguments_] }
+  if (!pnpmPath) {
+    throw new Error('This command must run through pnpm')
   }
-  return { executable: pnpmPath, arguments: [...arguments_] }
+  if (['.js', '.cjs', '.mjs'].includes(extname(pnpmPath))) {
+    return { arguments: [pnpmPath, ...arguments_], executable: process.execPath }
+  }
+  return { arguments: [...arguments_], executable: pnpmPath }
 }
 
 function defaultMaximumWorkers() {
@@ -174,9 +192,15 @@ function defaultMaximumWorkers() {
 }
 
 function signalExitCode(signal: NodeJS.Signals | null) {
-  if (signal === 'SIGINT') return 130
-  if (signal === 'SIGTERM') return 143
-  if (signal === 'SIGHUP') return 129
+  if (signal === 'SIGINT') {
+    return 130
+  }
+  if (signal === 'SIGTERM') {
+    return 143
+  }
+  if (signal === 'SIGHUP') {
+    return 129
+  }
   return 1
 }
 

@@ -88,11 +88,14 @@ export function platformModuleSubjectQueryKey(
   moduleId: string,
   subject: PlatformQuerySubject,
 ): EntryKey {
-  if (!moduleId) throw new TypeError('Platform module ID is required.')
+  if (!moduleId) {
+    throw new TypeError('Platform module ID is required.')
+  }
 
-  if (subject.kind === 'account')
+  if (subject.kind === 'account') {
     return [...PLATFORM_PRIVATE_QUERY_ROOT, 'modules', moduleId, 'account']
-  if (subject.kind === 'character')
+  }
+  if (subject.kind === 'character') {
     return [
       ...PLATFORM_PRIVATE_QUERY_ROOT,
       'characters',
@@ -100,14 +103,17 @@ export function platformModuleSubjectQueryKey(
       'modules',
       moduleId,
     ]
+  }
 
   const organizationKey: EntryKey = [
     ...PLATFORM_PRIVATE_QUERY_ROOT,
     'organization',
     positiveInteger(subject.organizationVersion, 'organization version'),
   ]
-  if (subject.kind === 'organization') return [...organizationKey, 'modules', moduleId]
-  if (subject.kind === 'corporation')
+  if (subject.kind === 'organization') {
+    return [...organizationKey, 'modules', moduleId]
+  }
+  if (subject.kind === 'corporation') {
     return [
       ...organizationKey,
       'corporations',
@@ -115,6 +121,7 @@ export function platformModuleSubjectQueryKey(
       'modules',
       moduleId,
     ]
+  }
   return [
     ...organizationKey,
     'alliances',
@@ -134,7 +141,9 @@ export function isPlatformModuleSectionQueryKey(
   sectionId: string,
 ) {
   return key.some((part, index) => {
-    if (part !== 'modules' || key[index + 1] !== moduleId) return false
+    if (part !== 'modules' || key[index + 1] !== moduleId) {
+      return false
+    }
     const accountSubject =
       index === PLATFORM_PRIVATE_QUERY_ROOT.length && key[index + 2] === 'account'
     const sectionIndex = index + (accountSubject ? 3 : 2)
@@ -143,27 +152,41 @@ export function isPlatformModuleSectionQueryKey(
 }
 
 export function isPlatformQuerySubjectValid(subject: PlatformQuerySubject) {
-  if (subject.kind === 'account') return true
-  if (subject.kind === 'character') return isPositiveInteger(subject.characterId)
-  if (!isPositiveInteger(subject.organizationVersion)) return false
-  if (subject.kind === 'organization') return true
+  if (subject.kind === 'account') {
+    return true
+  }
+  if (subject.kind === 'character') {
+    return isPositiveInteger(subject.characterId)
+  }
+  if (!isPositiveInteger(subject.organizationVersion)) {
+    return false
+  }
+  if (subject.kind === 'organization') {
+    return true
+  }
   return isPositiveInteger(
     subject.kind === 'corporation' ? subject.corporationId : subject.allianceId,
   )
 }
 
 function positiveInteger(value: number, name: string) {
-  if (!isPositiveInteger(value)) throw new TypeError(`Invalid ${name}: ${value}`)
+  if (!isPositiveInteger(value)) {
+    throw new TypeError(`Invalid ${name}: ${value}`)
+  }
   return value
 }
 
 function nonnegativeInteger(value: number, name: string) {
-  if (!Number.isSafeInteger(value) || value < 0) throw new TypeError(`Invalid ${name}: ${value}`)
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new TypeError(`Invalid ${name}: ${value}`)
+  }
   return value
 }
 
 function requiredIdentity(value: string, name: string) {
-  if (!value) throw new TypeError(`${name} is required.`)
+  if (!value) {
+    throw new TypeError(`${name} is required.`)
+  }
   return value
 }
 

@@ -22,28 +22,30 @@ process.env.NUXT_PUBLIC_EVE_IMAGE_BASE = infrastructure.api.origin
 
 describe('explicit character transfer production journeys', async () => {
   await setup({
-    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
+    browser: true,
     build: false,
+    captureServerLogs: false,
     nuxtConfig: {
       nitro: { output: { dir: fileURLToPath(new URL('../../.output-e2e', import.meta.url)) } },
     },
-    browser: true,
+    rootDir: fileURLToPath(new URL('../..', import.meta.url)),
     server: true,
-    captureServerLogs: false,
     setupTimeout: 120_000,
   })
 
   beforeAll(async () => {
     const testUrl = useTestContext().url
-    if (!testUrl) throw new Error('Nuxt test server URL is unavailable')
+    if (!testUrl) {
+      throw new Error('Nuxt test server URL is unavailable')
+    }
     webOrigin = new URL(testUrl).origin
     Object.assign(process.env, {
       DATABASE_URL: infrastructure.databaseUrl,
-      WEB_ORIGIN: webOrigin,
       EVE_CALLBACK_URL: `${infrastructure.api.origin}/auth/eve/callback`,
       EVE_CLIENT_ID: 'deterministic-browser-client',
       EVE_CLIENT_SECRET: 'deterministic-browser-secret',
       TOKEN_ENCRYPTION_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+      WEB_ORIGIN: webOrigin,
     })
 
     vi.doMock('../../api/src/auth/sso.js', () => ({
@@ -109,18 +111,24 @@ describe('explicit character transfer production journeys', async () => {
     >`
       select character_id, user_id, is_main from characters order by character_id
     `
-    expect(users).toEqual([{ count: 1 }])
-    expect(sessions).toEqual([{ count: 1 }])
-    expect(characters).toEqual([
+    expect(Array.from(users, ({ count }) => ({ count }))).toStrictEqual([{ count: 1 }])
+    expect(Array.from(sessions, ({ count }) => ({ count }))).toStrictEqual([{ count: 1 }])
+    expect(
+      Array.from(characters, ({ character_id, is_main, user_id }) => ({
+        character_id,
+        is_main,
+        user_id,
+      })),
+    ).toStrictEqual([
       {
         character_id: String(sourceMain.characterId),
-        user_id: characters[0]!.user_id,
         is_main: true,
+        user_id: characters[0]!.user_id,
       },
       {
         character_id: String(movingCharacter.characterId),
-        user_id: characters[0]!.user_id,
         is_main: false,
+        user_id: characters[0]!.user_id,
       },
     ])
   })
@@ -134,7 +142,7 @@ describe('explicit character transfer production journeys', async () => {
         const path = new URL(url).pathname
         return path === '/auth/session' || path === '/api/admin/session'
       }),
-    ).toEqual([])
+    ).toStrictEqual([])
 
     const sourceContext = await browserContext()
     const destinationContext = await browserContext()
@@ -307,20 +315,22 @@ describe('explicit character transfer production journeys', async () => {
     const sourceSession = await sourceContext.request.get(
       `${infrastructure.api.origin}/auth/session`,
     )
-    expect(await sourceSession.json()).toEqual({ authenticated: false })
+    expect(await sourceSession.json()).toStrictEqual({ authenticated: false })
     const destinationSession = await destinationContext.request.get(
       `${infrastructure.api.origin}/auth/session`,
     )
     expect(await destinationSession.json()).toMatchObject({
-      authenticated: true,
       account: { mainCharacter: { characterId: destinationMain.characterId } },
+      authenticated: true,
     })
   })
 })
 
 async function browserContext(options: { javaScriptEnabled?: boolean } = {}) {
   const browser = useTestContext().browser
-  if (!browser) throw new Error('Nuxt browser is unavailable')
+  if (!browser) {
+    throw new Error('Nuxt browser is unavailable')
+  }
   const context = await browser.newContext(options)
   openContexts.add(context)
   return context
@@ -342,14 +352,15 @@ async function authorize(
 async function openTransferLink(page: Page, link: string) {
   const transferRequests: string[] = []
   page.on('request', (request) => {
-    if (request.method() === 'POST' && request.url().endsWith('/auth/eve/transfer'))
+    if (request.method() === 'POST' && request.url().endsWith('/auth/eve/transfer')) {
       transferRequests.push(request.url())
+    }
   })
   await page.goto('about:blank')
   await page.goto(link)
   await page.getByRole('button', { name: 'CONTINUE TO EVE ONLINE' }).waitFor()
   await expect.poll(() => page.url()).toBe(`${webOrigin}/transfer`)
-  expect(transferRequests).toEqual([])
+  expect(transferRequests).toStrictEqual([])
 }
 
 async function seedAdministrator(context: BrowserContext) {
@@ -368,7 +379,7 @@ async function seedAdministrator(context: BrowserContext) {
     values (${sha256(sessionToken)}, ${administratorId}, now() + interval '1 hour')
   `
   await context.addCookies([
-    { name: 'eve_space_admin_session', value: sessionToken, url: infrastructure.api.origin },
+    { name: 'eve_space_admin_session', url: infrastructure.api.origin, value: sessionToken },
   ])
 }
 
@@ -448,7 +459,9 @@ async function characterUserId(characterId: number) {
   const [characterRow] = await infrastructure.connection<{ user_id: string }[]>`
     select user_id from characters where character_id = ${characterId}
   `
-  if (!characterRow) throw new Error(`Character ${characterId} is missing`)
+  if (!characterRow) {
+    throw new Error(`Character ${characterId} is missing`)
+  }
   return characterRow.user_id
 }
 
@@ -456,9 +469,11 @@ async function expectMainCharacters(expected: [string, number][]) {
   const mains = await infrastructure.connection<{ user_id: string; character_id: string }[]>`
     select user_id, character_id from characters where is_main order by user_id
   `
-  expect(mains).toEqual(
+  expect(
+    Array.from(mains, ({ character_id, user_id }) => ({ character_id, user_id })),
+  ).toStrictEqual(
     expected
-      .map(([userId, characterId]) => ({ user_id: userId, character_id: String(characterId) }))
+      .map(([userId, characterId]) => ({ character_id: String(characterId), user_id: userId }))
       .toSorted((left, right) => left.user_id.localeCompare(right.user_id)),
   )
 }
@@ -501,11 +516,11 @@ function sha256(value: string) {
 
 function character(characterId: number, characterName: string): FakeEveCharacter {
   return {
+    allianceId: null,
     characterId,
     characterName,
-    ownerHash: `browser-owner-${characterId}`,
     corporationId: 10_001_166,
-    allianceId: null,
+    ownerHash: `browser-owner-${characterId}`,
     scopes: ['scope.owner'],
   }
 }

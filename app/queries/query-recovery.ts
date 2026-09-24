@@ -12,26 +12,36 @@ export function installEsiQueryRecovery(): PiniaColadaPlugin {
     let previousEsiStatus: EsiServiceStatus | undefined
 
     queryCache.$onAction(({ name, args, after }) => {
-      if (name !== 'fetch') return
+      if (name !== 'fetch') {
+        return
+      }
       const entry = args[0] as UseQueryEntry
-      if (!isSystemStatusEntry(entry)) return
+      if (!isSystemStatusEntry(entry)) {
+        return
+      }
       previousEsiStatus ??= readEsiServiceStatus(entry.state.value.data)
 
       after((state) => {
-        if (state.status !== 'success') return
+        if (state.status !== 'success') {
+          return
+        }
         const currentEsiStatus = readEsiServiceStatus(state.data)
-        if (!currentEsiStatus) return
+        if (!currentEsiStatus) {
+          return
+        }
         const recovered = previousEsiStatus === 'unavailable' && currentEsiStatus === 'operational'
         previousEsiStatus = currentEsiStatus
-        if (!recovered) return
+        if (!recovered) {
+          return
+        }
 
         void queryCache
           .invalidateQueries({
             active: true,
-            stale: true,
             predicate: isRecoverableEsiEntry,
+            stale: true,
           })
-          .catch(() => undefined)
+          .catch(() => {})
       })
     })
   }
@@ -48,9 +58,13 @@ function isRecoverableEsiEntry(entry: UseQueryEntry) {
 }
 
 function readEsiServiceStatus(value: unknown): EsiServiceStatus | undefined {
-  if (!isRecord(value) || !isRecord(value.telemetry)) return undefined
+  if (!isRecord(value) || !isRecord(value.telemetry)) {
+    return undefined
+  }
   const services = value.telemetry.services
-  if (!isRecord(services) || !isRecord(services.esi)) return undefined
+  if (!isRecord(services) || !isRecord(services.esi)) {
+    return undefined
+  }
   const status = services.esi.status
   return status === 'degraded' ||
     status === 'operational' ||

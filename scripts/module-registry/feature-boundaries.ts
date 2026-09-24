@@ -192,22 +192,26 @@ export async function assertInstalledFeatureBoundaries(
   releases: readonly ResolvedInstalledModuleRelease[],
 ) {
   const violations = await installedFeatureBoundaryViolations(root, releases)
-  if (violations.length > 0)
+  if (violations.length > 0) {
     throw new Error(`Feature module boundary verification failed:\n${violations.join('\n')}`)
+  }
 }
 
 export async function assertManifestCompositionBoundaries(
   root: string,
   release: ResolvedInstalledModuleRelease,
 ) {
-  if (!release.packages.server.workspace) return
+  if (!release.packages.server.workspace) {
+    return
+  }
   const violations = await manifestCompositionBoundaryViolations(
     root,
     release.manifest,
     release.packages.server.root,
   )
-  if (violations.length > 0)
+  if (violations.length > 0) {
     throw new Error(`Feature module composition verification failed:\n${violations.join('\n')}`)
+  }
 }
 
 export function featurePackageManifestViolations(
@@ -219,13 +223,13 @@ export function featurePackageManifestViolations(
   requireWorkspaceSpecifiers = true,
 ) {
   return platformModulePackageManifestIssues({
-    moduleId,
     environment,
-    path,
-    manifest,
     expectedPackageName,
-    scope: 'source',
+    manifest,
+    moduleId,
+    path,
     requireWorkspaceSpecifiers,
+    scope: 'source',
   }).map(({ path: issuePath, message }) => `${issuePath}: ${lowercaseFirst(message)}`)
 }
 
@@ -235,7 +239,7 @@ export function descriptorBoundaryViolations(source: FeatureBoundarySource) {
   let defaultExpression: ts.Expression | undefined
   const constants = new Map<string, ts.Expression>()
 
-  for (const statement of sourceFile.statements)
+  for (const statement of sourceFile.statements) {
     defaultExpression = validateDescriptorStatement(
       source.path,
       statement,
@@ -243,18 +247,21 @@ export function descriptorBoundaryViolations(source: FeatureBoundarySource) {
       defaultExpression,
       violations,
     )
+  }
 
-  if (!defaultExpression)
+  if (!defaultExpression) {
     violations.push(`${source.path}: module descriptor must default-export a static object`)
-  else if (!isSerializableDescriptorExpression(defaultExpression, constants, new Set()))
+  } else if (!isSerializableDescriptorExpression(defaultExpression, constants, new Set())) {
     violations.push(`${source.path}: module descriptor must be a static serializable object`)
+  }
   return violations
 }
 
 export function serverSourceBoundaryViolations(source: FeatureBoundarySource) {
   const violations: string[] = []
-  if (source.path.endsWith('.cjs') || source.path.endsWith('.cts'))
+  if (source.path.endsWith('.cjs') || source.path.endsWith('.cts')) {
     violations.push(`${source.path}: feature packages must use ESM source files`)
+  }
   const packageRoot = source.boundaryRoot ?? `features/${source.moduleId}/server/src`
   violations.push(...portableImportViolations(source, packageRoot, 'server'))
   const sourceFiles = parseSourceFiles(source, violations)
@@ -268,22 +275,26 @@ export function serverSourceBoundaryViolations(source: FeatureBoundarySource) {
 
 export function nuxtSourceBoundaryViolations(source: FeatureBoundarySource) {
   const violations: string[] = []
-  if (source.path.endsWith('.cjs') || source.path.endsWith('.cts'))
+  if (source.path.endsWith('.cjs') || source.path.endsWith('.cts')) {
     violations.push(`${source.path}: feature packages must use ESM source files`)
+  }
   const packageRoot = source.boundaryRoot ?? `features/${source.moduleId}/nuxt/src`
   const runtimePath = `/nuxt/src/runtime/app/`
   const sourceLayout = source.layout !== 'artifact'
   const isModuleSetup = sourceLayout
     ? /\/nuxt\/src\/module\.(?:[cm]?[jt]s)$/.test(source.path)
     : source.entry === true
-  if (sourceLayout && !source.path.includes(runtimePath) && !isModuleSetup)
+  if (sourceLayout && !source.path.includes(runtimePath) && !isModuleSetup) {
     violations.push(`${source.path}: Nuxt source must live under src/runtime/app`)
+  }
 
   violations.push(...portableImportViolations(source, packageRoot, 'nuxt'))
   const sourceFiles = parseSourceFiles(source, violations)
   for (const sourceFile of sourceFiles) {
     validateNuxtRuntimeBoundaries(source, sourceFile, violations)
-    if (isModuleSetup) validateCompositionTopLevel(source.path, sourceFile, 'nuxt', violations)
+    if (isModuleSetup) {
+      validateCompositionTopLevel(source.path, sourceFile, 'nuxt', violations)
+    }
   }
   return violations
 }
@@ -306,12 +317,12 @@ function portableImportViolations(
   ])
   return platformModuleSourceIssues(
     {
-      moduleId: source.moduleId,
-      path: source.path,
-      source: source.source,
       boundaryRoot,
       environment,
+      moduleId: source.moduleId,
+      path: source.path,
       scope: source.layout === 'artifact' ? 'artifact' : 'source',
+      source: source.source,
     },
     new Set(),
   )
@@ -329,9 +340,9 @@ export function serverFactoryBoundaryViolations(
     return parseSourceFiles(source, violations).flatMap((sourceFile) => {
       const functions = findNamedFunctions(sourceFile, exportName)
       return functions.map((functionNode) => ({
-        source,
         functionNode,
         parseViolations: violations,
+        source,
       }))
     })
   })
@@ -343,10 +354,11 @@ export function serverFactoryBoundaryViolations(
     return violations
   }
   const match = matches[0]!
-  if (!isPackageRootExport(sources, match.source, exportName))
+  if (!isPackageRootExport(sources, match.source, exportName)) {
     violations.push(
       `features/${match.source.moduleId}/server: ${kind} export ${exportName} must be exported from the package root`,
     )
+  }
   validateFactory(match.source.path, match.functionNode, kind, violations)
   return violations
 }
@@ -379,30 +391,33 @@ export async function manifestCompositionBoundaryViolations(
     const matches = sources.flatMap((source) =>
       parseSourceFiles(source, violations).flatMap((sourceFile) =>
         findNamedDeclarations(sourceFile, contribution.exportName).map((declaration) => ({
-          source,
           declaration,
+          source,
         })),
       ),
     )
-    if (matches.length !== 1)
+    if (matches.length !== 1) {
       violations.push(
         `features/${manifest.id}/server: definition export ${contribution.exportName} must resolve to one local declaration`,
       )
-    else if (!isPackageRootExport(sources, matches[0]!.source, contribution.exportName))
+    } else if (!isPackageRootExport(sources, matches[0]!.source, contribution.exportName)) {
       violations.push(
         `features/${manifest.id}/server: definition export ${contribution.exportName} must be exported from the package root`,
       )
+    }
   }
-  for (const operation of manifest.server.persistenceOperations)
+  for (const operation of manifest.server.persistenceOperations) {
     validatePersistenceDefinitionExport(sources, manifest.id, operation.exportName, violations)
+  }
   const declaredPersistenceDefinitions = new Set(
     manifest.server.persistenceOperations.map(({ exportName }) => exportName),
   )
-  for (const definition of findPersistenceDefinitionExports(sources))
+  for (const definition of findPersistenceDefinitionExports(sources)) {
     if (!declaredPersistenceDefinitions.has(definition.exportName))
       violations.push(
         `${definition.path}: persistence definition export ${definition.exportName} is not declared by module ${manifest.id}`,
       )
+  }
   return violations.toSorted((left, right) => left.localeCompare(right))
 }
 
@@ -410,13 +425,16 @@ function findPersistenceDefinitionExports(sources: readonly FeatureBoundarySourc
   return sources.flatMap((source) =>
     parseSourceFiles(source, []).flatMap((sourceFile) =>
       sourceFile.statements.flatMap((statement) => {
-        if (!ts.isVariableStatement(statement)) return []
+        if (!ts.isVariableStatement(statement)) {
+          return []
+        }
         return statement.declarationList.declarations.flatMap((declaration) => {
           if (
             !ts.isIdentifier(declaration.name) ||
             !isPersistenceDefinitionDeclaration(declaration)
-          )
+          ) {
             return []
+          }
           return [{ exportName: declaration.name.text, path: source.path }]
         })
       }),
@@ -445,18 +463,22 @@ function validatePersistenceDefinitionExport(
     return
   }
   const match = matches[0]!
-  if (!isPersistenceDefinitionDeclaration(match.declaration))
+  if (!isPersistenceDefinitionDeclaration(match.declaration)) {
     violations.push(
       `${match.source.path}: persistence definition export ${exportName} must directly call definePlatformPersistenceOperation`,
     )
-  if (!isPackageRootExport(sources, match.source, exportName))
+  }
+  if (!isPackageRootExport(sources, match.source, exportName)) {
     violations.push(
       `features/${moduleId}/server: persistence definition export ${exportName} must be exported from the package root`,
     )
+  }
 }
 
 function isPersistenceDefinitionDeclaration(declaration: ts.Node) {
-  if (!ts.isVariableDeclaration(declaration) || !declaration.initializer) return false
+  if (!ts.isVariableDeclaration(declaration) || !declaration.initializer) {
+    return false
+  }
   const initializer = unwrapExpression(declaration.initializer)
   return (
     ts.isCallExpression(initializer) &&
@@ -472,11 +494,17 @@ function isPackageRootExport(
   const locallyExported = parseSourceFiles(definitionSource, []).some((sourceFile) =>
     findNamedDeclarations(sourceFile, exportName).some(isExportedDeclaration),
   )
-  if (!locallyExported) return false
-  if (/\/server\/src\/index\.[cm]?[jt]sx?$/.test(definitionSource.path)) return true
+  if (!locallyExported) {
+    return false
+  }
+  if (/\/server\/src\/index\.[cm]?[jt]sx?$/.test(definitionSource.path)) {
+    return true
+  }
 
   const entry = sources.find((source) => /\/server\/src\/index\.[cm]?[jt]sx?$/.test(source.path))
-  if (!entry) return false
+  if (!entry) {
+    return false
+  }
   return parseSourceFiles(entry, []).some((sourceFile) =>
     sourceFile.statements.some(
       (statement) =>
@@ -501,10 +529,15 @@ function exportDeclarationMatchesSource(
 ) {
   const specifier = (declaration.moduleSpecifier as ts.StringLiteral).text
   const target = resolve('/', dirname(entryPath), specifier)
-  if (sourceModuleIdentity(target) !== sourceModuleIdentity(resolve('/', definitionPath)))
+  if (sourceModuleIdentity(target) !== sourceModuleIdentity(resolve('/', definitionPath))) {
     return false
-  if (!declaration.exportClause) return true
-  if (!ts.isNamedExports(declaration.exportClause)) return false
+  }
+  if (!declaration.exportClause) {
+    return true
+  }
+  if (!ts.isNamedExports(declaration.exportClause)) {
+    return false
+  }
   return declaration.exportClause.elements.some(
     (element) => (element.propertyName?.text ?? element.name.text) === exportName,
   )
@@ -526,24 +559,29 @@ function validateDescriptorStatement(
     if (
       specifier !== '@eve-space/platform-module-contract/manifest' ||
       !isTypeOnlyImport(statement.importClause)
-    )
+    ) {
       violations.push(
         `${path}: module descriptor may only type-import @eve-space/platform-module-contract/manifest`,
       )
+    }
     return defaultExpression
   }
-  if (ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement))
+  if (ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement)) {
     return defaultExpression
+  }
   if (ts.isVariableStatement(statement)) {
     collectDescriptorConstants(path, statement, constants, violations)
     return defaultExpression
   }
   if (ts.isExportAssignment(statement) && !statement.isExportEquals) {
-    if (defaultExpression)
+    if (defaultExpression) {
       violations.push(`${path}: module descriptor must have one default export`)
+    }
     return statement.expression
   }
-  if (isEmptyExport(statement)) return defaultExpression
+  if (isEmptyExport(statement)) {
+    return defaultExpression
+  }
   violations.push(`${path}: module descriptor contains executable top-level code`)
   return defaultExpression
 }
@@ -597,9 +635,9 @@ async function installedPackageBoundaryViolations(
   const relativePackagePath = packageArtifact.workspace
     ? relative(root, packagePath).replaceAll('\\', '/')
     : `${packageArtifact.name}/package.json`
-  if (!manifest)
+  if (!manifest) {
     violations.push(`${relativePackagePath}: feature package manifest is missing or invalid`)
-  else
+  } else {
     violations.push(
       ...featurePackageManifestViolations(
         moduleId,
@@ -610,21 +648,24 @@ async function installedPackageBoundaryViolations(
         packageArtifact.workspace,
       ),
     )
+  }
 
   const sources = await loadInstalledFeaturePackageSources(root, release, environment)
-  if (sources.length === 0)
+  if (sources.length === 0) {
     violations.push(
       packageArtifact.workspace
         ? `features/${moduleId}/${environment}/src: feature package source is missing`
         : `${packageArtifact.name}: feature package artifacts are missing`,
     )
+  }
   const packageSourceBoundaryViolations =
     environment === 'server' ? serverSourceBoundaryViolations : nuxtSourceBoundaryViolations
   violations.push(
     ...installedSourceBoundaryViolations(sources, manifest, packageSourceBoundaryViolations),
   )
-  if (environment === 'nuxt')
+  if (environment === 'nuxt') {
     await validateNuxtPackageLayout(packageRoot, moduleId, packageArtifact.workspace, violations)
+  }
 
   return violations
 }
@@ -657,12 +698,14 @@ async function validateNuxtPackageLayout(
     isDirectory(join(packageRoot, 'src', 'runtime', 'app')),
     isDirectory(join(packageRoot, 'server')),
   ])
-  if (requireSourceLayout && !hasRuntimeApp)
+  if (requireSourceLayout && !hasRuntimeApp) {
     violations.push(`features/${moduleId}/nuxt: installed Nuxt module is missing src/runtime/app`)
-  if (hasServerDirectory)
+  }
+  if (hasServerDirectory) {
     violations.push(
       `features/${moduleId}/nuxt: installed Nuxt module must not define Nitro server handlers`,
     )
+  }
 }
 
 export async function loadInstalledFeaturePackageSources(
@@ -671,12 +714,13 @@ export async function loadInstalledFeaturePackageSources(
   environment: FeaturePackageEnvironment,
 ): Promise<FeatureBoundarySource[]> {
   const packageArtifact = release.packages[environment]
-  if (packageArtifact.workspace)
+  if (packageArtifact.workspace) {
     return loadSources(root, release.moduleId, join(packageArtifact.root, 'src'), {
       boundaryRoot: `features/${release.moduleId}/${environment}/src`,
       entryPath: packageArtifact.entryPath,
       layout: 'source',
     })
+  }
   const packageJson = await readJson(join(packageArtifact.root, 'package.json'))
   const exportPaths = packageJson
     ? exportTargets(packageJson.exports)
@@ -725,17 +769,23 @@ async function loadSourcePath(
   } catch {
     return []
   }
-  if (stats.isDirectory()) return loadSources(root, moduleId, path, options)
-  if (!stats.isFile() && !stats.isSymbolicLink()) return []
-  if (!stats.isSymbolicLink() && !sourceExtensions.has(extname(path))) return []
+  if (stats.isDirectory()) {
+    return loadSources(root, moduleId, path, options)
+  }
+  if (!stats.isFile() && !stats.isSymbolicLink()) {
+    return []
+  }
+  if (!stats.isSymbolicLink() && !sourceExtensions.has(extname(path))) {
+    return []
+  }
   return [
     {
+      boundaryRoot: options.boundaryRoot,
+      entry: options.entryPath === path,
+      layout: options.layout,
       moduleId,
       path: sourceDisplayPath(root, path, options.artifact),
       source: stats.isSymbolicLink() ? symbolicLinkSource : await readFile(path, 'utf8'),
-      boundaryRoot: options.boundaryRoot,
-      layout: options.layout,
-      entry: options.entryPath === path,
     },
   ]
 }
@@ -755,28 +805,35 @@ async function loadSources(
   const nested: FeatureBoundarySource[][] = await Promise.all(
     entries.map(async (entry) => {
       const path = join(directory, entry.name)
-      if (options.layout === 'artifact' && entry.name === 'node_modules') return []
-      if (entry.isSymbolicLink())
+      if (options.layout === 'artifact' && entry.name === 'node_modules') {
+        return []
+      }
+      if (entry.isSymbolicLink()) {
         return [
           {
+            boundaryRoot: options.boundaryRoot,
+            entry: options.entryPath === path,
+            layout: options.layout,
             moduleId,
             path: sourceDisplayPath(root, path, options.artifact),
             source: symbolicLinkSource,
-            boundaryRoot: options.boundaryRoot,
-            layout: options.layout,
-            entry: options.entryPath === path,
           },
         ]
-      if (entry.isDirectory()) return loadSources(root, moduleId, path, options)
-      if (!entry.isFile() || !sourceExtensions.has(extname(entry.name))) return []
+      }
+      if (entry.isDirectory()) {
+        return loadSources(root, moduleId, path, options)
+      }
+      if (!entry.isFile() || !sourceExtensions.has(extname(entry.name))) {
+        return []
+      }
       return [
         {
+          boundaryRoot: options.boundaryRoot,
+          entry: options.entryPath === path,
+          layout: options.layout,
           moduleId,
           path: sourceDisplayPath(root, path, options.artifact),
           source: await readFile(path, 'utf8'),
-          boundaryRoot: options.boundaryRoot,
-          layout: options.layout,
-          entry: options.entryPath === path,
         },
       ]
     }),
@@ -802,7 +859,7 @@ function undeclaredSourceDependencyViolations(
   )
   const imported = new Set<string>()
   const parseViolations: string[] = []
-  for (const sourceFile of parseSourceFiles(source, parseViolations))
+  for (const sourceFile of parseSourceFiles(source, parseViolations)) {
     visit(sourceFile, (node) => {
       if (
         (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
@@ -825,6 +882,7 @@ function undeclaredSourceDependencyViolations(
       )
         registerBarePackage(node.arguments[0].text, imported)
     })
+  }
   return [
     ...parseViolations,
     ...[...imported]
@@ -838,13 +896,19 @@ function undeclaredSourceDependencyViolations(
 
 function registerBarePackage(specifier: string, packages: Set<string>) {
   const normalized = specifier.replaceAll('\\', '/')
-  if (normalized.startsWith('.') || normalized.startsWith('/') || normalized.startsWith('#')) return
+  if (normalized.startsWith('.') || normalized.startsWith('/') || normalized.startsWith('#')) {
+    return
+  }
   packages.add(packageNameFromSpecifier(normalized))
 }
 
 function exportTargets(value: unknown): string[] {
-  if (typeof value === 'string') return [value]
-  if (!isRecord(value)) return []
+  if (typeof value === 'string') {
+    return [value]
+  }
+  if (!isRecord(value)) {
+    return []
+  }
   return Object.values(value).flatMap(exportTargets)
 }
 
@@ -853,15 +917,18 @@ function validateServerRuntimeBoundaries(
   sourceFile: ts.SourceFile,
   violations: string[],
 ) {
-  for (const name of forbiddenGlobalReferences(sourceFile, forbiddenServerGlobals))
+  for (const name of forbiddenGlobalReferences(sourceFile, forbiddenServerGlobals)) {
     violations.push(`${path}: feature server code must not reference ${name}`)
+  }
   visit(sourceFile, (node) => {
-    if (isEnvironmentReference(node))
+    if (isEnvironmentReference(node)) {
       violations.push(`${path}: feature server code must not read process environment`)
+    }
     if (ts.isNewExpression(node)) {
       const name = identifierText(node.expression)
-      if (name && ['EventSource', 'SharedWorker', 'WebSocket', 'Worker'].includes(name))
+      if (name && ['EventSource', 'SharedWorker', 'WebSocket', 'Worker'].includes(name)) {
         violations.push(`${path}: feature server code must not construct network or worker clients`)
+      }
     }
   })
   validateModulePersistenceBoundaries(path, sourceFile, violations)
@@ -876,14 +943,19 @@ function validateModulePersistenceBoundaries(
   let containsSql = false
   let containsGenericDispatch = false
   visit(sourceFile, (node) => {
-    if (isRuntimeSqlLiteral(node)) containsSql = true
-    if (ts.isCallExpression(node) && isGenericPersistenceCall(node.expression, persistenceNames))
+    if (isRuntimeSqlLiteral(node)) {
+      containsSql = true
+    }
+    if (ts.isCallExpression(node) && isGenericPersistenceCall(node.expression, persistenceNames)) {
       containsGenericDispatch = true
+    }
   })
-  if (containsSql)
+  if (containsSql) {
     violations.push(`${path}: feature server code must not contain runtime SQL statements`)
-  if (containsGenericDispatch)
+  }
+  if (containsGenericDispatch) {
     violations.push(`${path}: feature server code must not use generic persistence dispatch`)
+  }
 }
 
 function persistenceCapabilityNames(sourceFile: ts.SourceFile) {
@@ -892,8 +964,9 @@ function persistenceCapabilityNames(sourceFile: ts.SourceFile) {
   while (changed) {
     changed = false
     visit(sourceFile, (node) => {
-      if (!ts.isVariableDeclaration(node) || !ts.isIdentifier(node.name) || !node.initializer)
+      if (!ts.isVariableDeclaration(node) || !ts.isIdentifier(node.name) || !node.initializer) {
         return
+      }
       const initializer = unwrapExpression(node.initializer)
       const aliasesPersistence =
         (ts.isIdentifier(initializer) && names.has(initializer.text)) ||
@@ -912,12 +985,15 @@ function isGenericPersistenceCall(
   persistenceNames: ReadonlySet<string>,
 ) {
   const target = unwrapExpression(expression)
-  if (ts.isPropertyAccessExpression(target))
+  if (ts.isPropertyAccessExpression(target)) {
     return (
       genericPersistenceMethods.has(target.name.text) &&
       expressionReferencesPersistence(target.expression, persistenceNames)
     )
-  if (!ts.isElementAccessExpression(target)) return false
+  }
+  if (!ts.isElementAccessExpression(target)) {
+    return false
+  }
   return expressionReferencesPersistence(target.expression, persistenceNames)
 }
 
@@ -926,31 +1002,42 @@ function expressionReferencesPersistence(
   persistenceNames: ReadonlySet<string>,
 ) {
   const target = unwrapExpression(expression)
-  if (ts.isIdentifier(target)) return persistenceNames.has(target.text)
-  if (ts.isPropertyAccessExpression(target))
+  if (ts.isIdentifier(target)) {
+    return persistenceNames.has(target.text)
+  }
+  if (ts.isPropertyAccessExpression(target)) {
     return (
       target.name.text === 'persistence' ||
       expressionReferencesPersistence(target.expression, persistenceNames)
     )
-  if (ts.isElementAccessExpression(target))
+  }
+  if (ts.isElementAccessExpression(target)) {
     return expressionReferencesPersistence(target.expression, persistenceNames)
+  }
   return false
 }
 
 function isRuntimeSqlLiteral(node: ts.Node) {
   if (ts.isTaggedTemplateExpression(node)) {
     const tag = identifierText(node.tag)
-    if (tag === 'sql' || tag === 'query') return true
+    if (tag === 'sql' || tag === 'query') {
+      return true
+    }
   }
-  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
     return hasSqlStatementPrefix(node.text)
-  if (ts.isTemplateExpression(node)) return hasSqlStatementPrefix(node.head.text)
+  }
+  if (ts.isTemplateExpression(node)) {
+    return hasSqlStatementPrefix(node.head.text)
+  }
   return false
 }
 
 function hasSqlStatementPrefix(value: string) {
   const normalized = value.trimStart().toLowerCase()
-  if (normalized.startsWith('select ') && normalized.includes(' from ')) return true
+  if (normalized.startsWith('select ') && normalized.includes(' from ')) {
+    return true
+  }
   return sqlStatementPrefixes.some((prefix) => normalized.startsWith(prefix))
 }
 
@@ -960,23 +1047,29 @@ function validateCoreDataBypasses(path: string, sourceFile: ts.SourceFile, viola
     if (
       (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) &&
       /\bsde_[a-z0-9_]+\b/i.test(node.text)
-    )
+    ) {
       referencesSdeSource = true
+    }
 
-    if (ts.isIdentifier(node) && forbiddenSdeIdentifiers.has(normalizeIdentifier(node.text)))
+    if (ts.isIdentifier(node) && forbiddenSdeIdentifiers.has(normalizeIdentifier(node.text))) {
       referencesSdeSource = true
+    }
   })
-  if (referencesSdeSource)
+  if (referencesSdeSource) {
     violations.push(`${path}: feature server code must not reference unrestricted SDE datasets`)
-  if (referencesSdeSource || hasCompetingCoreDataCache(sourceFile))
+  }
+  if (referencesSdeSource || hasCompetingCoreDataCache(sourceFile)) {
     violations.push(
       `${path}: feature server code must use declared core-data products instead of alternate adapters or caches`,
     )
+  }
 }
 
 function hasCompetingCoreDataCache(sourceFile: ts.SourceFile) {
   const stateNames = moduleLevelMutableStateNames(sourceFile)
-  if (stateNames.size === 0) return false
+  if (stateNames.size === 0) {
+    return false
+  }
   let found = false
   visit(sourceFile, (node) => {
     if (
@@ -984,8 +1077,9 @@ function hasCompetingCoreDataCache(sourceFile: ts.SourceFile) {
       ts.isFunctionLike(node) &&
       containsCoreDataProductReference(node) &&
       containsIdentifier(node, stateNames)
-    )
+    ) {
       found = true
+    }
   })
   return found
 }
@@ -995,13 +1089,14 @@ function moduleLevelMutableStateNames(sourceFile: ts.SourceFile) {
   for (const statement of sourceFile.statements) {
     if (ts.isVariableStatement(statement)) {
       const isConst = (statement.declarationList.flags & ts.NodeFlags.Const) !== 0
-      for (const declaration of statement.declarationList.declarations)
+      for (const declaration of statement.declarationList.declarations) {
         if (
           ts.isIdentifier(declaration.name) &&
           (!isConst ||
             (!!declaration.initializer && isMutableModuleStateInitializer(declaration.initializer)))
         )
           stateNames.add(declaration.name.text)
+      }
       continue
     }
     if (
@@ -1014,34 +1109,47 @@ function moduleLevelMutableStateNames(sourceFile: ts.SourceFile) {
           (!hasModifier(member, ts.SyntaxKind.ReadonlyKeyword) ||
             (!!member.initializer && isMutableModuleStateInitializer(member.initializer))),
       )
-    )
+    ) {
       stateNames.add(statement.name.text)
+    }
   }
   return stateNames
 }
 
 function isMutableModuleStateInitializer(expression: ts.Expression): boolean {
-  if (containsEagerConstruction(expression)) return true
+  if (containsEagerConstruction(expression)) {
+    return true
+  }
   const value = unwrapExpression(expression)
-  if (!ts.isObjectLiteralExpression(value) && !ts.isArrayLiteralExpression(value)) return false
+  if (!ts.isObjectLiteralExpression(value) && !ts.isArrayLiteralExpression(value)) {
+    return false
+  }
   return !hasConstAssertion(expression) && !isResourceDefinition(expression, value)
 }
 
 function containsEagerConstruction(node: ts.Node): boolean {
-  if (ts.isFunctionLike(node)) return false
-  if (ts.isNewExpression(node)) return true
+  if (ts.isFunctionLike(node)) {
+    return false
+  }
+  if (ts.isNewExpression(node)) {
+    return true
+  }
   let found = false
   ts.forEachChild(node, (child) => {
-    if (!found && containsEagerConstruction(child)) found = true
+    if (!found && containsEagerConstruction(child)) {
+      found = true
+    }
   })
   return found
 }
 
 function hasConstAssertion(expression: ts.Expression): boolean {
-  if (ts.isAsExpression(expression))
+  if (ts.isAsExpression(expression)) {
     return isConstAssertionType(expression.type) || hasConstAssertion(expression.expression)
-  if (ts.isSatisfiesExpression(expression) || ts.isParenthesizedExpression(expression))
+  }
+  if (ts.isSatisfiesExpression(expression) || ts.isParenthesizedExpression(expression)) {
     return hasConstAssertion(expression.expression)
+  }
   return false
 }
 
@@ -1054,14 +1162,17 @@ function isConstAssertionType(type: ts.TypeNode) {
 function containsCoreDataProductReference(node: ts.Node) {
   let found = false
   visit(node, (child) => {
-    if (found) return
+    if (found) {
+      return
+    }
     if (
       (ts.isIdentifier(child) ||
         ts.isStringLiteral(child) ||
         ts.isNoSubstitutionTemplateLiteral(child)) &&
       coreDataProductReferences.has(child.text)
-    )
+    ) {
       found = true
+    }
   })
   return found
 }
@@ -1069,21 +1180,28 @@ function containsCoreDataProductReference(node: ts.Node) {
 function containsIdentifier(node: ts.Node, names: ReadonlySet<string>) {
   let found = false
   visit(node, (child) => {
-    if (!found && ts.isIdentifier(child) && names.has(child.text)) found = true
+    if (!found && ts.isIdentifier(child) && names.has(child.text)) {
+      found = true
+    }
   })
   return found
 }
 
 function isResourceDefinition(expression: ts.Expression, value: ts.ObjectLiteralExpression) {
-  if (!containsSatisfiesExpression(expression)) return false
+  if (!containsSatisfiesExpression(expression)) {
+    return false
+  }
   const properties = new Set(value.properties.map((property) => propertyName(property.name)))
   return ['operation', 'request', 'map'].every((property) => properties.has(property))
 }
 
 function containsSatisfiesExpression(expression: ts.Expression): boolean {
-  if (ts.isSatisfiesExpression(expression)) return true
-  if (ts.isAsExpression(expression) || ts.isParenthesizedExpression(expression))
+  if (ts.isSatisfiesExpression(expression)) {
+    return true
+  }
+  if (ts.isAsExpression(expression) || ts.isParenthesizedExpression(expression)) {
     return containsSatisfiesExpression(expression.expression)
+  }
   return false
 }
 
@@ -1093,26 +1211,32 @@ function validateNuxtRuntimeBoundaries(
   violations: string[],
 ) {
   const path = source.path
-  for (const name of forbiddenGlobalReferences(sourceFile, forbiddenNuxtGlobals))
+  for (const name of forbiddenGlobalReferences(sourceFile, forbiddenNuxtGlobals)) {
     violations.push(`${path}: feature Nuxt code must not reference ${name}`)
+  }
   validatePlatformApiAccess(source, sourceFile, violations)
   visit(sourceFile, (node) => {
     if (ts.isNewExpression(node)) {
       const name = identifierText(node.expression)
-      if (name && ['EventSource', 'SharedWorker', 'WebSocket', 'Worker'].includes(name))
+      if (name && ['EventSource', 'SharedWorker', 'WebSocket', 'Worker'].includes(name)) {
         violations.push(`${path}: feature Nuxt code must use the platform client surface`)
+      }
     }
-    if (!ts.isCallExpression(node)) return
+    if (!ts.isCallExpression(node)) {
+      return
+    }
     const name = calledName(node.expression)
-    if (name === 'fetch' || name === '$fetch')
+    if (name === 'fetch' || name === '$fetch') {
       violations.push(`${path}: feature Nuxt code must use the platform client surface`)
+    }
     if (
       name &&
       ['addDevServerHandler', 'addServerHandler', 'addServerImports', 'addServerPlugin'].includes(
         name,
       )
-    )
+    ) {
       violations.push(`${path}: Nuxt module setup must not call ${name}`)
+    }
   })
 }
 
@@ -1129,40 +1253,54 @@ function validatePlatformApiAccess(
       node.initializer &&
       isNamedCall(node.initializer, 'usePlatformApi')
     ) {
-      if (ts.isIdentifier(node.name)) clientNames.add(node.name.text)
-      else
+      if (ts.isIdentifier(node.name)) {
+        clientNames.add(node.name.text)
+      } else {
         violations.push(`${path}: usePlatformApi must remain an opaque module-scoped client value`)
+      }
     }
   })
   visit(sourceFile, (node) => {
-    if (ts.isIdentifier(node) && node.text === 'usePlatformApi' && !isDirectCallTarget(node))
+    if (ts.isIdentifier(node) && node.text === 'usePlatformApi' && !isDirectCallTarget(node)) {
       violations.push(`${path}: usePlatformApi must be invoked directly`)
-    if (ts.isIdentifier(node) && clientNames.has(node.text) && !isPermittedClientReference(node))
+    }
+    if (ts.isIdentifier(node) && clientNames.has(node.text) && !isPermittedClientReference(node)) {
       violations.push(`${path}: platform API clients must not be aliased or exposed`)
+    }
     if (
       ts.isCallExpression(node) &&
       isNamedCall(node, 'usePlatformApi') &&
       !isPermittedClientCall(node)
-    )
+    ) {
       violations.push(`${path}: usePlatformApi must remain an opaque module-scoped client value`)
-    if (!isOutermostAccess(node)) return
+    }
+    if (!isOutermostAccess(node)) {
+      return
+    }
     const access = platformApiAccess(node, clientNames)
-    if (!access) return
+    if (!access) {
+      return
+    }
     const moduleRoute =
       access[0] === 'api' && access[1] === 'modules' && access[2] === source.moduleId
     const ownedCharacterReauthorization =
       access[0] === 'auth' && access[1] === 'eve' && access[2] === 'reauthorize'
-    if (!moduleRoute && !ownedCharacterReauthorization)
+    if (!moduleRoute && !ownedCharacterReauthorization) {
       violations.push(
         `${path}: feature Nuxt API access must remain under api.modules[${JSON.stringify(source.moduleId)}]`,
       )
+    }
   })
 }
 
 function isPermittedClientReference(node: ts.Identifier) {
   const parent = node.parent
-  if (ts.isVariableDeclaration(parent) && parent.name === node) return true
-  if (ts.isPropertyAccessExpression(parent) && parent.name === node) return true
+  if (ts.isVariableDeclaration(parent) && parent.name === node) {
+    return true
+  }
+  if (ts.isPropertyAccessExpression(parent) && parent.name === node) {
+    return true
+  }
   return (
     (ts.isPropertyAccessExpression(parent) || ts.isElementAccessExpression(parent)) &&
     parent.expression === node
@@ -1191,7 +1329,9 @@ function isDirectCallTarget(node: ts.Identifier) {
 function isOutermostAccess(
   node: ts.Node,
 ): node is ts.PropertyAccessExpression | ts.ElementAccessExpression {
-  if (!ts.isPropertyAccessExpression(node) && !ts.isElementAccessExpression(node)) return false
+  if (!ts.isPropertyAccessExpression(node) && !ts.isElementAccessExpression(node)) {
+    return false
+  }
   const parent = node.parent
   return !(
     (ts.isPropertyAccessExpression(parent) || ts.isElementAccessExpression(parent)) &&
@@ -1206,15 +1346,21 @@ function platformApiAccess(
   const segments: string[] = []
   let current: ts.Expression = expression
   while (ts.isPropertyAccessExpression(current) || ts.isElementAccessExpression(current)) {
-    if (ts.isPropertyAccessExpression(current)) segments.unshift(current.name.text)
-    else if (current.argumentExpression && ts.isStringLiteralLike(current.argumentExpression))
+    if (ts.isPropertyAccessExpression(current)) {
+      segments.unshift(current.name.text)
+    } else if (current.argumentExpression && ts.isStringLiteralLike(current.argumentExpression)) {
       segments.unshift(current.argumentExpression.text)
-    else return undefined
+    } else {
+      return
+    }
     current = unwrapExpression(current.expression)
   }
-  if (ts.isIdentifier(current) && clientNames.has(current.text)) return segments
-  if (isNamedCall(current, 'usePlatformApi')) return segments
-  return undefined
+  if (ts.isIdentifier(current) && clientNames.has(current.text)) {
+    return segments
+  }
+  if (isNamedCall(current, 'usePlatformApi')) {
+    return segments
+  }
 }
 
 function validateCompositionTopLevel(
@@ -1223,8 +1369,9 @@ function validateCompositionTopLevel(
   environment: FeaturePackageEnvironment,
   violations: string[],
 ) {
-  for (const statement of sourceFile.statements)
+  for (const statement of sourceFile.statements) {
     validateCompositionStatement(path, statement, environment, violations)
+  }
 }
 
 function validateCompositionStatement(
@@ -1240,8 +1387,9 @@ function validateCompositionStatement(
     ts.isInterfaceDeclaration(statement) ||
     ts.isTypeAliasDeclaration(statement) ||
     isEmptyExport(statement)
-  )
+  ) {
     return
+  }
   if (ts.isClassDeclaration(statement)) {
     validateClassInitialization(path, statement, violations)
     return
@@ -1254,7 +1402,9 @@ function validateCompositionStatement(
     validateCompositionDefaultExport(path, statement.expression, environment, violations)
     return
   }
-  if (ts.isExpressionStatement(statement) && ts.isStringLiteral(statement.expression)) return
+  if (ts.isExpressionStatement(statement) && ts.isStringLiteral(statement.expression)) {
+    return
+  }
   if (ts.isExpressionStatement(statement) && ts.isCallExpression(statement.expression)) {
     const name = calledName(statement.expression.expression)
     if (environment === 'nuxt' && name && forbiddenCompositionCalls.has(name)) {
@@ -1270,11 +1420,12 @@ function validateCompositionInitializers(
   statement: ts.VariableStatement,
   violations: string[],
 ) {
-  for (const declaration of statement.declarationList.declarations)
+  for (const declaration of statement.declarationList.declarations) {
     if (declaration.initializer && !isPureCompositionExpression(declaration.initializer))
       violations.push(
         `${path}: feature package entry or definition ${declaration.name.getText()} has an executable initializer`,
       )
+  }
 }
 
 function validateCompositionDefaultExport(
@@ -1283,9 +1434,12 @@ function validateCompositionDefaultExport(
   environment: FeaturePackageEnvironment,
   violations: string[],
 ) {
-  if (!isPureCompositionExpression(expression))
+  if (!isPureCompositionExpression(expression)) {
     violations.push(`${path}: feature package default export has an executable initializer`)
-  if (environment === 'nuxt') validateNuxtModuleDefinition(path, expression, violations)
+  }
+  if (environment === 'nuxt') {
+    validateNuxtModuleDefinition(path, expression, violations)
+  }
 }
 
 function validateClassInitialization(
@@ -1294,19 +1448,22 @@ function validateClassInitialization(
   violations: string[],
 ) {
   for (const member of declaration.members) {
-    if (ts.isClassStaticBlockDeclaration(member))
+    if (ts.isClassStaticBlockDeclaration(member)) {
       violations.push(
         `${path}: feature package class must not contain static initialization blocks`,
       )
+    }
     if (
       ts.isPropertyDeclaration(member) &&
       hasModifier(member, ts.SyntaxKind.StaticKeyword) &&
       member.initializer &&
       !isPureCompositionExpression(member.initializer)
-    )
+    ) {
       violations.push(`${path}: feature package class has an executable static initializer`)
-    if (member.name && ts.isComputedPropertyName(member.name))
+    }
+    if (member.name && ts.isComputedPropertyName(member.name)) {
       violations.push(`${path}: feature package class must not use computed member names`)
+    }
   }
 }
 
@@ -1321,15 +1478,19 @@ function validateNuxtModuleDefinition(
     return
   }
   const definition = value.arguments[0] && unwrapExpression(value.arguments[0])
-  if (!definition || !ts.isObjectLiteralExpression(definition)) return
+  if (!definition || !ts.isObjectLiteralExpression(definition)) {
+    return
+  }
   for (const property of definition.properties) {
     const name = propertyName(property.name)
-    if (name === 'hooks' || name === 'onInstall' || name === 'onUpgrade')
+    if (name === 'hooks' || name === 'onInstall' || name === 'onUpgrade') {
       violations.push(`${path}: feature Nuxt modules must not register startup or deployment hooks`)
-    if (name === 'setup')
+    }
+    if (name === 'setup') {
       violations.push(
         `${path}: feature Nuxt modules must not define setup; runtime contributions use generated registries`,
       )
+    }
   }
 }
 
@@ -1343,7 +1504,9 @@ function validateFactory(
     violations.push(`${path}: ${kind} factory must have a local body`)
     return
   }
-  if (isFunctionLike(factory.body)) return
+  if (isFunctionLike(factory.body)) {
+    return
+  }
   const sourceFile = factory.getSourceFile()
   visitImmediate(factory.body, (node) =>
     validateFactoryNode(path, sourceFile, node, kind, violations),
@@ -1357,14 +1520,18 @@ function validateFactoryNode(
   kind: 'route' | 'provider',
   violations: string[],
 ) {
-  if (isEnvironmentReference(node))
+  if (isEnvironmentReference(node)) {
     violations.push(`${path}: ${kind} factory must not read environment-derived configuration`)
+  }
   if (ts.isNewExpression(node)) {
-    if (kind !== 'route' || !isImportedHonoConstructor(node.expression, sourceFile))
+    if (kind !== 'route' || !isImportedHonoConstructor(node.expression, sourceFile)) {
       violations.push(`${path}: ${kind} factory must not construct runtime clients`)
+    }
     return
   }
-  if (!ts.isCallExpression(node)) return
+  if (!ts.isCallExpression(node)) {
+    return
+  }
   const name = calledName(node.expression)
   if (name && forbiddenCompositionCalls.has(name)) {
     violations.push(`${path}: ${kind} factory must not call ${name}`)
@@ -1375,10 +1542,15 @@ function validateFactoryNode(
     name &&
     routeCompositionMethods.has(name) &&
     isHonoCompositionCall(node, sourceFile)
-  )
+  ) {
     return
-  if (kind === 'route' && name === 'zValidator') return
-  if (isZodCall(node)) return
+  }
+  if (kind === 'route' && name === 'zValidator') {
+    return
+  }
+  if (isZodCall(node)) {
+    return
+  }
   violations.push(`${path}: ${kind} factory must not perform work during composition`)
 }
 
@@ -1401,7 +1573,9 @@ function isHonoCompositionCall(call: ts.CallExpression, sourceFile: ts.SourceFil
 }
 
 function isImportedHonoConstructor(expression: ts.Expression, sourceFile: ts.SourceFile) {
-  if (identifierText(expression) !== 'Hono') return false
+  if (identifierText(expression) !== 'Hono') {
+    return false
+  }
   return sourceFile.statements.some(
     (statement) =>
       ts.isImportDeclaration(statement) &&
@@ -1419,26 +1593,23 @@ function isImportedHonoConstructor(expression: ts.Expression, sourceFile: ts.Sou
 
 function isPureCompositionExpression(expression: ts.Expression): boolean {
   const value = unwrapExpression(expression)
-  if (
-    ts.isStringLiteral(value) ||
-    ts.isNumericLiteral(value) ||
-    ts.isNoSubstitutionTemplateLiteral(value) ||
-    value.kind === ts.SyntaxKind.TrueKeyword ||
-    value.kind === ts.SyntaxKind.FalseKeyword ||
-    value.kind === ts.SyntaxKind.NullKeyword ||
-    ts.isIdentifier(value) ||
-    ts.isArrowFunction(value) ||
-    ts.isFunctionExpression(value) ||
-    ts.isRegularExpressionLiteral(value)
-  )
+  if (isPureCompositionAtom(value)) {
     return true
-  if (ts.isPrefixUnaryExpression(value)) return isPureCompositionExpression(value.operand)
-  if (ts.isPropertyAccessExpression(value)) return !isEnvironmentReference(value)
-  if (ts.isArrayLiteralExpression(value))
+  }
+  if (ts.isPrefixUnaryExpression(value)) {
+    return isPureCompositionExpression(value.operand)
+  }
+  if (ts.isPropertyAccessExpression(value)) {
+    return !isEnvironmentReference(value)
+  }
+  if (ts.isArrayLiteralExpression(value)) {
     return value.elements.every(
       (element) => !ts.isSpreadElement(element) && isPureCompositionExpression(element),
     )
-  if (ts.isObjectLiteralExpression(value)) return value.properties.every(isPureCompositionProperty)
+  }
+  if (ts.isObjectLiteralExpression(value)) {
+    return value.properties.every(isPureCompositionProperty)
+  }
   if (ts.isCallExpression(value)) {
     const name = identifierText(value.expression)
     return (
@@ -1450,9 +1621,28 @@ function isPureCompositionExpression(expression: ts.Expression): boolean {
   return false
 }
 
+function isPureCompositionAtom(value: ts.Expression): boolean {
+  return (
+    ts.isStringLiteral(value) ||
+    ts.isNumericLiteral(value) ||
+    ts.isNoSubstitutionTemplateLiteral(value) ||
+    value.kind === ts.SyntaxKind.TrueKeyword ||
+    value.kind === ts.SyntaxKind.FalseKeyword ||
+    value.kind === ts.SyntaxKind.NullKeyword ||
+    ts.isIdentifier(value) ||
+    ts.isArrowFunction(value) ||
+    ts.isFunctionExpression(value) ||
+    ts.isRegularExpressionLiteral(value)
+  )
+}
+
 function isPureCompositionProperty(property: ts.ObjectLiteralElementLike): boolean {
-  if (ts.isMethodDeclaration(property)) return !ts.isComputedPropertyName(property.name)
-  if (!ts.isPropertyAssignment(property) || ts.isComputedPropertyName(property.name)) return false
+  if (ts.isMethodDeclaration(property)) {
+    return !ts.isComputedPropertyName(property.name)
+  }
+  if (!ts.isPropertyAssignment(property) || ts.isComputedPropertyName(property.name)) {
+    return false
+  }
   return isPureCompositionExpression(property.initializer)
 }
 
@@ -1469,48 +1659,61 @@ function isSerializableDescriptorExpression(
     value.kind === ts.SyntaxKind.TrueKeyword ||
     value.kind === ts.SyntaxKind.FalseKeyword ||
     value.kind === ts.SyntaxKind.NullKeyword
-  )
+  ) {
     return true
-  if (ts.isPrefixUnaryExpression(value))
+  }
+  if (ts.isPrefixUnaryExpression(value)) {
     return (
       (value.operator === ts.SyntaxKind.MinusToken || value.operator === ts.SyntaxKind.PlusToken) &&
       ts.isNumericLiteral(value.operand)
     )
+  }
   if (ts.isIdentifier(value)) {
-    if (resolving.has(value.text)) return false
+    if (resolving.has(value.text)) {
+      return false
+    }
     const initializer = constants.get(value.text)
-    if (!initializer) return false
+    if (!initializer) {
+      return false
+    }
     resolving.add(value.text)
     const valid = isSerializableDescriptorExpression(initializer, constants, resolving)
     resolving.delete(value.text)
     return valid
   }
-  if (ts.isArrayLiteralExpression(value))
+  if (ts.isArrayLiteralExpression(value)) {
     return value.elements.every(
       (element) =>
         !ts.isSpreadElement(element) &&
         isSerializableDescriptorExpression(element, constants, resolving),
     )
-  if (ts.isObjectLiteralExpression(value))
+  }
+  if (ts.isObjectLiteralExpression(value)) {
     return value.properties.every(
       (property) =>
         ts.isPropertyAssignment(property) &&
         !ts.isComputedPropertyName(property.name) &&
         isSerializableDescriptorExpression(property.initializer, constants, resolving),
     )
+  }
   return false
 }
 
 function parseSourceFiles(source: FeatureBoundarySource, violations: string[]) {
-  if (!source.path.endsWith('.vue'))
+  if (!source.path.endsWith('.vue')) {
     return [parseTypescript(source.path, source.source, violations)]
+  }
   const { descriptor, errors } = parseVue(source.source, { filename: source.path })
-  for (const error of errors)
+  for (const error of errors) {
     violations.push(`${source.path}: Vue source must parse without errors: ${error.message}`)
+  }
   return [descriptor.script, descriptor.scriptSetup].flatMap((script, index) => {
-    if (!script) return []
-    if (script.src !== undefined)
+    if (!script) {
+      return []
+    }
+    if (script.src !== undefined) {
       violations.push(`${source.path}: Vue script blocks must be inline for boundary verification`)
+    }
     const language = script.lang ?? 'js'
     if (!['js', 'jsx', 'ts', 'tsx'].includes(language)) {
       violations.push(`${source.path}: unsupported Vue script language ${language}`)
@@ -1533,18 +1736,22 @@ function parseTypescript(path: string, source: string, violations: string[]) {
   if (
     (sourceFile as ts.SourceFile & { readonly parseDiagnostics: readonly ts.Diagnostic[] })
       .parseDiagnostics.length > 0
-  )
+  ) {
     violations.push(`${path}: feature source must parse without TypeScript syntax errors`)
+  }
   return sourceFile
 }
 
 function findNamedFunctions(sourceFile: ts.SourceFile, name: string): ts.FunctionLikeDeclaration[] {
   const matches: ts.FunctionLikeDeclaration[] = []
   for (const statement of sourceFile.statements) {
-    if (ts.isFunctionDeclaration(statement) && statement.name?.text === name)
+    if (ts.isFunctionDeclaration(statement) && statement.name?.text === name) {
       matches.push(statement)
-    if (!ts.isVariableStatement(statement)) continue
-    for (const declaration of statement.declarationList.declarations)
+    }
+    if (!ts.isVariableStatement(statement)) {
+      continue
+    }
+    for (const declaration of statement.declarationList.declarations) {
       if (
         ts.isIdentifier(declaration.name) &&
         declaration.name.text === name &&
@@ -1553,6 +1760,7 @@ function findNamedFunctions(sourceFile: ts.SourceFile, name: string): ts.Functio
           ts.isFunctionExpression(unwrapExpression(declaration.initializer)))
       )
         matches.push(unwrapExpression(declaration.initializer) as ts.FunctionLikeDeclaration)
+    }
   }
   return matches
 }
@@ -1560,12 +1768,16 @@ function findNamedFunctions(sourceFile: ts.SourceFile, name: string): ts.Functio
 function findNamedDeclarations(sourceFile: ts.SourceFile, name: string): ts.Node[] {
   const matches: ts.Node[] = []
   for (const statement of sourceFile.statements) {
-    if (ts.isFunctionDeclaration(statement) && statement.name?.text === name)
+    if (ts.isFunctionDeclaration(statement) && statement.name?.text === name) {
       matches.push(statement)
-    if (!ts.isVariableStatement(statement)) continue
-    for (const declaration of statement.declarationList.declarations)
+    }
+    if (!ts.isVariableStatement(statement)) {
+      continue
+    }
+    for (const declaration of statement.declarationList.declarations) {
       if (ts.isIdentifier(declaration.name) && declaration.name.text === name)
         matches.push(declaration)
+    }
   }
   return matches
 }
@@ -1573,7 +1785,9 @@ function findNamedDeclarations(sourceFile: ts.SourceFile, name: string): ts.Node
 function visitImmediate(node: ts.Node, operation: (node: ts.Node) => void) {
   operation(node)
   ts.forEachChild(node, (child) => {
-    if (child !== node && isFunctionLike(child)) return
+    if (child !== node && isFunctionLike(child)) {
+      return
+    }
     visitImmediate(child, operation)
   })
 }
@@ -1588,13 +1802,16 @@ function isFunctionLike(node: ts.Node): node is ts.FunctionLikeDeclaration {
 }
 
 function isEnvironmentReference(node: ts.Node) {
-  if (!ts.isPropertyAccessExpression(node)) return false
+  if (!ts.isPropertyAccessExpression(node)) {
+    return false
+  }
   if (
     ts.isIdentifier(node.expression) &&
     node.expression.text === 'process' &&
     node.name.text === 'env'
-  )
+  ) {
     return true
+  }
   return (
     ts.isMetaProperty(node.expression) &&
     node.expression.keywordToken === ts.SyntaxKind.ImportKeyword &&
@@ -1604,12 +1821,13 @@ function isEnvironmentReference(node: ts.Node) {
 
 function isDrizzleSchemaCall(call: ts.CallExpression): boolean {
   const expression = call.expression
-  if (ts.isIdentifier(expression))
+  if (ts.isIdentifier(expression)) {
     return (
       ['pgTable', 'text', 'uuid', 'bigint', 'integer', 'jsonb', 'timestamp', 'primaryKey'].includes(
         expression.text,
       ) && call.arguments.every(isPureCompositionExpression)
     )
+  }
   return (
     ts.isPropertyAccessExpression(expression) &&
     ['notNull', 'default'].includes(expression.name.text) &&
@@ -1621,16 +1839,20 @@ function isDrizzleSchemaCall(call: ts.CallExpression): boolean {
 
 function isZodCall(call: ts.CallExpression) {
   let expression: ts.Expression = call.expression
-  while (ts.isPropertyAccessExpression(expression) || ts.isCallExpression(expression))
+  while (ts.isPropertyAccessExpression(expression) || ts.isCallExpression(expression)) {
     expression = expression.expression
+  }
   return ts.isIdentifier(expression) && expression.text === 'z'
 }
 
 function calledName(expression: ts.Expression) {
   const value = unwrapExpression(expression)
-  if (ts.isIdentifier(value)) return value.text
-  if (ts.isPropertyAccessExpression(value)) return value.name.text
-  return undefined
+  if (ts.isIdentifier(value)) {
+    return value.text
+  }
+  if (ts.isPropertyAccessExpression(value)) {
+    return value.name.text
+  }
 }
 
 function identifierText(expression: ts.Expression) {
@@ -1643,10 +1865,18 @@ function normalizeIdentifier(value: string) {
 }
 
 function isTypeOnlyImport(importClause: ts.ImportClause | undefined) {
-  if (!importClause) return false
-  if (importClause.phaseModifier === ts.SyntaxKind.TypeKeyword) return true
-  if (importClause.name || !importClause.namedBindings) return false
-  if (ts.isNamespaceImport(importClause.namedBindings)) return false
+  if (!importClause) {
+    return false
+  }
+  if (importClause.phaseModifier === ts.SyntaxKind.TypeKeyword) {
+    return true
+  }
+  if (importClause.name || !importClause.namedBindings) {
+    return false
+  }
+  if (ts.isNamespaceImport(importClause.namedBindings)) {
+    return false
+  }
   return (
     importClause.namedBindings.elements.length > 0 &&
     importClause.namedBindings.elements.every((element) => element.isTypeOnly)
@@ -1663,10 +1893,12 @@ function packageNameFromSpecifier(specifier: string) {
 }
 
 function propertyName(name: ts.PropertyName | undefined) {
-  if (!name) return undefined
-  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name))
+  if (!name) {
+    return
+  }
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
     return name.text
-  return undefined
+  }
 }
 
 function hasModifier(node: ts.Node, kind: ts.SyntaxKind) {
@@ -1686,10 +1918,15 @@ function isEmptyExport(statement: ts.Statement) {
 }
 
 function scriptKind(path: string) {
-  if (path.endsWith('.tsx')) return ts.ScriptKind.TSX
-  if (path.endsWith('.jsx')) return ts.ScriptKind.JSX
-  if (path.endsWith('.js') || path.endsWith('.mjs') || path.endsWith('.cjs'))
+  if (path.endsWith('.tsx')) {
+    return ts.ScriptKind.TSX
+  }
+  if (path.endsWith('.jsx')) {
+    return ts.ScriptKind.JSX
+  }
+  if (path.endsWith('.js') || path.endsWith('.mjs') || path.endsWith('.cjs')) {
     return ts.ScriptKind.JS
+  }
   return ts.ScriptKind.TS
 }
 

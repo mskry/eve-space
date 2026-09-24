@@ -13,7 +13,7 @@ describe('packed package graph', () => {
 
     expect(packageRoot).toContain('packages/core-data-contract')
     expect(packageJson.type).toBe('module')
-    expect(packageJson.files).toEqual(['dist'])
+    expect(packageJson.files).toStrictEqual(['dist'])
     expect(packageJson).not.toHaveProperty('dependencies')
     expect(packageJson).not.toHaveProperty('peerDependencies')
     expect(declaration).not.toMatch(

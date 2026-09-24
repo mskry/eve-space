@@ -47,8 +47,20 @@ interface CharacterContractsData {
 type CharacterContractsResult = CharacterContractsData & EsiReadResultMetadata
 
 const characterContractCacheSchema = z.object({
+  acceptedAt: z.string().nullable(),
+  availability: z.enum(['public', 'personal', 'corporation', 'alliance']),
+  buyout: z.number().nullable(),
+  collateral: z.number().nullable(),
+  completedAt: z.string().nullable(),
   contractId: z.number(),
-  type: z.enum(['unknown', 'item_exchange', 'auction', 'courier', 'loan']),
+  daysToComplete: z.number().nullable(),
+  endLocationId: z.number().nullable(),
+  expiredAt: z.string(),
+  issuedAt: z.string(),
+  price: z.number().nullable(),
+  reward: z.number().nullable(),
+  role: z.enum(['assigned', 'issued']),
+  startLocationId: z.number().nullable(),
   status: z.enum([
     'outstanding',
     'in_progress',
@@ -61,20 +73,8 @@ const characterContractCacheSchema = z.object({
     'deleted',
     'reversed',
   ]),
-  availability: z.enum(['public', 'personal', 'corporation', 'alliance']),
-  role: z.enum(['assigned', 'issued']),
   title: z.string().nullable(),
-  issuedAt: z.string(),
-  expiredAt: z.string(),
-  acceptedAt: z.string().nullable(),
-  completedAt: z.string().nullable(),
-  daysToComplete: z.number().nullable(),
-  startLocationId: z.number().nullable(),
-  endLocationId: z.number().nullable(),
-  price: z.number().nullable(),
-  reward: z.number().nullable(),
-  collateral: z.number().nullable(),
-  buyout: z.number().nullable(),
+  type: z.enum(['unknown', 'item_exchange', 'auction', 'courier', 'loan']),
   volume: z.number().nullable(),
 })
 const characterContractsCacheSchema = z.object({
@@ -84,10 +84,8 @@ const characterContractsCacheSchema = z.object({
 })
 
 const characterContractsRead = createCharacterEsiRead({
-  operation: 'character-contracts',
-  name: 'character-contracts-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdContracts.transport,
   cacheSchema: characterContractsCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdContracts.transport,
   encodeRequest: (input: CharacterContractsRepresentationInput) => ({
     path: { character_id: input.characterId },
     query: { page: input.page },
@@ -122,6 +120,8 @@ const characterContractsRead = createCharacterEsiRead({
     page: input.page,
     totalPages: resolveFinanceTotalPages(response.meta.pagination?.pages, input.page),
   }),
+  name: 'character-contracts-core',
+  operation: 'character-contracts',
 })
 
 export const characterContractsScope = characterContractsRead.requiredScope
@@ -149,22 +149,20 @@ type CharacterContractItemsResult = CharacterContractItemsData & EsiReadResultMe
 const characterContractItemsCacheSchema = z.object({
   items: z.array(
     z.object({
+      blueprint: z.enum(['original', 'copy']).nullable(),
+      direction: z.enum(['included', 'requested']),
+      isSingleton: z.boolean(),
+      quantity: z.number(),
       recordId: z.number(),
       typeId: z.number(),
       typeName: z.string(),
-      direction: z.enum(['included', 'requested']),
-      quantity: z.number(),
-      isSingleton: z.boolean(),
-      blueprint: z.enum(['original', 'copy']).nullable(),
     }),
   ),
 })
 
 const characterContractItemsRead = createCharacterEsiRead({
-  operation: 'character-contract-items',
-  name: 'character-contract-items-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdContractsContractIdItems.transport,
   cacheSchema: characterContractItemsCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdContractsContractIdItems.transport,
   encodeRequest: (input: CharacterContractItemsRepresentationInput) => ({
     path: { character_id: input.characterId, contract_id: input.contractId },
   }),
@@ -182,6 +180,8 @@ const characterContractItemsRead = createCharacterEsiRead({
       })),
     }
   },
+  name: 'character-contract-items-core',
+  operation: 'character-contract-items',
 })
 
 interface CharacterContractBidsRepresentationInput {
@@ -203,18 +203,16 @@ type CharacterContractBidsResult = CharacterContractBidsData & EsiReadResultMeta
 const characterContractBidsCacheSchema = z.object({
   bids: z.array(
     z.object({
-      bidId: z.number(),
       amount: z.number(),
       bidAt: z.string(),
+      bidId: z.number(),
     }),
   ),
 })
 
 const characterContractBidsRead = createCharacterEsiRead({
-  operation: 'character-contract-bids',
-  name: 'character-contract-bids-core',
-  descriptor: operationRegistry.GetCharactersCharacterIdContractsContractIdBids.transport,
   cacheSchema: characterContractBidsCacheSchema,
+  descriptor: operationRegistry.GetCharactersCharacterIdContractsContractIdBids.transport,
   encodeRequest: (input: CharacterContractBidsRepresentationInput) => ({
     path: { character_id: input.characterId, contract_id: input.contractId },
   }),
@@ -225,6 +223,8 @@ const characterContractBidsRead = createCharacterEsiRead({
       bidAt: bid.date_bid,
     })),
   }),
+  name: 'character-contract-bids-core',
+  operation: 'character-contract-bids',
 })
 
 export class ContractNotFoundError extends Error {
@@ -286,8 +286,9 @@ async function requirePersonalContract(
   page: number,
 ) {
   const parent = await loadCharacterContracts(characterId, subjectLifecycleId, page)
-  if (!parent.data.contracts.some((contract) => contract.contractId === contractId))
+  if (!parent.data.contracts.some((contract) => contract.contractId === contractId)) {
     throw new ContractNotFoundError()
+  }
 }
 
 function assertContractDetailInputs(contractId: number, contractPage: number) {
@@ -296,7 +297,11 @@ function assertContractDetailInputs(contractId: number, contractPage: number) {
 }
 
 function contractItemBlueprint(rawQuantity: number | undefined): 'original' | 'copy' | null {
-  if (rawQuantity === -1) return 'original'
-  if (rawQuantity === -2) return 'copy'
+  if (rawQuantity === -1) {
+    return 'original'
+  }
+  if (rawQuantity === -2) {
+    return 'copy'
+  }
   return null
 }

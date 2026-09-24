@@ -39,14 +39,22 @@ const body = defineModel<string>('body', { required: true })
 const guardedOpen = computed({
   get: () => props.open,
   set: (value: boolean) => {
-    if (!value) emit('close')
+    if (!value) {
+      emit('close')
+    }
   },
 })
 
 const title = computed(() => {
-  if (props.mode === 'reply') return 'Reply to message'
-  if (props.mode === 'reply-all') return 'Reply to all'
-  if (props.mode === 'forward') return 'Forward message'
+  if (props.mode === 'reply') {
+    return 'Reply to message'
+  }
+  if (props.mode === 'reply-all') {
+    return 'Reply to all'
+  }
+  if (props.mode === 'forward') {
+    return 'Forward message'
+  }
   return 'Compose new mail'
 })
 </script>

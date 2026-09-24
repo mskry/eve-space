@@ -24,14 +24,14 @@ import { toPlatformResourceSubject } from '../platform/resource-subject.js'
 import { platformResources } from '../platform/resources.js'
 
 export const localOrganizationFixture = {
+  adminEmail: 'fixture-admin@localhost',
+  adminPassword: 'eve-space-fixture',
   corporationId: 98_000_001,
   corporationName: 'EVE Space Fixture Corporation',
   corporationTicker: 'ESFIX',
   directorCharacterId: 90_000_001,
   directorCharacterName: 'Fixture Director',
   unregisteredCharacterId: 90_000_002,
-  adminEmail: 'fixture-admin@localhost',
-  adminPassword: 'eve-space-fixture',
 } as const
 
 export const localOrganizationFixtureScopes = [
@@ -46,10 +46,10 @@ export const localOrganizationFixtureScopes = [
 const fixtureLockId = 2_026_090_008
 const organizationVersion = 1
 const activityIds = {
-  project: '11111111-1111-4111-8111-111111111111',
-  job: '22222222-2222-4222-8222-222222222222',
   campaign: '33333333-3333-4333-8333-333333333333',
+  job: '22222222-2222-4222-8222-222222222222',
   objective: '44444444-4444-4444-8444-444444444444',
+  project: '11111111-1111-4111-8111-111111111111',
 } as const
 
 export interface LocalOrganizationFixtureSummary {
@@ -73,90 +73,94 @@ export async function seedLocalOrganizationFixture({
     await lockConnection`select pg_advisory_lock(${fixtureLockId})`
     await assertFixtureDatabaseEmpty()
     const now = new Date()
-    const sessionExpiresAt = new Date(now.getTime() + 8 * 60 * 60 * 1_000)
+    const sessionExpiresAt = new Date(now.getTime() + 8 * 60 * 60 * 1000)
     const applicationSessionToken = createOpaqueToken()
 
     await createDeployment({
       email: localOrganizationFixture.adminEmail,
-      passwordHash: await hashPassword(localOrganizationFixture.adminPassword),
-      sessionToken: createOpaqueToken(),
-      sessionExpiresAt,
       organization: {
-        type: 'corporation',
         id: localOrganizationFixture.corporationId,
         name: localOrganizationFixture.corporationName,
         ticker: localOrganizationFixture.corporationTicker,
+        type: 'corporation',
       },
+      passwordHash: await hashPassword(localOrganizationFixture.adminPassword),
+      sessionExpiresAt,
+      sessionToken: createOpaqueToken(),
     })
     await saveLogin({
+      accessToken: createOpaqueToken(),
+      affiliationCheckedAt: now,
+      allianceId: null,
       characterId: localOrganizationFixture.directorCharacterId,
       characterName: localOrganizationFixture.directorCharacterName,
-      ownerHash: 'local-organization-fixture-owner',
       corporationId: localOrganizationFixture.corporationId,
-      allianceId: null,
-      affiliationCheckedAt: now,
-      accessToken: createOpaqueToken(),
-      refreshToken: createOpaqueToken(),
       expiresIn: 8 * 60 * 60,
+      ownerHash: 'local-organization-fixture-owner',
+      refreshToken: createOpaqueToken(),
       scopes: [...localOrganizationFixtureScopes],
-      sessionToken: applicationSessionToken,
       sessionExpiresAt,
+      sessionToken: applicationSessionToken,
     })
     const account = await findSession(applicationSessionToken)
-    if (!account) throw new Error('Local organization fixture session was not persisted')
+    if (!account) {
+      throw new Error('Local organization fixture session was not persisted')
+    }
     const character = await findOwnedCharacter(
       account.userId,
       localOrganizationFixture.directorCharacterId,
     )
-    if (!character) throw new Error('Local organization fixture character was not persisted')
+    if (!character) {
+      throw new Error('Local organization fixture character was not persisted')
+    }
     const authorization = await findCharacterCacheAuthorizationForLifecycle(
       localOrganizationFixture.directorCharacterId,
       character.subjectLifecycleId,
     )
-    if (!authorization)
+    if (!authorization) {
       throw new Error('Local organization fixture authorization was not persisted')
+    }
 
     await claimOrganizationOwnership({
-      userId: account.userId,
-      characterId: localOrganizationFixture.directorCharacterId,
-      subjectLifecycleId: character.subjectLifecycleId,
+      affiliationCheckedAt: now,
+      authorityCorporationId: localOrganizationFixture.corporationId,
       authorizationGeneration: authorization.tokenVersion,
-      roleEvidenceRevision: now.toISOString(),
+      characterId: localOrganizationFixture.directorCharacterId,
       evidenceAuthorizationGeneration: authorization.tokenVersion,
       evidenceFreshUntil: sessionExpiresAt,
+      observedAllianceId: null,
+      observedCorporationId: localOrganizationFixture.corporationId,
       organizationId: localOrganizationFixture.corporationId,
       organizationVersion,
-      authorityCorporationId: localOrganizationFixture.corporationId,
-      observedCorporationId: localOrganizationFixture.corporationId,
-      observedAllianceId: null,
-      affiliationCheckedAt: now,
       requiredScope: 'esi-characters.read_corporation_roles.v1',
+      roleEvidenceRevision: now.toISOString(),
+      subjectLifecycleId: character.subjectLifecycleId,
+      userId: account.userId,
     })
     await updateOrganizationRegistrationPolicy({
       actorUserId: account.userId,
-      requiredScopes: [...localOrganizationFixtureScopes],
-      strictRemediationDurationSeconds: 86_400,
-      staleEvidenceGraceDurationSeconds: 86_400,
-      derivedDirectorAuthorityEnabled: true,
       authorityEvidenceFreshDurationSeconds: 3600,
+      derivedDirectorAuthorityEnabled: true,
       reason: 'Establish the local organization fixture registration policy.',
+      requiredScopes: [...localOrganizationFixtureScopes],
+      staleEvidenceGraceDurationSeconds: 86_400,
+      strictRemediationDurationSeconds: 86_400,
     })
     await grantOrganizationRole({
       actorUserId: account.userId,
-      targetUserId: account.userId,
-      role: 'hr_auditor',
       reason: 'Exercise local HR authorization.',
+      role: 'hr_auditor',
+      targetUserId: account.userId,
     })
     await grantOrganizationRole({
       actorUserId: account.userId,
-      targetUserId: account.userId,
-      role: 'director',
       reason: 'Exercise local director authorization.',
+      role: 'director',
+      targetUserId: account.userId,
     })
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: account.userId,
       name: 'Organization Activity Members',
-      reason: 'Create the local organization activity permission bundle.',
       permissions: [
         {
           type: 'module',
@@ -165,40 +169,41 @@ export async function seedLocalOrganizationFixture({
           key: 'organization-activity.view',
         },
       ],
+      reason: 'Create the local organization activity permission bundle.',
     })
     await createOrganizationGroup({
       actorUserId: account.userId,
+      bundleIds: [bundle.bundleId],
+      complianceSource: 'core.registration',
+      managementMode: 'compliance',
       name: 'Registered Members',
       restricted: false,
-      managementMode: 'compliance',
-      complianceSource: 'core.registration',
-      bundleIds: [bundle.bundleId],
     })
     await registerOrganizationCorporationSource(
       {
         actorUserId: account.userId,
-        corporationId: localOrganizationFixture.corporationId,
         characterId: localOrganizationFixture.directorCharacterId,
+        corporationId: localOrganizationFixture.corporationId,
       },
       {
         evidence: {
           affiliation: {
-            characterId: localOrganizationFixture.directorCharacterId,
-            corporationId: localOrganizationFixture.corporationId,
-            allianceId: null,
             affiliationCheckedAt: now,
             affiliationFreshUntil: sessionExpiresAt,
+            allianceId: null,
+            characterId: localOrganizationFixture.directorCharacterId,
+            corporationId: localOrganizationFixture.corporationId,
             stale: false,
           },
           roles: {
+            authorizationGeneration: authorization.tokenVersion,
+            freshUntil: sessionExpiresAt,
+            observedAt: now,
+            roleEvidenceRevision: now.toISOString(),
             roles: ['Director'],
             rolesAtBase: [],
             rolesAtHeadquarters: [],
             rolesAtOther: [],
-            authorizationGeneration: authorization.tokenVersion,
-            roleEvidenceRevision: now.toISOString(),
-            observedAt: now,
-            freshUntil: sessionExpiresAt,
             stale: false,
           },
         },
@@ -208,12 +213,12 @@ export async function seedLocalOrganizationFixture({
     const seededResourceCount = await seedFixtureResources(new Date())
     await deliverSession(applicationSessionToken)
     return {
-      organizationVersion,
       corporationId: localOrganizationFixture.corporationId,
       directorCharacterId: localOrganizationFixture.directorCharacterId,
+      organizationVersion,
+      seededResourceCount,
       unregisteredCharacterId: localOrganizationFixture.unregisteredCharacterId,
       userId: account.userId,
-      seededResourceCount,
     }
   } finally {
     try {
@@ -237,8 +242,9 @@ async function assertFixtureDatabaseEmpty() {
       or exists(select 1 from eve_module_organization_activity.collection_checkpoints)
       as populated
   `
-  if (state?.populated)
+  if (state?.populated) {
     throw new Error('Local organization fixtures require an empty disposable database')
+  }
 }
 
 async function seedFixtureResources(validatedAt: Date) {
@@ -258,28 +264,25 @@ async function seedFixtureResources(validatedAt: Date) {
         ({ identity }) =>
           identity.moduleId === resource.moduleId && identity.resourceId === resource.resourceId,
       )
-      if (!planned) throw new Error(`Local fixture resource ${resource.resourceId} is not due`)
+      if (!planned) {
+        throw new Error(`Local fixture resource ${resource.resourceId} is not due`)
+      }
       const installed = findInstalledResource(planned.identity, platformResources)
       const subject = toPlatformResourceSubject(planned.identity)
-      if (!installed || !subject)
+      if (!installed || !subject) {
         throw new Error(`Local fixture resource ${resource.resourceId} is unavailable`)
+      }
       const eligibility = await resolveInstalledResourceEligibility(planned.identity)
-      if (eligibility.status !== 'eligible' || !eligibility.due)
+      if (eligibility.status !== 'eligible' || !eligibility.due) {
         throw new Error(`Local fixture resource ${resource.resourceId} is ineligible`)
+      }
 
       try {
         await applyInstalledResourceObservation({
-          identity: planned.identity,
-          resource: installed,
-          subject,
-          authorizationGeneration: eligibility.authorizationGeneration,
           authorizationCharacterId: eligibility.authorizationCharacterId,
           authorizationCharacterLifecycleId: eligibility.authorizationCharacterLifecycleId,
-          managedAuthority: eligibility.managedAuthority,
-          validatedAt: validatedAt.toISOString(),
-          organizationVersion,
+          authorizationGeneration: eligibility.authorizationGeneration,
           complete: true,
-          outcome: 'complete',
           data:
             resource.moduleId === 'core'
               ? [
@@ -287,6 +290,13 @@ async function seedFixtureResources(validatedAt: Date) {
                   localOrganizationFixture.unregisteredCharacterId,
                 ]
               : activityObservation(resource.resourceId, validatedAt),
+          identity: planned.identity,
+          managedAuthority: eligibility.managedAuthority,
+          organizationVersion,
+          outcome: 'complete',
+          resource: installed,
+          subject,
+          validatedAt: validatedAt.toISOString(),
         })
       } catch (error) {
         throw new Error(`Local fixture resource ${resource.resourceId} failed`, { cause: error })
@@ -299,65 +309,65 @@ async function seedFixtureResources(validatedAt: Date) {
 function activityObservation(resourceId: string, validatedAt: Date) {
   const snapshots = snapshotsForResource(resourceId, validatedAt)
   return {
-    resourceId,
-    expectedRevision: 0,
-    organizationVersion,
     checkpoint: {
+      cursors: {},
       initialized: true,
       requests: [],
-      cursors: {},
-      retainedIds: snapshots.map(({ snapshot }) => snapshot.id),
       retainedCampaignIds: [activityIds.campaign],
+      retainedIds: snapshots.map(({ snapshot }) => snapshot.id),
     },
+    expectedRevision: 0,
+    organizationVersion,
+    resourceId,
     snapshots,
   }
 }
 
 function snapshotsForResource(resourceId: string, validatedAt: Date) {
   const timestamp = validatedAt.toISOString()
-  const deadline = new Date(validatedAt.getTime() + 7 * 24 * 60 * 60 * 1_000).toISOString()
+  const deadline = new Date(validatedAt.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
   const project = {
+    campaignId: null,
+    committed: null,
+    contributed: null,
+    corporationId: localOrganizationFixture.corporationId,
+    deadline,
+    description: 'Deliver production materials for the fixture corporation.',
+    eligibility: 'unrestricted' as const,
     id: activityIds.project,
     kind: 'project' as const,
-    campaignId: null,
-    corporationId: localOrganizationFixture.corporationId,
-    title: 'Fixture Logistics Project',
-    description: 'Deliver production materials for the fixture corporation.',
     objective: 'Deliver materials',
-    state: 'Active',
     progress: { current: 40, desired: 100 },
     reward: { initial: 1_000_000, remaining: 600_000 },
-    deadline,
-    eligibility: 'unrestricted' as const,
-    contributed: null,
-    committed: null,
+    state: 'Active',
+    title: 'Fixture Logistics Project',
   }
   const job = {
     ...project,
     id: activityIds.job,
     kind: 'job' as const,
-    title: 'Fixture Hauling Job',
     objective: 'Haul supplies',
     progress: { current: 5, desired: 20 },
+    title: 'Fixture Hauling Job',
   }
   const campaign = {
     ...project,
+    corporationId: null,
+    description: null,
     id: activityIds.campaign,
     kind: 'campaign' as const,
-    corporationId: null,
-    title: 'Fixture Military Campaign',
-    description: null,
     objective: null,
     progress: { current: 0.25, desired: 1 },
     reward: null,
+    title: 'Fixture Military Campaign',
   }
   const objective = {
     ...campaign,
+    campaignId: activityIds.campaign,
     id: activityIds.objective,
     kind: 'objective' as const,
-    campaignId: activityIds.campaign,
-    title: 'Fixture Campaign Objective',
     objective: 'Secure the objective',
+    title: 'Fixture Campaign Objective',
   }
   let selected
   switch (resourceId) {
@@ -372,16 +382,16 @@ function snapshotsForResource(resourceId: string, validatedAt: Date) {
       selected = [project]
       break
     case 'character-jobs':
-      selected = [{ ...job, contributed: 5, committed: true }]
+      selected = [{ ...job, committed: true, contributed: 5 }]
       break
     case 'character-campaigns':
-      selected = [{ ...objective, contributed: 0.1, committed: true }]
+      selected = [{ ...objective, committed: true, contributed: 0.1 }]
       break
     case 'character-projects':
-      selected = [{ ...project, contributed: 40, committed: true }]
+      selected = [{ ...project, committed: true, contributed: 40 }]
       break
     default:
       throw new Error(`Unsupported local fixture resource ${resourceId}`)
   }
-  return selected.map((snapshot) => ({ snapshot, validatedAt: timestamp, replace: true }))
+  return selected.map((snapshot) => ({ replace: true, snapshot, validatedAt: timestamp }))
 }

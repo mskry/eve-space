@@ -60,43 +60,47 @@ export async function createOrganizationPermissionBundle(input: {
           sql`lower(${organizationPermissionBundles.name}) = ${input.name.toLowerCase()}`,
         ),
       )
-    if (existing) throw new OrganizationGroupMutationError('bundle-name-conflict')
+    if (existing) {
+      throw new OrganizationGroupMutationError('bundle-name-conflict')
+    }
 
     const [bundle] = await transaction
       .insert(organizationPermissionBundles)
       .values({
-        deploymentId: 1,
-        organizationVersion: organization.organizationVersion,
-        name: input.name,
         createdByUserId: input.actorUserId,
+        deploymentId: 1,
+        name: input.name,
+        organizationVersion: organization.organizationVersion,
       })
       .returning()
-    if (!bundle) throw new Error('Failed to create organization permission bundle')
+    if (!bundle) {
+      throw new Error('Failed to create organization permission bundle')
+    }
 
     const permissions = await resolvePermissions(transaction, input.permissions)
     await transaction.insert(organizationPermissionBundleEntries).values(
       permissions.map((permission) => ({
         bundleId: bundle.bundleId,
         deploymentId: 1,
-        organizationVersion: organization.organizationVersion,
-        permissionType: permission.type,
-        permissionKey: permission.key,
-        publisherPackage: permission.type === 'module' ? permission.publisherPackage : undefined,
         moduleId: permission.type === 'module' ? permission.moduleId : undefined,
+        organizationVersion: organization.organizationVersion,
+        permissionKey: permission.key,
+        permissionType: permission.type,
+        publisherPackage: permission.type === 'module' ? permission.publisherPackage : undefined,
         reviewAllowed: permission.reviewAllowed,
       })),
     )
     await appendPermissionBundleAudit(transaction, organization, {
-      eventType: 'permission-bundle.created',
       actorUserId: input.actorUserId,
       bundleId: bundle.bundleId,
-      reason: input.reason,
+      eventType: 'permission-bundle.created',
       now: new Date(),
+      reason: input.reason,
     })
     return {
       bundleId: bundle.bundleId,
-      organizationVersion: bundle.organizationVersion,
       name: bundle.name,
+      organizationVersion: bundle.organizationVersion,
       permissions,
     }
   })
@@ -124,7 +128,9 @@ export async function updateOrganizationPermissionBundle(input: {
         ),
       )
       .for('update')
-    if (!bundle) throw new OrganizationGroupMutationError('bundle-not-found')
+    if (!bundle) {
+      throw new OrganizationGroupMutationError('bundle-not-found')
+    }
     const [existing] = await transaction
       .select({ bundleId: organizationPermissionBundles.bundleId })
       .from(organizationPermissionBundles)
@@ -136,7 +142,9 @@ export async function updateOrganizationPermissionBundle(input: {
           sql`lower(${organizationPermissionBundles.name}) = ${input.name.toLowerCase()}`,
         ),
       )
-    if (existing) throw new OrganizationGroupMutationError('bundle-name-conflict')
+    if (existing) {
+      throw new OrganizationGroupMutationError('bundle-name-conflict')
+    }
 
     const [permissions, retainedPermissions] = await Promise.all([
       resolvePermissions(transaction, input.permissions),
@@ -154,31 +162,32 @@ export async function updateOrganizationPermissionBundle(input: {
     await transaction
       .delete(organizationPermissionBundleEntries)
       .where(eq(organizationPermissionBundleEntries.bundleId, input.bundleId))
-    if (permissions.length > 0 || retainedPermissions.length > 0)
+    if (permissions.length > 0 || retainedPermissions.length > 0) {
       await transaction.insert(organizationPermissionBundleEntries).values([
         ...permissions.map((permission) => ({
           bundleId: input.bundleId,
           deploymentId: 1,
-          organizationVersion: organization.organizationVersion,
-          permissionType: permission.type,
-          permissionKey: permission.key,
-          publisherPackage: permission.type === 'module' ? permission.publisherPackage : undefined,
           moduleId: permission.type === 'module' ? permission.moduleId : undefined,
+          organizationVersion: organization.organizationVersion,
+          permissionKey: permission.key,
+          permissionType: permission.type,
+          publisherPackage: permission.type === 'module' ? permission.publisherPackage : undefined,
           reviewAllowed: permission.reviewAllowed,
         })),
         ...retainedPermissions,
       ])
+    }
     await appendPermissionBundleAudit(transaction, organization, {
-      eventType: 'permission-bundle.updated',
       actorUserId: input.actorUserId,
       bundleId: input.bundleId,
-      reason: input.reason,
+      eventType: 'permission-bundle.updated',
       now: new Date(),
+      reason: input.reason,
     })
     return {
       bundleId: input.bundleId,
-      organizationVersion: organization.organizationVersion,
       name: input.name,
+      organizationVersion: organization.organizationVersion,
       permissions,
     }
   })
@@ -232,12 +241,12 @@ export async function listCurrentOrganizationPermissionBundles(actorUserId: stri
     return {
       bundles: bundles.map((bundle) => ({
         bundleId: bundle.bundleId,
-        organizationVersion: bundle.organizationVersion,
         name: bundle.name,
+        organizationVersion: bundle.organizationVersion,
         permissions: entries
           .filter(({ bundleId }) => bundleId === bundle.bundleId)
           .map((entry) => {
-            if (entry.permissionType === 'service')
+            if (entry.permissionType === 'service') {
               return {
                 entryId: entry.entryId,
                 type: 'service' as const,
@@ -245,10 +254,11 @@ export async function listCurrentOrganizationPermissionBundles(actorUserId: stri
                 reviewAllowed: entry.reviewAllowed,
                 available: true,
               }
+            }
             const declaration = declarations.get(
               `${entry.publisherPackage ?? ''}\u0000${entry.moduleId ?? ''}\u0000${entry.permissionKey}`,
             )
-            if (declaration)
+            if (declaration) {
               return {
                 entryId: entry.entryId,
                 type: 'module' as const,
@@ -263,6 +273,7 @@ export async function listCurrentOrganizationPermissionBundles(actorUserId: stri
                 sensitivity: declaration.sensitivity,
                 currentReviewAllowed: declaration.reviewAllowed,
               }
+            }
             return {
               entryId: entry.entryId,
               type: 'module' as const,
@@ -301,7 +312,9 @@ export async function createOrganizationGroup(input: {
           sql`lower(${organizationGroups.name}) = ${input.name.toLowerCase()}`,
         ),
       )
-    if (existing) throw new OrganizationGroupMutationError('group-name-conflict')
+    if (existing) {
+      throw new OrganizationGroupMutationError('group-name-conflict')
+    }
 
     const bundleIds = [...new Set(input.bundleIds)]
     const bundles = await transaction
@@ -314,28 +327,31 @@ export async function createOrganizationGroup(input: {
           inArray(organizationPermissionBundles.bundleId, bundleIds),
         ),
       )
-    if (bundles.length !== bundleIds.length)
+    if (bundles.length !== bundleIds.length) {
       throw new OrganizationGroupMutationError('bundle-not-found')
+    }
 
     const [group] = await transaction
       .insert(organizationGroups)
       .values({
-        deploymentId: 1,
-        organizationVersion: organization.organizationVersion,
-        name: input.name,
-        restricted: input.restricted,
-        managementMode: input.managementMode,
         complianceSource: input.complianceSource,
         createdByUserId: input.actorUserId,
+        deploymentId: 1,
+        managementMode: input.managementMode,
+        name: input.name,
+        organizationVersion: organization.organizationVersion,
+        restricted: input.restricted,
       })
       .returning()
-    if (!group) throw new Error('Failed to create organization group')
+    if (!group) {
+      throw new Error('Failed to create organization group')
+    }
 
     await transaction.insert(organizationGroupPermissionBundles).values(
       bundleIds.map((bundleId) => ({
-        groupId: group.groupId,
         bundleId,
         deploymentId: 1,
+        groupId: group.groupId,
         organizationVersion: organization.organizationVersion,
       })),
     )
@@ -352,15 +368,16 @@ export async function createOrganizationGroup(input: {
           ),
         )
         .orderBy(asc(organizationAccountCompliance.userId))
-      for (const { userId } of eligibleAccounts)
+      for (const { userId } of eligibleAccounts) {
         // oxlint-disable-next-line no-await-in-loop -- Group locks must follow stable user order.
         await convergeRegistrationComplianceGroupsInTransaction(transaction, {
+          eligible: true,
+          now,
           organizationVersion: organization.organizationVersion,
           policyVersion: organization.policyVersion,
           userId,
-          eligible: true,
-          now,
         })
+      }
     }
     return toGroup(group, bundleIds)
   })
@@ -401,70 +418,77 @@ export async function assignManualOrganizationGroupInTransaction(
     expiresAt: Date | null
   },
 ) {
-  if (group.managementMode === 'compliance')
+  if (group.managementMode === 'compliance') {
     throw new OrganizationGroupMutationError('compliance-group-manual-change')
+  }
 
   const [target] = await transaction
     .select({ userId: users.id })
     .from(users)
     .where(eq(users.id, input.targetUserId))
-  if (!target) throw new OrganizationGroupMutationError('target-not-found')
+  if (!target) {
+    throw new OrganizationGroupMutationError('target-not-found')
+  }
 
   const now = new Date()
-  if (input.expiresAt && input.expiresAt <= now)
+  if (input.expiresAt && input.expiresAt <= now) {
     throw new OrganizationGroupMutationError('invalid-expiry')
+  }
   const existing = await loadUnrevokedGroupAssignmentForUpdate(
     transaction,
     organization.organizationVersion,
     group.groupId,
     input.targetUserId,
   )
-  if (existing && (!existing.expiresAt || existing.expiresAt > now))
+  if (existing && (!existing.expiresAt || existing.expiresAt > now)) {
     throw new OrganizationGroupMutationError('assignment-already-active')
+  }
   if (existing) {
     const expiredAt = existing.expiresAt!
     const expired = await revokeGroupAssignmentRecord(transaction, existing.assignmentId, {
       actorType: 'system',
       actorUserId: null,
-      reason: expiredGroupAssignmentReason,
       now: expiredAt,
+      reason: expiredGroupAssignmentReason,
     })
     await appendGroupAudit(transaction, organization, {
-      eventType: 'group.revoked',
-      actorType: 'system',
       actorId: null,
+      actorType: 'system',
       assignment: expired,
-      reason: expiredGroupAssignmentReason,
-      outcome: 'revoked',
+      eventType: 'group.revoked',
       now: expiredAt,
+      outcome: 'revoked',
+      reason: expiredGroupAssignmentReason,
     })
   }
 
   const [assignment] = await transaction
     .insert(organizationGroupAssignments)
     .values({
-      groupId: group.groupId,
-      deploymentId: 1,
-      organizationVersion: organization.organizationVersion,
-      userId: input.targetUserId,
+      assignedActorType: 'user',
+      assignedAt: now,
+      assignedByUserId: input.actorUserId,
       assignmentSource: 'manual',
       complianceSource: null,
-      assignedActorType: 'user',
-      assignedByUserId: input.actorUserId,
-      reason: input.reason,
-      assignedAt: now,
+      deploymentId: 1,
       expiresAt: input.expiresAt,
+      groupId: group.groupId,
+      organizationVersion: organization.organizationVersion,
+      reason: input.reason,
+      userId: input.targetUserId,
     })
     .returning()
-  if (!assignment) throw new Error('Failed to assign organization group')
+  if (!assignment) {
+    throw new Error('Failed to assign organization group')
+  }
   await appendGroupAudit(transaction, organization, {
-    eventType: 'group.assigned',
-    actorType: 'user',
     actorId: input.actorUserId,
+    actorType: 'user',
     assignment,
-    reason: input.reason,
-    outcome: 'granted',
+    eventType: 'group.assigned',
     now,
+    outcome: 'granted',
+    reason: input.reason,
   })
   return toOrganizationGroupAssignment(assignment)
 }
@@ -499,15 +523,15 @@ export async function listCurrentOrganizationGroups() {
       )
     return {
       groups: groups.map((group) => ({
-        groupId: group.groupId,
-        organizationVersion: group.organizationVersion,
-        name: group.name,
-        restricted: group.restricted,
-        managementMode: group.managementMode,
-        complianceSource: group.complianceSource,
         assignments: assignments
           .filter((assignment) => assignment.groupId === group.groupId)
           .map(toOrganizationGroupAssignment),
+        complianceSource: group.complianceSource,
+        groupId: group.groupId,
+        managementMode: group.managementMode,
+        name: group.name,
+        organizationVersion: group.organizationVersion,
+        restricted: group.restricted,
       })),
     }
   })
@@ -532,8 +556,9 @@ export async function revokeOrganizationGroupAssignment(input: {
       input.actorUserId,
     )
     requireGroupManagementAuthority(group, authority)
-    if (group.managementMode === 'compliance')
+    if (group.managementMode === 'compliance') {
       throw new OrganizationGroupMutationError('compliance-group-manual-change')
+    }
 
     const assignment = await loadUnrevokedGroupAssignmentByIdForUpdate(
       transaction,
@@ -541,7 +566,9 @@ export async function revokeOrganizationGroupAssignment(input: {
       group.groupId,
       input.assignmentId,
     )
-    if (!assignment) throw new OrganizationGroupMutationError('assignment-not-found')
+    if (!assignment) {
+      throw new OrganizationGroupMutationError('assignment-not-found')
+    }
     return revokeManualOrganizationGroupAssignmentInTransaction(
       transaction,
       organization,
@@ -559,23 +586,24 @@ export async function revokeManualOrganizationGroupAssignmentInTransaction(
   assignment: typeof organizationGroupAssignments.$inferSelect,
   input: { actorUserId: string; reason: string },
 ) {
-  if (group.managementMode === 'compliance')
+  if (group.managementMode === 'compliance') {
     throw new OrganizationGroupMutationError('compliance-group-manual-change')
+  }
   const now = new Date()
   const revoked = await revokeGroupAssignmentRecord(transaction, assignment.assignmentId, {
     actorType: 'user',
     actorUserId: input.actorUserId,
-    reason: input.reason,
     now,
+    reason: input.reason,
   })
   await appendGroupAudit(transaction, organization, {
-    eventType: 'group.revoked',
-    actorType: 'user',
     actorId: input.actorUserId,
+    actorType: 'user',
     assignment: revoked,
-    reason: input.reason,
-    outcome: 'revoked',
+    eventType: 'group.revoked',
     now,
+    outcome: 'revoked',
+    reason: input.reason,
   })
   return toOrganizationGroupAssignment(revoked)
 }
@@ -592,22 +620,26 @@ async function requireManager(
     new Date(),
     'mutate',
   )
-  if (!authority) throw new OrganizationGroupMutationError('manager-authority-required')
+  if (!authority) {
+    throw new OrganizationGroupMutationError('manager-authority-required')
+  }
   return authority
 }
 
 async function requireOwner(transaction: Transaction, organizationVersion: number, userId: string) {
   const authority = await requireManager(transaction, organizationVersion, userId)
-  if (authority !== 'organization_owner')
+  if (authority !== 'organization_owner') {
     throw new OrganizationGroupMutationError('owner-authority-required')
+  }
 }
 
 function requireGroupManagementAuthority(
   group: typeof organizationGroups.$inferSelect,
   authority: OrganizationManagementAuthority,
 ) {
-  if (group.restricted && authority !== 'organization_owner')
+  if (group.restricted && authority !== 'organization_owner') {
     throw new OrganizationGroupMutationError('owner-authority-required')
+  }
 }
 
 async function resolvePermissions(
@@ -617,8 +649,9 @@ async function resolvePermissions(
   try {
     return await resolveCurrentPermissionSelections(transaction, permissions)
   } catch (error) {
-    if (error instanceof OrganizationPermissionCatalogError)
+    if (error instanceof OrganizationPermissionCatalogError) {
       throw new OrganizationGroupMutationError('permission-unavailable')
+    }
     throw error
   }
 }
@@ -629,9 +662,12 @@ async function loadRetainedUnavailablePermissions(
   bundleId: string,
   entryIds: readonly string[],
 ) {
-  if (new Set(entryIds).size !== entryIds.length)
+  if (new Set(entryIds).size !== entryIds.length) {
     throw new OrganizationGroupMutationError('retained-permission-invalid')
-  if (entryIds.length === 0) return []
+  }
+  if (entryIds.length === 0) {
+    return []
+  }
 
   const [entries, currentCatalog] = await Promise.all([
     transaction
@@ -663,31 +699,32 @@ async function loadRetainedUnavailablePermissions(
           `${entry.publisherPackage ?? ''}\u0000${entry.moduleId ?? ''}\u0000${entry.permissionKey}`,
         ),
     )
-  )
+  ) {
     throw new OrganizationGroupMutationError('retained-permission-invalid')
+  }
 
   return entries.map((entry) => ({
-    entryId: entry.entryId,
     bundleId: entry.bundleId,
-    deploymentId: entry.deploymentId,
-    organizationVersion: entry.organizationVersion,
-    permissionType: entry.permissionType,
-    permissionKey: entry.permissionKey,
-    publisherPackage: entry.publisherPackage,
-    moduleId: entry.moduleId,
-    reviewAllowed: entry.reviewAllowed,
     createdAt: entry.createdAt,
+    deploymentId: entry.deploymentId,
+    entryId: entry.entryId,
+    moduleId: entry.moduleId,
+    organizationVersion: entry.organizationVersion,
+    permissionKey: entry.permissionKey,
+    permissionType: entry.permissionType,
+    publisherPackage: entry.publisherPackage,
+    reviewAllowed: entry.reviewAllowed,
   }))
 }
 
 function toGroup(group: typeof organizationGroups.$inferSelect, bundleIds: string[]) {
   return {
-    groupId: group.groupId,
-    organizationVersion: group.organizationVersion,
-    name: group.name,
-    restricted: group.restricted,
-    managementMode: group.managementMode,
-    complianceSource: group.complianceSource,
     bundleIds,
+    complianceSource: group.complianceSource,
+    groupId: group.groupId,
+    managementMode: group.managementMode,
+    name: group.name,
+    organizationVersion: group.organizationVersion,
+    restricted: group.restricted,
   }
 }

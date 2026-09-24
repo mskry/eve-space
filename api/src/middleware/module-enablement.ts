@@ -7,8 +7,9 @@ export function requireInstalledModuleEnabled(
   sectionId?: string,
 ): MiddlewareHandler {
   return async (context, next) => {
-    if (!(await isInstalledModuleContributionEnabled(moduleId, sectionId)))
+    if (!(await isInstalledModuleContributionEnabled(moduleId, sectionId))) {
       return context.json(routeNotFoundBody, 404)
+    }
     await next()
   }
 }

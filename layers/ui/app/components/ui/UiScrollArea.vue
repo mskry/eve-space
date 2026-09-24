@@ -15,9 +15,9 @@ withDefaults(
     horizontal?: boolean
   }>(),
   {
-    type: 'auto',
-    scrollHideDelay: 600,
     horizontal: false,
+    scrollHideDelay: 600,
+    type: 'auto',
   },
 )
 
@@ -26,19 +26,21 @@ const viewport = computed(() => scrollArea.value?.viewport)
 
 function scrollToElement(target: HTMLElement, offset = 0) {
   const element = viewport.value
-  if (!element) return
+  if (!element) {
+    return
+  }
   const top =
     target.getBoundingClientRect().top -
     element.getBoundingClientRect().top +
     element.scrollTop -
     offset
   element.scrollTo({
-    top: Math.max(top, 0),
     behavior: globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    top: Math.max(top, 0),
   })
 }
 
-defineExpose({ viewport, scrollToElement })
+defineExpose({ scrollToElement, viewport })
 </script>
 
 <template>

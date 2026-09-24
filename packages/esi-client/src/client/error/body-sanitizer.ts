@@ -24,7 +24,9 @@ export function normalizeErrorBody(
   bodyText: string | undefined,
   redactor: Redactor,
 ): NormalizedBody | undefined {
-  if (typeof bodyText !== 'string') return undefined;
+  if (typeof bodyText !== 'string') {
+    return undefined;
+  }
   const bounded = takeBoundedText(
     bodyText,
     ESI_ERROR_BODY_LIMITS.characters,
@@ -33,15 +35,15 @@ export function normalizeErrorBody(
   if (!bounded.truncated) {
     try {
       const parsed: unknown = JSON.parse(bounded.text);
-      const state: NormalizationState = { keys: 0, arrayItems: 0, truncated: false };
+      const state: NormalizationState = { arrayItems: 0, keys: 0, truncated: false };
       const value = normalizeJsonValue(parsed, 0, state, redactor);
-      return Object.freeze({ format: 'json', value, truncated: state.truncated });
+      return Object.freeze({ format: 'json', truncated: state.truncated, value });
     } catch {
       // Invalid JSON is represented as bounded text below.
     }
   }
   const text = sanitizeString(bounded.text, redactor, ESI_ERROR_BODY_LIMITS.characters, '');
-  return Object.freeze({ format: 'text', value: text, truncated: bounded.truncated });
+  return Object.freeze({ format: 'text', truncated: bounded.truncated, value: text });
 }
 
 function normalizeJsonValue(
@@ -75,8 +77,12 @@ function normalizeJsonObject(
   state: NormalizationState,
   redactor: Redactor,
 ): EsiErrorBodyValue {
-  if (value === null) return null;
-  if (Array.isArray(value)) return normalizeJsonArray(value, depth, state, redactor);
+  if (value === null) {
+    return null;
+  }
+  if (Array.isArray(value)) {
+    return normalizeJsonArray(value, depth, state, redactor);
+  }
   const result: Record<string, EsiErrorBodyValue> = {};
   for (const [rawKey, item] of Object.entries(value)) {
     if (state.keys >= ESI_ERROR_BODY_LIMITS.keys) {
@@ -93,9 +99,9 @@ function normalizeJsonObject(
       ? REDACTED
       : normalizeJsonValue(item, depth + 1, state, redactor);
     Object.defineProperty(result, key, {
-      value: normalized,
-      enumerable: true,
       configurable: false,
+      enumerable: true,
+      value: normalized,
       writable: false,
     });
   }

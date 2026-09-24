@@ -2,11 +2,11 @@
 import { ApiQueryError } from '../../utils/query-error'
 import { reviewerContributionIdentity } from '../../utils/organization-review'
 
-definePageMeta({ title: 'Organization review', platformAudience: 'authenticated' })
+definePageMeta({ platformAudience: 'authenticated', title: 'Organization review' })
 
 useHead({
-  title: 'Organization review // EVE Space',
   meta: [{ name: 'description', content: 'Authorized organization member review workspace.' }],
+  title: 'Organization review // EVE Space',
 })
 
 const workspace = useOrganizationReviewWorkspace()

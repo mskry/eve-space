@@ -14,10 +14,10 @@ describe('core migration manifest', () => {
   test('loads every reviewed migration in canonical order with matching content', async () => {
     const migrations = await loadMigrations()
 
-    expect(migrations.map(({ name }) => name)).toEqual(
+    expect(migrations.map(({ name }) => name)).toStrictEqual(
       activeCoreMigrationManifest.map(({ name }) => name),
     )
-    expect(migrations.map(({ name }) => name)).toEqual([
+    expect(migrations.map(({ name }) => name)).toStrictEqual([
       '001_baseline.sql',
       '002_module_sections.sql',
       '003_reviewer_disclosure_acceptance.sql',
@@ -69,7 +69,7 @@ describe('core migration history', () => {
     expect(() => assertCoreMigrationHistory([], activeCoreMigrationManifest)).not.toThrow()
     expect(() =>
       assertCoreMigrationHistory(
-        [{ name: baseline.name, contentSha256: baseline.sha256 }],
+        [{ contentSha256: baseline.sha256, name: baseline.name }],
         activeCoreMigrationManifest,
       ),
     ).not.toThrow()
@@ -78,20 +78,20 @@ describe('core migration history', () => {
   test('rejects unknown and non-prefix histories before pending work', () => {
     expect(() =>
       assertCoreMigrationHistory(
-        [{ name: '001_retired.sql', contentSha256: null }],
+        [{ contentSha256: null, name: '001_retired.sql' }],
         activeCoreMigrationManifest,
       ),
     ).toThrow('unknown migration')
     expect(() =>
       assertCoreMigrationHistory(
-        [{ name: futureMigration.name, contentSha256: futureMigration.sha256 }],
+        [{ contentSha256: futureMigration.sha256, name: futureMigration.name }],
         [baseline, futureMigration],
       ),
     ).toThrow('non-prefix migration')
   })
 
   test('requires exact content identities after checksum storage exists', () => {
-    const rows = [{ name: baseline.name, contentSha256: baseline.sha256 }]
+    const rows = [{ contentSha256: baseline.sha256, name: baseline.name }]
     expect(() => assertCoreMigrationHistory(rows, activeCoreMigrationManifest)).not.toThrow()
     expect(() =>
       assertCoreMigrationHistory(
@@ -112,8 +112,9 @@ describe('transactional migration validation', () => {
   test('keeps every core migration transactional', async () => {
     const migrations = await loadMigrations()
     expect(migrations.length).toBeGreaterThan(0)
-    for (const migration of migrations)
+    for (const migration of migrations) {
       expect(() => assertTransactionalMigration(migration)).not.toThrow()
+    }
   })
 
   test('rejects concurrent unique indexes with an actionable statement name', () => {

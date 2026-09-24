@@ -10,21 +10,21 @@ describe('reviewer contribution target query lifecycle', () => {
     const account = identity({
       kind: 'managed-organization-account',
       managedMemberLifecycleId: 'lifecycle-1',
-      userId: 'user-1',
       sectionActivationVersion: 3,
+      userId: 'user-1',
     })
     const character = identity({
-      kind: 'managed-organization-character',
-      managedMemberLifecycleId: 'lifecycle-1',
-      userId: 'user-1',
+      authorizationGeneration: 4,
       characterId: 90_000_001,
       characterLifecycleId: 'character-lifecycle-1',
-      authorizationGeneration: 4,
       disclosureVersion: 2,
+      kind: 'managed-organization-character',
+      managedMemberLifecycleId: 'lifecycle-1',
       sectionActivationVersion: 3,
+      userId: 'user-1',
     })
 
-    expect(platformReviewerContributionTargetResourceKey(account)).toEqual([
+    expect(platformReviewerContributionTargetResourceKey(account)).toStrictEqual([
       'reviewer',
       'contributions',
       'overview',
@@ -34,7 +34,7 @@ describe('reviewer contribution target query lifecycle', () => {
       'section-activation',
       3,
     ])
-    expect(platformReviewerContributionTargetQueryKey(character)).toEqual([
+    expect(platformReviewerContributionTargetQueryKey(character)).toStrictEqual([
       'private',
       'organization',
       7,
@@ -83,14 +83,14 @@ describe('reviewer contribution target query lifecycle', () => {
 
   it('changes the private prefix for every live character authority identity', () => {
     const target = {
-      kind: 'managed-organization-character' as const,
-      managedMemberLifecycleId: 'lifecycle-1',
-      userId: 'user-1',
+      authorizationGeneration: 4,
       characterId: 90_000_001,
       characterLifecycleId: 'character-lifecycle-1',
-      authorizationGeneration: 4,
       disclosureVersion: 2,
+      kind: 'managed-organization-character' as const,
+      managedMemberLifecycleId: 'lifecycle-1',
       sectionActivationVersion: 3,
+      userId: 'user-1',
     }
     const original = platformReviewerContributionTargetQueryKey(identity(target))
 
@@ -99,8 +99,11 @@ describe('reviewer contribution target query lifecycle', () => {
       { ...target, authorizationGeneration: 5 },
       { ...target, disclosureVersion: 3 },
       { ...target, sectionActivationVersion: 4 },
-    ])
-      expect(platformReviewerContributionTargetQueryKey(identity(changed))).not.toEqual(original)
+    ]) {
+      expect(platformReviewerContributionTargetQueryKey(identity(changed))).not.toStrictEqual(
+        original,
+      )
+    }
   })
 })
 
@@ -108,8 +111,8 @@ function accountTarget() {
   return {
     kind: 'managed-organization-account' as const,
     managedMemberLifecycleId: 'lifecycle-1',
-    userId: 'user-1',
     sectionActivationVersion: 3,
+    userId: 'user-1',
   }
 }
 
@@ -128,10 +131,10 @@ function identity(
       },
 ) {
   return {
-    organizationVersion: 7,
-    moduleId: 'alpha',
-    sectionId: 'review',
     contributionId: 'overview',
+    moduleId: 'alpha',
+    organizationVersion: 7,
+    sectionId: 'review',
     target,
   }
 }

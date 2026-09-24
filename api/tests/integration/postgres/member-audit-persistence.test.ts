@@ -20,14 +20,14 @@ let connection: postgres.Sql
 let databaseUrl: string
 
 const memberAuditAuthority = {
-  organizationVersion: 1,
-  targetUserId: '71111111-1111-4111-8111-111111111111',
-  managedMemberLifecycleId: '72222222-2222-4222-8222-222222222222',
+  authorizationGeneration: 1,
   characterId: 90_000_101,
   characterLifecycleId: '73333333-3333-4333-8333-333333333333',
-  authorizationGeneration: 1,
   disclosureVersion: 1,
+  managedMemberLifecycleId: '72222222-2222-4222-8222-222222222222',
+  organizationVersion: 1,
   sectionActivationVersion: 1,
+  targetUserId: '71111111-1111-4111-8111-111111111111',
 } as const
 
 const continuationIdentity = {
@@ -87,10 +87,10 @@ test('records the squashed member audit baseline once across repeated startup', 
     await runStartupMigrations(upgradeConnection, {
       installed: legacyMigrations,
       moduleIds: ['member-audit'],
-      persistenceOperations: legacyOperations,
       persistenceContractFingerprint: persistenceContractFingerprintFor(legacyOperations, [
         'member-audit',
       ]),
+      persistenceOperations: legacyOperations,
     })
     await runStartupMigrations(upgradeConnection)
 
@@ -100,7 +100,7 @@ test('records the squashed member audit baseline once across repeated startup', 
       where module = 'member-audit'
       order by name
     `
-    expect(migrations).toEqual([{ name: 'member-audit-001-baseline.sql' }])
+    expect([...migrations]).toStrictEqual([{ name: 'member-audit-001-baseline.sql' }])
   } finally {
     await upgradeConnection.end()
   }
@@ -118,25 +118,25 @@ test('replaces trained snapshots across authority revisions', async () => {
     ),
   )
   const initial = {
-    resourceId: 'trained-skills' as const,
-    organizationVersion: 1,
-    targetUserId: '11111111-1111-4111-8111-111111111111',
-    managedMemberLifecycleId: '22222222-2222-4222-8222-222222222222',
+    authorizationGeneration: 1,
     characterId: 90_000_001,
     characterLifecycleId: '33333333-3333-4333-8333-333333333333',
-    authorizationGeneration: 1,
     disclosureVersion: 1,
-    sectionActivationVersion: 1,
-    observationId: '70000000-0000-4000-8000-000000000001',
     dtoRevision: 1,
-    validatedAt: '2026-09-17T10:00:00Z',
+    managedMemberLifecycleId: '22222222-2222-4222-8222-222222222222',
+    observationId: '70000000-0000-4000-8000-000000000001',
+    organizationVersion: 1,
+    resourceId: 'trained-skills' as const,
+    sectionActivationVersion: 1,
     snapshot: {
+      groups: [],
+      injectedSkillCount: 0,
       kind: 'trained-skills' as const,
       totalSp: 0,
       unallocatedSp: 0,
-      injectedSkillCount: 0,
-      groups: [],
     },
+    targetUserId: '11111111-1111-4111-8111-111111111111',
+    validatedAt: '2026-09-17T10:00:00Z',
   }
   const revisions = [
     {
@@ -155,58 +155,61 @@ test('replaces trained snapshots across authority revisions', async () => {
     {
       ...initial,
       authorizationGeneration: 2,
-      managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
       characterLifecycleId: '55555555-5555-4555-8555-555555555555',
+      managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
       observationId: '70000000-0000-4000-8000-000000000004',
       validatedAt: '2026-09-17T09:57:00Z',
     },
     {
       ...initial,
       authorizationGeneration: 2,
-      managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
       characterLifecycleId: '55555555-5555-4555-8555-555555555555',
       disclosureVersion: 2,
+      managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
       observationId: '70000000-0000-4000-8000-000000000005',
       validatedAt: '2026-09-17T09:56:00Z',
     },
     {
       ...initial,
       authorizationGeneration: 2,
-      managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
       characterLifecycleId: '55555555-5555-4555-8555-555555555555',
       disclosureVersion: 2,
-      sectionActivationVersion: 2,
+      managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
       observationId: '70000000-0000-4000-8000-000000000006',
+      sectionActivationVersion: 2,
       validatedAt: '2026-09-17T09:55:00Z',
     },
     {
       ...initial,
-      organizationVersion: 2,
       authorizationGeneration: 2,
-      managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
       characterLifecycleId: '55555555-5555-4555-8555-555555555555',
       disclosureVersion: 2,
-      sectionActivationVersion: 2,
+      managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
       observationId: '70000000-0000-4000-8000-000000000007',
+      organizationVersion: 2,
+      sectionActivationVersion: 2,
       validatedAt: '2026-09-17T09:54:00Z',
     },
     {
       ...initial,
-      organizationVersion: 2,
-      targetUserId: '66666666-6666-4666-8666-666666666666',
       authorizationGeneration: 2,
-      managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
       characterLifecycleId: '55555555-5555-4555-8555-555555555555',
       disclosureVersion: 2,
-      sectionActivationVersion: 2,
+      managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
       observationId: '70000000-0000-4000-8000-000000000008',
+      organizationVersion: 2,
+      sectionActivationVersion: 2,
+      targetUserId: '66666666-6666-4666-8666-666666666666',
       validatedAt: '2026-09-17T09:53:00Z',
     },
   ]
 
-  await expect(materializeCurrentSnapshot(initial)).resolves.toEqual({ outcome: 'applied' })
-  for (const revision of revisions)
-    await expect(materializeCurrentSnapshot(revision)).resolves.toEqual({ outcome: 'applied' })
+  await expect(materializeCurrentSnapshot(initial)).resolves.toStrictEqual({ outcome: 'applied' })
+  for (const revision of revisions) {
+    await expect(materializeCurrentSnapshot(revision)).resolves.toStrictEqual({
+      outcome: 'applied',
+    })
+  }
 
   const finalRevision = revisions[6]!
   await expect(
@@ -215,7 +218,7 @@ test('replaces trained snapshots across authority revisions', async () => {
       observationId: '70000000-0000-4000-8000-000000000009',
       validatedAt: '2026-09-17T09:52:00Z',
     }),
-  ).resolves.toEqual({ outcome: 'obsolete' })
+  ).resolves.toStrictEqual({ outcome: 'obsolete' })
 
   const snapshots = await connection<
     {
@@ -243,16 +246,16 @@ test('replaces trained snapshots across authority revisions', async () => {
     from eve_module_member_audit.trained_skill_snapshots
     where character_id = 90000001
   `
-  expect(snapshots).toEqual([
+  expect([...snapshots]).toStrictEqual([
     {
-      count: 1,
-      organizationVersion: 2,
-      targetUserId: '66666666-6666-4666-8666-666666666666',
-      managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
-      characterLifecycleId: '55555555-5555-4555-8555-555555555555',
       authorizationGeneration: 2,
+      characterLifecycleId: '55555555-5555-4555-8555-555555555555',
+      count: 1,
       disclosureVersion: 2,
+      managedMemberLifecycleId: '44444444-4444-4444-8444-444444444444',
+      organizationVersion: 2,
       sectionActivationVersion: 2,
+      targetUserId: '66666666-6666-4666-8666-666666666666',
       validatedAt: new Date('2026-09-17T09:53:00Z'),
     },
   ])
@@ -264,38 +267,38 @@ test('replaces a wallet balance after its authority changes despite an older cac
     memberAuditInvoker(),
   )
   const initial = {
-    resourceId: 'wallet-balance' as const,
-    organizationVersion: 1,
-    targetUserId: '88888888-8888-4888-8888-888888888888',
-    managedMemberLifecycleId: '89999999-9999-4999-8999-999999999999',
+    authorizationGeneration: 1,
     characterId: 90_000_008,
     characterLifecycleId: '8aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-    authorizationGeneration: 1,
     disclosureVersion: 1,
-    sectionActivationVersion: 1,
-    observationId: '8bbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
     dtoRevision: 1,
+    managedMemberLifecycleId: '89999999-9999-4999-8999-999999999999',
+    observationId: '8bbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    organizationVersion: 1,
+    resourceId: 'wallet-balance' as const,
+    sectionActivationVersion: 1,
+    snapshot: { balance: 10, kind: 'wallet-balance' as const },
+    targetUserId: '88888888-8888-4888-8888-888888888888',
     validatedAt: '2026-09-17T10:00:00Z',
-    snapshot: { kind: 'wallet-balance' as const, balance: 10 },
   }
   const changedAuthority = {
     ...initial,
     authorizationGeneration: 2,
     observationId: '8ccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    snapshot: { balance: 20, kind: 'wallet-balance' as const },
     validatedAt: '2026-09-17T09:59:00Z',
-    snapshot: { kind: 'wallet-balance' as const, balance: 20 },
   }
 
-  await expect(materializeCurrentSnapshot(initial)).resolves.toEqual({ outcome: 'applied' })
+  await expect(materializeCurrentSnapshot(initial)).resolves.toStrictEqual({ outcome: 'applied' })
   await expect(
     materializeCurrentSnapshot({
       ...initial,
       observationId: '8ddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      snapshot: { balance: 15, kind: 'wallet-balance' },
       validatedAt: '2026-09-17T09:58:00Z',
-      snapshot: { kind: 'wallet-balance', balance: 15 },
     }),
-  ).resolves.toEqual({ outcome: 'obsolete' })
-  await expect(materializeCurrentSnapshot(changedAuthority)).resolves.toEqual({
+  ).resolves.toStrictEqual({ outcome: 'obsolete' })
+  await expect(materializeCurrentSnapshot(changedAuthority)).resolves.toStrictEqual({
     outcome: 'applied',
   })
   await expect(
@@ -306,8 +309,8 @@ test('replaces a wallet balance after its authority changes despite an older cac
         validated_at as "validatedAt"
       from eve_module_member_audit.wallet_balance_snapshots
       where character_id = ${changedAuthority.characterId}
-    `,
-  ).resolves.toEqual([
+    `.then((rows) => [...rows]),
+  ).resolves.toStrictEqual([
     {
       authorizationGeneration: 2,
       balance: 20,
@@ -354,7 +357,7 @@ test('attests the declared routines and denies the runtime role direct table acc
       ) as "routineAccess"
   `
 
-  expect(state).toEqual({
+  expect(state).toStrictEqual({
     attestationCount: 11,
     migrationCount: 1,
     moduleTableAccess: false,
@@ -363,16 +366,16 @@ test('attests the declared routines and denies the runtime role direct table acc
   })
   expect(
     installedModulePersistenceOperationCatalog['member-audit/read-asset-evidence'].grants,
-  ).toEqual({
-    routes: ['assets-detail'],
+  ).toStrictEqual({
     activityProviders: [],
-    resourceProjections: [],
     resourceMaterializations: [],
+    resourceProjections: [],
+    routes: ['assets-detail'],
   })
   expect(
     installedModulePersistenceOperationCatalog['member-audit/write-evidence-continuation'].grants
       .routes,
-  ).toEqual([])
+  ).toStrictEqual([])
   await expect(
     connection.begin(async (transaction) => {
       await transaction`set local role eve_module_member_audit_runtime`
@@ -407,8 +410,8 @@ test('keeps incomplete observations isolated and promotes complete assets idempo
   await expect(
     writeContinuation({
       ...continuationIdentity,
-      expectedRevision: 0,
       checkpoint: { page: 1 },
+      expectedRevision: 0,
       records: [
         {
           recordKind: 'asset',
@@ -420,84 +423,84 @@ test('keeps incomplete observations isolated and promotes complete assets idempo
       ],
       updatedAt: validatedAt,
     }),
-  ).resolves.toEqual({ outcome: 'applied', revision: 1 })
-  await expect(readContinuation(continuationIdentity)).resolves.toEqual({
-    revision: 1,
+  ).resolves.toStrictEqual({ outcome: 'applied', revision: 1 })
+  await expect(readContinuation(continuationIdentity)).resolves.toStrictEqual({
     checkpoint: { page: 1 },
+    revision: 1,
   })
   await expect(
     readActiveContinuation({
-      sectionId: continuationIdentity.sectionId,
-      resourceId: continuationIdentity.resourceId,
       operationContractRevision: continuationIdentity.operationContractRevision,
+      resourceId: continuationIdentity.resourceId,
       resourceRevision: continuationIdentity.resourceRevision,
+      sectionId: continuationIdentity.sectionId,
       ...memberAuditAuthority,
     }),
-  ).resolves.toEqual({
+  ).resolves.toStrictEqual({
+    checkpoint: { page: 1 },
     observationId: continuationIdentity.observationId,
     revision: 1,
-    checkpoint: { page: 1 },
   })
   await expect(readAssets(memberAuditAuthority)).resolves.toBeNull()
   const incompletePromotion = {
     ...continuationIdentity,
-    expectedRevision: 1,
     dtoRevision: 1,
+    expectedRevision: 1,
     validatedAt,
   }
-  await expect(promoteObservation(incompletePromotion)).resolves.toEqual({
+  await expect(promoteObservation(incompletePromotion)).resolves.toStrictEqual({
     outcome: 'obsolete',
   })
   await expect(readAssets(memberAuditAuthority)).resolves.toBeNull()
   await expect(
     writeContinuation({
       ...continuationIdentity,
-      expectedRevision: 0,
       checkpoint: { page: 2 },
+      expectedRevision: 0,
       records: [],
       updatedAt: '2026-09-17T11:01:00Z',
     }),
-  ).resolves.toEqual({ outcome: 'obsolete' })
+  ).resolves.toStrictEqual({ outcome: 'obsolete' })
   await expect(
     writeContinuation({
       ...continuationIdentity,
-      expectedRevision: 1,
       checkpoint: { complete: 'true' },
+      expectedRevision: 1,
       records: [],
       updatedAt: '2026-09-17T11:01:00Z',
     }),
-  ).resolves.toEqual({ outcome: 'applied', revision: 2 })
+  ).resolves.toStrictEqual({ outcome: 'applied', revision: 2 })
   await expect(
     promoteObservation({
       ...continuationIdentity,
-      expectedRevision: 2,
       dtoRevision: 1,
+      expectedRevision: 2,
       validatedAt,
     }),
-  ).resolves.toEqual({ outcome: 'obsolete' })
+  ).resolves.toStrictEqual({ outcome: 'obsolete' })
   await expect(
     writeContinuation({
       ...continuationIdentity,
-      expectedRevision: 2,
       checkpoint: { complete: true },
+      expectedRevision: 2,
       records: [],
       updatedAt: '2026-09-17T11:01:00Z',
     }),
-  ).resolves.toEqual({ outcome: 'applied', revision: 3 })
+  ).resolves.toStrictEqual({ outcome: 'applied', revision: 3 })
 
   const promotion = {
     ...continuationIdentity,
-    expectedRevision: 3,
     dtoRevision: 1,
+    expectedRevision: 3,
     validatedAt,
   }
-  await expect(promoteObservation(promotion)).resolves.toEqual({ outcome: 'applied' })
-  await expect(promoteObservation(promotion)).resolves.toEqual({ outcome: 'applied' })
+  await expect(promoteObservation(promotion)).resolves.toStrictEqual({ outcome: 'applied' })
+  await expect(promoteObservation(promotion)).resolves.toStrictEqual({ outcome: 'applied' })
   await expect(
     writeContinuation({
       ...continuationIdentity,
-      expectedRevision: 0,
       checkpoint: { page: 2 },
+      expectedRevision: 0,
       records: [
         {
           recordKind: 'asset',
@@ -509,17 +512,17 @@ test('keeps incomplete observations isolated and promotes complete assets idempo
       ],
       updatedAt: validatedAt,
     }),
-  ).resolves.toEqual({ outcome: 'obsolete' })
+  ).resolves.toStrictEqual({ outcome: 'obsolete' })
   await expect(
     writeContinuation({
       ...continuationIdentity,
-      observationId: '70000000-0000-4000-8000-000000000010',
-      expectedRevision: 1,
       checkpoint: { page: 2 },
+      expectedRevision: 1,
+      observationId: '70000000-0000-4000-8000-000000000010',
       records: [],
       updatedAt: validatedAt,
     }),
-  ).resolves.toEqual({ outcome: 'obsolete' })
+  ).resolves.toStrictEqual({ outcome: 'obsolete' })
   await expect(readAssets(memberAuditAuthority)).resolves.toMatchObject({
     observationId: continuationIdentity.observationId,
     snapshot: { kind: 'assets', records: [{ itemId: 1, typeName: 'Veldspar' }] },
@@ -531,8 +534,8 @@ test('keeps incomplete observations isolated and promotes complete assets idempo
   }
   await writeContinuation({
     ...incompleteIdentity,
-    expectedRevision: 0,
     checkpoint: { page: 1 },
+    expectedRevision: 0,
     records: [
       {
         recordKind: 'asset',
@@ -564,18 +567,18 @@ test('replaces an asset snapshot when its authority changes without a newer vali
   )
   const firstAuthority = {
     ...memberAuditAuthority,
-    organizationVersion: 3,
-    targetUserId: '70000000-0000-4000-8000-000000000011',
-    managedMemberLifecycleId: '70000000-0000-4000-8000-000000000012',
     characterId: 90_000_104,
     characterLifecycleId: '70000000-0000-4000-8000-000000000013',
+    managedMemberLifecycleId: '70000000-0000-4000-8000-000000000012',
+    organizationVersion: 3,
+    targetUserId: '70000000-0000-4000-8000-000000000011',
   }
   const replacementAuthority = {
     ...firstAuthority,
+    characterLifecycleId: '70000000-0000-4000-8000-000000000016',
+    managedMemberLifecycleId: '70000000-0000-4000-8000-000000000015',
     organizationVersion: 4,
     targetUserId: '70000000-0000-4000-8000-000000000014',
-    managedMemberLifecycleId: '70000000-0000-4000-8000-000000000015',
-    characterLifecycleId: '70000000-0000-4000-8000-000000000016',
   }
   const firstIdentity = {
     sectionId: 'assets' as const,
@@ -600,8 +603,8 @@ test('replaces an asset snapshot when its authority changes without a newer vali
     await expect(
       writeContinuation({
         ...identity,
-        expectedRevision: 0,
         checkpoint: { complete: true },
+        expectedRevision: 0,
         records: [
           {
             recordKind: 'asset',
@@ -613,15 +616,15 @@ test('replaces an asset snapshot when its authority changes without a newer vali
         ],
         updatedAt: validatedAt,
       }),
-    ).resolves.toEqual({ outcome: 'applied', revision: 1 })
+    ).resolves.toStrictEqual({ outcome: 'applied', revision: 1 })
     await expect(
       promoteObservation({
         ...identity,
-        expectedRevision: 1,
         dtoRevision: 1,
+        expectedRevision: 1,
         validatedAt,
       }),
-    ).resolves.toEqual({ outcome: 'applied' })
+    ).resolves.toStrictEqual({ outcome: 'applied' })
   }
 
   await expect(readAssets(firstAuthority)).resolves.toBeNull()
@@ -646,11 +649,11 @@ test('replaces an incomplete continuation when its contract revision changes', a
   )
   const authority = {
     ...memberAuditAuthority,
-    organizationVersion: 6,
-    targetUserId: '70000000-0000-4000-8000-000000000030',
-    managedMemberLifecycleId: '70000000-0000-4000-8000-000000000031',
     characterId: 90_000_108,
     characterLifecycleId: '70000000-0000-4000-8000-000000000032',
+    managedMemberLifecycleId: '70000000-0000-4000-8000-000000000031',
+    organizationVersion: 6,
+    targetUserId: '70000000-0000-4000-8000-000000000030',
   }
   const staleIdentity = {
     sectionId: 'assets' as const,
@@ -662,16 +665,16 @@ test('replaces an incomplete continuation when its contract revision changes', a
   }
   const revisedIdentity = {
     ...staleIdentity,
-    operationContractRevision: 2,
     observationId: '70000000-0000-4000-8000-000000000034',
+    operationContractRevision: 2,
   }
   const validatedAt = new Date(Date.now() - 60_000).toISOString()
 
   await expect(
     writeContinuation({
       ...staleIdentity,
-      expectedRevision: 0,
       checkpoint: { page: 1 },
+      expectedRevision: 0,
       records: [
         {
           recordKind: 'asset',
@@ -683,12 +686,12 @@ test('replaces an incomplete continuation when its contract revision changes', a
       ],
       updatedAt: validatedAt,
     }),
-  ).resolves.toEqual({ outcome: 'applied', revision: 1 })
+  ).resolves.toStrictEqual({ outcome: 'applied', revision: 1 })
   await expect(
     writeContinuation({
       ...revisedIdentity,
-      expectedRevision: 0,
       checkpoint: { complete: true },
+      expectedRevision: 0,
       records: [
         {
           recordKind: 'asset',
@@ -700,35 +703,35 @@ test('replaces an incomplete continuation when its contract revision changes', a
       ],
       updatedAt: validatedAt,
     }),
-  ).resolves.toEqual({ outcome: 'applied', revision: 1 })
+  ).resolves.toStrictEqual({ outcome: 'applied', revision: 1 })
   await expect(readContinuation(staleIdentity)).resolves.toBeNull()
-  await expect(readContinuation(revisedIdentity)).resolves.toEqual({
-    revision: 1,
+  await expect(readContinuation(revisedIdentity)).resolves.toStrictEqual({
     checkpoint: { complete: true },
+    revision: 1,
   })
   await expect(
     promoteObservation({
       ...staleIdentity,
-      expectedRevision: 1,
       dtoRevision: 1,
+      expectedRevision: 1,
       validatedAt,
     }),
-  ).resolves.toEqual({ outcome: 'obsolete' })
+  ).resolves.toStrictEqual({ outcome: 'obsolete' })
   await expect(
     promoteObservation({
       ...revisedIdentity,
-      expectedRevision: 1,
       dtoRevision: 1,
+      expectedRevision: 1,
       validatedAt,
     }),
-  ).resolves.toEqual({ outcome: 'applied' })
+  ).resolves.toStrictEqual({ outcome: 'applied' })
 
   const [staging] = await connection<{ staleRows: number }[]>`
     select count(*)::integer as "staleRows"
     from eve_module_member_audit.observation_staging
     where observation_id = ${staleIdentity.observationId}
   `
-  expect(staging).toEqual({ staleRows: 0 })
+  expect(staging).toStrictEqual({ staleRows: 0 })
 })
 
 test('rejects mismatched promotions and future event timestamps before mutating evidence', async () => {
@@ -743,11 +746,11 @@ test('rejects mismatched promotions and future event timestamps before mutating 
   const sourceTimestamp = new Date(Date.now() - 60_000).toISOString()
   const authority = {
     ...memberAuditAuthority,
-    organizationVersion: 5,
-    targetUserId: '70000000-0000-4000-8000-000000000019',
-    managedMemberLifecycleId: '70000000-0000-4000-8000-000000000020',
     characterId: 90_000_105,
     characterLifecycleId: '70000000-0000-4000-8000-000000000021',
+    managedMemberLifecycleId: '70000000-0000-4000-8000-000000000020',
+    organizationVersion: 5,
+    targetUserId: '70000000-0000-4000-8000-000000000019',
   }
   const identity = {
     sectionId: 'wallet' as const,
@@ -774,8 +777,8 @@ test('rejects mismatched promotions and future event timestamps before mutating 
   `
   await writeContinuation({
     ...identity,
-    expectedRevision: 0,
     checkpoint: { complete: true },
+    expectedRevision: 0,
     records: [
       {
         recordKind: 'wallet-journal',
@@ -790,19 +793,19 @@ test('rejects mismatched promotions and future event timestamps before mutating 
   await expect(
     promoteObservation({
       ...identity,
-      operationContractRevision: 2,
-      expectedRevision: 1,
       dtoRevision: 1,
+      expectedRevision: 1,
+      operationContractRevision: 2,
       validatedAt: sourceTimestamp,
     }),
-  ).resolves.toEqual({ outcome: 'obsolete' })
+  ).resolves.toStrictEqual({ outcome: 'obsolete' })
 
   const futureAuthority = {
     ...authority,
-    targetUserId: '70000000-0000-4000-8000-000000000023',
-    managedMemberLifecycleId: '70000000-0000-4000-8000-000000000024',
     characterId: 90_000_106,
     characterLifecycleId: '70000000-0000-4000-8000-000000000025',
+    managedMemberLifecycleId: '70000000-0000-4000-8000-000000000024',
+    targetUserId: '70000000-0000-4000-8000-000000000023',
   }
   const futureIdentity = {
     ...identity,
@@ -827,8 +830,8 @@ test('rejects mismatched promotions and future event timestamps before mutating 
   `
   await writeContinuation({
     ...futureIdentity,
-    expectedRevision: 0,
     checkpoint: { complete: true },
+    expectedRevision: 0,
     records: [
       {
         recordKind: 'wallet-journal',
@@ -843,11 +846,11 @@ test('rejects mismatched promotions and future event timestamps before mutating 
   await expect(
     promoteObservation({
       ...futureIdentity,
-      expectedRevision: 1,
       dtoRevision: 1,
+      expectedRevision: 1,
       validatedAt: sourceTimestamp,
     }),
-  ).resolves.toEqual({ outcome: 'obsolete' })
+  ).resolves.toStrictEqual({ outcome: 'obsolete' })
 
   const rows = await connection<{ characterId: number; sourceId: string }[]>`
     select character_id::integer as "characterId", source_id as "sourceId"
@@ -855,7 +858,7 @@ test('rejects mismatched promotions and future event timestamps before mutating 
     where character_id in (${authority.characterId}, ${futureAuthority.characterId})
     order by character_id
   `
-  expect(rows).toEqual([
+  expect([...rows]).toStrictEqual([
     { characterId: authority.characterId, sourceId: 'existing' },
     { characterId: futureAuthority.characterId, sourceId: 'existing-future-authority' },
   ])
@@ -872,11 +875,11 @@ test('derives mail detail retention from the matching retained header', async ()
   )
   const authority = {
     ...memberAuditAuthority,
-    organizationVersion: 7,
-    targetUserId: '70000000-0000-4000-8000-000000000035',
-    managedMemberLifecycleId: '70000000-0000-4000-8000-000000000036',
     characterId: 90_000_109,
     characterLifecycleId: '70000000-0000-4000-8000-000000000037',
+    managedMemberLifecycleId: '70000000-0000-4000-8000-000000000036',
+    organizationVersion: 7,
+    targetUserId: '70000000-0000-4000-8000-000000000035',
   }
   const identity = {
     sectionId: 'mail' as const,
@@ -886,7 +889,7 @@ test('derives mail detail retention from the matching retained header', async ()
     ...authority,
     observationId: '70000000-0000-4000-8000-000000000038',
   }
-  const headerTimestamp = new Date(Date.now() - 24 * 60 * 60 * 1_000).toISOString()
+  const headerTimestamp = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   const collectorTimestamp = new Date().toISOString()
   await connection`
     insert into eve_module_member_audit.mail_headers (
@@ -907,8 +910,8 @@ test('derives mail detail retention from the matching retained header', async ()
   await expect(
     writeContinuation({
       ...identity,
-      expectedRevision: 0,
       checkpoint: { complete: true },
+      expectedRevision: 0,
       records: [
         {
           recordKind: 'mail-content',
@@ -920,36 +923,36 @@ test('derives mail detail retention from the matching retained header', async ()
       ],
       updatedAt: collectorTimestamp,
     }),
-  ).resolves.toEqual({ outcome: 'applied', revision: 1 })
+  ).resolves.toStrictEqual({ outcome: 'applied', revision: 1 })
   await expect(
     promoteObservation({
       ...identity,
-      expectedRevision: 1,
       dtoRevision: 1,
+      expectedRevision: 1,
       validatedAt: collectorTimestamp,
     }),
-  ).resolves.toEqual({ outcome: 'applied' })
+  ).resolves.toStrictEqual({ outcome: 'applied' })
 
   const [content] = await connection<{ expiresAt: Date; sourceTimestamp: Date }[]>`
     select source_timestamp as "sourceTimestamp", expires_at as "expiresAt"
     from eve_module_member_audit.mail_contents
     where character_id = ${authority.characterId} and source_id = 'message-1'
   `
-  expect(content).toEqual({
+  expect(content).toStrictEqual({
+    expiresAt: new Date(new Date(headerTimestamp).getTime() + 90 * 24 * 60 * 60 * 1000),
     sourceTimestamp: new Date(headerTimestamp),
-    expiresAt: new Date(new Date(headerTimestamp).getTime() + 90 * 24 * 60 * 60 * 1_000),
   })
 })
 
 test('rolls promotion back atomically with its enclosing collection transaction', async () => {
   const rollbackIdentity = {
     ...continuationIdentity,
-    organizationVersion: 2,
-    targetUserId: '7bbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
-    managedMemberLifecycleId: '7ccccccc-cccc-4ccc-8ccc-cccccccccccc',
     characterId: 90_000_103,
     characterLifecycleId: '7ddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    managedMemberLifecycleId: '7ccccccc-cccc-4ccc-8ccc-cccccccccccc',
     observationId: '76666666-6666-4666-8666-666666666666',
+    organizationVersion: 2,
+    targetUserId: '7bbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
   }
   const writeContinuation = bindPlatformPersistenceOperation(
     installedModulePersistenceOperationCatalog['member-audit/write-evidence-continuation'],
@@ -957,8 +960,8 @@ test('rolls promotion back atomically with its enclosing collection transaction'
   )
   await writeContinuation({
     ...rollbackIdentity,
-    expectedRevision: 0,
     checkpoint: { complete: true },
+    expectedRevision: 0,
     records: [
       {
         recordKind: 'asset',
@@ -982,8 +985,8 @@ test('rolls promotion back atomically with its enclosing collection transaction'
         installedModulePersistenceOperationCatalog['member-audit/promote-evidence-observation'],
         {
           ...rollbackIdentity,
-          expectedRevision: 1,
           dtoRevision: 1,
+          expectedRevision: 1,
           validatedAt: '2026-09-17T11:03:00Z',
         },
       )
@@ -1003,7 +1006,7 @@ test('rolls promotion back atomically with its enclosing collection transaction'
       (select count(*)::integer from eve_module_member_audit.promoted_observations
        where observation_id = ${rollbackIdentity.observationId}) as "promotionCount"
   `
-  expect(state).toEqual({ continuationCount: 1, stagingCount: 1, promotionCount: 0 })
+  expect(state).toStrictEqual({ continuationCount: 1, promotionCount: 0, stagingCount: 1 })
 })
 
 test('bounds retention and authority purges without retaining evidence through account deletion', async () => {
@@ -1036,27 +1039,27 @@ test('bounds retention and authority purges without retaining evidence through a
   })
   await expect(
     purgeEvidence({
-      mode: 'retention',
-      store: 'wallet-journal',
       cutoff: '2026-01-02T00:00:00Z',
       limit: 1,
-    }),
-  ).resolves.toEqual({ deleted: 1, remaining: true })
-  await expect(
-    purgeEvidence({
       mode: 'retention',
       store: 'wallet-journal',
+    }),
+  ).resolves.toStrictEqual({ deleted: 1, remaining: true })
+  await expect(
+    purgeEvidence({
       cutoff: '2026-01-02T00:00:00Z',
       limit: 100,
+      mode: 'retention',
+      store: 'wallet-journal',
     }),
-  ).resolves.toEqual({ deleted: 1, remaining: false })
+  ).resolves.toStrictEqual({ deleted: 1, remaining: false })
 
   const invalidAuthority = {
     ...memberAuditAuthority,
-    targetUserId: '7eeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
-    managedMemberLifecycleId: '7fffffff-ffff-4fff-8fff-ffffffffffff',
     characterId: 90_000_104,
     characterLifecycleId: '70000000-0000-4000-8000-000000000001',
+    managedMemberLifecycleId: '7fffffff-ffff-4fff-8fff-ffffffffffff',
+    targetUserId: '7eeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
   }
   await connection`
     insert into eve_module_member_audit.wallet_balance_snapshots (
@@ -1069,7 +1072,7 @@ test('bounds retention and authority purges without retaining evidence through a
       ${invalidAuthority.characterLifecycleId}, ${invalidAuthority.authorizationGeneration},
       ${invalidAuthority.disclosureVersion}, ${invalidAuthority.sectionActivationVersion}, 1,
       '70000000-0000-4000-8000-000000000002',
-      ${connection.json({ kind: 'wallet-balance', balance: 99 })}, now()
+      ${connection.json({ balance: 99, kind: 'wallet-balance' })}, now()
     )
   `
   await expect(
@@ -1077,12 +1080,12 @@ test('bounds retention and authority purges without retaining evidence through a
   ).resolves.toMatchObject({ balance: null })
   await expect(
     purgeEvidence({
+      limit: 100,
       mode: 'authority',
       store: 'wallet-balance',
-      limit: 100,
       ...invalidAuthority,
     }),
-  ).resolves.toEqual({ deleted: 1, remaining: false })
+  ).resolves.toStrictEqual({ deleted: 1, remaining: false })
 
   await connection`
     insert into eve_module_member_audit.wallet_balance_snapshots (
@@ -1094,17 +1097,17 @@ test('bounds retention and authority purges without retaining evidence through a
       '70000000-0000-4000-8000-000000000004', 90000105,
       '70000000-0000-4000-8000-000000000005', 1, 1, 1, 1,
       '70000000-0000-4000-8000-000000000006',
-      ${connection.json({ kind: 'wallet-balance', balance: 7 })}, now()
+      ${connection.json({ balance: 7, kind: 'wallet-balance' })}, now()
     )
   `
   await expect(
     purgeEvidence({
-      mode: 'organization',
-      store: 'wallet-balance',
-      organizationVersion: 9,
       limit: 100,
+      mode: 'organization',
+      organizationVersion: 9,
+      store: 'wallet-balance',
     }),
-  ).resolves.toEqual({ deleted: 1, remaining: false })
+  ).resolves.toStrictEqual({ deleted: 1, remaining: false })
 
   const userId = '77777777-7777-4777-8777-777777777777'
   await connection`insert into public.users (id) values (${userId})`
@@ -1118,23 +1121,23 @@ test('bounds retention and authority purges without retaining evidence through a
         1, ${userId}, '78888888-8888-4888-8888-888888888888', 90000102,
         '79999999-9999-4999-8999-999999999999', 1, 1, 1, 1,
         '7aaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-        ${connection.json({ kind: 'wallet-balance', balance: 42 })}, now()
+        ${connection.json({ balance: 42, kind: 'wallet-balance' })}, now()
       ),
       (
         2, ${userId}, '70000000-0000-4000-8000-000000000039', 90000110,
         '70000000-0000-4000-8000-000000000040', 1, 1, 1, 1,
         '70000000-0000-4000-8000-000000000041',
-        ${connection.json({ kind: 'wallet-balance', balance: 84 })}, now()
+        ${connection.json({ balance: 84, kind: 'wallet-balance' })}, now()
       )
   `
   await expect(
     purgeEvidence({
+      limit: 100,
       mode: 'account',
       store: 'wallet-balance',
       targetUserId: userId,
-      limit: 100,
     }),
-  ).resolves.toEqual({ deleted: 2, remaining: false })
+  ).resolves.toStrictEqual({ deleted: 2, remaining: false })
   await expect(connection`delete from public.users where id = ${userId}`).resolves.toBeDefined()
   const [retention] = await connection<{ evidenceCount: number; userCount: number }[]>`
     select
@@ -1142,7 +1145,7 @@ test('bounds retention and authority purges without retaining evidence through a
       (select count(*)::integer from eve_module_member_audit.wallet_balance_snapshots
        where target_user_id = ${userId}) as "evidenceCount"
   `
-  expect(retention).toEqual({ userCount: 0, evidenceCount: 0 })
+  expect(retention).toStrictEqual({ evidenceCount: 0, userCount: 0 })
 })
 
 test('retains module evidence while module and section collection are disabled', async () => {
@@ -1165,15 +1168,15 @@ test('retains module evidence while module and section collection are disabled',
       (select count(*)::integer from eve_module_member_audit.asset_snapshots)
         as "evidenceCount"
   `
-  expect(state).toEqual({ moduleEnabled: false, sectionEnabled: false, evidenceCount: 3 })
+  expect(state).toStrictEqual({ evidenceCount: 3, moduleEnabled: false, sectionEnabled: false })
 })
 
 test('retains the disabled schema and evidence across static uninstall reconciliation', async () => {
   await runStartupMigrations(connection, {
     installed: [],
     moduleIds: [],
-    persistenceOperations: [],
     persistenceContractFingerprint: persistenceContractFingerprintFor([], []),
+    persistenceOperations: [],
   })
   const [retained] = await connection<
     { attested: boolean; evidenceCount: number; migrated: boolean; schemaExists: boolean }[]
@@ -1191,10 +1194,10 @@ test('retains the disabled schema and evidence across static uninstall reconcili
       (select count(*)::integer from eve_module_member_audit.asset_snapshots)
         as "evidenceCount"
   `
-  expect(retained).toEqual({
+  expect(retained).toStrictEqual({
     attested: true,
+    evidenceCount: 3,
     migrated: true,
     schemaExists: true,
-    evidenceCount: 3,
   })
 })

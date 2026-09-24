@@ -27,18 +27,18 @@ import type {
 } from './persistence.js'
 import { resolveUniverseNamesBestEffort } from './universe-name-resolution.js'
 
-const pageSize = 1_000
+const pageSize = 1000
 const projectionBatchSize = 500
 const maximumPages = 10
 const assetSchema = z.strictObject({
-  item_id: z.number().int().positive(),
-  type_id: z.number().int().positive(),
-  quantity: z.number().int(),
-  is_singleton: z.boolean(),
   is_blueprint_copy: z.boolean().optional(),
+  is_singleton: z.boolean(),
+  item_id: z.number().int().positive(),
+  location_flag: z.string().min(1).max(100),
   location_id: z.number().int().positive(),
   location_type: z.enum(['station', 'solar_system', 'item', 'other']),
-  location_flag: z.string().min(1).max(100),
+  quantity: z.number().int(),
+  type_id: z.number().int().positive(),
 })
 const assetPageSchema = z.array(assetSchema).max(pageSize)
 const assetNamesSchema = z.array(
@@ -67,8 +67,6 @@ export const assetsResource: PlatformBoundedCollectionResourceImplementation<
   EvidenceMaterializationPersistence,
   EvidenceMaintenancePersistence
 > = {
-  mode: 'bounded-collection',
-  operation: 'character-assets-page',
   async collect(context) {
     const collection = await startEvidenceCollection(
       { sectionId: 'assets', resourceId: 'assets' },
@@ -102,12 +100,14 @@ export const assetsResource: PlatformBoundedCollectionResourceImplementation<
       },
     }
   },
-  materialize(context) {
-    return materializeEvidenceObservation(context)
-  },
   maintain(context) {
     return maintainEvidence('assets', context, false)
   },
+  materialize(context) {
+    return materializeEvidenceObservation(context)
+  },
+  mode: 'bounded-collection',
+  operation: 'character-assets-page',
 }
 
 async function projectAssetPage(
@@ -145,8 +145,8 @@ async function projectAssets(
     namedItemIds.length === 0
       ? { data: [] }
       : context.operations['character-asset-names']({
-          path: { character_id: context.subject.characterId },
           body: namedItemIds,
+          path: { character_id: context.subject.characterId },
         }),
     resolveUniverseNamesBestEffort(locationIds, context),
   ])
@@ -154,11 +154,11 @@ async function projectAssets(
     types.rows.map((type) => [
       type.typeId,
       {
-        typeName: type.typeName,
-        groupId: type.groupId,
-        groupName: type.groupName,
         categoryId: type.categoryId,
         categoryName: type.categoryName,
+        groupId: type.groupId,
+        groupName: type.groupName,
+        typeName: type.typeName,
         unitVolume: type.packagedVolume,
       },
     ]),
@@ -177,7 +177,9 @@ async function projectAssets(
     ]),
   )
   for (const locationId of locationIds) {
-    if (locationsById.has(locationId)) continue
+    if (locationsById.has(locationId)) {
+      continue
+    }
     locationsById.set(locationId, {
       name: universeNames.get(locationId)?.name ?? null,
       solarSystemId: null,
@@ -185,9 +187,6 @@ async function projectAssets(
     })
   }
   return snapshots.map((snapshot) => ({
-    recordKind: 'asset',
-    sourceId: String(snapshot.itemId),
-    sourceTimestamp: null,
     evidence: {
       ...projectAsset(
         snapshot,
@@ -196,6 +195,9 @@ async function projectAssets(
         locationsById.get(snapshot.locationId),
       ),
     },
+    recordKind: 'asset',
+    sourceId: String(snapshot.itemId),
+    sourceTimestamp: null,
     validatedAt,
   }))
 }

@@ -41,7 +41,7 @@ describe('mail label management', () => {
 
     expect(harness.organization.labelName.value).toBe('')
     expect(harness.organization.labelColor.value).toBeUndefined()
-    expect(harness.mutations.createdLabels.value).toEqual([
+    expect(harness.mutations.createdLabels.value).toStrictEqual([
       { color: '#fe0000', labelId: 3, name: 'Priority', unreadCount: 0 },
     ])
     expect(harness.showToast).toHaveBeenCalledWith(
@@ -229,7 +229,7 @@ describe('mail label management', () => {
     await harness.organization.changeOpenMessageLabel(3, true)
     await harness.organization.changeOpenMessageLabel(2, false)
 
-    expect(requestBodies).toEqual([{ labels: [1, 2, 3] }, { labels: [1, 3] }])
+    expect(requestBodies).toStrictEqual([{ labels: [1, 2, 3] }, { labels: [1, 3] }])
     expect(requestBodies.every((body) => !Object.hasOwn(body as object, 'read'))).toBe(true)
     harness.unmount()
   })
@@ -247,8 +247,8 @@ describe('mail label management', () => {
 
     await harness.organization.changeOpenMessageLabel(3, true)
 
-    expect(requestBodies).toEqual([{ labels: [1, 3] }])
-    expect(harness.organization.assignedLabelIds.value).toEqual(new Set([1, 3]))
+    expect(requestBodies).toStrictEqual([{ labels: [1, 3] }])
+    expect(harness.organization.assignedLabelIds.value).toStrictEqual(new Set([1, 3]))
     harness.unmount()
   })
 
@@ -323,7 +323,7 @@ describe('mail label management', () => {
     const harness = mountOrganization([1])
 
     const request = harness.organization.changeOpenMessageLabel(2, true)
-    expect(harness.mutations.labelOverrides.value.get(1)).toEqual([1, 2])
+    expect(harness.mutations.labelOverrides.value.get(1)).toStrictEqual([1, 2])
     finishRequest()
     await request
 
@@ -376,7 +376,9 @@ function mountOrganization(labelIds: number[] = [1]) {
     detailQuery: { data: detail, error: ref<unknown>() },
     displayedDetail: computed(() => {
       const value = detail.value
-      if (!value) return undefined
+      if (!value) {
+        return undefined
+      }
       const overridden = mutations?.labelOverrides.value.get(value.mailId) ?? value.labelIds
       return {
         ...value,
@@ -403,7 +405,7 @@ function mountOrganization(labelIds: number[] = [1]) {
         mailbox,
         mutations,
       })
-      subscribePrivateQueryInvalidation(useQueryCache(), { kind: 'character', characterId }, () => {
+      subscribePrivateQueryInvalidation(useQueryCache(), { characterId, kind: 'character' }, () => {
         mutations.resetMailMutations()
         organization.resetPrivateState()
       })

@@ -12,8 +12,9 @@ import {
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const mode = process.argv[2]
 
-if (mode !== '--write' && mode !== '--check')
+if (mode !== '--write' && mode !== '--check') {
   throw new Error('Usage: generate-module-registries.ts --write|--check')
+}
 
 const manifests = await loadInstalledModuleManifests(root)
 const formatOptions: FormatConfig = JSON.parse(readFileSync(resolve(root, '.oxfmtrc.json'), 'utf8'))
@@ -27,14 +28,18 @@ const files = new Map(
       ),
     ].map(async ([path, source]) => {
       const result = await format(path, source, formatOptions)
-      if (result.errors.length) throw new Error(`Could not format generated registry ${path}`)
+      if (result.errors.length) {
+        throw new Error(`Could not format generated registry ${path}`)
+      }
       return [path, result.code] as const
     }),
   ),
 )
 
 if (mode === '--write') {
-  for (const [path, content] of files) writeAtomically(assertOutputPath(root, path), content)
+  for (const [path, content] of files) {
+    writeAtomically(assertOutputPath(root, path), content)
+  }
   console.log(`Generated ${files.size} platform module registries`)
 } else {
   const stale: string[] = []
@@ -46,12 +51,15 @@ if (mode === '--write') {
     } catch {
       actual = undefined
     }
-    if (actual !== (files.get(path) ?? '')) stale.push(relative(root, checkedInPath))
+    if (actual !== (files.get(path) ?? '')) {
+      stale.push(relative(root, checkedInPath))
+    }
   }
-  if (stale.length > 0)
+  if (stale.length > 0) {
     throw new Error(
       `Generated platform registries are stale: ${stale.join(', ')}. Run pnpm registry:generate.`,
     )
+  }
   console.log(`Verified ${files.size} platform module registries`)
 }
 

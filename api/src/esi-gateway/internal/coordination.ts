@@ -24,8 +24,9 @@ export async function initializeCacheNamespace(coordination: Redis) {
     '1',
     randomUUID(),
   )
-  if (typeof namespace !== 'string' || !/^[0-9a-f-]{36}$/i.test(namespace))
+  if (typeof namespace !== 'string' || !/^[0-9a-f-]{36}$/i.test(namespace)) {
     throw new Error('Invalid cache namespace')
+  }
   return namespace
 }
 
@@ -46,7 +47,7 @@ export async function acquireEsiRequestLease(
     ownerToken,
     fenceStateTtlMs,
   )) as number | null
-  return result === null ? undefined : { key, ownerToken, fence: Number(result), ttlMs: leaseTtlMs }
+  return result === null ? undefined : { fence: Number(result), key, ownerToken, ttlMs: leaseTtlMs }
 }
 
 export async function getEsiRequestLeaseTtl(
@@ -116,9 +117,13 @@ export async function getEsiResourceRevision(
   principal: string,
 ) {
   const value = await connection.get(resourceRevisionKey(namespace, principal))
-  if (value === null) return 0
+  if (value === null) {
+    return 0
+  }
   const revision = Number(value)
-  if (!isNonnegativeSafeInteger(revision)) throw new Error('Invalid ESI resource revision')
+  if (!isNonnegativeSafeInteger(revision)) {
+    throw new Error('Invalid ESI resource revision')
+  }
   return revision
 }
 
@@ -135,12 +140,15 @@ export async function incrementEsiResourceRevision(
       Number.MAX_SAFE_INTEGER,
     ),
   )
-  if (!isPositiveSafeInteger(value)) throw new Error('Invalid ESI resource revision')
+  if (!isPositiveSafeInteger(value)) {
+    throw new Error('Invalid ESI resource revision')
+  }
   return value
 }
 
 function resourceRevisionKey(namespace: string, principal: string) {
-  if (!revisionNamespacePattern.test(namespace) || !revisionPrincipalPattern.test(principal))
+  if (!revisionNamespacePattern.test(namespace) || !revisionPrincipalPattern.test(principal)) {
     throw new Error('Invalid ESI resource revision identity')
+  }
   return `${keyPrefix}:revision:${namespace}:${principal}`
 }

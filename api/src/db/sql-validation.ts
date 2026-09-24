@@ -33,13 +33,17 @@ export function maskSqlLiteralsAndComments(sql: string, options: MaskSqlOptions 
 }
 
 function skipLineComment(sql: string, index: number) {
-  if (!sql.startsWith('--', index)) return undefined
+  if (!sql.startsWith('--', index)) {
+    return
+  }
   const end = sql.indexOf('\n', index + 2)
   return end === -1 ? sql.length : end
 }
 
 function skipBlockComment(sql: string, index: number, rejectUnterminated = false) {
-  if (!sql.startsWith('/*', index)) return undefined
+  if (!sql.startsWith('/*', index)) {
+    return
+  }
   let depth = 1
   index += 2
   while (index < sql.length && depth > 0) {
@@ -53,17 +57,23 @@ function skipBlockComment(sql: string, index: number, rejectUnterminated = false
       index += 1
     }
   }
-  if (depth > 0 && rejectUnterminated) throw new Error('Unterminated SQL block comment.')
+  if (depth > 0 && rejectUnterminated) {
+    throw new Error('Unterminated SQL block comment.')
+  }
   return index
 }
 
 function skipSingleQuotedLiteral(sql: string, index: number, rejectUnterminated = false) {
-  if (sql[index] !== "'") return undefined
+  if (sql[index] !== "'") {
+    return
+  }
   return skipQuoted(sql, index, "'", rejectUnterminated)
 }
 
 function skipQuotedIdentifier(sql: string, index: number, rejectUnterminated = false) {
-  if (sql[index] !== '"') return undefined
+  if (sql[index] !== '"') {
+    return
+  }
   return skipQuoted(sql, index, '"', rejectUnterminated)
 }
 
@@ -74,23 +84,32 @@ function skipQuoted(sql: string, index: number, quote: string, rejectUnterminate
       index += 2
       continue
     }
-    if (sql[index] === quote) return index + 1
+    if (sql[index] === quote) {
+      return index + 1
+    }
     index += 1
   }
-  if (rejectUnterminated)
+  if (rejectUnterminated) {
     throw new Error(`Unterminated SQL ${quote === "'" ? 'string literal' : 'quoted identifier'}.`)
+  }
   return index
 }
 
 function skipDollarQuotedLiteral(sql: string, index: number, rejectUnterminated = false) {
-  if (sql[index] !== '$') return undefined
+  if (sql[index] !== '$') {
+    return
+  }
 
   const delimiter = dollarQuoteDelimiterPattern.exec(sql.slice(index))?.[0]
-  if (!delimiter) return undefined
+  if (!delimiter) {
+    return
+  }
 
   const end = sql.indexOf(delimiter, index + delimiter.length)
   if (end === -1) {
-    if (rejectUnterminated) throw new Error(`Unterminated SQL dollar-quoted literal ${delimiter}.`)
+    if (rejectUnterminated) {
+      throw new Error(`Unterminated SQL dollar-quoted literal ${delimiter}.`)
+    }
     return sql.length
   }
   return end + delimiter.length

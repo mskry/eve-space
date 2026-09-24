@@ -65,15 +65,15 @@ describe('cache Redis connections', () => {
       retryStrategy: (attempt: number) => number
     }
     expect(options).toMatchObject({
-      commandTimeout: 1_000,
-      connectTimeout: 1_000,
+      commandTimeout: 1000,
+      connectTimeout: 1000,
       enableOfflineQueue: false,
       lazyConnect: true,
       maxRetriesPerRequest: 1,
     })
     expect(options.retryStrategy(1)).toBe(100)
-    expect(options.retryStrategy(20)).toBe(2_000)
-    expect(options.retryStrategy(100)).toBe(2_000)
+    expect(options.retryStrategy(20)).toBe(2000)
+    expect(options.retryStrategy(100)).toBe(2000)
     expect(connection.on).toHaveBeenCalledWith('error', expect.any(Function))
     expect(connection.connect).toHaveBeenCalledOnce()
   })
@@ -94,7 +94,7 @@ describe('cache Redis connections', () => {
     )
     errorListener(new Error('authentication failed'))
 
-    expect(getCacheConnectionErrorCounts()).toEqual({ ECONNREFUSED: 2, UNKNOWN: 1 })
+    expect(getCacheConnectionErrorCounts()).toStrictEqual({ ECONNREFUSED: 2, UNKNOWN: 1 })
     expect(JSON.stringify(getCacheConnectionErrorCounts())).not.toContain('redis://secret')
   })
 
@@ -111,9 +111,9 @@ describe('cache Redis connections', () => {
   test('disconnects a never-connected client without sending quit', async () => {
     const { closeCacheRedisConnection } = await import('../../src/cache-redis.js')
     const connection = {
-      status: 'wait',
       disconnect: vi.fn(),
       quit: vi.fn(),
+      status: 'wait',
     }
 
     await closeCacheRedisConnection(connection as never)
@@ -126,13 +126,13 @@ describe('cache Redis connections', () => {
     vi.useFakeTimers()
     const { closeCacheRedisConnection } = await import('../../src/cache-redis.js')
     const connection = {
-      status: 'ready',
       disconnect: vi.fn(),
       quit: vi.fn(() => new Promise(() => {})),
+      status: 'ready',
     }
 
-    const closing = closeCacheRedisConnection(connection as never, 1_000)
-    await vi.advanceTimersByTimeAsync(1_000)
+    const closing = closeCacheRedisConnection(connection as never, 1000)
+    await vi.advanceTimersByTimeAsync(1000)
     await closing
 
     expect(connection.quit).toHaveBeenCalledOnce()

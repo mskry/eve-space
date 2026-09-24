@@ -102,16 +102,16 @@ export async function runPlatformModuleConformance(
     hasPackageArtifact(input.nuxt)
   if (artifactRequested) {
     const artifactReport = await verifyInstalledModuleArtifacts(input, {
-      baseDirectory,
       allowLocalDependencySpecifiers:
         sourceRequested &&
         !input.manifest.archivePath &&
         !input.server.archivePath &&
         !input.nuxt.archivePath,
+      baseDirectory,
     })
     issues.push(...artifactReport.issues)
   }
-  if (!sourceRequested && !artifactRequested)
+  if (!sourceRequested && !artifactRequested) {
     issues.push(
       issue(
         'CONFORMANCE_INPUT_INVALID',
@@ -120,6 +120,7 @@ export async function runPlatformModuleConformance(
         'At least one source or artifact check must be configured.',
       ),
     )
+  }
   return report(sourceRequested, artifactRequested, issues)
 }
 
@@ -134,12 +135,16 @@ export async function verifyInstalledModuleArtifacts(
     openPackageView(input.server, 'server', baseDirectory, issues),
     openPackageView(input.nuxt, 'nuxt', baseDirectory, issues),
   ])
-  if (!manifestView || !serverView || !nuxtView) return report(false, true, issues)
+  if (!manifestView || !serverView || !nuxtView) {
+    return report(false, true, issues)
+  }
 
   const manifestPackage = await readPackageManifest(manifestView, issues)
   const serverPackage = await readPackageManifest(serverView, issues)
   const nuxtPackage = await readPackageManifest(nuxtView, issues)
-  if (!manifestPackage || !serverPackage || !nuxtPackage) return report(false, true, issues)
+  if (!manifestPackage || !serverPackage || !nuxtPackage) {
+    return report(false, true, issues)
+  }
 
   const manifestExport = input.manifest.export ?? './manifest'
   const manifestTarget = resolveExportTarget(manifestPackage.exports, manifestExport)
@@ -166,7 +171,9 @@ export async function verifyInstalledModuleArtifacts(
     'artifact',
     issues,
   )
-  if (!manifest) return report(false, true, issues)
+  if (!manifest) {
+    return report(false, true, issues)
+  }
 
   validateManifestPackage(
     manifest,
@@ -201,8 +208,9 @@ export function formatPlatformModuleConformanceReport(result: PlatformModuleConf
     result.ok ? 'Platform module conformance passed.' : 'Platform module conformance failed.',
     `Checks: source=${result.checks.source ? 'run' : 'not-run'}, artifact=${result.checks.artifact ? 'run' : 'not-run'}`,
   ]
-  for (const finding of result.issues)
+  for (const finding of result.issues) {
     lines.push(`[${finding.code}] ${finding.scope} ${finding.path}: ${finding.message}`)
+  }
   return lines.join('\n')
 }
 
@@ -228,7 +236,9 @@ async function loadManifestInput(
       )
     }
   }
-  if (value === undefined) return undefined
+  if (value === undefined) {
+    return
+  }
   const expectedPublisher =
     isRecord(value) && isRecord(value.release) ? stringValue(value.release.publisherPackage) : ''
   return compileManifest(value, expectedPublisher, 'source', issues)
@@ -245,11 +255,11 @@ function compileManifest(
     issues.push(
       issue('MANIFEST_INVALID', scope, 'manifest/manifest.json', 'Manifest identity is invalid.'),
     )
-    return undefined
+    return
   }
   try {
     const compiled = compilePlatformModules(
-      [{ expectedModuleId, expectedPublisherPackage: expectedPublisher, declaration: value }],
+      [{ declaration: value, expectedModuleId, expectedPublisherPackage: expectedPublisher }],
       platformModulePublisherAuthorities,
     )
     return readCompiledPlatformModules(compiled)[0]
@@ -262,7 +272,7 @@ function compileManifest(
         'Manifest does not satisfy the public platform contract.',
       ),
     )
-    return undefined
+    return
   }
 }
 
@@ -273,7 +283,9 @@ async function validateSourceRoot(
   baseDirectory: string,
   issues: PlatformModuleConformanceIssue[],
 ) {
-  if (!input.sourceRoot) return
+  if (!input.sourceRoot) {
+    return
+  }
   const sourceRoot = resolveInputPath(baseDirectory, input.sourceRoot)
   const packageRoot = input.packageRoot
     ? resolveInputPath(baseDirectory, input.packageRoot)
@@ -284,17 +296,19 @@ async function validateSourceRoot(
     'source',
     issues,
   )
-  if (!packageManifest) return
+  if (!packageManifest) {
+    return
+  }
   const expectedName = manifest[environment].package
   issues.push(
     ...platformModulePackageManifestIssues({
-      moduleId: manifest.id,
       environment,
-      path: `${environment}/package.json`,
-      manifest: packageManifest,
       expectedPackageName: expectedName,
-      scope: 'source',
+      manifest: packageManifest,
+      moduleId: manifest.id,
+      path: `${environment}/package.json`,
       requireWorkspaceSpecifiers: false,
+      scope: 'source',
     }),
   )
   const dependencies = runtimeDependencyNames(packageManifest)
@@ -308,21 +322,23 @@ async function validateSourceRoot(
   const packageFiles = new Set(
     files.map(({ logicalPath }) => logicalPath.slice(`${environment}/source/`.length)),
   )
-  for (const file of files)
+  for (const file of files) {
     if (inspectableExtensions.has(extname(file.logicalPath))) {
       const sourceInput = {
-        moduleId: manifest.id,
-        path: file.logicalPath,
-        source: await readFile(file.absolutePath, 'utf8'),
         boundaryRoot: `${environment}/source`,
         environment,
+        moduleId: manifest.id,
+        path: file.logicalPath,
         scope: 'source',
+        // oxlint-disable-next-line no-await-in-loop -- Preserve source diagnostic order.
+        source: await readFile(file.absolutePath, 'utf8'),
       } as const
       issues.push(
         ...platformModuleSourceIssues(sourceInput, dependencies),
         ...platformModuleRelativeImportIssues(sourceInput, packageFiles),
       )
     }
+  }
 }
 
 async function validateRuntimeArtifact(
@@ -336,19 +352,19 @@ async function validateRuntimeArtifact(
   const expectedName = manifest[environment].package
   issues.push(
     ...platformModulePackageManifestIssues({
-      moduleId: manifest.id,
-      environment,
-      path: `${environment}/package.json`,
-      manifest: packageManifest,
-      expectedPackageName: expectedName,
-      scope: 'artifact',
       allowLocalDependencySpecifiers,
+      environment,
+      expectedPackageName: expectedName,
+      manifest: packageManifest,
+      moduleId: manifest.id,
+      path: `${environment}/package.json`,
+      scope: 'artifact',
     }),
   )
   validatePackedFiles(packageManifest, view, environment, issues)
   const dependencies = runtimeDependencyNames(packageManifest)
   validateRuntimeRole(manifest, environment, dependencies, view.files, issues)
-  for (const target of exportTargets(packageManifest.exports))
+  for (const target of exportTargets(packageManifest.exports)) {
     if (!target.includes('*') && !view.files.includes(target))
       issues.push(
         issue(
@@ -358,17 +374,19 @@ async function validateRuntimeArtifact(
           'Package export target is missing.',
         ),
       )
-  for (const path of view.files)
+  }
+  for (const path of view.files) {
     if (inspectableExtensions.has(extname(path))) {
+      // oxlint-disable-next-line no-await-in-loop -- Preserve artifact diagnostic order.
       const source = await view.read(path)
       if (source !== undefined) {
         const sourceInput = {
-          moduleId: manifest.id,
-          path: `${environment}/${path}`,
-          source,
           boundaryRoot: environment,
           environment,
+          moduleId: manifest.id,
+          path: `${environment}/${path}`,
           scope: 'artifact',
+          source,
         } as const
         issues.push(
           ...platformModuleSourceIssues(sourceInput, dependencies),
@@ -376,6 +394,7 @@ async function validateRuntimeArtifact(
         )
       }
     }
+  }
 
   const rootEntry = resolveExportTarget(packageManifest.exports, '.')
   if (rootEntry) {
@@ -392,7 +411,7 @@ async function validateRuntimeArtifact(
     const actual = await collectRuntimeExports(view, rootEntry, issues)
     const missing = expectedExports.filter((name) => !actual.has(name)).toSorted()
     const extra = [...actual].filter((name) => !expectedExports.includes(name)).toSorted()
-    if (missing.length > 0 || extra.length > 0)
+    if (missing.length > 0 || extra.length > 0) {
       issues.push(
         issue(
           'EXECUTABLE_INVENTORY_MISMATCH',
@@ -401,10 +420,14 @@ async function validateRuntimeArtifact(
           `Executable inventory differs (missing: ${missing.join(', ') || 'none'}; extra: ${extra.join(', ') || 'none'}).`,
         ),
       )
+    }
   }
 
-  if (environment === 'server') await validateMigrations(manifest, packageManifest, view, issues)
-  else await validateNuxtInventory(manifest, packageManifest, view, issues)
+  if (environment === 'server') {
+    await validateMigrations(manifest, packageManifest, view, issues)
+  } else {
+    await validateNuxtInventory(manifest, packageManifest, view, issues)
+  }
 }
 
 function validateRuntimeRole(
@@ -415,7 +438,7 @@ function validateRuntimeRole(
   issues: PlatformModuleConformanceIssue[],
 ) {
   const oppositePackage = environment === 'server' ? manifest.nuxt.package : manifest.server.package
-  if (dependencies.has(oppositePackage))
+  if (dependencies.has(oppositePackage)) {
     issues.push(
       issue(
         'PACKAGE_ROLE_DEPENDENCY_CONTAMINATION',
@@ -424,13 +447,14 @@ function validateRuntimeRole(
         `${environment} package must not depend on its ${environment === 'server' ? 'Nuxt' : 'server'} package.`,
       ),
     )
+  }
 
   const contaminated = files.filter((path) =>
     environment === 'server'
       ? path.endsWith('.vue')
       : path.startsWith('server/') || path.startsWith('migrations/'),
   )
-  for (const path of contaminated)
+  for (const path of contaminated) {
     issues.push(
       issue(
         'PACKAGE_ROLE_FILE_CONTAMINATION',
@@ -439,6 +463,7 @@ function validateRuntimeRole(
         `${environment} package contains a ${environment === 'server' ? 'Nuxt' : 'server'} artifact.`,
       ),
     )
+  }
 }
 
 async function validateMigrations(
@@ -452,7 +477,7 @@ async function validateMigrations(
     .filter((path) => path.startsWith('migrations/') && path.endsWith('.sql'))
     .map((path) => path.slice('migrations/'.length))
     .toSorted()
-  if (!arraysEqual(expected, actual))
+  if (!arraysEqual(expected, actual)) {
     issues.push(
       issue(
         'MIGRATION_INVENTORY_MISMATCH',
@@ -461,12 +486,13 @@ async function validateMigrations(
         `Migration inventory differs (missing: ${expected.filter((name) => !actual.includes(name)).join(', ') || 'none'}; extra: ${actual.filter((name) => !expected.includes(name)).join(', ') || 'none'}).`,
       ),
     )
+  }
   const { schemaName } = modulePersistenceNames(manifest.id)
   await Promise.all(
     manifest.server.migrations.map(async (migration) => {
       const exportPath = `./migrations/${migration.name}`
       const target = resolveExportTarget(packageManifest.exports, exportPath)
-      if (target !== `migrations/${migration.name}`)
+      if (target !== `migrations/${migration.name}`) {
         issues.push(
           issue(
             'MIGRATION_EXPORT_INVALID',
@@ -475,14 +501,17 @@ async function validateMigrations(
             `Migration must be exported as ${exportPath}.`,
           ),
         )
+      }
       const sql = await view.read(`migrations/${migration.name}`)
-      if (sql === undefined) return
+      if (sql === undefined) {
+        return
+      }
       const routines = manifest.server.persistenceOperations
         .filter((operation) => operation.migration === migration.name)
         .map((operation) => ({
+          mode: operation.mode,
           operationId: operation.id,
           routineName: modulePersistenceRoutineName(operation.id),
-          mode: operation.mode,
         }))
       try {
         await assertModuleMigrationSql(
@@ -512,7 +541,7 @@ async function validateNuxtInventory(
   view: PackageView,
   issues: PlatformModuleConformanceIssue[],
 ) {
-  for (const page of manifest.nuxt.pages)
+  for (const page of manifest.nuxt.pages) {
     if (!view.files.includes(normalizePackagePath(page.file)))
       issues.push(
         issue(
@@ -522,6 +551,7 @@ async function validateNuxtInventory(
           `Nuxt page ${page.id} is missing.`,
         ),
       )
+  }
   const reviewerIssues = await Promise.all(
     (manifest.reviewerContributions ?? []).map(async (contribution) => {
       const contributionIssues: PlatformModuleConformanceIssue[] = []
@@ -539,7 +569,7 @@ async function validateNuxtInventory(
       }
       if (extname(target) !== '.vue') {
         const exports = await collectRuntimeExports(view, target, contributionIssues)
-        if (!exports.has('default'))
+        if (!exports.has('default')) {
           contributionIssues.push(
             issue(
               'REVIEWER_PANEL_DEFAULT_EXPORT_MISSING',
@@ -548,6 +578,7 @@ async function validateNuxtInventory(
               `Reviewer panel ${contribution.id} must have a default component export.`,
             ),
           )
+        }
       }
       return contributionIssues
     }),
@@ -563,7 +594,7 @@ function validateManifestPackage(
   view: PackageView,
   issues: PlatformModuleConformanceIssue[],
 ) {
-  if (packageManifest.name !== manifest.release.publisherPackage)
+  if (packageManifest.name !== manifest.release.publisherPackage) {
     issues.push(
       issue(
         'PACKAGE_NAME_MISMATCH',
@@ -572,7 +603,8 @@ function validateManifestPackage(
         'Manifest package name does not match publisher identity.',
       ),
     )
-  if (packageManifest.type !== 'module' || packageManifest.sideEffects !== false)
+  }
+  if (packageManifest.type !== 'module' || packageManifest.sideEffects !== false) {
     issues.push(
       issue(
         'MANIFEST_PACKAGE_POLICY_INVALID',
@@ -581,8 +613,9 @@ function validateManifestPackage(
         'Manifest package must be side-effect-free ESM.',
       ),
     )
+  }
   const targets = exportTargets(packageManifest.exports)
-  if (targets.length !== 1 || resolveExportTarget(packageManifest.exports, exportPath) !== target)
+  if (targets.length !== 1 || resolveExportTarget(packageManifest.exports, exportPath) !== target) {
     issues.push(
       issue(
         'MANIFEST_EXPORT_INVALID',
@@ -591,11 +624,12 @@ function validateManifestPackage(
         `Manifest package must export only ${exportPath}.`,
       ),
     )
+  }
   if (
     !Array.isArray(packageManifest.files) ||
     packageManifest.files.length !== 1 ||
     normalizePackagePath(String(packageManifest.files[0])) !== target
-  )
+  ) {
     issues.push(
       issue(
         'MANIFEST_FILES_INVALID',
@@ -604,6 +638,7 @@ function validateManifestPackage(
         'Manifest package must publish only its canonical manifest.',
       ),
     )
+  }
   validatePackedFiles(packageManifest, view, 'manifest', issues)
 }
 
@@ -618,7 +653,7 @@ function validateReleaseAgreement(
     ['manifest', manifestPackage],
     ['server', serverPackage],
     ['nuxt', nuxtPackage],
-  ] as const)
+  ] as const) {
     if (packageManifest.version !== manifest.release.version)
       issues.push(
         issue(
@@ -628,6 +663,7 @@ function validateReleaseAgreement(
           `Package version must equal release ${manifest.release.version}.`,
         ),
       )
+  }
 }
 
 function validatePackedFiles(
@@ -636,14 +672,16 @@ function validatePackedFiles(
   label: string,
   issues: PlatformModuleConformanceIssue[],
 ) {
-  if (!view.packed) return
+  if (!view.packed) {
+    return
+  }
   const files = Array.isArray(packageManifest.files)
     ? packageManifest.files
         .filter((value): value is string => typeof value === 'string')
         .map(normalizePackagePath)
     : []
   for (const path of view.files) {
-    if (sensitiveFileNames.has(path.split('/').at(-1) ?? ''))
+    if (sensitiveFileNames.has(path.split('/').at(-1) ?? '')) {
       issues.push(
         issue(
           'SENSITIVE_FILE_PACKED',
@@ -652,8 +690,11 @@ function validatePackedFiles(
           'Packed release contains a sensitive configuration file.',
         ),
       )
-    if (path === 'package.json') continue
-    if (!files.some((allowed) => path === allowed || path.startsWith(`${allowed}/`)))
+    }
+    if (path === 'package.json') {
+      continue
+    }
+    if (!files.some((allowed) => path === allowed || path.startsWith(`${allowed}/`))) {
       issues.push(
         issue(
           'PACKED_FILE_UNDECLARED',
@@ -662,6 +703,7 @@ function validatePackedFiles(
           'Packed file is outside the package files declaration.',
         ),
       )
+    }
   }
 }
 
@@ -728,7 +770,9 @@ async function directoryPackageFiles(root: string, paths: readonly string[]) {
   } catch {
     return new Set(paths)
   }
-  if (!isRecord(value) || !Array.isArray(value.files)) return new Set(paths)
+  if (!isRecord(value) || !Array.isArray(value.files)) {
+    return new Set(paths)
+  }
   const declared = value.files.flatMap((entry) =>
     typeof entry === 'string' && isSafePackagePath(entry) ? [normalizePackagePath(entry)] : [],
   )
@@ -783,7 +827,9 @@ async function openArchiveView(
     packed: true,
     async read(path) {
       const normalized = normalizePackagePath(path)
-      if (!files.includes(normalized)) return undefined
+      if (!files.includes(normalized)) {
+        return
+      }
       const result = runTar(['-xOzf', archivePath, `package/${normalized}`])
       return result.ok ? result.output : undefined
     },
@@ -812,11 +858,13 @@ async function readJsonFromView(
     issues.push(
       issue('ARTIFACT_FILE_MISSING', 'artifact', logicalPath, 'Required artifact file is missing.'),
     )
-    return undefined
+    return
   }
   try {
     const value: unknown = JSON.parse(source)
-    if (!isRecord(value)) throw new TypeError('not an object')
+    if (!isRecord(value)) {
+      throw new TypeError('not an object')
+    }
     return value
   } catch {
     issues.push(
@@ -827,7 +875,7 @@ async function readJsonFromView(
         'Artifact must contain a JSON object.',
       ),
     )
-    return undefined
+    return
   }
 }
 
@@ -839,7 +887,9 @@ async function readDirectoryPackageManifest(
 ) {
   try {
     const value: unknown = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
-    if (isRecord(value)) return value as PlatformModulePackageManifest
+    if (isRecord(value)) {
+      return value as PlatformModulePackageManifest
+    }
   } catch {}
   issues.push(
     issue(
@@ -849,7 +899,7 @@ async function readDirectoryPackageManifest(
       'Package manifest is missing or invalid.',
     ),
   )
-  return undefined
+  return
 }
 
 interface WalkedFile {
@@ -874,7 +924,9 @@ async function walkDirectory(
     entries
       .toSorted((left, right) => left.name.localeCompare(right.name))
       .map(async (entry) => {
-        if (entry.name === 'node_modules') return []
+        if (entry.name === 'node_modules') {
+          return []
+        }
         const absolutePath = join(directory, entry.name)
         const logicalPath = `${logicalRoot}/${relative(root, absolutePath).replaceAll('\\', '/')}`
         const stats = await lstat(absolutePath)
@@ -889,8 +941,9 @@ async function walkDirectory(
           )
           return []
         }
-        if (stats.isDirectory())
+        if (stats.isDirectory()) {
           return walkDirectory(root, absolutePath, logicalRoot, scope, issues)
+        }
         return stats.isFile() ? [{ absolutePath, logicalPath }] : []
       }),
   )
@@ -904,7 +957,9 @@ async function collectRuntimeExports(
   visited = new Set<string>(),
 ): Promise<Set<string>> {
   const path = normalizePackagePath(entry)
-  if (visited.has(path)) return new Set()
+  if (visited.has(path)) {
+    return new Set()
+  }
   visited.add(path)
   const source = await view.read(path)
   if (source === undefined) {
@@ -915,7 +970,22 @@ async function collectRuntimeExports(
   }
   const file = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
   const names = new Set<string>()
-  const reexportedNames = await Promise.all(
+  const reexportedNames = await collectReexportedNames(view, file, path, issues, visited)
+  for (const exported of reexportedNames) {
+    for (const name of exported) if (name !== 'default') names.add(name)
+  }
+  collectDeclaredExportNames(file, path, issues, names)
+  return names
+}
+
+function collectReexportedNames(
+  view: PackageView,
+  file: ts.SourceFile,
+  path: string,
+  issues: PlatformModuleConformanceIssue[],
+  visited: Set<string>,
+) {
+  return Promise.all(
     file.statements.flatMap((statement) => {
       if (
         !ts.isExportDeclaration(statement) ||
@@ -923,52 +993,82 @@ async function collectRuntimeExports(
         !statement.moduleSpecifier ||
         !ts.isStringLiteral(statement.moduleSpecifier) ||
         !statement.moduleSpecifier.text.startsWith('.')
-      )
+      ) {
         return []
+      }
       const nested = resolveRelativeModule(path, statement.moduleSpecifier.text, view.files)
       return nested ? [collectRuntimeExports(view, nested, issues, visited)] : []
     }),
   )
-  for (const exported of reexportedNames)
-    for (const name of exported) if (name !== 'default') names.add(name)
+}
+
+function collectDeclaredExportNames(
+  file: ts.SourceFile,
+  path: string,
+  issues: PlatformModuleConformanceIssue[],
+  names: Set<string>,
+) {
   for (const statement of file.statements) {
-    if (ts.isExportAssignment(statement) && !statement.isExportEquals) names.add('default')
-    if (ts.isExportDeclaration(statement)) {
-      if (statement.exportClause && ts.isNamedExports(statement.exportClause))
-        for (const element of statement.exportClause.elements) names.add(element.name.text)
-      else if (
-        !statement.exportClause &&
-        statement.moduleSpecifier &&
-        ts.isStringLiteral(statement.moduleSpecifier)
-      ) {
-        if (!statement.moduleSpecifier.text.startsWith('.')) {
-          issues.push(
-            issue(
-              'PUBLIC_CONTRACT_SURFACE_INVALID',
-              'artifact',
-              path,
-              'Package root must not re-export external package surfaces.',
-            ),
-          )
-          continue
-        }
-      }
+    if (ts.isExportAssignment(statement) && !statement.isExportEquals) {
+      names.add('default')
+    }
+    if (
+      ts.isExportDeclaration(statement) &&
+      collectExportDeclaration(statement, path, issues, names)
+    ) {
+      continue
     }
     const modifiers = ts.canHaveModifiers(statement) ? ts.getModifiers(statement) : undefined
-    if (!modifiers?.some(({ kind }) => kind === ts.SyntaxKind.ExportKeyword)) continue
-    if (modifiers.some(({ kind }) => kind === ts.SyntaxKind.DefaultKeyword)) names.add('default')
+    if (!modifiers?.some(({ kind }) => kind === ts.SyntaxKind.ExportKeyword)) {
+      continue
+    }
+    if (modifiers.some(({ kind }) => kind === ts.SyntaxKind.DefaultKeyword)) {
+      names.add('default')
+    }
     if (
       (ts.isFunctionDeclaration(statement) ||
         ts.isClassDeclaration(statement) ||
         ts.isEnumDeclaration(statement)) &&
       statement.name
-    )
+    ) {
       names.add(statement.name.text)
-    if (ts.isVariableStatement(statement))
+    }
+    if (ts.isVariableStatement(statement)) {
       for (const declaration of statement.declarationList.declarations)
         if (ts.isIdentifier(declaration.name)) names.add(declaration.name.text)
+    }
   }
-  return names
+}
+
+function collectExportDeclaration(
+  statement: ts.ExportDeclaration,
+  path: string,
+  issues: PlatformModuleConformanceIssue[],
+  names: Set<string>,
+) {
+  if (statement.exportClause && ts.isNamedExports(statement.exportClause)) {
+    for (const element of statement.exportClause.elements) {
+      names.add(element.name.text)
+    }
+    return false
+  }
+  if (
+    !statement.exportClause &&
+    statement.moduleSpecifier &&
+    ts.isStringLiteral(statement.moduleSpecifier) &&
+    !statement.moduleSpecifier.text.startsWith('.')
+  ) {
+    issues.push(
+      issue(
+        'PUBLIC_CONTRACT_SURFACE_INVALID',
+        'artifact',
+        path,
+        'Package root must not re-export external package surfaces.',
+      ),
+    )
+    return true
+  }
+  return false
 }
 
 function resolveRelativeModule(from: string, specifier: string, files: readonly string[]) {
@@ -980,35 +1080,48 @@ function resolveRelativeModule(from: string, specifier: string, files: readonly 
 
 function resolveExportTarget(exportsValue: unknown, exportPath: string): string | undefined {
   const raw = packageExportTarget(exportsValue, exportPath)
-  if (!raw || !raw.startsWith('./') || raw.replaceAll('\\', '/').split('/').includes('..'))
+  if (!raw || !raw.startsWith('./') || raw.replaceAll('\\', '/').split('/').includes('..')) {
     return undefined
+  }
   return normalizePackagePath(raw)
 }
 
 function packageExportTarget(value: unknown, exportPath: string): string | undefined {
-  if (exportPath === '.' && (typeof value === 'string' || isConditionalExport(value)))
+  if (exportPath === '.' && (typeof value === 'string' || isConditionalExport(value))) {
     return conditionalTarget(value)
-  if (!isRecord(value)) return undefined
+  }
+  if (!isRecord(value)) {
+    return undefined
+  }
   const exact = conditionalTarget(value[exportPath])
-  if (exact) return exact
+  if (exact) {
+    return exact
+  }
   for (const [key, targetValue] of Object.entries(value)) {
     const marker = key.indexOf('*')
     if (
       marker < 0 ||
       !exportPath.startsWith(key.slice(0, marker)) ||
       !exportPath.endsWith(key.slice(marker + 1))
-    )
+    ) {
       continue
+    }
     const wildcard = exportPath.slice(marker, exportPath.length - key.slice(marker + 1).length)
     const target = conditionalTarget(targetValue)
-    if (target?.includes('*')) return target.replace('*', wildcard)
+    if (target?.includes('*')) {
+      return target.replace('*', wildcard)
+    }
   }
   return undefined
 }
 
 function conditionalTarget(value: unknown): string | undefined {
-  if (typeof value === 'string') return value
-  if (!isRecord(value)) return undefined
+  if (typeof value === 'string') {
+    return value
+  }
+  if (!isRecord(value)) {
+    return undefined
+  }
   return conditionalTarget(value.import) ?? conditionalTarget(value.default)
 }
 
@@ -1017,8 +1130,12 @@ function isConditionalExport(value: unknown) {
 }
 
 function exportTargets(value: unknown): string[] {
-  if (typeof value === 'string') return [normalizePackagePath(value)]
-  if (!isRecord(value)) return []
+  if (typeof value === 'string') {
+    return [normalizePackagePath(value)]
+  }
+  if (!isRecord(value)) {
+    return []
+  }
   return Object.values(value).flatMap(exportTargets)
 }
 
@@ -1028,8 +1145,9 @@ function isSafeArchiveEntry(entry: string) {
     entry.includes('\\') ||
     entry.includes('\0') ||
     isAbsolute(entry)
-  )
+  ) {
     return false
+  }
   const parts = entry.split('/')
   return !parts.includes('..') && !parts.includes('.')
 }
@@ -1074,7 +1192,7 @@ function report(
       `${right.scope}\0${right.path}\0${right.code}\0${right.message}`,
     ),
   )
-  return { version: 1, ok: sorted.length === 0, checks: { source, artifact }, issues: sorted }
+  return { checks: { artifact, source }, issues: sorted, ok: sorted.length === 0, version: 1 }
 }
 
 function issue(
@@ -1083,7 +1201,7 @@ function issue(
   path: string,
   message: string,
 ): PlatformModuleConformanceIssue {
-  return { code, scope, path: path.replaceAll('\\', '/'), message }
+  return { code, message, path: path.replaceAll('\\', '/'), scope }
 }
 
 function arraysEqual(left: readonly string[], right: readonly string[]) {

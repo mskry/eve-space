@@ -12,10 +12,10 @@ const characterId = 90_000_001
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const freshness = {
   cachedUntil: '2026-08-20T13:00:00.000Z',
-  validatedAt: '2026-08-20T12:00:00.000Z',
   quota: {},
   source: 'esi' as const,
   stale: false,
+  validatedAt: '2026-08-20T12:00:00.000Z',
 }
 
 beforeEach(() => {
@@ -34,22 +34,22 @@ describe('character market service', () => {
       result({
         orders: [
           {
-            orderId: 10,
-            typeId: 34,
-            typeName: 'Tritanium',
-            isBuy: true,
-            price: 7.5,
-            volumeRemain: 20,
-            volumeTotal: 40,
-            minimumVolume: 5,
+            durationDays: 3,
             escrow: 12,
-            range: 'station',
+            expiresAt: '2026-08-23T12:00:00.000Z',
+            isBuy: true,
+            issuedAt: '2026-08-20T12:00:00Z',
             locationId: 60_000_001,
             locationName: 'Jita IV - Moon 4',
+            minimumVolume: 5,
+            orderId: 10,
+            price: 7.5,
+            range: 'station',
             regionId: 10_000_002,
-            issuedAt: '2026-08-20T12:00:00Z',
-            durationDays: 3,
-            expiresAt: '2026-08-23T12:00:00.000Z',
+            typeId: 34,
+            typeName: 'Tritanium',
+            volumeRemain: 20,
+            volumeTotal: 40,
           },
         ],
       }),
@@ -58,8 +58,8 @@ describe('character market service', () => {
       await import('../../src/characters/market.js')
 
     await expect(getCharacterMarketOrders(characterId, subjectLifecycleId)).resolves.toMatchObject({
-      orders: [{ orderId: 10, typeName: 'Tritanium', isBuy: true }],
       cachedUntil: freshness.cachedUntil,
+      orders: [{ orderId: 10, typeName: 'Tritanium', isBuy: true }],
     })
     expect(marketOrdersScope).toBe('esi-markets.read_character_orders.v1')
     expect(mocks.executeRepresentation).toHaveBeenCalledWith(
@@ -72,7 +72,7 @@ describe('character market service', () => {
   test('returns mapped history and preserves the requested page input', async () => {
     mocks.executeRepresentation.mockResolvedValueOnce(
       result({
-        orders: [{ orderId: 30, typeId: 34, typeName: 'Tritanium', state: 'cancelled' }],
+        orders: [{ orderId: 30, state: 'cancelled', typeId: 34, typeName: 'Tritanium' }],
         page: 3,
         totalPages: 8,
       }),
@@ -96,9 +96,9 @@ describe('character market service', () => {
   test('preserves cached stale metadata without executing a second callable', async () => {
     mocks.executeRepresentation.mockResolvedValueOnce({
       ...result({ orders: [], page: 4, totalPages: 9 }),
+      refreshFailureClass: 'esi-cooldown',
       source: 'cache',
       stale: true,
-      refreshFailureClass: 'esi-cooldown',
     })
     const { getCharacterMarketOrderHistory } = await import('../../src/characters/market.js')
 
@@ -106,9 +106,9 @@ describe('character market service', () => {
       getCharacterMarketOrderHistory(characterId, 4, subjectLifecycleId),
     ).resolves.toMatchObject({
       page: 4,
-      totalPages: 9,
-      stale: true,
       refreshFailureClass: 'esi-cooldown',
+      stale: true,
+      totalPages: 9,
     })
   })
 

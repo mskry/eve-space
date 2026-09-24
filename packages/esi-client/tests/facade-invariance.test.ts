@@ -37,19 +37,21 @@ describe('facade rename invariance', () => {
     );
 
     expect(originalManifest.operations).toHaveLength(operationCount);
-    expect(renamedManifest.operations.map(({ operationId }) => operationId)).toEqual(
+    expect(renamedManifest.operations.map(({ operationId }) => operationId)).toStrictEqual(
       originalManifest.operations.map(({ operationId }) => operationId),
     );
     for (const [index, original] of originalManifest.operations.entries()) {
       const renamed = renamedManifest.operations[index];
-      if (renamed === undefined) throw new Error(`Missing renamed manifest entry at ${index}`);
-      expect(renamed.facade).toEqual({
+      if (renamed === undefined) {
+        throw new Error(`Missing renamed manifest entry at ${index}`);
+      }
+      expect(renamed.facade).toStrictEqual({
         domain: original.facade.domain,
         method: renamedMethod(original.facade.method),
       });
       const { facade: _originalFacade, ...originalContract } = original;
       const { facade: _renamedFacade, ...renamedContract } = renamed;
-      expect(renamedContract).toEqual(originalContract);
+      expect(renamedContract).toStrictEqual(originalContract);
     }
 
     const originalRegistry = renderOperationRegistryArtifacts(
@@ -86,7 +88,9 @@ describe('facade rename invariance', () => {
     ).toBe(canonicalizeDomainImports(originalDomains.contractsSource));
     for (const [index, original] of originalDomains.domains.entries()) {
       const renamed = renamedDomains.domains[index];
-      if (renamed === undefined) throw new Error(`Missing renamed domain artifact at ${index}`);
+      if (renamed === undefined) {
+        throw new Error(`Missing renamed domain artifact at ${index}`);
+      }
       expect(renamed.descriptorSource).toBe(original.descriptorSource);
       expect(restoreFacadeNames(renamed.domainSource, fixture.metadata)).toBe(
         original.domainSource,
@@ -97,7 +101,9 @@ describe('facade rename invariance', () => {
     const renamedSnippets = renderOperationSnippets(renamedManifest);
     for (const [operationId, original] of originalSnippets) {
       const renamed = renamedSnippets.get(operationId);
-      if (renamed === undefined) throw new Error(`Missing renamed snippets for ${operationId}`);
+      if (renamed === undefined) {
+        throw new Error(`Missing renamed snippets for ${operationId}`);
+      }
       expect(renamed.genericExecution).toBe(original.genericExecution);
       expect(renamed.domainMethod).not.toBe(original.domainMethod);
       expect(restoreFacadeNames(renamed.domainMethod, fixture.metadata)).toBe(
@@ -116,12 +122,14 @@ describe('facade rename invariance', () => {
       'test naming review\n',
     );
     expect(renamedDocumentation.llmsText).toBe(originalDocumentation.llmsText);
-    expect([...renamedDocumentation.generatedFiles.keys()]).toEqual([
+    expect([...renamedDocumentation.generatedFiles.keys()]).toStrictEqual([
       ...originalDocumentation.generatedFiles.keys(),
     ]);
     for (const [path, original] of originalDocumentation.generatedFiles) {
       const renamed = renamedDocumentation.generatedFiles.get(path);
-      if (renamed === undefined) throw new Error(`Missing renamed documentation: ${path}`);
+      if (renamed === undefined) {
+        throw new Error(`Missing renamed documentation: ${path}`);
+      }
       const isFacadeReference = path.startsWith('domains/') || path.startsWith('operations/');
       expect(renamed === original).toBe(!isFacadeReference);
       expect(restoreFacadeNames(renamed, fixture.metadata)).toBe(original);

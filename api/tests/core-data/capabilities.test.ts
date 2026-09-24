@@ -26,20 +26,21 @@ describe('core-data capabilities', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.loadPublishedTypeGroupsProduct.mockResolvedValue({
-      rows: [],
-      revision: { buildNumber: 1, ingestVersion: 1, ingestedAt: '2026-09-01T12:00:00Z' },
       complete: true,
+      revision: { buildNumber: 1, ingestVersion: 1, ingestedAt: '2026-09-01T12:00:00Z' },
+      rows: [],
     })
     for (const mock of [
       mocks.loadPublishedSkillCatalogueProduct,
       mocks.loadPublishedTypeDetailsProduct,
       mocks.loadStaticLocationLabelsProduct,
-    ])
+    ]) {
       mock.mockResolvedValue({
-        rows: [],
-        revision: { buildNumber: 1, ingestVersion: 1, ingestedAt: '2026-09-01T12:00:00Z' },
         complete: true,
+        revision: { buildNumber: 1, ingestVersion: 1, ingestedAt: '2026-09-01T12:00:00Z' },
+        rows: [],
       })
+    }
   })
 
   test('binds each new product to only its declared method', () => {
@@ -50,14 +51,14 @@ describe('core-data capabilities', () => {
           'resource-projection',
         ),
       ),
-    ).toEqual(['publishedSkillCatalogue', 'publishedTypeDetails', 'staticLocationLabels'])
+    ).toStrictEqual(['publishedSkillCatalogue', 'publishedTypeDetails', 'staticLocationLabels'])
   })
 
   test('contains only methods declared for the active contribution', async () => {
-    expect(createCoreDataCapability([], 'route')).toEqual({})
+    expect(createCoreDataCapability([], 'route')).toStrictEqual({})
     const capability = createCoreDataCapability(['published-type-groups'], 'route')
 
-    expect(Object.keys(capability)).toEqual(['publishedTypeGroups'])
+    expect(Object.keys(capability)).toStrictEqual(['publishedTypeGroups'])
     expect(mocks.loadPublishedTypeGroupsProduct).not.toHaveBeenCalled()
     await capability.publishedTypeGroups({ typeIds: [34] })
     expect(mocks.loadPublishedTypeGroupsProduct).toHaveBeenCalledWith({ typeIds: [34] })

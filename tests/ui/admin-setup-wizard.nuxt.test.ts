@@ -7,7 +7,9 @@ import AdminSetupWizard from '../../app/components/admin/SetupWizard.vue'
 const mountedWrappers: { unmount: () => void }[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
 })
 
 async function mountWizard() {
@@ -71,7 +73,7 @@ it('summarises the deployment and emits the trimmed setup payload', async () => 
 
   await wrapper.find('form').trigger('submit')
 
-  expect(wrapper.emitted('submit')).toEqual([
+  expect(wrapper.emitted('submit')).toStrictEqual([
     [
       {
         email: 'owner@corp.eve',

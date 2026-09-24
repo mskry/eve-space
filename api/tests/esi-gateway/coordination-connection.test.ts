@@ -31,12 +31,12 @@ describe('shared coordination Redis lifecycle', () => {
     const quit = new Promise<void>((resolve) => {
       resolveQuit = resolve
     })
-    const first = { status: 'ready', on: vi.fn(), quit: vi.fn(() => quit), disconnect: vi.fn() }
+    const first = { disconnect: vi.fn(), on: vi.fn(), quit: vi.fn(() => quit), status: 'ready' }
     const second = {
-      status: 'ready',
+      disconnect: vi.fn(),
       on: vi.fn(),
       quit: vi.fn().mockResolvedValue('OK'),
-      disconnect: vi.fn(),
+      status: 'ready',
     }
     mocks.create.mockReturnValueOnce(first).mockReturnValueOnce(second)
 
@@ -72,12 +72,12 @@ describe('shared coordination Redis lifecycle', () => {
     const { getCoordinationConnection, closeSharedCoordinationRedisConnection } =
       await import('../../src/esi-gateway/internal/coordination-connection.js')
     const connection = {
-      status: 'ready',
+      disconnect: vi.fn(),
       on: vi.fn(),
       quit: vi.fn().mockRejectedValue(new Error('Redis unavailable')),
-      disconnect: vi.fn(),
+      status: 'ready',
     }
-    const replacement = { status: 'end', on: vi.fn(), quit: vi.fn(), disconnect: vi.fn() }
+    const replacement = { disconnect: vi.fn(), on: vi.fn(), quit: vi.fn(), status: 'end' }
     mocks.create.mockReturnValueOnce(connection).mockReturnValueOnce(replacement)
     getCoordinationConnection()
 
@@ -95,8 +95,8 @@ describe('shared coordination Redis lifecycle', () => {
   test.each(['wait', 'end'])('forgets a %s connection without sending QUIT', async (status) => {
     const { getCoordinationConnection, closeSharedCoordinationRedisConnection } =
       await import('../../src/esi-gateway/internal/coordination-connection.js')
-    const connection = { status, on: vi.fn(), quit: vi.fn(), disconnect: vi.fn() }
-    const replacement = { status: 'end', on: vi.fn(), quit: vi.fn(), disconnect: vi.fn() }
+    const connection = { disconnect: vi.fn(), on: vi.fn(), quit: vi.fn(), status }
+    const replacement = { disconnect: vi.fn(), on: vi.fn(), quit: vi.fn(), status: 'end' }
     mocks.create.mockReturnValueOnce(connection).mockReturnValueOnce(replacement)
     getCoordinationConnection()
 

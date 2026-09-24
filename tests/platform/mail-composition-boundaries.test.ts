@@ -13,7 +13,18 @@ describe('mail composition boundaries', () => {
             '<script setup lang="ts">\nimport { useMailComposition } from "../../composables/useMailComposition"\n</script>',
         }),
       ),
-    ).toEqual([])
+    ).toStrictEqual([])
+  })
+
+  it('ignores package imports while checking composition dependencies', () => {
+    expect(
+      mailCompositionImportViolations(
+        declaredSources({
+          'app/composables/mail-composition-draft.ts':
+            "import { computed } from 'vue'\nimport '../utils/mail-composition'",
+        }),
+      ),
+    ).toStrictEqual([])
   })
 
   it('rejects reverse imports and callers that bypass the facade', () => {
@@ -24,7 +35,7 @@ describe('mail composition boundaries', () => {
           'app/pages/mail-helper.ts': "import '../composables/mail-composition-submission'",
         }),
       ),
-    ).toEqual([
+    ).toStrictEqual([
       'app/composables/mail-composition-draft.ts: cannot import mail composition module app/composables/mail-composition-submission.ts',
       'app/pages/mail-helper.ts: cannot import mail composition module app/composables/mail-composition-submission.ts',
     ])
@@ -38,7 +49,7 @@ describe('mail composition boundaries', () => {
             '<script setup lang="ts">\nimport "../composables/mail-composition-submission"\n</script>\n<template><main></main></template>',
         }),
       ),
-    ).toEqual([
+    ).toStrictEqual([
       'app/pages/mail.vue: cannot import mail composition module app/composables/mail-composition-submission.ts',
     ])
   })
@@ -48,7 +59,9 @@ describe('mail composition boundaries', () => {
       mailCompositionImportViolations(
         declaredSources({}, ['app/composables/mail-composition-submission.ts']),
       ),
-    ).toEqual(['Mail composition module app/composables/mail-composition-submission.ts is missing'])
+    ).toStrictEqual([
+      'Mail composition module app/composables/mail-composition-submission.ts is missing',
+    ])
   })
 })
 

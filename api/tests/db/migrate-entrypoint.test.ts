@@ -34,7 +34,7 @@ describe('migration entrypoint diagnostics', () => {
       expect(process.exitCode).toBe(1)
       for (const call of consoleError.mock.calls) {
         const serialized = String(call[0])
-        expect(JSON.parse(serialized)).toEqual(
+        expect(JSON.parse(serialized)).toStrictEqual(
           expect.objectContaining({
             event: 'database.migration.failed',
             thrownType: 'object',

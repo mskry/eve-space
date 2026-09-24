@@ -9,9 +9,6 @@ import { queryServer } from '../support/query-server'
 const mountedWrappers: { unmount: () => void }[] = []
 const requestedPaths: string[] = []
 const skills = {
-  totalSp: 900_000,
-  unallocatedSp: 0,
-  injectedSkillCount: 2,
   groups: [
     {
       groupId: 255,
@@ -37,10 +34,12 @@ const skills = {
       ],
     },
   ],
+  injectedSkillCount: 2,
+  totalSp: 900_000,
+  unallocatedSp: 0,
 } satisfies CharacterSkills
 
 const skillQueue = {
-  state: 'paused',
   activeQueuePosition: null,
   entries: [
     {
@@ -59,6 +58,7 @@ const skillQueue = {
       secondaryAttribute: 'willpower',
     },
   ],
+  state: 'paused',
 } satisfies CharacterSkillQueue
 
 async function settle() {
@@ -85,7 +85,9 @@ beforeAll(() => queryServer.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => queryServer.close())
 
 afterEach(async () => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   requestedPaths.length = 0
   queryServer.resetHandlers()
   await settle()
@@ -99,17 +101,17 @@ describe('Skills item-information integration', () => {
         requestedPaths.push(new URL(request.url).pathname)
         const typeId = Number(params.typeId)
         return HttpResponse.json({
-          typeId,
-          name: typeId === 100 ? 'Motion Prediction' : 'Sharpshooter',
-          description: typeId === 100 ? 'Improves turret tracking.' : null,
-          group: { id: 255, name: 'Gunnery' },
           category: { id: 16, name: 'Skill' },
+          description: typeId === 100 ? 'Improves turret tracking.' : null,
           detail: {
             kind: 'skill',
-            rank: typeId === 100 ? 3 : null,
             primaryAttribute: typeId === 100 ? 'perception' : null,
+            rank: typeId === 100 ? 3 : null,
             secondaryAttribute: typeId === 100 ? 'willpower' : null,
           },
+          group: { id: 255, name: 'Gunnery' },
+          name: typeId === 100 ? 'Motion Prediction' : 'Sharpshooter',
+          typeId,
         })
       }),
     )
@@ -137,11 +139,11 @@ describe('Skills item-information integration', () => {
     expect(document.getElementById(statusDescriptionId!)?.textContent).toContain('trained level IV')
     motionTrigger.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await settle()
-    expect(requestedPaths).toEqual([])
+    expect(requestedPaths).toStrictEqual([])
 
     motionTrigger.focus()
     motionTrigger.click()
-    await vi.waitFor(() => expect(requestedPaths).toEqual(['/api/universe/types/100']))
+    await vi.waitFor(() => expect(requestedPaths).toStrictEqual(['/api/universe/types/100']))
     await vi.waitFor(() =>
       expect(document.querySelector('[role="dialog"] h2')?.textContent).toBe('Motion Prediction'),
     )
@@ -193,7 +195,7 @@ describe('Skills item-information integration', () => {
     motionTrigger.click()
     await settle()
     expect(document.querySelector('[role="dialog"]')).not.toBeNull()
-    expect(requestedPaths).toEqual(['/api/universe/types/100'])
+    expect(requestedPaths).toStrictEqual(['/api/universe/types/100'])
     document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }))
     await settle()
     expect(document.querySelector('[role="dialog"]')).toBeNull()

@@ -38,33 +38,39 @@ export function assertEsiOperationCatalogConfiguration(
       installedModuleEsiOperationDefinitions,
     )
   }
-  if (!isIsoCalendarDate(options.compatibilityDate))
+  if (!isIsoCalendarDate(options.compatibilityDate)) {
     throw new Error('ESI compatibility configuration date must use YYYY-MM-DD')
+  }
 
   const incompatible = Object.entries(catalog).flatMap(([operation, contract]) =>
     contract.compatibility.minimumDate > options.compatibilityDate
       ? [`${operation} requires ${contract.compatibility.minimumDate}`]
       : [],
   )
-  if (incompatible.length > 0)
+  if (incompatible.length > 0) {
     throw new Error(
       `ESI compatibility configuration is too old: ${incompatible.toSorted((left, right) => left.localeCompare(right)).join(', ')}`,
     )
+  }
 
-  if (!options.ssoEnabled) return
+  if (!options.ssoEnabled) {
+    return
+  }
   const requestableScopes = new Set(options.requestableScopes)
   const missingScopes = new Set<string>()
   for (const contract of Object.values(catalog)) {
     if (
       contract.authorization.kind === 'character' &&
       !requestableScopes.has(contract.authorization.scope)
-    )
+    ) {
       missingScopes.add(contract.authorization.scope)
+    }
   }
-  if (missingScopes.size > 0)
+  if (missingScopes.size > 0) {
     throw new Error(
       `EVE_SCOPES is missing scopes required by registered ESI operations: ${[...missingScopes].toSorted((left, right) => left.localeCompare(right)).join(' ')}`,
     )
+  }
 }
 
 export function assertEsiOperationSdkClassifications(
@@ -83,18 +89,20 @@ export function assertEsiOperationSdkClassifications(
       continue
     }
     const expectedClassification = contract.mutation ? 'mutation' : 'read'
-    if (sdkOperation.classification !== expectedClassification)
+    if (sdkOperation.classification !== expectedClassification) {
       issues.push(
         `operation ${operation} is configured as ${expectedClassification} but SDK operation ${contract.audit.esiOperationId} is ${sdkOperation.classification}`,
       )
+    }
   }
-  if (issues.length > 0)
+  if (issues.length > 0) {
     throw new Error(
       `Invalid ESI SDK operation classifications:\n${issues
         .toSorted((left, right) => left.localeCompare(right))
         .map((issue) => `- ${issue}`)
         .join('\n')}`,
     )
+  }
 }
 
 export function assertExecutableEsiOperationDefinitions(
@@ -114,20 +122,24 @@ export function assertExecutableEsiOperationDefinitions(
       issues.push(`catalog operation ${operation} has no executable definition`)
       continue
     }
-    if (definition.contract !== contract)
+    if (definition.contract !== contract) {
       issues.push(`operation ${operation} definition does not own its catalog contract`)
-    if (definition.sdkOperationId !== contract.audit.esiOperationId)
+    }
+    if (definition.sdkOperationId !== contract.audit.esiOperationId) {
       issues.push(
         `operation ${operation} definition binds ${definition.sdkOperationId} instead of ${contract.audit.esiOperationId}`,
       )
-    if (operationRegistry[definition.sdkOperationId] !== definition.descriptor)
+    }
+    if (operationRegistry[definition.sdkOperationId] !== definition.descriptor) {
       issues.push(`operation ${operation} does not bind the registered SDK descriptor`)
+    }
   }
-  if (issues.length > 0)
+  if (issues.length > 0) {
     throw new Error(
       `Invalid executable ESI operation definitions:\n${issues
         .toSorted((left, right) => left.localeCompare(right))
         .map((issue) => `- ${issue}`)
         .join('\n')}`,
     )
+  }
 }

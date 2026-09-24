@@ -13,7 +13,7 @@ describe('health route', () => {
     const response = await healthRoutes.request('/')
 
     expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({ status: 'ok', database: 'connected' })
+    await expect(response.json()).resolves.toStrictEqual({ database: 'connected', status: 'ok' })
     expect(mocks.sql).toHaveBeenCalledOnce()
   })
 })

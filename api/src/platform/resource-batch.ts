@@ -85,27 +85,32 @@ export async function executeInstalledResourceBatchOperation(
   const parsed = platformResourceBatchPayloadSchema.parse(payload)
   const resources = options.resources ?? installedModuleResources
   const resource = findInstalledResource(parsed, resources)
-  if (!resource?.batch) return { outcome: 'noop', reason: 'resource-unavailable' }
+  if (!resource?.batch) {
+    return { outcome: 'noop', reason: 'resource-unavailable' }
+  }
 
   const implementation = resource.implementation as PlatformResourceImplementation
   const batch = implementation.batch as PlatformResourceBatchOperationImplementation | undefined
-  if (!batch)
+  if (!batch) {
     throw new Error(
       `Installed resource ${resource.moduleId}/${resource.resourceId} lacks batch implementation`,
     )
+  }
 
   const operation = resource.batch.operationId
   assertPlatformEsiOperation(operation)
   const authorization = getEsiOperationAuthorization(operation)
-  if (authorization.kind !== 'public')
+  if (authorization.kind !== 'public') {
     throw new Error(
       `Installed resource ${resource.moduleId}/${resource.resourceId} has invalid batch operation policy`,
     )
+  }
   const setConfiguration = getEsiSetOperationConfiguration(operation)
-  if (parsed.subjects.length > setConfiguration.maximumItems)
+  if (parsed.subjects.length > setConfiguration.maximumItems) {
     throw new Error(
       `Installed resource ${resource.moduleId}/${resource.resourceId} batch exceeds ${setConfiguration.maximumItems} subjects`,
     )
+  }
 
   const candidates = parsed.subjects.map((identity) => toEligibleBatchSubject(parsed, identity))
   assertUniqueBatchSubjects(candidates.map(({ subject }) => subject))
@@ -118,19 +123,10 @@ export async function executeInstalledResourceBatchOperation(
     ),
   )
   options.signal?.throwIfAborted()
-  const eligible = candidates.flatMap((candidate, index) => {
-    const resolved = eligibility[index]
-    return resolved?.status === 'eligible' && resolved.due
-      ? [
-          {
-            ...candidate,
-            authorizationGeneration: resolved.authorizationGeneration,
-            managedAuthority: resolved.managedAuthority,
-          },
-        ]
-      : []
-  })
-  if (eligible.length === 0) return { outcome: 'noop', reason: 'no-due-subjects' }
+  const eligible = selectEligibleBatchSubjects(candidates, eligibility)
+  if (eligible.length === 0) {
+    return { outcome: 'noop', reason: 'no-due-subjects' }
+  }
 
   const subjects = eligible.map(({ subject }) => subject)
   let inputs: Readonly<Record<string, unknown>>
@@ -143,12 +139,9 @@ export async function executeInstalledResourceBatchOperation(
   }
   let result: Awaited<ReturnType<typeof executeUntypedPlatformEsiOperation>>
   try {
-    result = await (options.executeEsiOperation ?? executeUntypedPlatformEsiOperation)({
-      operation,
-      inputs,
-      authorization: { kind: 'public' },
-      ...(options.signal ? { signal: options.signal } : {}),
-    })
+    result = await (options.executeEsiOperation ?? executeUntypedPlatformEsiOperation)(
+      batchEsiRequest(operation, inputs, options.signal),
+    )
     assertPlatformResourceRefreshSucceeded(result)
   } catch (error) {
     options.signal?.throwIfAborted()
@@ -163,7 +156,7 @@ export async function executeInstalledResourceBatchOperation(
     classifications = validatePlatformResourceBatchClassifications(
       resource.batch.mode,
       subjects,
-      batch.classify({ subjects, data: result.data }),
+      batch.classify({ data: result.data, subjects }),
     )
   } catch (error) {
     options.signal?.throwIfAborted()
@@ -174,16 +167,49 @@ export async function executeInstalledResourceBatchOperation(
   )
   const enrichClassification = (classification: (typeof classifications)[number]) => {
     const eligibleSubject = eligibleBySubject.get(batchSubjectKey(classification.subject))
-    if (!eligibleSubject) throw new Error('Resource batch classification is not eligible')
+    if (!eligibleSubject) {
+      throw new Error('Resource batch classification is not eligible')
+    }
     return { ...eligibleSubject, ...classification }
   }
 
   return {
+    classifications: classifications.map(enrichClassification),
     outcome: 'loaded',
     resource,
     validatedAt: result.validatedAt,
-    classifications: classifications.map(enrichClassification),
   }
+}
+
+function batchEsiRequest(
+  operation: string,
+  inputs: Readonly<Record<string, unknown>>,
+  signal?: AbortSignal,
+) {
+  return {
+    authorization: { kind: 'public' as const },
+    inputs,
+    operation,
+    ...(signal ? { signal } : {}),
+  }
+}
+
+function selectEligibleBatchSubjects(
+  candidates: readonly ReturnType<typeof toEligibleBatchSubject>[],
+  eligibility: readonly Awaited<ReturnType<typeof resolveInstalledResourceEligibility>>[],
+): EligibleBatchSubject[] {
+  return candidates.flatMap((candidate, index) => {
+    const resolved = eligibility[index]
+    return resolved?.status === 'eligible' && resolved.due
+      ? [
+          {
+            ...candidate,
+            authorizationGeneration: resolved.authorizationGeneration,
+            managedAuthority: resolved.managedAuthority,
+          },
+        ]
+      : []
+  })
 }
 
 export function validatePlatformResourceBatchClassifications<Data>(
@@ -192,8 +218,9 @@ export function validatePlatformResourceBatchClassifications<Data>(
   classifications: unknown,
 ): readonly BatchClassification<Data>[] {
   assertUniqueBatchSubjects(subjects)
-  if (!Array.isArray(classifications))
-    throw new Error('Resource batch classification must be an array')
+  if (!Array.isArray(classifications)) {
+    throw new TypeError('Resource batch classification must be an array')
+  }
 
   const requested = new Map(subjects.map((subject) => [batchSubjectKey(subject), subject]))
   const classified = new Map<string, BatchClassification<Data>>()
@@ -206,8 +233,9 @@ export function validatePlatformResourceBatchClassifications<Data>(
     )
     classified.set(key, classification)
   }
-  if (classified.size !== requested.size)
+  if (classified.size !== requested.size) {
     throw new Error('Resource batch classification omitted a requested subject')
+  }
   return subjects.map((subject) => classified.get(batchSubjectKey(subject))!)
 }
 
@@ -217,14 +245,17 @@ function validateBatchClassification<Data>(
   requested: ReadonlyMap<string, PlatformCharacterResourceSubject>,
   classified: ReadonlyMap<string, BatchClassification<Data>>,
 ): readonly [string, BatchClassification<Data>] {
-  if (!isRecord(value) || !isCharacterSubject(value.subject) || typeof value.outcome !== 'string')
+  if (!isRecord(value) || !isCharacterSubject(value.subject) || typeof value.outcome !== 'string') {
     throw new Error('Resource batch classification is invalid')
+  }
 
   const key = batchSubjectKey(value.subject)
-  if (!requested.has(key))
+  if (!requested.has(key)) {
     throw new Error('Resource batch classification contains an unknown subject')
-  if (classified.has(key))
+  }
+  if (classified.has(key)) {
     throw new Error('Resource batch classification contains a duplicate subject')
+  }
 
   assertBatchClassificationOutcome(mode, value, value.outcome)
   return [key, value as BatchClassification<Data>]
@@ -236,14 +267,17 @@ function assertBatchClassificationOutcome(
   outcome: string,
 ) {
   if (mode === 'change-hint') {
-    if (outcome !== 'changed' && outcome !== 'unchanged')
+    if (outcome !== 'changed' && outcome !== 'unchanged') {
       throw new Error(`Change-hint batch cannot classify ${outcome}`)
+    }
     return
   }
-  if (outcome !== 'complete' && outcome !== 'unchanged')
+  if (outcome !== 'complete' && outcome !== 'unchanged') {
     throw new Error(`Complete-observation batch cannot classify ${outcome}`)
-  if (outcome === 'complete' && !Object.hasOwn(value, 'data'))
+  }
+  if (outcome === 'complete' && !Object.hasOwn(value, 'data')) {
     throw new Error('Complete resource batch classification must carry data')
+  }
 }
 
 function toEligibleBatchSubject(
@@ -251,8 +285,9 @@ function toEligibleBatchSubject(
   subjectIdentity: PlatformResourceBatchPayload['subjects'][number],
 ): Omit<EligibleBatchSubject, 'authorizationGeneration' | 'managedAuthority'> {
   const characterId = Number(subjectIdentity.subjectId)
-  if (!isPositiveSafeInteger(characterId))
+  if (!isPositiveSafeInteger(characterId)) {
     throw new Error('Resource batch subject character identity is invalid')
+  }
   return {
     identity: {
       moduleId: payload.moduleId,
@@ -261,8 +296,8 @@ function toEligibleBatchSubject(
       ...subjectIdentity,
     },
     subject: {
-      kind: 'character',
       characterId,
+      kind: 'character',
       lifecycleId: subjectIdentity.subjectLifecycleId,
     },
   }
@@ -275,14 +310,16 @@ function assertBatchInputs(
   maximumItems: number,
 ) {
   const values = inputs[field]
-  if (!Array.isArray(values) || values.length !== subjects.length || values.length > maximumItems)
+  if (!Array.isArray(values) || values.length !== subjects.length || values.length > maximumItems) {
     throw new Error(`Resource batch identity input ${field} must correlate every requested subject`)
+  }
   const requested = new Set(subjects.map(({ characterId }) => characterId))
   if (
     values.some((value) => !Number.isSafeInteger(value) || !requested.has(Number(value))) ||
     new Set(values).size !== requested.size
-  )
+  ) {
     throw new Error(`Resource batch identity input ${field} must match requested character IDs`)
+  }
 }
 
 function assertUniqueBatchSubjects(subjects: readonly PlatformCharacterResourceSubject[]) {
@@ -290,8 +327,9 @@ function assertUniqueBatchSubjects(subjects: readonly PlatformCharacterResourceS
   const characterIds = new Set<number>()
   for (const subject of subjects) {
     const identity = batchSubjectKey(subject)
-    if (identities.has(identity) || characterIds.has(subject.characterId))
+    if (identities.has(identity) || characterIds.has(subject.characterId)) {
       throw new Error('Resource batch contains a duplicate subject')
+    }
     identities.add(identity)
     characterIds.add(subject.characterId)
   }

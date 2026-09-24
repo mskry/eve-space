@@ -21,12 +21,12 @@ import { resolveAffiliationFreshness } from './affiliation-freshness.js'
 import { organizationReviewerPermissionExists } from './reviewer-group-policy.js'
 import { hasCurrentReviewerOrganizationSnapshot } from './reviewer-organization-snapshot.js'
 const pendingCompliance: PlatformReviewerTargetCompliance = {
-  state: 'pending',
-  evidenceFreshness: 'unavailable',
-  evidenceAt: null,
-  reviewDeadline: null,
   accessValidUntil: null,
   evaluatedAt: null,
+  evidenceAt: null,
+  evidenceFreshness: 'unavailable',
+  reviewDeadline: null,
+  state: 'pending',
 }
 
 export async function resolveOrganizationReviewerTarget(input: {
@@ -51,30 +51,38 @@ async function resolveOrganizationReviewerTargetInTransaction(
   },
   now: Date,
 ): Promise<PlatformReviewerTargetContext | null> {
-  if (!(await hasCurrentReviewerOrganizationSnapshot(transaction, input.organizationVersion, now)))
+  if (
+    !(await hasCurrentReviewerOrganizationSnapshot(transaction, input.organizationVersion, now))
+  ) {
     return null
+  }
   const characterRows = await loadTargetCharacters(transaction, input, now)
 
   const targetCharacters = characterRows.flatMap((character) => {
     const freshness = resolveAffiliationFreshness(character, now)
     let membership: 'managed' | 'approved-external' | null = null
-    if (character.managedCorporationId !== null && freshness === 'fresh') membership = 'managed'
-    else if (character.exceptionId !== null) membership = 'approved-external'
-    if (!membership) return []
+    if (character.managedCorporationId !== null && freshness === 'fresh') {
+      membership = 'managed'
+    } else if (character.exceptionId !== null) {
+      membership = 'approved-external'
+    }
+    if (!membership) {
+      return []
+    }
     return [
       {
-        characterId: character.characterId,
-        subjectLifecycleId: character.subjectLifecycleId,
-        authorizationGeneration: character.authorizationGeneration,
-        name: character.name,
-        isMain: character.isMain,
         affiliation: {
-          corporationId: character.corporationId,
           allianceId: character.allianceId,
-          membership,
-          freshness,
           checkedAt: character.affiliationCheckedAt?.toISOString() ?? null,
+          corporationId: character.corporationId,
+          freshness,
+          membership,
         },
+        authorizationGeneration: character.authorizationGeneration,
+        characterId: character.characterId,
+        isMain: character.isMain,
+        name: character.name,
+        subjectLifecycleId: character.subjectLifecycleId,
       },
     ]
   })
@@ -83,39 +91,36 @@ async function resolveOrganizationReviewerTargetInTransaction(
       ({ affiliation }) =>
         affiliation.membership === 'managed' && affiliation.freshness === 'fresh',
     )
-  )
+  ) {
     return null
+  }
 
   const selectedCharacter =
     input.characterId === undefined
       ? undefined
       : targetCharacters.find(({ characterId }) => characterId === input.characterId)
-  if (input.characterId !== undefined && !selectedCharacter) return null
+  if (input.characterId !== undefined && !selectedCharacter) {
+    return null
+  }
 
   const [compliance, groups, block] = await Promise.all([
     loadCompliance(transaction, input.organizationVersion, input.targetUserId),
     loadGroups(transaction, input.organizationVersion, input.targetUserId, now),
     loadBlock(transaction, input.organizationVersion, input.targetUserId),
   ])
-  if (!(await isCurrentOrganizationVersion(transaction, input.organizationVersion))) return null
+  if (!(await isCurrentOrganizationVersion(transaction, input.organizationVersion))) {
+    return null
+  }
 
   const mainCharacter = targetCharacters.find(({ isMain }) => isMain)
   return {
-    organizationVersion: input.organizationVersion,
-    managedMemberLifecycleId: characterRows[0]!.managedMemberLifecycleId,
-    selection: selectedCharacter
-      ? {
-          kind: 'character',
-          characterId: selectedCharacter.characterId,
-          subjectLifecycleId: selectedCharacter.subjectLifecycleId,
-        }
-      : { kind: 'account' },
     account: {
-      userId: input.targetUserId,
       mainCharacter: mainCharacter
         ? { characterId: mainCharacter.characterId, name: mainCharacter.name }
         : null,
+      userId: input.targetUserId,
     },
+    block: block ? { blocked: true, blockedAt: block.blockedAt.toISOString() } : { blocked: false },
     characters: targetCharacters,
     compliance: compliance ?? pendingCompliance,
     groups: groups.map((group) => ({
@@ -129,7 +134,15 @@ async function resolveOrganizationReviewerTargetInTransaction(
       assignedAt: group.assignedAt.toISOString(),
       expiresAt: group.expiresAt?.toISOString() ?? null,
     })),
-    block: block ? { blocked: true, blockedAt: block.blockedAt.toISOString() } : { blocked: false },
+    managedMemberLifecycleId: characterRows[0]!.managedMemberLifecycleId,
+    organizationVersion: input.organizationVersion,
+    selection: selectedCharacter
+      ? {
+          kind: 'character',
+          characterId: selectedCharacter.characterId,
+          subjectLifecycleId: selectedCharacter.subjectLifecycleId,
+        }
+      : { kind: 'account' },
   }
 }
 
@@ -143,19 +156,19 @@ function loadTargetCharacters(
 ) {
   return transaction
     .select({
-      characterId: characters.characterId,
-      subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+      affiliationCheckedAt: characters.affiliationCheckedAt,
+      affiliationResolutionState: characters.affiliationResolutionState,
+      allianceId: characters.allianceId,
       authorizationGeneration: eveTokens.tokenVersion,
+      characterId: characters.characterId,
+      corporationId: characters.corporationId,
+      exceptionId: organizationCharacterExceptions.exceptionId,
+      isMain: characters.isMain,
+      managedCorporationId: organizationManagedCorporations.corporationId,
       managedMemberLifecycleId: organizationManagedMemberLifecycles.managedMemberLifecycleId,
       name: characters.name,
-      corporationId: characters.corporationId,
-      allianceId: characters.allianceId,
-      isMain: characters.isMain,
-      affiliationResolutionState: characters.affiliationResolutionState,
-      affiliationCheckedAt: characters.affiliationCheckedAt,
       nextAffiliationCheck: characters.nextAffiliationCheck,
-      managedCorporationId: organizationManagedCorporations.corporationId,
-      exceptionId: organizationCharacterExceptions.exceptionId,
+      subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
     })
     .from(deploymentSettings)
     .innerJoin(
@@ -220,12 +233,12 @@ async function loadCompliance(
 ) {
   const [projection] = await transaction
     .select({
-      state: organizationAccountCompliance.state,
-      evidenceFreshness: organizationAccountCompliance.evidenceFreshness,
-      evidenceAt: organizationAccountCompliance.evidenceAt,
-      reviewDeadline: organizationAccountCompliance.reviewDeadline,
       accessValidUntil: organizationAccountCompliance.accessValidUntil,
       evaluatedAt: organizationAccountCompliance.evaluatedAt,
+      evidenceAt: organizationAccountCompliance.evidenceAt,
+      evidenceFreshness: organizationAccountCompliance.evidenceFreshness,
+      reviewDeadline: organizationAccountCompliance.reviewDeadline,
+      state: organizationAccountCompliance.state,
     })
     .from(deploymentSettings)
     .innerJoin(
@@ -246,14 +259,16 @@ async function loadCompliance(
         eq(deploymentSettings.organizationVersion, organizationVersion),
       ),
     )
-  if (!projection) return null
+  if (!projection) {
+    return null
+  }
   return {
-    state: projection.state,
-    evidenceFreshness: projection.evidenceFreshness,
-    evidenceAt: projection.evidenceAt?.toISOString() ?? null,
-    reviewDeadline: projection.reviewDeadline?.toISOString() ?? null,
     accessValidUntil: projection.accessValidUntil?.toISOString() ?? null,
     evaluatedAt: projection.evaluatedAt.toISOString(),
+    evidenceAt: projection.evidenceAt?.toISOString() ?? null,
+    evidenceFreshness: projection.evidenceFreshness,
+    reviewDeadline: projection.reviewDeadline?.toISOString() ?? null,
+    state: projection.state,
   }
 }
 
@@ -265,17 +280,17 @@ function loadGroups(
 ) {
   return transaction
     .select({
-      groupId: organizationGroups.groupId,
+      assignedAt: organizationGroupAssignments.assignedAt,
       assignmentId: organizationGroupAssignments.assignmentId,
-      name: organizationGroups.name,
-      restricted: organizationGroups.restricted,
-      managementMode: organizationGroups.managementMode,
+      expiresAt: organizationGroupAssignments.expiresAt,
+      groupId: organizationGroups.groupId,
       hasReviewerPermission: organizationReviewerPermissionExists(
         organizationVersion,
         organizationGroups.groupId,
       ),
-      assignedAt: organizationGroupAssignments.assignedAt,
-      expiresAt: organizationGroupAssignments.expiresAt,
+      managementMode: organizationGroups.managementMode,
+      name: organizationGroups.name,
+      restricted: organizationGroups.restricted,
     })
     .from(deploymentSettings)
     .innerJoin(

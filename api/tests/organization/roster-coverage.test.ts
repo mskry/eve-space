@@ -21,57 +21,50 @@ describe('organization roster coverage', () => {
     selectResults(
       [
         {
-          organizationVersion: 4,
+          attemptedAt: new Date('2026-09-01T11:00:00.000Z'),
           corporationId: 98_000_001,
           managedLastObservedAt: new Date('2026-09-01T10:00:00.000Z'),
-          sourceId: 'source-1',
+          organizationVersion: 4,
           sourceCharacterId: 1_404_328_063,
+          sourceId: 'source-1',
           subjectLifecycleId: 'lifecycle-1',
-          attemptedAt: new Date('2026-09-01T11:00:00.000Z'),
         },
         {
-          organizationVersion: 4,
+          attemptedAt: null,
           corporationId: 98_000_002,
           managedLastObservedAt: new Date('2026-09-01T10:30:00.000Z'),
-          sourceId: null,
+          organizationVersion: 4,
           sourceCharacterId: null,
+          sourceId: null,
           subjectLifecycleId: null,
-          attemptedAt: null,
         },
       ],
       [
         {
-          corporationId: 98_000_001,
           characterId: 1_404_328_064,
+          corporationId: 98_000_001,
           observedAt: new Date('2026-09-01T10:15:00.000Z'),
         },
       ],
       [],
       [
         {
-          organizationType: 'corporation',
+          configuredAt: new Date('2026-09-01T09:00:00.000Z'),
           organizationId: 98_000_001,
+          organizationType: 'corporation',
           organizationVersion: 4,
           subjectLifecycleId: 'managed-lifecycle',
-          configuredAt: new Date('2026-09-01T09:00:00.000Z'),
         },
       ],
     )
     mocks.getCollectionStatus.mockResolvedValue({
-      status: 'current',
-      validatedAt: '2026-09-01T10:15:00.000Z',
       attemptedAt: '2026-09-01T11:00:00.000Z',
       lastFailureClass: null,
+      status: 'current',
+      validatedAt: '2026-09-01T10:15:00.000Z',
     })
 
-    await expect(listOrganizationRosterCoverage()).resolves.toEqual({
-      stale: false,
-      managedCorporations: {
-        status: 'current',
-        validatedAt: '2026-09-01T09:00:00.000Z',
-        attemptedAt: '2026-09-01T09:00:00.000Z',
-        lastFailureClass: null,
-      },
+    await expect(listOrganizationRosterCoverage()).resolves.toStrictEqual({
       corporations: [
         {
           organizationVersion: 4,
@@ -101,6 +94,13 @@ describe('organization roster coverage', () => {
           unregisteredCharacters: [],
         },
       ],
+      managedCorporations: {
+        attemptedAt: '2026-09-01T09:00:00.000Z',
+        lastFailureClass: null,
+        status: 'current',
+        validatedAt: '2026-09-01T09:00:00.000Z',
+      },
+      stale: false,
     })
     expect(mocks.getCollectionStatus).toHaveBeenCalledOnce()
   })
@@ -109,73 +109,76 @@ describe('organization roster coverage', () => {
     selectResults(
       [
         {
-          organizationVersion: 7,
+          attemptedAt: null,
           corporationId: 98_000_003,
           managedLastObservedAt: new Date('2026-09-02T10:00:00.000Z'),
-          sourceId: 'source-3',
+          organizationVersion: 7,
           sourceCharacterId: 1_404_328_065,
+          sourceId: 'source-3',
           subjectLifecycleId: 'lifecycle-3',
-          attemptedAt: null,
         },
       ],
       [],
       [],
       [
         {
-          organizationType: 'alliance',
+          configuredAt: new Date('2026-09-02T09:00:00.000Z'),
           organizationId: 99_000_001,
+          organizationType: 'alliance',
           organizationVersion: 7,
           subjectLifecycleId: 'alliance-lifecycle',
-          configuredAt: new Date('2026-09-02T09:00:00.000Z'),
         },
       ],
     )
     mocks.getCollectionStatus
       .mockResolvedValueOnce({
-        status: 'stale',
-        validatedAt: '2026-09-02T09:30:00.000+02:00',
         attemptedAt: '2026-09-02T09:30:00.000Z',
         lastFailureClass: 'esi-cooldown',
+        status: 'stale',
+        validatedAt: '2026-09-02T09:30:00.000+02:00',
       })
       .mockResolvedValueOnce({
-        status: 'stale',
-        validatedAt: '2026-09-02T08:00:00.000Z',
         attemptedAt: '2026-09-02T10:00:00.000Z',
         lastFailureClass: 'esi-unavailable',
+        status: 'stale',
+        validatedAt: '2026-09-02T08:00:00.000Z',
       })
 
     const result = await listOrganizationRosterCoverage()
 
-    expect(result.managedCorporations).toEqual({
-      status: 'stale',
-      validatedAt: '2026-09-02T08:00:00.000Z',
+    expect(result.managedCorporations).toStrictEqual({
       attemptedAt: '2026-09-02T10:00:00.000Z',
       lastFailureClass: 'esi-unavailable',
+      status: 'stale',
+      validatedAt: '2026-09-02T08:00:00.000Z',
     })
-    expect(result.corporations[0]).toMatchObject({ status: 'stale', attemptedAt: null })
+    expect(result.corporations[0]).toMatchObject({ attemptedAt: null, status: 'stale' })
     expect(result).toMatchObject({
+      refreshFailureClass: 'esi-cooldown',
       stale: true,
       validatedAt: '2026-09-02T09:30:00.000+02:00',
-      refreshFailureClass: 'esi-cooldown',
     })
     expect(mocks.getCollectionStatus).toHaveBeenNthCalledWith(2, {
       moduleId: 'core',
       resourceId: 'managed-corporations',
+      subjectId: '99000001',
       subjectKind: 'alliance',
       subjectLifecycleId: 'alliance-lifecycle',
-      subjectId: '99000001',
     })
   })
 })
 
 function selectResults(...results: unknown[][]) {
-  for (const result of results) mocks.select.mockReturnValueOnce(query(result))
+  for (const result of results) {
+    mocks.select.mockReturnValueOnce(query(result))
+  }
 }
 
 function query(result: unknown[]) {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'innerJoin', 'leftJoin', 'where', 'orderBy'])
+  for (const method of ['from', 'innerJoin', 'leftJoin', 'where', 'orderBy']) {
     builder[method] = () => builder
+  }
   // oxlint-disable-next-line unicorn/no-thenable -- Drizzle query builders are awaitable.
   builder.then = (resolve: (value: unknown[]) => unknown, reject: (error: unknown) => unknown) =>
     Promise.resolve(result).then(resolve, reject)

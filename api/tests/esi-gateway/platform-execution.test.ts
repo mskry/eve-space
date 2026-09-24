@@ -68,7 +68,7 @@ beforeEach(() => {
   mocks.authorizeCache.mockResolvedValue({ tokenVersion: 5 })
   mocks.callOperation.mockResolvedValue({
     data: { freelance_jobs: [{ id: 'job-one' }] },
-    meta: { status: 200, headers: {} },
+    meta: { headers: {}, status: 200 },
   })
 })
 
@@ -79,18 +79,18 @@ describe('platform ESI execution', () => {
 
     await expect(
       executePlatformEsiOperation({
-        operation: characterOperation,
-        inputs,
         authorization: {
-          kind: 'character-lifecycle',
           characterId,
-          lifecycleId,
           generation: 4,
+          kind: 'character-lifecycle',
+          lifecycleId,
         },
+        inputs,
+        operation: characterOperation,
       }),
     ).resolves.toMatchObject({
-      data: { freelance_jobs: [{ id: 'job-one' }] },
       authorizationGeneration: 5,
+      data: { freelance_jobs: [{ id: 'job-one' }] },
       source: 'esi',
     })
     expect(mocks.authorize).toHaveBeenCalledWith(
@@ -111,16 +111,16 @@ describe('platform ESI execution', () => {
     const operation = 'organization-activity-campaign-list'
     mocks.callOperation.mockResolvedValueOnce({
       data: { campaigns: [] },
-      meta: { status: 200, headers: {} },
+      meta: { headers: {}, status: 200 },
     })
 
     await expect(
       executePlatformEsiOperation({
-        operation,
-        inputs: {},
         authorization: { kind: 'public' },
+        inputs: {},
+        operation,
       }),
-    ).resolves.toMatchObject({ data: { campaigns: [] }, authorizationGeneration: null })
+    ).resolves.toMatchObject({ authorizationGeneration: null, data: { campaigns: [] } })
     expect(mocks.authorize).not.toHaveBeenCalled()
   })
 
@@ -129,9 +129,9 @@ describe('platform ESI execution', () => {
     async (headerName) => {
       const operation = 'organization-activity-campaign-list'
       const execution = executePlatformEsiOperation({
-        operation,
-        inputs: { headers: { [headerName]: 'caller-value' } } as never,
         authorization: { kind: 'public' },
+        inputs: { headers: { [headerName]: 'caller-value' } } as never,
+        operation,
       })
 
       await expect(execution).rejects.toBeInstanceOf(PlatformEsiRequestError)
@@ -147,10 +147,10 @@ describe('platform ESI execution', () => {
 
     await closeProductionEsiExecutionRuntime()
     await executePlatformEsiOperation({
-      operation,
-      inputs: {},
       authorization: { kind: 'public' },
       definition: forged,
+      inputs: {},
+      operation,
     } as never)
 
     expect(mocks.callOperation).toHaveBeenCalledWith(canonical.sdkOperationId, {})
@@ -161,14 +161,14 @@ describe('platform ESI execution', () => {
 
     await expect(
       executePlatformEsiOperation({
-        operation,
-        inputs: {},
         authorization: {
-          kind: 'character-lifecycle',
           characterId,
-          lifecycleId,
           generation: 4,
+          kind: 'character-lifecycle',
+          lifecycleId,
         },
+        inputs: {},
+        operation,
       }),
     ).rejects.toThrow('Public platform ESI operation received character authority')
     expect(mocks.callOperation).not.toHaveBeenCalled()
@@ -177,9 +177,9 @@ describe('platform ESI execution', () => {
   test('rejects an unregistered operation before SDK construction or network activity', async () => {
     await expect(
       executePlatformEsiOperation({
-        operation: 'not-a-registered-operation',
-        inputs: {},
         authorization: { kind: 'public' },
+        inputs: {},
+        operation: 'not-a-registered-operation',
       } as never),
     ).rejects.toThrow('Unregistered ESI operation')
     expect(mocks.clientOptions).not.toHaveBeenCalled()

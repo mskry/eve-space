@@ -7,12 +7,8 @@ const queryPersistenceFixtureEnabled = process.env.EVE_SPACE_E2E_PERSISTENCE_FIX
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  buildDir: queryPersistenceFixtureEnabled ? '.nuxt-e2e' : undefined,
-  compatibilityDate: '2025-07-15',
   app: {
-    viewTransition: false,
     head: {
-      title: 'EVE Space // Capsuleer Operations',
       htmlAttrs: { lang: 'en' },
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
@@ -24,8 +20,12 @@ export default defineNuxtConfig({
         { name: 'application-name', content: 'EVE Space' },
         { name: 'apple-mobile-web-app-title', content: 'EVE Space' },
       ],
+      title: 'EVE Space // Capsuleer Operations',
     },
+    viewTransition: false,
   },
+  buildDir: queryPersistenceFixtureEnabled ? '.nuxt-e2e' : undefined,
+  compatibilityDate: '2025-07-15',
   css: [
     '~/assets/css/foundation.css',
     '~/assets/css/shell/public.css',
@@ -90,7 +90,7 @@ export default defineNuxtConfig({
                 name: 'reka-ui',
                 test: /node_modules[\\/]reka-ui/,
                 entriesAware: true,
-                entriesAwareMergeThreshold: 4_096,
+                entriesAwareMergeThreshold: 4096,
               },
             ],
           },

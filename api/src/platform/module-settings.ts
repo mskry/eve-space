@@ -58,11 +58,13 @@ export async function reconcileInstalledModules(
   connection: postgres.Sql,
   definitions: readonly PlatformInstalledModuleDefinition[] = installedModuleDefinitions,
 ) {
-  if (definitions.length === 0) return
+  if (definitions.length === 0) {
+    return
+  }
 
   const rows = definitions.map(({ moduleId, defaultEnabled }) => ({
-    module_id: moduleId,
     enabled: defaultEnabled,
+    module_id: moduleId,
   }))
   await connection`
     insert into deployment_modules ${connection(rows, 'module_id', 'enabled')}
@@ -74,14 +76,16 @@ export async function reconcileInstalledModuleSections(
   connection: postgres.Sql,
   definitions: readonly PlatformInstalledModuleSectionDefinition[] = installedModuleSectionDefinitions,
 ) {
-  if (definitions.length === 0) return
+  if (definitions.length === 0) {
+    return
+  }
   const rows = definitions.map((definition) => ({
-    module_id: definition.moduleId,
-    section_id: definition.id,
-    kind: definition.kind,
-    enabled: false,
     declaration_revision:
       definition.kind === 'sensitive-evidence' ? definition.disclosureRevision : null,
+    enabled: false,
+    kind: definition.kind,
+    module_id: definition.moduleId,
+    section_id: definition.id,
   }))
   await connection`
     insert into deployment_module_sections ${connection(
@@ -117,7 +121,9 @@ export async function listInstalledModuleSettings(
   definitions: readonly PlatformInstalledModuleDefinition[] = installedModuleDefinitions,
   sectionDefinitions: readonly PlatformInstalledModuleSectionDefinition[] = installedModuleSectionDefinitions,
 ): Promise<readonly InstalledModuleSetting[]> {
-  if (definitions.length === 0) return []
+  if (definitions.length === 0) {
+    return []
+  }
   const database = await connectionOrDefault(connection)
   const [rows, sectionRows] = await Promise.all([
     loadDeploymentModuleRows(database),
@@ -129,17 +135,20 @@ export async function listInstalledModuleSettings(
   )
   return definitions.map((definition) => {
     const row = rowsById.get(definition.moduleId)
-    if (!row) throw new Error(`Installed module setting ${definition.moduleId} is missing`)
+    if (!row) {
+      throw new Error(`Installed module setting ${definition.moduleId} is missing`)
+    }
     const sections = sectionDefinitions
       .filter(({ moduleId }) => moduleId === definition.moduleId)
       .map((sectionDefinition) => {
         const sectionRow = sectionRowsById.get(
           moduleSectionKey(sectionDefinition.moduleId, sectionDefinition.id),
         )
-        if (!sectionRow)
+        if (!sectionRow) {
           throw new Error(
             `Installed module section setting ${sectionDefinition.moduleId}/${sectionDefinition.id} is missing`,
           )
+        }
         return toModuleSectionSetting(sectionDefinition, sectionRow)
       })
     return toModuleSetting(definition, row, sections)
@@ -153,7 +162,9 @@ export async function setInstalledModuleEnabled(
   definitions: readonly PlatformInstalledModuleDefinition[] = installedModuleDefinitions,
 ): Promise<InstalledModuleSetting | null> {
   const definition = definitions.find((candidate) => candidate.moduleId === moduleId)
-  if (!definition) return null
+  if (!definition) {
+    return null
+  }
 
   const database = await connectionOrDefault(connection)
   const [row] = await database<DeploymentModuleRow[]>`
@@ -176,7 +187,9 @@ export async function setInstalledModuleEnabled(
     from deployment_modules
     where module_id = ${moduleId} and not exists (select 1 from changed)
   `
-  if (!row) throw new Error(`Installed module setting ${moduleId} is missing`)
+  if (!row) {
+    throw new Error(`Installed module setting ${moduleId} is missing`)
+  }
   invalidateModuleRuntimeState()
   const sectionDefinitions = (
     installedModuleSectionDefinitions as readonly PlatformInstalledModuleSectionDefinition[]
@@ -187,10 +200,11 @@ export async function setInstalledModuleEnabled(
   const sectionRowsById = new Map(sectionRows.map((section) => [section.section_id, section]))
   const sections = sectionDefinitions.map((sectionDefinition) => {
     const sectionRow = sectionRowsById.get(sectionDefinition.id)
-    if (!sectionRow)
+    if (!sectionRow) {
       throw new Error(
         `Installed module section setting ${moduleId}/${sectionDefinition.id} is missing`,
       )
+    }
     return toModuleSectionSetting(sectionDefinition, sectionRow)
   })
   return toModuleSetting(definition, row, sections)
@@ -206,7 +220,9 @@ export async function setInstalledModuleSectionEnabled(
   const definition = definitions.find(
     (candidate) => candidate.moduleId === moduleId && candidate.id === sectionId,
   )
-  if (!definition) return null
+  if (!definition) {
+    return null
+  }
   const database = await connectionOrDefault(connection)
   const [row] = await database<DeploymentModuleSectionRow[]>`
     update deployment_module_sections
@@ -223,7 +239,9 @@ export async function setInstalledModuleSectionEnabled(
     returning module_id, section_id, kind, enabled, declaration_revision,
       disclosure_version, activation_version, updated_at
   `
-  if (!row) throw new Error(`Installed module section setting ${moduleId}/${sectionId} is missing`)
+  if (!row) {
+    throw new Error(`Installed module section setting ${moduleId}/${sectionId} is missing`)
+  }
   invalidateModuleRuntimeState()
   return toModuleSectionSetting(definition, row)
 }
@@ -252,13 +270,14 @@ export async function loadModuleRuntimeState(
     definitions !== installedModuleDefinitions ||
     defaults !== platformNavigationDefaults ||
     sectionDefinitions !== installedModuleSectionDefinitions
-  )
+  ) {
     return loadUncachedModuleRuntimeState(
       await connectionOrDefault(connection),
       definitions,
       defaults,
       sectionDefinitions,
     )
+  }
 
   return loadCachedModuleRuntimeState(
     () =>
@@ -271,8 +290,12 @@ export async function loadModuleRuntimeState(
 
 export async function isInstalledModuleContributionEnabled(moduleId: string, sectionId?: string) {
   const state = await loadModuleRuntimeState()
-  if (!state.enabledModuleIds.includes(moduleId)) return false
-  if (!sectionId) return true
+  if (!state.enabledModuleIds.includes(moduleId)) {
+    return false
+  }
+  if (!sectionId) {
+    return true
+  }
   return state.enabledSections.some(
     (section) => section.moduleId === moduleId && section.sectionId === sectionId,
   )
@@ -287,7 +310,9 @@ export async function loadEnabledReviewerUseDisclosures(
       .filter(({ kind }) => kind === 'sensitive-evidence')
       .map(({ moduleId, id }) => moduleSectionKey(moduleId, id)),
   )
-  if (evidenceSectionKeys.size === 0) return []
+  if (evidenceSectionKeys.size === 0) {
+    return []
+  }
 
   const database = await connectionOrDefault(connection)
   const rows = await database<
@@ -305,9 +330,9 @@ export async function loadEnabledReviewerUseDisclosures(
   return rows
     .filter((row) => evidenceSectionKeys.has(moduleSectionKey(row.module_id, row.section_id)))
     .map((row) => ({
+      disclosureVersion: row.disclosure_version,
       moduleId: row.module_id,
       sectionId: row.section_id,
-      disclosureVersion: row.disclosure_version,
     }))
 }
 
@@ -319,18 +344,19 @@ export async function saveInstalledShellNavigationOrder(
 ) {
   const installedOwners = new Set(['core', ...definitions.map(({ moduleId }) => moduleId)])
   const installedDefaults = defaults.filter(({ ownerId }) => installedOwners.has(ownerId))
-  if (!isCompleteShellNavigationOrder(order, installedDefaults))
+  if (!isCompleteShellNavigationOrder(order, installedDefaults)) {
     throw new Error('Invalid shell navigation order')
+  }
 
   const database = await connectionOrDefault(connection)
   const rows = platformNavigationPlacements.flatMap((placement) =>
     order[placement].map(({ ownerId, navigationId }, position) => ({
-      owner_id: ownerId,
       navigation_id: navigationId,
+      owner_id: ownerId,
       position,
     })),
   )
-  if (rows.length > 0)
+  if (rows.length > 0) {
     await database.begin(async (transaction) => {
       await transaction`
         insert into deployment_shell_navigation_order ${transaction(
@@ -343,6 +369,7 @@ export async function saveInstalledShellNavigationOrder(
         set position = excluded.position, updated_at = now()
       `
     })
+  }
 
   invalidateModuleRuntimeState()
   return loadInstalledShellNavigationOrder(database, definitions, defaults)
@@ -376,11 +403,11 @@ async function loadUncachedModuleRuntimeState(
         declaredSections.has(moduleSectionKey(section.module_id, section.section_id)),
     )
     .map((section) => ({
+      activationVersion: section.activation_version,
+      disclosureVersion: section.disclosure_version,
+      kind: section.kind,
       moduleId: section.module_id,
       sectionId: section.section_id,
-      kind: section.kind,
-      disclosureVersion: section.disclosure_version,
-      activationVersion: section.activation_version,
     }))
   const enabledSectionKeys = new Set(
     enabledSections.map(({ moduleId, sectionId }) => moduleSectionKey(moduleId, sectionId)),
@@ -423,9 +450,9 @@ function toModuleSetting(
   sections: readonly InstalledModuleSectionSetting[],
 ): InstalledModuleSetting {
   return {
-    moduleId: definition.moduleId,
-    enabled: row.enabled,
     defaultEnabled: definition.defaultEnabled,
+    enabled: row.enabled,
+    moduleId: definition.moduleId,
     sections,
     updatedAt: row.updated_at.toISOString(),
   }
@@ -437,9 +464,9 @@ function toModuleSectionSetting(
 ): InstalledModuleSectionSetting {
   return {
     ...definition,
-    enabled: row.enabled,
-    disclosureVersion: row.disclosure_version,
     activationVersion: row.activation_version,
+    disclosureVersion: row.disclosure_version,
+    enabled: row.enabled,
     updatedAt: row.updated_at.toISOString(),
   }
 }

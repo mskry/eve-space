@@ -13,16 +13,13 @@ const api = usePlatformApi()
 const { enabledModuleIds } = usePlatformModuleRuntime()
 const characterId = computed(() => Number(route.params.characterId))
 const activityQuery = usePlatformProtectedQuery(() => ({
-  esiPersistence: { kind: 'none' },
   access: {
     authenticated: true,
     moduleEnabled: enabledModuleIds.value.has('conformance'),
     ownsCharacter: true,
   },
+  esiPersistence: { kind: 'none' },
   moduleId: 'conformance',
-  routeId: 'conformance-character-status',
-  resource: ['activity'],
-  subject: { kind: 'character', characterId: characterId.value },
   query: async ({ signal }) =>
     readPlatformApiResponse(
       await api.api.modules.conformance.characters[':characterId'].$get(
@@ -34,34 +31,41 @@ const activityQuery = usePlatformProtectedQuery(() => ({
       ),
       'Conformance activity is unavailable.',
     ),
+  resource: ['activity'],
+  routeId: 'conformance-character-status',
+  subject: { characterId: characterId.value, kind: 'character' },
 }))
 const resourceState = computed<PlatformResourceState>(() => {
   const resource = activityQuery.data.value?.resource
-  if (resource?.status === 'stale')
+  if (resource?.status === 'stale') {
     return {
-      status: 'stale',
-      title: 'Conformance activity is stale',
       message: 'Showing the last production-shaped fixture snapshot.',
       retryLabel: 'Refresh activity',
+      status: 'stale',
+      title: 'Conformance activity is stale',
     }
-  if (activityQuery.status.value === 'pending')
+  }
+  if (activityQuery.status.value === 'pending') {
     return { status: 'loading', title: 'Loading conformance activity' }
+  }
 
   const error = activityQuery.error.value
-  if (error instanceof ApiQueryError && (error.status === 401 || error.status === 403))
+  if (error instanceof ApiQueryError && (error.status === 401 || error.status === 403)) {
     return {
-      status: 'authorization-required',
-      title: 'Conformance authorization required',
       message: error.message,
       retryLabel: 'Retry authorization',
+      status: 'authorization-required',
+      title: 'Conformance authorization required',
     }
-  if (error)
+  }
+  if (error) {
     return {
-      status: 'unavailable',
-      title: 'Conformance activity unavailable',
       message: error.message,
       retryLabel: 'Retry activity',
+      status: 'unavailable',
+      title: 'Conformance activity unavailable',
     }
+  }
   return { status: 'ready' }
 })
 const { openConfirmDialog } = usePlatformConfirmDialog()
@@ -69,9 +73,9 @@ const { announceSuccess } = usePlatformMutationAnnouncement()
 
 function confirmActivity() {
   openConfirmDialog({
-    title: 'Confirm conformance activity',
     description: 'Confirm the shared interaction surface is active.',
     onConfirm: () => announceSuccess('Conformance activity confirmed.'),
+    title: 'Confirm conformance activity',
   })
 }
 </script>

@@ -49,10 +49,10 @@ describe('worker readiness', () => {
   test('names the expected migration when the migrations table is missing', async () => {
     const connection = vi.fn().mockResolvedValueOnce([{ exists: false, qualified: false }])
 
-    await expect(checkWorkerReadiness(connection as never)).resolves.toEqual({
+    await expect(checkWorkerReadiness(connection as never)).resolves.toStrictEqual({
       healthy: false,
-      reason: `Missing migration ${expectedWorkerIdentity}`,
       missing: { module: 'core', name: expectedWorkerMigration },
+      reason: `Missing migration ${expectedWorkerIdentity}`,
     })
   })
 
@@ -74,11 +74,11 @@ describe('worker readiness', () => {
       .mockResolvedValueOnce(appliedMigrations)
       .mockResolvedValueOnce(provisionedModules)
     const queueProbe = vi.fn().mockResolvedValue({
-      status: 'operational',
       heartbeatAt: new Date().toISOString(),
+      status: 'operational',
     })
 
-    await expect(checkWorkerDependencies(queueProbe, connection as never)).resolves.toEqual({
+    await expect(checkWorkerDependencies(queueProbe, connection as never)).resolves.toStrictEqual({
       healthy: true,
     })
   })
@@ -87,7 +87,7 @@ describe('worker readiness', () => {
     const connection = vi.fn().mockRejectedValue(new Error('password=private-value'))
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
-    await expect(checkWorkerReadiness(connection as never)).resolves.toEqual({
+    await expect(checkWorkerReadiness(connection as never)).resolves.toStrictEqual({
       healthy: false,
       reason: 'Database unavailable',
     })
@@ -100,7 +100,7 @@ describe('worker readiness', () => {
       new ModulePersistenceAttestationError('organization-activity', 'catalog', 'authority'),
     )
 
-    await expect(checkWorkerReadiness(connection as never)).resolves.toEqual({
+    await expect(checkWorkerReadiness(connection as never)).resolves.toStrictEqual({
       healthy: false,
       reason: 'Module persistence attestation organization-activity/catalog rejected: authority',
     })
@@ -113,8 +113,8 @@ describe('worker readiness', () => {
       .mockResolvedValueOnce(appliedMigrations)
       .mockResolvedValueOnce(provisionedModules)
     const queueProbe = vi.fn().mockResolvedValue({
-      status: 'operational',
       heartbeatAt: new Date().toISOString(),
+      status: 'operational',
     })
 
     await expect(assertWorkerReadiness(connection as never)).resolves.toBeUndefined()
@@ -135,9 +135,9 @@ describe('worker readiness', () => {
       .mockResolvedValueOnce([{ exists: true, qualified: true }])
       .mockResolvedValueOnce(appliedMigrations)
       .mockResolvedValueOnce(provisionedModules)
-    const queueProbe = vi.fn().mockResolvedValue({ status: 'unavailable', heartbeatAt: null })
+    const queueProbe = vi.fn().mockResolvedValue({ heartbeatAt: null, status: 'unavailable' })
 
-    await expect(checkWorkerDependencies(queueProbe, connection as never)).resolves.toEqual({
+    await expect(checkWorkerDependencies(queueProbe, connection as never)).resolves.toStrictEqual({
       healthy: false,
       reason: 'Queue Redis unavailable',
     })
@@ -150,7 +150,7 @@ describe('worker readiness', () => {
 
     const result = await checkWorkerDependencies(queueProbe, appliedMigrationConnection() as never)
 
-    expect(result).toEqual({ healthy: false, reason: 'Queue Redis unavailable' })
+    expect(result).toStrictEqual({ healthy: false, reason: 'Queue Redis unavailable' })
     expect(JSON.stringify(result)).not.toContain('private-host')
   })
 
@@ -167,7 +167,7 @@ describe('worker readiness', () => {
 
     await expect(
       checkWorkerStartupDependencies(appliedMigrationConnection() as never, queueProbe),
-    ).resolves.toEqual({ healthy: true })
+    ).resolves.toStrictEqual({ healthy: true })
     await expect(
       assertWorkerStartupDependencies(appliedMigrationConnection() as never, queueProbe),
     ).resolves.toBeUndefined()
@@ -175,10 +175,10 @@ describe('worker readiness', () => {
     // The same state must still read unhealthy for an already-started worker.
     await expect(
       checkWorkerDependencies(
-        vi.fn().mockResolvedValue({ status: 'stale', heartbeatAt: null }),
+        vi.fn().mockResolvedValue({ heartbeatAt: null, status: 'stale' }),
         appliedMigrationConnection() as never,
       ),
-    ).resolves.toEqual({ healthy: false, reason: 'Worker heartbeat stale' })
+    ).resolves.toStrictEqual({ healthy: false, reason: 'Worker heartbeat stale' })
   })
 
   test('refuses to start when the queue Redis is unreachable', async () => {
@@ -186,7 +186,7 @@ describe('worker readiness', () => {
 
     await expect(
       checkWorkerStartupDependencies(appliedMigrationConnection() as never, queueProbe),
-    ).resolves.toEqual({ healthy: false, reason: 'Queue Redis unavailable' })
+    ).resolves.toStrictEqual({ healthy: false, reason: 'Queue Redis unavailable' })
     await expect(
       assertWorkerStartupDependencies(appliedMigrationConnection() as never, queueProbe),
     ).rejects.toThrow('Worker dependency unavailable: Queue Redis unavailable')
@@ -199,7 +199,7 @@ describe('worker readiness', () => {
 
     await expect(
       checkWorkerStartupDependencies(appliedMigrationConnection() as never, queueProbe),
-    ).resolves.toEqual({ healthy: false, reason: 'Queue Redis unavailable' })
+    ).resolves.toStrictEqual({ healthy: false, reason: 'Queue Redis unavailable' })
   })
 
   test('refuses to start before the required migration is applied', async () => {
@@ -213,11 +213,11 @@ describe('worker readiness', () => {
   })
 
   test('fails an already-running worker when its scoped heartbeat is stale', async () => {
-    const queueProbe = vi.fn().mockResolvedValue({ status: 'stale', heartbeatAt: null })
+    const queueProbe = vi.fn().mockResolvedValue({ heartbeatAt: null, status: 'stale' })
 
     await expect(
       checkWorkerDependencies(queueProbe, appliedMigrationConnection() as never),
-    ).resolves.toEqual({ healthy: false, reason: 'Worker heartbeat stale' })
+    ).resolves.toStrictEqual({ healthy: false, reason: 'Worker heartbeat stale' })
   })
 
   test('names a missing installed-module migration without running it', async () => {
@@ -231,10 +231,10 @@ describe('worker readiness', () => {
       { module: 'alpha', name: 'alpha-001-initial.sql' },
     ]
 
-    await expect(checkWorkerReadiness(connection as never, requirements)).resolves.toEqual({
+    await expect(checkWorkerReadiness(connection as never, requirements)).resolves.toStrictEqual({
       healthy: false,
-      reason: 'Missing migration alpha/alpha-001-initial.sql',
       missing: { module: 'alpha', name: 'alpha-001-initial.sql' },
+      reason: 'Missing migration alpha/alpha-001-initial.sql',
     })
     expect(connection).toHaveBeenCalledTimes(2)
   })
@@ -242,10 +242,10 @@ describe('worker readiness', () => {
   test('reports a qualified migration requirement for a legacy ledger', async () => {
     const connection = vi.fn().mockResolvedValueOnce([{ exists: true, qualified: false }])
 
-    await expect(checkWorkerReadiness(connection as never)).resolves.toEqual({
+    await expect(checkWorkerReadiness(connection as never)).resolves.toStrictEqual({
       healthy: false,
-      reason: `Missing migration ${expectedWorkerIdentity}`,
       missing: { module: 'core', name: expectedWorkerMigration },
+      reason: `Missing migration ${expectedWorkerIdentity}`,
     })
     expect(connection).toHaveBeenCalledTimes(1)
   })
@@ -263,10 +263,10 @@ describe('worker readiness', () => {
         [{ module: 'core', name: expectedWorkerMigration }],
         ['empty-module'],
       ),
-    ).resolves.toEqual({
+    ).resolves.toStrictEqual({
       healthy: false,
-      reason: 'Missing module provisioning empty-module',
       missingProvisioning: 'empty-module',
+      reason: 'Missing module provisioning empty-module',
     })
     expect(connection).toHaveBeenCalledTimes(3)
   })
@@ -284,6 +284,6 @@ describe('worker readiness', () => {
         [{ module: 'core', name: expectedWorkerMigration }],
         ['empty-module'],
       ),
-    ).resolves.toEqual({ healthy: true })
+    ).resolves.toStrictEqual({ healthy: true })
   })
 })

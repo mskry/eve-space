@@ -42,7 +42,7 @@ describe('API production image', () => {
       }),
     ])
 
-    expect(JSON.parse(verification)).toEqual({ verified: true })
+    expect(JSON.parse(verification)).toStrictEqual({ verified: true })
   })
 })
 
@@ -101,8 +101,11 @@ function runDocker(arguments_: readonly string[], timeout = 60_000) {
     encoding: 'utf8',
     timeout,
   })
-  if (result.error) throw result.error
-  if (result.status !== 0)
+  if (result.error) {
+    throw result.error
+  }
+  if (result.status !== 0) {
     throw new Error(`docker ${arguments_.join(' ')} failed:\n${result.stdout}\n${result.stderr}`)
+  }
   return result.stdout.trim()
 }

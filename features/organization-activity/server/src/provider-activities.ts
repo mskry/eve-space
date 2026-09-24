@@ -7,18 +7,18 @@ import type { ActivitySourceRead } from './activity-source.js'
 import type { ActivitySnapshot } from './snapshot.js'
 
 const activityKindMetadata = {
-  project: {
-    resourceId: 'character-projects',
-    pageId: 'organization-activity-projects',
-  },
-  job: { resourceId: 'character-jobs', pageId: 'organization-activity-jobs' },
   campaign: {
-    resourceId: 'character-campaigns',
     pageId: 'organization-activity-campaigns',
+    resourceId: 'character-campaigns',
   },
+  job: { pageId: 'organization-activity-jobs', resourceId: 'character-jobs' },
   objective: {
-    resourceId: 'character-campaigns',
     pageId: 'organization-activity-campaigns',
+    resourceId: 'character-campaigns',
+  },
+  project: {
+    pageId: 'organization-activity-projects',
+    resourceId: 'character-projects',
   },
 } as const satisfies Record<
   ActivitySnapshot['kind'],
@@ -46,7 +46,9 @@ export function combineActivitySources(
   const activities: PlatformActivity[] = []
   for (const record of records.values()) {
     const activity = createActivity(record, characters, privateSources)
-    if (activity) activities.push(activity)
+    if (activity) {
+      activities.push(activity)
+    }
   }
   return activities.toSorted(compareActivities).slice(0, 100)
 }
@@ -55,23 +57,25 @@ function collectSourceRecords(
   sources: readonly ActivitySourceRead[],
   records: Map<string, ActivityRecord>,
 ) {
-  for (const source of sources)
+  for (const source of sources) {
     for (const snapshot of source.snapshots) {
       const existing = records.get(snapshot.id)
       if (!existing || (source.status.status === 'current' && snapshot.description !== null))
         records.set(snapshot.id, { snapshot, source })
     }
+  }
 }
 
 function collectPrivateJobRecords(
   privateSources: readonly CharacterActivitySources[],
   records: Map<string, ActivityRecord>,
 ) {
-  for (const participation of privateSources)
+  for (const participation of privateSources) {
     for (const source of participation.sources)
       for (const snapshot of source.snapshots)
         if (snapshot.kind === 'job' && !records.has(snapshot.id))
           records.set(snapshot.id, { snapshot, source })
+  }
 }
 
 function createActivity(
@@ -79,7 +83,9 @@ function createActivity(
   characters: readonly PlatformActivityProviderCharacter[],
   privateSources: readonly CharacterActivitySources[],
 ): PlatformActivity | null {
-  if (snapshot.state !== 'Active') return null
+  if (snapshot.state !== 'Active') {
+    return null
+  }
   const managed = characters.filter(
     (character) =>
       character.membership === 'managed' &&
@@ -94,29 +100,29 @@ function createActivity(
   const authorization = participation.find((item) => item.state === 'authorization-required')
   const selectedCharacter = eligibleCharacterIds[0] ?? authorization?.characterId ?? null
   return {
-    id: snapshot.id,
-    kind: snapshot.kind,
-    title: snapshot.title,
-    summary: snapshot.description?.slice(0, 2000) ?? snapshot.objective,
-    objective: snapshot.objective,
-    state: snapshot.state,
-    progress: snapshot.progress,
-    reward: snapshot.reward,
-    requiredAction: requiredActionFor(authorization, selectedCharacter),
-    organizationPriority: 0,
     deadline: snapshot.deadline,
     eligibleCharacterIds,
-    participation,
-    linkTarget: {
-      pageId: activityKindMetadata[snapshot.kind].pageId,
-      characterId: selectedCharacter,
-      activityId: snapshot.campaignId ?? snapshot.id,
-      corporationId: snapshot.corporationId,
-    },
     freshness: {
-      state: source.status.status === 'current' ? 'current' : 'stale',
       collectedAt: source.status.validatedAt,
+      state: source.status.status === 'current' ? 'current' : 'stale',
     },
+    id: snapshot.id,
+    kind: snapshot.kind,
+    linkTarget: {
+      activityId: snapshot.campaignId ?? snapshot.id,
+      characterId: selectedCharacter,
+      corporationId: snapshot.corporationId,
+      pageId: activityKindMetadata[snapshot.kind].pageId,
+    },
+    objective: snapshot.objective,
+    organizationPriority: 0,
+    participation,
+    progress: snapshot.progress,
+    requiredAction: requiredActionFor(authorization, selectedCharacter),
+    reward: snapshot.reward,
+    state: snapshot.state,
+    summary: snapshot.description?.slice(0, 2000) ?? snapshot.objective,
+    title: snapshot.title,
   }
 }
 
@@ -130,18 +136,20 @@ function createParticipation(
   const privateSource = privateSources
     .find((item) => item.characterId === character.characterId)
     ?.sources.find((item) => item.resourceId === resourceId)
-  if (privateSource?.status.status === 'authorization-required')
+  if (privateSource?.status.status === 'authorization-required') {
     return {
       characterId: character.characterId,
-      state: 'authorization-required',
       contribution: null,
+      state: 'authorization-required',
     }
+  }
   if (
     source.status.status !== 'current' ||
     character.affiliationFreshness !== 'fresh' ||
     privateSource?.status.status !== 'current'
-  )
-    return { characterId: character.characterId, state: 'unavailable', contribution: null }
+  ) {
+    return { characterId: character.characterId, contribution: null, state: 'unavailable' }
+  }
   const own = privateSource.snapshots.find((item) => item.id === snapshot.id)
   const participatingObjective =
     snapshot.kind === 'campaign'
@@ -149,16 +157,17 @@ function createParticipation(
           (item) => item.campaignId === snapshot.id && item.committed === true,
         )
       : undefined
-  if (own?.committed || participatingObjective)
+  if (own?.committed || participatingObjective) {
     return {
       characterId: character.characterId,
-      state: 'participating',
       contribution: snapshot.kind === 'campaign' ? null : (own?.contributed ?? null),
+      state: 'participating',
     }
+  }
   return {
     characterId: character.characterId,
-    state: snapshot.eligibility === 'unrestricted' ? 'eligible' : 'unavailable',
     contribution: own?.contributed ?? null,
+    state: snapshot.eligibility === 'unrestricted' ? 'eligible' : 'unavailable',
   }
 }
 
@@ -174,17 +183,19 @@ function requiredActionFor(
   authorization: PlatformActivityParticipation | undefined,
   selectedCharacter: number | null,
 ): PlatformActivity['requiredAction'] {
-  if (authorization)
+  if (authorization) {
     return {
+      characterId: authorization.characterId,
       kind: 'authorization',
       label: 'Authorize this character to view participation',
-      characterId: authorization.characterId,
     }
-  if (selectedCharacter !== null)
+  }
+  if (selectedCharacter !== null) {
     return {
+      characterId: selectedCharacter,
       kind: 'participation',
       label: 'View participation in EVE Online',
-      characterId: selectedCharacter,
     }
+  }
   return null
 }

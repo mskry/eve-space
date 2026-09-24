@@ -12,7 +12,7 @@ const queryCache = useQueryCache()
 providePlatformQueryPersistence((key) => readQueryPersistenceState(queryCache, key))
 usePlatformModulePersistenceLifecycle(({ admissionScopes }) => {
   for (const admissionScope of admissionScopes) {
-    void invalidatePrivateQueryScope(queryCache, { kind: 'organization', admissionScope })
+    void invalidatePrivateQueryScope(queryCache, { admissionScope, kind: 'organization' })
   }
 })
 
@@ -27,30 +27,30 @@ const canonicalUrl = computed(() => new URL(route.path, siteUrl).toString())
 
 useHead(() => ({
   link: [
-    { rel: 'canonical', href: canonicalUrl.value },
-    { rel: 'preconnect', href: apiOrigin, crossorigin: 'use-credentials' },
-    { rel: 'preconnect', href: 'https://images.evetech.net' },
+    { href: canonicalUrl.value, rel: 'canonical' },
+    { crossorigin: 'use-credentials', href: apiOrigin, rel: 'preconnect' },
+    { href: 'https://images.evetech.net', rel: 'preconnect' },
   ],
 }))
 
 useSeoMeta({
   description: siteDescription,
-  ogTitle: siteTitle,
   ogDescription: siteDescription,
-  ogType: 'website',
-  ogUrl: () => canonicalUrl.value,
-  ogSiteName: 'EVE Space',
-  ogLocale: 'en_US',
   ogImage: socialImage,
-  ogImageWidth: 1200,
+  ogImageAlt: 'EVE Space capsuleer operations deck',
   ogImageHeight: 630,
   ogImageType: 'image/png',
-  ogImageAlt: 'EVE Space capsuleer operations deck',
+  ogImageWidth: 1200,
+  ogLocale: 'en_US',
+  ogSiteName: 'EVE Space',
+  ogTitle: siteTitle,
+  ogType: 'website',
+  ogUrl: () => canonicalUrl.value,
   twitterCard: 'summary_large_image',
-  twitterTitle: siteTitle,
   twitterDescription: siteDescription,
   twitterImage: socialImage,
   twitterImageAlt: 'EVE Space capsuleer operations deck',
+  twitterTitle: siteTitle,
 })
 
 const coladaDevtools = import.meta.dev

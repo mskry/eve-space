@@ -3,18 +3,6 @@ import { findDependencyCycles } from '../dependency-cycles.js'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
-  policy: [
-    'access-policy',
-    'affiliation-freshness',
-    'authority-policy',
-    'compliance-evaluator',
-    'freshness',
-    'group-mutation-error',
-    'managed-corporation-evidence',
-    'owner-claim-policy',
-    'permission-catalog-policy',
-    'registration-policy',
-  ],
   adapter: [
     'activity-context',
     'authority',
@@ -35,22 +23,6 @@ const modulesByTier = {
     'roster-collection',
     'roster-coverage',
   ],
-  observability: [
-    'audit',
-    'audit-history',
-    'entitlement-transitions',
-    'group-audit',
-    'permission-bundle-audit',
-    'sensitive-access-audit',
-  ],
-  service: [
-    'effective-authority',
-    'group-assignment-expiry',
-    'group-compliance',
-    'group-permissions',
-    'management-authority',
-    'module-authorization',
-  ],
   application: [
     'activity',
     'block-store',
@@ -69,6 +41,34 @@ const modulesByTier = {
     'role-store',
   ],
   entry: ['compliance-repair'],
+  observability: [
+    'audit',
+    'audit-history',
+    'entitlement-transitions',
+    'group-audit',
+    'permission-bundle-audit',
+    'sensitive-access-audit',
+  ],
+  policy: [
+    'access-policy',
+    'affiliation-freshness',
+    'authority-policy',
+    'compliance-evaluator',
+    'freshness',
+    'group-mutation-error',
+    'managed-corporation-evidence',
+    'owner-claim-policy',
+    'permission-catalog-policy',
+    'registration-policy',
+  ],
+  service: [
+    'effective-authority',
+    'group-assignment-expiry',
+    'group-compliance',
+    'group-permissions',
+    'management-authority',
+    'module-authorization',
+  ],
   transport: [
     'route-middleware',
     'routes',
@@ -88,12 +88,12 @@ const tierByModule = new Map<string, OrganizationTier>(
 )
 
 const allowedImportTiersBySourceTier: Record<OrganizationTier, readonly OrganizationTier[]> = {
-  policy: ['policy'],
   adapter: ['policy', 'adapter'],
-  observability: ['policy', 'observability'],
-  service: ['policy', 'adapter', 'observability', 'service'],
   application: ['policy', 'adapter', 'observability', 'service', 'application'],
   entry: ['policy', 'adapter', 'observability', 'service', 'application', 'entry'],
+  observability: ['policy', 'observability'],
+  policy: ['policy'],
+  service: ['policy', 'adapter', 'observability', 'service'],
   transport: ['policy', 'adapter', 'observability', 'service', 'application', 'transport'],
 }
 
@@ -111,13 +111,16 @@ export function organizationImportViolations(sources: readonly OrganizationSourc
 function violationsForSource(source: OrganizationSource) {
   const module = moduleName(source.path)
   const sourceTier = tierByModule.get(module)
-  if (!sourceTier) return [`${source.path}: Organization module ${module} has no declared tier`]
+  if (!sourceTier) {
+    return [`${source.path}: Organization module ${module} has no declared tier`]
+  }
 
   return typescriptModuleSpecifiers(source.path, source.source).flatMap((specifier) => {
-    if (sourceTier === 'policy' && !specifier.startsWith('./'))
+    if (sourceTier === 'policy' && !specifier.startsWith('./')) {
       return [
         `${source.path}: policy module ${module} cannot import outside organization: ${specifier}`,
       ]
+    }
     return violationsForImport(source.path, module, sourceTier, specifier)
   })
 }
@@ -129,10 +132,14 @@ function violationsForImport(
   specifier: string,
 ) {
   const importedModule = localModuleName(specifier)
-  if (!importedModule) return []
+  if (!importedModule) {
+    return []
+  }
 
   const importedTier = tierByModule.get(importedModule)
-  if (!importedTier || allowedImportTiersBySourceTier[sourceTier].includes(importedTier)) return []
+  if (!importedTier || allowedImportTiersBySourceTier[sourceTier].includes(importedTier)) {
+    return []
+  }
 
   return [
     `${path}: ${sourceTier} module ${module} cannot import ${importedTier} module ${importedModule}`,
@@ -153,6 +160,8 @@ function moduleName(path: string) {
 }
 
 function localModuleName(specifier: string) {
-  if (!specifier.startsWith('./')) return undefined
+  if (!specifier.startsWith('./')) {
+    return
+  }
   return moduleName(specifier)
 }

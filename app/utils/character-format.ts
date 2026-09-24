@@ -3,8 +3,8 @@ export function formatBirthday(birthday: string) {
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: 'long',
-    year: 'numeric',
     timeZone: 'UTC',
+    year: 'numeric',
   }).format(new Date(birthday))
 }
 
@@ -13,8 +13,8 @@ export function formatBirthdayShort(birthday: string) {
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric',
     timeZone: 'UTC',
+    year: 'numeric',
   })
     .format(new Date(birthday))
     .replaceAll('/', '.')
@@ -23,7 +23,7 @@ export function formatBirthdayShort(birthday: string) {
 /** Abbreviated ISK/SP amount for tight layouts, e.g. `1.2B`. */
 export function formatCompactAmount(value: number) {
   return new Intl.NumberFormat('en-US', {
-    notation: 'compact',
     maximumFractionDigits: 1,
+    notation: 'compact',
   }).format(value)
 }

@@ -19,10 +19,10 @@ export function createPlatformModuleActivityProviderCapabilities<
 ) {
   return {
     collectionStatus: createPlatformModuleCollectionStatusReads({
-      moduleId,
-      sectionId,
-      organizationVersion: context.organizationVersion,
       characters: context.characters,
+      moduleId,
+      organizationVersion: context.organizationVersion,
+      sectionId,
       signal: context.signal,
     }),
     coreData: createCoreDataCapability(productIds, 'activity-provider'),

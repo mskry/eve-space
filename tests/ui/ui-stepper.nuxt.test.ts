@@ -6,7 +6,9 @@ import UiStepper from '../../layers/ui/app/components/ui/UiStepper.vue'
 const mountedWrappers: { unmount: () => void }[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
 })
 
 function createHost() {
@@ -24,10 +26,10 @@ function createHost() {
           h(UiStepper, {
             label: 'Deployment setup',
             modelValue: value.value,
-            steps,
             'onUpdate:modelValue': (next: number) => {
               value.value = next
             },
+            steps,
           }),
         ])
     },

@@ -9,9 +9,9 @@ import {
 const identity = {
   moduleId: 'member-audit',
   resourceId: 'character-skills',
+  subjectId: '1404328063',
   subjectKind: 'character' as const,
   subjectLifecycleId: randomUUID(),
-  subjectId: '1404328063',
 }
 
 describe('installed resource eligibility', () => {
@@ -19,8 +19,8 @@ describe('installed resource eligibility', () => {
     const connection = vi.fn()
 
     await expect(
-      selectDueInstalledResources({ limit: 10, resources: [], connection: connection as never }),
-    ).resolves.toEqual([])
+      selectDueInstalledResources({ connection: connection as never, limit: 10, resources: [] }),
+    ).resolves.toStrictEqual([])
     expect(connection).not.toHaveBeenCalled()
   })
 
@@ -30,7 +30,7 @@ describe('installed resource eligibility', () => {
       const connection = vi.fn()
 
       await expect(
-        selectDueInstalledResources({ limit, resources: [], connection: connection as never }),
+        selectDueInstalledResources({ connection: connection as never, limit, resources: [] }),
       ).rejects.toThrow('Resource planning limit must be a positive safe integer')
       expect(connection).not.toHaveBeenCalled()
     },
@@ -41,9 +41,9 @@ describe('installed resource eligibility', () => {
 
     await expect(
       selectDueInstalledResources({
+        connection: vi.fn() as never,
         limit: 10,
         resources: [descriptor, descriptor],
-        connection: vi.fn() as never,
       }),
     ).rejects.toThrow('Duplicate installed resource planning identity')
   })
@@ -52,48 +52,48 @@ describe('installed resource eligibility', () => {
     const connection = vi.fn()
     await expect(
       resolveInstalledResourceEligibility(identity, { connection: connection as never }),
-    ).resolves.toEqual({ status: 'resource-unavailable' })
+    ).resolves.toStrictEqual({ status: 'resource-unavailable' })
     expect(connection).not.toHaveBeenCalled()
   })
 
   test.each([
     [[], { status: 'obsolete' }],
     [
-      [row({ eligibilityStatus: 'disabled', dueReason: null, schedulingKey: null })],
+      [row({ dueReason: null, eligibilityStatus: 'disabled', schedulingKey: null })],
       {
-        status: 'disabled',
         authorizationGeneration: 7,
         dueReason: null,
-        schedulingKey: null,
-        nextEligibleAt: null,
-        validatedAt: null,
         lastFailureClass: null,
         managedAuthority: null,
+        nextEligibleAt: null,
+        schedulingKey: null,
+        status: 'disabled',
+        validatedAt: null,
       },
     ],
   ])('fails closed for obsolete or disabled durable state', async (rows, expected) => {
-    await expect(resolve(rows)).resolves.toEqual(expected)
+    await expect(resolve(rows)).resolves.toStrictEqual(expected)
   })
 
   test('derives required scope and generation from the operation catalog', async () => {
     await expect(
       resolve([
         row({
-          eligibilityStatus: 'authorization-required',
           dueReason: null,
+          eligibilityStatus: 'authorization-required',
           schedulingKey: null,
         }),
       ]),
-    ).resolves.toEqual({
-      status: 'authorization-required',
+    ).resolves.toStrictEqual({
       authorizationGeneration: 7,
-      requiredScope: 'esi-skills.read_skills.v1',
       dueReason: null,
-      schedulingKey: null,
-      nextEligibleAt: null,
-      validatedAt: null,
       lastFailureClass: null,
       managedAuthority: null,
+      nextEligibleAt: null,
+      requiredScope: 'esi-skills.read_skills.v1',
+      schedulingKey: null,
+      status: 'authorization-required',
+      validatedAt: null,
     })
   })
 
@@ -116,26 +116,26 @@ describe('installed resource eligibility', () => {
     await expect(
       resolve([
         row({
-          organizationDeploymentId: 1,
-          organizationVersion: '7',
-          targetUserId: '00000000-0000-4000-8000-000000000002',
-          managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
           authoritySectionId: 'skills',
           disclosureVersion: 2,
-          sectionActivationVersion: 3,
           lastFailureClass: 'esi-unavailable',
+          managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+          organizationDeploymentId: 1,
+          organizationVersion: '7',
+          sectionActivationVersion: 3,
+          targetUserId: '00000000-0000-4000-8000-000000000002',
         }),
       ]),
     ).resolves.toMatchObject({
       lastFailureClass: 'esi-unavailable',
       managedAuthority: {
+        disclosureVersion: 2,
+        managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
         organizationDeploymentId: 1,
         organizationVersion: 7,
-        targetUserId: '00000000-0000-4000-8000-000000000002',
-        managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
-        sectionId: 'skills',
-        disclosureVersion: 2,
         sectionActivationVersion: 3,
+        sectionId: 'skills',
+        targetUserId: '00000000-0000-4000-8000-000000000002',
       },
     })
   })
@@ -144,13 +144,13 @@ describe('installed resource eligibility', () => {
     await expect(
       resolve([
         row({
-          organizationDeploymentId: 1,
-          organizationVersion: 7,
-          targetUserId: null,
-          managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
           authoritySectionId: 'skills',
           disclosureVersion: 2,
+          managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
+          organizationDeploymentId: 1,
+          organizationVersion: 7,
           sectionActivationVersion: 3,
+          targetUserId: null,
         }),
       ]),
     ).rejects.toThrow('incomplete managed authority')
@@ -185,16 +185,16 @@ describe('installed resource eligibility', () => {
     const corporationIdentity = {
       moduleId: 'core',
       resourceId: 'corporation-members',
+      subjectId: '98000001',
       subjectKind: 'corporation' as const,
       subjectLifecycleId: randomUUID(),
-      subjectId: '98000001',
     }
     const connection = vi.fn().mockResolvedValue([
       row({
         ...corporationIdentity,
-        operationId: 'corporation-members',
         authorizationCharacterId: '1404328063',
         authorizationCharacterLifecycleId: '00000000-0000-4000-8000-000000000030',
+        operationId: 'corporation-members',
       }),
     ])
 
@@ -203,18 +203,18 @@ describe('installed resource eligibility', () => {
         connection: connection as never,
         resources: [
           {
-            moduleId: 'core',
-            resourceId: 'corporation-members',
-            operationId: 'corporation-members',
-            subjectKind: 'corporation',
-            materializationIntervalSeconds: 900,
             eligibility: { kind: 'current-managed-corporation-source' },
             implementation: {},
+            materializationIntervalSeconds: 900,
+            moduleId: 'core',
+            operationId: 'corporation-members',
+            resourceId: 'corporation-members',
+            subjectKind: 'corporation',
           },
         ],
       }),
     ).resolves.toMatchObject({
-      authorizationCharacterId: 1404328063,
+      authorizationCharacterId: 1_404_328_063,
       authorizationCharacterLifecycleId: '00000000-0000-4000-8000-000000000030',
     })
   })
@@ -223,15 +223,15 @@ describe('installed resource eligibility', () => {
     const corporationIdentity = {
       moduleId: 'core',
       resourceId: 'corporation-members',
+      subjectId: '98000001',
       subjectKind: 'corporation' as const,
       subjectLifecycleId: randomUUID(),
-      subjectId: '98000001',
     }
     const connection = vi.fn().mockResolvedValue([
       row({
         ...corporationIdentity,
-        operationId: 'corporation-members',
         authorizationCharacterId: 'invalid',
+        operationId: 'corporation-members',
       }),
     ])
 
@@ -240,13 +240,13 @@ describe('installed resource eligibility', () => {
         connection: connection as never,
         resources: [
           {
-            moduleId: 'core',
-            resourceId: 'corporation-members',
-            operationId: 'corporation-members',
-            subjectKind: 'corporation',
-            materializationIntervalSeconds: 900,
             eligibility: { kind: 'current-managed-corporation-source' },
             implementation: {},
+            materializationIntervalSeconds: 900,
+            moduleId: 'core',
+            operationId: 'corporation-members',
+            resourceId: 'corporation-members',
+            subjectKind: 'corporation',
           },
         ],
       }),
@@ -257,7 +257,7 @@ describe('installed resource eligibility', () => {
     const connection = vi
       .fn()
       .mockResolvedValue([
-        row({ eligibilityStatus: 'disabled', dueReason: null, schedulingKey: null }),
+        row({ dueReason: null, eligibilityStatus: 'disabled', schedulingKey: null }),
       ])
 
     await resolveInstalledResourceEligibility(identity, {
@@ -265,7 +265,7 @@ describe('installed resource eligibility', () => {
       resources: [resource('skills')],
     })
 
-    expect(JSON.parse(connection.mock.calls[0]![1] as string)).toEqual([
+    expect(JSON.parse(connection.mock.calls[0]![1] as string)).toStrictEqual([
       expect.objectContaining({ module_id: 'member-audit', section_id: 'skills' }),
     ])
   })
@@ -275,25 +275,25 @@ describe('installed resource eligibility', () => {
       resolve(
         [
           row({
-            expectedAuthorizationGeneration: null,
-            requiredScope: null,
             dueReason: 'future',
-            schedulingKey: new Date('2026-08-27T00:00:00Z'),
+            expectedAuthorizationGeneration: null,
             nextEligibleAt: new Date('2026-08-27T00:00:00Z'),
+            requiredScope: null,
+            schedulingKey: new Date('2026-08-27T00:00:00Z'),
           }),
         ],
         'status',
       ),
-    ).resolves.toEqual({
-      status: 'eligible',
+    ).resolves.toStrictEqual({
+      authorizationGeneration: null,
       due: false,
       dueReason: 'future',
-      schedulingKey: new Date('2026-08-27T00:00:00Z'),
-      authorizationGeneration: null,
-      nextEligibleAt: new Date('2026-08-27T00:00:00Z'),
-      validatedAt: null,
       lastFailureClass: null,
       managedAuthority: null,
+      nextEligibleAt: new Date('2026-08-27T00:00:00Z'),
+      schedulingKey: new Date('2026-08-27T00:00:00Z'),
+      status: 'eligible',
+      validatedAt: null,
     })
   })
 
@@ -310,33 +310,33 @@ describe('installed resource eligibility', () => {
         resolve([
           row({
             dueReason,
-            schedulingKey,
             nextEligibleAt,
+            schedulingKey,
           }),
         ]),
-      ).resolves.toEqual({
-        status: 'eligible',
+      ).resolves.toStrictEqual({
+        authorizationGeneration: 7,
         due,
         dueReason,
-        schedulingKey,
-        authorizationGeneration: 7,
-        nextEligibleAt,
-        validatedAt: null,
         lastFailureClass: null,
         managedAuthority: null,
+        nextEligibleAt,
+        schedulingKey,
+        status: 'eligible',
+        validatedAt: null,
       })
     },
   )
 
   test('compares every managed authority identity field', () => {
     const authority = {
+      disclosureVersion: 2,
+      managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
       organizationDeploymentId: 1 as const,
       organizationVersion: 7,
-      targetUserId: '00000000-0000-4000-8000-000000000002',
-      managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
-      sectionId: 'skills',
-      disclosureVersion: 2,
       sectionActivationVersion: 3,
+      sectionId: 'skills',
+      targetUserId: '00000000-0000-4000-8000-000000000002',
     }
 
     expect(managedCollectionAuthorityEquals(authority, { ...authority })).toBe(true)
@@ -365,36 +365,36 @@ function resolve(rows: unknown[], operationId = 'skills') {
 
 function resource(operationId: string) {
   return {
-    moduleId: identity.moduleId,
-    sectionId: 'skills',
-    resourceId: identity.resourceId,
-    operationId,
-    subjectKind: 'character' as const,
-    materializationIntervalSeconds: 900,
     eligibility: { kind: 'current-owned-character' as const },
     implementation: {},
+    materializationIntervalSeconds: 900,
+    moduleId: identity.moduleId,
+    operationId,
+    resourceId: identity.resourceId,
+    sectionId: 'skills',
+    subjectKind: 'character' as const,
   }
 }
 
 function row(overrides: Record<string, unknown> = {}) {
   return {
     ...identity,
-    operationId: 'skills',
-    eligibilityStatus: 'eligible',
-    expectedAuthorizationGeneration: 7,
-    requiredScope: 'esi-skills.read_skills.v1',
-    organizationDeploymentId: null,
-    organizationVersion: null,
-    targetUserId: null,
-    managedMemberLifecycleId: null,
     authoritySectionId: null,
     disclosureVersion: null,
-    sectionActivationVersion: null,
     dueReason: 'never-collected',
-    schedulingKey: epoch,
-    nextEligibleAt: null,
-    validatedAt: null,
+    eligibilityStatus: 'eligible',
+    expectedAuthorizationGeneration: 7,
     lastFailureClass: null,
+    managedMemberLifecycleId: null,
+    nextEligibleAt: null,
+    operationId: 'skills',
+    organizationDeploymentId: null,
+    organizationVersion: null,
+    requiredScope: 'esi-skills.read_skills.v1',
+    schedulingKey: epoch,
+    sectionActivationVersion: null,
+    targetUserId: null,
+    validatedAt: null,
     ...overrides,
   }
 }

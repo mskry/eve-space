@@ -6,7 +6,9 @@ import MailComposeDialog from '../../app/components/mail/MailComposeDialog.vue'
 const mountedWrappers: { unmount: () => void }[] = []
 
 afterEach(() => {
-  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
   document.body.replaceChildren()
 })
 
@@ -28,8 +30,8 @@ describe('MailComposeDialog', () => {
     document.querySelector('form')?.dispatchEvent(new SubmitEvent('submit', { bubbles: true }))
     await nextTick()
 
-    expect(wrapper.emitted('removeRecipient')?.[0]).toEqual([recipient])
-    expect(wrapper.emitted('addRecipient')?.[0]).toEqual([
+    expect(wrapper.emitted('removeRecipient')?.[0]).toStrictEqual([recipient])
+    expect(wrapper.emitted('addRecipient')?.[0]).toStrictEqual([
       { id: 91, name: 'Suggestion Corp', type: 'corporation' },
     ])
     expect(wrapper.emitted('recoverCharge')).toHaveLength(1)
@@ -88,7 +90,7 @@ async function mountDialog(overrides: Record<string, unknown> = {}) {
     attachTo: document.body,
     props: {
       body: 'Message body',
-      bodyRemaining: 9_988,
+      bodyRemaining: 9988,
       chargeRecoveryAvailable: true,
       feedback: 'Provider feedback',
       mode: 'new',

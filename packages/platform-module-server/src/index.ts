@@ -75,11 +75,10 @@ export function definePlatformExecutableEsiOperation<
   Policy & { readonly audit: Policy['audit'] & { readonly esiOperationId: SdkOperation } }
 > {
   const descriptor = operationRegistry[definition.sdkOperationId]
-  if (!descriptor)
+  if (!descriptor) {
     throw new Error(`Unknown ESI SDK operation identity: ${definition.sdkOperationId}`)
+  }
   return {
-    sdkOperationId: definition.sdkOperationId,
-    descriptor,
     contract: {
       ...definition.policy,
       audit: {
@@ -87,5 +86,7 @@ export function definePlatformExecutableEsiOperation<
         esiOperationId: definition.sdkOperationId,
       },
     },
+    descriptor,
+    sdkOperationId: definition.sdkOperationId,
   }
 }

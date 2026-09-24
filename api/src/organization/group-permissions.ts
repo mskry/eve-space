@@ -20,13 +20,13 @@ export async function getOrganizationGroupPermissions(
   await expireCurrentOrganizationGroupAssignments(now)
   const permissions = await db
     .select({
-      type: organizationPermissionBundleEntries.permissionType,
-      key: organizationPermissionBundleEntries.permissionKey,
-      publisherPackage: organizationPermissionBundleEntries.publisherPackage,
-      moduleId: organizationPermissionBundleEntries.moduleId,
-      reviewAllowed: organizationPermissionBundleEntries.reviewAllowed,
       complianceState: organizationAccountCompliance.state,
+      key: organizationPermissionBundleEntries.permissionKey,
       moduleEnabled: deploymentModules.enabled,
+      moduleId: organizationPermissionBundleEntries.moduleId,
+      publisherPackage: organizationPermissionBundleEntries.publisherPackage,
+      reviewAllowed: organizationPermissionBundleEntries.reviewAllowed,
+      type: organizationPermissionBundleEntries.permissionType,
     })
     .from(deploymentSettings)
     .leftJoin(
@@ -136,12 +136,13 @@ export async function getOrganizationGroupPermissions(
               !permission.publisherPackage ||
               !permission.moduleId ||
               !permission.moduleEnabled
-            )
+            ) {
               return false
+            }
             const declaration = currentCatalogPermission({
-              publisherPackage: permission.publisherPackage,
-              moduleId: permission.moduleId,
               key: permission.key,
+              moduleId: permission.moduleId,
+              publisherPackage: permission.publisherPackage,
             })
             return Boolean(
               declaration &&

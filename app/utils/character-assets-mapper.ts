@@ -37,14 +37,14 @@ export function mapCharacterAssets(response: CharacterAssetsResponse): AssetColl
       parentItemId: asset.parentItemId,
     })),
     enrichment: {
-      types: response.enrichment.types,
-      names: response.enrichment.names,
       locations: response.enrichment.locations,
+      names: response.enrichment.names,
+      types: response.enrichment.types,
     },
-    stale: response.stale,
-    validatedAt: response.validatedAt,
     refreshFailureClass: response.refreshFailureClass ?? null,
     retryAt: response.retryAt ?? null,
+    stale: response.stale,
+    validatedAt: response.validatedAt,
   }
 }
 
@@ -61,46 +61,89 @@ export function mapCharacterAssetsResourceState({
   // must offer a retry rather than a spinner that nothing will ever resolve.
   parked?: boolean
 }): AssetResourceState {
-  const normalizedError = error instanceof Error ? error : null
-  const apiError = normalizedError instanceof ApiQueryError ? normalizedError : null
-  const accessRequired = apiError?.code === 'EVE_SCOPE_REQUIRED'
-  const authorizationRejected = apiError?.code === 'EVE_REAUTH_REQUIRED'
-  const authorizationRequired = accessRequired || authorizationRejected
-  const retainedFailureClass = data?.stale ? data.refreshFailureClass : null
-  const cooldown =
-    apiError?.status === 429 ||
-    apiError?.code === 'ESI_COOLDOWN' ||
-    retainedFailureClass === 'esi-cooldown'
-  const retained = data != null
+  const {
+    normalizedError,
+    apiError,
+    accessRequired,
+    authorizationRejected,
+    authorizationRequired,
+    retainedFailureClass,
+    cooldown,
+    retained,
+  } = classifyAssetsResource(error, data)
 
   return {
     phase: resourcePhase({
-      retained,
-      loading,
       accessRequired,
       authorizationRejected,
       cooldown,
+      loading,
+      retained,
       unavailable: normalizedError !== null || parked,
     }),
-    initialLoading: loading && !retained,
-    refreshing: loading && retained,
-    refreshFailed: retained && normalizedError !== null,
+    ...assetsLoadingState(loading, retained, normalizedError),
     stale: data?.stale ?? false,
     message: resourceMessage(normalizedError, apiError, retainedFailureClass, parked),
     statusLabel: parked
       ? 'IDLE / ASSETS'
       : resourceStatusLabel(normalizedError, apiError, cooldown),
-    canRetry:
-      !cooldown &&
-      ((normalizedError !== null && !authorizationRequired) ||
-        retainedFailureClass !== null ||
-        parked),
+    canRetry: canRetryAssets(
+      cooldown,
+      normalizedError,
+      authorizationRequired,
+      retainedFailureClass,
+      parked,
+    ),
     retryAt: apiError?.retryAt ?? data?.retryAt ?? null,
     action:
       authorizationRequired && apiError?.authorizeUrl
         ? { href: apiError.authorizeUrl, label: 'AUTHORIZE ASSETS FOR THIS CHARACTER' }
         : null,
   }
+}
+
+function classifyAssetsResource(error: unknown, data?: AssetCollection | null) {
+  const normalizedError = error instanceof Error ? error : null
+  const apiError = normalizedError instanceof ApiQueryError ? normalizedError : null
+  const accessRequired = apiError?.code === 'EVE_SCOPE_REQUIRED'
+  const authorizationRejected = apiError?.code === 'EVE_REAUTH_REQUIRED'
+  const retainedFailureClass = data?.stale ? data.refreshFailureClass : null
+  return {
+    accessRequired,
+    apiError,
+    authorizationRejected,
+    authorizationRequired: accessRequired || authorizationRejected,
+    cooldown: isAssetsCooldown(apiError, retainedFailureClass),
+    normalizedError,
+    retained: data != null,
+    retainedFailureClass,
+  }
+}
+
+function assetsLoadingState(loading: boolean, retained: boolean, error: Error | null) {
+  return {
+    initialLoading: loading && !retained,
+    refreshFailed: retained && error !== null,
+    refreshing: loading && retained,
+  }
+}
+
+function isAssetsCooldown(apiError: ApiQueryError | null, failureClass: string | null) {
+  return (
+    apiError?.status === 429 || apiError?.code === 'ESI_COOLDOWN' || failureClass === 'esi-cooldown'
+  )
+}
+
+function canRetryAssets(
+  cooldown: boolean,
+  error: Error | null,
+  authorizationRequired: boolean,
+  failureClass: string | null,
+  parked: boolean,
+) {
+  return (
+    !cooldown && ((error !== null && !authorizationRequired) || failureClass !== null || parked)
+  )
 }
 
 function resourcePhase({
@@ -118,12 +161,24 @@ function resourcePhase({
   cooldown: boolean
   unavailable: boolean
 }): AssetResourceState['phase'] {
-  if (retained) return 'ready'
-  if (loading) return 'loading'
-  if (accessRequired) return 'access-required'
-  if (authorizationRejected) return 'authorization-rejected'
-  if (cooldown) return 'cooldown'
-  if (unavailable) return 'unavailable'
+  if (retained) {
+    return 'ready'
+  }
+  if (loading) {
+    return 'loading'
+  }
+  if (accessRequired) {
+    return 'access-required'
+  }
+  if (authorizationRejected) {
+    return 'authorization-rejected'
+  }
+  if (cooldown) {
+    return 'cooldown'
+  }
+  if (unavailable) {
+    return 'unavailable'
+  }
   return 'ready'
 }
 
@@ -133,9 +188,15 @@ function resourceMessage(
   retainedFailureClass: string | null,
   parked: boolean,
 ) {
-  if (error) return assetsErrorMessage(error, apiError)
-  if (retainedFailureClass) return retainedFailureMessage(retainedFailureClass)
-  if (parked) return 'Character assets are not loaded. Retry to request them again.'
+  if (error) {
+    return assetsErrorMessage(error, apiError)
+  }
+  if (retainedFailureClass) {
+    return retainedFailureMessage(retainedFailureClass)
+  }
+  if (parked) {
+    return 'Character assets are not loaded. Retry to request them again.'
+  }
   return null
 }
 
@@ -144,8 +205,12 @@ function resourceStatusLabel(
   apiError: ApiQueryError | null,
   cooldown: boolean,
 ) {
-  if (!error) return null
-  if (cooldown) return 'ESI / QUOTA'
+  if (!error) {
+    return null
+  }
+  if (cooldown) {
+    return 'ESI / QUOTA'
+  }
   return `ESI ${apiError?.status ?? 502} / ASSETS`
 }
 

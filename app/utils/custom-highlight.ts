@@ -13,9 +13,13 @@ function normalizeBase(value: string): string {
 }
 
 export function findRangesForElement(element: Element, term: string): Range[] {
-  if (!term) return []
+  if (!term) {
+    return []
+  }
   const termNorm = normalizeBase(term.trim())
-  if (!termNorm) return []
+  if (!termNorm) {
+    return []
+  }
   const ranges: Range[] = []
   const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
   let node: Text | null = walker.nextNode() as Text | null
@@ -25,7 +29,9 @@ export function findRangesForElement(element: Element, term: string): Range[] {
     let from = 0
     while (from < textNorm.length) {
       const idx = textNorm.indexOf(termNorm, from)
-      if (idx === -1) break
+      if (idx === -1) {
+        break
+      }
       const range = new Range()
       try {
         range.setStart(node, Math.min(idx, node.length))
@@ -42,20 +48,29 @@ export function findRangesForElement(element: Element, term: string): Range[] {
 }
 
 export function createSearchHighlight(name: string): Highlight | null {
-  if (!supportsCustomHighlight()) return null
+  if (!supportsCustomHighlight()) {
+    return null
+  }
   const highlight = new Highlight()
   CSS.highlights.set(name, highlight)
   return highlight
 }
 
 export function clearSearchHighlight(name: string, highlight?: Highlight | null) {
-  if (!supportsCustomHighlight()) return
-  if (highlight) highlight.clear()
-  else CSS.highlights.delete(name)
+  if (!supportsCustomHighlight()) {
+    return
+  }
+  if (highlight) {
+    highlight.clear()
+  } else {
+    CSS.highlights.delete(name)
+  }
 }
 
 export function deleteSearchHighlight(name: string) {
-  if (!supportsCustomHighlight()) return
+  if (!supportsCustomHighlight()) {
+    return
+  }
   CSS.highlights.delete(name)
 }
 
@@ -66,7 +81,9 @@ export function applySearchHighlight(
 ) {
   highlight.clear()
   const raw = term.trim()
-  if (!raw) return
+  if (!raw) {
+    return
+  }
   const tokens = raw.split(/\s+/).filter(Boolean)
   for (const el of elements) {
     for (const token of tokens) {

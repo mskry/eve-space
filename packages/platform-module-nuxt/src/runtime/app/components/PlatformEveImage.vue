@@ -27,19 +27,37 @@ const sourceSet = computed(() => {
 })
 
 function imageUrl(size: EveImageSize) {
-  if (props.kind === 'alliance') return images.allianceLogo(props.id, size)
-  if (props.kind === 'character') return images.characterPortrait(props.id, size)
-  if (props.kind === 'corporation') return images.corporationLogo(props.id, size)
-  if (props.kind === 'faction') return images.factionLogo(props.id, size)
+  if (props.kind === 'alliance') {
+    return images.allianceLogo(props.id, size)
+  }
+  if (props.kind === 'character') {
+    return images.characterPortrait(props.id, size)
+  }
+  if (props.kind === 'corporation') {
+    return images.corporationLogo(props.id, size)
+  }
+  if (props.kind === 'faction') {
+    return images.factionLogo(props.id, size)
+  }
   return images.typeImage(props.id, typeVariations[props.kind], size)
 }
 
 function sourceSize(minimum: number): EveImageSize {
-  if (minimum <= 32) return 32
-  if (minimum <= 64) return 64
-  if (minimum <= 128) return 128
-  if (minimum <= 256) return 256
-  if (minimum <= 512) return 512
+  if (minimum <= 32) {
+    return 32
+  }
+  if (minimum <= 64) {
+    return 64
+  }
+  if (minimum <= 128) {
+    return 128
+  }
+  if (minimum <= 256) {
+    return 256
+  }
+  if (minimum <= 512) {
+    return 512
+  }
   return 1024
 }
 </script>

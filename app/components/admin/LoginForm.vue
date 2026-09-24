@@ -46,7 +46,9 @@ const submitLabel = computed(() => (submitting ? 'AUTHENTICATING...' : 'SIGN IN'
 
 function submitCredentials() {
   attempted.value = true
-  if (!credentialsValid.value || submitting) return
+  if (!credentialsValid.value || submitting) {
+    return
+  }
   emit('submit', { email: email.value.trim(), password: password.value })
 }
 

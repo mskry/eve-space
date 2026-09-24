@@ -23,9 +23,9 @@ export interface CacheAdmissionBootstrap {
 
 export const unauthenticatedSession: AuthSession = { authenticated: false }
 export const unavailableAuthConfig: AuthConfig = {
+  attachUrl: '',
   configured: false,
   loginUrl: '',
-  attachUrl: '',
 }
 
 export const authConfigQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
@@ -77,13 +77,13 @@ export async function loadAuthBootstrap(apiClient: ApiClient, signal?: AbortSign
 
 function readAuthBootstrap(response: AuthSessionResponse, requestedAt: number) {
   const session: AuthSession = response.authenticated
-    ? { authenticated: true, account: response.account }
+    ? { account: response.account, authenticated: true }
     : unauthenticatedSession
   const admission: CacheAdmissionBootstrap | undefined =
     response.authenticated && response.cacheAdmission !== undefined
       ? { context: response.cacheAdmission, requestedAt }
       : undefined
-  return { session, admission }
+  return { admission, session }
 }
 
 export async function loadCacheAdmission(apiClient: ApiClient, signal?: AbortSignal) {

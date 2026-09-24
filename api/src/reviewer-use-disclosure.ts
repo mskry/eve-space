@@ -19,45 +19,49 @@ export interface ReviewerUseDisclosurePresentation extends ReviewerUseDisclosure
 }
 
 const disclosurePresentationBySection = {
-  skills: {
-    title: 'Skills and training queue',
-    purpose: 'Authorized organization reviewers may verify training and skill readiness.',
-    fields: 'Trained skills, skill levels, skill points, and queued training entries.',
-    retention: 'Only the current complete skills and training-queue snapshots are retained.',
-  },
   assets: {
-    title: 'Assets',
-    purpose: 'Authorized organization reviewers may verify organization policy and readiness.',
     fields: 'Asset types, quantities, locations, and eligible custom names.',
+    purpose: 'Authorized organization reviewers may verify organization policy and readiness.',
     retention: 'Only the current complete asset snapshot is retained.',
-  },
-  wallet: {
-    title: 'Wallet',
-    purpose:
-      'Authorized organization reviewers may inspect financial evidence for compliance review.',
-    fields: 'Wallet balance plus bounded journal and transaction records.',
-    retention:
-      'The current balance and up to 90 days of journal and transaction records are retained.',
+    title: 'Assets',
   },
   mail: {
-    title: 'Mail',
-    purpose: 'Authorized organization reviewers may inspect mail evidence for compliance review.',
     fields:
       'Mail headers, parties, and sanitized plain-text message content. Raw markup is not retained.',
+    purpose: 'Authorized organization reviewers may inspect mail evidence for compliance review.',
     retention: 'Mail evidence is retained for no more than 90 days.',
+    title: 'Mail',
+  },
+  skills: {
+    fields: 'Trained skills, skill levels, skill points, and queued training entries.',
+    purpose: 'Authorized organization reviewers may verify training and skill readiness.',
+    retention: 'Only the current complete skills and training-queue snapshots are retained.',
+    title: 'Skills and training queue',
+  },
+  wallet: {
+    fields: 'Wallet balance plus bounded journal and transaction records.',
+    purpose:
+      'Authorized organization reviewers may inspect financial evidence for compliance review.',
+    retention:
+      'The current balance and up to 90 days of journal and transaction records are retained.',
+    title: 'Wallet',
   },
 } as const
 
 export function parseReviewerUseDisclosures(value: unknown): readonly ReviewerUseDisclosure[] {
-  if (!Array.isArray(value) || value.length > maxReviewerUseDisclosures)
+  if (!Array.isArray(value) || value.length > maxReviewerUseDisclosures) {
     throw new Error('Stored OAuth state has invalid reviewer-use disclosures')
+  }
 
   const seen = new Set<string>()
   const disclosures = value.map((candidate) => {
-    if (!isReviewerUseDisclosure(candidate))
+    if (!isReviewerUseDisclosure(candidate)) {
       throw new Error('Stored OAuth state has invalid reviewer-use disclosures')
+    }
     const key = `${candidate.moduleId}/${candidate.sectionId}`
-    if (seen.has(key)) throw new Error('Stored OAuth state has duplicate reviewer-use disclosures')
+    if (seen.has(key)) {
+      throw new Error('Stored OAuth state has duplicate reviewer-use disclosures')
+    }
     seen.add(key)
     return candidate
   })
@@ -72,14 +76,17 @@ export function presentReviewerUseDisclosures(
       disclosurePresentationBySection[
         disclosure.sectionId as keyof typeof disclosurePresentationBySection
       ]
-    if (!presentation)
+    if (!presentation) {
       throw new Error(`Sensitive section ${disclosure.sectionId} has no reviewer-use disclosure`)
+    }
     return { ...disclosure, ...presentation }
   })
 }
 
 function isReviewerUseDisclosure(value: unknown): value is ReviewerUseDisclosure {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
   const record = value as Record<string, unknown>
   return (
     Object.keys(record).length === 3 &&
