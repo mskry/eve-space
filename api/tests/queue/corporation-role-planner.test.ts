@@ -71,6 +71,33 @@ describe('corporation-role planner', () => {
     ).resolves.toStrictEqual({ planned: 1, reason: 'scheduled' })
   })
 
+  test('pages beyond a full page of coalesced jobs to admit later demand', async () => {
+    const firstPage = Array.from({ length: 100 }, (_, index) => demand(index + 1, null))
+    mocks.selectDue.mockResolvedValue(firstPage)
+    const producer = createInMemoryQueueProducer({ highWaterMark: 101 })
+    const outcomes = { recordAffiliation: async () => {}, recordOutbox: async () => {} }
+    await expect(runCorporationRolePlanner({ outcomes, producer }, now)).resolves.toStrictEqual({
+      planned: 100,
+      reason: 'scheduled',
+    })
+
+    mocks.selectDue.mockReset()
+    mocks.selectDue.mockImplementation(({ after }: { after?: { characterId: number } }) =>
+      after ? [demand(101, null)] : firstPage,
+    )
+    await expect(runCorporationRolePlanner({ outcomes, producer }, now)).resolves.toStrictEqual({
+      planned: 1,
+      reason: 'scheduled',
+    })
+    expect(mocks.selectDue).toHaveBeenNthCalledWith(2, {
+      after: { characterId: 100, nextRefreshAt: null },
+      dueBefore: new Date('2026-09-25T12:20:00.000Z'),
+      limit: 100,
+    })
+    expect(producer.commands).toHaveLength(101)
+    expect(producer.commands.at(-1)?.payload).toMatchObject({ characterId: 101 })
+  })
+
   test('stops at queue capacity and leaves omitted demand in PostgreSQL', async () => {
     mocks.selectDue.mockResolvedValue([demand(1, null), demand(2, null)])
     const producer = createInMemoryQueueProducer({ highWaterMark: 1 })

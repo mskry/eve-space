@@ -19,6 +19,11 @@ export interface CorporationRoleDemand extends CorporationRoleSourceBinding {
   readonly consumers: readonly CorporationRoleConsumer[]
 }
 
+export type CorporationRoleDemandCursor = Pick<
+  CorporationRoleDemand,
+  'characterId' | 'nextRefreshAt'
+>
+
 interface DemandRow extends Record<string, unknown> {
   readonly organizationVersion: string
   readonly userId: string
@@ -136,16 +141,33 @@ const toDemand = (row: DemandRow): CorporationRoleDemand => ({
   userId: row.userId,
 })
 
+const afterDemand = (after: CorporationRoleDemandCursor | undefined) => {
+  if (!after) {
+    return sql`true`
+  }
+  if (!after.nextRefreshAt) {
+    return sql`(demand."nextRefreshAt" is not null or demand."characterId"::bigint > ${after.characterId})`
+  }
+  const dueAt = after.nextRefreshAt.toISOString()
+  return sql`(
+    demand."nextRefreshAt" > ${dueAt}::timestamptz
+    or (demand."nextRefreshAt" = ${dueAt}::timestamptz
+      and demand."characterId"::bigint > ${after.characterId})
+  )`
+}
+
 export const selectDueCorporationRoleDemand = async (input: {
   readonly dueBefore: Date
   readonly limit: number
+  readonly after?: CorporationRoleDemandCursor
   readonly database?: DemandDatabase
 }) => {
   const database = input.database ?? db
   const rows = await database.execute<DemandRow>(sql`
     select * from (${demandQuery(sql`true`)}) demand
-    where demand."nextRefreshAt" is null
-      or demand."nextRefreshAt" <= ${input.dueBefore.toISOString()}::timestamptz
+    where (demand."nextRefreshAt" is null
+      or demand."nextRefreshAt" <= ${input.dueBefore.toISOString()}::timestamptz)
+      and ${afterDemand(input.after)}
     order by demand."nextRefreshAt" asc nulls first, demand."characterId"::bigint asc
     limit ${Math.max(1, input.limit)}
   `)

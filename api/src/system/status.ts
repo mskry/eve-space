@@ -139,6 +139,7 @@ async function probeSystemStatus(now: number): Promise<SystemStatus> {
     esi.status === 'operational' &&
     queue.status === 'operational' &&
     eventRelay.status === 'operational' &&
+    corporationRoleEvidence.status === 'operational' &&
     esiResilience.cache.status === 'operational' &&
     esiResilience.coordination.status === 'operational' &&
     esiResilience.cooldown.status === 'inactive' &&

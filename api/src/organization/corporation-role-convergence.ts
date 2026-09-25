@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, ne, sql, type SQLWrapper } from 'drizzle-orm'
 import {
   corporationRoleObservationRequiredScope,
   evaluateCorporationRoleEvidence,
@@ -58,6 +58,7 @@ const loadConvergenceSettings = async (transaction: DatabaseTransaction) => {
       organizationType: deploymentSettings.organizationType,
       organizationVersion: deploymentSettings.organizationVersion,
       policyVersion: deploymentSettings.registrationPolicyVersion,
+      staleGraceSeconds: deploymentSettings.staleEvidenceGraceDurationSeconds,
     })
     .from(deploymentSettings)
     .where(eq(deploymentSettings.id, 1))
@@ -481,9 +482,22 @@ const convergeObservedRoles = async (
   await refreshCorporationSources(transaction, projection, character.scopes)
 }
 
+const boundedGraceUntil = (
+  freshUntil: SQLWrapper,
+  currentGraceUntil: SQLWrapper,
+  degradedUntil: Date,
+  staleGraceSeconds: number,
+) =>
+  sql<Date>`least(
+    ${degradedUntil.toISOString()}::timestamptz,
+    ${freshUntil} + ${staleGraceSeconds} * interval '1 second',
+    coalesce(${currentGraceUntil}, 'infinity'::timestamptz)
+  )`
+
 const degradeRoleDependentSources = async (
   transaction: DatabaseTransaction,
   transition: CorporationRoleObservationTransition,
+  settings: ConvergenceSettings,
 ) => {
   const { binding, degradedUntil, roleRevision } = transition.evidence
   if (!degradedUntil || !roleRevision) {
@@ -491,35 +505,54 @@ const degradeRoleDependentSources = async (
   }
   const degraded = {
     failureClass: degradedFailureClass,
-    graceUntil: degradedUntil,
     status: 'degraded' as const,
     updatedAt: transition.checkedAt,
   }
+  const ownerGraceUntil = boundedGraceUntil(
+    organizationAuthorityEvidence.freshUntil,
+    organizationAuthorityEvidence.graceUntil,
+    degradedUntil,
+    settings.staleGraceSeconds,
+  )
   await transaction
     .update(organizationAuthorityEvidence)
-    .set(degraded)
+    .set({ ...degraded, graceUntil: ownerGraceUntil })
     .where(
       and(
         eq(organizationAuthorityEvidence.characterId, binding.characterId),
         eq(organizationAuthorityEvidence.organizationVersion, binding.organizationVersion),
         eq(organizationAuthorityEvidence.roleEvidenceRevision, roleRevision),
         isNull(organizationAuthorityEvidence.invalidatedAt),
+        sql`${ownerGraceUntil} > ${transition.checkedAt.toISOString()}::timestamptz`,
       ),
     )
+  const derivedGraceUntil = boundedGraceUntil(
+    organizationDerivedAuthoritySources.freshUntil,
+    organizationDerivedAuthoritySources.graceUntil,
+    degradedUntil,
+    settings.staleGraceSeconds,
+  )
   await transaction
     .update(organizationDerivedAuthoritySources)
-    .set(degraded)
+    .set({ ...degraded, graceUntil: derivedGraceUntil })
     .where(
       and(
         eq(organizationDerivedAuthoritySources.characterId, binding.characterId),
         eq(organizationDerivedAuthoritySources.organizationVersion, binding.organizationVersion),
         eq(organizationDerivedAuthoritySources.roleEvidenceRevision, roleRevision),
         isNull(organizationDerivedAuthoritySources.invalidatedAt),
+        sql`${derivedGraceUntil} > ${transition.checkedAt.toISOString()}::timestamptz`,
       ),
     )
+  const corporationGraceUntil = boundedGraceUntil(
+    organizationCorporationSources.freshUntil,
+    organizationCorporationSources.graceUntil,
+    degradedUntil,
+    settings.staleGraceSeconds,
+  )
   await transaction
     .update(organizationCorporationSources)
-    .set(degraded)
+    .set({ ...degraded, graceUntil: corporationGraceUntil })
     .where(
       and(
         eq(organizationCorporationSources.evidenceCharacterId, binding.characterId),
@@ -527,6 +560,7 @@ const degradeRoleDependentSources = async (
         eq(organizationCorporationSources.roleEvidenceRevision, roleRevision),
         isNull(organizationCorporationSources.revokedAt),
         isNull(organizationCorporationSources.invalidatedAt),
+        sql`${corporationGraceUntil} > ${transition.checkedAt.toISOString()}::timestamptz`,
       ),
     )
 }
@@ -545,7 +579,7 @@ export const convergeCorporationRoleTransitionInTransaction = async (
     return
   }
   if (transition.kind === 'degraded') {
-    await degradeRoleDependentSources(transaction, transition)
+    await degradeRoleDependentSources(transaction, transition, settings)
     return
   }
   if (transition.kind === 'invalidated' && transition.invalidationOutcome) {

@@ -595,6 +595,76 @@ describe('corporation-role observation persistence', () => {
     ])
   })
 
+  test('does not extend an earlier authority deadline when role evidence degrades', async () => {
+    await connection`update deployment_settings set stale_evidence_grace_duration_seconds = 3600`
+    await connection`
+      update eve_tokens set scopes = ${connection.json([rolesScope, membershipScope])}
+      where character_id = ${characterId}
+    `
+    await claimOwner()
+    await modules.sources.registerOrganizationCorporationSource({
+      actorUserId: userId,
+      characterId,
+      corporationId,
+    })
+    await expireObservation()
+    await connection`
+      update organization_authority_evidence
+      set fresh_until = now() - interval '2 hours'
+      where character_id = ${characterId}
+    `
+    await connection`
+      update organization_derived_authority_sources
+      set fresh_until = now() - interval '30 minutes'
+      where character_id = ${characterId}
+    `
+    await connection`
+      update organization_corporation_sources
+      set observed_at = now() - interval '3 hours', fresh_until = now() - interval '2 hours'
+      where evidence_character_id = ${characterId}
+    `
+    mocks.observeAndPersistCharacterAffiliation.mockResolvedValue(null)
+
+    await expect(refreshCurrentDemand()).resolves.toBe('degraded')
+    const [owner] = await connection<{ status: string; grace_until: Date | null }[]>`
+      select status, grace_until from organization_authority_evidence
+      where character_id = ${characterId}
+    `
+    const [derived] = await connection<{ status: string; fresh_until: Date; grace_until: Date }[]>`
+      select status, fresh_until, grace_until from organization_derived_authority_sources
+      where character_id = ${characterId} and invalidated_at is null
+    `
+    const [corporation] = await connection<{ status: string; grace_until: Date | null }[]>`
+      select status, grace_until from organization_corporation_sources
+      where evidence_character_id = ${characterId} and revoked_at is null
+    `
+    const [observation] = await loadObservationRows()
+    expect(owner).toStrictEqual({ grace_until: null, status: 'fresh' })
+    expect(corporation).toStrictEqual({ grace_until: null, status: 'fresh' })
+    expect(derived?.status).toBe('degraded')
+    expect(derived?.grace_until).toStrictEqual(
+      new Date(derived!.fresh_until.getTime() + 60 * 60_000),
+    )
+    expect(derived!.grace_until.getTime()).toBeLessThan(observation!.degraded_until!.getTime())
+    await makeDue()
+    await expect(refreshCurrentDemand()).resolves.toBe('degraded')
+    const [rechecked] = await connection<{ grace_until: Date }[]>`
+      select grace_until from organization_derived_authority_sources
+      where character_id = ${characterId} and invalidated_at is null
+    `
+    expect(rechecked?.grace_until).toStrictEqual(derived?.grace_until)
+    await expect(effectiveAuthority('read-continuity')).resolves.toMatchObject({
+      derivedDirector: true,
+      organizationOwner: false,
+    })
+    await expect(effectiveAuthority('mutate')).resolves.toMatchObject({
+      derivedDirector: false,
+      organizationOwner: false,
+    })
+  })
+})
+
+describe('corporation-role outage recovery', () => {
   test('persists a classified affiliation outage and defers another refresh', async () => {
     await claimOwner()
     await expireObservation()
@@ -1094,6 +1164,42 @@ describe('bounded legacy rollout', () => {
 })
 
 describe('corporation-role worker execution', () => {
+  test('pages due demand across null and equal refresh deadlines', async () => {
+    await seedCharacter(userId, secondCharacterId, false)
+    const dueBefore = new Date()
+    const [first] = await modules.demand.selectDueCorporationRoleDemand({ dueBefore, limit: 1 })
+    const [second] = await modules.demand.selectDueCorporationRoleDemand({
+      after: first,
+      dueBefore,
+      limit: 1,
+    })
+    expect([first?.characterId, second?.characterId]).toStrictEqual([
+      characterId,
+      secondCharacterId,
+    ])
+
+    await observeThroughDemand(characterId)
+    await observeThroughDemand(secondCharacterId)
+    const dueAt = new Date(Date.now() - 1000)
+    await connection`
+      update character_corporation_role_observations
+      set next_refresh_at = ${dueAt}
+    `
+    const [firstTimed] = await modules.demand.selectDueCorporationRoleDemand({
+      dueBefore: new Date(),
+      limit: 1,
+    })
+    const [secondTimed] = await modules.demand.selectDueCorporationRoleDemand({
+      after: firstTimed,
+      dueBefore: new Date(),
+      limit: 1,
+    })
+    expect([firstTimed?.characterId, secondTimed?.characterId]).toStrictEqual([
+      characterId,
+      secondCharacterId,
+    ])
+  })
+
   test('plans initial demand once and executes it through the worker handler', async () => {
     const producer = modules.producer.createInMemoryQueueProducer()
     const context = { outcomes: {} as never, producer, signal: new AbortController().signal }
