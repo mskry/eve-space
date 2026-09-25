@@ -52,9 +52,19 @@ const location = await client.location.get(characterId);
 
 Required path identifiers are positional. Optional query and header values, including a per-operation compatibility-date override, are grouped in a final typed options object.
 
+Every typed method also accepts an optional `signal` in that final options object, even when there are no other options. The bare-data and `withMetadata()` views both honor it; required request bodies and other required options remain required.
+
+```ts
+const controller = new AbortController();
+const status = await client.status.get({ signal: controller.signal });
+```
+
+Call `controller.abort()` to cancel credential acquisition, fetch, or response reading. An asynchronous `tokenProvider` may accept an optional `{ signal }` context to cancel its own work. Zero-argument providers still work; the SDK rejects promptly on caller abort even if a provider does not stop. Public operations never invoke the provider.
+
 ## Runtime Behavior
 
 - Every ESI exchange has a 10,000 millisecond deadline by default. Set a positive integer `requestTimeoutMs` to override it; the deadline begins after token-provider resolution and spans the configured fetch and response-body consumption.
+- Caller cancellation is active during token-provider resolution, before fetch, and throughout response processing. It does not start the SDK's transport deadline early. Cancellation after a response is accepted reports a response-phase transport error with available status and metadata.
 - Date and date-time values remain their JSON wire-format strings. The SDK does not transform them into JavaScript `Date` objects.
 - Successful JSON responses are validated with generated Zod schemas by default. Set `validateResponses: false` to opt out.
 - Typed request validation is off by default; opt in with `validateRequests: true`. Generic operation arguments are always validated before network activity.

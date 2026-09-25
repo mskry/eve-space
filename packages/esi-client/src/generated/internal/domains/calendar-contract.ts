@@ -20,6 +20,7 @@ export interface GetCharactersCharacterIdCalendarEventIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>["headers"]>["X-Tenant"];
 }
 
@@ -27,6 +28,7 @@ export interface GetCharactersCharacterIdCalendarEventIdAttendeesOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>["headers"]>["X-Tenant"];
 }
 
@@ -35,6 +37,7 @@ export interface GetCharactersCharacterIdCalendarOptions {
   readonly "fromEvent"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarData>["query"]>["from_event"];
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarData>["headers"]>["X-Tenant"];
 }
 
@@ -43,6 +46,7 @@ export interface PutCharactersCharacterIdCalendarEventIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>["headers"]>["X-Tenant"];
 }
 

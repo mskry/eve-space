@@ -91,6 +91,14 @@ describe('generated LLM documentation', () => {
     for (const path of examplePaths) {
       expect(first.generatedFiles.has(path)).toBe(true);
     }
+    expect(first.generatedFiles.get('concepts/auth.md')).toContain('optional context');
+    expect(first.generatedFiles.get('concepts/client.md')).toContain('optional caller `signal`');
+    expect(first.generatedFiles.get('concepts/client.md')).toContain(
+      'after token-provider resolution',
+    );
+    expect(first.generatedFiles.get('concepts/standalone-domains.md')).toContain(
+      'typed per-call `signal`',
+    );
 
     for (const operation of fixture.manifest.operations) {
       const path = `operations/${operation.operationId}.md`;
@@ -101,6 +109,7 @@ describe('generated LLM documentation', () => {
       expect(page).toContain(`# ${operation.operationId}`);
       expect(page).toContain(`Stable ID: \`${operation.operationId}\``);
       expect(page).toContain(`client.${operation.facade.domain}.${operation.facade.method}(`);
+      expect(page).toContain('optional caller cancellation via `signal`');
       expect(page).toContain(`client.callOperation("${operation.operationId}"`);
       expect(page).toContain('## Standalone domain-factory snippet');
       expect(page).toContain('## Aggregate EsiClient snippet');
@@ -126,11 +135,18 @@ describe('generated LLM documentation', () => {
         expect(page).toContain(response.schema.export);
       }
     }
+  });
 
-    for (const path of domainPaths) {
-      const page = first.generatedFiles.get(path);
-      if (page === undefined) {
-        throw new Error(`Missing domain documentation: ${path}`);
+  it('links every domain to its standalone factory and aggregate client', async () => {
+    const fixture = await loadFixture();
+    const rendered = renderGeneratedDocumentation(
+      fixture.manifest,
+      fixture.provenance,
+      fixture.namingReviewReport,
+    );
+    for (const [path, page] of rendered.generatedFiles) {
+      if (!path.startsWith('domains/')) {
+        continue;
       }
       expect(page).toContain('## Standalone domain factory');
       expect(page).toContain('## Aggregate client');

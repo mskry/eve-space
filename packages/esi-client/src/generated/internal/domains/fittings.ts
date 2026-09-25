@@ -38,17 +38,17 @@ class FittingsDomainClientWithMetadataImplementation implements FittingsDomainCl
 
   create(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdFittingsData>['path']>["character_id"], options: PostCharactersCharacterIdFittingsOptions): Promise<EsiResponse<PostCharactersCharacterIdFittingsResponse>> {
     const arguments_: OperationArguments<PostCharactersCharacterIdFittingsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostCharactersCharacterIdFittingsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostCharactersCharacterIdFittingsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   deleteFitting(characterId: NonNullable<OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>['path']>["character_id"], fittingId: NonNullable<OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>['path']>["fitting_id"], options?: DeleteCharactersCharacterIdFittingsFittingIdOptions): Promise<EsiResponse<DeleteCharactersCharacterIdFittingsFittingIdResponse>> {
     const arguments_: OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData> = { path: { "character_id": characterId, "fitting_id": fittingId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, DeleteCharactersCharacterIdFittingsFittingIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, DeleteCharactersCharacterIdFittingsFittingIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   list(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdFittingsData>['path']>["character_id"], options?: GetCharactersCharacterIdFittingsOptions): Promise<EsiResponse<GetCharactersCharacterIdFittingsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdFittingsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdFittingsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdFittingsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

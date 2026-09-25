@@ -72,6 +72,7 @@ export interface GetUniverseAsteroidBeltsAsteroidBeltIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>["headers"]>["X-Tenant"];
 }
 
@@ -79,6 +80,7 @@ export interface GetUniverseConstellationsConstellationIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseConstellationsConstellationIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseConstellationsConstellationIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseConstellationsConstellationIdData>["headers"]>["X-Tenant"];
 }
 
@@ -86,6 +88,7 @@ export interface GetUniverseGraphicsGraphicIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseGraphicsGraphicIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseGraphicsGraphicIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseGraphicsGraphicIdData>["headers"]>["X-Tenant"];
 }
 
@@ -93,6 +96,7 @@ export interface GetUniverseCategoriesCategoryIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseCategoriesCategoryIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseCategoriesCategoryIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseCategoriesCategoryIdData>["headers"]>["X-Tenant"];
 }
 
@@ -100,6 +104,7 @@ export interface GetUniverseGroupsGroupIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseGroupsGroupIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseGroupsGroupIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseGroupsGroupIdData>["headers"]>["X-Tenant"];
 }
 
@@ -107,6 +112,7 @@ export interface GetUniverseMoonsMoonIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseMoonsMoonIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseMoonsMoonIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseMoonsMoonIdData>["headers"]>["X-Tenant"];
 }
 
@@ -114,6 +120,7 @@ export interface GetUniversePlanetsPlanetIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniversePlanetsPlanetIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniversePlanetsPlanetIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniversePlanetsPlanetIdData>["headers"]>["X-Tenant"];
 }
 
@@ -121,6 +128,7 @@ export interface GetUniverseRegionsRegionIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseRegionsRegionIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseRegionsRegionIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseRegionsRegionIdData>["headers"]>["X-Tenant"];
 }
 
@@ -128,6 +136,7 @@ export interface GetUniverseSystemsSystemIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseSystemsSystemIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseSystemsSystemIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseSystemsSystemIdData>["headers"]>["X-Tenant"];
 }
 
@@ -135,6 +144,7 @@ export interface GetUniverseStarsStarIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseStarsStarIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseStarsStarIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseStarsStarIdData>["headers"]>["X-Tenant"];
 }
 
@@ -142,6 +152,7 @@ export interface GetUniverseStargatesStargateIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseStargatesStargateIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseStargatesStargateIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseStargatesStargateIdData>["headers"]>["X-Tenant"];
 }
 
@@ -149,6 +160,7 @@ export interface GetUniverseStationsStationIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseStationsStationIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseStationsStationIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseStationsStationIdData>["headers"]>["X-Tenant"];
 }
 
@@ -156,6 +168,7 @@ export interface GetUniverseStructuresStructureIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseStructuresStructureIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseStructuresStructureIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseStructuresStructureIdData>["headers"]>["X-Tenant"];
 }
 
@@ -163,6 +176,7 @@ export interface GetUniverseTypesTypeIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseTypesTypeIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseTypesTypeIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseTypesTypeIdData>["headers"]>["X-Tenant"];
 }
 
@@ -170,6 +184,7 @@ export interface GetUniverseAncestriesOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseAncestriesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseAncestriesData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseAncestriesData>["headers"]>["X-Tenant"];
 }
 
@@ -177,6 +192,7 @@ export interface GetUniverseBloodlinesOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseBloodlinesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseBloodlinesData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseBloodlinesData>["headers"]>["X-Tenant"];
 }
 
@@ -184,6 +200,7 @@ export interface GetUniverseConstellationsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseConstellationsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseConstellationsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseConstellationsData>["headers"]>["X-Tenant"];
 }
 
@@ -191,6 +208,7 @@ export interface GetUniverseFactionsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseFactionsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseFactionsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseFactionsData>["headers"]>["X-Tenant"];
 }
 
@@ -198,6 +216,7 @@ export interface GetUniverseGraphicsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseGraphicsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseGraphicsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseGraphicsData>["headers"]>["X-Tenant"];
 }
 
@@ -205,6 +224,7 @@ export interface GetUniverseCategoriesOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseCategoriesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseCategoriesData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseCategoriesData>["headers"]>["X-Tenant"];
 }
 
@@ -213,6 +233,7 @@ export interface GetUniverseGroupsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseGroupsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseGroupsData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetUniverseGroupsData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseGroupsData>["headers"]>["X-Tenant"];
 }
 
@@ -221,6 +242,7 @@ export interface GetUniverseStructuresOptions {
   readonly "filter"?: NonNullable<OperationArguments<GetUniverseStructuresData>["query"]>["filter"];
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseStructuresData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseStructuresData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseStructuresData>["headers"]>["X-Tenant"];
 }
 
@@ -228,6 +250,7 @@ export interface GetUniverseRacesOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseRacesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseRacesData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseRacesData>["headers"]>["X-Tenant"];
 }
 
@@ -235,6 +258,7 @@ export interface GetUniverseRegionsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseRegionsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseRegionsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseRegionsData>["headers"]>["X-Tenant"];
 }
 
@@ -242,6 +266,7 @@ export interface GetUniverseSystemsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseSystemsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseSystemsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseSystemsData>["headers"]>["X-Tenant"];
 }
 
@@ -249,6 +274,7 @@ export interface GetUniverseSystemJumpsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseSystemJumpsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseSystemJumpsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseSystemJumpsData>["headers"]>["X-Tenant"];
 }
 
@@ -256,6 +282,7 @@ export interface GetUniverseSystemKillsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseSystemKillsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseSystemKillsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseSystemKillsData>["headers"]>["X-Tenant"];
 }
 
@@ -264,6 +291,7 @@ export interface GetUniverseTypesOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseTypesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseTypesData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetUniverseTypesData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseTypesData>["headers"]>["X-Tenant"];
 }
 
@@ -272,6 +300,7 @@ export interface PostUniverseIdsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUniverseIdsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUniverseIdsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostUniverseIdsData>["headers"]>["X-Tenant"];
 }
 
@@ -280,6 +309,7 @@ export interface PostUniverseNamesOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUniverseNamesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUniverseNamesData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostUniverseNamesData>["headers"]>["X-Tenant"];
 }
 

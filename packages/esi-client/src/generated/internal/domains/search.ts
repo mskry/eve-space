@@ -30,7 +30,7 @@ class SearchDomainClientWithMetadataImplementation implements SearchDomainClient
 
   search(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>['path']>["character_id"], options: GetCharactersCharacterIdSearchOptions): Promise<EsiResponse<GetCharactersCharacterIdSearchResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdSearchData> = { path: { "character_id": characterId }, query: { "categories": options?.["categories"], "search": options?.["search"], "strict": options?.["strict"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdSearchDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdSearchDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

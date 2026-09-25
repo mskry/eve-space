@@ -22,6 +22,7 @@ export interface GetDogmaAttributesAttributeIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetDogmaAttributesAttributeIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetDogmaAttributesAttributeIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetDogmaAttributesAttributeIdData>["headers"]>["X-Tenant"];
 }
 
@@ -29,6 +30,7 @@ export interface GetDogmaDynamicItemsTypeIdItemIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>["headers"]>["X-Tenant"];
 }
 
@@ -36,6 +38,7 @@ export interface GetDogmaEffectsEffectIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetDogmaEffectsEffectIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetDogmaEffectsEffectIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetDogmaEffectsEffectIdData>["headers"]>["X-Tenant"];
 }
 
@@ -43,6 +46,7 @@ export interface GetDogmaAttributesOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetDogmaAttributesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetDogmaAttributesData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetDogmaAttributesData>["headers"]>["X-Tenant"];
 }
 
@@ -50,6 +54,7 @@ export interface GetDogmaEffectsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetDogmaEffectsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetDogmaEffectsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetDogmaEffectsData>["headers"]>["X-Tenant"];
 }
 

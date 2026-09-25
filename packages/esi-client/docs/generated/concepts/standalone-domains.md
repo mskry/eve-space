@@ -9,7 +9,7 @@ DO NOT EDIT.
 
 Import a `create<Domain>Client` factory from `@evespace/esi-client/domains/<domain>` when an aggregate `EsiClient` is unnecessary. Standalone factories accept the same client options, including `requestTimeoutMs`, authentication, validation, and custom fetch configuration.
 
-Standalone methods return bare data by default and expose the same metadata-enabled view, structured errors, generated protocol descriptors, one-attempt behavior, and transport deadline as the aggregate client. A standalone import narrows runtime and declaration reach but does not reduce installed package size.
+Standalone methods return bare data by default and expose the same metadata-enabled view, typed per-call `signal`, structured errors, generated protocol descriptors, one-attempt behavior, and transport deadline as the aggregate client. A standalone import narrows runtime and declaration reach but does not reduce installed package size.
 
 ## Related
 

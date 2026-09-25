@@ -62,47 +62,47 @@ class ContractsDomainClientWithMetadataImplementation implements ContractsDomain
 
   listCharacterContractBids(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['path']>["character_id"], contractId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['path']>["contract_id"], options?: GetCharactersCharacterIdContractsContractIdBidsOptions): Promise<EsiResponse<GetCharactersCharacterIdContractsContractIdBidsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData> = { path: { "character_id": characterId, "contract_id": contractId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdContractsContractIdBidsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdContractsContractIdBidsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCharacterContractItems(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['path']>["character_id"], contractId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['path']>["contract_id"], options?: GetCharactersCharacterIdContractsContractIdItemsOptions): Promise<EsiResponse<GetCharactersCharacterIdContractsContractIdItemsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData> = { path: { "character_id": characterId, "contract_id": contractId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdContractsContractIdItemsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdContractsContractIdItemsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCharacterContracts(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsData>['path']>["character_id"], options?: GetCharactersCharacterIdContractsOptions): Promise<EsiResponse<GetCharactersCharacterIdContractsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdContractsData> = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdContractsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdContractsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCorporationContractBids(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['path']>["corporation_id"], contractId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['path']>["contract_id"], options?: GetCorporationsCorporationIdContractsContractIdBidsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContractsContractIdBidsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData> = { path: { "corporation_id": corporationId, "contract_id": contractId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdContractsContractIdBidsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdContractsContractIdBidsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCorporationContractItems(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['path']>["corporation_id"], contractId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['path']>["contract_id"], options?: GetCorporationsCorporationIdContractsContractIdItemsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContractsContractIdItemsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData> = { path: { "corporation_id": corporationId, "contract_id": contractId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdContractsContractIdItemsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdContractsContractIdItemsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCorporationContracts(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContractsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContractsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdContractsData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdContractsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdContractsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listPublicContractBids(contractId: NonNullable<OperationArguments<GetContractsPublicBidsContractIdData>['path']>["contract_id"], options?: GetContractsPublicBidsContractIdOptions): Promise<EsiResponse<GetContractsPublicBidsContractIdResponse>> {
     const arguments_: OperationArguments<GetContractsPublicBidsContractIdData> = { path: { "contract_id": contractId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetContractsPublicBidsContractIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetContractsPublicBidsContractIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listPublicContractItems(contractId: NonNullable<OperationArguments<GetContractsPublicItemsContractIdData>['path']>["contract_id"], options?: GetContractsPublicItemsContractIdOptions): Promise<EsiResponse<GetContractsPublicItemsContractIdResponse>> {
     const arguments_: OperationArguments<GetContractsPublicItemsContractIdData> = { path: { "contract_id": contractId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetContractsPublicItemsContractIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetContractsPublicItemsContractIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listPublicContracts(regionId: NonNullable<OperationArguments<GetContractsPublicRegionIdData>['path']>["region_id"], options?: GetContractsPublicRegionIdOptions): Promise<EsiResponse<GetContractsPublicRegionIdResponse>> {
     const arguments_: OperationArguments<GetContractsPublicRegionIdData> = { path: { "region_id": regionId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetContractsPublicRegionIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetContractsPublicRegionIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

@@ -42,22 +42,22 @@ class CorporationProjectsDomainClientWithMetadataImplementation implements Corpo
 
   get(corporationId: NonNullable<OperationArguments<GetCorporationsProjectsDetailData>['path']>["corporation_id"], projectId: NonNullable<OperationArguments<GetCorporationsProjectsDetailData>['path']>["project_id"], options?: GetCorporationsProjectsDetailOptions): Promise<EsiResponse<GetCorporationsProjectsDetailResponse>> {
     const arguments_: OperationArguments<GetCorporationsProjectsDetailData> = { path: { "corporation_id": corporationId, "project_id": projectId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsProjectsDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsProjectsDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getContribution(corporationId: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>['path']>["corporation_id"], projectId: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>['path']>["project_id"], characterId: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>['path']>["character_id"], options?: GetCorporationsProjectsContributionOptions): Promise<EsiResponse<GetCorporationsProjectsContributionResponse>> {
     const arguments_: OperationArguments<GetCorporationsProjectsContributionData> = { path: { "corporation_id": corporationId, "project_id": projectId, "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsProjectsContributionDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsProjectsContributionDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   list(corporationId: NonNullable<OperationArguments<GetCorporationsProjectsListingData>['path']>["corporation_id"], options?: GetCorporationsProjectsListingOptions): Promise<EsiResponse<GetCorporationsProjectsListingResponse>> {
     const arguments_: OperationArguments<GetCorporationsProjectsListingData> = { path: { "corporation_id": corporationId }, query: { "after": options?.["after"], "before": options?.["before"], "limit": options?.["limit"], "state": options?.["state"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsProjectsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsProjectsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listContributors(corporationId: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>['path']>["corporation_id"], projectId: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>['path']>["project_id"], options?: GetCorporationsProjectsContributorsOptions): Promise<EsiResponse<GetCorporationsProjectsContributorsResponse>> {
     const arguments_: OperationArguments<GetCorporationsProjectsContributorsData> = { path: { "corporation_id": corporationId, "project_id": projectId }, query: { "after": options?.["after"], "before": options?.["before"], "limit": options?.["limit"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsProjectsContributorsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsProjectsContributorsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

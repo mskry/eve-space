@@ -31,6 +31,7 @@ export interface PostCharactersCharacterIdMailLabelsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostCharactersCharacterIdMailLabelsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostCharactersCharacterIdMailLabelsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostCharactersCharacterIdMailLabelsData>["headers"]>["X-Tenant"];
 }
 
@@ -38,6 +39,7 @@ export interface DeleteCharactersCharacterIdMailLabelsLabelIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>["headers"]>["X-Tenant"];
 }
 
@@ -45,6 +47,7 @@ export interface DeleteCharactersCharacterIdMailMailIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>["headers"]>["X-Tenant"];
 }
 
@@ -52,6 +55,7 @@ export interface GetCharactersCharacterIdMailMailIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailMailIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailMailIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailMailIdData>["headers"]>["X-Tenant"];
 }
 
@@ -61,6 +65,7 @@ export interface GetCharactersCharacterIdMailOptions {
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailData>["headers"]>["If-None-Match"];
   readonly "labels"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailData>["query"]>["labels"];
   readonly "lastMailId"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailData>["query"]>["last_mail_id"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailData>["headers"]>["X-Tenant"];
 }
 
@@ -68,6 +73,7 @@ export interface GetCharactersCharacterIdMailLabelsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailLabelsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailLabelsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailLabelsData>["headers"]>["X-Tenant"];
 }
 
@@ -75,6 +81,7 @@ export interface GetCharactersCharacterIdMailListsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailListsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailListsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailListsData>["headers"]>["X-Tenant"];
 }
 
@@ -83,6 +90,7 @@ export interface PostCharactersCharacterIdMailOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostCharactersCharacterIdMailData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostCharactersCharacterIdMailData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostCharactersCharacterIdMailData>["headers"]>["X-Tenant"];
 }
 
@@ -91,6 +99,7 @@ export interface PutCharactersCharacterIdMailMailIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PutCharactersCharacterIdMailMailIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PutCharactersCharacterIdMailMailIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PutCharactersCharacterIdMailMailIdData>["headers"]>["X-Tenant"];
 }
 

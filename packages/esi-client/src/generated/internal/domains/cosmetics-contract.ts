@@ -18,6 +18,7 @@ export interface GetCosmeticsSkinrOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCosmeticsSkinrData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCosmeticsSkinrData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCosmeticsSkinrData>["headers"]>["X-Tenant"];
 }
 
@@ -25,6 +26,7 @@ export interface GetCharactersCosmeticsSkinrComponentsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>["headers"]>["X-Tenant"];
 }
 
@@ -32,6 +34,7 @@ export interface GetCharactersCosmeticsSkinrOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrData>["headers"]>["X-Tenant"];
 }
 

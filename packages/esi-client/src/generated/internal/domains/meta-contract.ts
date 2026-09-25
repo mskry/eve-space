@@ -20,6 +20,7 @@ export interface GetMetaChangelogOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMetaChangelogData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMetaChangelogData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetMetaChangelogData>["headers"]>["X-Tenant"];
 }
 
@@ -27,6 +28,7 @@ export interface GetMetaStatusOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMetaStatusData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMetaStatusData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetMetaStatusData>["headers"]>["X-Tenant"];
 }
 
@@ -34,6 +36,7 @@ export interface GetMetaNameOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMetaNameData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMetaNameData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetMetaNameData>["headers"]>["X-Tenant"];
 }
 
@@ -41,6 +44,7 @@ export interface GetMetaCompatibilityDatesOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMetaCompatibilityDatesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMetaCompatibilityDatesData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetMetaCompatibilityDatesData>["headers"]>["X-Tenant"];
 }
 

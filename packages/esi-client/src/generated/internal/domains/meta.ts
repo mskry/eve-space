@@ -42,22 +42,22 @@ class MetaDomainClientWithMetadataImplementation implements MetaDomainClientWith
 
   getChangelog(options?: GetMetaChangelogOptions): Promise<EsiResponse<GetMetaChangelogResponse>> {
     const arguments_: OperationArguments<GetMetaChangelogData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetMetaChangelogDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetMetaChangelogDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getHealthStatus(options?: GetMetaStatusOptions): Promise<EsiResponse<GetMetaStatusResponse>> {
     const arguments_: OperationArguments<GetMetaStatusData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetMetaStatusDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetMetaStatusDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getName(options?: GetMetaNameOptions): Promise<EsiResponse<GetMetaNameResponse>> {
     const arguments_: OperationArguments<GetMetaNameData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetMetaNameDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetMetaNameDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCompatibilityDates(options?: GetMetaCompatibilityDatesOptions): Promise<EsiResponse<GetMetaCompatibilityDatesResponse>> {
     const arguments_: OperationArguments<GetMetaCompatibilityDatesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetMetaCompatibilityDatesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetMetaCompatibilityDatesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

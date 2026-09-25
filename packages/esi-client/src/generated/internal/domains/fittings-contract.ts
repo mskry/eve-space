@@ -19,6 +19,7 @@ export interface PostCharactersCharacterIdFittingsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostCharactersCharacterIdFittingsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostCharactersCharacterIdFittingsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostCharactersCharacterIdFittingsData>["headers"]>["X-Tenant"];
 }
 
@@ -26,6 +27,7 @@ export interface DeleteCharactersCharacterIdFittingsFittingIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>["headers"]>["X-Tenant"];
 }
 
@@ -33,6 +35,7 @@ export interface GetCharactersCharacterIdFittingsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdFittingsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdFittingsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdFittingsData>["headers"]>["X-Tenant"];
 }
 

@@ -209,10 +209,10 @@ function renderConceptPage(slug: string, title: string, provenance: ArtifactProv
   const bodies = {
     auth: `Public operations need no authentication. Authenticated operation references list every required OAuth scope.
 
-Configure either \`token\` or an asynchronous \`tokenProvider\`; do not configure both. Token providers are resolved only for authenticated requests. Credentials and authorization headers are excluded from the serializable registry, response metadata, and structured errors.`,
+Configure either \`token\` or an asynchronous \`tokenProvider\`; do not configure both. Token providers are resolved only for authenticated requests. A provider may accept an optional context with the caller's \`signal\` and stop its own work when aborted. Existing zero-argument providers remain valid; the SDK rejects promptly on caller abort even when a provider ignores the signal. Credentials and authorization headers are excluded from the serializable registry, response metadata, and structured errors.`,
     client: `Create a public client with \`new EsiClient()\`. The pinned compatibility date, standard ESI base URL, English language, 10,000 millisecond request timeout, response validation, and the global \`fetch\` implementation are defaults.
 
-Constructor options include \`baseUrl\`, \`compatibilityDate\`, \`language\`, \`requestTimeoutMs\`, \`token\` or \`tokenProvider\`, \`fetch\`, \`validateResponses\`, \`validateRequests\`, and \`allowGenericMutations\`. Configuration is immutable. The positive-integer timeout starts after token-provider resolution and spans the configured fetch plus response-body consumption. Operation options can override the compatibility date where the registry declares support.`,
+Constructor options include \`baseUrl\`, \`compatibilityDate\`, \`language\`, \`requestTimeoutMs\`, \`token\` or \`tokenProvider\`, \`fetch\`, \`validateResponses\`, \`validateRequests\`, and \`allowGenericMutations\`. Configuration is immutable. Every typed domain method accepts an optional caller \`signal\` in its final options object, including methods with no other options; required request fields remain required. The positive-integer timeout starts after token-provider resolution and spans the configured fetch plus response-body consumption. Caller cancellation also applies during credential resolution. Operation options can override the compatibility date where the registry declares support.`,
     'custom-fetch': `Pass a custom \`fetch\` implementation to compose application headers, coordination, or telemetry with SDK execution. The SDK calls it once per operation and supplies the final URL, method, headers, body, and a composed \`AbortSignal\` that includes the SDK deadline and any caller cancellation.
 
 Custom wrappers must forward and observe \`init.signal\`, retain resources such as distributed permits until the response body closes, errors, or is cancelled, and return the original response stream semantics. A wrapper that ignores cancellation may continue background work after the public SDK promise has been bounded. Do not add a competing independent timeout around the same attempt.`,
@@ -235,7 +235,7 @@ Generic mutation execution is denied unless the client is constructed with \`all
 Protocol facts are generated from the corrected pinned OpenAPI document: declared conditional validators, cache extensions, route-group limits or an explicit \`legacy-only\` marker, bounded request arrays, and an unambiguous maximum batch size when one exists. Missing declarations remain explicit; inspecting them performs no network or policy side effect. Executable registry descriptors expose the same facts through \`transport.protocol\`.`,
     'standalone-domains': `Import a \`create<Domain>Client\` factory from \`@evespace/esi-client/domains/<domain>\` when an aggregate \`EsiClient\` is unnecessary. Standalone factories accept the same client options, including \`requestTimeoutMs\`, authentication, validation, and custom fetch configuration.
 
-Standalone methods return bare data by default and expose the same metadata-enabled view, structured errors, generated protocol descriptors, one-attempt behavior, and transport deadline as the aggregate client. A standalone import narrows runtime and declaration reach but does not reduce installed package size.`,
+Standalone methods return bare data by default and expose the same metadata-enabled view, typed per-call \`signal\`, structured errors, generated protocol descriptors, one-attempt behavior, and transport deadline as the aggregate client. A standalone import narrows runtime and declaration reach but does not reduce installed package size.`,
     validation: `Successful JSON responses are validated by generated Zod 4 schemas by default. Natural TypeScript exports are available from \`@evespace/esi-client/types\`; matching natural Zod exports are available from \`@evespace/esi-client/zod\`. Known object fields are checked while unknown response fields are preserved for forward compatibility. Date and date-time values remain JSON strings.
 
 Typed request validation is opt-in with \`validateRequests: true\`. Generic \`callOperation\` arguments are always validated before network activity. Response validation can be disabled explicitly with \`validateResponses: false\`.`,
@@ -336,7 +336,7 @@ ${markdownText(operation.summary ?? 'No summary is available for this operation.
 - Domain import: \`@evespace/esi-client/domains/${domainFile(operation.facade.domain)}\`
 - Domain index: [${markdownText(operation.facade.domain)}](../domains/${domainFile(operation.facade.domain)}.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use \`path\`, \`query\`, \`headers\`, and \`body\` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values, an available compatibility-date override, and optional caller cancellation via \`signal\` are fields in its final options object, even if the operation has no other options. Both the bare-data and metadata views apply the signal; required body and other required options remain required. The signal is transport-only and is not sent as an ESI parameter. Generic arguments use \`path\`, \`query\`, \`headers\`, and \`body\` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
@@ -585,16 +585,10 @@ function domainMethodArguments(operation: SerializableOperationManifestEntry): s
     }
   }
   const nonPathParameters = operation.parameters.filter(({ placement }) => placement !== 'path');
-  const hasOptions =
-    nonPathParameters.length > 0 ||
-    operation.requestBody !== null ||
-    operation.transport.compatibilityDateOverride;
-  if (hasOptions) {
-    const optionsRequired =
-      nonPathParameters.some((parameter) => parameter.required) ||
-      operation.requestBody?.required === true;
-    signatureArguments.push(optionsRequired ? 'options' : 'options?');
-  }
+  const optionsRequired =
+    nonPathParameters.some((parameter) => parameter.required) ||
+    operation.requestBody?.required === true;
+  signatureArguments.push(optionsRequired ? 'options' : 'options?');
   return signatureArguments.join(', ');
 }
 

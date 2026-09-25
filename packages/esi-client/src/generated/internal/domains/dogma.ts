@@ -46,27 +46,27 @@ class DogmaDomainClientWithMetadataImplementation implements DogmaDomainClientWi
 
   getAttribute(attributeId: NonNullable<OperationArguments<GetDogmaAttributesAttributeIdData>['path']>["attribute_id"], options?: GetDogmaAttributesAttributeIdOptions): Promise<EsiResponse<GetDogmaAttributesAttributeIdResponse>> {
     const arguments_: OperationArguments<GetDogmaAttributesAttributeIdData> = { path: { "attribute_id": attributeId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetDogmaAttributesAttributeIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetDogmaAttributesAttributeIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getDynamicItem(typeId: NonNullable<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['path']>["type_id"], itemId: NonNullable<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['path']>["item_id"], options?: GetDogmaDynamicItemsTypeIdItemIdOptions): Promise<EsiResponse<GetDogmaDynamicItemsTypeIdItemIdResponse>> {
     const arguments_: OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData> = { path: { "type_id": typeId, "item_id": itemId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetDogmaDynamicItemsTypeIdItemIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetDogmaDynamicItemsTypeIdItemIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getEffect(effectId: NonNullable<OperationArguments<GetDogmaEffectsEffectIdData>['path']>["effect_id"], options?: GetDogmaEffectsEffectIdOptions): Promise<EsiResponse<GetDogmaEffectsEffectIdResponse>> {
     const arguments_: OperationArguments<GetDogmaEffectsEffectIdData> = { path: { "effect_id": effectId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetDogmaEffectsEffectIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetDogmaEffectsEffectIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listAttributes(options?: GetDogmaAttributesOptions): Promise<EsiResponse<GetDogmaAttributesResponse>> {
     const arguments_: OperationArguments<GetDogmaAttributesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetDogmaAttributesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetDogmaAttributesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listEffects(options?: GetDogmaEffectsOptions): Promise<EsiResponse<GetDogmaEffectsResponse>> {
     const arguments_: OperationArguments<GetDogmaEffectsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetDogmaEffectsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetDogmaEffectsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

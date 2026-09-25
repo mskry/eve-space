@@ -34,12 +34,12 @@ class ClonesDomainClientWithMetadataImplementation implements ClonesDomainClient
 
   getState(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdClonesData>['path']>["character_id"], options?: GetCharactersCharacterIdClonesOptions): Promise<EsiResponse<GetCharactersCharacterIdClonesResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdClonesData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdClonesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdClonesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listActiveImplants(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdImplantsData>['path']>["character_id"], options?: GetCharactersCharacterIdImplantsOptions): Promise<EsiResponse<GetCharactersCharacterIdImplantsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdImplantsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdImplantsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdImplantsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

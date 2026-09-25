@@ -50,32 +50,32 @@ class WalletDomainClientWithMetadataImplementation implements WalletDomainClient
 
   getCharacterBalance(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdWalletData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdWalletDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdWalletDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCharacterJournal(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletJournalData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletJournalOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletJournalResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdWalletJournalData> = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdWalletJournalDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdWalletJournalDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCharacterTransactions(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletTransactionsOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletTransactionsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdWalletTransactionsData> = { path: { "character_id": characterId }, query: { "from_id": options?.["fromId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdWalletTransactionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdWalletTransactionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCorporationBalances(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdWalletsOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdWalletsData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdWalletsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdWalletsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCorporationDivisionJournal(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']>["corporation_id"], division: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionJournalOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionJournalResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData> = { path: { "corporation_id": corporationId, "division": division }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdWalletsDivisionJournalDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdWalletsDivisionJournalDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCorporationDivisionTransactions(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']>["corporation_id"], division: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionTransactionsOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionTransactionsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData> = { path: { "corporation_id": corporationId, "division": division }, query: { "from_id": options?.["fromId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdWalletsDivisionTransactionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdWalletsDivisionTransactionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

@@ -18,6 +18,7 @@ export interface GetCharactersMercenaryTacticalOperationsDetailOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>["headers"]>["X-Tenant"];
 }
 
@@ -25,6 +26,7 @@ export interface GetCharactersMercenaryTacticalOperationsListingOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>["headers"]>["X-Tenant"];
 }
 
@@ -32,6 +34,7 @@ export interface GetSkyhooksRaidableOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetSkyhooksRaidableData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetSkyhooksRaidableData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetSkyhooksRaidableData>["headers"]>["X-Tenant"];
 }
 

@@ -16,6 +16,7 @@ export interface GetCharactersCharacterIdLoyaltyPointsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>["headers"]>["X-Tenant"];
 }
 
@@ -23,6 +24,7 @@ export interface GetLoyaltyStoresCorporationIdOffersOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetLoyaltyStoresCorporationIdOffersData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetLoyaltyStoresCorporationIdOffersData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetLoyaltyStoresCorporationIdOffersData>["headers"]>["X-Tenant"];
 }
 

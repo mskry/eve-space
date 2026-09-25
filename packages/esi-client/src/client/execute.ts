@@ -153,12 +153,15 @@ export async function executeOperation<TArguments extends OperationRequestArgume
       redaction,
       status: response.status,
     };
+    rejectCancelledResponse(response, exchange, responseTransport);
 
     await rejectUnsuccessfulResponse(response, exchange, responseTransport);
+    rejectCancelledResponse(response, exchange, responseTransport);
 
     const successResponse = selectSuccessResponse(execution.successResponses, response.status);
     if (response.status === 204 || response.status === 205 || successResponse?.body === 'none') {
       await cancelResponseBody(response, exchange, responseTransport);
+      exchange.throwIfCancelled(responseTransport);
       return createEsiResponse(
         // Generated descriptors include undefined in TResponse exactly when no content is declared.
         // oxlint-disable-next-line typescript/no-unsafe-type-assertion
@@ -168,16 +171,16 @@ export async function executeOperation<TArguments extends OperationRequestArgume
     }
 
     const responseBodyText = await readResponseBody(response, exchange, responseTransport);
+    exchange.throwIfCancelled(responseTransport);
     const data = parseResponseBody(responseBodyText, responseTransport);
-    return createEsiResponse(
-      validateResponseData(
-        data,
-        configuration.validateResponses,
-        successResponse,
-        responseTransport,
-      ),
-      metadata,
+    const validatedData = validateResponseData(
+      data,
+      configuration.validateResponses,
+      successResponse,
+      responseTransport,
     );
+    exchange.throwIfCancelled(responseTransport);
+    return createEsiResponse(validatedData, metadata);
   } finally {
     exchange.close();
   }
@@ -190,14 +193,16 @@ async function authorizeOperationRequest(
   signal: AbortSignal | undefined,
   headers: Headers,
 ): Promise<string[]> {
+  throwIfCallerCancelled(signal, operationId);
   if (authentication === null) {
     return [];
   }
   const token = await raceCallerCancellation(
-    resolveAccessToken(configuration, operationId, authentication),
+    resolveAccessToken(configuration, operationId, authentication, signal),
     signal,
     operationId,
   );
+  throwIfCallerCancelled(signal, operationId);
   headers.set('authorization', `Bearer ${token}`);
   return [token];
 }
@@ -211,14 +216,16 @@ async function fetchOperationResponse(
   redaction: EsiResponseTransportContext['redaction'],
 ): Promise<Response> {
   const fetchImplementation = configuration.fetch;
-  const fetchPromise = Promise.resolve().then(() =>
-    fetchImplementation(`${configuration.baseUrl}${request.path}`, {
+  exchange.throwIfCancelled({ operationId, phase: 'request', redaction });
+  const fetchPromise = Promise.resolve().then(() => {
+    exchange.throwIfCancelled({ operationId, phase: 'request', redaction });
+    return fetchImplementation(`${configuration.baseUrl}${request.path}`, {
       headers,
       method: request.method,
       signal: exchange.signal,
       ...requestBodyInit(request.body),
-    }),
-  );
+    });
+  });
   void fetchPromise.then(
     (lateResponse) => cancelLateResponse(lateResponse, exchange),
     () => {},
@@ -241,6 +248,17 @@ function cancelLateResponse(response: Response, exchange: EsiExchangeDeadline): 
   void response.body?.cancel().catch(() => {});
 }
 
+function rejectCancelledResponse(
+  response: Response,
+  exchange: EsiExchangeDeadline,
+  context: EsiOperationResponseContext,
+): void {
+  if (exchange.cancelled) {
+    void response.body?.cancel().catch(() => {});
+    exchange.throwIfCancelled(context);
+  }
+}
+
 async function rejectUnsuccessfulResponse(
   response: Response,
   exchange: EsiExchangeDeadline,
@@ -248,6 +266,7 @@ async function rejectUnsuccessfulResponse(
 ): Promise<void> {
   if (response.status === 304) {
     await cancelResponseBody(response, exchange, context);
+    exchange.throwIfCancelled(context);
     throw new EsiNotModifiedError(context);
   }
   if (response.ok) {
@@ -259,6 +278,7 @@ async function rejectUnsuccessfulResponse(
     context,
     ESI_ERROR_BODY_LIMITS.bytes + 1,
   );
+  exchange.throwIfCancelled(context);
   throw new EsiHttpError({ ...context, responseBodyText });
 }
 
@@ -522,12 +542,15 @@ async function resolveAccessToken(
   configuration: EsiClientConfiguration,
   operationId: string,
   authentication: OperationAuthentication,
+  signal: AbortSignal | undefined,
 ): Promise<string> {
   let token = configuration.token;
   if (token === undefined && configuration.tokenProvider !== undefined) {
     try {
-      token = await configuration.tokenProvider();
+      throwIfCallerCancelled(signal, operationId);
+      token = await configuration.tokenProvider({ signal });
     } catch (cause) {
+      throwIfCallerCancelled(signal, operationId);
       throw new EsiAuthenticationRequiredError({
         cause,
         operationId,
@@ -535,6 +558,7 @@ async function resolveAccessToken(
       });
     }
   }
+  throwIfCallerCancelled(signal, operationId);
   if (!isSafeToken(token)) {
     throw new EsiAuthenticationRequiredError({
       operationId,
@@ -570,6 +594,7 @@ async function raceCallerCancellation<Value>(
   const cancellationPromise = new Promise<never>((_resolve, reject) => {
     rejectCancellation = reject;
   });
+  void cancellationPromise.catch(() => {});
   const cancel = () =>
     rejectCancellation?.(
       new EsiTransportError({
@@ -584,9 +609,25 @@ async function raceCallerCancellation<Value>(
     cancel();
   }
   try {
-    return await Promise.race([promise, cancellationPromise]);
+    const value = await Promise.race([promise, cancellationPromise]);
+    throwIfCallerCancelled(signal, operationId);
+    return value;
+  } catch (cause) {
+    throwIfCallerCancelled(signal, operationId);
+    throw cause;
   } finally {
     signal.removeEventListener('abort', cancel);
+  }
+}
+
+function throwIfCallerCancelled(signal: AbortSignal | undefined, operationId: string): void {
+  if (signal?.aborted) {
+    throw new EsiTransportError({
+      cause: signal.reason,
+      operationId,
+      phase: 'request',
+      reason: 'network',
+    });
   }
 }
 
@@ -615,6 +656,7 @@ interface EsiExchangeDeadline {
   readonly signal: AbortSignal;
   readonly cancelled: boolean;
   race<Value>(promise: PromiseLike<Value>, context: EsiResponseTransportContext): Promise<Value>;
+  throwIfCancelled(context: EsiResponseTransportContext): void;
   close(): void;
 }
 
@@ -631,6 +673,7 @@ function createExchangeDeadline(
   const cancellationPromise = new Promise<never>((_resolve, reject) => {
     rejectCancellation = reject;
   });
+  void cancellationPromise.catch(() => {});
   const cancel = (reason: 'timeout' | 'network') => {
     if (cancellation.reason !== undefined) {
       return;
@@ -666,6 +709,15 @@ function createExchangeDeadline(
         throw new EsiTransportError({
           ...context,
           reason: cancellation.reason ?? 'network',
+          cause: signal.reason,
+        });
+      }
+    },
+    throwIfCancelled(context: EsiResponseTransportContext) {
+      if (cancellation.reason !== undefined) {
+        throw new EsiTransportError({
+          ...context,
+          reason: cancellation.reason,
           cause: signal.reason,
         });
       }

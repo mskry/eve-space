@@ -10,8 +10,8 @@ import {
   EsiResponseValidationError,
   EsiTransportError,
 } from '../src/client/errors.js';
-import { executeOperation } from '../src/client/execute.js';
-import type { OperationExecutionDescriptor } from '../src/client/execute.js';
+import { executeOperation, type OperationExecutionDescriptor } from '../src/client/execute.js';
+import type { EsiTokenProvider } from '../src/client/options.js';
 import type { OperationRequestArguments, OperationSchema } from '../src/client/request.js';
 
 describe('shared descriptor execution', () => {
@@ -139,7 +139,9 @@ describe('shared descriptor execution', () => {
       ),
     ).resolves.toMatchObject({ data: { ok: true } });
   });
+});
 
+describe('credential and request cancellation', () => {
   it('stops waiting for deferred credentials when the caller cancels', async () => {
     let resolveToken: ((token: string) => void) | undefined;
     const tokenProvider = vi.fn<() => Promise<string>>(
@@ -166,6 +168,107 @@ describe('shared descriptor execution', () => {
     });
     expect(fetch).not.toHaveBeenCalled();
     resolveToken?.('late-secret');
+  });
+
+  it.each(['provider', 'public', 'direct token'] as const)(
+    'does not start credentials or transport for a pre-aborted %s call',
+    async (mode) => {
+      const controller = new AbortController();
+      controller.abort(new Error('cancelled before execution'));
+      const fetch = jsonFetch({ unreachable: true });
+      const tokenProvider = vi.fn<EsiTokenProvider>(async () => 'deferred-secret');
+      const configuration = new EsiClientConfiguration({
+        fetch,
+        ...(mode === 'direct token' ? { token: 'direct-secret' } : { tokenProvider }),
+      });
+
+      await expect(
+        executeOperation(
+          configuration,
+          mode === 'public' ? operation() : authenticatedOperation(),
+          {},
+          {
+            signal: controller.signal,
+          },
+        ),
+      ).rejects.toMatchObject({ phase: 'request', reason: 'network' });
+      expect(tokenProvider).not.toHaveBeenCalled();
+      expect(fetch).not.toHaveBeenCalled();
+    },
+  );
+
+  it('passes caller cancellation to a cooperating provider and keeps its failure in the request phase', async () => {
+    const controller = new AbortController();
+    let providedSignal: AbortSignal | undefined;
+    const tokenProvider = vi.fn<EsiTokenProvider>(
+      async (context?: { readonly signal?: AbortSignal }): Promise<string> => {
+        providedSignal = context?.signal;
+        return await new Promise((_resolve, reject) => {
+          context?.signal?.addEventListener('abort', () => reject(context.signal?.reason), {
+            once: true,
+          });
+        });
+      },
+    );
+    const fetch = jsonFetch({ unreachable: true });
+    const promise = executeOperation(
+      new EsiClientConfiguration({ fetch, tokenProvider }),
+      authenticatedOperation(),
+      {},
+      { signal: controller.signal },
+    );
+
+    expect(providedSignal).toBe(controller.signal);
+    controller.abort(new Error('provider stopped'));
+    await expect(promise).rejects.toMatchObject({ phase: 'request', reason: 'network' });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('keeps caller cancellation over a provider failure and preserves ordinary provider errors', async () => {
+    const controller = new AbortController();
+    const failure = new Error('provider failed');
+    const fetch = jsonFetch({ unreachable: true });
+    const tokenProvider = vi.fn<EsiTokenProvider>(async () => {
+      controller.abort(failure);
+      throw failure;
+    });
+
+    await expect(
+      executeOperation(
+        new EsiClientConfiguration({ fetch, tokenProvider }),
+        authenticatedOperation(),
+        {},
+        { signal: controller.signal },
+      ),
+    ).rejects.toMatchObject({ phase: 'request', reason: 'network' });
+    await expect(
+      executeOperation(
+        new EsiClientConfiguration({
+          fetch,
+          tokenProvider: async () => {
+            throw failure;
+          },
+        }),
+        authenticatedOperation(),
+        {},
+      ),
+    ).rejects.toBeInstanceOf(EsiAuthenticationRequiredError);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('does not start scheduled fetch after cancellation', async () => {
+    const controller = new AbortController();
+    const fetch = jsonFetch({ unreachable: true });
+    const promise = executeOperation(
+      new EsiClientConfiguration({ fetch }),
+      operation(),
+      {},
+      { signal: controller.signal },
+    );
+    controller.abort();
+
+    await expect(promise).rejects.toMatchObject({ phase: 'request', reason: 'network' });
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it('requires credentials with scopes before network activity', async () => {
@@ -270,7 +373,9 @@ describe('shared descriptor execution', () => {
       expect(fetch).not.toHaveBeenCalled();
     },
   );
+});
 
+describe('response completion and cancellation', () => {
   it('selects the status-specific response schema and returns validated JSON', async () => {
     const exact = schema<{ readonly selected: string }>(() => ({
       data: { selected: 'exact' },
@@ -345,6 +450,184 @@ describe('shared descriptor execution', () => {
     expect(cancelled).toBe(true);
   });
 
+  it('rejects cancellation during the fetched-response handoff with response metadata and body cleanup', async () => {
+    const controller = new AbortController();
+    const cancel = vi.fn<() => void>();
+    const response = new Response(new ReadableStream<Uint8Array>({ cancel }), {
+      headers: { 'x-request-id': 'handoff' },
+    });
+    const headers = response.headers;
+    Object.defineProperty(response, 'headers', {
+      get() {
+        queueMicrotask(() => controller.abort());
+        return headers;
+      },
+    });
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => response);
+
+    await expect(
+      executeOperation(
+        new EsiClientConfiguration({ fetch }),
+        operation(),
+        {},
+        {
+          signal: controller.signal,
+        },
+      ),
+    ).rejects.toMatchObject({
+      phase: 'response',
+      reason: 'network',
+      status: 200,
+      metadata: { requestId: 'handoff' },
+    });
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it.each([204, 205])('rejects cancellation during bodyless %s completion', async (status) => {
+    const controller = new AbortController();
+    const response = new Response(null, { status, headers: { 'x-request-id': 'no-body' } });
+    Object.defineProperty(response, 'body', {
+      get() {
+        queueMicrotask(() => controller.abort());
+        return null;
+      },
+    });
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => response);
+
+    await expect(
+      executeOperation(
+        new EsiClientConfiguration({ fetch }),
+        operation(),
+        {},
+        {
+          signal: controller.signal,
+        },
+      ),
+    ).rejects.toMatchObject({
+      phase: 'response',
+      reason: 'network',
+      status,
+      metadata: { requestId: 'no-body' },
+    });
+  });
+
+  it('rejects cancellation during declared no-content body cleanup', async () => {
+    const controller = new AbortController();
+    const cancel = vi.fn<() => void>(() => {
+      queueMicrotask(() => controller.abort());
+    });
+    const body = new ReadableStream<Uint8Array>({ cancel });
+    const fetch = vi.fn<typeof globalThis.fetch>(
+      async () => new Response(body, { headers: { 'x-request-id': 'declared-empty' } }),
+    );
+
+    await expect(
+      executeOperation(
+        new EsiClientConfiguration({ fetch }),
+        operation({ successResponses: [{ body: 'none', status: 200 }] }),
+        {},
+        { signal: controller.signal },
+      ),
+    ).rejects.toMatchObject({
+      phase: 'response',
+      reason: 'network',
+      status: 200,
+      metadata: { requestId: 'declared-empty' },
+    });
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it('checks cancellation after consuming JSON before returning success', async () => {
+    const controller = new AbortController();
+    const responseSchema = schema(() => {
+      controller.abort();
+      return { success: true, data: { id: 7 } };
+    });
+    const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+      Response.json({ id: 7 }, { headers: { 'x-request-id': 'parsed' } }),
+    );
+
+    await expect(
+      executeOperation(
+        new EsiClientConfiguration({ fetch }),
+        operation({ responseSchema }),
+        {},
+        { signal: controller.signal },
+      ),
+    ).rejects.toMatchObject({
+      phase: 'response',
+      reason: 'network',
+      status: 200,
+      metadata: { requestId: 'parsed' },
+    });
+    expect(responseSchema.safeParse).toHaveBeenCalledWith({ id: 7 });
+  });
+
+  it('rejects a microtask abort after the final JSON chunk is read', async () => {
+    const controller = new AbortController();
+    let completed = false;
+    const body = new ReadableStream<Uint8Array>({
+      start(stream) {
+        stream.enqueue(new TextEncoder().encode('{"id":7}'));
+        stream.close();
+        completed = true;
+      },
+    });
+    const getReader = body.getReader.bind(body);
+    Object.defineProperty(body, 'getReader', {
+      value: () => {
+        const reader = getReader();
+        const releaseLock = reader.releaseLock.bind(reader);
+        Object.defineProperty(reader, 'releaseLock', {
+          value: () => {
+            queueMicrotask(() => controller.abort());
+            releaseLock();
+          },
+        });
+        return reader;
+      },
+    });
+    const fetch = vi.fn<typeof globalThis.fetch>(
+      async () => new Response(body, { headers: { 'x-request-id': 'complete-json' } }),
+    );
+
+    await expect(
+      executeOperation(
+        new EsiClientConfiguration({ fetch }),
+        operation(),
+        {},
+        {
+          signal: controller.signal,
+        },
+      ),
+    ).rejects.toMatchObject({
+      phase: 'response',
+      reason: 'network',
+      status: 200,
+      metadata: { requestId: 'complete-json' },
+    });
+    expect(completed).toBe(true);
+  });
+
+  it.each([204, 205, 200])('returns a non-cancelled no-content %s response', async (status) => {
+    const descriptor = operation({ successResponses: [{ body: 'none', status }] });
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(null, { status }));
+    const controller = new AbortController();
+
+    await expect(
+      executeOperation(
+        new EsiClientConfiguration({ fetch }),
+        descriptor,
+        {},
+        {
+          signal: controller.signal,
+        },
+      ),
+    ).resolves.toMatchObject({ data: undefined, meta: { status } });
+  });
+});
+
+describe('transport and response failures', () => {
   it('throws a structured parse error for a successful non-JSON body', async () => {
     const fetch = vi.fn<typeof globalThis.fetch>(
       async () =>
@@ -426,6 +709,34 @@ describe('shared descriptor execution', () => {
       phase: 'request',
       reason: 'network',
     });
+  });
+
+  it('cancels an active response reader on caller abort', async () => {
+    const controller = new AbortController();
+    const cancel = vi.fn<() => void>();
+    const body = new ReadableStream<Uint8Array>({
+      pull: () => new Promise(() => undefined),
+      cancel,
+    });
+    const fetch = vi.fn<typeof globalThis.fetch>(
+      async () => new Response(body, { headers: { 'x-request-id': 'body-abort' } }),
+    );
+    const promise = executeOperation(
+      new EsiClientConfiguration({ fetch }),
+      operation(),
+      {},
+      { signal: controller.signal },
+    );
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    controller.abort();
+
+    await expect(promise).rejects.toMatchObject({
+      phase: 'response',
+      reason: 'network',
+      status: 200,
+      metadata: { requestId: 'body-abort' },
+    });
+    expect(cancel).toHaveBeenCalledOnce();
   });
 
   it('maps response-stream failures separately from completed invalid JSON', async () => {

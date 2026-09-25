@@ -38,17 +38,17 @@ class LocationDomainClientWithMetadataImplementation implements LocationDomainCl
 
   get(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdLocationData>['path']>["character_id"], options?: GetCharactersCharacterIdLocationOptions): Promise<EsiResponse<GetCharactersCharacterIdLocationResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdLocationData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdLocationDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdLocationDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getCurrentShip(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdShipData>['path']>["character_id"], options?: GetCharactersCharacterIdShipOptions): Promise<EsiResponse<GetCharactersCharacterIdShipResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdShipData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdShipDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdShipDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getOnlineStatus(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdOnlineData>['path']>["character_id"], options?: GetCharactersCharacterIdOnlineOptions): Promise<EsiResponse<GetCharactersCharacterIdOnlineResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdOnlineData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdOnlineDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdOnlineDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

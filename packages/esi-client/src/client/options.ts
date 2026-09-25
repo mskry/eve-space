@@ -1,5 +1,9 @@
 export type EsiLanguage = 'de' | 'en' | 'es' | 'fr' | 'ja' | 'ko' | 'ru' | 'zh';
-export type EsiTokenProvider = () => Promise<string>;
+export interface EsiTokenProviderContext {
+  readonly signal?: AbortSignal;
+}
+
+export type EsiTokenProvider = (context?: EsiTokenProviderContext) => Promise<string>;
 export type EsiFetch = typeof globalThis.fetch;
 
 export interface EsiClientOptions {

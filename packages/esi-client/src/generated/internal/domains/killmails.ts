@@ -38,17 +38,17 @@ class KillmailsDomainClientWithMetadataImplementation implements KillmailsDomain
 
   get(killmailId: NonNullable<OperationArguments<GetKillmailsKillmailIdKillmailHashData>['path']>["killmail_id"], killmailHash: NonNullable<OperationArguments<GetKillmailsKillmailIdKillmailHashData>['path']>["killmail_hash"], options?: GetKillmailsKillmailIdKillmailHashOptions): Promise<EsiResponse<GetKillmailsKillmailIdKillmailHashResponse>> {
     const arguments_: OperationArguments<GetKillmailsKillmailIdKillmailHashData> = { path: { "killmail_id": killmailId, "killmail_hash": killmailHash }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetKillmailsKillmailIdKillmailHashDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetKillmailsKillmailIdKillmailHashDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listRecentForCharacter(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdKillmailsRecentData>['path']>["character_id"], options?: GetCharactersCharacterIdKillmailsRecentOptions): Promise<EsiResponse<GetCharactersCharacterIdKillmailsRecentResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdKillmailsRecentData> = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdKillmailsRecentDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdKillmailsRecentDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listRecentForCorporation(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdKillmailsRecentOptions): Promise<EsiResponse<GetCorporationsCorporationIdKillmailsRecentResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdKillmailsRecentData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdKillmailsRecentDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdKillmailsRecentDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

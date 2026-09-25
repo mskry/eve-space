@@ -2425,6 +2425,7 @@ export type GetCharactersAccessListsDetailOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersAccessListsDetailData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersAccessListsDetailData>['headers']
       >['X-Tenant'];
@@ -2464,6 +2465,7 @@ export type GetCharactersAccessListsListingOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersAccessListsListingData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersAccessListsListingData>['headers']
       >['X-Tenant'];
@@ -2515,6 +2517,7 @@ export type GetCharactersMercenaryTacticalOperationsDetailOptionsAssertion = Ass
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['headers']
       >['X-Tenant'];
@@ -2554,6 +2557,7 @@ export type GetCharactersMercenaryTacticalOperationsListingOptionsAssertion = As
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>['headers']
       >['X-Tenant'];
@@ -2583,6 +2587,7 @@ export type GetSkyhooksRaidableOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetSkyhooksRaidableData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetSkyhooksRaidableData>['headers']
       >['X-Tenant'];
@@ -2628,6 +2633,7 @@ export type GetAlliancesAllianceIdIconsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetAlliancesAllianceIdIconsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetAlliancesAllianceIdIconsData>['headers']
       >['X-Tenant'];
@@ -2667,6 +2673,7 @@ export type GetAlliancesAllianceIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetAlliancesAllianceIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetAlliancesAllianceIdData>['headers']
       >['X-Tenant'];
@@ -2696,6 +2703,7 @@ export type GetAlliancesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetAlliancesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<OperationArguments<GetAlliancesData>['headers']>['X-Tenant'];
     }
   >
@@ -2733,6 +2741,7 @@ export type GetAlliancesAllianceIdCorporationsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetAlliancesAllianceIdCorporationsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetAlliancesAllianceIdCorporationsData>['headers']
       >['X-Tenant'];
@@ -2781,6 +2790,7 @@ export type GetCharactersCharacterIdAssetsOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCharactersCharacterIdAssetsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdAssetsData>['headers']
       >['X-Tenant'];
@@ -2823,6 +2833,7 @@ export type GetCorporationsCorporationIdAssetsOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdAssetsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdAssetsData>['headers']
       >['X-Tenant'];
@@ -2863,6 +2874,7 @@ export type PostCharactersCharacterIdAssetsLocationsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostCharactersCharacterIdAssetsLocationsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostCharactersCharacterIdAssetsLocationsData>['headers']
       >['X-Tenant'];
@@ -2903,6 +2915,7 @@ export type PostCharactersCharacterIdAssetsNamesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostCharactersCharacterIdAssetsNamesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostCharactersCharacterIdAssetsNamesData>['headers']
       >['X-Tenant'];
@@ -2943,6 +2956,7 @@ export type PostCorporationsCorporationIdAssetsLocationsOptionsAssertion = Asser
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>['headers']
       >['X-Tenant'];
@@ -2983,6 +2997,7 @@ export type PostCorporationsCorporationIdAssetsNamesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostCorporationsCorporationIdAssetsNamesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostCorporationsCorporationIdAssetsNamesData>['headers']
       >['X-Tenant'];
@@ -3034,6 +3049,7 @@ export type GetCharactersCharacterIdCalendarEventIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['headers']
       >['X-Tenant'];
@@ -3079,6 +3095,7 @@ export type GetCharactersCharacterIdCalendarEventIdAttendeesOptionsAssertion = A
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['headers']
       >['X-Tenant'];
@@ -3121,6 +3138,7 @@ export type GetCharactersCharacterIdCalendarOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdCalendarData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdCalendarData>['headers']
       >['X-Tenant'];
@@ -3167,6 +3185,7 @@ export type PutCharactersCharacterIdCalendarEventIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['headers']
       >['X-Tenant'];
@@ -3212,6 +3231,7 @@ export type GetCharactersCharacterIdAgentsResearchOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdAgentsResearchData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdAgentsResearchData>['headers']
       >['X-Tenant'];
@@ -3252,6 +3272,7 @@ export type PostCharactersCharacterIdCspaOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostCharactersCharacterIdCspaData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostCharactersCharacterIdCspaData>['headers']
       >['X-Tenant'];
@@ -3291,6 +3312,7 @@ export type GetCharactersCharacterIdRolesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdRolesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdRolesData>['headers']
       >['X-Tenant'];
@@ -3330,6 +3352,7 @@ export type GetCharactersCharacterIdFatigueOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdFatigueData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdFatigueData>['headers']
       >['X-Tenant'];
@@ -3369,6 +3392,7 @@ export type GetCharactersCharacterIdPortraitOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdPortraitData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdPortraitData>['headers']
       >['X-Tenant'];
@@ -3404,6 +3428,7 @@ export type GetCharactersDetailOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersDetailData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersDetailData>['headers']
       >['X-Tenant'];
@@ -3446,6 +3471,7 @@ export type GetCharactersCharacterIdBlueprintsOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCharactersCharacterIdBlueprintsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdBlueprintsData>['headers']
       >['X-Tenant'];
@@ -3485,6 +3511,7 @@ export type GetCharactersCharacterIdNotificationsContactsOptionsAssertion = Asse
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdNotificationsContactsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdNotificationsContactsData>['headers']
       >['X-Tenant'];
@@ -3524,6 +3551,7 @@ export type GetCharactersCharacterIdCorporationhistoryOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdCorporationhistoryData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdCorporationhistoryData>['headers']
       >['X-Tenant'];
@@ -3563,6 +3591,7 @@ export type GetCharactersCharacterIdTitlesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdTitlesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdTitlesData>['headers']
       >['X-Tenant'];
@@ -3602,6 +3631,7 @@ export type GetCharactersCharacterIdMedalsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdMedalsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdMedalsData>['headers']
       >['X-Tenant'];
@@ -3641,6 +3671,7 @@ export type GetCharactersCharacterIdNotificationsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdNotificationsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdNotificationsData>['headers']
       >['X-Tenant'];
@@ -3680,6 +3711,7 @@ export type GetCharactersCharacterIdStandingsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdStandingsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdStandingsData>['headers']
       >['X-Tenant'];
@@ -3712,6 +3744,7 @@ export type PostCharactersAffiliationOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostCharactersAffiliationData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostCharactersAffiliationData>['headers']
       >['X-Tenant'];
@@ -3757,6 +3790,7 @@ export type GetCharactersCharacterIdClonesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdClonesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdClonesData>['headers']
       >['X-Tenant'];
@@ -3796,6 +3830,7 @@ export type GetCharactersCharacterIdImplantsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdImplantsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdImplantsData>['headers']
       >['X-Tenant'];
@@ -3845,6 +3880,7 @@ export type PostCharactersCharacterIdContactsOptionsAssertion = Assert<
       readonly labelIds?: NonNullable<
         OperationArguments<PostCharactersCharacterIdContactsData>['query']
       >['label_ids'];
+      readonly signal?: AbortSignal;
       readonly standing: NonNullable<
         OperationArguments<PostCharactersCharacterIdContactsData>['query']
       >['standing'];
@@ -3893,6 +3929,7 @@ export type DeleteCharactersCharacterIdContactsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<DeleteCharactersCharacterIdContactsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<DeleteCharactersCharacterIdContactsData>['headers']
       >['X-Tenant'];
@@ -3932,6 +3969,7 @@ export type GetAlliancesAllianceIdContactsLabelsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetAlliancesAllianceIdContactsLabelsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetAlliancesAllianceIdContactsLabelsData>['headers']
       >['X-Tenant'];
@@ -3974,6 +4012,7 @@ export type GetAlliancesAllianceIdContactsOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetAlliancesAllianceIdContactsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetAlliancesAllianceIdContactsData>['headers']
       >['X-Tenant'];
@@ -4013,6 +4052,7 @@ export type GetCharactersCharacterIdContactsLabelsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdContactsLabelsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdContactsLabelsData>['headers']
       >['X-Tenant'];
@@ -4055,6 +4095,7 @@ export type GetCharactersCharacterIdContactsOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCharactersCharacterIdContactsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdContactsData>['headers']
       >['X-Tenant'];
@@ -4094,6 +4135,7 @@ export type GetCorporationsCorporationIdContactsLabelsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdContactsLabelsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdContactsLabelsData>['headers']
       >['X-Tenant'];
@@ -4136,6 +4178,7 @@ export type GetCorporationsCorporationIdContactsOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdContactsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdContactsData>['headers']
       >['X-Tenant'];
@@ -4179,6 +4222,7 @@ export type PutCharactersCharacterIdContactsOptionsAssertion = Assert<
       readonly labelIds?: NonNullable<
         OperationArguments<PutCharactersCharacterIdContactsData>['query']
       >['label_ids'];
+      readonly signal?: AbortSignal;
       readonly standing: NonNullable<
         OperationArguments<PutCharactersCharacterIdContactsData>['query']
       >['standing'];
@@ -4236,6 +4280,7 @@ export type GetCharactersCharacterIdContractsContractIdBidsOptionsAssertion = As
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['headers']
       >['X-Tenant'];
@@ -4281,6 +4326,7 @@ export type GetCharactersCharacterIdContractsContractIdItemsOptionsAssertion = A
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['headers']
       >['X-Tenant'];
@@ -4323,6 +4369,7 @@ export type GetCharactersCharacterIdContractsOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCharactersCharacterIdContractsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdContractsData>['headers']
       >['X-Tenant'];
@@ -4371,6 +4418,7 @@ export type GetCorporationsCorporationIdContractsContractIdBidsOptionsAssertion 
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['headers']
       >['X-Tenant'];
@@ -4416,6 +4464,7 @@ export type GetCorporationsCorporationIdContractsContractIdItemsOptionsAssertion
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['headers']
       >['X-Tenant'];
@@ -4458,6 +4507,7 @@ export type GetCorporationsCorporationIdContractsOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdContractsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdContractsData>['headers']
       >['X-Tenant'];
@@ -4500,6 +4550,7 @@ export type GetContractsPublicBidsContractIdOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetContractsPublicBidsContractIdData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetContractsPublicBidsContractIdData>['headers']
       >['X-Tenant'];
@@ -4542,6 +4593,7 @@ export type GetContractsPublicItemsContractIdOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetContractsPublicItemsContractIdData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetContractsPublicItemsContractIdData>['headers']
       >['X-Tenant'];
@@ -4584,6 +4636,7 @@ export type GetContractsPublicRegionIdOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetContractsPublicRegionIdData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetContractsPublicRegionIdData>['headers']
       >['X-Tenant'];
@@ -4629,6 +4682,7 @@ export type GetCorporationsCorporationIdIconsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdIconsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdIconsData>['headers']
       >['X-Tenant'];
@@ -4668,6 +4722,7 @@ export type GetCorporationsCorporationIdMembersLimitOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdMembersLimitData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdMembersLimitData>['headers']
       >['X-Tenant'];
@@ -4707,6 +4762,7 @@ export type GetCorporationsCorporationIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdData>['headers']
       >['X-Tenant'];
@@ -4752,6 +4808,7 @@ export type GetCorporationsCorporationIdStarbasesStarbaseIdOptionsAssertion = As
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly systemId: NonNullable<
         OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['query']
       >['system_id'];
@@ -4794,6 +4851,7 @@ export type GetCorporationsCorporationIdAlliancehistoryOptionsAssertion = Assert
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>['headers']
       >['X-Tenant'];
@@ -4836,6 +4894,7 @@ export type GetCorporationsCorporationIdContainersLogsOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdContainersLogsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdContainersLogsData>['headers']
       >['X-Tenant'];
@@ -4878,6 +4937,7 @@ export type GetCorporationsCorporationIdBlueprintsOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdBlueprintsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdBlueprintsData>['headers']
       >['X-Tenant'];
@@ -4917,6 +4977,7 @@ export type GetCorporationsCorporationIdDivisionsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdDivisionsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdDivisionsData>['headers']
       >['X-Tenant'];
@@ -4956,6 +5017,7 @@ export type GetCorporationsCorporationIdFacilitiesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdFacilitiesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdFacilitiesData>['headers']
       >['X-Tenant'];
@@ -4998,6 +5060,7 @@ export type GetCorporationsCorporationIdMedalsIssuedOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>['headers']
       >['X-Tenant'];
@@ -5040,6 +5103,7 @@ export type GetCorporationsCorporationIdMedalsOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdMedalsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdMedalsData>['headers']
       >['X-Tenant'];
@@ -5082,6 +5146,7 @@ export type GetCorporationsCorporationIdRolesHistoryOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdRolesHistoryData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdRolesHistoryData>['headers']
       >['X-Tenant'];
@@ -5121,6 +5186,7 @@ export type GetCorporationsCorporationIdRolesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdRolesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdRolesData>['headers']
       >['X-Tenant'];
@@ -5160,6 +5226,7 @@ export type GetCorporationsCorporationIdMembersTitlesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdMembersTitlesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdMembersTitlesData>['headers']
       >['X-Tenant'];
@@ -5199,6 +5266,7 @@ export type GetCorporationsCorporationIdMembertrackingOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdMembertrackingData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdMembertrackingData>['headers']
       >['X-Tenant'];
@@ -5238,6 +5306,7 @@ export type GetCorporationsCorporationIdMembersOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdMembersData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdMembersData>['headers']
       >['X-Tenant'];
@@ -5269,6 +5338,7 @@ export type GetCorporationsNpccorpsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsNpccorpsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsNpccorpsData>['headers']
       >['X-Tenant'];
@@ -5311,6 +5381,7 @@ export type GetCorporationsCorporationIdShareholdersOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdShareholdersData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdShareholdersData>['headers']
       >['X-Tenant'];
@@ -5353,6 +5424,7 @@ export type GetCorporationsCorporationIdStandingsOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdStandingsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdStandingsData>['headers']
       >['X-Tenant'];
@@ -5395,6 +5467,7 @@ export type GetCorporationsCorporationIdStarbasesOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdStarbasesData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdStarbasesData>['headers']
       >['X-Tenant'];
@@ -5437,6 +5510,7 @@ export type GetCorporationsCorporationIdStructuresOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdStructuresData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdStructuresData>['headers']
       >['X-Tenant'];
@@ -5476,6 +5550,7 @@ export type GetCorporationsCorporationIdTitlesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdTitlesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdTitlesData>['headers']
       >['X-Tenant'];
@@ -5527,6 +5602,7 @@ export type GetCorporationsProjectsDetailOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsProjectsDetailData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsProjectsDetailData>['headers']
       >['X-Tenant'];
@@ -5578,6 +5654,7 @@ export type GetCorporationsProjectsContributionOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsProjectsContributionData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsProjectsContributionData>['headers']
       >['X-Tenant'];
@@ -5626,6 +5703,7 @@ export type GetCorporationsProjectsListingOptionsAssertion = Assert<
       readonly limit?: NonNullable<
         OperationArguments<GetCorporationsProjectsListingData>['query']
       >['limit'];
+      readonly signal?: AbortSignal;
       readonly state?: NonNullable<
         OperationArguments<GetCorporationsProjectsListingData>['query']
       >['state'];
@@ -5683,6 +5761,7 @@ export type GetCorporationsProjectsContributorsOptionsAssertion = Assert<
       readonly limit?: NonNullable<
         OperationArguments<GetCorporationsProjectsContributorsData>['query']
       >['limit'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsProjectsContributorsData>['headers']
       >['X-Tenant'];
@@ -5730,6 +5809,7 @@ export type GetCosmeticsSkinrOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCosmeticsSkinrData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCosmeticsSkinrData>['headers']
       >['X-Tenant'];
@@ -5769,6 +5849,7 @@ export type GetCharactersCosmeticsSkinrComponentsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCosmeticsSkinrComponentsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCosmeticsSkinrComponentsData>['headers']
       >['X-Tenant'];
@@ -5808,6 +5889,7 @@ export type GetCharactersCosmeticsSkinrOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCosmeticsSkinrData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCosmeticsSkinrData>['headers']
       >['X-Tenant'];
@@ -5853,6 +5935,7 @@ export type GetDogmaAttributesAttributeIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetDogmaAttributesAttributeIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetDogmaAttributesAttributeIdData>['headers']
       >['X-Tenant'];
@@ -5898,6 +5981,7 @@ export type GetDogmaDynamicItemsTypeIdItemIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['headers']
       >['X-Tenant'];
@@ -5933,6 +6017,7 @@ export type GetDogmaEffectsEffectIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetDogmaEffectsEffectIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetDogmaEffectsEffectIdData>['headers']
       >['X-Tenant'];
@@ -5962,6 +6047,7 @@ export type GetDogmaAttributesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetDogmaAttributesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetDogmaAttributesData>['headers']
       >['X-Tenant'];
@@ -5991,6 +6077,7 @@ export type GetDogmaEffectsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetDogmaEffectsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetDogmaEffectsData>['headers']
       >['X-Tenant'];
@@ -6028,6 +6115,7 @@ export type GetFwLeaderboardsCharactersOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetFwLeaderboardsCharactersData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetFwLeaderboardsCharactersData>['headers']
       >['X-Tenant'];
@@ -6067,6 +6155,7 @@ export type GetCharactersCharacterIdFwStatsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdFwStatsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdFwStatsData>['headers']
       >['X-Tenant'];
@@ -6100,6 +6189,7 @@ export type GetFwLeaderboardsCorporationsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetFwLeaderboardsCorporationsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetFwLeaderboardsCorporationsData>['headers']
       >['X-Tenant'];
@@ -6139,6 +6229,7 @@ export type GetCorporationsCorporationIdFwStatsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdFwStatsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdFwStatsData>['headers']
       >['X-Tenant'];
@@ -6168,6 +6259,7 @@ export type GetFwLeaderboardsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetFwLeaderboardsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetFwLeaderboardsData>['headers']
       >['X-Tenant'];
@@ -6197,6 +6289,7 @@ export type GetFwStatsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetFwStatsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<OperationArguments<GetFwStatsData>['headers']>['X-Tenant'];
     }
   >
@@ -6224,6 +6317,7 @@ export type GetFwSystemsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetFwSystemsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<OperationArguments<GetFwSystemsData>['headers']>['X-Tenant'];
     }
   >
@@ -6251,6 +6345,7 @@ export type GetFwWarsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetFwWarsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<OperationArguments<GetFwWarsData>['headers']>['X-Tenant'];
     }
   >
@@ -6298,6 +6393,7 @@ export type PostCharactersCharacterIdFittingsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostCharactersCharacterIdFittingsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostCharactersCharacterIdFittingsData>['headers']
       >['X-Tenant'];
@@ -6343,6 +6439,7 @@ export type DeleteCharactersCharacterIdFittingsFittingIdOptionsAssertion = Asser
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>['headers']
       >['X-Tenant'];
@@ -6382,6 +6479,7 @@ export type GetCharactersCharacterIdFittingsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdFittingsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdFittingsData>['headers']
       >['X-Tenant'];
@@ -6433,6 +6531,7 @@ export type PostFleetsFleetIdWingsWingIdSquadsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>['headers']
       >['X-Tenant'];
@@ -6468,6 +6567,7 @@ export type PostFleetsFleetIdWingsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostFleetsFleetIdWingsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostFleetsFleetIdWingsData>['headers']
       >['X-Tenant'];
@@ -6513,6 +6613,7 @@ export type DeleteFleetsFleetIdSquadsSquadIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>['headers']
       >['X-Tenant'];
@@ -6558,6 +6659,7 @@ export type DeleteFleetsFleetIdWingsWingIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<DeleteFleetsFleetIdWingsWingIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<DeleteFleetsFleetIdWingsWingIdData>['headers']
       >['X-Tenant'];
@@ -6593,6 +6695,7 @@ export type GetFleetsFleetIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetFleetsFleetIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetFleetsFleetIdData>['headers']
       >['X-Tenant'];
@@ -6632,6 +6735,7 @@ export type GetCharactersCharacterIdFleetOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdFleetData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdFleetData>['headers']
       >['X-Tenant'];
@@ -6668,6 +6772,7 @@ export type PostFleetsFleetIdMembersOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostFleetsFleetIdMembersData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostFleetsFleetIdMembersData>['headers']
       >['X-Tenant'];
@@ -6703,6 +6808,7 @@ export type GetFleetsFleetIdMembersOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetFleetsFleetIdMembersData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetFleetsFleetIdMembersData>['headers']
       >['X-Tenant'];
@@ -6738,6 +6844,7 @@ export type GetFleetsFleetIdWingsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetFleetsFleetIdWingsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetFleetsFleetIdWingsData>['headers']
       >['X-Tenant'];
@@ -6784,6 +6891,7 @@ export type PutFleetsFleetIdMembersMemberIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PutFleetsFleetIdMembersMemberIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PutFleetsFleetIdMembersMemberIdData>['headers']
       >['X-Tenant'];
@@ -6829,6 +6937,7 @@ export type DeleteFleetsFleetIdMembersMemberIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>['headers']
       >['X-Tenant'];
@@ -6875,6 +6984,7 @@ export type PutFleetsFleetIdSquadsSquadIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PutFleetsFleetIdSquadsSquadIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PutFleetsFleetIdSquadsSquadIdData>['headers']
       >['X-Tenant'];
@@ -6913,6 +7023,7 @@ export type PutFleetsFleetIdWingsWingIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PutFleetsFleetIdWingsWingIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PutFleetsFleetIdWingsWingIdData>['headers']
       >['X-Tenant'];
@@ -6949,6 +7060,7 @@ export type PutFleetsFleetIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PutFleetsFleetIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PutFleetsFleetIdData>['headers']
       >['X-Tenant'];
@@ -6990,6 +7102,7 @@ export type GetFreelanceJobsDetailOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetFreelanceJobsDetailData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetFreelanceJobsDetailData>['headers']
       >['X-Tenant'];
@@ -7035,6 +7148,7 @@ export type GetCharactersFreelanceJobsParticipationOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersFreelanceJobsParticipationData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersFreelanceJobsParticipationData>['headers']
       >['X-Tenant'];
@@ -7074,6 +7188,7 @@ export type GetCharactersFreelanceJobsListingOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersFreelanceJobsListingData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersFreelanceJobsListingData>['headers']
       >['X-Tenant'];
@@ -7122,6 +7237,7 @@ export type GetCorporationsFreelanceJobsListingOptionsAssertion = Assert<
       readonly limit?: NonNullable<
         OperationArguments<GetCorporationsFreelanceJobsListingData>['query']
       >['limit'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsFreelanceJobsListingData>['headers']
       >['X-Tenant'];
@@ -7176,6 +7292,7 @@ export type GetCorporationsFreelanceJobsParticipantsOptionsAssertion = Assert<
       readonly limit?: NonNullable<
         OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['query']
       >['limit'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['headers']
       >['X-Tenant'];
@@ -7219,6 +7336,7 @@ export type GetFreelanceJobsListingOptionsAssertion = Assert<
       readonly limit?: NonNullable<
         OperationArguments<GetFreelanceJobsListingData>['query']
       >['limit'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetFreelanceJobsListingData>['headers']
       >['X-Tenant'];
@@ -7257,6 +7375,7 @@ export type GetIncursionsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetIncursionsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<OperationArguments<GetIncursionsData>['headers']>['X-Tenant'];
     }
   >
@@ -7303,6 +7422,7 @@ export type GetCharactersCharacterIdIndustryJobsOptionsAssertion = Assert<
       readonly includeCompleted?: NonNullable<
         OperationArguments<GetCharactersCharacterIdIndustryJobsData>['query']
       >['include_completed'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdIndustryJobsData>['headers']
       >['X-Tenant'];
@@ -7345,6 +7465,7 @@ export type GetCharactersCharacterIdMiningOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCharactersCharacterIdMiningData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdMiningData>['headers']
       >['X-Tenant'];
@@ -7390,6 +7511,7 @@ export type GetCorporationsCorporationIdIndustryJobsOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdIndustryJobsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdIndustryJobsData>['headers']
       >['X-Tenant'];
@@ -7419,6 +7541,7 @@ export type GetIndustryFacilitiesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetIndustryFacilitiesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetIndustryFacilitiesData>['headers']
       >['X-Tenant'];
@@ -7461,6 +7584,7 @@ export type GetCorporationCorporationIdMiningObserversOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationCorporationIdMiningObserversData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationCorporationIdMiningObserversData>['headers']
       >['X-Tenant'];
@@ -7503,6 +7627,7 @@ export type GetCorporationCorporationIdMiningExtractionsOptionsAssertion = Asser
       readonly page?: NonNullable<
         OperationArguments<GetCorporationCorporationIdMiningExtractionsData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationCorporationIdMiningExtractionsData>['headers']
       >['X-Tenant'];
@@ -7551,6 +7676,7 @@ export type GetCorporationCorporationIdMiningObserversObserverIdOptionsAssertion
       readonly page?: NonNullable<
         OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['headers']
       >['X-Tenant'];
@@ -7580,6 +7706,7 @@ export type GetIndustrySystemsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetIndustrySystemsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetIndustrySystemsData>['headers']
       >['X-Tenant'];
@@ -7615,6 +7742,7 @@ export type GetInsurancePricesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetInsurancePricesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetInsurancePricesData>['headers']
       >['X-Tenant'];
@@ -7666,6 +7794,7 @@ export type GetKillmailsKillmailIdKillmailHashOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetKillmailsKillmailIdKillmailHashData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetKillmailsKillmailIdKillmailHashData>['headers']
       >['X-Tenant'];
@@ -7708,6 +7837,7 @@ export type GetCharactersCharacterIdKillmailsRecentOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCharactersCharacterIdKillmailsRecentData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdKillmailsRecentData>['headers']
       >['X-Tenant'];
@@ -7750,6 +7880,7 @@ export type GetCorporationsCorporationIdKillmailsRecentOptionsAssertion = Assert
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>['headers']
       >['X-Tenant'];
@@ -7795,6 +7926,7 @@ export type GetCharactersCharacterIdLocationOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdLocationData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdLocationData>['headers']
       >['X-Tenant'];
@@ -7834,6 +7966,7 @@ export type GetCharactersCharacterIdShipOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdShipData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdShipData>['headers']
       >['X-Tenant'];
@@ -7873,6 +8006,7 @@ export type GetCharactersCharacterIdOnlineOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdOnlineData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdOnlineData>['headers']
       >['X-Tenant'];
@@ -7918,6 +8052,7 @@ export type GetCharactersCharacterIdLoyaltyPointsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>['headers']
       >['X-Tenant'];
@@ -7957,6 +8092,7 @@ export type GetLoyaltyStoresCorporationIdOffersOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetLoyaltyStoresCorporationIdOffersData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetLoyaltyStoresCorporationIdOffersData>['headers']
       >['X-Tenant'];
@@ -8003,6 +8139,7 @@ export type PostCharactersCharacterIdMailLabelsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostCharactersCharacterIdMailLabelsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostCharactersCharacterIdMailLabelsData>['headers']
       >['X-Tenant'];
@@ -8048,6 +8185,7 @@ export type DeleteCharactersCharacterIdMailLabelsLabelIdOptionsAssertion = Asser
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['headers']
       >['X-Tenant'];
@@ -8093,6 +8231,7 @@ export type DeleteCharactersCharacterIdMailMailIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['headers']
       >['X-Tenant'];
@@ -8138,6 +8277,7 @@ export type GetCharactersCharacterIdMailMailIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdMailMailIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdMailMailIdData>['headers']
       >['X-Tenant'];
@@ -8183,6 +8323,7 @@ export type GetCharactersCharacterIdMailOptionsAssertion = Assert<
       readonly lastMailId?: NonNullable<
         OperationArguments<GetCharactersCharacterIdMailData>['query']
       >['last_mail_id'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdMailData>['headers']
       >['X-Tenant'];
@@ -8222,6 +8363,7 @@ export type GetCharactersCharacterIdMailLabelsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdMailLabelsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdMailLabelsData>['headers']
       >['X-Tenant'];
@@ -8261,6 +8403,7 @@ export type GetCharactersCharacterIdMailListsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdMailListsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdMailListsData>['headers']
       >['X-Tenant'];
@@ -8301,6 +8444,7 @@ export type PostCharactersCharacterIdMailOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostCharactersCharacterIdMailData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostCharactersCharacterIdMailData>['headers']
       >['X-Tenant'];
@@ -8347,6 +8491,7 @@ export type PutCharactersCharacterIdMailMailIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PutCharactersCharacterIdMailMailIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PutCharactersCharacterIdMailMailIdData>['headers']
       >['X-Tenant'];
@@ -8392,6 +8537,7 @@ export type GetMarketsGroupsMarketGroupIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetMarketsGroupsMarketGroupIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetMarketsGroupsMarketGroupIdData>['headers']
       >['X-Tenant'];
@@ -8434,6 +8580,7 @@ export type GetCharactersCharacterIdOrdersHistoryOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCharactersCharacterIdOrdersHistoryData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdOrdersHistoryData>['headers']
       >['X-Tenant'];
@@ -8473,6 +8620,7 @@ export type GetCharactersCharacterIdOrdersOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdOrdersData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdOrdersData>['headers']
       >['X-Tenant'];
@@ -8515,6 +8663,7 @@ export type GetCorporationsCorporationIdOrdersHistoryOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>['headers']
       >['X-Tenant'];
@@ -8557,6 +8706,7 @@ export type GetCorporationsCorporationIdOrdersOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdOrdersData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdOrdersData>['headers']
       >['X-Tenant'];
@@ -8586,6 +8736,7 @@ export type GetMarketsGroupsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetMarketsGroupsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetMarketsGroupsData>['headers']
       >['X-Tenant'];
@@ -8615,6 +8766,7 @@ export type GetMarketsPricesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetMarketsPricesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetMarketsPricesData>['headers']
       >['X-Tenant'];
@@ -8650,6 +8802,7 @@ export type GetMarketsRegionIdHistoryOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetMarketsRegionIdHistoryData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly typeId: NonNullable<
         OperationArguments<GetMarketsRegionIdHistoryData>['query']
       >['type_id'];
@@ -8694,6 +8847,7 @@ export type GetMarketsRegionIdOrdersOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetMarketsRegionIdOrdersData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly typeId?: NonNullable<
         OperationArguments<GetMarketsRegionIdOrdersData>['query']
       >['type_id'];
@@ -8733,6 +8887,7 @@ export type GetMarketsRegionIdTypesOptionsAssertion = Assert<
         OperationArguments<GetMarketsRegionIdTypesData>['headers']
       >['If-None-Match'];
       readonly page?: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>['query']>['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetMarketsRegionIdTypesData>['headers']
       >['X-Tenant'];
@@ -8775,6 +8930,7 @@ export type GetMarketsStructuresStructureIdOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetMarketsStructuresStructureIdData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetMarketsStructuresStructureIdData>['headers']
       >['X-Tenant'];
@@ -8810,6 +8966,7 @@ export type GetMetaChangelogOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetMetaChangelogData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetMetaChangelogData>['headers']
       >['X-Tenant'];
@@ -8839,6 +8996,7 @@ export type GetMetaStatusOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetMetaStatusData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<OperationArguments<GetMetaStatusData>['headers']>['X-Tenant'];
     }
   >
@@ -8866,6 +9024,7 @@ export type GetMetaNameOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetMetaNameData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<OperationArguments<GetMetaNameData>['headers']>['X-Tenant'];
     }
   >
@@ -8895,6 +9054,7 @@ export type GetMetaCompatibilityDatesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetMetaCompatibilityDatesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetMetaCompatibilityDatesData>['headers']
       >['X-Tenant'];
@@ -8940,6 +9100,7 @@ export type GetMilitaryCampaignsDetailOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetMilitaryCampaignsDetailData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetMilitaryCampaignsDetailData>['headers']
       >['X-Tenant'];
@@ -8985,6 +9146,7 @@ export type GetCharactersMilitaryCampaignsObjectivesParticipationOptionsAssertio
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>['headers']
       >['X-Tenant'];
@@ -9030,6 +9192,7 @@ export type GetMilitaryCampaignsObjectivesDetailOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetMilitaryCampaignsObjectivesDetailData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetMilitaryCampaignsObjectivesDetailData>['headers']
       >['X-Tenant'];
@@ -9061,6 +9224,7 @@ export type GetMilitaryCampaignsListingOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetMilitaryCampaignsListingData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetMilitaryCampaignsListingData>['headers']
       >['X-Tenant'];
@@ -9109,6 +9273,7 @@ export type GetCharactersMilitaryCampaignsObjectivesListingOptionsAssertion = As
       readonly limit?: NonNullable<
         OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>['query']
       >['limit'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>['headers']
       >['X-Tenant'];
@@ -9157,6 +9322,7 @@ export type GetMilitaryCampaignsObjectivesListingOptionsAssertion = Assert<
       readonly limit?: NonNullable<
         OperationArguments<GetMilitaryCampaignsObjectivesListingData>['query']
       >['limit'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetMilitaryCampaignsObjectivesListingData>['headers']
       >['X-Tenant'];
@@ -9217,6 +9383,7 @@ export type GetParagonHubSkinrAlliancesOptionsAssertion = Assert<
       readonly limit?: NonNullable<
         OperationArguments<GetParagonHubSkinrAlliancesData>['query']
       >['limit'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetParagonHubSkinrAlliancesData>['headers']
       >['X-Tenant'];
@@ -9265,6 +9432,7 @@ export type GetParagonHubSkinrCharactersOptionsAssertion = Assert<
       readonly limit?: NonNullable<
         OperationArguments<GetParagonHubSkinrCharactersData>['query']
       >['limit'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetParagonHubSkinrCharactersData>['headers']
       >['X-Tenant'];
@@ -9313,6 +9481,7 @@ export type GetParagonHubSkinrCorporationsOptionsAssertion = Assert<
       readonly limit?: NonNullable<
         OperationArguments<GetParagonHubSkinrCorporationsData>['query']
       >['limit'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetParagonHubSkinrCorporationsData>['headers']
       >['X-Tenant'];
@@ -9361,6 +9530,7 @@ export type GetCharactersParagonHubSkinrOptionsAssertion = Assert<
       readonly limit?: NonNullable<
         OperationArguments<GetCharactersParagonHubSkinrData>['query']
       >['limit'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersParagonHubSkinrData>['headers']
       >['X-Tenant'];
@@ -9393,6 +9563,7 @@ export type GetParagonHubSkinrOptionsAssertion = Assert<
         OperationArguments<GetParagonHubSkinrData>['headers']
       >['If-None-Match'];
       readonly limit?: NonNullable<OperationArguments<GetParagonHubSkinrData>['query']>['limit'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetParagonHubSkinrData>['headers']
       >['X-Tenant'];
@@ -9444,6 +9615,7 @@ export type GetCharactersCharacterIdPlanetsPlanetIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>['headers']
       >['X-Tenant'];
@@ -9483,6 +9655,7 @@ export type GetUniverseSchematicsSchematicIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseSchematicsSchematicIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseSchematicsSchematicIdData>['headers']
       >['X-Tenant'];
@@ -9522,6 +9695,7 @@ export type GetCharactersCharacterIdPlanetsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdPlanetsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdPlanetsData>['headers']
       >['X-Tenant'];
@@ -9564,6 +9738,7 @@ export type GetCorporationsCorporationIdCustomsOfficesOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>['headers']
       >['X-Tenant'];
@@ -9618,6 +9793,7 @@ export type PostRouteOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostRouteData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<OperationArguments<PostRouteData>['headers']>['X-Tenant'];
     }
   >
@@ -9667,6 +9843,7 @@ export type GetCharactersCharacterIdSearchOptionsAssertion = Assert<
       readonly search: NonNullable<
         OperationArguments<GetCharactersCharacterIdSearchData>['query']
       >['search'];
+      readonly signal?: AbortSignal;
       readonly strict?: NonNullable<
         OperationArguments<GetCharactersCharacterIdSearchData>['query']
       >['strict'];
@@ -9715,6 +9892,7 @@ export type GetCharactersCharacterIdAttributesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdAttributesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdAttributesData>['headers']
       >['X-Tenant'];
@@ -9754,6 +9932,7 @@ export type GetCharactersCharacterIdSkillqueueOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdSkillqueueData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdSkillqueueData>['headers']
       >['X-Tenant'];
@@ -9793,6 +9972,7 @@ export type GetCharactersCharacterIdSkillsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdSkillsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdSkillsData>['headers']
       >['X-Tenant'];
@@ -9830,6 +10010,7 @@ export type GetSovereigntyCampaignsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetSovereigntyCampaignsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetSovereigntyCampaignsData>['headers']
       >['X-Tenant'];
@@ -9859,6 +10040,7 @@ export type GetSovereigntySystemsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetSovereigntySystemsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetSovereigntySystemsData>['headers']
       >['X-Tenant'];
@@ -9891,6 +10073,7 @@ export type GetStatusOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetStatusData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<OperationArguments<GetStatusData>['headers']>['X-Tenant'];
     }
   >
@@ -9940,6 +10123,7 @@ export type GetCharactersStructuresMercenaryDensDetailOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['headers']
       >['X-Tenant'];
@@ -9985,6 +10169,7 @@ export type GetCorporationsStructuresSkyhooksDetailOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['headers']
       >['X-Tenant'];
@@ -10030,6 +10215,7 @@ export type GetCorporationsStructuresSovereigntyHubsDetailOptionsAssertion = Ass
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['headers']
       >['X-Tenant'];
@@ -10069,6 +10255,7 @@ export type GetCharactersStructuresMercenaryDensListingOptionsAssertion = Assert
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersStructuresMercenaryDensListingData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersStructuresMercenaryDensListingData>['headers']
       >['X-Tenant'];
@@ -10108,6 +10295,7 @@ export type GetCorporationsStructuresSkyhooksListingOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsStructuresSkyhooksListingData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsStructuresSkyhooksListingData>['headers']
       >['X-Tenant'];
@@ -10147,6 +10335,7 @@ export type GetCorporationsStructuresSovereigntyHubsListingOptionsAssertion = As
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>['headers']
       >['X-Tenant'];
@@ -10192,6 +10381,7 @@ export type GetUniverseAsteroidBeltsAsteroidBeltIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>['headers']
       >['X-Tenant'];
@@ -10231,6 +10421,7 @@ export type GetUniverseConstellationsConstellationIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseConstellationsConstellationIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseConstellationsConstellationIdData>['headers']
       >['X-Tenant'];
@@ -10270,6 +10461,7 @@ export type GetUniverseGraphicsGraphicIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseGraphicsGraphicIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseGraphicsGraphicIdData>['headers']
       >['X-Tenant'];
@@ -10309,6 +10501,7 @@ export type GetUniverseCategoriesCategoryIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseCategoriesCategoryIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseCategoriesCategoryIdData>['headers']
       >['X-Tenant'];
@@ -10344,6 +10537,7 @@ export type GetUniverseGroupsGroupIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseGroupsGroupIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseGroupsGroupIdData>['headers']
       >['X-Tenant'];
@@ -10379,6 +10573,7 @@ export type GetUniverseMoonsMoonIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseMoonsMoonIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseMoonsMoonIdData>['headers']
       >['X-Tenant'];
@@ -10418,6 +10613,7 @@ export type GetUniversePlanetsPlanetIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniversePlanetsPlanetIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniversePlanetsPlanetIdData>['headers']
       >['X-Tenant'];
@@ -10457,6 +10653,7 @@ export type GetUniverseRegionsRegionIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseRegionsRegionIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseRegionsRegionIdData>['headers']
       >['X-Tenant'];
@@ -10496,6 +10693,7 @@ export type GetUniverseSystemsSystemIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseSystemsSystemIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseSystemsSystemIdData>['headers']
       >['X-Tenant'];
@@ -10531,6 +10729,7 @@ export type GetUniverseStarsStarIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseStarsStarIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseStarsStarIdData>['headers']
       >['X-Tenant'];
@@ -10570,6 +10769,7 @@ export type GetUniverseStargatesStargateIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseStargatesStargateIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseStargatesStargateIdData>['headers']
       >['X-Tenant'];
@@ -10609,6 +10809,7 @@ export type GetUniverseStationsStationIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseStationsStationIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseStationsStationIdData>['headers']
       >['X-Tenant'];
@@ -10648,6 +10849,7 @@ export type GetUniverseStructuresStructureIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseStructuresStructureIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseStructuresStructureIdData>['headers']
       >['X-Tenant'];
@@ -10683,6 +10885,7 @@ export type GetUniverseTypesTypeIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseTypesTypeIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseTypesTypeIdData>['headers']
       >['X-Tenant'];
@@ -10712,6 +10915,7 @@ export type GetUniverseAncestriesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseAncestriesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseAncestriesData>['headers']
       >['X-Tenant'];
@@ -10741,6 +10945,7 @@ export type GetUniverseBloodlinesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseBloodlinesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseBloodlinesData>['headers']
       >['X-Tenant'];
@@ -10772,6 +10977,7 @@ export type GetUniverseConstellationsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseConstellationsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseConstellationsData>['headers']
       >['X-Tenant'];
@@ -10801,6 +11007,7 @@ export type GetUniverseFactionsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseFactionsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseFactionsData>['headers']
       >['X-Tenant'];
@@ -10830,6 +11037,7 @@ export type GetUniverseGraphicsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseGraphicsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseGraphicsData>['headers']
       >['X-Tenant'];
@@ -10859,6 +11067,7 @@ export type GetUniverseCategoriesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseCategoriesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseCategoriesData>['headers']
       >['X-Tenant'];
@@ -10889,6 +11098,7 @@ export type GetUniverseGroupsOptionsAssertion = Assert<
         OperationArguments<GetUniverseGroupsData>['headers']
       >['If-None-Match'];
       readonly page?: NonNullable<OperationArguments<GetUniverseGroupsData>['query']>['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseGroupsData>['headers']
       >['X-Tenant'];
@@ -10921,6 +11131,7 @@ export type GetUniverseStructuresOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseStructuresData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseStructuresData>['headers']
       >['X-Tenant'];
@@ -10950,6 +11161,7 @@ export type GetUniverseRacesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseRacesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseRacesData>['headers']
       >['X-Tenant'];
@@ -10979,6 +11191,7 @@ export type GetUniverseRegionsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseRegionsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseRegionsData>['headers']
       >['X-Tenant'];
@@ -11008,6 +11221,7 @@ export type GetUniverseSystemsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseSystemsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseSystemsData>['headers']
       >['X-Tenant'];
@@ -11039,6 +11253,7 @@ export type GetUniverseSystemJumpsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseSystemJumpsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseSystemJumpsData>['headers']
       >['X-Tenant'];
@@ -11070,6 +11285,7 @@ export type GetUniverseSystemKillsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetUniverseSystemKillsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseSystemKillsData>['headers']
       >['X-Tenant'];
@@ -11100,6 +11316,7 @@ export type GetUniverseTypesOptionsAssertion = Assert<
         OperationArguments<GetUniverseTypesData>['headers']
       >['If-None-Match'];
       readonly page?: NonNullable<OperationArguments<GetUniverseTypesData>['query']>['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetUniverseTypesData>['headers']
       >['X-Tenant'];
@@ -11130,6 +11347,7 @@ export type PostUniverseIdsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostUniverseIdsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostUniverseIdsData>['headers']
       >['X-Tenant'];
@@ -11160,6 +11378,7 @@ export type PostUniverseNamesOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostUniverseNamesData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostUniverseNamesData>['headers']
       >['X-Tenant'];
@@ -11200,6 +11419,7 @@ export type PostUiOpenwindowContractOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostUiOpenwindowContractData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostUiOpenwindowContractData>['headers']
       >['X-Tenant'];
@@ -11231,6 +11451,7 @@ export type PostUiOpenwindowInformationOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostUiOpenwindowInformationData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly targetId: NonNullable<
         OperationArguments<PostUiOpenwindowInformationData>['query']
       >['target_id'];
@@ -11267,6 +11488,7 @@ export type PostUiOpenwindowMarketdetailsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostUiOpenwindowMarketdetailsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly typeId: NonNullable<
         OperationArguments<PostUiOpenwindowMarketdetailsData>['query']
       >['type_id'];
@@ -11302,6 +11524,7 @@ export type PostUiOpenwindowNewmailOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostUiOpenwindowNewmailData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostUiOpenwindowNewmailData>['headers']
       >['X-Tenant'];
@@ -11342,6 +11565,7 @@ export type PostUiAutopilotWaypointOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<PostUiAutopilotWaypointData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<PostUiAutopilotWaypointData>['headers']
       >['X-Tenant'];
@@ -11390,6 +11614,7 @@ export type GetCharactersCharacterIdWalletOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdWalletData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdWalletData>['headers']
       >['X-Tenant'];
@@ -11432,6 +11657,7 @@ export type GetCharactersCharacterIdWalletJournalOptionsAssertion = Assert<
       readonly page?: NonNullable<
         OperationArguments<GetCharactersCharacterIdWalletJournalData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdWalletJournalData>['headers']
       >['X-Tenant'];
@@ -11474,6 +11700,7 @@ export type GetCharactersCharacterIdWalletTransactionsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCharactersCharacterIdWalletTransactionsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCharactersCharacterIdWalletTransactionsData>['headers']
       >['X-Tenant'];
@@ -11513,6 +11740,7 @@ export type GetCorporationsCorporationIdWalletsOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdWalletsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdWalletsData>['headers']
       >['X-Tenant'];
@@ -11561,6 +11789,7 @@ export type GetCorporationsCorporationIdWalletsDivisionJournalOptionsAssertion =
       readonly page?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['query']
       >['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['headers']
       >['X-Tenant'];
@@ -11609,6 +11838,7 @@ export type GetCorporationsCorporationIdWalletsDivisionTransactionsOptionsAssert
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['headers']
       >['X-Tenant'];
@@ -11650,6 +11880,7 @@ export type GetWarsWarIdOptionsAssertion = Assert<
       readonly ifNoneMatch?: NonNullable<
         OperationArguments<GetWarsWarIdData>['headers']
       >['If-None-Match'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<OperationArguments<GetWarsWarIdData>['headers']>['X-Tenant'];
     }
   >
@@ -11675,6 +11906,7 @@ export type GetWarsOptionsAssertion = Assert<
         OperationArguments<GetWarsData>['headers']
       >['If-None-Match'];
       readonly maxWarId?: NonNullable<OperationArguments<GetWarsData>['query']>['max_war_id'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<OperationArguments<GetWarsData>['headers']>['X-Tenant'];
     }
   >
@@ -11709,6 +11941,7 @@ export type GetWarsWarIdKillmailsOptionsAssertion = Assert<
         OperationArguments<GetWarsWarIdKillmailsData>['headers']
       >['If-None-Match'];
       readonly page?: NonNullable<OperationArguments<GetWarsWarIdKillmailsData>['query']>['page'];
+      readonly signal?: AbortSignal;
       readonly xTenant?: NonNullable<
         OperationArguments<GetWarsWarIdKillmailsData>['headers']
       >['X-Tenant'];

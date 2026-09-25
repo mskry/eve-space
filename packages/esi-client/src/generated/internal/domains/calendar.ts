@@ -42,22 +42,22 @@ class CalendarDomainClientWithMetadataImplementation implements CalendarDomainCl
 
   getEvent(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']>["character_id"], eventId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdCalendarEventIdData> = { path: { "character_id": characterId, "event_id": eventId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdCalendarEventIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdCalendarEventIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listEventAttendees(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']>["character_id"], eventId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdAttendeesOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdAttendeesResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData> = { path: { "character_id": characterId, "event_id": eventId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdCalendarEventIdAttendeesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdCalendarEventIdAttendeesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listEvents(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarData>['path']>["character_id"], options?: GetCharactersCharacterIdCalendarOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdCalendarData> = { path: { "character_id": characterId }, query: { "from_event": options?.["fromEvent"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdCalendarDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdCalendarDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   respondToEvent(characterId: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']>["character_id"], eventId: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']>["event_id"], options: PutCharactersCharacterIdCalendarEventIdOptions): Promise<EsiResponse<PutCharactersCharacterIdCalendarEventIdResponse>> {
     const arguments_: OperationArguments<PutCharactersCharacterIdCalendarEventIdData> = { path: { "character_id": characterId, "event_id": eventId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PutCharactersCharacterIdCalendarEventIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PutCharactersCharacterIdCalendarEventIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

@@ -146,152 +146,152 @@ class UniverseDomainClientWithMetadataImplementation implements UniverseDomainCl
 
   getAsteroidBelt(asteroidBeltId: NonNullable<OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>['path']>["asteroid_belt_id"], options?: GetUniverseAsteroidBeltsAsteroidBeltIdOptions): Promise<EsiResponse<GetUniverseAsteroidBeltsAsteroidBeltIdResponse>> {
     const arguments_: OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData> = { path: { "asteroid_belt_id": asteroidBeltId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseAsteroidBeltsAsteroidBeltIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseAsteroidBeltsAsteroidBeltIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getConstellation(constellationId: NonNullable<OperationArguments<GetUniverseConstellationsConstellationIdData>['path']>["constellation_id"], options?: GetUniverseConstellationsConstellationIdOptions): Promise<EsiResponse<GetUniverseConstellationsConstellationIdResponse>> {
     const arguments_: OperationArguments<GetUniverseConstellationsConstellationIdData> = { path: { "constellation_id": constellationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseConstellationsConstellationIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseConstellationsConstellationIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getGraphic(graphicId: NonNullable<OperationArguments<GetUniverseGraphicsGraphicIdData>['path']>["graphic_id"], options?: GetUniverseGraphicsGraphicIdOptions): Promise<EsiResponse<GetUniverseGraphicsGraphicIdResponse>> {
     const arguments_: OperationArguments<GetUniverseGraphicsGraphicIdData> = { path: { "graphic_id": graphicId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseGraphicsGraphicIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseGraphicsGraphicIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getItemCategory(categoryId: NonNullable<OperationArguments<GetUniverseCategoriesCategoryIdData>['path']>["category_id"], options?: GetUniverseCategoriesCategoryIdOptions): Promise<EsiResponse<GetUniverseCategoriesCategoryIdResponse>> {
     const arguments_: OperationArguments<GetUniverseCategoriesCategoryIdData> = { path: { "category_id": categoryId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseCategoriesCategoryIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseCategoriesCategoryIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getItemGroup(groupId: NonNullable<OperationArguments<GetUniverseGroupsGroupIdData>['path']>["group_id"], options?: GetUniverseGroupsGroupIdOptions): Promise<EsiResponse<GetUniverseGroupsGroupIdResponse>> {
     const arguments_: OperationArguments<GetUniverseGroupsGroupIdData> = { path: { "group_id": groupId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseGroupsGroupIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseGroupsGroupIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getMoon(moonId: NonNullable<OperationArguments<GetUniverseMoonsMoonIdData>['path']>["moon_id"], options?: GetUniverseMoonsMoonIdOptions): Promise<EsiResponse<GetUniverseMoonsMoonIdResponse>> {
     const arguments_: OperationArguments<GetUniverseMoonsMoonIdData> = { path: { "moon_id": moonId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseMoonsMoonIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseMoonsMoonIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getPlanet(planetId: NonNullable<OperationArguments<GetUniversePlanetsPlanetIdData>['path']>["planet_id"], options?: GetUniversePlanetsPlanetIdOptions): Promise<EsiResponse<GetUniversePlanetsPlanetIdResponse>> {
     const arguments_: OperationArguments<GetUniversePlanetsPlanetIdData> = { path: { "planet_id": planetId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniversePlanetsPlanetIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniversePlanetsPlanetIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getRegion(regionId: NonNullable<OperationArguments<GetUniverseRegionsRegionIdData>['path']>["region_id"], options?: GetUniverseRegionsRegionIdOptions): Promise<EsiResponse<GetUniverseRegionsRegionIdResponse>> {
     const arguments_: OperationArguments<GetUniverseRegionsRegionIdData> = { path: { "region_id": regionId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseRegionsRegionIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseRegionsRegionIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getSolarSystem(systemId: NonNullable<OperationArguments<GetUniverseSystemsSystemIdData>['path']>["system_id"], options?: GetUniverseSystemsSystemIdOptions): Promise<EsiResponse<GetUniverseSystemsSystemIdResponse>> {
     const arguments_: OperationArguments<GetUniverseSystemsSystemIdData> = { path: { "system_id": systemId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseSystemsSystemIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseSystemsSystemIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getStar(starId: NonNullable<OperationArguments<GetUniverseStarsStarIdData>['path']>["star_id"], options?: GetUniverseStarsStarIdOptions): Promise<EsiResponse<GetUniverseStarsStarIdResponse>> {
     const arguments_: OperationArguments<GetUniverseStarsStarIdData> = { path: { "star_id": starId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseStarsStarIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseStarsStarIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getStargate(stargateId: NonNullable<OperationArguments<GetUniverseStargatesStargateIdData>['path']>["stargate_id"], options?: GetUniverseStargatesStargateIdOptions): Promise<EsiResponse<GetUniverseStargatesStargateIdResponse>> {
     const arguments_: OperationArguments<GetUniverseStargatesStargateIdData> = { path: { "stargate_id": stargateId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseStargatesStargateIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseStargatesStargateIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getStation(stationId: NonNullable<OperationArguments<GetUniverseStationsStationIdData>['path']>["station_id"], options?: GetUniverseStationsStationIdOptions): Promise<EsiResponse<GetUniverseStationsStationIdResponse>> {
     const arguments_: OperationArguments<GetUniverseStationsStationIdData> = { path: { "station_id": stationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseStationsStationIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseStationsStationIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getStructure(structureId: NonNullable<OperationArguments<GetUniverseStructuresStructureIdData>['path']>["structure_id"], options?: GetUniverseStructuresStructureIdOptions): Promise<EsiResponse<GetUniverseStructuresStructureIdResponse>> {
     const arguments_: OperationArguments<GetUniverseStructuresStructureIdData> = { path: { "structure_id": structureId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseStructuresStructureIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseStructuresStructureIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getType(typeId: NonNullable<OperationArguments<GetUniverseTypesTypeIdData>['path']>["type_id"], options?: GetUniverseTypesTypeIdOptions): Promise<EsiResponse<GetUniverseTypesTypeIdResponse>> {
     const arguments_: OperationArguments<GetUniverseTypesTypeIdData> = { path: { "type_id": typeId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseTypesTypeIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseTypesTypeIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listAncestries(options?: GetUniverseAncestriesOptions): Promise<EsiResponse<GetUniverseAncestriesResponse>> {
     const arguments_: OperationArguments<GetUniverseAncestriesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseAncestriesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseAncestriesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listBloodlines(options?: GetUniverseBloodlinesOptions): Promise<EsiResponse<GetUniverseBloodlinesResponse>> {
     const arguments_: OperationArguments<GetUniverseBloodlinesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseBloodlinesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseBloodlinesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listConstellations(options?: GetUniverseConstellationsOptions): Promise<EsiResponse<GetUniverseConstellationsResponse>> {
     const arguments_: OperationArguments<GetUniverseConstellationsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseConstellationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseConstellationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listFactions(options?: GetUniverseFactionsOptions): Promise<EsiResponse<GetUniverseFactionsResponse>> {
     const arguments_: OperationArguments<GetUniverseFactionsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseFactionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseFactionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listGraphics(options?: GetUniverseGraphicsOptions): Promise<EsiResponse<GetUniverseGraphicsResponse>> {
     const arguments_: OperationArguments<GetUniverseGraphicsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseGraphicsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseGraphicsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listItemCategories(options?: GetUniverseCategoriesOptions): Promise<EsiResponse<GetUniverseCategoriesResponse>> {
     const arguments_: OperationArguments<GetUniverseCategoriesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseCategoriesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseCategoriesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listItemGroups(options?: GetUniverseGroupsOptions): Promise<EsiResponse<GetUniverseGroupsResponse>> {
     const arguments_: OperationArguments<GetUniverseGroupsData> = { query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseGroupsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseGroupsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listPublicStructures(options?: GetUniverseStructuresOptions): Promise<EsiResponse<GetUniverseStructuresResponse>> {
     const arguments_: OperationArguments<GetUniverseStructuresData> = { query: { "filter": options?.["filter"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseStructuresDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseStructuresDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listRaces(options?: GetUniverseRacesOptions): Promise<EsiResponse<GetUniverseRacesResponse>> {
     const arguments_: OperationArguments<GetUniverseRacesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseRacesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseRacesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listRegions(options?: GetUniverseRegionsOptions): Promise<EsiResponse<GetUniverseRegionsResponse>> {
     const arguments_: OperationArguments<GetUniverseRegionsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseRegionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseRegionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listSolarSystems(options?: GetUniverseSystemsOptions): Promise<EsiResponse<GetUniverseSystemsResponse>> {
     const arguments_: OperationArguments<GetUniverseSystemsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseSystemsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseSystemsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listSystemJumps(options?: GetUniverseSystemJumpsOptions): Promise<EsiResponse<GetUniverseSystemJumpsResponse>> {
     const arguments_: OperationArguments<GetUniverseSystemJumpsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseSystemJumpsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseSystemJumpsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listSystemKills(options?: GetUniverseSystemKillsOptions): Promise<EsiResponse<GetUniverseSystemKillsResponse>> {
     const arguments_: OperationArguments<GetUniverseSystemKillsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseSystemKillsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseSystemKillsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listTypes(options?: GetUniverseTypesOptions): Promise<EsiResponse<GetUniverseTypesResponse>> {
     const arguments_: OperationArguments<GetUniverseTypesData> = { query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetUniverseTypesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetUniverseTypesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   resolveIds(options: PostUniverseIdsOptions): Promise<EsiResponse<PostUniverseIdsResponse>> {
     const arguments_: OperationArguments<PostUniverseIdsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostUniverseIdsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostUniverseIdsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   resolveNames(options: PostUniverseNamesOptions): Promise<EsiResponse<PostUniverseNamesResponse>> {
     const arguments_: OperationArguments<PostUniverseNamesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostUniverseNamesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostUniverseNamesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

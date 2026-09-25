@@ -20,6 +20,7 @@ export interface GetCorporationsProjectsDetailOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsProjectsDetailData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsProjectsDetailData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsProjectsDetailData>["headers"]>["X-Tenant"];
 }
 
@@ -27,6 +28,7 @@ export interface GetCorporationsProjectsContributionOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>["headers"]>["X-Tenant"];
 }
 
@@ -37,6 +39,7 @@ export interface GetCorporationsProjectsListingOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsProjectsListingData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsProjectsListingData>["headers"]>["If-None-Match"];
   readonly "limit"?: NonNullable<OperationArguments<GetCorporationsProjectsListingData>["query"]>["limit"];
+  readonly "signal"?: AbortSignal;
   readonly "state"?: NonNullable<OperationArguments<GetCorporationsProjectsListingData>["query"]>["state"];
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsProjectsListingData>["headers"]>["X-Tenant"];
 }
@@ -48,6 +51,7 @@ export interface GetCorporationsProjectsContributorsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>["headers"]>["If-None-Match"];
   readonly "limit"?: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>["query"]>["limit"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>["headers"]>["X-Tenant"];
 }
 

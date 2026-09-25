@@ -46,27 +46,27 @@ class UserInterfaceDomainClientWithMetadataImplementation implements UserInterfa
 
   openContract(options: PostUiOpenwindowContractOptions): Promise<EsiResponse<PostUiOpenwindowContractResponse>> {
     const arguments_: OperationArguments<PostUiOpenwindowContractData> = { query: { "contract_id": options?.["contractId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, PostUiOpenwindowContractDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostUiOpenwindowContractDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   openInformation(options: PostUiOpenwindowInformationOptions): Promise<EsiResponse<PostUiOpenwindowInformationResponse>> {
     const arguments_: OperationArguments<PostUiOpenwindowInformationData> = { query: { "target_id": options?.["targetId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, PostUiOpenwindowInformationDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostUiOpenwindowInformationDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   openMarketDetails(options: PostUiOpenwindowMarketdetailsOptions): Promise<EsiResponse<PostUiOpenwindowMarketdetailsResponse>> {
     const arguments_: OperationArguments<PostUiOpenwindowMarketdetailsData> = { query: { "type_id": options?.["typeId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, PostUiOpenwindowMarketdetailsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostUiOpenwindowMarketdetailsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   openNewMail(options: PostUiOpenwindowNewmailOptions): Promise<EsiResponse<PostUiOpenwindowNewmailResponse>> {
     const arguments_: OperationArguments<PostUiOpenwindowNewmailData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostUiOpenwindowNewmailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostUiOpenwindowNewmailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   setAutopilotWaypoint(options: PostUiAutopilotWaypointOptions): Promise<EsiResponse<PostUiAutopilotWaypointResponse>> {
     const arguments_: OperationArguments<PostUiAutopilotWaypointData> = { query: { "add_to_beginning": options?.["addToBeginning"], "clear_other_waypoints": options?.["clearOtherWaypoints"], "destination_id": options?.["destinationId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, PostUiAutopilotWaypointDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostUiAutopilotWaypointDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

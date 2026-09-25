@@ -30,7 +30,7 @@ class InsuranceDomainClientWithMetadataImplementation implements InsuranceDomain
 
   listPrices(options?: GetInsurancePricesOptions): Promise<EsiResponse<GetInsurancePricesResponse>> {
     const arguments_: OperationArguments<GetInsurancePricesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetInsurancePricesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetInsurancePricesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

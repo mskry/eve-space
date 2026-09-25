@@ -30,7 +30,7 @@ class RoutesDomainClientWithMetadataImplementation implements RoutesDomainClient
 
   calculate(originSystemId: NonNullable<OperationArguments<PostRouteData>['path']>["origin_system_id"], destinationSystemId: NonNullable<OperationArguments<PostRouteData>['path']>["destination_system_id"], options: PostRouteOptions): Promise<EsiResponse<PostRouteResponse>> {
     const arguments_: OperationArguments<PostRouteData> = { path: { "origin_system_id": originSystemId, "destination_system_id": destinationSystemId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostRouteDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostRouteDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

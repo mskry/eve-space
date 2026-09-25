@@ -25,6 +25,7 @@ export interface GetParagonHubSkinrAlliancesOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetParagonHubSkinrAlliancesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetParagonHubSkinrAlliancesData>["headers"]>["If-None-Match"];
   readonly "limit"?: NonNullable<OperationArguments<GetParagonHubSkinrAlliancesData>["query"]>["limit"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetParagonHubSkinrAlliancesData>["headers"]>["X-Tenant"];
 }
 
@@ -35,6 +36,7 @@ export interface GetParagonHubSkinrCharactersOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetParagonHubSkinrCharactersData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetParagonHubSkinrCharactersData>["headers"]>["If-None-Match"];
   readonly "limit"?: NonNullable<OperationArguments<GetParagonHubSkinrCharactersData>["query"]>["limit"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetParagonHubSkinrCharactersData>["headers"]>["X-Tenant"];
 }
 
@@ -45,6 +47,7 @@ export interface GetParagonHubSkinrCorporationsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetParagonHubSkinrCorporationsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetParagonHubSkinrCorporationsData>["headers"]>["If-None-Match"];
   readonly "limit"?: NonNullable<OperationArguments<GetParagonHubSkinrCorporationsData>["query"]>["limit"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetParagonHubSkinrCorporationsData>["headers"]>["X-Tenant"];
 }
 
@@ -55,6 +58,7 @@ export interface GetCharactersParagonHubSkinrOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersParagonHubSkinrData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersParagonHubSkinrData>["headers"]>["If-None-Match"];
   readonly "limit"?: NonNullable<OperationArguments<GetCharactersParagonHubSkinrData>["query"]>["limit"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersParagonHubSkinrData>["headers"]>["X-Tenant"];
 }
 
@@ -65,6 +69,7 @@ export interface GetParagonHubSkinrOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetParagonHubSkinrData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetParagonHubSkinrData>["headers"]>["If-None-Match"];
   readonly "limit"?: NonNullable<OperationArguments<GetParagonHubSkinrData>["query"]>["limit"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetParagonHubSkinrData>["headers"]>["X-Tenant"];
 }
 

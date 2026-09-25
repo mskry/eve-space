@@ -50,32 +50,32 @@ class AssetsDomainClientWithMetadataImplementation implements AssetsDomainClient
 
   listCharacterAssets(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdAssetsData>['path']>["character_id"], options?: GetCharactersCharacterIdAssetsOptions): Promise<EsiResponse<GetCharactersCharacterIdAssetsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdAssetsData> = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdAssetsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdAssetsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCorporationAssets(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdAssetsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdAssetsOptions): Promise<EsiResponse<GetCorporationsCorporationIdAssetsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdAssetsData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdAssetsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdAssetsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   lookupCharacterLocations(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdAssetsLocationsData>['path']>["character_id"], options: PostCharactersCharacterIdAssetsLocationsOptions): Promise<EsiResponse<PostCharactersCharacterIdAssetsLocationsResponse>> {
     const arguments_: OperationArguments<PostCharactersCharacterIdAssetsLocationsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostCharactersCharacterIdAssetsLocationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostCharactersCharacterIdAssetsLocationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   lookupCharacterNames(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdAssetsNamesData>['path']>["character_id"], options: PostCharactersCharacterIdAssetsNamesOptions): Promise<EsiResponse<PostCharactersCharacterIdAssetsNamesResponse>> {
     const arguments_: OperationArguments<PostCharactersCharacterIdAssetsNamesData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostCharactersCharacterIdAssetsNamesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostCharactersCharacterIdAssetsNamesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   lookupCorporationLocations(corporationId: NonNullable<OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>['path']>["corporation_id"], options: PostCorporationsCorporationIdAssetsLocationsOptions): Promise<EsiResponse<PostCorporationsCorporationIdAssetsLocationsResponse>> {
     const arguments_: OperationArguments<PostCorporationsCorporationIdAssetsLocationsData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostCorporationsCorporationIdAssetsLocationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostCorporationsCorporationIdAssetsLocationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   lookupCorporationNames(corporationId: NonNullable<OperationArguments<PostCorporationsCorporationIdAssetsNamesData>['path']>["corporation_id"], options: PostCorporationsCorporationIdAssetsNamesOptions): Promise<EsiResponse<PostCorporationsCorporationIdAssetsNamesResponse>> {
     const arguments_: OperationArguments<PostCorporationsCorporationIdAssetsNamesData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostCorporationsCorporationIdAssetsNamesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostCorporationsCorporationIdAssetsNamesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

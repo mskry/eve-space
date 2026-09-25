@@ -30,7 +30,7 @@ class IncursionsDomainClientWithMetadataImplementation implements IncursionsDoma
 
   list(options?: GetIncursionsOptions): Promise<EsiResponse<GetIncursionsResponse>> {
     const arguments_: OperationArguments<GetIncursionsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetIncursionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetIncursionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

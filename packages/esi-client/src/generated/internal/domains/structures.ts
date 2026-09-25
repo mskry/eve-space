@@ -50,32 +50,32 @@ class StructuresDomainClientWithMetadataImplementation implements StructuresDoma
 
   getMercenaryDen(characterId: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['path']>["character_id"], mercenaryDenId: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['path']>["mercenary_den_id"], options?: GetCharactersStructuresMercenaryDensDetailOptions): Promise<EsiResponse<GetCharactersStructuresMercenaryDensDetailResponse>> {
     const arguments_: OperationArguments<GetCharactersStructuresMercenaryDensDetailData> = { path: { "character_id": characterId, "mercenary_den_id": mercenaryDenId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersStructuresMercenaryDensDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersStructuresMercenaryDensDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getSkyhook(corporationId: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['path']>["corporation_id"], skyhookId: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['path']>["skyhook_id"], options?: GetCorporationsStructuresSkyhooksDetailOptions): Promise<EsiResponse<GetCorporationsStructuresSkyhooksDetailResponse>> {
     const arguments_: OperationArguments<GetCorporationsStructuresSkyhooksDetailData> = { path: { "corporation_id": corporationId, "skyhook_id": skyhookId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsStructuresSkyhooksDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsStructuresSkyhooksDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getSovereigntyHub(corporationId: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['path']>["corporation_id"], sovereigntyHubId: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['path']>["sovereignty_hub_id"], options?: GetCorporationsStructuresSovereigntyHubsDetailOptions): Promise<EsiResponse<GetCorporationsStructuresSovereigntyHubsDetailResponse>> {
     const arguments_: OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData> = { path: { "corporation_id": corporationId, "sovereignty_hub_id": sovereigntyHubId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsStructuresSovereigntyHubsDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsStructuresSovereigntyHubsDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listMercenaryDens(characterId: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensListingData>['path']>["character_id"], options?: GetCharactersStructuresMercenaryDensListingOptions): Promise<EsiResponse<GetCharactersStructuresMercenaryDensListingResponse>> {
     const arguments_: OperationArguments<GetCharactersStructuresMercenaryDensListingData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersStructuresMercenaryDensListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersStructuresMercenaryDensListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listSkyhooks(corporationId: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksListingData>['path']>["corporation_id"], options?: GetCorporationsStructuresSkyhooksListingOptions): Promise<EsiResponse<GetCorporationsStructuresSkyhooksListingResponse>> {
     const arguments_: OperationArguments<GetCorporationsStructuresSkyhooksListingData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsStructuresSkyhooksListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsStructuresSkyhooksListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listSovereigntyHubs(corporationId: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>['path']>["corporation_id"], options?: GetCorporationsStructuresSovereigntyHubsListingOptions): Promise<EsiResponse<GetCorporationsStructuresSovereigntyHubsListingResponse>> {
     const arguments_: OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsStructuresSovereigntyHubsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsStructuresSovereigntyHubsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

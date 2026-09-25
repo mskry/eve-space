@@ -16,6 +16,7 @@ export interface GetSovereigntyCampaignsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetSovereigntyCampaignsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetSovereigntyCampaignsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetSovereigntyCampaignsData>["headers"]>["X-Tenant"];
 }
 
@@ -23,6 +24,7 @@ export interface GetSovereigntySystemsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetSovereigntySystemsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetSovereigntySystemsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetSovereigntySystemsData>["headers"]>["X-Tenant"];
 }
 

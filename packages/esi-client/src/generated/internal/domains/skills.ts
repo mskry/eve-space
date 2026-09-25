@@ -38,17 +38,17 @@ class SkillsDomainClientWithMetadataImplementation implements SkillsDomainClient
 
   getAttributes(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdAttributesData>['path']>["character_id"], options?: GetCharactersCharacterIdAttributesOptions): Promise<EsiResponse<GetCharactersCharacterIdAttributesResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdAttributesData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdAttributesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdAttributesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getSkillQueue(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSkillqueueData>['path']>["character_id"], options?: GetCharactersCharacterIdSkillqueueOptions): Promise<EsiResponse<GetCharactersCharacterIdSkillqueueResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdSkillqueueData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdSkillqueueDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdSkillqueueDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getSkills(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSkillsData>['path']>["character_id"], options?: GetCharactersCharacterIdSkillsOptions): Promise<EsiResponse<GetCharactersCharacterIdSkillsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdSkillsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdSkillsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdSkillsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

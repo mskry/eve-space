@@ -1,10 +1,9 @@
 // @vitest-environment node
-import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { promisify } from 'node:util'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { runGit } from '../../scripts/jev/git'
 import {
   changedRepositoryFiles,
   mergeBaseRevision,
@@ -13,7 +12,6 @@ import {
 import { createJevClient, evaluateSystemOne } from '../../scripts/jev/client'
 import { runJevReview, type JevReviewVerdict } from '../../scripts/jev/review'
 
-const run = promisify(execFile)
 const originalApiKey = process.env.TYPESAFE_API_KEY
 
 afterEach(() => {
@@ -23,26 +21,70 @@ afterEach(() => {
     process.env.TYPESAFE_API_KEY = originalApiKey
   }
   vi.restoreAllMocks()
+  vi.unstubAllEnvs()
   vi.useRealTimers()
 })
 
 describe('Jev review change discovery', () => {
+  it('keeps temporary Git repositories isolated from hook environment variables', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'eve-space-jev-review-'))
+    const foreign = join(root, 'foreign')
+    const fixture = join(root, 'fixture')
+
+    try {
+      await mkdir(foreign)
+      await mkdir(fixture)
+      await runGit(foreign, 'init')
+      vi.stubEnv('GIT_DIR', join(foreign, '.git'))
+      vi.stubEnv('GIT_WORK_TREE', foreign)
+      vi.stubEnv('GIT_INDEX_FILE', join(foreign, '.git', 'index'))
+
+      await runGit(fixture, 'init')
+      await writeFile(join(fixture, 'mapping.ts'), 'export const version = 1\n')
+      await runGit(fixture, 'add', 'mapping.ts')
+      await runGit(
+        fixture,
+        '-c',
+        'user.name=Test',
+        '-c',
+        'user.email=test@example.com',
+        'commit',
+        '-m',
+        'fixture',
+      )
+
+      expect((await runGit(fixture, 'rev-parse', '--show-toplevel')).stdout.trim()).toBe(
+        await realpath(fixture),
+      )
+      expect((await runGit(foreign, 'ls-files')).stdout.trim()).toBe('')
+      await expect(changedRepositoryFiles(fixture, 'HEAD')).resolves.toStrictEqual([])
+    } finally {
+      vi.unstubAllEnvs()
+      await rm(root, { force: true, recursive: true })
+    }
+  })
+
   it('includes staged and non-ignored untracked files and reads the base revision', async () => {
     const root = await mkdtemp(join(tmpdir(), 'eve-space-jev-review-'))
 
     try {
-      await run('git', ['init'], { cwd: root })
+      await runGit(root, 'init')
       await mkdir(join(root, 'app'), { recursive: true })
       await writeFile(join(root, 'app', 'baseline.ts'), 'export const baseline = true\n')
-      await run('git', ['add', '.'], { cwd: root })
-      await run(
-        'git',
-        ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-m', 'baseline'],
-        { cwd: root },
+      await runGit(root, 'add', '.')
+      await runGit(
+        root,
+        '-c',
+        'user.name=Test',
+        '-c',
+        'user.email=test@example.com',
+        'commit',
+        '-m',
+        'baseline',
       )
 
       await writeFile(join(root, 'app', 'staged.ts'), 'export const staged = true\n')
-      await run('git', ['add', 'app/staged.ts'], { cwd: root })
+      await runGit(root, 'add', 'app/staged.ts')
       await mkdir(join(root, 'layers'), { recursive: true })
       await writeFile(join(root, 'layers/untracked.vue'), '<template><main /></template>\n')
 
@@ -61,9 +103,7 @@ describe('Jev review change discovery', () => {
   it('reads previous sources from the merge base after the base branch advances', async () => {
     const root = await mkdtemp(join(tmpdir(), 'eve-space-jev-review-'))
     const git = (...args: string[]) =>
-      run('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', ...args], {
-        cwd: root,
-      })
+      runGit(root, '-c', 'user.name=Test', '-c', 'user.email=test@example.com', ...args)
 
     try {
       await git('init', '--initial-branch=main')

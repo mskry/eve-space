@@ -18,6 +18,7 @@ export interface GetKillmailsKillmailIdKillmailHashOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetKillmailsKillmailIdKillmailHashData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetKillmailsKillmailIdKillmailHashData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetKillmailsKillmailIdKillmailHashData>["headers"]>["X-Tenant"];
 }
 
@@ -26,6 +27,7 @@ export interface GetCharactersCharacterIdKillmailsRecentOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdKillmailsRecentData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdKillmailsRecentData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCharactersCharacterIdKillmailsRecentData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdKillmailsRecentData>["headers"]>["X-Tenant"];
 }
 
@@ -34,6 +36,7 @@ export interface GetCorporationsCorporationIdKillmailsRecentOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>["headers"]>["X-Tenant"];
 }
 
