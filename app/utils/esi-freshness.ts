@@ -31,11 +31,10 @@ export function getStaleEsiMetadata(value: unknown): StaleEsiMetadata | undefine
   const retryAt = normalizedTimestamp(record.retryAt)
   return {
     stale: true,
-    ...(validatedAt ? { validatedAt } : {}),
-    ...(retryAt ? { retryAt } : {}),
-    ...(typeof record.refreshFailureClass === 'string' && record.refreshFailureClass.length > 0
-      ? { refreshFailureClass: record.refreshFailureClass }
-      : {}),
+    ...(validatedAt && { validatedAt }),
+    ...(retryAt && { retryAt }),
+    ...(typeof record.refreshFailureClass === 'string' &&
+      record.refreshFailureClass.length > 0 && { refreshFailureClass: record.refreshFailureClass }),
   }
 }
 

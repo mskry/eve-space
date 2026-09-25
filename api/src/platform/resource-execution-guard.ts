@@ -300,7 +300,7 @@ function createReadyResourceExecution(
     outcome: 'ready',
     resource,
     subject,
-    ...(subject.kind === 'character' ? { characterId: subject.characterId } : {}),
+    ...(subject.kind === 'character' && { characterId: subject.characterId }),
     authorization,
     authorizationCharacterId,
     authorizationCharacterLifecycleId,

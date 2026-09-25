@@ -5,9 +5,28 @@ import { ApiQueryError } from '../utils/query-error'
 import type { useCharacterMailbox } from './useCharacterMailbox'
 import type { useMailOrganizationMutations } from './useMailOrganizationMutations'
 
+type CharacterMailbox = ReturnType<typeof useCharacterMailbox>
+type MailOrganizationMailbox = Pick<
+  CharacterMailbox,
+  | 'activeLabelId'
+  | 'removeLoadedHeader'
+  | 'removeLoadedLabel'
+  | 'resetMailboxView'
+  | 'selectLabel'
+  | 'selectedMailId'
+> & {
+  readonly detailQuery: {
+    readonly data: Pick<CharacterMailbox['detailQuery']['data'], 'value'>
+    readonly error: Pick<CharacterMailbox['detailQuery']['error'], 'value'>
+  }
+  readonly displayedDetail: Pick<CharacterMailbox['displayedDetail'], 'value'>
+  readonly displayedHeaders: Pick<CharacterMailbox['displayedHeaders'], 'value'>
+  readonly selectedHeader: Pick<CharacterMailbox['selectedHeader'], 'value'>
+}
+
 interface MailOrganizationOptions {
   characterId: ComputedRef<number | undefined>
-  mailbox: ReturnType<typeof useCharacterMailbox>
+  mailbox: MailOrganizationMailbox
   mutations: ReturnType<typeof useMailOrganizationMutations>
 }
 
@@ -250,7 +269,7 @@ export function useMailOrganization(options: MailOrganizationOptions) {
     const outcome = await options.mutations.createMailLabel({
       characterId,
       name,
-      ...(labelColor.value === undefined ? {} : { color: labelColor.value }),
+      ...(labelColor.value !== undefined && { color: labelColor.value }),
     })
     if (!scopeActive || options.characterId.value !== characterId) {
       return

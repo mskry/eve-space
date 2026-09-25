@@ -9,16 +9,21 @@ const compositionModules = {
   utility: 'app/utils/mail-composition.ts',
 } as const
 
-const allowedCompositionImports: Record<string, ReadonlySet<string>> = {
-  [compositionModules.draft]: new Set([compositionModules.utility]),
-  [compositionModules.facade]: new Set([
-    compositionModules.draft,
-    compositionModules.submission,
-    compositionModules.utility,
-  ]),
-  [compositionModules.submission]: new Set([compositionModules.draft, compositionModules.utility]),
-  [compositionModules.utility]: new Set(),
-}
+const allowedCompositionImports = new Map(
+  Object.entries({
+    [compositionModules.draft]: new Set([compositionModules.utility]),
+    [compositionModules.facade]: new Set([
+      compositionModules.draft,
+      compositionModules.submission,
+      compositionModules.utility,
+    ]),
+    [compositionModules.submission]: new Set([
+      compositionModules.draft,
+      compositionModules.utility,
+    ]),
+    [compositionModules.utility]: new Set(),
+  }),
+)
 
 export interface MailCompositionSource {
   readonly path: string
@@ -41,11 +46,11 @@ export function mailCompositionImportViolations(sources: readonly MailCompositio
       if (!importedPath || !Object.values(compositionModules).includes(importedPath as never)) {
         continue
       }
-      if (allowedCompositionImports[sourcePath]?.has(importedPath)) {
+      if (allowedCompositionImports.get(sourcePath)?.has(importedPath)) {
         continue
       }
       if (
-        !(sourcePath in allowedCompositionImports) &&
+        !allowedCompositionImports.has(sourcePath) &&
         importedPath === compositionModules.facade
       ) {
         continue

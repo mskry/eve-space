@@ -24,8 +24,8 @@ export const characterHistoryRoutes = new Hono<OwnedCharacterEnv>().get(
         history: result.data,
         stale: result.stale,
         validatedAt: result.validatedAt,
-        ...(result.retryAt ? { retryAt: result.retryAt } : {}),
-        ...(result.refreshFailureClass ? { refreshFailureClass: result.refreshFailureClass } : {}),
+        ...(result.retryAt && { retryAt: result.retryAt }),
+        ...(result.refreshFailureClass && { refreshFailureClass: result.refreshFailureClass }),
       })
     } catch (error) {
       if (error instanceof EsiQuotaError) {

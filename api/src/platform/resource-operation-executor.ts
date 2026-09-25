@@ -236,7 +236,7 @@ async function executeCollectionRequest(
   return {
     data: result.result.data,
     validatedAt: result.result.validatedAt,
-    ...(result.result.pagination ? { pagination: { ...result.result.pagination } } : {}),
+    ...(result.result.pagination && { pagination: { ...result.result.pagination } }),
   }
 }
 
@@ -331,7 +331,7 @@ async function executeResourceRequest(
         : { kind: 'public' },
     inputs,
     operation,
-    ...(options.signal ? { signal: options.signal } : {}),
+    ...(options.signal && { signal: options.signal }),
   })
   options.signal?.throwIfAborted()
   assertPlatformResourceRefreshSucceeded(execution)

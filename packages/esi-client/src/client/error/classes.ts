@@ -209,8 +209,8 @@ export class EsiTransportError extends EsiError {
       ...super.toJSON(),
       phase: this.phase,
       reason: this.reason,
-      ...(this.status === undefined ? {} : { status: this.status }),
-      ...(this.metadata === undefined ? {} : { metadata: this.metadata }),
+      ...(!(this.status === undefined) && { status: this.status }),
+      ...(this.metadata !== undefined && { metadata: this.metadata }),
     });
   }
 }

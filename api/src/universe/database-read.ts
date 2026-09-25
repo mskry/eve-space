@@ -6,10 +6,11 @@ export const universeDatabaseOperationTimeoutMilliseconds = 2500
 
 export type UniverseDatabase = postgres.Sql
 export type UniverseQuery = postgres.Sql | postgres.TransactionSql
+export type BoundedReadDatabase = Pick<postgres.Sql, 'begin'>
 export const executeUniverseQuery = executeCancellableQuery
 
 export function runBoundedReadTransaction<Result>(
-  database: UniverseDatabase,
+  database: BoundedReadDatabase,
   options: string,
   timeoutError: Error,
   load: (transaction: postgres.TransactionSql, signal: AbortSignal) => Promise<Result>,

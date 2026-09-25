@@ -43,11 +43,12 @@ export function parseOrganizationReviewUrlState(query: Record<string, unknown>) 
   const targetCharacterId = singleString(query.targetCharacterId)
   const contribution = singleString(query.contribution)
   return {
-    ...(targetUserId && isUuid(targetUserId) ? { targetUserId } : {}),
-    ...(targetCharacterId && positiveIntegerString(targetCharacterId)
-      ? { targetCharacterId: Number(targetCharacterId) }
-      : {}),
-    ...(contribution && isContributionIdentity(contribution) ? { contribution } : {}),
+    ...(targetUserId && isUuid(targetUserId) && { targetUserId }),
+    ...(targetCharacterId &&
+      positiveIntegerString(targetCharacterId) && {
+        targetCharacterId: Number(targetCharacterId),
+      }),
+    ...(contribution && isContributionIdentity(contribution) && { contribution }),
   } satisfies OrganizationReviewUrlState
 }
 

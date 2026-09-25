@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { VNode } from 'vue'
 import type { EsiQueryPersistencePresentation } from '../../query-persistence-presentation.js'
 import type { PlatformResourceState } from '../../resource-state.js'
 
@@ -16,12 +17,12 @@ const emit = defineEmits<{
 }>()
 
 defineSlots<{
-  default(): unknown
+  default(): VNode[]
   error(props: {
     state: Extract<PlatformResourceState, { status: 'error' | 'unavailable' }>
-  }): unknown
-  loading(props: { state: Extract<PlatformResourceState, { status: 'loading' }> }): unknown
-  retained(props: { state: Exclude<PlatformResourceState, { status: 'ready' }> }): unknown
+  }): VNode[]
+  loading(props: { state: Extract<PlatformResourceState, { status: 'loading' }> }): VNode[]
+  retained(props: { state: Exclude<PlatformResourceState, { status: 'ready' }> }): VNode[]
 }>()
 </script>
 

@@ -34,7 +34,7 @@ export interface EsiRouteRateLimitMetadata {
 }
 
 export interface EsiResponseMetadataInput {
-  readonly headers?: Readonly<Record<string, string>>;
+  readonly headers?: Readonly<Record<string, unknown>>;
   readonly requestId?: string;
   readonly pagination?: EsiPaginationMetadata;
   readonly cache?: EsiCacheMetadata;
@@ -54,6 +54,8 @@ export interface EsiResponseMetadata {
   readonly routeRateLimit?: EsiRouteRateLimitMetadata;
 }
 
+export type MutableMetadata<Value> = { -readonly [Key in keyof Value]: Value[Key] };
+
 export interface EsiResponse<T> {
   readonly data: T;
   readonly meta: EsiResponseMetadata;
@@ -68,16 +70,7 @@ export function extractEsiResponseMetadata(status: number, headers: Headers): Es
   }
 
   const headerRecord = headersToRecord(headers);
-  const metadata: {
-    status: number;
-    headers: Readonly<Record<string, string>>;
-    requestId?: string;
-    pagination?: EsiPaginationMetadata;
-    cache?: EsiCacheMetadata;
-    errorLimit?: EsiErrorLimitMetadata;
-    retryAfterSeconds?: number;
-    routeRateLimit?: EsiRouteRateLimitMetadata;
-  } = { headers: headerRecord, status };
+  const metadata: MutableMetadata<EsiResponseMetadata> = { headers: headerRecord, status };
 
   const requestId = firstPresentHeader(headerRecord, ['x-esi-request-id', 'x-request-id']);
   if (requestId !== undefined) {
@@ -115,16 +108,7 @@ export function createEsiResponse<T>(data: T, meta: EsiResponseMetadata): EsiRes
 }
 
 function freezeMetadata(input: EsiResponseMetadata): EsiResponseMetadata {
-  const metadata: {
-    status: number;
-    headers: Readonly<Record<string, string>>;
-    requestId?: string;
-    pagination?: EsiPaginationMetadata;
-    cache?: EsiCacheMetadata;
-    errorLimit?: EsiErrorLimitMetadata;
-    retryAfterSeconds?: number;
-    routeRateLimit?: EsiRouteRateLimitMetadata;
-  } = {
+  const metadata: MutableMetadata<EsiResponseMetadata> = {
     headers: freezeRecord(input.headers),
     status: input.status,
   };
@@ -190,12 +174,7 @@ function headersToRecord(headers: Headers): Readonly<Record<string, string>> {
 function extractPagination(
   headers: Readonly<Record<string, string>>,
 ): EsiPaginationMetadata | undefined {
-  const pagination: {
-    pages?: number;
-    cursor?: string;
-    nextCursor?: string;
-    previousCursor?: string;
-  } = {};
+  const pagination: MutableMetadata<EsiPaginationMetadata> = {};
   const pages = parseNonnegativeInteger(headers['x-pages']);
   if (pages !== undefined) {
     pagination.pages = pages;
@@ -216,13 +195,7 @@ function extractPagination(
 }
 
 function extractCache(headers: Readonly<Record<string, string>>): EsiCacheMetadata | undefined {
-  const cache: {
-    etag?: string;
-    expires?: string;
-    lastModified?: string;
-    cacheControl?: string;
-    maxAgeSeconds?: number;
-  } = {};
+  const cache: MutableMetadata<EsiCacheMetadata> = {};
   const etag = nonemptyHeader(headers.etag);
   if (etag !== undefined) {
     cache.etag = etag;
@@ -249,12 +222,7 @@ function extractCache(headers: Readonly<Record<string, string>>): EsiCacheMetada
 function extractRouteRateLimit(
   headers: Readonly<Record<string, string>>,
 ): EsiRouteRateLimitMetadata | undefined {
-  const rateLimit: {
-    group?: string;
-    limit?: number;
-    used?: number;
-    remaining?: number;
-  } = {};
+  const rateLimit: MutableMetadata<EsiRouteRateLimitMetadata> = {};
   const group = nonemptyHeader(headers['x-ratelimit-group']);
   if (group !== undefined) {
     rateLimit.group = group;
@@ -297,7 +265,7 @@ function parseCacheControlMaxAge(value: string): number | undefined {
 function extractErrorLimit(
   headers: Readonly<Record<string, string>>,
 ): EsiErrorLimitMetadata | undefined {
-  const errorLimit: { remaining?: number; reset?: number } = {};
+  const errorLimit: MutableMetadata<EsiErrorLimitMetadata> = {};
   const remaining = parseNonnegativeFiniteNumber(headers['x-esi-error-limit-remain']);
   if (remaining !== undefined) {
     errorLimit.remaining = remaining;

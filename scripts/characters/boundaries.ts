@@ -75,106 +75,109 @@ const allowedPackagesByTier: Record<CharacterTier, ReadonlySet<string>> = {
   'route-adapter': new Set(['hono', 'zod']),
 }
 
-const allowedCrossSubsystemImportsByModule: Readonly<Record<string, readonly string[]>> = {
-  'affiliation-planning': ['api/src/esi-gateway/failures'],
-  'affiliation-sync': [
-    'api/src/db/client',
-    'api/src/db/locks',
-    'api/src/db/schema',
-    'api/src/domain-events/store',
-    'api/src/env',
-    'api/src/esi-gateway/feature-execution',
-  ],
-  assets: [
-    'api/src/db/client',
-    'api/src/db/schema',
-    'api/src/esi-gateway/feature-execution',
-    'api/src/type-guards',
-    'api/src/universe/names',
-    'api/src/universe/static-locations',
-  ],
-  'assets-routes': [
-    'api/src/http/private-response',
-    'api/src/http/validation',
-    'api/src/middleware/auth-session',
-    'api/src/middleware/owned-character',
-  ],
-  attributes: ['api/src/esi-gateway/feature-execution'],
-  clones: [
-    'api/src/db/client',
-    'api/src/db/schema',
-    'api/src/esi-gateway/feature-execution',
-    'api/src/type-guards',
-    'api/src/universe/implant-attributes',
-    'api/src/universe/names',
-    'api/src/universe/static-locations',
-  ],
-  'clones-routes': [
-    'api/src/http/private-response',
-    'api/src/http/validation',
-    'api/src/middleware/auth-session',
-    'api/src/middleware/owned-character',
-  ],
-  contracts: ['api/src/esi-gateway/feature-execution'],
-  'core-routes': [
-    'api/src/auth/character-lifecycle',
-    'api/src/esi-gateway/feature-execution',
-    'api/src/http/private-response',
-    'api/src/http/validation',
-    'api/src/middleware/auth-session',
-    'api/src/middleware/owned-character',
-  ],
-  'corporation-roles': ['api/src/esi-gateway/feature-execution'],
-  'finance-location-names': ['api/src/type-guards', 'api/src/universe/names'],
-  'finance-pagination': ['api/src/type-guards'],
-  'finance-routes': [
-    'api/src/http/private-response',
-    'api/src/http/validation',
-    'api/src/middleware/auth-session',
-    'api/src/middleware/owned-character',
-  ],
-  'finance-type-names': ['api/src/db/client', 'api/src/db/schema', 'api/src/type-guards'],
-  history: ['api/src/esi-gateway/feature-execution', 'api/src/universe/names'],
-  'history-routes': [
-    'api/src/esi-gateway/failures',
-    'api/src/http/private-response',
-    'api/src/http/validation',
-    'api/src/middleware/auth-session',
-    'api/src/middleware/owned-character',
-  ],
-  market: ['api/src/esi-gateway/feature-execution'],
-  overview: ['api/src/esi-gateway/feature-execution', 'api/src/universe/locations'],
-  profile: [
-    'api/src/alliances/public-data',
-    'api/src/corporations/public-data',
-    'api/src/esi-gateway/feature-execution',
-    'api/src/text/eve-formatted-text',
-  ],
-  'progression-routes': [
-    'api/src/http/private-response',
-    'api/src/http/validation',
-    'api/src/middleware/auth-session',
-    'api/src/middleware/owned-character',
-  ],
-  'public-routes': [
-    'api/src/esi-gateway/failures',
-    'api/src/http/private-response',
-    'api/src/http/public-rate-limit',
-    'api/src/http/validation',
-  ],
-  'resource-failure': ['api/src/auth/token-errors', 'api/src/esi-gateway/failures'],
-  'route-responses': ['api/src/env', 'api/src/esi-gateway/feature-execution'],
-  routes: ['api/src/middleware/owned-character'],
-  'skill-catalogue': ['api/src/db/client', 'api/src/db/schema', 'api/src/skills/training'],
-  'skill-queue': [
-    'api/src/db/client',
-    'api/src/db/schema',
-    'api/src/esi-gateway/feature-execution',
-    'api/src/skills/training',
-  ],
-  skills: ['api/src/esi-gateway/feature-execution'],
-  wallet: ['api/src/esi-gateway/feature-execution', 'api/src/type-guards'],
-}
+const allowedCrossSubsystemImportsByModule = new Map(
+  Object.entries({
+    'affiliation-planning': ['api/src/esi-gateway/failures'],
+    'affiliation-sync': [
+      'api/src/db/client',
+      'api/src/db/locks',
+      'api/src/db/schema',
+      'api/src/domain-events/store',
+      'api/src/env',
+      'api/src/esi-gateway/feature-execution',
+    ],
+    assets: [
+      'api/src/db/client',
+      'api/src/db/schema',
+      'api/src/esi-gateway/feature-execution',
+      'api/src/type-guards',
+      'api/src/universe/names',
+      'api/src/universe/static-locations',
+    ],
+    'assets-routes': [
+      'api/src/http/private-response',
+      'api/src/http/validation',
+      'api/src/middleware/auth-session',
+      'api/src/middleware/owned-character',
+    ],
+    attributes: ['api/src/esi-gateway/feature-execution'],
+    clones: [
+      'api/src/db/client',
+      'api/src/db/schema',
+      'api/src/esi-gateway/feature-execution',
+      'api/src/type-guards',
+      'api/src/universe/implant-attributes',
+      'api/src/universe/names',
+      'api/src/universe/static-locations',
+    ],
+    'clones-routes': [
+      'api/src/http/private-response',
+      'api/src/http/validation',
+      'api/src/middleware/auth-session',
+      'api/src/middleware/owned-character',
+    ],
+    contracts: ['api/src/esi-gateway/feature-execution'],
+    'core-routes': [
+      'api/src/auth/character-lifecycle',
+      'api/src/esi-gateway/feature-execution',
+      'api/src/http/private-response',
+      'api/src/http/validation',
+      'api/src/middleware/auth-session',
+      'api/src/middleware/owned-character',
+    ],
+    'corporation-roles': ['api/src/esi-gateway/feature-execution'],
+    'finance-location-names': ['api/src/type-guards', 'api/src/universe/names'],
+    'finance-pagination': ['api/src/type-guards'],
+    'finance-routes': [
+      'api/src/http/private-response',
+      'api/src/http/validation',
+      'api/src/middleware/auth-session',
+      'api/src/middleware/owned-character',
+    ],
+    'finance-type-names': ['api/src/db/client', 'api/src/db/schema', 'api/src/type-guards'],
+    history: ['api/src/esi-gateway/feature-execution', 'api/src/universe/names'],
+    'history-routes': [
+      'api/src/esi-gateway/failures',
+      'api/src/http/private-response',
+      'api/src/http/validation',
+      'api/src/middleware/auth-session',
+      'api/src/middleware/owned-character',
+    ],
+    market: ['api/src/esi-gateway/feature-execution'],
+    overview: ['api/src/esi-gateway/feature-execution', 'api/src/universe/locations'],
+    profile: [
+      'api/src/alliances/public-data',
+      'api/src/corporations/public-data',
+      'api/src/esi-gateway/feature-execution',
+      'api/src/text/eve-formatted-text',
+    ],
+    'progression-routes': [
+      'api/src/http/private-response',
+      'api/src/http/validation',
+      'api/src/middleware/auth-session',
+      'api/src/middleware/owned-character',
+    ],
+    'public-routes': [
+      'api/src/error-status',
+      'api/src/esi-gateway/failures',
+      'api/src/http/private-response',
+      'api/src/http/public-rate-limit',
+      'api/src/http/validation',
+    ],
+    'resource-failure': ['api/src/auth/token-errors', 'api/src/esi-gateway/failures'],
+    'route-responses': ['api/src/env', 'api/src/esi-gateway/feature-execution'],
+    routes: ['api/src/middleware/owned-character'],
+    'skill-catalogue': ['api/src/db/client', 'api/src/db/schema', 'api/src/skills/training'],
+    'skill-queue': [
+      'api/src/db/client',
+      'api/src/db/schema',
+      'api/src/esi-gateway/feature-execution',
+      'api/src/skills/training',
+    ],
+    skills: ['api/src/esi-gateway/feature-execution'],
+    wallet: ['api/src/esi-gateway/feature-execution', 'api/src/type-guards'],
+  }),
+)
 
 const restrictedReadPrefixes = ['api/src/alliances/', 'api/src/corporations/', 'api/src/universe/']
 const esiGatewayPrefix = 'api/src/esi-gateway/'
@@ -286,7 +289,7 @@ function violationsForImport(
     ]
   }
 
-  const allowedImports = new Set(allowedCrossSubsystemImportsByModule[module] ?? [])
+  const allowedImports = new Set(allowedCrossSubsystemImportsByModule.get(module) ?? [])
   const isRestrictedRead = restrictedReadPrefixes.some((prefix) => dependency.startsWith(prefix))
   if (isRestrictedRead && !allowedImports.has(dependency)) {
     return [

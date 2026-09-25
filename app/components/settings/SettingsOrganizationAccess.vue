@@ -268,7 +268,7 @@ function copyBundlePermission(permission: BundlePermission): DraftPermission {
     moduleId: permission.moduleId,
     publisherPackage: permission.publisherPackage,
     type: 'module',
-    ...('label' in permission ? { label: permission.label, purpose: permission.purpose } : {}),
+    ...('label' in permission && { label: permission.label, purpose: permission.purpose }),
   }
 }
 

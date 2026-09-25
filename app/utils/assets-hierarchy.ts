@@ -49,19 +49,17 @@ export function assetBlueprintLabel(asset: AssetRecord) {
   return asset.isBlueprintCopy === true ? 'BPC' : 'BPO'
 }
 
-const placementOverrides: Record<string, string> = { Cargo: 'Cargo Hold' }
-
 export function assetPlacementLabel(flag: string) {
   if (!flag) {
     return 'Unknown'
   }
-  return (
-    placementOverrides[flag] ??
-    flag
-      .replace(/([a-z\d])([A-Z])/g, '$1 $2')
-      .replace(/([A-Z])(?=[A-Z][a-z])/g, '$1 ')
-      .replace(/([A-Za-z])(\d)/g, '$1 $2')
-  )
+  if (flag === 'Cargo') {
+    return 'Cargo Hold'
+  }
+  return flag
+    .replace(/([a-z\d])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z])(?=[A-Z][a-z])/g, '$1 ')
+    .replace(/([A-Za-z])(\d)/g, '$1 $2')
 }
 
 export function assetLocationLabel(asset: AssetRecord) {

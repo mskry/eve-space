@@ -107,22 +107,24 @@ const sharedExternalDependencies = new Set([
   'zod',
 ])
 
-const externalDependenciesByModule: Readonly<Record<string, readonly string[]>> = {
-  'catalog-interface': ['api/src/generated/platform/installed-module-esi'],
-  'internal/catalog': ['api/src/generated/platform/installed-module-esi'],
-  'internal/catalog-access': ['api/src/generated/platform/installed-module-esi'],
-  'internal/cooldowns': ['ioredis'],
-  'internal/coordination': ['ioredis'],
-  'internal/coordination-connection': ['api/src/coordination-redis'],
-  'internal/failure-policy': ['api/src/auth/token-errors'],
-  'internal/permits': ['ioredis'],
-  'internal/production-runtime': ['api/src/auth/tokens', 'api/src/env', 'api/src/cache-redis'],
-  'internal/rate-measurement': ['ioredis'],
-  'internal/request-lifecycle': ['effect'],
-  'internal/telemetry': ['ioredis', 'api/src/cache-redis', 'api/src/coordination-redis'],
-  'internal/telemetry-counters': ['ioredis', 'api/src/cache-redis'],
-  'status-interface': ['api/src/cache-redis'],
-}
+const externalDependenciesByModule = new Map(
+  Object.entries({
+    'catalog-interface': ['api/src/generated/platform/installed-module-esi'],
+    'internal/catalog': ['api/src/generated/platform/installed-module-esi'],
+    'internal/catalog-access': ['api/src/generated/platform/installed-module-esi'],
+    'internal/cooldowns': ['ioredis'],
+    'internal/coordination': ['ioredis'],
+    'internal/coordination-connection': ['api/src/coordination-redis'],
+    'internal/failure-policy': ['api/src/auth/token-errors'],
+    'internal/permits': ['ioredis'],
+    'internal/production-runtime': ['api/src/auth/tokens', 'api/src/env', 'api/src/cache-redis'],
+    'internal/rate-measurement': ['ioredis'],
+    'internal/request-lifecycle': ['effect'],
+    'internal/telemetry': ['ioredis', 'api/src/cache-redis', 'api/src/coordination-redis'],
+    'internal/telemetry-counters': ['ioredis', 'api/src/cache-redis'],
+    'status-interface': ['api/src/cache-redis'],
+  }),
+)
 
 export interface EsiGatewaySource {
   readonly path: string
@@ -215,7 +217,7 @@ function externalDependencyViolations(path: string, module: string, specifier: s
   }
   if (
     sharedExternalDependencies.has(dependency) ||
-    externalDependenciesByModule[module]?.includes(dependency)
+    externalDependenciesByModule.get(module)?.includes(dependency)
   ) {
     return []
   }

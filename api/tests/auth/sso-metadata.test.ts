@@ -285,10 +285,9 @@ describe('EVE SSO requests', () => {
 
   test('wraps response body failures as SSO transport errors', async () => {
     const cause = new Error('response stream failed')
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      text: vi.fn().mockRejectedValue(cause),
-    } as unknown as Response)
+    const response = new Response()
+    response.text = vi.fn().mockRejectedValue(cause)
+    fetchMock.mockResolvedValueOnce(response)
     const sso = await import('../../src/auth/sso.js')
     const errors = await import('../../src/auth/sso-errors.js')
 

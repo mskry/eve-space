@@ -591,7 +591,7 @@ function parseOrganizationPartition(
   now: number,
   budget: ParseEnvelopeBudget,
 ) {
-  if (!isNonemptyString(admissionScope)) {
+  if (admissionScope.length === 0) {
     throw new TypeError('Persisted organization cache scope is invalid.')
   }
   if (
@@ -1043,9 +1043,9 @@ function parsePersistedQueryMeta(value: unknown): QueryMeta {
   }
   return {
     esiPersistence: persistence,
-    ...(typeof value.globalErrorMessage === 'string'
-      ? { globalErrorMessage: value.globalErrorMessage }
-      : {}),
+    ...(typeof value.globalErrorMessage === 'string' && {
+      globalErrorMessage: value.globalErrorMessage,
+    }),
   }
 }
 

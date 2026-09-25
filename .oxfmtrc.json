@@ -18,6 +18,7 @@
     "**/coverage-registry/**",
     "dist/**",
     "**/dist/**",
+    "api/src/generated/**",
     "node_modules/**",
     "openspec/**",
     "pnpm-lock.yaml",

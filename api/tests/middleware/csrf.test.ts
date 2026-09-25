@@ -16,7 +16,7 @@ describe('global CSRF protection', () => {
       headers: {
         Origin: 'https://attacker.invalid',
         'Sec-Fetch-Site': 'cross-site',
-        ...(contentType ? { 'Content-Type': contentType } : {}),
+        ...(contentType && { 'Content-Type': contentType }),
       },
       method: 'POST',
     })

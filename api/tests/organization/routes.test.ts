@@ -1,4 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import type { OrganizationSessionContext } from '../../src/organization/access-policy.js'
+
+interface OrganizationSessionFixture {
+  context: OrganizationSessionContext
+}
 
 const mocks = vi.hoisted(() => {
   class RoleMutationError extends Error {
@@ -41,16 +46,7 @@ const mocks = vi.hoisted(() => {
       super(code)
     }
   }
-  const organizationSession: {
-    context: {
-      organizationVersion: number
-      state: 'pending' | 'compliant' | 'review_required' | 'suspended'
-      evidenceFreshness: 'fresh' | 'stale' | 'unavailable'
-      reviewDeadline: Date | null
-      accessValidUntil: Date | null
-      blocked: boolean
-    }
-  } = {
+  const organizationSession: OrganizationSessionFixture = {
     context: {
       accessValidUntil: new Date('2027-09-01T12:00:00.000Z'),
       blocked: false,

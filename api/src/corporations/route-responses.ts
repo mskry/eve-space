@@ -1,5 +1,6 @@
 import type { Context } from 'hono'
 import { EsiQuotaError } from '../esi-gateway/failures.js'
+import { errorStatus } from '../error-status.js'
 
 export function npcCorporationsError(context: Context, error: unknown) {
   if (error instanceof EsiQuotaError) {
@@ -34,8 +35,4 @@ function esiCooldown(context: Context, error: EsiQuotaError) {
     },
     429,
   )
-}
-
-function errorStatus(error: unknown) {
-  return typeof error === 'object' && error && 'status' in error ? Number(error.status) : undefined
 }

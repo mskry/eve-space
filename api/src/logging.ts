@@ -110,7 +110,7 @@ interface DiagnosticOptions {
 }
 
 interface DiagnosticErrorSource {
-  on(event: 'error', listener: (error: Error) => void): unknown
+  on(event: 'error', listener: (error: Error) => void): void
 }
 
 export const apiLogger = new LogLayer({
@@ -131,8 +131,8 @@ export function recordDiagnostic(event: DiagnosticEvent, options: DiagnosticOpti
     correlationId,
     event,
     ...safeDiagnosticContext(definition.contextKeys, options.context),
-    ...(failureCategory ? { failureCategory } : {}),
-    ...(Object.hasOwn(options, 'error') ? safeErrorMetadata(options.error) : {}),
+    ...(failureCategory && { failureCategory }),
+    ...(Object.hasOwn(options, 'error') && safeErrorMetadata(options.error)),
   }
   const logger = apiLogger.child()
   logger.clearContext()
@@ -152,7 +152,7 @@ export function safeRequestMetadata(request: Request, path: string) {
   return {
     method: request.method,
     url: safeRequestPath(path),
-    ...(remoteAddress ? { remoteAddress } : {}),
+    ...(remoteAddress && { remoteAddress }),
   }
 }
 

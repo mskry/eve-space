@@ -182,7 +182,7 @@ describe('generated domain clients', () => {
     expect(Object.isFrozen(client.items.withMetadata())).toBe(true);
     expect(client.items.withMetadata()).toBe(client.items.withMetadata());
     expect(() => {
-      (client as { items: RuntimeItemsDomainClient }).items = domainClient;
+      Object.assign(client, { items: domainClient });
     }).toThrow(TypeError);
 
     await expect(
@@ -508,7 +508,7 @@ function emitterContext(
   };
 }
 
-function representativeOpenApiDocument(): Record<string, unknown> {
+function representativeOpenApiDocument() {
   const commonParameters = [
     {
       in: 'header',

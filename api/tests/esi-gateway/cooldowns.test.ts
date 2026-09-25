@@ -135,7 +135,7 @@ describe('ESI shared cooldowns', () => {
         metadata: {
           headers: {},
           status: 429,
-          ...(retryAfterSeconds === undefined ? {} : { retryAfterSeconds }),
+          ...(!(retryAfterSeconds === undefined) && { retryAfterSeconds }),
         },
         operation: 'status',
       })

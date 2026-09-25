@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { VNode } from 'vue'
 import {
   StepperDescription,
   StepperIndicator,
@@ -28,8 +29,8 @@ const {
 }>()
 
 defineSlots<{
-  description?: (props: { state: UiStepperState; step: UiStepperStep }) => unknown
-  indicator?: (props: { state: UiStepperState; step: UiStepperStep }) => unknown
+  description?: (props: { state: UiStepperState; step: UiStepperStep }) => VNode[]
+  indicator?: (props: { state: UiStepperState; step: UiStepperStep }) => VNode[]
 }>()
 
 const modelValue = defineModel<number>({ required: true })

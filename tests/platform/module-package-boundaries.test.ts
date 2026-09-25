@@ -723,20 +723,18 @@ describe('descriptor and composition purity', () => {
       'export { alternateResource as alphaResource, alternateOperation as alphaOperation } from "./alternate.js"',
       'utf8',
     )
-    const declaration = persistenceManifest('unused') as unknown as {
+    const original = persistenceManifest('unused')
+    const declaration = {
+      ...original,
       server: {
-        routes: unknown[]
-        persistenceOperations: unknown[]
-        resources: unknown[]
-        esiOperations: unknown[]
-        activityProviders: unknown[]
-      }
+        ...original.server,
+        persistenceOperations: [],
+        resources: [{ exportName: 'alphaResource' }],
+        esiOperations: [{ exportName: 'alphaOperation' }],
+      },
     }
-    declaration.server.persistenceOperations = []
-    declaration.server.resources = [{ exportName: 'alphaResource' }]
-    declaration.server.esiOperations = [{ exportName: 'alphaOperation' }]
 
-    const violations = await manifestCompositionBoundaryViolations(root, declaration as never)
+    const violations = await manifestCompositionBoundaryViolations(root, declaration)
     expect(violations).toStrictEqual(
       expect.arrayContaining([
         expect.stringContaining(
@@ -1141,7 +1139,7 @@ function nuxtModuleSource(source: string) {
 
 async function createUnsafeInstalledFixture() {
   const root = await mkdtemp(join(tmpdir(), 'eve-space-feature-boundaries-'))
-  const files: Record<string, string> = {
+  const files = {
     'features/alpha/module.config.ts': `
       globalThis.unsafeDescriptorImported = true
       export default {}
@@ -1209,7 +1207,7 @@ async function createExternalPackageBoundaryFixture(
     sideEffects: ['**/*.vue'],
     type: 'module',
   }
-  const files: Record<string, string> = {
+  const files = {
     'installed/alpha-nuxt/dist/module.d.ts':
       'declare const feature: unknown\nexport default feature\n',
     'installed/alpha-nuxt/dist/module.js':

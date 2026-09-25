@@ -264,7 +264,7 @@ describe('deployment administration routes', () => {
         headers: {
           'Content-Type': 'application/json',
           Cookie: 'eve_space_session=member-or-organization-owner-session',
-          ...(method === 'POST' ? { Origin: 'http://localhost:3000' } : {}),
+          ...(method === 'POST' && { Origin: 'http://localhost:3000' }),
         },
         method,
       })

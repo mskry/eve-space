@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 
 import { applySpecificationCorrections } from './generate/corrections.ts';
 import { normalizeOpenApiDocument } from './generate/normalize.ts';
-import type { NormalizedOpenApiModel } from './generate/normalize.ts';
+import type { NormalizedOpenApiModel, NormalizedParameter } from './generate/normalize.ts';
 import { defaultSpecificationUrl, stageOpenApiSnapshot } from './generate/openapi.ts';
 import { generatedPaths, repositoryRoot } from './generate/paths.ts';
 
@@ -84,6 +84,12 @@ export interface SpecificationDriftReportOptions {
     serializedReport: string,
     report: SpecificationDriftReport,
   ) => void | Promise<void>;
+}
+
+interface DriftCliOptions {
+  latestCompatibilityDate?: string;
+  outputPath?: string;
+  specificationUrl?: string;
 }
 
 const correctionPolicy = 'applicable-date-ranges' as const;
@@ -251,14 +257,9 @@ export function renderSpecificationDriftReport(report: SpecificationDriftReport)
 }
 
 function compareOperation(before: any, after: any): OperationChange | undefined {
-  const change: {
-    operationId: string;
-    categories: string[];
-    parameters: DriftCollection;
-    responses: DriftCollection;
-    [key: string]: unknown;
-  } = {
-    categories: [],
+  const categories: string[] = [];
+  const change = {
+    categories,
     operationId: before.operationId,
     parameters: compareParameters(before.parameters, after.parameters),
     responses: compareResponses(before.successResponses, after.successResponses),
@@ -271,7 +272,7 @@ function compareOperation(before: any, after: any): OperationChange | undefined 
   const requestBody = compareRequestBody(before.requestBody, after.requestBody);
   if (requestBody !== undefined) {
     change.categories.push('requestBody');
-    change.requestBody = requestBody;
+    Object.assign(change, { requestBody });
   }
   if (hasDiff(change.responses)) {
     change.categories.push('responses');
@@ -300,7 +301,7 @@ function compareOperation(before: any, after: any): OperationChange | undefined 
   const authentication = compareOperationAuthentication(before.security, after.security);
   if (authentication !== undefined) {
     change.categories.push('authentication');
-    change.authentication = authentication;
+    Object.assign(change, { authentication });
   }
   change.categories.sort(compareText);
   return change.categories.length === 0 ? undefined : change;
@@ -375,7 +376,7 @@ function compareParameter(
   };
 }
 
-function compareRequestBody(before: any, after: any): unknown {
+function compareRequestBody(before: any, after: any) {
   if (sameJson(before, after)) {
     return undefined;
   }
@@ -398,24 +399,25 @@ function compareResponses(before: any[], after: any[]): DriftCollection {
   );
 }
 
-function compareResponse(before: any, after: any): unknown {
-  const change: { status: string; categories: string[]; [key: string]: unknown } = {
-    categories: [],
+function compareResponse(before: any, after: any) {
+  const categories: string[] = [];
+  const change = {
+    categories,
     status: before.status,
   };
   if (before.noContent !== after.noContent) {
     change.categories.push('noContent');
-    change.noContent = { after: after.noContent, before: before.noContent };
+    Object.assign(change, { noContent: { after: after.noContent, before: before.noContent } });
   }
   const content = compareContent(before.content, after.content);
   if (hasDiff(content)) {
     change.categories.push('shape');
-    change.content = content;
+    Object.assign(change, { content });
   }
   const headers = compareResponseHeaders(before.headers, after.headers);
   if (hasDiff(headers)) {
     change.categories.push('fields');
-    change.headers = headers;
+    Object.assign(change, { headers });
   }
   change.categories.sort(compareText);
   return change.categories.length === 0 ? undefined : change;
@@ -457,7 +459,7 @@ function compareResponseHeaders(before: any[], after: any[]): DriftCollection {
   );
 }
 
-function compareComponent(before: any, after: any): unknown {
+function compareComponent(before: any, after: any) {
   if (sameJson(before.schema, after.schema)) {
     return undefined;
   }
@@ -530,7 +532,7 @@ function visitSchemaFields(
   }
 }
 
-function compareOperationAuthentication(before: unknown, after: unknown): unknown {
+function compareOperationAuthentication(before: unknown, after: unknown) {
   if (sameJson(before, after)) {
     return undefined;
   }
@@ -651,10 +653,7 @@ function diffScopeDescriptions(before: any[], after: any[]): DriftCollection {
   );
 }
 
-function diffStrings(
-  before: readonly string[],
-  after: readonly string[],
-): { added: string[]; removed: string[] } {
+function diffStrings(before: readonly string[], after: readonly string[]) {
   const beforeSet = new Set(before);
   const afterSet = new Set(after);
   return {
@@ -695,7 +694,7 @@ function summarizeChanges(changes: {
   readonly operations: DriftCollection<OperationIdentity, OperationChange>;
   readonly componentSchemas: DriftCollection;
   readonly authenticationSchemes: DriftCollection;
-}): Record<string, boolean | number> {
+}) {
   const changedOperations = changes.operations.changed;
   const responseChanges: any[] = changedOperations.flatMap(
     ({ responses }: any) => responses.changed,
@@ -810,7 +809,7 @@ function isPathInside(path: string, parent: string): boolean {
   );
 }
 
-function responseContract(response: any): unknown {
+function responseContract(response: any) {
   return {
     content: response.content.map(mediaContract),
     headers: response.headers.map(({ name, schema }: any) => ({ name, schema })),
@@ -819,7 +818,7 @@ function responseContract(response: any): unknown {
   };
 }
 
-function mediaContract(media: any): unknown {
+function mediaContract(media: any) {
   return {
     fields: [...collectSchemaFields(media.schema).values()],
     mediaType: media.mediaType,
@@ -827,12 +826,9 @@ function mediaContract(media: any): unknown {
   };
 }
 
-function parameterContract(parameter: any): {
-  name: string;
-  placement: string;
-  required: boolean;
-  schema: unknown;
-} {
+function parameterContract(
+  parameter: NormalizedParameter,
+): Pick<NormalizedParameter, 'name' | 'placement' | 'required' | 'schema'> {
   return {
     name: parameter.name,
     placement: parameter.placement,
@@ -1002,11 +998,7 @@ function isCompatibilityDate(value: unknown): value is string {
 }
 
 function parseArguments(arguments_: readonly string[]): SpecificationDriftReportOptions {
-  const options: {
-    latestCompatibilityDate?: string;
-    outputPath?: string;
-    specificationUrl?: string;
-  } = {};
+  const options: DriftCliOptions = {};
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index];
     const value = arguments_[index + 1];

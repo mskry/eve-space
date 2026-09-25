@@ -21,10 +21,8 @@ export function withEsiRevalidation<Arguments extends OperationRequestArguments>
     ...inputs,
     headers: {
       ...headers,
-      ...(revalidation.ifNoneMatch ? { 'If-None-Match': revalidation.ifNoneMatch } : {}),
-      ...(revalidation.ifModifiedSince
-        ? { 'If-Modified-Since': revalidation.ifModifiedSince }
-        : {}),
+      ...(revalidation.ifNoneMatch && { 'If-None-Match': revalidation.ifNoneMatch }),
+      ...(revalidation.ifModifiedSince && { 'If-Modified-Since': revalidation.ifModifiedSince }),
     },
   }
 }

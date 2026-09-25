@@ -145,6 +145,9 @@ catalogs:
     oxlint:
       specifier: 1.81.0
       version: 1.81.0
+    oxlint-plugin-complexity:
+      specifier: 3.0.0
+      version: 3.0.0
     oxlint-tsgolint:
       specifier: 7.0.2001
       version: 7.0.2001
@@ -326,6 +329,9 @@ importers:
       oxlint:
         specifier: 'catalog:'
         version: 1.81.0(oxlint-tsgolint@7.0.2001)
+      oxlint-plugin-complexity:
+        specifier: 'catalog:'
+        version: 3.0.0(diff@8.0.4)(estree-walker@3.0.3)(oxc-parser@0.143.0)
       postgres:
         specifier: 'catalog:'
         version: 3.4.9
@@ -2401,6 +2407,10 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [win32]
+
+  '@oxlint/plugins@1.85.0':
+    resolution: {integrity: sha512-qqHqML3ME3cxGgFvWJG8wwMnJc9ol5SMdtqkq0k8r7l0USmC+HRXYjzDacME4Dqkx4yqrUsBhj0JYvji8fHxJQ==}
+    engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
 
   '@parcel/watcher-wasm@2.6.0':
     resolution: {integrity: sha512-dtjbDxKSDPQ8AmA+pS4OFaHE1FKrjtGpLGBxw85uKFkRorjNbvDM/aFPgqosu40wprbp1xw2ZSxIKqghCUHe2w==}
@@ -5339,6 +5349,21 @@ packages:
       svelte:
         optional: true
       vite-plus:
+        optional: true
+
+  oxlint-plugin-complexity@3.0.0:
+    resolution: {integrity: sha512-VEScDKwvwYCaCfRo7fu9ugbwuMMd/UJ0iER6omjKN1xnpSddricm2rIPVcASl3H3sbQa7qdVYn0YHrmaTwF6Aw==}
+    engines: {node: '>=20.0.0'}
+    peerDependencies:
+      diff: '>=5.0.0'
+      estree-walker: '>=3.0.0'
+      oxc-parser: '>=0.60.0'
+    peerDependenciesMeta:
+      diff:
+        optional: true
+      estree-walker:
+        optional: true
+      oxc-parser:
         optional: true
 
   oxlint-tsgolint@7.0.2001:
@@ -8381,6 +8406,8 @@ snapshots:
   '@oxlint/binding-win32-x64-msvc@1.81.0':
     optional: true
 
+  '@oxlint/plugins@1.85.0': {}
+
   '@parcel/watcher-wasm@2.6.0':
     dependencies:
       is-glob: 4.0.3
@@ -11392,6 +11419,14 @@ snapshots:
       '@oxfmt/binding-win32-arm64-msvc': 0.66.0
       '@oxfmt/binding-win32-ia32-msvc': 0.66.0
       '@oxfmt/binding-win32-x64-msvc': 0.66.0
+
+  oxlint-plugin-complexity@3.0.0(diff@8.0.4)(estree-walker@3.0.3)(oxc-parser@0.143.0):
+    dependencies:
+      '@oxlint/plugins': 1.85.0
+    optionalDependencies:
+      diff: 8.0.4
+      estree-walker: 3.0.3
+      oxc-parser: 0.143.0
 
   oxlint-tsgolint@7.0.2001:
     optionalDependencies:

@@ -1,7 +1,10 @@
 import { z } from 'zod'
 
+const isBlankEnvironmentValue = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim() === ''
+
 const optionalValue = z.preprocess(
-  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  (value) => (isBlankEnvironmentValue(value) ? undefined : value),
   z.string().trim().min(1).optional(),
 )
 
@@ -13,7 +16,7 @@ const redisUrl = z
 
 const positiveInteger = z.coerce.number().int().positive()
 const optionalNonNegativeInteger = z.preprocess(
-  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  (value) => (isBlankEnvironmentValue(value) ? undefined : value),
   z.coerce.number().int().nonnegative().optional(),
 )
 const cronSchedule = z
@@ -57,7 +60,7 @@ const schema = z.object({
   AFFILIATION_ACTIVE_INTERVAL_SECONDS: positiveInteger.default(3600),
   AFFILIATION_INACTIVE_INTERVAL_SECONDS: positiveInteger.default(86_400),
   ADMIN_SETUP_SECRET: z.preprocess(
-    (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+    (value) => (isBlankEnvironmentValue(value) ? undefined : value),
     z.string().min(32).optional(),
   ),
   QUEUE_REDIS_URL: redisUrl.default('redis://localhost:6379'),

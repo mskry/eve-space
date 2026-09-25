@@ -55,11 +55,11 @@ export function serializeQuery(
   return pairs.join('&');
 }
 
-export function createHeaderRecord(
+export function appendHeaderParameters(
   descriptor: ValidatedDescriptor,
   values: ReadonlyMap<string, unknown>,
-): Record<string, string> {
-  const headers: Record<string, string> = {};
+  headers: Record<string, string>,
+): void {
   for (const parameter of descriptor.parameters) {
     if (parameter.placement !== 'header' || !values.has(parameter.name)) {
       continue;
@@ -77,7 +77,6 @@ export function createHeaderRecord(
       writable: false,
     });
   }
-  return headers;
 }
 
 export function validateHeaderValue(

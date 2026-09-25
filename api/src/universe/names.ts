@@ -2,6 +2,7 @@ import { operationRegistry } from '@evespace/esi-client/operations'
 import type { PostUniverseIdsResponse } from '@evespace/esi-client/types'
 import { z } from 'zod'
 import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
+import { errorStatus } from '../error-status.js'
 import {
   readUniverseIds,
   readUniverseNames,
@@ -165,7 +166,7 @@ async function loadUniverseNameChunk(
   missingIds: number[],
   signal?: AbortSignal,
 ) {
-  const response = await universeNamesRead.execute({ body: chunk, ...(signal ? { signal } : {}) })
+  const response = await universeNamesRead.execute({ body: chunk, ...(signal && { signal }) })
   for (const entry of response.data) {
     names.set(entry.id, entry)
   }
@@ -259,12 +260,6 @@ function groupUniverseIdsByInputName(chunk: string[], chunkEntries: UniverseId[]
 
 function normalizeName(name: string) {
   return name.trim().toLowerCase()
-}
-
-function errorStatus(error: unknown): number | undefined {
-  return typeof error === 'object' && error !== null && 'status' in error
-    ? Number((error as { status: unknown }).status)
-    : undefined
 }
 
 async function mapBoundedSettled<Item>(

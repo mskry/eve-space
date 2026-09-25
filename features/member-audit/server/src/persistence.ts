@@ -72,7 +72,7 @@ const walletBalanceSnapshotSchema = z.strictObject({
   balance: z.number(),
   kind: z.literal('wallet-balance'),
 })
-const authorityShape = {
+const reviewerAuthorityFields = {
   authorizationGeneration: z.number().int().nonnegative(),
   characterId: z.number().int().positive(),
   characterLifecycleId: z.uuid(),
@@ -95,7 +95,7 @@ const continuationResourceSchema = z.discriminatedUnion('sectionId', [
     sectionId: z.literal('mail'),
   }),
 ])
-const continuationIdentityShape = {
+const evidenceContinuationFields = {
   authorizationGeneration: z.number().int().nonnegative(),
   characterId: z.number().int().positive(),
   characterLifecycleId: z.uuid(),
@@ -108,7 +108,7 @@ const continuationIdentityShape = {
   sectionActivationVersion: z.number().int().positive(),
   targetUserId: z.uuid(),
 } as const
-const continuationIdentitySchema = z.strictObject(continuationIdentityShape)
+const continuationIdentitySchema = z.strictObject(evidenceContinuationFields)
 const continuationCheckpointSchema = z
   .record(z.string().min(1).max(100), z.json())
   .refine((checkpoint) => Object.keys(checkpoint).length <= 64)
@@ -147,7 +147,7 @@ const mailContentStagedRecordSchema = z.strictObject({
   sourceTimestamp: z.nullable(instantSchema),
   validatedAt: instantSchema,
 })
-const authoritySchema = z.strictObject(authorityShape)
+const authoritySchema = z.strictObject(reviewerAuthorityFields)
 const trainedSkillsEnvelopeSchema = z.strictObject({
   dtoRevision: z.number().int().positive(),
   observationId: z.uuid(),

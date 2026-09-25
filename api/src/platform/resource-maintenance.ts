@@ -75,7 +75,7 @@ async function maintainResource(
     ],
     invalidAuthorities,
     purgeRetention: true,
-    ...(signal ? { signal } : {}),
+    ...(signal && { signal }),
     capabilities: {
       logger: createPlatformModuleLogger(resource.moduleId),
       persistence,

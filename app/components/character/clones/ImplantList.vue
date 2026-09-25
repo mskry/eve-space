@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { CharacterImplants } from '../../../queries/clones'
+import type { CloneImplantCollection } from '../../../types/clones'
 import { formatImplantSlot, implantBonusLabel } from '../../../utils/clone-derivation'
 
 defineProps<{
-  implants: CharacterImplants['implants']
+  implants: CloneImplantCollection['implants']
 }>()
 </script>
 

@@ -1,4 +1,4 @@
-import { useQuery, type QueryCache, type UseQueryEntry } from '@pinia/colada'
+import { useQuery, type UseQueryEntry } from '@pinia/colada'
 import { flushPromises } from '@vue/test-utils'
 import { defineComponent, h, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -62,7 +62,7 @@ describe('query prefetching and hooks', () => {
     const queryCache = {
       ensure: vi.fn(() => entry),
       refresh: vi.fn(() => refreshResult),
-    } as unknown as QueryCache
+    } satisfies Parameters<typeof prefetchQuery>[0]
 
     await expect(prefetchQuery(queryCache, options)).resolves.toMatchObject({ data: 'value' })
     expect(queryCache.ensure).toHaveBeenCalledWith(options)

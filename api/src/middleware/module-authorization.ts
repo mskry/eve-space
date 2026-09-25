@@ -267,7 +267,7 @@ export function exposeReviewerTargetModuleContext<
     const collectionStatus = createPlatformReviewerCollectionStatusReads({
       moduleId,
       sectionId,
-      ...(contribution ? { resourceIds: contribution.resourceIds } : {}),
+      ...(contribution && { resourceIds: contribution.resourceIds }),
       target: reviewerTarget,
     })
     const platform = {
@@ -278,30 +278,26 @@ export function exposeReviewerTargetModuleContext<
       collectionStatus,
       evidenceSummary: createPlatformReviewerEvidenceSummaryReads({
         moduleId,
-        ...(contribution ? { sectionId, resourceIds: contribution.resourceIds } : {}),
+        ...(contribution && { sectionId, resourceIds: contribution.resourceIds }),
         target: reviewerTarget,
       }),
       organization,
       reviewerTarget,
-      ...(evidenceBinding
-        ? {
-            evidence: createPlatformReviewerEvidenceReads(
-              { moduleId, ...evidenceBinding, target: reviewerTarget },
-              collectionStatus,
-            ),
-          }
-        : {}),
-      ...(commandIds.length > 0
-        ? {
-            organizationCommands: createPlatformOrganizationCommandCapabilities(commandIds, {
-              actorUserId: session.userId,
-              moduleId,
-              organization,
-              publisherPackage,
-              target: reviewerTarget,
-            }),
-          }
-        : {}),
+      ...(evidenceBinding && {
+        evidence: createPlatformReviewerEvidenceReads(
+          { moduleId, ...evidenceBinding, target: reviewerTarget },
+          collectionStatus,
+        ),
+      }),
+      ...(commandIds.length > 0 && {
+        organizationCommands: createPlatformOrganizationCommandCapabilities(commandIds, {
+          actorUserId: session.userId,
+          moduleId,
+          organization,
+          publisherPackage,
+          target: reviewerTarget,
+        }),
+      }),
     }
     context.set(
       'platform',

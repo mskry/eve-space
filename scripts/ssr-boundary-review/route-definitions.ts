@@ -254,9 +254,9 @@ const matchesPattern = (path: string, pattern: string) =>
 
 const matches = (candidate: RouteDefinition, remainder: string, method: string | null) =>
   (method === null || candidate.method === method) &&
-  segmentShape(candidate.path) === segmentShape(remainder)
+  routePattern(candidate.path) === routePattern(remainder)
 
-const segmentShape = (path: string) =>
+const routePattern = (path: string) =>
   path
     .split('/')
     .filter(Boolean)

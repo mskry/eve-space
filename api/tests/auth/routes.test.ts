@@ -1582,7 +1582,7 @@ function transferStartRequest(options: { origin?: string; session?: boolean } = 
     headers: {
       'Content-Type': 'application/json',
       Origin: options.origin ?? 'http://localhost:3000',
-      ...(options.session === false ? {} : sessionHeader()),
+      ...(options.session !== false && sessionHeader()),
     },
     method: 'POST',
   })

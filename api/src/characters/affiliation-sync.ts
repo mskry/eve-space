@@ -219,7 +219,7 @@ async function persistAffiliationObservations(
 }
 
 async function lookupAffiliationResult(characterIds: readonly number[], signal?: AbortSignal) {
-  return bulkAffiliationRead.execute({ body: [...characterIds], ...(signal ? { signal } : {}) })
+  return bulkAffiliationRead.execute({ body: [...characterIds], ...(signal && { signal }) })
 }
 
 function validateAffiliationBatch(characterIds: readonly number[]) {

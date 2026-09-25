@@ -21,15 +21,14 @@ export interface CommittedSnapshot {
 export async function readCommittedSnapshot(projectRoot: string): Promise<CommittedSnapshot> {
   const directory = join(projectRoot, 'openapi/generated');
   let snapshotSource: string;
-  let provenance: GenerationProvenance;
+  let rawProvenance: unknown;
   try {
-    [snapshotSource, provenance] = await Promise.all([
+    const [snapshot, serializedProvenance] = await Promise.all([
       readFile(join(directory, 'esi-openapi.json'), 'utf8'),
-      readFile(join(directory, 'provenance.json'), 'utf8').then(
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- assertProvenance validates this shape below
-        (text) => JSON.parse(text) as GenerationProvenance,
-      ),
+      readFile(join(directory, 'provenance.json'), 'utf8'),
     ]);
+    snapshotSource = snapshot;
+    rawProvenance = JSON.parse(serializedProvenance);
   } catch (error) {
     throw new Error(
       `Missing corrected pinned snapshot; run pnpm generate:source:refresh once (${directory})`,
@@ -38,7 +37,8 @@ export async function readCommittedSnapshot(projectRoot: string): Promise<Commit
   }
 
   const document: Record<string, unknown> = JSON.parse(snapshotSource);
-  assertProvenance(provenance);
+  assertProvenance(rawProvenance);
+  const provenance = rawProvenance;
   const compatibilityDate = (
     await readFile(resolveConfigPath('compatibilityDate', projectRoot), 'utf8')
   ).trim();

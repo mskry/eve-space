@@ -428,7 +428,7 @@ function fixtureResponses(document: Record<string, unknown>): Record<string, unk
   );
 }
 
-function invalidNoContentResponse(): Record<string, unknown> {
+function invalidNoContentResponse() {
   return {
     content: {
       'application/json': { schema: { $ref: '#/components/schemas/SemanticEntity' } },

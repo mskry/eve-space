@@ -104,8 +104,8 @@ function createCursorQuery(
   }
   return {
     limit: 100,
-    ...(cursor.before ? { before: cursor.before } : {}),
-    ...(cursor.after ? { after: cursor.after } : {}),
+    ...(cursor.before && { before: cursor.before }),
+    ...(cursor.after && { after: cursor.after }),
   }
 }
 

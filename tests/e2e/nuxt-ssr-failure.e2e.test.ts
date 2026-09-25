@@ -852,9 +852,8 @@ function sessionApiResponse(request: IncomingMessage) {
           },
           authenticated: true,
           ...(bootstrapAdmissionEnabled &&
-          new URL(request.url!, apiServer.origin).searchParams.get('includeAdmission') === 'true'
-            ? { cacheAdmission: bootstrapCacheAdmission(currentUserId) }
-            : {}),
+            new URL(request.url!, apiServer.origin).searchParams.get('includeAdmission') ===
+              'true' && { cacheAdmission: bootstrapCacheAdmission(currentUserId) }),
         },
       }
     : { body: { authenticated: false } }

@@ -1,9 +1,12 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, describe, expect, it } from 'vitest'
 import CharacterClonesWorkspace from '../../app/components/character/clones/Workspace.vue'
-import type { CharacterSkills } from '../../app/queries/characters'
 import type { CharacterClones, CharacterImplants } from '../../app/queries/clones'
-import type { CloneResourceState } from '../../app/types/clones'
+import type {
+  CloneImplantCollection,
+  CloneResourceState,
+  CloneSkillArchive,
+} from '../../app/types/clones'
 
 const mountedWrappers: { unmount: () => void }[] = []
 const ready: CloneResourceState = { authorizeUrl: '', message: '', status: 'ready' }
@@ -53,7 +56,7 @@ const skills = {
       ],
     },
   ],
-} as unknown as CharacterSkills
+} satisfies CloneSkillArchive
 
 afterEach(() => {
   for (const wrapper of mountedWrappers.splice(0)) {
@@ -227,7 +230,7 @@ describe('character Clones workspace', () => {
   it('states a full clone bay through the value the summary card already renders', async () => {
     const fullBay = {
       groups: [{ skills: [{ activeLevel: 2, trainedLevel: 2, typeId: 24_242 }] }],
-    } as unknown as CharacterSkills
+    } satisfies CloneSkillArchive
 
     const wrapper = await mountWorkspace({ clones, implants, skills: fullBay })
 
@@ -270,7 +273,7 @@ describe('character Clones workspace', () => {
         { name: 'Neural Boost', typeId: 4 },
       ],
       ...freshness,
-    } as unknown as CharacterImplants
+    } satisfies CloneImplantCollection
 
     const wrapper = await mountWorkspace({ clones, implants: legacyImplants })
 
@@ -294,7 +297,7 @@ describe('character Clones workspace', () => {
         { bonuses: [], name: 'Unknown implant 9', slot: null, typeId: 9 },
       ],
       ...freshness,
-    } as unknown as CharacterImplants
+    } satisfies CloneImplantCollection
 
     const wrapper = await mountWorkspace({ clones, implants: mixed })
 
@@ -308,7 +311,7 @@ describe('character Clones workspace', () => {
   it('keeps the rack headings without drawing empty slots when there are no implants', async () => {
     const wrapper = await mountWorkspace({
       clones,
-      implants: { implants: [], ...freshness } as unknown as CharacterImplants,
+      implants: { implants: [], ...freshness } satisfies CloneImplantCollection,
     })
 
     expect(wrapper.find('.character-clones-rack-columns').exists()).toBe(true)
@@ -450,9 +453,9 @@ describe('character Clones workspace', () => {
 interface WorkspaceOverrides {
   clones?: CharacterClones
   cloneState?: CloneResourceState
-  implants?: CharacterImplants
+  implants?: CloneImplantCollection
   implantState?: CloneResourceState
-  skills?: CharacterSkills
+  skills?: CloneSkillArchive
   expandStoredClones?: boolean
 }
 

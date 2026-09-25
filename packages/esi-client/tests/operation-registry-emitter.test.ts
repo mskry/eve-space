@@ -336,8 +336,35 @@ function assertFrozenJsonValue(value: unknown, path: string, ancestors: WeakSet<
     ancestors.delete(value);
     return;
   }
-  assertFrozenJsonRecord(value, path, ancestors);
+  assertFrozenJsonProperties(
+    Reflect.ownKeys(value),
+    (key) => Object.getOwnPropertyDescriptor(value, key),
+    path,
+    ancestors,
+  );
   ancestors.delete(value);
+}
+
+function assertFrozenJsonProperties(
+  keys: readonly PropertyKey[],
+  descriptorFor: (key: PropertyKey) => PropertyDescriptor | undefined,
+  path: string,
+  ancestors: WeakSet<object>,
+): void {
+  for (const key of keys) {
+    if (typeof key !== 'string') {
+      throw new TypeError(`Symbol manifest key at ${path}`);
+    }
+    const normalizedKey = key.replaceAll(/[^A-Za-z]/gu, '').toLowerCase();
+    if (forbiddenCredentialKeys.has(normalizedKey)) {
+      throw new TypeError(`Credential-bearing manifest key at ${path}.${key}`);
+    }
+    const descriptor = descriptorFor(key);
+    if (descriptor === undefined || !descriptor.enumerable || !('value' in descriptor)) {
+      throw new TypeError(`Non-data manifest property at ${path}.${key}`);
+    }
+    assertFrozenJsonValue(descriptor.value, `${path}.${key}`, ancestors);
+  }
 }
 
 function assertFrozenJsonArray(value: unknown[], path: string, ancestors: WeakSet<object>): void {
@@ -354,23 +381,6 @@ function assertFrozenJsonArray(value: unknown[], path: string, ancestors: WeakSe
       throw new TypeError(`Sparse manifest array at ${path}`);
     }
     assertFrozenJsonValue(value[index], `${path}.${index}`, ancestors);
-  }
-}
-
-function assertFrozenJsonRecord(value: object, path: string, ancestors: WeakSet<object>): void {
-  for (const key of Reflect.ownKeys(value)) {
-    if (typeof key !== 'string') {
-      throw new TypeError(`Symbol manifest key at ${path}`);
-    }
-    const normalizedKey = key.replaceAll(/[^A-Za-z]/gu, '').toLowerCase();
-    if (forbiddenCredentialKeys.has(normalizedKey)) {
-      throw new TypeError(`Credential-bearing manifest key at ${path}.${key}`);
-    }
-    const descriptor = Object.getOwnPropertyDescriptor(value, key);
-    if (descriptor === undefined || !descriptor.enumerable || !('value' in descriptor)) {
-      throw new TypeError(`Non-data manifest property at ${path}.${key}`);
-    }
-    assertFrozenJsonValue(descriptor.value, `${path}.${key}`, ancestors);
   }
 }
 

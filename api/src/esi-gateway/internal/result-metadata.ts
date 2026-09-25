@@ -35,9 +35,9 @@ export function combineEsiResultMetadata(results: readonly EsiResultMetadata[]):
     cachedUntil: earliestExpiry.cachedUntil,
     stale: oldestStale !== undefined,
     validatedAt: oldest.validatedAt,
-    ...(oldestStale?.refreshFailureClass
-      ? { refreshFailureClass: oldestStale.refreshFailureClass }
-      : {}),
-    ...(latestRetryAt ? { retryAt: latestRetryAt } : {}),
+    ...(oldestStale?.refreshFailureClass && {
+      refreshFailureClass: oldestStale.refreshFailureClass,
+    }),
+    ...(latestRetryAt && { retryAt: latestRetryAt }),
   }
 }

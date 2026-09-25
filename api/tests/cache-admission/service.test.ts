@@ -71,7 +71,7 @@ const revisionFacts: OrganizationRevisionFacts = {
     },
   ],
 }
-const permissions: { modules: string[]; services: string[] } = {
+const permissions = {
   modules: ['alpha.view'],
   services: [],
 }

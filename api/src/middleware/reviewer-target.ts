@@ -32,9 +32,7 @@ export function loadOrganizationReviewerTarget(targetKind: 'account' | 'characte
     const binding = await resolveOrganizationReviewerTarget({
       organizationVersion: authorization.organizationVersion,
       targetUserId: context.req.param('userId')!,
-      ...(targetKind === 'character'
-        ? { characterId: Number(context.req.param('characterId')) }
-        : {}),
+      ...(targetKind === 'character' && { characterId: Number(context.req.param('characterId')) }),
     })
     if (!binding) {
       return context.json(

@@ -1,4 +1,7 @@
-import type { PlatformReviewerTargetRouteEnv } from '@eve-space/platform-module-contract/server'
+import type {
+  PlatformModuleRouteCapabilities,
+  PlatformReviewerTargetRouteEnv,
+} from '@eve-space/platform-module-contract/server'
 import { zValidator } from '@eve-space/platform-module-server'
 import { Hono } from 'hono'
 import { z } from 'zod'
@@ -22,8 +25,9 @@ const actionReasonBody = z.object({ reason: actionReason }).strict()
 
 type GroupCommandIds = readonly ['assign-ordinary-group', 'revoke-ordinary-group']
 type BlockCommandIds = readonly ['block-member', 'unblock-member']
+type MemberAuditRouteCapabilities = Pick<PlatformModuleRouteCapabilities, 'coreData' | 'logger'>
 
-export function memberSummaryRoutes(_capabilities: object) {
+export function memberSummaryRoutes(_capabilities: MemberAuditRouteCapabilities) {
   return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
     const target = context.var.platform.reviewerTarget
     return context.json(
@@ -42,7 +46,7 @@ export function memberSummaryRoutes(_capabilities: object) {
   })
 }
 
-export function memberSkillsRoutes(_capabilities: object) {
+export function memberSkillsRoutes(_capabilities: MemberAuditRouteCapabilities) {
   return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
     const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
     const trainedSkills = await context.var.platform.collectionStatus.read(
@@ -61,7 +65,7 @@ export function memberSkillsRoutes(_capabilities: object) {
   })
 }
 
-export function memberAssetsRoutes(_capabilities: object) {
+export function memberAssetsRoutes(_capabilities: MemberAuditRouteCapabilities) {
   return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
     const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
     const status = await context.var.platform.collectionStatus.read('assets', characterId)
@@ -75,7 +79,7 @@ export function memberAssetsRoutes(_capabilities: object) {
   })
 }
 
-export function memberWalletRoutes(_capabilities: object) {
+export function memberWalletRoutes(_capabilities: MemberAuditRouteCapabilities) {
   return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
     const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
     const [balance, journal, transactions] = await Promise.all([
@@ -95,7 +99,7 @@ export function memberWalletRoutes(_capabilities: object) {
   })
 }
 
-export function memberMailRoutes(_capabilities: object) {
+export function memberMailRoutes(_capabilities: MemberAuditRouteCapabilities) {
   return new Hono<PlatformReviewerTargetRouteEnv>().get('/', async (context) => {
     const characterId = selectedCharacterId(context.var.platform.reviewerTarget)
     const [headers, details] = await Promise.all([
@@ -113,7 +117,7 @@ export function memberMailRoutes(_capabilities: object) {
   })
 }
 
-export function memberGroupRoutes(_capabilities: object) {
+export function memberGroupRoutes(_capabilities: MemberAuditRouteCapabilities) {
   return new Hono<PlatformReviewerTargetRouteEnv<GroupCommandIds>>()
     .get('/', (context) =>
       context.json({ groups: context.var.platform.reviewerTarget.groups }, 200),
@@ -149,7 +153,7 @@ export function memberGroupRoutes(_capabilities: object) {
     )
 }
 
-export function memberBlockRoutes(_capabilities: object) {
+export function memberBlockRoutes(_capabilities: MemberAuditRouteCapabilities) {
   return new Hono<PlatformReviewerTargetRouteEnv<BlockCommandIds>>()
     .get('/', (context) => context.json({ block: context.var.platform.reviewerTarget.block }, 200))
     .post('/', zValidator('json', actionReasonBody), async (context) =>

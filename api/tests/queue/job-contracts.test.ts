@@ -97,7 +97,7 @@ describe('job contracts', () => {
         activeWorkDeduplication: deduplication,
         attempts,
         delay,
-        durability: { kind: durability, ...(recovery ? { recovery } : {}) },
+        durability: { kind: durability, ...(recovery && { recovery }) },
         name,
         priority,
         retention: {

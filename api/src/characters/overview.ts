@@ -107,10 +107,8 @@ export async function getCharacterLocation(
     solarSystemId: position.solarSystemId,
     solarSystemName: system.data.name,
     solarSystemSecurityStatus: system.data.security_status,
-    ...(position.stationId
-      ? { stationId: position.stationId, stationName: station?.data.name }
-      : {}),
-    ...(position.structureId ? { structureId: position.structureId } : {}),
+    ...(position.stationId && { stationId: position.stationId, stationName: station?.data.name }),
+    ...(position.structureId && { structureId: position.structureId }),
     ...combineEsiReadResultMetadata([
       toEsiReadResultMetadata(positionResult),
       toEsiReadResultMetadata(system),
@@ -144,8 +142,8 @@ function mapCharacterLocationSnapshot(
 ): CharacterLocationSnapshot {
   return {
     solarSystemId: result.solar_system_id,
-    ...(result.station_id !== undefined ? { stationId: result.station_id } : {}),
-    ...(result.structure_id !== undefined ? { structureId: result.structure_id } : {}),
+    ...(result.station_id !== undefined && { stationId: result.station_id }),
+    ...(result.structure_id !== undefined && { structureId: result.structure_id }),
   }
 }
 

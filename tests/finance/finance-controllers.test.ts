@@ -241,7 +241,9 @@ function mountControllers({
         contractPage: state.services.contractPage,
         contracts: state.ledger.contracts,
         financeAccess: state.services.financeAccess,
-        refreshRequestedServices: state.services.refreshRequestedServices,
+        refreshRequestedServices: async () => {
+          await state.services.refreshRequestedServices()
+        },
       })
       return () => h('span')
     },

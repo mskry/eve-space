@@ -25,6 +25,7 @@ import {
 } from '../auth/character-transfer-approvals.js'
 import { resolveDeploymentOrganization } from '../deployment/organization.js'
 import { env } from '../env.js'
+import { errorStatus } from '../error-status.js'
 import { platformNavigationDefaults } from '../generated/platform/installed-module-runtime.js'
 import { isCompleteShellNavigationOrder } from '../platform/module-navigation.js'
 import {
@@ -360,8 +361,7 @@ function setAdminSessionCookie(context: Context, token: string) {
 }
 
 function organizationFailure(context: Context, error: unknown) {
-  const status =
-    typeof error === 'object' && error && 'status' in error ? Number(error.status) : undefined
+  const status = errorStatus(error)
   if (status === 404) {
     return context.json(
       { code: 'ORGANIZATION_NOT_FOUND', message: 'EVE organization was not found.' },

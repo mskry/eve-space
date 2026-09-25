@@ -21,10 +21,26 @@ interface ParameterDescriptor {
   readonly name: string;
   readonly placement: 'path' | 'query' | 'header';
   readonly required: boolean;
-  readonly schema: Record<string, unknown>;
+  readonly schema: ParameterSchemaContract;
   style?: string;
   explode?: boolean;
   allowReserved?: boolean;
+}
+
+interface ParameterSchemaContract {
+  readonly type: string;
+  readonly items?: { readonly type: string };
+}
+
+interface OperationParameterFixtures {
+  readonly descriptorParameters: ParameterDescriptor[];
+  readonly fixtureArguments: Record<string, unknown>;
+}
+
+interface OperationParameterFixture {
+  readonly descriptor: ParameterDescriptor;
+  readonly fixture?: unknown;
+  readonly hasFixture: boolean;
 }
 
 interface OperationRequestBodyContract {
@@ -314,10 +330,7 @@ function createOperationParameters(
   parameters: readonly NormalizedParameter[],
   models: readonly NormalizedModel[],
   modelsByPointer: Map<string, NormalizedModel>,
-): {
-  descriptorParameters: ParameterDescriptor[];
-  fixtureArguments: Record<string, unknown>;
-} {
+): OperationParameterFixtures {
   const descriptorParameters: ParameterDescriptor[] = [];
   const fixtureArguments: Record<string, unknown> = {};
   for (const parameter of parameters) {
@@ -345,7 +358,7 @@ function createOperationParameterContract(
   parameter: NormalizedParameter,
   models: readonly NormalizedModel[],
   modelsByPointer: Map<string, NormalizedModel>,
-): { descriptor: ParameterDescriptor; fixture?: unknown; hasFixture: boolean } {
+): OperationParameterFixture {
   try {
     const descriptor = createParameterDescriptor(parameter, modelsByPointer, operation.operationId);
     const fixture = createSchemaContractFixture(parameter.schema, models, {
@@ -440,30 +453,34 @@ function resolveParameterSchema(
   modelsByPointer: Map<string, NormalizedModel>,
   active: Set<string>,
   operationId: string,
-): Record<string, unknown> {
-  if (!isObject(schema)) {
-    throw new Error(`Invalid parameter schema for ${operationId}`);
+) {
+  let current: unknown = schema;
+  const overlays: Array<Record<string, unknown>> = [];
+  while (true) {
+    if (!isObject(current)) {
+      throw new Error(`Invalid parameter schema for ${operationId}`);
+    }
+    if (typeof current.$ref !== 'string') {
+      return overlays.reduce((resolved, overlay) => ({ ...resolved, ...overlay }), current);
+    }
+    if (active.has(current.$ref)) {
+      throw new Error(`Recursive parameter schema for ${operationId}`);
+    }
+    const model = modelsByPointer.get(current.$ref);
+    if (model === undefined) {
+      throw new Error(`Unresolved parameter schema ${current.$ref}`);
+    }
+    active.add(current.$ref);
+    overlays.unshift(current);
+    current = model.schema;
   }
-  if (typeof schema.$ref !== 'string') {
-    return schema;
-  }
-  if (active.has(schema.$ref)) {
-    throw new Error(`Recursive parameter schema for ${operationId}`);
-  }
-  const model = modelsByPointer.get(schema.$ref);
-  if (model === undefined) {
-    throw new Error(`Unresolved parameter schema ${schema.$ref}`);
-  }
-  const next = new Set(active);
-  next.add(schema.$ref);
-  return { ...resolveParameterSchema(model.schema, modelsByPointer, next, operationId), ...schema };
 }
 
 function simplifyParameterSchema(
   schema: Record<string, unknown>,
   modelsByPointer: Map<string, NormalizedModel>,
   operationId: string,
-): Record<string, unknown> {
+): ParameterSchemaContract {
   const resolved = resolveParameterSchema(schema, modelsByPointer, new Set(), operationId);
   if (
     typeof resolved.type === 'string' &&

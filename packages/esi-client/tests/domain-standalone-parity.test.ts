@@ -159,7 +159,7 @@ function contactFetch(requests: Request[]): ReturnType<typeof vi.fn<typeof fetch
   });
 }
 
-function requestSnapshot(request: Request | undefined): unknown {
+function requestSnapshot(request: Request | undefined) {
   if (request === undefined) {
     throw new Error('Expected a request');
   }

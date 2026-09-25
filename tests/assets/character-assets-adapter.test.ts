@@ -387,21 +387,23 @@ describe('character Assets adapter', () => {
   })
 })
 
+interface AssetAdapterFixtureState {
+  authenticated: ReturnType<typeof ref<boolean>>
+  authenticationReady: ReturnType<typeof ref<boolean>>
+  characterId: ReturnType<typeof ref<number | undefined>>
+  characters: ReturnType<
+    typeof ref<Array<{ characterId: number; location?: { solarSystemId: number } | null }>>
+  >
+  adapter: ReturnType<typeof useCharacterAssets>
+}
+
 function mountAdapter(
   registerReauthorization: (
     id: ReturnType<typeof computed<number | undefined>>,
     onSuccess: () => void,
   ) => void = () => {},
 ) {
-  const state = {} as {
-    authenticated: ReturnType<typeof ref<boolean>>
-    authenticationReady: ReturnType<typeof ref<boolean>>
-    characterId: ReturnType<typeof ref<number | undefined>>
-    characters: ReturnType<
-      typeof ref<Array<{ characterId: number; location?: { solarSystemId: number } | null }>>
-    >
-    adapter: ReturnType<typeof useCharacterAssets>
-  }
+  const state = {} as AssetAdapterFixtureState
   const Host = defineComponent({
     setup() {
       state.authenticated = ref(true)

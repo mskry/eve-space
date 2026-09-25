@@ -62,7 +62,18 @@ function validateJsonValue(
   if (Array.isArray(value)) {
     validateJsonArray(operationId, value, path, ancestors);
   } else {
-    validateJsonObject(operationId, value, path, ancestors);
+    if (!isPlainRecord(value)) {
+      throw requestError(
+        operationId,
+        path,
+        'Request body objects must be plain objects',
+        'invalid_json',
+      );
+    }
+    assertDataProperties(operationId, value, path);
+    for (const key of Object.keys(value)) {
+      validateJsonValue(operationId, value[key], [...path, key], ancestors);
+    }
   }
   ancestors.delete(value);
 }
@@ -84,26 +95,6 @@ function validateJsonArray(
       );
     }
     validateJsonValue(operationId, value[index], [...path, index], ancestors);
-  }
-}
-
-function validateJsonObject(
-  operationId: string,
-  value: object,
-  path: readonly (string | number)[],
-  ancestors: WeakSet<object>,
-): void {
-  if (!isPlainRecord(value)) {
-    throw requestError(
-      operationId,
-      path,
-      'Request body objects must be plain objects',
-      'invalid_json',
-    );
-  }
-  assertDataProperties(operationId, value, path);
-  for (const key of Object.keys(value)) {
-    validateJsonValue(operationId, value[key], [...path, key], ancestors);
   }
 }
 

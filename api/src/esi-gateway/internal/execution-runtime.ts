@@ -537,7 +537,7 @@ class EsiExecutionRuntimeImplementation {
           const client = new EsiClient({
             fetch: transport,
             requestTimeoutMs: this.config.requestTimeoutMs,
-            ...(authorization ? { token: authorization.accessToken } : {}),
+            ...(authorization && { token: authorization.accessToken }),
             validateResponses: policy.responseValidation.kind === 'enabled',
           })
           return client.callOperation(
@@ -614,7 +614,7 @@ class EsiExecutionRuntimeImplementation {
         const client = new EsiClient({
           fetch: transport,
           requestTimeoutMs: this.config.requestTimeoutMs,
-          ...(authorization ? { token: authorization.accessToken } : {}),
+          ...(authorization && { token: authorization.accessToken }),
           validateResponses: definition.contract.responseValidation.kind === 'enabled',
         })
         return client.callOperation(
@@ -1492,10 +1492,10 @@ function toCachedResult<Data>(
     validatedAt: envelope.validatedAt,
     source,
     stale,
-    ...(retryAt ? { retryAt } : {}),
-    ...(refreshFailureClass ? { refreshFailureClass } : {}),
+    ...(retryAt && { retryAt }),
+    ...(refreshFailureClass && { refreshFailureClass }),
     quota,
-    ...(envelope.pagination ? { pagination: { ...envelope.pagination } } : {}),
+    ...(envelope.pagination && { pagination: { ...envelope.pagination } }),
   }
 }
 

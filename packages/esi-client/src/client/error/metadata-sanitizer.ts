@@ -5,6 +5,7 @@ import type {
   EsiResponseMetadata,
   EsiResponseMetadataInput,
   EsiRouteRateLimitMetadata,
+  MutableMetadata,
 } from '../response.js';
 import {
   MAX_HEADER_COUNT,
@@ -29,16 +30,7 @@ export function normalizeMetadata(
   input: EsiResponseMetadataInput | undefined,
   redactor: Redactor,
 ): EsiResponseMetadata {
-  const metadata: {
-    status: number;
-    headers: Readonly<Record<string, string>>;
-    requestId?: string;
-    pagination?: EsiPaginationMetadata;
-    cache?: EsiCacheMetadata;
-    errorLimit?: EsiErrorLimitMetadata;
-    retryAfterSeconds?: number;
-    routeRateLimit?: EsiRouteRateLimitMetadata;
-  } = {
+  const metadata: MutableMetadata<EsiResponseMetadata> = {
     headers: normalizeHeaders(input?.headers, redactor),
     status,
   };
@@ -73,7 +65,7 @@ export function normalizeMetadata(
 }
 
 function normalizeHeaders(
-  headers: Readonly<Record<string, string>> | undefined,
+  headers: Readonly<Record<string, unknown>> | undefined,
   redactor: Redactor,
 ): Readonly<Record<string, string>> {
   const result: Record<string, string> = {};
@@ -113,12 +105,7 @@ function normalizePagination(
   if (input === undefined) {
     return undefined;
   }
-  const result: {
-    pages?: number;
-    cursor?: string;
-    nextCursor?: string;
-    previousCursor?: string;
-  } = {};
+  const result: MutableMetadata<EsiPaginationMetadata> = {};
   if (isFiniteNumber(input.pages)) {
     result.pages = input.pages;
   }
@@ -151,13 +138,7 @@ function normalizeCache(
   if (input === undefined) {
     return undefined;
   }
-  const result: {
-    etag?: string;
-    expires?: string;
-    lastModified?: string;
-    cacheControl?: string;
-    maxAgeSeconds?: number;
-  } = {};
+  const result: MutableMetadata<EsiCacheMetadata> = {};
   if (input.etag !== undefined) {
     result.etag = sanitizeString(input.etag, redactor, MAX_METADATA_STRING_CHARACTERS, '');
   }
@@ -192,7 +173,7 @@ function normalizeErrorLimit(
   if (input === undefined) {
     return undefined;
   }
-  const result: { remaining?: number; reset?: number } = {};
+  const result: MutableMetadata<EsiErrorLimitMetadata> = {};
   if (isNonnegativeFiniteNumber(input.remaining)) {
     result.remaining = input.remaining;
   }
@@ -209,12 +190,7 @@ function normalizeRouteRateLimit(
   if (input === undefined) {
     return undefined;
   }
-  const result: {
-    group?: string;
-    limit?: number;
-    used?: number;
-    remaining?: number;
-  } = {};
+  const result: MutableMetadata<EsiRouteRateLimitMetadata> = {};
   if (input.group !== undefined) {
     result.group = sanitizeString(input.group, redactor, MAX_METADATA_STRING_CHARACTERS, '');
   }
@@ -239,7 +215,7 @@ function isNonnegativeFiniteNumber(value: number | undefined): value is number {
 }
 
 export function normalizeScopes(
-  scopes: readonly string[] | undefined,
+  scopes: readonly unknown[] | undefined,
   redactor: Redactor,
 ): readonly string[] {
   const normalized: string[] = [];
@@ -256,7 +232,7 @@ export function normalizeScopes(
 }
 
 export function normalizeIssues(
-  issues: readonly EsiValidationIssueInput[],
+  issues: readonly (EsiValidationIssueInput | null)[],
   redactor: Redactor,
 ): readonly EsiValidationIssue[] {
   const normalized: EsiValidationIssue[] = [];

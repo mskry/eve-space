@@ -12,12 +12,12 @@ import { parseEveFormattedText, type EveFormattedText } from '../text/eve-format
 
 // Only the four empire races are playable. These are faction IDs, which the EVE image server
 // serves as empire emblems under its corporations category.
-const raceFactionIds: Record<number, number> = {
-  1: 500_001, // Caldari State
-  2: 500_002, // Minmatar Republic
-  4: 500_003, // Amarr Empire
-  8: 500_004, // Gallente Federation
-}
+const raceFactionIds = new Map([
+  [1, 500_001], // Caldari State
+  [2, 500_002], // Minmatar Republic
+  [4, 500_003], // Amarr Empire
+  [8, 500_004], // Gallente Federation
+])
 
 interface PublicCharacterResult {
   name: string
@@ -149,7 +149,7 @@ export async function getCharacterProfile(characterId: number) {
     birthday: character.birthday,
     gender: character.gender,
     race: race?.name ?? 'Unknown',
-    raceFactionId: raceFactionIds[character.raceId] ?? null,
+    raceFactionId: raceFactionIds.get(character.raceId) ?? null,
     bloodline:
       bloodlines.data.find((bloodline) => bloodline.bloodlineId === character.bloodlineId)?.name ??
       'Unknown',

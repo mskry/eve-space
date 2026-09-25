@@ -421,7 +421,7 @@ function aggregateActivityFreshness(
   )
   return {
     stale: staleFreshness.length > 0,
-    ...(validatedAt ? { validatedAt } : {}),
+    ...(validatedAt && { validatedAt }),
   }
 }
 

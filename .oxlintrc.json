@@ -21,6 +21,10 @@
     "**/dist/**",
     "node_modules/**",
     "openspec/**",
+    "api/src/generated/**",
+    "packages/esi-client/src/generated/**",
+    "packages/esi-client/tests/generated/**",
+    "packages/esi-client/examples/generated/**",
     "sde-ingest/target/**"
   ],
   "options": {

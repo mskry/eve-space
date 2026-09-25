@@ -3,7 +3,6 @@ import { dirname, extname, join, relative, resolve } from 'node:path'
 import ts from 'typescript'
 import { parse as parseVue } from 'vue/compiler-sfc'
 import { CORE_DATA_PRODUCT_CONTRACTS } from '../../packages/core-data-contract/src/index.js'
-import type { PlatformModuleManifest } from '@eve-space/platform-module-contract/manifest'
 import {
   platformModulePackageManifestIssues,
   platformModuleSourceIssues,
@@ -185,6 +184,21 @@ interface FeaturePackageManifest {
   readonly optionalDependencies?: unknown
   readonly peerDependencies?: unknown
   readonly exports?: unknown
+}
+
+interface ManifestCompositionExport {
+  readonly exportName: string
+}
+
+interface ManifestCompositionInput {
+  readonly id: string
+  readonly server: {
+    readonly routes: readonly ManifestCompositionExport[]
+    readonly activityProviders: readonly ManifestCompositionExport[]
+    readonly resources: readonly ManifestCompositionExport[]
+    readonly esiOperations: readonly ManifestCompositionExport[]
+    readonly persistenceOperations: readonly ManifestCompositionExport[]
+  }
 }
 
 export async function assertInstalledFeatureBoundaries(
@@ -375,7 +389,7 @@ async function installedFeatureBoundaryViolations(
 
 export async function manifestCompositionBoundaryViolations(
   root: string,
-  manifest: PlatformModuleManifest,
+  manifest: ManifestCompositionInput,
   serverRoot = join(root, 'features', manifest.id, 'server'),
 ) {
   const sources = await loadSources(root, manifest.id, join(serverRoot, 'src'))

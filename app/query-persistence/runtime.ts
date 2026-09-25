@@ -1505,8 +1505,7 @@ function extendRestoredEntries(queryCache: QueryCache) {
     if ('isRetrying' in entry.ext) {
       continue
     }
-    const extensibleEntry = entry as unknown as { ext: Record<string, unknown> }
-    extensibleEntry.ext = {}
+    Object.assign(entry, { ext: {} })
     queryCache.extend(entry)
   }
 }

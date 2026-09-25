@@ -55,8 +55,8 @@ function metadataFrom(result: {
     cachedUntil: result.cachedUntil,
     stale: result.stale,
     validatedAt: result.validatedAt,
-    ...(result.retryAt ? { retryAt: result.retryAt } : {}),
-    ...(result.refreshFailureClass ? { refreshFailureClass: result.refreshFailureClass } : {}),
+    ...(result.retryAt && { retryAt: result.retryAt }),
+    ...(result.refreshFailureClass && { refreshFailureClass: result.refreshFailureClass }),
   }
 }
 
@@ -87,9 +87,9 @@ function combineMetadata(results: readonly ReturnType<typeof metadataFrom>[]) {
     ),
     stale: oldestStale !== undefined,
     validatedAt: oldest.validatedAt,
-    ...(oldestStale?.refreshFailureClass
-      ? { refreshFailureClass: oldestStale.refreshFailureClass }
-      : {}),
-    ...(retryAt ? { retryAt } : {}),
+    ...(oldestStale?.refreshFailureClass && {
+      refreshFailureClass: oldestStale.refreshFailureClass,
+    }),
+    ...(retryAt && { retryAt }),
   }
 }

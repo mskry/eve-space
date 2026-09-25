@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { VNode } from 'vue'
+
 withDefaults(
   defineProps<{
     actionLabel?: string
@@ -16,7 +18,7 @@ withDefaults(
 )
 
 defineSlots<{
-  action(): unknown
+  action(): VNode[]
 }>()
 </script>
 

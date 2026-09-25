@@ -163,7 +163,7 @@ describe('ESI cache envelopes', () => {
         fence: 1,
         maximumRetentionMs,
         metadata: {
-          cache: { cacheControl, ...(maxAgeSeconds === undefined ? {} : { maxAgeSeconds }) },
+          cache: { cacheControl, ...(!(maxAgeSeconds === undefined) && { maxAgeSeconds }) },
           headers: {},
           status: 200,
         },

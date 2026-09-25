@@ -38,12 +38,13 @@ const selectedLabel = computed(
   () => props.options.find((option) => option.value === modelValue.value)?.label,
 )
 
+const isNewSelectableValue = (value: unknown): value is string =>
+  typeof value === 'string' &&
+  value !== modelValue.value &&
+  props.options.some((option) => option.value === value && !option.disabled)
+
 function updateModelValue(value: unknown) {
-  if (
-    typeof value === 'string' &&
-    value !== modelValue.value &&
-    props.options.some((option) => option.value === value && !option.disabled)
-  ) {
+  if (isNewSelectableValue(value)) {
     modelValue.value = value
   }
 }

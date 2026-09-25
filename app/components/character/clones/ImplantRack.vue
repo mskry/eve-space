@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
-import type { CharacterImplants } from '../../../queries/clones'
-import type { CloneResourceState } from '../../../types/clones'
+import type { CloneImplantCollection, CloneResourceState } from '../../../types/clones'
 import {
   attributeImplantSlotCount,
   implantSlotCount,
@@ -10,7 +9,7 @@ import {
 import { toCloneEsiResourceState } from '../../../utils/clone-resource-state'
 
 const props = defineProps<{
-  implants?: CharacterImplants
+  implants?: CloneImplantCollection
   presentation?: EsiQueryPersistencePresentation
   state: CloneResourceState
 }>()

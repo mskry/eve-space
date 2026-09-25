@@ -146,9 +146,9 @@ function commitMailHeaderLabels(
   queryCache.setQueryData<MailHeaders>(entryKey, {
     ...page,
     messages,
-    ...(membershipChanged && matchesNextFilter && page.nextLastMailId !== null
-      ? { nextLastMailId: messages.at(-1)?.mailId ?? null }
-      : {}),
+    ...(membershipChanged &&
+      matchesNextFilter &&
+      page.nextLastMailId !== null && { nextLastMailId: messages.at(-1)?.mailId ?? null }),
   })
 }
 

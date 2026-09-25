@@ -184,7 +184,7 @@ function normalizeRoutineAst(
   parentField?: string,
   defaultRelationName?: string,
   implicitRelationAliases: ReadonlyMap<string, string> = new Map(),
-): unknown {
+): PostgresAstValue {
   if (Array.isArray(value)) {
     return value.map((entry) =>
       normalizeRoutineAst(
@@ -511,7 +511,7 @@ function inferredSelectTargetName(value: PostgresAstValue | undefined): string |
   return undefined
 }
 
-function normalizeAst(value: PostgresAstValue): unknown {
+function normalizeAst(value: PostgresAstValue): PostgresAstValue {
   if (Array.isArray(value)) {
     return value.map(normalizeAst)
   }

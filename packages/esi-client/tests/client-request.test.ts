@@ -7,6 +7,10 @@ import type {
   OperationParameterDescriptor,
 } from '../src/client/request.js';
 
+interface CyclicRequestBody {
+  self?: CyclicRequestBody;
+}
+
 describe('descriptor-driven request construction', () => {
   it('constructs every supported placement with deterministic encoding', () => {
     const descriptor = operation({
@@ -256,7 +260,7 @@ describe('descriptor-driven request construction', () => {
     const descriptor = operation({
       requestBody: { mediaType: 'application/json', required: true },
     });
-    const cyclic: { self?: unknown } = {};
+    const cyclic: CyclicRequestBody = {};
     cyclic.self = cyclic;
     const shared = { id: 1 };
 
@@ -439,7 +443,7 @@ function arrayParameter(
     placement,
     required,
     schema: { items: { type: itemType }, type: 'array' },
-    ...(explode === undefined ? {} : { explode }),
+    ...(!(explode === undefined) && { explode }),
   };
 }
 
@@ -447,7 +451,7 @@ function constructUnknown(descriptor: unknown, arguments_: unknown): unknown {
   return Reflect.apply(constructOperationRequest, undefined, [descriptor, arguments_]);
 }
 
-function malformedOperation(overrides: Readonly<Record<string, unknown>>): unknown {
+function malformedOperation(overrides: Readonly<Record<string, unknown>>) {
   return { ...operation(), ...overrides };
 }
 

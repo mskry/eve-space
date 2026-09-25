@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { TabsContent, TabsIndicator, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
+import type { VNode } from 'vue'
 
 interface UiTab {
   label: string
@@ -24,7 +25,7 @@ const props = withDefaults(
   },
 )
 
-defineSlots<Record<string, (props?: { tab: UiTab }) => unknown>>()
+defineSlots<Record<string, (props?: { tab: UiTab }) => VNode[]>>()
 
 const modelValue = defineModel<string>()
 const initialValue = computed(() => props.defaultValue ?? props.tabs[0]?.value)

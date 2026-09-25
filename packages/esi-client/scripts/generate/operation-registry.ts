@@ -221,15 +221,14 @@ function indexOperations(
     throw new TypeError('Resolved operation metadata must be an array');
   }
   const metadataById = new Map<string, ResolvedOperationMetadata>();
-  for (const metadata of operationMetadata as readonly unknown[]) {
-    if (!isObject(metadata) || typeof metadata.operationId !== 'string') {
+  for (const metadata of operationMetadata) {
+    if (!isRecordLike(metadata) || typeof metadata.operationId !== 'string') {
       throw new TypeError('Resolved operation metadata entry is invalid');
     }
     if (metadataById.has(metadata.operationId)) {
       throw new Error(`Duplicate resolved operation metadata: ${metadata.operationId}`);
     }
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- operationId/domain are validated above; the rest is trusted like the prior untyped implementation
-    metadataById.set(metadata.operationId, metadata as unknown as ResolvedOperationMetadata);
+    metadataById.set(metadata.operationId, metadata);
   }
   const seen = new Set<string>();
   const entries = model.operations.map((operation) => {
@@ -597,7 +596,3 @@ function generatedReference(
 ): SerializableOperationReference {
   return { export: exportName, module };
 }
-
-// Same runtime check as isObject, but without a type predicate: some call sites validate a
-// value whose static type is already concrete, and a predicate there would incorrectly widen
-// (rather than preserve) that type after narrowing.

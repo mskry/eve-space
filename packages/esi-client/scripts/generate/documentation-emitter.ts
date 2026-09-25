@@ -206,7 +206,7 @@ Generic mutations are disabled by default and require both client enablement and
 }
 
 function renderConceptPage(slug: string, title: string, provenance: ArtifactProvenance): string {
-  const bodies: Record<string, string> = {
+  const bodies = {
     auth: `Public operations need no authentication. Authenticated operation references list every required OAuth scope.
 
 Configure either \`token\` or an asynchronous \`tokenProvider\`; do not configure both. Token providers are resolved only for authenticated requests. Credentials and authorization headers are excluded from the serializable registry, response metadata, and structured errors.`,
@@ -239,8 +239,8 @@ Standalone methods return bare data by default and expose the same metadata-enab
     validation: `Successful JSON responses are validated by generated Zod 4 schemas by default. Natural TypeScript exports are available from \`@evespace/esi-client/types\`; matching natural Zod exports are available from \`@evespace/esi-client/zod\`. Known object fields are checked while unknown response fields are preserved for forward compatibility. Date and date-time values remain JSON strings.
 
 Typed request validation is opt-in with \`validateRequests: true\`. Generic \`callOperation\` arguments are always validated before network activity. Response validation can be disabled explicitly with \`validateResponses: false\`.`,
-  };
-  const body = bodies[slug];
+  } as const;
+  const body = Object.entries(bodies).find(([name]) => name === slug)?.[1];
   if (body === undefined) {
     throw new Error(`Missing documentation concept body: ${slug}`);
   }

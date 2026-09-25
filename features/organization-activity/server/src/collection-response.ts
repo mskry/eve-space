@@ -18,9 +18,7 @@ import {
   type ActivitySnapshot,
 } from './snapshot.js'
 
-const collectionOperationHandlers: {
-  readonly [Operation in ActivityOperationId]: CollectionOperationHandler
-} = {
+const collectionOperationHandlers = {
   'campaign-detail': async ({ request, operations }) => {
     const result = await requireOperation(
       operations,
@@ -228,7 +226,7 @@ const collectionOperationHandlers: {
       ),
     })
   },
-}
+} satisfies { readonly [Operation in ActivityOperationId]: CollectionOperationHandler }
 
 export interface CollectionRequest {
   readonly operation: ActivityOperationId

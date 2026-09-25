@@ -54,7 +54,7 @@ export function createPlatformReviewerEvidenceReads(
         organizationVersion: status.organizationVersion,
         sectionActivationVersion: status.sectionActivationVersion,
         targetUserId: status.targetUserId,
-        ...(options.limit === undefined ? {} : { limit: options.limit }),
+        ...(options.limit !== undefined && { limit: options.limit }),
       })
     },
   }

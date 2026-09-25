@@ -7,6 +7,7 @@ import type {
 import { z } from 'zod'
 import { eveFormattedTextToPlainText } from '../text/eve-formatted-text.js'
 import { createPublicEsiRead, type EsiReadResult } from '../esi-gateway/feature-execution.js'
+import { errorStatus } from '../error-status.js'
 import { resolveUniverseNames } from '../universe/names.js'
 
 interface CorporationPublic {
@@ -229,10 +230,4 @@ function errorMetadata(error: unknown): EsiResponseMetadata {
     return error.metadata as EsiResponseMetadata
   }
   return { headers: {}, status: 404 }
-}
-
-function errorStatus(error: unknown): number | undefined {
-  return typeof error === 'object' && error !== null && 'status' in error
-    ? Number((error as { status: unknown }).status)
-    : undefined
 }

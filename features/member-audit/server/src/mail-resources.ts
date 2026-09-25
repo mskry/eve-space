@@ -98,7 +98,7 @@ export const mailHeadersResource: MailResource<MailHeaderProtocol, MailHeaderObs
     const checkpoint = headerCheckpointSchema.parse(collection.checkpoint)
     const result = await context.operations['mail-headers']({
       path: { character_id: context.subject.characterId },
-      ...(checkpoint.lastMailId === null ? {} : { query: { last_mail_id: checkpoint.lastMailId } }),
+      ...(checkpoint.lastMailId !== null && { query: { last_mail_id: checkpoint.lastMailId } }),
     })
     const headers = mailHeadersSchema.parse(result.data)
     const parties = await resolveParties(headers, context)
@@ -144,7 +144,7 @@ export const mailDetailsResource: MailResource<MailDetailProtocol, MailDetailObs
     const checkpoint = detailCheckpointSchema.parse(collection.checkpoint)
     const headerResult = await context.operations['mail-headers']({
       path: { character_id: context.subject.characterId },
-      ...(checkpoint.lastMailId === null ? {} : { query: { last_mail_id: checkpoint.lastMailId } }),
+      ...(checkpoint.lastMailId !== null && { query: { last_mail_id: checkpoint.lastMailId } }),
     })
     const headers = mailHeadersSchema.parse(headerResult.data)
     const detailLimit = Math.max(0, context.requestBudget - 3)

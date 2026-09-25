@@ -114,11 +114,12 @@ describe('organization HR review', () => {
     auth.authUnavailable.value = false
 
     review.loadOlderAuditEvents()
-    const observeAuditPage = watchSpy.mock.calls[0]?.[1] as unknown as (
-      page: ReturnType<typeof auditPage> | undefined,
-    ) => void
-    observeAuditPage(undefined)
-    observeAuditPage(auditPage(['audit-2', 'audit-1']))
+    const observeAuditPage = watchSpy.mock.calls[0]?.[1]
+    if (typeof observeAuditPage !== 'function') {
+      throw new Error('Expected an audit-page watcher')
+    }
+    observeAuditPage(undefined, undefined, () => {})
+    observeAuditPage(auditPage(['audit-2', 'audit-1']), undefined, () => {})
     expect(review.auditEvents.value.map(({ auditId }) => auditId)).toStrictEqual([
       'audit-3',
       'audit-2',

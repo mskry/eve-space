@@ -43,7 +43,7 @@ function captureFactory(
     }
     callables.set(definition.name, {
       execution,
-      ...(hasCacheSchema(definition) ? { cacheSchema: definition.cacheSchema } : {}),
+      ...(hasCacheSchema(definition) && { cacheSchema: definition.cacheSchema }),
       execute: (input) => Promise.resolve(Reflect.apply(callable.execute, callable, [input])),
     })
     return callable

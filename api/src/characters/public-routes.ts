@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { getCharacterProfile } from './profile.js'
 import { EsiQuotaError } from '../esi-gateway/failures.js'
+import { errorStatus } from '../error-status.js'
 import { privateNoStore } from '../http/private-response.js'
 import { createPublicRequestRateLimit } from '../http/public-rate-limit.js'
 import { zValidator } from '../http/validation.js'
@@ -29,10 +30,8 @@ export const publicCharacterRoutes = new Hono().get(
         profile,
         stale: profile.stale,
         validatedAt: profile.validatedAt,
-        ...(profile.retryAt ? { retryAt: profile.retryAt } : {}),
-        ...(profile.refreshFailureClass
-          ? { refreshFailureClass: profile.refreshFailureClass }
-          : {}),
+        ...(profile.retryAt && { retryAt: profile.retryAt }),
+        ...(profile.refreshFailureClass && { refreshFailureClass: profile.refreshFailureClass }),
       })
     } catch (error) {
       if (error instanceof EsiQuotaError) {
@@ -54,9 +53,3 @@ export const publicCharacterRoutes = new Hono().get(
     }
   },
 )
-
-function errorStatus(error: unknown) {
-  return typeof error === 'object' && error !== null && 'status' in error
-    ? Number(error.status)
-    : undefined
-}

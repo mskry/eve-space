@@ -311,8 +311,8 @@ function aggregateRosterFreshness(
     staleCollections.find(({ lastFailureClass }) => lastFailureClass)?.lastFailureClass
   return {
     stale: staleCollections.length > 0,
-    ...(validatedAt ? { validatedAt } : {}),
-    ...(refreshFailureClass ? { refreshFailureClass } : {}),
+    ...(validatedAt && { validatedAt }),
+    ...(refreshFailureClass && { refreshFailureClass }),
   }
 }
 

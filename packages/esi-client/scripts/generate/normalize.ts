@@ -625,7 +625,7 @@ function isConditionalRequestValidator(value: string): value is ConditionalReque
   return (conditionalRequestValidatorNames as readonly string[]).includes(value);
 }
 
-function isCacheMode(value: unknown): value is CacheMode {
+function isCacheMode(value: JsonValue): value is CacheMode {
   return (cacheModes as readonly unknown[]).includes(value);
 }
 
@@ -1113,10 +1113,10 @@ function resolveReferenceObject(
   document: Record<string, unknown>,
   value: unknown,
   context: string,
-): Record<string, unknown> {
+) {
   assertRecord(value, context);
   let current = value;
-  let overlay: Record<string, unknown> = {};
+  const overlays: Array<Record<string, unknown>> = [];
   const seen = new Set<string>();
   while (Object.hasOwn(current, '$ref')) {
     const reference = current.$ref;
@@ -1129,12 +1129,12 @@ function resolveReferenceObject(
     seen.add(reference);
     const siblings = { ...current };
     delete siblings.$ref;
-    overlay = { ...siblings, ...overlay };
+    overlays.unshift(siblings);
     const target = resolveLocalReference(document, reference);
     assertRecord(target, `reference target ${reference} for ${context}`);
     current = target;
   }
-  return { ...current, ...overlay };
+  return overlays.reduce((resolved, siblings) => ({ ...resolved, ...siblings }), current);
 }
 
 async function readExclusions(path: string): Promise<OperationExclusion[]> {

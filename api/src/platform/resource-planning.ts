@@ -33,7 +33,7 @@ export function createResourcePlanningCooldownRequest(
   }
   return {
     operation: operationId,
-    ...(authorization.kind === 'character' ? { characterId: authorizationCharacterId! } : {}),
+    ...(authorization.kind === 'character' && { characterId: authorizationCharacterId! }),
   }
 }
 

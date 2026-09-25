@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
+import type { VNode } from 'vue'
 import type {
   FinanceBalance,
   FinanceResourceState,
@@ -22,7 +23,7 @@ defineEmits<{
 }>()
 
 defineSlots<{
-  icon(): unknown
+  icon(): VNode[]
 }>()
 
 const resourceState = computed(() => {

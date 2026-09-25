@@ -24,7 +24,7 @@ export function createOperationsQueueHandle(
   const queue = new Queue(operationsQueueName, {
     connection,
     prefix: queuePrefix,
-    ...(options.repeatStrategy ? { settings: { repeatStrategy: options.repeatStrategy } } : {}),
+    ...(options.repeatStrategy && { settings: { repeatStrategy: options.repeatStrategy } }),
     skipWaitingForReady: true,
   })
   attachDiagnosticErrorListener(queue, 'queue.runtime.failed')

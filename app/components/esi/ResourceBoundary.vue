@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { VNode } from 'vue'
 import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type { EsiResourceState } from '../../types/esi-resource'
 
@@ -21,10 +22,10 @@ const emit = defineEmits<{
 }>()
 
 defineSlots<{
-  default(): unknown
-  error(props: { state: Extract<EsiResourceState, { status: 'error' }> }): unknown
-  loading(props: { state: Extract<EsiResourceState, { status: 'loading' }> }): unknown
-  retained(props: { state: Exclude<EsiResourceState, { status: 'ready' }> }): unknown
+  default(): VNode[]
+  error(props: { state: Extract<EsiResourceState, { status: 'error' }> }): VNode[]
+  loading(props: { state: Extract<EsiResourceState, { status: 'loading' }> }): VNode[]
+  retained(props: { state: Exclude<EsiResourceState, { status: 'ready' }> }): VNode[]
 }>()
 </script>
 

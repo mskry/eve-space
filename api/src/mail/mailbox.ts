@@ -229,14 +229,12 @@ const mailHeadersRead = createCharacterEsiRead({
   descriptor: operationRegistry.GetCharactersCharacterIdMail.transport,
   encodeRequest: (input: MailHeadersRepresentationInput) => ({
     path: { character_id: input.characterId },
-    ...(input.labels === null && input.lastMailId === null
-      ? {}
-      : {
-          query: {
-            ...(input.labels === null ? {} : { labels: input.labels }),
-            ...(input.lastMailId === null ? {} : { last_mail_id: input.lastMailId }),
-          },
-        }),
+    ...((input.labels !== null || input.lastMailId !== null) && {
+      query: {
+        ...(input.labels !== null && { labels: input.labels }),
+        ...(input.lastMailId !== null && { last_mail_id: input.lastMailId }),
+      },
+    }),
   }),
   map: (response, input) =>
     mapMailHeaders(input.characterId, input.subjectLifecycleId, response.data),
@@ -376,7 +374,7 @@ const mailCreateLabelMutation = createCharacterEsiMutation({
   descriptor: operationRegistry.PostCharactersCharacterIdMailLabels.transport,
   encodeRequest: ({ characterId, input }: MailCreateLabelRepresentationInput) => ({
     path: { character_id: characterId },
-    body: { name: input.name, ...(input.color ? { color: input.color } : {}) },
+    body: { name: input.name, ...(input.color && { color: input.color }) },
   }),
   map: ({ data }, { characterId }): CreatedMailLabelResult => ({
     characterId,
@@ -398,8 +396,8 @@ const mailUpdateMutation = createCharacterEsiMutation({
   encodeRequest: ({ characterId, mailId, input }: MailUpdateRepresentationInput) => ({
     path: { character_id: characterId, mail_id: mailId },
     body: {
-      ...(input.labels === undefined ? {} : { labels: [...input.labels] }),
-      ...(input.read === undefined ? {} : { read: input.read }),
+      ...(input.labels !== undefined && { labels: [...input.labels] }),
+      ...(input.read !== undefined && { read: input.read }),
     },
   }),
   map: (_response, { characterId, mailId }): UpdatedMailResult => ({ characterId, mailId }),

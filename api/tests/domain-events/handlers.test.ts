@@ -101,9 +101,10 @@ describe('domain event handlers', () => {
       eventType,
       payload: {
         ...storedEvent().payload,
-        ...(eventType === 'character.scopes-changed'
-          ? { addedScopes: ['scope'], removedScopes: [] }
-          : {}),
+        ...(eventType === 'character.scopes-changed' && {
+          addedScopes: ['scope'],
+          removedScopes: [],
+        }),
       },
     } as never
 

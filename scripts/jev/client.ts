@@ -23,7 +23,12 @@ export async function evaluateSystemOne<const Q extends Questions>(
 function answersFrom<Q extends Questions>(
   payload: SystemOneResult<Q>,
 ): SystemOneResult<Q>['answers'] {
-  if (!isRecord(payload) || !isRecord(payload.answers)) {
+  if (
+    payload === null ||
+    typeof payload !== 'object' ||
+    Array.isArray(payload) ||
+    !isRecord(payload.answers)
+  ) {
     throw new Error('TypeSafe response did not contain an answers object')
   }
   return payload.answers

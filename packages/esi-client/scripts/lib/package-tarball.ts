@@ -11,9 +11,13 @@ interface ArchiveEntry {
 }
 
 interface ExtractionState {
-  globalPax: Record<string, string>;
-  nextPax: Record<string, string>;
+  globalPax: PaxAttributes;
+  nextPax: PaxAttributes;
   nextLongPath: string | undefined;
+}
+
+interface PaxAttributes {
+  path?: string;
 }
 
 const gunzip = promisify(gunzipCallback);
@@ -128,9 +132,9 @@ function safePackagePath(value: string): string {
   return normalized;
 }
 
-function parsePax(body: Buffer): Record<string, string> {
+function parsePax(body: Buffer): PaxAttributes {
   const source = body.toString('utf8');
-  const values: Record<string, string> = {};
+  const values: PaxAttributes = {};
   let offset = 0;
   while (offset < source.length) {
     const separator = source.indexOf(' ', offset);
@@ -143,8 +147,8 @@ function parsePax(body: Buffer): Record<string, string> {
     }
     const record = source.slice(separator + 1, offset + length - 1);
     const equals = record.indexOf('=');
-    if (equals > 0) {
-      values[record.slice(0, equals)] = record.slice(equals + 1);
+    if (equals > 0 && record.slice(0, equals) === 'path') {
+      values.path = record.slice(equals + 1);
     }
     offset += length;
   }

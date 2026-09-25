@@ -58,6 +58,9 @@ function readPathField(inputs: Readonly<Record<string, unknown>>, field: string)
   return isRecord(inputs.path) ? inputs.path[field] : undefined
 }
 
+const isSafeInteger = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isSafeInteger(value)
+
 function assertBoundedIntegerBody(
   values: readonly unknown[],
   maximumItems: number,
@@ -68,7 +71,7 @@ function assertBoundedIntegerBody(
       `ESI identity request body for ${operation} must contain between 1 and ${maximumItems} items`,
     )
   }
-  if (values.some((value) => typeof value !== 'number' || !Number.isSafeInteger(value))) {
+  if (!values.every(isSafeInteger)) {
     throw new Error(`ESI identity request body for ${operation} must contain safe integers`)
   }
 }

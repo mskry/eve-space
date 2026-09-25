@@ -1,11 +1,10 @@
 import { validateDescriptor } from './request/descriptor-validation.js';
 import { collectParameterValues, validateArgumentsObject } from './request/argument-validation.js';
 import { serializeBody } from './request/json-body.js';
-import { createHeaderRecord, serializeQuery, substitutePath } from './request/serialization.js';
+import { appendHeaderParameters, serializeQuery, substitutePath } from './request/serialization.js';
 import type {
   ConstructedOperationRequest,
   ExecutableOperationDescriptor,
-  OperationHttpMethod,
   OperationRequestArguments,
 } from './request/types.js';
 
@@ -47,21 +46,17 @@ export function constructOperationRequest<
   const valuesByPlacement = collectParameterValues(validated, argumentObject);
   const path = substitutePath(validated, valuesByPlacement.path);
   const query = serializeQuery(validated, valuesByPlacement.query);
-  const headers = createHeaderRecord(validated, valuesByPlacement.header);
+  const headers: Record<string, string> = {};
+  appendHeaderParameters(validated, valuesByPlacement.header, headers);
   const body = serializeBody(validated, argumentObject, headers);
   const requestPath = query.length === 0 ? path : `${path}?${query}`;
-  const request: {
-    method: OperationHttpMethod;
-    path: string;
-    headers: Readonly<Record<string, string>>;
-    body?: string;
-  } = {
+  const request = {
     headers: Object.freeze(headers),
     method: validated.method,
     path: requestPath,
-  };
+  } satisfies ConstructedOperationRequest;
   if (body !== undefined) {
-    request.body = body;
+    return Object.freeze({ ...request, body });
   }
   return Object.freeze(request);
 }

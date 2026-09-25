@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFilter } from 'reka-ui'
+import type { VNode } from 'vue'
 
 interface SearchableHistoryEntry {
   recordId: number
@@ -21,9 +22,9 @@ const props = withDefaults(
 )
 
 defineSlots<{
-  controls(): unknown
-  empty(): unknown
-  'entry-name'(props: { entry: SearchableHistoryEntry }): unknown
+  controls(): VNode[]
+  empty(): VNode[]
+  'entry-name'(props: { entry: SearchableHistoryEntry }): VNode[]
 }>()
 
 const { contains } = useFilter({ sensitivity: 'base' })

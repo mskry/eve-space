@@ -23,12 +23,12 @@ const tiers = {
   snapshot: 'representation',
   'snapshot-reads': 'adapter',
 } as const
-const allowed: Record<string, readonly string[]> = {
+const allowed = {
   adapter: ['representation', 'adapter'],
   entry: ['representation', 'adapter', 'service', 'entry'],
   representation: ['representation'],
   service: ['representation', 'adapter', 'service'],
-}
+} satisfies Record<(typeof tiers)[keyof typeof tiers], readonly string[]>
 
 const sources = await Promise.all(
   (await readdir(directory))

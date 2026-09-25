@@ -142,7 +142,7 @@ const defineOrganizationAuditQuery = defineEsiQueryOptions(
         {
           query: {
             limit: '50',
-            ...(beforeAuditSequence ? { beforeAuditSequence } : {}),
+            ...(beforeAuditSequence && { beforeAuditSequence }),
           },
         },
         { init: { signal } },

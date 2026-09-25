@@ -2748,11 +2748,9 @@ function staleResult(
   return {
     name: 'Stale',
     stale: true as const,
-    ...(validatedAt === undefined ? {} : { validatedAt: new Date(validatedAt).toISOString() }),
-    ...(metadata.retryAt === undefined
-      ? {}
-      : { retryAt: new Date(metadata.retryAt).toISOString() }),
-    ...(metadata.refreshFailureClass ? { refreshFailureClass: metadata.refreshFailureClass } : {}),
+    ...(!(validatedAt === undefined) && { validatedAt: new Date(validatedAt).toISOString() }),
+    ...(!(metadata.retryAt === undefined) && { retryAt: new Date(metadata.retryAt).toISOString() }),
+    ...(metadata.refreshFailureClass && { refreshFailureClass: metadata.refreshFailureClass }),
   }
 }
 

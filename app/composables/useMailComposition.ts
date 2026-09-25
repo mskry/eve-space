@@ -1,16 +1,15 @@
 import { computed, onBeforeUnmount, type ComputedRef } from 'vue'
 import type { ApiClient } from '../utils/api-client'
 import { MAIL_BODY_LIMIT, MAIL_SUBJECT_LIMIT } from '../utils/mail-composition'
-import { useMailCompositionDraft } from './mail-composition-draft'
+import { useMailCompositionDraft, type MailCompositionMailbox } from './mail-composition-draft'
 import { useMailCompositionSubmission } from './mail-composition-submission'
-import type { useCharacterMailbox } from './useCharacterMailbox'
 
 interface MailCompositionOptions {
   apiClient: ApiClient
   authenticated: ComputedRef<boolean>
   authenticationReady: ComputedRef<boolean>
   characterId: ComputedRef<number | undefined>
-  mailbox: ReturnType<typeof useCharacterMailbox>
+  mailbox: MailCompositionMailbox
   ownsCharacter: ComputedRef<boolean>
 }
 

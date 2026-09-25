@@ -20,39 +20,41 @@ const publicModules = new Set([
   'server',
 ])
 const internalModules = new Set([...publicModules, 'validation'])
-const allowedInternalImports: Readonly<Record<string, ReadonlySet<string>>> = {
-  activity: new Set(['installed', 'persistence', 'server']),
-  compiler: new Set([
-    'activity',
-    'manifest',
-    'nuxt',
-    'permissions',
-    'persistence',
-    'resources',
-    'server',
-    'validation',
-  ]),
-  esi: new Set(),
-  identifiers: new Set(),
-  installed: new Set(['nuxt', 'permissions', 'server']),
-  manifest: new Set(['activity', 'nuxt', 'permissions', 'persistence', 'resources', 'server']),
-  nuxt: new Set(['server']),
-  permissions: new Set(['server']),
-  persistence: new Set(),
-  publisher: new Set(['compiler', 'esi', 'identifiers', 'manifest', 'nuxt']),
-  resources: new Set(['persistence', 'server']),
-  'reviewer-directory': new Set(['server']),
-  server: new Set(),
-  validation: new Set([
-    'identifiers',
-    'manifest',
-    'nuxt',
-    'permissions',
-    'persistence',
-    'resources',
-    'server',
-  ]),
-}
+const allowedInternalImports = new Map(
+  Object.entries({
+    activity: new Set(['installed', 'persistence', 'server']),
+    compiler: new Set([
+      'activity',
+      'manifest',
+      'nuxt',
+      'permissions',
+      'persistence',
+      'resources',
+      'server',
+      'validation',
+    ]),
+    esi: new Set(),
+    identifiers: new Set(),
+    installed: new Set(['nuxt', 'permissions', 'server']),
+    manifest: new Set(['activity', 'nuxt', 'permissions', 'persistence', 'resources', 'server']),
+    nuxt: new Set(['server']),
+    permissions: new Set(['server']),
+    persistence: new Set(),
+    publisher: new Set(['compiler', 'esi', 'identifiers', 'manifest', 'nuxt']),
+    resources: new Set(['persistence', 'server']),
+    'reviewer-directory': new Set(['server']),
+    server: new Set(),
+    validation: new Set([
+      'identifiers',
+      'manifest',
+      'nuxt',
+      'permissions',
+      'persistence',
+      'resources',
+      'server',
+    ]),
+  }),
+)
 const sourceExtensions = new Set([
   '.cjs',
   '.cts',
@@ -101,14 +103,16 @@ const hostNuxtModules = new Set(['nuxt', 'reviewer-directory', 'server'])
 const nonCompositionModules = new Set(
   [...publicModules].filter((name) => name !== 'compiler' && name !== 'manifest'),
 )
-const apiGeneratedRegistryModules: Readonly<Record<string, ReadonlySet<string>>> = {
-  'installed-module-activity-providers': new Set(['activity']),
-  'installed-module-esi': new Set(['esi']),
-  'installed-module-migrations': new Set(['installed']),
-  'installed-module-runtime': new Set(['installed', 'nuxt']),
-  'installed-module-worker': new Set(['resources']),
-  'installed-reviewer-contributions': new Set(['installed']),
-}
+const apiGeneratedRegistryModules = new Map(
+  Object.entries({
+    'installed-module-activity-providers': new Set(['activity']),
+    'installed-module-esi': new Set(['esi']),
+    'installed-module-migrations': new Set(['installed']),
+    'installed-module-runtime': new Set(['installed', 'nuxt']),
+    'installed-module-worker': new Set(['resources']),
+    'installed-reviewer-contributions': new Set(['installed']),
+  }),
+)
 
 export function platformModuleContractBoundaryViolations() {
   return [
@@ -147,7 +151,7 @@ function validateContractFiles() {
     const imports = localImports(path)
     dependencies.set(name, imports)
     for (const imported of imports) {
-      if (!allowedInternalImports[name]?.has(imported))
+      if (!allowedInternalImports.get(name)?.has(imported))
         violations.push(
           `packages/platform-module-contract/src/${name}.ts cannot import ${imported}.ts`,
         )
@@ -267,7 +271,7 @@ function generatedRegistryContractCallerRole(normalizedPath: string) {
     const filename = normalizedPath.slice(apiGeneratedPrefix.length)
     const registryName = filename.slice(0, -extname(filename).length)
     return {
-      allowed: apiGeneratedRegistryModules[registryName] ?? hostApiModules,
+      allowed: apiGeneratedRegistryModules.get(registryName) ?? hostApiModules,
       name: 'generated API registry',
     }
   }

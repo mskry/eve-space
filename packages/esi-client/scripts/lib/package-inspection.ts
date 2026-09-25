@@ -418,10 +418,14 @@ function collectArtifactEdge(path: string, specifier: string, context: ArtifactE
   externalEdges.set(key, { from: path, specifier });
 }
 
+interface DomainEntryValidationResult {
+  readonly domainEntryCount: number;
+}
+
 export function validateDomainEntryIsolation(
   measurements: PackageMeasurements,
   expectedCount: number = expectedDomainEntryCount,
-): { domainEntryCount: number } {
+): DomainEntryValidationResult {
   const entries = Object.entries(measurements.publicEntries).filter(([entryName]) =>
     entryName.startsWith('./domains/'),
   );
@@ -453,7 +457,7 @@ export function validateDomainDeclarationSurface(
   measurements: PackageMeasurements,
   files: readonly PackedFile[],
   expectedCount: number = expectedDomainEntryCount,
-): { domainEntryCount: number } {
+): DomainEntryValidationResult {
   const entries = Object.entries(measurements.publicEntries).filter(([entryName]) =>
     entryName.startsWith('./domains/'),
   );

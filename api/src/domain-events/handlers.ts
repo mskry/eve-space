@@ -26,7 +26,7 @@ export class DomainEventNotFoundError extends Error {
 type CharacterCollectionStateRepair = (options: {
   characterId: number
   signal?: AbortSignal
-}) => Promise<unknown>
+}) => Promise<void>
 
 const characterCollectionStateEventTypes = [
   'character.attached',
@@ -53,7 +53,9 @@ function isCharacterCollectionStateEvent(
 }
 
 export function createPlatformCollectionStateEventHandlers(
-  repair: CharacterCollectionStateRepair = repairPlatformCollectionState,
+  repair: CharacterCollectionStateRepair = async (options) => {
+    await repairPlatformCollectionState(options)
+  },
 ): readonly DomainEventHandler[] {
   return characterCollectionStateEventTypes.map((eventType) => ({
     eventType,
@@ -63,7 +65,7 @@ export function createPlatformCollectionStateEventHandlers(
       }
       await repair({
         characterId: event.payload.characterId,
-        ...(signal ? { signal } : {}),
+        ...(signal && { signal }),
       })
     },
     idempotency: 'convergent-state',

@@ -165,8 +165,8 @@ export function toEsiReadResultMetadata(result: EsiReadResult<unknown>): EsiRead
     cachedUntil: result.cachedUntil,
     stale: result.stale,
     validatedAt: result.validatedAt,
-    ...(result.retryAt ? { retryAt: result.retryAt } : {}),
-    ...(result.refreshFailureClass ? { refreshFailureClass: result.refreshFailureClass } : {}),
+    ...(result.retryAt && { retryAt: result.retryAt }),
+    ...(result.refreshFailureClass && { refreshFailureClass: result.refreshFailureClass }),
   }
 }
 
@@ -195,7 +195,7 @@ export function createCharacterEsiRead<
         await getProductionEsiExecutionRuntime()
       ).executeRepresentation(representation, input, {
         subjectLifecycleId: input.subjectLifecycleId,
-        ...(input.signal ? { signal: input.signal } : {}),
+        ...(input.signal && { signal: input.signal }),
       })
       return {
         ...toEsiReadResult(execution.result),
@@ -223,7 +223,7 @@ export function createCharacterEsiMutation<
       getProductionEsiExecutionRuntime().then((runtime) =>
         runtime.executeMutationRepresentation(representation, input, {
           subjectLifecycleId: input.subjectLifecycleId,
-          ...(input.signal ? { signal: input.signal } : {}),
+          ...(input.signal && { signal: input.signal }),
         }),
       ),
     operation: representation.operation,
@@ -253,8 +253,8 @@ function toEsiReadResult<Data>(result: EsiCachedResult<Data>): EsiReadResult<Dat
     validatedAt: result.validatedAt,
     cachedUntil: result.cachedUntil,
     stale: result.stale,
-    ...(result.retryAt ? { retryAt: result.retryAt } : {}),
-    ...(result.refreshFailureClass ? { refreshFailureClass: result.refreshFailureClass } : {}),
+    ...(result.retryAt && { retryAt: result.retryAt }),
+    ...(result.refreshFailureClass && { refreshFailureClass: result.refreshFailureClass }),
     quota: { ...result.quota },
   }
 }

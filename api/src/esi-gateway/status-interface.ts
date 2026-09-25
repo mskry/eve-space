@@ -71,9 +71,9 @@ export async function probeEsiStatus(
     coordination: {
       checkedAt: telemetry.coordination.checkedAt,
       status: telemetry.coordination.status,
-      ...(telemetry.coordination.operationFailures === undefined
-        ? {}
-        : { operationFailures: telemetry.coordination.operationFailures }),
+      ...(telemetry.coordination.operationFailures !== undefined && {
+        operationFailures: telemetry.coordination.operationFailures,
+      }),
     },
     upstream: {
       checkedAt: telemetry.upstream.checkedAt,

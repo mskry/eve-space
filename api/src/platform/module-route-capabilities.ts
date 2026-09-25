@@ -12,9 +12,9 @@ export function createPlatformModuleRouteCapabilities<
   const ModuleId extends string,
   const RouteId extends string,
   const ProductIds extends readonly CoreDataProductId[] = readonly [],
->(moduleId: ModuleId, routeId: RouteId, productIds: ProductIds = [] as unknown as ProductIds) {
+>(moduleId: ModuleId, routeId: RouteId, productIds?: ProductIds) {
   return {
-    coreData: createCoreDataCapability(productIds, 'route'),
+    coreData: createCoreDataCapability(productIds ?? [], 'route'),
     logger: createPlatformModuleLogger(moduleId),
     persistence: createPlatformModuleRoutePersistence(moduleId, routeId),
   }
@@ -23,9 +23,9 @@ export function createPlatformModuleRouteCapabilities<
 export function createPlatformReviewerContributionRouteCapabilities<
   const Descriptor extends Pick<PlatformInstalledReviewerContributionDescriptor, 'moduleId'>,
   const ProductIds extends readonly CoreDataProductId[] = readonly [],
->(descriptor: Descriptor, productIds: ProductIds = [] as unknown as ProductIds) {
+>(descriptor: Descriptor, productIds?: ProductIds) {
   return {
-    coreData: createCoreDataCapability(productIds, 'route'),
+    coreData: createCoreDataCapability(productIds ?? [], 'route'),
     logger: createPlatformModuleLogger(descriptor.moduleId),
   }
 }

@@ -511,10 +511,10 @@ function canonicalQuery(
   const targetCharacterId = requestedCharacterId ?? member.managedAffiliation.characterId
   return {
     targetUserId: member.account.userId,
-    ...(requestedCharacterId !== undefined ||
-    contribution.target === 'managed-organization-character'
-      ? { targetCharacterId: String(targetCharacterId) }
-      : {}),
+    ...((requestedCharacterId !== undefined ||
+      contribution.target === 'managed-organization-character') && {
+      targetCharacterId: String(targetCharacterId),
+    }),
     contribution: reviewerContributionIdentity(contribution),
   }
 }

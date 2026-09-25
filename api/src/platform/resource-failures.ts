@@ -141,7 +141,9 @@ async function persistFailureTransition(
   transition: ReturnType<typeof classifyPlatformResourceFailure>,
   options: ResourceFailureOptions,
   resolveEligibility: () => ReturnType<typeof resolveInstalledResourceEligibility>,
-  upsertState: (input: PlatformCollectionStateWrite) => Promise<unknown>,
+  upsertState: (
+    input: PlatformCollectionStateWrite,
+  ) => ReturnType<typeof upsertPlatformCollectionState>,
 ) {
   const eligibility = await resolveEligibility()
   if (eligibility.status !== 'eligible' || !eligibility.due) {

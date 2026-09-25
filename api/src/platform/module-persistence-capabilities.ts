@@ -83,7 +83,7 @@ export function createPlatformResourceProjectionPersistence<
       {
         readOnly: true,
         statementTimeoutMilliseconds: resourcePersistenceTimeoutMilliseconds,
-        ...(signal ? { signal } : {}),
+        ...(signal && { signal }),
       },
     ),
   )

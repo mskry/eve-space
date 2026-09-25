@@ -70,7 +70,7 @@ export async function getCharacterCorporationRolesEvidence(
   const result = await characterCorporationRolesRead.execute({
     characterId,
     subjectLifecycleId,
-    ...(signal ? { signal } : {}),
+    ...(signal && { signal }),
   })
   return {
     ...result.data,

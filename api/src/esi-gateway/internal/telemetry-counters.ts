@@ -26,7 +26,7 @@ let coordinationOperationFailures = 0
 const cacheEnvelopeRejections: Record<EsiCacheEnvelopeRejectionReason, number> = {
   incoherentFreshnessWindow: 0,
   invalidPayload: 0,
-  invalidShape: 0,
+  ['invalidShape']: 0,
   malformedJson: 0,
   versionMismatch: 0,
 }

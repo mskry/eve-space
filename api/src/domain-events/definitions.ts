@@ -136,6 +136,8 @@ const domainEventRegistry = {
   },
 } as const
 
+const domainEventDefinitionsByType = new Map(Object.entries(domainEventRegistry))
+
 type DomainEventRegistry = typeof domainEventRegistry
 export type DomainEventType = keyof DomainEventRegistry
 type DomainEventVersion<Type extends DomainEventType> =
@@ -315,13 +317,12 @@ export function categorizeRelayFailure(error: unknown): RelayFailureCategory {
 }
 
 function getDomainEventDefinition(type: string, version: number) {
-  const definition = (
-    domainEventRegistry as Record<
-      string,
-      { aggregateType: DomainEventAggregateType; versions: Record<number, z.ZodType> }
-    >
-  )[type]
-  const payloadSchema = definition?.versions[version]
+  const definition = domainEventDefinitionsByType.get(type)
+  const payloadSchema =
+    definition &&
+    Object.entries(definition.versions).find(
+      ([candidateVersion]) => Number(candidateVersion) === version,
+    )?.[1]
   if (!definition || !payloadSchema) {
     throw new DomainEventValidationError()
   }

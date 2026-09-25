@@ -1,7 +1,7 @@
 export interface ClosableRedisConnection {
   readonly status: string
   disconnect(): void
-  quit(): Promise<unknown>
+  quit(): Promise<string>
 }
 
 export async function closeRedisConnection(

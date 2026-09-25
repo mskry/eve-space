@@ -553,7 +553,7 @@ describe('installed resource operation policy', () => {
         [
           {
             ...resource,
-            ...(dependentOperationIds ? { dependentOperationIds } : {}),
+            ...(dependentOperationIds && { dependentOperationIds }),
             implementation: candidate,
           } as PlatformInstalledResourceDescriptor,
         ],
@@ -901,6 +901,6 @@ function platformExecution(
     ...cached(data),
     authorizationGeneration,
     source,
-    ...(pagination ? { pagination } : {}),
+    ...(pagination && { pagination }),
   }
 }

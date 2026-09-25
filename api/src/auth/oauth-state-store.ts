@@ -114,7 +114,7 @@ function parseOAuthStateRecord(
     return {
       intent: 'login',
       reviewerUseDisclosures,
-      ...(record.returnPath ? { returnPath: record.returnPath } : {}),
+      ...(record.returnPath && { returnPath: record.returnPath }),
     }
   }
   if (record.intent === 'attach' && record.userId) {
@@ -126,7 +126,7 @@ function parseOAuthStateRecord(
       intent: 'reauthorize',
       reviewerUseDisclosures,
       userId: record.userId,
-      ...(record.returnPath ? { returnPath: record.returnPath } : {}),
+      ...(record.returnPath && { returnPath: record.returnPath }),
     }
   }
   if (record.intent === 'claim-organization-owner') {

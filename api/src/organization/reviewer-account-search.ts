@@ -779,15 +779,15 @@ function normalizeDirectoryFilters(
   validateDirectoryLimit(limit)
   validateSearchCursor(input.cursor)
   return {
-    ...(query ? { query } : {}),
-    ...(input.corporationId ? { corporationId: input.corporationId } : {}),
-    ...(input.groupId ? { groupId: input.groupId } : {}),
-    ...(input.complianceState ? { complianceState: input.complianceState } : {}),
-    ...(input.blocked === undefined ? {} : { blocked: input.blocked }),
-    ...(input.auditState ? { auditState: input.auditState } : {}),
+    ...(query && { query }),
+    ...(input.corporationId && { corporationId: input.corporationId }),
+    ...(input.groupId && { groupId: input.groupId }),
+    ...(input.complianceState && { complianceState: input.complianceState }),
+    ...(input.blocked !== undefined && { blocked: input.blocked }),
+    ...(input.auditState && { auditState: input.auditState }),
     sort: input.sort ?? platformReviewerDirectoryDefaultSortField,
     direction: input.direction ?? platformReviewerDirectoryDefaultSortDirection,
-    ...(input.cursor ? { cursor: input.cursor } : {}),
+    ...(input.cursor && { cursor: input.cursor }),
     limit,
   }
 }
@@ -1310,11 +1310,11 @@ function normalizeFilters(input: PlatformReviewerAccountSearchInput): Normalized
   }
   validateSearchCursor(input.cursor)
   return {
-    ...(query ? { query } : {}),
-    ...(input.corporationId ? { corporationId: input.corporationId } : {}),
-    ...(input.complianceState ? { complianceState: input.complianceState } : {}),
-    ...(input.blocked === undefined ? {} : { blocked: input.blocked }),
-    ...(input.cursor ? { cursor: input.cursor } : {}),
+    ...(query && { query }),
+    ...(input.corporationId && { corporationId: input.corporationId }),
+    ...(input.complianceState && { complianceState: input.complianceState }),
+    ...(input.blocked !== undefined && { blocked: input.blocked }),
+    ...(input.cursor && { cursor: input.cursor }),
     limit,
   }
 }

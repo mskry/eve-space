@@ -30,7 +30,7 @@ const scopesSchema = z
     if (!scopes) {
       return []
     }
-    return typeof scopes === 'string' ? scopes.split(/\s+/).filter(Boolean) : scopes
+    return Array.isArray(scopes) ? scopes : scopes.split(/\s+/).filter(Boolean)
   })
 
 const claimsSchema = z.looseObject({

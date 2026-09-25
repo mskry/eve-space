@@ -2258,97 +2258,98 @@ async function createResolvedReleaseFixture(options: ResolvedReleaseFixtureOptio
       routes: [],
     },
   }
-  const rootDependencies: Record<string, string> = {
+  const rootDependencies = {
     '@example/alpha-manifest': 'workspace:*',
     '@example/alpha-nuxt': 'workspace:*',
   }
   const archiveReference = 'file:archives/alpha-server.tgz'
-  const apiDependencies: Record<string, string> = {
+  const apiDependencies = {
     '@example/alpha-server': options.serverArchive ? archiveReference : 'workspace:*',
-  }
-  if (options.apiIncludesNuxt) {
-    apiDependencies['@example/alpha-nuxt'] = 'workspace:*'
+    ...(options.apiIncludesNuxt && { '@example/alpha-nuxt': 'workspace:*' }),
   }
 
-  const files: Record<string, string> = {
-    'api/package.json': `${JSON.stringify(
-      { name: 'fixture-api', private: true, dependencies: apiDependencies },
-      null,
-      2,
-    )}\n`,
-    'features/alpha/manifest/manifest.json': `${JSON.stringify(manifestArtifact, null, 2)}\n`,
-    'features/alpha/manifest/package.json': `${JSON.stringify(
-      {
-        name: '@example/alpha-manifest',
-        version: '1.2.3',
-        type: 'module',
-        sideEffects: false,
-        exports: {
-          [options.manifestPackageExport ?? './manifest']:
-            options.manifestExportTarget ?? './manifest.json',
+  const files = new Map(
+    Object.entries({
+      'api/package.json': `${JSON.stringify(
+        { name: 'fixture-api', private: true, dependencies: apiDependencies },
+        null,
+        2,
+      )}\n`,
+      'features/alpha/manifest/manifest.json': `${JSON.stringify(manifestArtifact, null, 2)}\n`,
+      'features/alpha/manifest/package.json': `${JSON.stringify(
+        {
+          name: '@example/alpha-manifest',
+          version: '1.2.3',
+          type: 'module',
+          sideEffects: false,
+          exports: {
+            [options.manifestPackageExport ?? './manifest']:
+              options.manifestExportTarget ?? './manifest.json',
+          },
+          files: ['manifest.json'],
         },
-        files: ['manifest.json'],
-      },
-      null,
-      2,
-    )}\n`,
-    'features/alpha/nuxt/dist/module.d.ts': 'declare const module: object\nexport default module\n',
-    'features/alpha/nuxt/dist/module.js': 'export default {}\n',
-    'features/alpha/nuxt/package.json': `${JSON.stringify(
-      {
-        name: '@example/alpha-nuxt',
-        version: '1.2.3',
-        type: 'module',
-        sideEffects: ['**/*.vue'],
-        exports: {
-          '.': { types: './dist/module.d.ts', import: './dist/module.js' },
+        null,
+        2,
+      )}\n`,
+      'features/alpha/nuxt/dist/module.d.ts':
+        'declare const module: object\nexport default module\n',
+      'features/alpha/nuxt/dist/module.js': 'export default {}\n',
+      'features/alpha/nuxt/package.json': `${JSON.stringify(
+        {
+          name: '@example/alpha-nuxt',
+          version: '1.2.3',
+          type: 'module',
+          sideEffects: ['**/*.vue'],
+          exports: {
+            '.': { types: './dist/module.d.ts', import: './dist/module.js' },
+          },
+          files: ['dist'],
         },
-        files: ['dist'],
-      },
-      null,
-      2,
-    )}\n`,
-    'features/alpha/server/dist/index.d.ts': 'export {}\n',
-    'features/alpha/server/dist/index.js': '',
-    'features/alpha/server/package.json': `${JSON.stringify(
-      {
-        name: options.declaredServerName ?? '@example/alpha-server',
-        version: options.serverVersion ?? '1.2.3',
-        type: 'module',
-        sideEffects: options.serverSideEffects ?? false,
-        exports: {
-          '.': { types: './dist/index.d.ts', import: './dist/index.js' },
-          './migrations/*': './migrations/*',
+        null,
+        2,
+      )}\n`,
+      'features/alpha/server/dist/index.d.ts': 'export {}\n',
+      'features/alpha/server/dist/index.js': '',
+      'features/alpha/server/package.json': `${JSON.stringify(
+        {
+          name: options.declaredServerName ?? '@example/alpha-server',
+          version: options.serverVersion ?? '1.2.3',
+          type: 'module',
+          sideEffects: options.serverSideEffects ?? false,
+          exports: {
+            '.': { types: './dist/index.d.ts', import: './dist/index.js' },
+            './migrations/*': './migrations/*',
+          },
+          files: ['dist', 'migrations'],
         },
-        files: ['dist', 'migrations'],
-      },
-      null,
-      2,
-    )}\n`,
-    'features/installed-modules.json': `${JSON.stringify(
-      { modules: options.duplicateSelection ? [selection, selection] : [selection] },
-      null,
-      2,
-    )}\n`,
-    'package.json': `${JSON.stringify(
-      { name: 'fixture-host', private: true, dependencies: rootDependencies },
-      null,
-      2,
-    )}\n`,
-    'pnpm-lock.yaml': resolvedReleaseLockfile(options, archiveReference),
-  }
+        null,
+        2,
+      )}\n`,
+      'features/installed-modules.json': `${JSON.stringify(
+        { modules: options.duplicateSelection ? [selection, selection] : [selection] },
+        null,
+        2,
+      )}\n`,
+      'package.json': `${JSON.stringify(
+        { name: 'fixture-host', private: true, dependencies: rootDependencies },
+        null,
+        2,
+      )}\n`,
+      'pnpm-lock.yaml': resolvedReleaseLockfile(options, archiveReference),
+    }),
+  )
   if (!options.omitMigration) {
-    files['features/alpha/server/migrations/alpha-001-initial.sql'] = 'select 1;\n'
+    files.set('features/alpha/server/migrations/alpha-001-initial.sql', 'select 1;\n')
   }
   if (options.extraMigration) {
-    files['features/alpha/server/migrations/alpha-002-extra.sql'] = 'select 2;\n'
+    files.set('features/alpha/server/migrations/alpha-002-extra.sql', 'select 2;\n')
   }
   if (options.sourceOnlyViolation) {
-    files['features/alpha/server/src/unsafe.ts'] = "import postgres from 'postgres'\n"
+    files.set('features/alpha/server/src/unsafe.ts', "import postgres from 'postgres'\n")
   }
 
   await Promise.all(
-    Object.entries(files).map(async ([path, source]) => {
+    [...files].map(async ([path, source]) => {
       const output = join(root, path)
       await mkdir(join(output, '..'), { recursive: true })
       await writeFile(output, source)

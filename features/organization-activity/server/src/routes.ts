@@ -127,7 +127,7 @@ function collectionFreshness(status: PlatformCollectionStatus) {
   }
   return {
     stale: true as const,
-    ...(status.validatedAt ? { validatedAt: status.validatedAt } : {}),
-    ...(status.lastFailureClass ? { refreshFailureClass: status.lastFailureClass } : {}),
+    ...(status.validatedAt && { validatedAt: status.validatedAt }),
+    ...(status.lastFailureClass && { refreshFailureClass: status.lastFailureClass }),
   }
 }

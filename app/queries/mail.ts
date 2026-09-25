@@ -91,8 +91,8 @@ export const mailHeadersQuery = defineEsiQueryOptions(
           {
             param: { characterId: String(characterId) },
             query: {
-              ...(normalizedLabels.length > 0 ? { labels: normalizedLabels.map(String) } : {}),
-              ...(lastMailId === null ? {} : { lastMailId: String(lastMailId) }),
+              ...(normalizedLabels.length > 0 && { labels: normalizedLabels.map(String) }),
+              ...(lastMailId !== null && { lastMailId: String(lastMailId) }),
             },
           },
           { init: { signal } },
@@ -271,7 +271,7 @@ export async function createMailLabelMutation({
   color,
 }: CreateMailLabelMutationParameters) {
   const response = await apiClient.api.me.characters[':characterId'].mail.labels.$post({
-    json: { name, ...(color === undefined ? {} : { color }) },
+    json: { name, ...(color !== undefined && { color }) },
     param: { characterId: String(characterId) },
   })
   if (response.status !== 201) {

@@ -14,7 +14,7 @@ export function createPlatformModuleActivityProviderCapabilities<
   moduleId: ModuleId,
   providerId: ProviderId,
   context: PlatformActivityProviderContext,
-  productIds: ProductIds = [] as unknown as ProductIds,
+  productIds?: ProductIds,
   sectionId?: string,
 ) {
   return {
@@ -25,7 +25,7 @@ export function createPlatformModuleActivityProviderCapabilities<
       sectionId,
       signal: context.signal,
     }),
-    coreData: createCoreDataCapability(productIds, 'activity-provider'),
+    coreData: createCoreDataCapability(productIds ?? [], 'activity-provider'),
     logger: createPlatformModuleLogger(moduleId),
     persistence: createPlatformModuleActivityProviderPersistence(
       moduleId,

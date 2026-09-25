@@ -18,14 +18,16 @@ export type EsiResponseOutcome =
   | 'clientError'
   | 'serverError'
 
+export interface EsiResponseClassification {
+  readonly outcome: EsiResponseOutcome
+  readonly tokenCost: number
+}
+
 /**
  * ESI charges its floating-window buckets per response class, so the class that telemetry counts
  * and the tokens a response spends are one decision and must not drift apart.
  */
-export function classifyEsiResponse(status: number): {
-  outcome: EsiResponseOutcome
-  tokenCost: number
-} {
+export function classifyEsiResponse(status: number): EsiResponseClassification {
   if (status >= 200 && status < 300) {
     return { outcome: 'success', tokenCost: 2 }
   }

@@ -1,13 +1,24 @@
 <script setup lang="ts">
 import type { SystemStatusTelemetry } from '../queries/system-status'
 
+interface ServiceStatusTelemetry {
+  readonly checkedAt: SystemStatusTelemetry['checkedAt']
+  readonly status: SystemStatusTelemetry['status']
+  readonly services: {
+    readonly api: Pick<SystemStatusTelemetry['services']['api'], 'status'>
+    readonly database: Pick<SystemStatusTelemetry['services']['database'], 'latencyMs' | 'status'>
+    readonly esi: Pick<SystemStatusTelemetry['services']['esi'], 'latencyMs' | 'players' | 'status'>
+    readonly sde: Pick<SystemStatusTelemetry['services']['sde'], 'buildNumber' | 'status'>
+  }
+}
+
 const {
   telemetry,
   apiLatencyMs,
   loading = false,
   error = false,
 } = defineProps<{
-  telemetry?: SystemStatusTelemetry
+  telemetry?: ServiceStatusTelemetry
   apiLatencyMs?: number
   loading?: boolean
   error?: boolean

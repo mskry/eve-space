@@ -41,7 +41,7 @@ test('runs maintenance for non-scheduled resources with invalid authority contex
     scheduled: false,
     sectionId: 'wallet',
     subjectKind: 'character',
-  } as unknown as PlatformInstalledResourceDescriptor
+  } satisfies PlatformInstalledResourceDescriptor
 
   await expect(
     runInstalledResourceMaintenance({
@@ -106,7 +106,7 @@ test('consumes durable account and lifecycle purge work after maintenance succee
     resourceId: 'trained-skills',
     sectionId: 'skills',
     subjectKind: 'character',
-  } as unknown as PlatformInstalledResourceDescriptor
+  } satisfies PlatformInstalledResourceDescriptor
 
   await runInstalledResourceMaintenance({ connection: connection as never, resources: [resource] })
 

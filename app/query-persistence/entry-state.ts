@@ -108,7 +108,7 @@ export function createQueryPersistenceEntryState(): QueryPersistenceEntryState {
       )
       records.set(event.keyHash, {
         provenance: existing?.provenance ?? { kind: 'fresh' },
-        ...(originalSuccessAt === undefined ? {} : { originalSuccessAt }),
+        ...(originalSuccessAt !== undefined && { originalSuccessAt }),
         restored: existing?.restored ?? false,
         local: true,
         failed: false,
@@ -188,7 +188,7 @@ export function createQueryPersistenceEntryState(): QueryPersistenceEntryState {
         : freshOriginalSuccessAt(event)
       records.set(event.keyHash, {
         provenance: staleMetadata ? serverStaleProvenance(staleMetadata) : { kind: 'fresh' },
-        ...(originalSuccessAt === undefined ? {} : { originalSuccessAt }),
+        ...(originalSuccessAt !== undefined && { originalSuccessAt }),
         restored: false,
         local: false,
         failed: false,
@@ -245,9 +245,9 @@ function oldestPastTimestamp(now: number, ...candidates: readonly (number | unde
 function serverStaleProvenance(metadata: StaleEsiMetadata): QueryPersistenceProvenance {
   return {
     kind: 'server-stale',
-    ...(metadata.validatedAt ? { validatedAt: metadata.validatedAt } : {}),
-    ...(metadata.retryAt ? { retryAt: metadata.retryAt } : {}),
-    ...(metadata.refreshFailureClass ? { refreshFailureClass: metadata.refreshFailureClass } : {}),
+    ...(metadata.validatedAt && { validatedAt: metadata.validatedAt }),
+    ...(metadata.retryAt && { retryAt: metadata.retryAt }),
+    ...(metadata.refreshFailureClass && { refreshFailureClass: metadata.refreshFailureClass }),
   }
 }
 
@@ -260,7 +260,7 @@ function restoredRefreshFailedProvenance(
     (provenance.kind === 'restored-refresh-failed' ? provenance.retryAt : undefined)
   return {
     kind: 'restored-refresh-failed',
-    ...(retryAt ? { retryAt } : {}),
+    ...(retryAt && { retryAt }),
     ...refreshFailureMetadata(error, provenance),
   }
 }
@@ -278,7 +278,7 @@ function refreshFailureMetadata(
 ) {
   if (error instanceof ApiQueryError) {
     return {
-      ...(error.code ? { refreshFailureCode: error.code } : {}),
+      ...(error.code && { refreshFailureCode: error.code }),
       refreshFailureStatus: error.status,
     }
   }
@@ -286,10 +286,10 @@ function refreshFailureMetadata(
     return {}
   }
   return {
-    ...(provenance.refreshFailureCode ? { refreshFailureCode: provenance.refreshFailureCode } : {}),
-    ...(provenance.refreshFailureStatus
-      ? { refreshFailureStatus: provenance.refreshFailureStatus }
-      : {}),
+    ...(provenance.refreshFailureCode && { refreshFailureCode: provenance.refreshFailureCode }),
+    ...(provenance.refreshFailureStatus && {
+      refreshFailureStatus: provenance.refreshFailureStatus,
+    }),
   }
 }
 

@@ -88,11 +88,11 @@ async function readCache<Key, Value>(
   return result
 }
 
-async function writeCache<Entry, Value = Entry>(
+async function writeCache<Entry, Value>(
   entries: readonly Entry[],
   cacheId: (entry: Entry) => string,
   kind: 'id' | 'name',
-  selectValue: (entry: Entry) => Value = (entry) => entry as unknown as Value,
+  selectValue?: (entry: Entry) => Value,
 ) {
   if (entries.length === 0) {
     return
@@ -103,9 +103,10 @@ async function writeCache<Entry, Value = Entry>(
     const freshUntil = Date.now() + freshMilliseconds
     for (const entry of entries) {
       const id = cacheId(entry)
+      const value = selectValue ? selectValue(entry) : entry
       transaction.set(
         positiveKey(kind, id),
-        JSON.stringify({ freshUntil, value: selectValue(entry) }),
+        JSON.stringify({ freshUntil, value }),
         'EX',
         retainedSeconds,
       )

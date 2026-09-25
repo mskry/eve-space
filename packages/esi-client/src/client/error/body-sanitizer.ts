@@ -64,7 +64,13 @@ function normalizeJsonValue(
     case 'string':
       return sanitizeString(value, redactor, ESI_ERROR_BODY_LIMITS.stringCharacters, '');
     case 'object':
-      return normalizeJsonObject(value, depth, state, redactor);
+      if (value === null) {
+        return null;
+      }
+      if (Array.isArray(value)) {
+        return normalizeJsonArray(value, depth, state, redactor);
+      }
+      return normalizeJsonObject(Object.entries(value), depth, state, redactor);
     default:
       state.truncated = true;
       return TRUNCATED;
@@ -72,19 +78,13 @@ function normalizeJsonValue(
 }
 
 function normalizeJsonObject(
-  value: object | null,
+  entries: readonly (readonly [string, unknown])[],
   depth: number,
   state: NormalizationState,
   redactor: Redactor,
 ): EsiErrorBodyValue {
-  if (value === null) {
-    return null;
-  }
-  if (Array.isArray(value)) {
-    return normalizeJsonArray(value, depth, state, redactor);
-  }
   const result: Record<string, EsiErrorBodyValue> = {};
-  for (const [rawKey, item] of Object.entries(value)) {
+  for (const [rawKey, item] of entries) {
     if (state.keys >= ESI_ERROR_BODY_LIMITS.keys) {
       state.truncated = true;
       break;

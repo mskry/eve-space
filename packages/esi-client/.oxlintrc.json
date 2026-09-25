@@ -10,6 +10,8 @@
   },
   "ignorePatterns": [
     "src/generated/**",
+    "tests/generated/**",
+    "examples/generated/**",
     "dist/**",
     "node_modules/**",
     ".opencode/**",

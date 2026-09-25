@@ -9,12 +9,14 @@ const PARAM_VALIDATOR = 'zValidator'
 
 // Character-ID-scoped routes that are gated by something other than character ownership.
 // Keep exact membership here rather than in prose, and state why each one differs.
-const ALTERNATIVE_GATES: Record<string, string | null> = {
-  // Unauthenticated character profile. Ownership must never gate it.
-  'api/src/characters/public-routes.ts': null,
-  // HR reviewers act on another member's character, so ownership cannot apply.
-  'api/src/organization/routes-review.ts': 'requireOrganizationHr',
-}
+const ALTERNATIVE_GATES = new Map(
+  Object.entries({
+    // Unauthenticated character profile. Ownership must never gate it.
+    'api/src/characters/public-routes.ts': null,
+    // HR reviewers act on another member's character, so ownership cannot apply.
+    'api/src/organization/routes-review.ts': 'requireOrganizationHr',
+  }),
+)
 
 interface RouteDefinition {
   path: string
@@ -92,8 +94,8 @@ const validatedTarget = (argument: ts.Expression) =>
 
 const routeViolations = (path: string, route: RouteDefinition) => {
   const location = `${path}:${route.line} ${route.method} ${route.path}`
-  const requiredGate = Object.hasOwn(ALTERNATIVE_GATES, path)
-    ? ALTERNATIVE_GATES[path]
+  const requiredGate = ALTERNATIVE_GATES.has(path)
+    ? ALTERNATIVE_GATES.get(path)
     : OWNERSHIP_MIDDLEWARE
 
   return [

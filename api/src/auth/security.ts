@@ -12,6 +12,11 @@ import { getSsoConfig } from '../env.js'
 const scryptAsync = promisify(scrypt)
 const passwordKeyLength = 64
 
+interface EncryptedTokenPayload {
+  accessToken: string
+  refreshToken: string
+}
+
 export function createOpaqueToken() {
   return randomBytes(32).toString('base64url')
 }
@@ -53,7 +58,7 @@ export async function verifyPassword(password: string, encoded: string) {
   return timingSafeEqual(derived, expected)
 }
 
-export function encryptTokens(tokens: { accessToken: string; refreshToken: string }) {
+export function encryptTokens(tokens: EncryptedTokenPayload) {
   const key = getEncryptionKey()
 
   const initializationVector = randomBytes(12)
@@ -66,6 +71,14 @@ export function encryptTokens(tokens: { accessToken: string; refreshToken: strin
     .map((value) => value.toString('base64url'))
     .join('.')
 }
+
+const isEncryptedTokenPayload = (value: unknown): value is EncryptedTokenPayload =>
+  typeof value === 'object' &&
+  value !== null &&
+  'accessToken' in value &&
+  'refreshToken' in value &&
+  typeof value.accessToken === 'string' &&
+  typeof value.refreshToken === 'string'
 
 export function decryptTokens(value: string) {
   const parts = value.split('.')
@@ -81,14 +94,7 @@ export function decryptTokens(value: string) {
   const plaintext = Buffer.concat([decipher.update(encrypted!), decipher.final()]).toString('utf8')
   const parsed = JSON.parse(plaintext) as unknown
 
-  if (
-    !parsed ||
-    typeof parsed !== 'object' ||
-    !('accessToken' in parsed) ||
-    !('refreshToken' in parsed) ||
-    typeof parsed.accessToken !== 'string' ||
-    typeof parsed.refreshToken !== 'string'
-  ) {
+  if (!isEncryptedTokenPayload(parsed)) {
     throw new Error('Decrypted token payload is invalid')
   }
 

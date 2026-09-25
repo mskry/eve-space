@@ -80,7 +80,7 @@ function readAuthBootstrap(response: AuthSessionResponse, requestedAt: number) {
     ? { account: response.account, authenticated: true }
     : unauthenticatedSession
   const admission: CacheAdmissionBootstrap | undefined =
-    response.authenticated && response.cacheAdmission !== undefined
+    response.authenticated && 'cacheAdmission' in response && response.cacheAdmission !== undefined
       ? { context: response.cacheAdmission, requestedAt }
       : undefined
   return { admission, session }

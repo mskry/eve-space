@@ -106,8 +106,8 @@ export function applyMailOverlays(
       : [
           {
             ...header,
-            ...(readState === undefined ? {} : { isRead: readState }),
-            ...(labelIds === undefined ? {} : { labelIds: [...labelIds] }),
+            ...(readState !== undefined && { isRead: readState }),
+            ...(labelIds !== undefined && { labelIds: [...labelIds] }),
           },
         ]
   })

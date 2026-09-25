@@ -33,9 +33,9 @@ export function createCoreDataCapability<const ProductIds extends readonly CoreD
 }
 
 export function assertCoreDataProductDeclarations(
-  productIds: unknown,
+  productIds: readonly CoreDataProductId[],
   context: CoreDataContributionContext,
-): asserts productIds is readonly CoreDataProductId[] {
+): void {
   if (!Array.isArray(productIds)) {
     throw new TypeError('Core-data product declarations must be an array')
   }

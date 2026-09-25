@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { VNode } from 'vue'
+
 interface EveItemInformationItem {
   category: { id: number; name: string }
   description: string | null
@@ -29,7 +31,7 @@ const props = withDefaults(
 )
 
 defineSlots<{
-  details(props: { item: EveItemInformationItem }): unknown
+  details(props: { item: EveItemInformationItem }): VNode[]
 }>()
 
 const emit = defineEmits<{

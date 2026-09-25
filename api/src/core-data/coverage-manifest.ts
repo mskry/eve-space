@@ -276,9 +276,9 @@ function entry(
     owner,
     source,
     status,
-    ...(exposure ? { exposure } : {}),
+    ...(exposure && { exposure }),
     rationale,
-    ...(productId ? { productId } : {}),
-    ...(esiOperationIds ? { esiOperationIds } : {}),
+    ...(productId && { productId }),
+    ...(esiOperationIds && { esiOperationIds }),
   }
 }

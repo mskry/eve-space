@@ -200,7 +200,7 @@ export const walletTransactionsResource: PlatformBoundedCollectionResourceImplem
     const checkpoint = transactionCheckpointSchema.parse(collection.checkpoint)
     const result = await context.operations['wallet-transactions']({
       path: { character_id: context.subject.characterId },
-      ...(checkpoint.fromId === null ? {} : { query: { from_id: checkpoint.fromId } }),
+      ...(checkpoint.fromId !== null && { query: { from_id: checkpoint.fromId } }),
     })
     const page = transactionPageSchema.parse(result.data)
     const projected = await projectTransactionPage(page, context)

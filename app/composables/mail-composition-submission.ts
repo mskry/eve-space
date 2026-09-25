@@ -274,9 +274,10 @@ export function useMailCompositionSubmission(options: MailSubmissionOptions) {
       return
     }
     options.showToast({
-      ...(error.authorizeUrl
-        ? { actionHref: error.authorizeUrl, actionLabel: 'Authorize character' }
-        : {}),
+      ...(error.authorizeUrl && {
+        actionHref: error.authorizeUrl,
+        actionLabel: 'Authorize character',
+      }),
       description: error.message,
       duration: Number.POSITIVE_INFINITY,
       title,

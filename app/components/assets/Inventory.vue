@@ -241,6 +241,8 @@ function authorize() {
   }
 }
 
+const isNumericSortValue = (value: string | number): value is number => typeof value === 'number'
+
 function compareRows(left: AssetHierarchyRow, right: AssetHierarchyRow) {
   const leftValue = sortValue(left)
   const rightValue = sortValue(right)
@@ -253,7 +255,7 @@ function compareRows(left: AssetHierarchyRow, right: AssetHierarchyRow) {
     order = -1
   } else {
     order =
-      typeof leftValue === 'number' && typeof rightValue === 'number'
+      isNumericSortValue(leftValue) && isNumericSortValue(rightValue)
         ? leftValue - rightValue
         : String(leftValue).localeCompare(String(rightValue), 'en')
   }

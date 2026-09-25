@@ -1,7 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
 import ServiceStatus from '../../app/components/ServiceStatus.vue'
-import type { SystemStatusTelemetry } from '../../app/queries/system-status'
 
 const telemetry = {
   checkedAt: '2026-08-20T12:30:00.000Z',
@@ -24,7 +23,7 @@ const telemetry = {
     },
   },
   status: 'degraded',
-} as unknown as SystemStatusTelemetry
+} as const
 
 describe('ServiceStatus', () => {
   it('labels non-operational services and missing SDE projection', async () => {

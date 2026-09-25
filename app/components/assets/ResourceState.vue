@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
+import type { VNode } from 'vue'
 import type { AssetResourceState } from '../../types/assets'
 import type { EsiResourceState } from '../../types/esi-resource'
 
@@ -14,7 +15,7 @@ const emit = defineEmits<{
 }>()
 
 defineSlots<{
-  default(): unknown
+  default(): VNode[]
 }>()
 
 const resourceState = computed<EsiResourceState>(() => {

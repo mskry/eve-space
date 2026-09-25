@@ -1,4 +1,3 @@
-import type postgres from 'postgres'
 import { describe, expect, test, vi } from 'vitest'
 import { loadPublishedTypeGroupsProduct } from '../../src/core-data/published-type-groups-adapter.js'
 
@@ -15,7 +14,7 @@ describe('published type-groups product validation', () => {
     [{ typeIds: Array.from({ length: 501 }, (_, index) => index + 1) }, 'cannot exceed 500'],
   ])('rejects an invalid complete request before source access', (request, message) => {
     const begin = vi.fn()
-    const database = { begin } as unknown as postgres.Sql
+    const database = { begin }
 
     expect(() => loadPublishedTypeGroupsProduct(request as never, database)).toThrow(message)
     expect(begin).not.toHaveBeenCalled()

@@ -242,13 +242,18 @@ describe('character mailbox', () => {
 })
 
 function capturedQueryOptions() {
-  return vi.mocked(useQuery).mock.calls.map(
-    ([options]) =>
-      options as unknown as () => {
-        enabled: boolean
-        key: readonly unknown[]
-      },
-  )
+  return vi.mocked(useQuery).mock.calls.map(([options]) => {
+    if (typeof options !== 'function') {
+      throw new Error('Mailbox query must use a reactive options factory')
+    }
+    return () => {
+      const queryOptions = options()
+      if (typeof queryOptions.enabled !== 'boolean' || !Array.isArray(queryOptions.key)) {
+        throw new Error('Mailbox query must declare a key and an enabled gate')
+      }
+      return { enabled: queryOptions.enabled, key: queryOptions.key }
+    }
+  })
 }
 
 function queryState<T>(data: T) {

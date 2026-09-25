@@ -23,7 +23,7 @@ const identity = reactive({
 })
 const route = reactive({
   fullPath: '/jobs?characterId=9001',
-  query: { activityId: id, characterId: '9001' } as Record<string, string>,
+  query: { activityId: id, characterId: '9001' },
 })
 const queries: {
   options: () => any

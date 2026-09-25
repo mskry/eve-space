@@ -20,6 +20,9 @@ import { normalizeScopeSet } from '../../src/scopes.js'
 
 const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
 const eventId = '98a782d2-e042-47d7-9659-03b218121a1a'
+interface RecursivePayload {
+  child?: RecursivePayload
+}
 
 describe('domain event registry', () => {
   test('registers every initial event at payload version 1', () => {
@@ -171,7 +174,7 @@ describe('domain event registry', () => {
   )
 
   test('handles repeated object references without weakening secret detection', () => {
-    const payload: { child?: unknown } = {}
+    const payload: RecursivePayload = {}
     payload.child = payload
     expect(() => assertSecretFreePayload([payload])).not.toThrow()
   })

@@ -215,9 +215,7 @@ async function probeEsi(): Promise<EsiStatusProbe> {
     return {
       observation: {
         status,
-        ...(response.refreshFailureClass
-          ? { refreshFailureClass: response.refreshFailureClass }
-          : {}),
+        ...(response.refreshFailureClass && { refreshFailureClass: response.refreshFailureClass }),
       },
       service: {
         cachedUntil: response.cachedUntil,

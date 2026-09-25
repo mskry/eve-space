@@ -75,6 +75,12 @@ export interface CompiledPlatformModules {
   readonly [compiledPlatformModulesBrand]: true
 }
 
+interface ManifestFreezeFrame {
+  readonly value: object
+  readonly properties: readonly PropertyKey[]
+  position: number
+}
+
 export class PlatformModuleCompilationError extends Error {
   readonly issues: readonly string[]
 
@@ -84,6 +90,26 @@ export class PlatformModuleCompilationError extends Error {
     super(`Invalid platform module declarations:\n${issueList}`)
     this.name = 'PlatformModuleCompilationError'
     this.issues = sortedIssues
+  }
+}
+
+const freezeCompiledPlatformModules = (compiled: CompiledPlatformModules): void => {
+  const frames: ManifestFreezeFrame[] = [
+    { position: 0, properties: Reflect.ownKeys(compiled), value: compiled },
+  ]
+  while (frames.length > 0) {
+    const frame = frames.at(-1)!
+    if (frame.position === frame.properties.length) {
+      Object.freeze(frame.value)
+      frames.pop()
+      continue
+    }
+    const property = frame.properties[frame.position++]!
+    const value = frame.value
+    const child = Reflect.get(value, property)
+    if (typeof child === 'object' && child !== null && !Object.isFrozen(child)) {
+      frames.push({ position: 0, properties: Reflect.ownKeys(child), value: child })
+    }
   }
 }
 
@@ -145,7 +171,7 @@ export function compilePlatformModules(
     modules: validated,
     [compiledPlatformModulesBrand]: true,
   } satisfies CompiledPlatformModules
-  deepFreeze(compiled)
+  freezeCompiledPlatformModules(compiled)
   return compiled
 }
 
@@ -1220,14 +1246,4 @@ function readMembers<const Member extends string>(
   return readArray(value, path, issues, (item, itemPath, itemIssues) =>
     readDeclaredMember(item, allowed, itemPath, itemIssues),
   )
-}
-
-function deepFreeze(value: object): void {
-  for (const property of Reflect.ownKeys(value)) {
-    const child = Reflect.get(value, property)
-    if (typeof child === 'object' && child !== null && !Object.isFrozen(child)) {
-      deepFreeze(child)
-    }
-  }
-  Object.freeze(value)
 }

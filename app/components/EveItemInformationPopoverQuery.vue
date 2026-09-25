@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useQuery } from '@pinia/colada'
+import type { VNode } from 'vue'
 import { publicTypeDetailQuery, type PublicTypeDetail } from '../queries/universe'
 import { ApiQueryError } from '../utils/query-error'
 
@@ -17,7 +18,7 @@ const props = withDefaults(
 )
 
 defineSlots<{
-  details(props: { item: PublicTypeDetail }): unknown
+  details(props: { item: PublicTypeDetail }): VNode[]
 }>()
 
 const runtimeConfig = useRuntimeConfig()

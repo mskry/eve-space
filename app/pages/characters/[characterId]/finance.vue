@@ -46,7 +46,9 @@ const contractDetail = useCharacterFinanceContractDetail({
   contractPage: services.contractPage,
   contracts: ledger.contracts,
   financeAccess: services.financeAccess,
-  refreshRequestedServices: services.refreshRequestedServices,
+  refreshRequestedServices: async () => {
+    await services.refreshRequestedServices()
+  },
 })
 
 const {

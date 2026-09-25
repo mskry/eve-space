@@ -176,7 +176,7 @@ describe('ESI resilience telemetry', () => {
     expect(after.cache.envelopeRejections).toStrictEqual({
       incoherentFreshnessWindow: before.cache.envelopeRejections.incoherentFreshnessWindow,
       invalidPayload: before.cache.envelopeRejections.invalidPayload + 1,
-      invalidShape: before.cache.envelopeRejections.invalidShape + 2,
+      ['invalidShape']: before.cache.envelopeRejections.invalidShape + 2,
       malformedJson: before.cache.envelopeRejections.malformedJson,
       versionMismatch: before.cache.envelopeRejections.versionMismatch + 1,
     })

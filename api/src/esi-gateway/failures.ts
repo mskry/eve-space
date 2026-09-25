@@ -32,7 +32,7 @@ export async function getEsiQuotaStatuses(
   return (await getProductionEsiExecutionRuntime()).getQuotaStatuses(
     requests.map(({ operation, characterId }) => ({
       operation,
-      ...(characterId === undefined ? {} : { principal: characterEsiPrincipal(characterId) }),
+      ...(characterId !== undefined && { principal: characterEsiPrincipal(characterId) }),
     })),
   )
 }

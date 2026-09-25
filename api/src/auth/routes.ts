@@ -115,7 +115,7 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       }
       return startAuthorization(context, {
         intent: 'login',
-        ...(returnTo ? { returnPath: normalizeLoginReturnPath(returnTo) } : {}),
+        ...(returnTo && { returnPath: normalizeLoginReturnPath(returnTo) }),
       })
     },
   )
@@ -201,14 +201,12 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
         characterId: context.var.ownedCharacter.characterId,
         intent: 'reauthorize',
         userId: session!.userId,
-        ...(returnTo
-          ? {
-              returnPath: normalizeCharacterReturnPath(
-                returnTo,
-                context.var.ownedCharacter.characterId,
-              ),
-            }
-          : {}),
+        ...(returnTo && {
+          returnPath: normalizeCharacterReturnPath(
+            returnTo,
+            context.var.ownedCharacter.characterId,
+          ),
+        }),
       })
     },
   )
@@ -350,10 +348,9 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
     if (renewedExpiry) {
       setAuthCookie(context, sessionCookie, sessionToken, secondsUntil(renewedExpiry))
     }
-    const bootstrap: { cacheAdmission?: CacheAdmissionContext | null } = {}
-    if (context.req.valid('query').includeAdmission) {
-      bootstrap.cacheAdmission = await loadBootstrapAdmission(session.userId)
-    }
+    const bootstrap = context.req.valid('query').includeAdmission
+      ? { cacheAdmission: await loadBootstrapAdmission(session.userId) }
+      : {}
     return context.json({ account: session, authenticated: true as const, ...bootstrap })
   })
   .post('/logout', async (context) => {

@@ -10,6 +10,14 @@ import {
   type PlatformReviewerContributionTargetIdentity,
 } from './query-keys.js'
 
+type QueryScopeRemovalCache = Pick<QueryCache, 'cancelQueries' | 'getEntries' | 'remove'>
+type QueryModuleRemovalCache = Pick<QueryCache, 'cancel' | 'getEntries' | 'remove'>
+type QueryPrefetchCache = Pick<QueryCache, 'ensure' | 'refresh'>
+type QuerySessionTransitionCache = Pick<
+  QueryCache,
+  'cancelQueries' | 'get' | 'getEntries' | 'remove' | 'setQueryData'
+>
+
 export interface PlatformProtectedQueryAccess {
   readonly authenticated: boolean
   readonly authorized?: boolean
@@ -41,7 +49,7 @@ export function canRunPlatformProtectedQuery(access: PlatformProtectedQueryAcces
 }
 
 export function clearAuthenticatedQueries<TSession>(
-  queryCache: QueryCache,
+  queryCache: QuerySessionTransitionCache,
   unauthenticatedSession: TSession,
   sessionKey: EntryKey = [...PLATFORM_PRIVATE_QUERY_ROOT, 'session'],
 ) {
@@ -49,7 +57,7 @@ export function clearAuthenticatedQueries<TSession>(
 }
 
 export function clearAuthenticatedQueriesAfterSessionTransition<TSession>(
-  queryCache: QueryCache,
+  queryCache: QuerySessionTransitionCache,
   settledSession: TSession,
   sessionKey: EntryKey = [...PLATFORM_PRIVATE_QUERY_ROOT, 'session'],
 ) {
@@ -57,7 +65,7 @@ export function clearAuthenticatedQueriesAfterSessionTransition<TSession>(
 }
 
 function clearAuthenticatedQueryEntries<TSession>(
-  queryCache: QueryCache,
+  queryCache: QuerySessionTransitionCache,
   sessionValue: TSession,
   sessionKey: EntryKey,
   cancelSession: boolean,
@@ -83,7 +91,7 @@ function clearAuthenticatedQueryEntries<TSession>(
   queryCache.setQueryData(sessionKey, sessionValue)
 }
 
-export function removePlatformModuleQueries(queryCache: QueryCache, moduleId: string) {
+export function removePlatformModuleQueries(queryCache: QueryModuleRemovalCache, moduleId: string) {
   for (const entry of queryCache.getEntries({ key: PLATFORM_PRIVATE_QUERY_ROOT })) {
     if (isPlatformModuleQueryKey(entry.key, moduleId)) {
       removeQueryEntry(queryCache, entry)
@@ -92,7 +100,7 @@ export function removePlatformModuleQueries(queryCache: QueryCache, moduleId: st
 }
 
 export function removePlatformModuleSectionQueries(
-  queryCache: QueryCache,
+  queryCache: QueryModuleRemovalCache,
   moduleId: string,
   sectionId: string,
 ) {
@@ -103,7 +111,7 @@ export function removePlatformModuleSectionQueries(
   }
 }
 
-export function removePlatformQueryScope(queryCache: QueryCache, key: EntryKey) {
+export function removePlatformQueryScope(queryCache: QueryScopeRemovalCache, key: EntryKey) {
   const filter = { key }
   queryCache.cancelQueries(filter, new Error('Protected query state cleared.'))
   for (const entry of queryCache.getEntries(filter)) {
@@ -111,7 +119,7 @@ export function removePlatformQueryScope(queryCache: QueryCache, key: EntryKey) 
   }
 }
 
-export function removePlatformQuery(queryCache: QueryCache, key: EntryKey) {
+export function removePlatformQuery(queryCache: QueryScopeRemovalCache, key: EntryKey) {
   const filter = { exact: true, key }
   queryCache.cancelQueries(filter, new Error('Protected query state cleared.'))
   for (const entry of queryCache.getEntries(filter)) {
@@ -120,7 +128,7 @@ export function removePlatformQuery(queryCache: QueryCache, key: EntryKey) {
 }
 
 export function removePlatformReviewerContributionTargetQueries(
-  queryCache: QueryCache,
+  queryCache: QueryScopeRemovalCache,
   identity: PlatformReviewerContributionTargetIdentity,
 ) {
   removePlatformQueryScope(queryCache, platformReviewerContributionTargetQueryKey(identity))
@@ -130,7 +138,7 @@ export function prefetchQuery<
   TData,
   TError = Error,
   TDataInitial extends TData | undefined = undefined,
->(queryCache: QueryCache, options: UseQueryOptions<TData, TError, TDataInitial>) {
+>(queryCache: QueryPrefetchCache, options: UseQueryOptions<TData, TError, TDataInitial>) {
   const entry = queryCache.ensure(options)
   return queryCache.refresh(entry as UseQueryEntry<TData, TError, TDataInitial>)
 }
@@ -140,7 +148,7 @@ export function prefetchPlatformProtectedQuery<
   TError = Error,
   TDataInitial extends TData | undefined = undefined,
 >(
-  queryCache: QueryCache,
+  queryCache: QueryPrefetchCache,
   options: Omit<UseQueryOptions<TData, TError, TDataInitial>, 'key'>,
   moduleId: string,
   resource: EntryKey,
@@ -155,7 +163,7 @@ export function prefetchPlatformProtectedQuery<
   })
 }
 
-function removeQueryEntry(queryCache: QueryCache, entry: UseQueryEntry) {
+function removeQueryEntry(queryCache: Pick<QueryCache, 'cancel' | 'remove'>, entry: UseQueryEntry) {
   queryCache.cancel(entry, new Error('Protected query state cleared.'))
   queryCache.remove(entry)
 }

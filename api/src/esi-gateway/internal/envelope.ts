@@ -203,8 +203,8 @@ export function toRevalidation(
     return {}
   }
   return {
-    ...(envelope?.etag ? { ifNoneMatch: envelope.etag } : {}),
-    ...(envelope?.lastModified ? { ifModifiedSince: envelope.lastModified } : {}),
+    ...(envelope?.etag && { ifNoneMatch: envelope.etag }),
+    ...(envelope?.lastModified && { ifModifiedSince: envelope.lastModified }),
   }
 }
 

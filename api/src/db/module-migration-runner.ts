@@ -73,23 +73,15 @@ export async function loadInstalledModuleMigrationSets(
         const moduleOperations = persistenceOperations.filter(
           (operation) => operation.moduleId === moduleId,
         )
-        const migrationSet: {
-          moduleId: string
-          migrations: Migration[]
-          persistenceOperations?: readonly ModulePersistenceRoutineDescriptor[]
-        } = {
-          migrations: await Promise.all(
-            migrations.map(async ({ name, ...descriptor }) => ({
-              name,
-              sql: await migrationSqlLoader({ name, ...descriptor }),
-            })),
-          ),
-          moduleId,
-        }
-        if (moduleOperations.length > 0) {
-          migrationSet.persistenceOperations = moduleOperations
-        }
-        return migrationSet
+        const resolvedMigrations = await Promise.all(
+          migrations.map(async ({ name, ...descriptor }) => ({
+            name,
+            sql: await migrationSqlLoader({ name, ...descriptor }),
+          })),
+        )
+        return moduleOperations.length > 0
+          ? { migrations: resolvedMigrations, moduleId, persistenceOperations: moduleOperations }
+          : { migrations: resolvedMigrations, moduleId }
       }),
   )
 }
@@ -195,13 +187,18 @@ async function applyModuleMigrationSet(
   }
 }
 
-async function runInTransaction(connection: postgres.ReservedSql, body: () => Promise<unknown>) {
+async function runInTransaction(connection: postgres.ReservedSql, body: () => Promise<void>) {
   await connection`begin`
   try {
     await body()
     await connection`commit`
   } catch (error) {
-    throw withCleanupFailure(error, await attempt(() => connection`rollback`))
+    throw withCleanupFailure(
+      error,
+      await attempt(async () => {
+        await connection`rollback`
+      }),
+    )
   }
 }
 
@@ -263,19 +260,19 @@ async function releaseLease(
 
   if (lockHeld) {
     record(
-      await attempt(
-        () => connection`select pg_advisory_unlock(${moduleMigrationLockNamespace}, ${lockKey})`,
-      ),
+      await attempt(async () => {
+        await connection`select pg_advisory_unlock(${moduleMigrationLockNamespace}, ${lockKey})`
+      }),
     )
   }
   if (restoreLockTimeout !== undefined) {
     record(
-      await attempt(
-        () => connection`select set_config('lock_timeout', ${restoreLockTimeout}, false)`,
-      ),
+      await attempt(async () => {
+        await connection`select set_config('lock_timeout', ${restoreLockTimeout}, false)`
+      }),
     )
   }
-  record(await attempt(async () => connection.release()))
+  record(await attempt(() => connection.release()))
 
   if (failures.length === 0) {
     return
@@ -292,7 +289,7 @@ interface Failure {
   readonly error: unknown
 }
 
-async function attempt(action: () => Promise<unknown>): Promise<Failure | undefined> {
+async function attempt(action: () => void | Promise<void>): Promise<Failure | undefined> {
   try {
     await action()
     return undefined

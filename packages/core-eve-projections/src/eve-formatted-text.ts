@@ -2,45 +2,48 @@
 // The UI renders typed runs and never receives raw markup.
 const legacyUnicodePrefixes = new Set(['u', 'U'])
 const quoteCharacters = new Set(["'", '"'])
-const unicodeEscapeLengths: Readonly<Record<string, number>> = { U: 8, u: 4 }
-const escapedCharacters: Readonly<Record<string, string>> = {
-  '"': '"',
-  "'": "'",
-  '\\': '\\',
-  n: '\n',
-  r: '\r',
-  t: '\t',
-}
-const eveEntities: Readonly<Record<string, string>> = {
-  amp: '&',
-  gt: '>',
-  lt: '<',
-  nbsp: ' ',
-}
-const namedEveColors: Readonly<Record<string, string>> = {
-  aqua: 'ff00ffff',
-  black: 'ff000000',
-  blue: 'ff0000ff',
-  fuchsia: 'ffff00ff',
-  gray: 'ff808080',
-  green: 'ff008000',
-  grey: 'ff808080',
-  lightblue: 'ff7777ff',
-  lightgreen: 'ff80ff80',
-  lightred: 'ffcc3333',
-  lime: 'ff00ff00',
-  maroon: 'ff800000',
-  navy: 'ff000080',
-  olive: 'ff808000',
-  orange: 'ffff8000',
-  purple: 'ff800080',
-  red: 'ffff0000',
-  silver: 'ffc0c0c0',
-  teal: 'ff008080',
-  transparent: '00000000',
-  white: 'ffffffff',
-  yellow: 'ffffff00',
-}
+const unicodeEscapeLengths = new Map([
+  ['U', 8],
+  ['u', 4],
+])
+const escapedCharacters = new Map([
+  ['"', '"'],
+  ["'", "'"],
+  ['\\', '\\'],
+  ['n', '\n'],
+  ['r', '\r'],
+  ['t', '\t'],
+])
+const eveEntities = new Map([
+  ['amp', '&'],
+  ['gt', '>'],
+  ['lt', '<'],
+  ['nbsp', ' '],
+])
+const namedEveColors = new Map([
+  ['aqua', 'ff00ffff'],
+  ['black', 'ff000000'],
+  ['blue', 'ff0000ff'],
+  ['fuchsia', 'ffff00ff'],
+  ['gray', 'ff808080'],
+  ['green', 'ff008000'],
+  ['grey', 'ff808080'],
+  ['lightblue', 'ff7777ff'],
+  ['lightgreen', 'ff80ff80'],
+  ['lightred', 'ffcc3333'],
+  ['lime', 'ff00ff00'],
+  ['maroon', 'ff800000'],
+  ['navy', 'ff000080'],
+  ['olive', 'ff808000'],
+  ['orange', 'ffff8000'],
+  ['purple', 'ff800080'],
+  ['red', 'ffff0000'],
+  ['silver', 'ffc0c0c0'],
+  ['teal', 'ff008080'],
+  ['transparent', '00000000'],
+  ['white', 'ffffffff'],
+  ['yellow', 'ffffff00'],
+])
 const voidTags = new Set(['br', 'center', 'left', 'right', 't'])
 
 interface EveFormattedTextRun {
@@ -261,7 +264,7 @@ function parseEveColor(value: string | undefined) {
     return
   }
   const lower = value.toLowerCase()
-  let alphaRedGreenBlue = namedEveColors[lower]
+  let alphaRedGreenBlue = namedEveColors.get(lower)
   if (!alphaRedGreenBlue) {
     const withoutLongSuffix = lower.endsWith('l') ? lower.slice(0, -1) : lower
     if (withoutLongSuffix.startsWith('0x')) {
@@ -385,7 +388,7 @@ function trimTextRuns(runs: readonly TextRun[]) {
 function decodeEveEntities(value: string) {
   return value.replaceAll(/&(?:amp|gt|lt|nbsp);/gi, (entity) => {
     const name = entity.slice(1, -1).toLowerCase()
-    return eveEntities[name]!
+    return eveEntities.get(name)!
   })
 }
 
@@ -646,7 +649,7 @@ function legacyUnicodeBody(value: string) {
 
 function decodeEscape(body: string, escapeIndex: number): [value: string, consumed: number] {
   const escape = body[escapeIndex]!
-  const digits = unicodeEscapeLengths[escape]
+  const digits = unicodeEscapeLengths.get(escape)
   if (digits !== undefined) {
     const hex = body.slice(escapeIndex + 1, escapeIndex + 1 + digits)
     if (hex.length === digits && /^[0-9a-f]+$/i.test(hex)) {
@@ -657,5 +660,5 @@ function decodeEscape(body: string, escapeIndex: number): [value: string, consum
     }
   }
 
-  return [escapedCharacters[escape] ?? `\\${escape}`, 1]
+  return [escapedCharacters.get(escape) ?? `\\${escape}`, 1]
 }

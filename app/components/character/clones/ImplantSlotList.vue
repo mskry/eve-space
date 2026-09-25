@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { CharacterImplants } from '../../../queries/clones'
+import type { CloneImplantView } from '../../../types/clones'
 import type { ImplantRackEntry } from '../../../utils/clone-derivation'
 import { formatImplantSlot, implantBonusLabel } from '../../../utils/clone-derivation'
 
-type RackImplant = CharacterImplants['implants'][number]
+type RackImplant = CloneImplantView
 type FilledRackEntry = ImplantRackEntry<RackImplant> & { implant: RackImplant }
 
 const props = defineProps<{

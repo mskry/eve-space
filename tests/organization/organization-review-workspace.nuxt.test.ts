@@ -370,7 +370,7 @@ describe('useOrganizationReviewWorkspace', () => {
       await testRouter.push({
         query: {
           targetUserId,
-          ...(targetCharacterId ? { targetCharacterId } : {}),
+          ...(targetCharacterId && { targetCharacterId }),
           contribution,
         },
       })
@@ -841,7 +841,7 @@ function panel(
     description: `Review ${moduleId}.`,
     icon: 'overview' as const,
     order: moduleId === 'alpha' ? 10 : 20,
-    ...(moduleId === 'beta' ? { sectionId: 'details' } : {}),
+    ...(moduleId === 'beta' && { sectionId: 'details' }),
     load: vi.fn(),
   }
 }
@@ -861,7 +861,7 @@ function authorizedContribution(
     routeId: `${moduleId}-${contributionId}`,
     routePath: `/api/modules/${moduleId}/${contributionId}`,
     target,
-    ...(moduleId === 'beta' ? { sectionId: 'details' } : {}),
+    ...(moduleId === 'beta' && { sectionId: 'details' }),
   }
 }
 

@@ -9,7 +9,13 @@ const authVerificationInFlight = ref(false)
 const authVerificationStatus = ref<
   'idle' | 'verifying' | 'refreshing' | 'verified' | 'unavailable'
 >('verified')
-const route: { fullPath: string; meta: Record<string, unknown>; path: string } = {
+interface AuthResumeRoute {
+  fullPath: string
+  meta: { platformAudience?: string }
+  path: string
+}
+
+const route: AuthResumeRoute = {
   fullPath: '/characters/7?tab=wallet',
   meta: {},
   path: '/characters/7',

@@ -12,7 +12,11 @@ import {
 } from '@eve-space/core-eve-projections/skill-training'
 import type postgres from 'postgres'
 import { sql } from '../db/client.js'
-import { executeUniverseQuery, runBoundedReadTransaction } from '../universe/database-read.js'
+import {
+  executeUniverseQuery,
+  runBoundedReadTransaction,
+  type BoundedReadDatabase,
+} from '../universe/database-read.js'
 import {
   CoreDataProductUnavailableError,
   nonemptyString,
@@ -34,7 +38,7 @@ interface PublishedSkillRow extends postgres.Row {
 
 export function loadPublishedSkillCatalogueProduct(
   _request: Record<never, never> = {},
-  database: postgres.Sql = sql,
+  database: BoundedReadDatabase = sql,
 ): Promise<PublishedSkillCatalogueResult> {
   return runBoundedReadTransaction(
     database,

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ToggleGroupItem, ToggleGroupRoot } from 'reka-ui'
+import type { VNode } from 'vue'
 
 export interface UiToggleGroupOption {
   disabled?: boolean
@@ -23,7 +24,7 @@ const props = withDefaults(
 )
 
 defineSlots<{
-  option?: (props: { option: UiToggleGroupOption; selected: boolean }) => unknown
+  option?: (props: { option: UiToggleGroupOption; selected: boolean }) => VNode[]
 }>()
 
 const modelValue = defineModel<string>({ required: true })

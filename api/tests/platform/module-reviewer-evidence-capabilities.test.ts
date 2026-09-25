@@ -24,12 +24,23 @@ const target = {
   },
   block: { blocked: false },
   characters: [],
-  compliance: {},
+  compliance: {
+    accessValidUntil: null,
+    evaluatedAt: null,
+    evidenceAt: null,
+    evidenceFreshness: 'unavailable',
+    reviewDeadline: null,
+    state: 'pending',
+  },
   groups: [],
   managedMemberLifecycleId: '00000000-0000-4000-8000-000000000020',
   organizationVersion: 7,
-  selection: { characterId, kind: 'character' },
-} as unknown as PlatformReviewerTargetContext
+  selection: {
+    characterId,
+    kind: 'character',
+    subjectLifecycleId: '00000000-0000-4000-8000-000000000021',
+  },
+} as const satisfies PlatformReviewerTargetContext
 const currentStatus = {
   authorizationGeneration: 3,
   characterId,
@@ -49,7 +60,7 @@ const currentStatus = {
 const readStatus = vi.fn()
 const collectionStatus = {
   read: readStatus,
-} as unknown as PlatformReviewerCollectionStatusReads
+} satisfies PlatformReviewerCollectionStatusReads
 
 beforeEach(() => {
   vi.clearAllMocks()

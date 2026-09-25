@@ -62,7 +62,7 @@ describe('IndexedDB query persistence storage', () => {
       'x'.repeat(PERSISTED_ESI_QUERY_CACHE_MAX_BYTES + 1),
     )
     const storage = createIndexedDbQueryPersistenceStorage({
-      indexedDb: indexedDb as unknown as IDBFactory,
+      indexedDb,
       localStorage: new FakeStorage(),
       now: () => NOW,
     })
@@ -104,7 +104,7 @@ describe('IndexedDB query persistence storage', () => {
     const indexedDb = new FakeIndexedDb()
     const localStorage = new FakeStorage()
     const storage = createIndexedDbQueryPersistenceStorage({
-      indexedDb: indexedDb as unknown as IDBFactory,
+      indexedDb,
       localStorage,
       now: () => NOW,
     })
@@ -140,7 +140,7 @@ describe('IndexedDB query persistence storage', () => {
     const indexedDb = new FakeIndexedDb()
     const localStorage = new FakeStorage()
     const storage = createIndexedDbQueryPersistenceStorage({
-      indexedDb: indexedDb as unknown as IDBFactory,
+      indexedDb,
       localStorage,
       now: () => NOW,
     })
@@ -150,7 +150,7 @@ describe('IndexedDB query persistence storage', () => {
     await expect(storage.invalidate({ characterId: 7, kind: 'character' })).resolves.toBeNull()
 
     const reloaded = createIndexedDbQueryPersistenceStorage({
-      indexedDb: indexedDb as unknown as IDBFactory,
+      indexedDb,
       localStorage,
       now: () => NOW,
     })
@@ -174,7 +174,7 @@ describe('IndexedDB query persistence storage', () => {
     const indexedDb = new FakeIndexedDb()
     const localStorage = new ThrowingStorage()
     const storage = createIndexedDbQueryPersistenceStorage({
-      indexedDb: indexedDb as unknown as IDBFactory,
+      indexedDb,
       localStorage,
       now: () => NOW,
     })
@@ -185,7 +185,7 @@ describe('IndexedDB query persistence storage', () => {
     await expect(storage.readGeneration()).resolves.toBeNull()
 
     const reloaded = createIndexedDbQueryPersistenceStorage({
-      indexedDb: indexedDb as unknown as IDBFactory,
+      indexedDb,
       localStorage,
       now: () => NOW,
     })
@@ -203,7 +203,7 @@ describe('IndexedDB query persistence storage', () => {
     const indexedDb = new FakeIndexedDb()
     const localStorage = new FakeStorage()
     const storage = createIndexedDbQueryPersistenceStorage({
-      indexedDb: indexedDb as unknown as IDBFactory,
+      indexedDb,
       localStorage,
       now: () => NOW,
     })
@@ -226,7 +226,7 @@ describe('IndexedDB query persistence storage', () => {
     const indexedDb = new FakeIndexedDb()
     const localStorage = new FakeStorage()
     const storage = createIndexedDbQueryPersistenceStorage({
-      indexedDb: indexedDb as unknown as IDBFactory,
+      indexedDb,
       localStorage,
       now: () => NOW,
     })
@@ -252,7 +252,7 @@ describe('IndexedDB query persistence storage', () => {
 
 function createStorage(): QueryPersistenceStorage {
   return createIndexedDbQueryPersistenceStorage({
-    indexedDb: new FakeIndexedDb() as unknown as IDBFactory,
+    indexedDb: new FakeIndexedDb(),
     localStorage: new FakeStorage(),
     now: () => NOW,
   })
@@ -324,7 +324,7 @@ class FakeIndexedDb {
       }
       request.dispatchEvent(new Event('success'))
     })
-    return request as unknown as IDBOpenDBRequest
+    return request
   }
 
   setRecord(key: IDBValidKey, value: unknown) {
@@ -362,7 +362,7 @@ class FakeDatabase extends EventTarget {
       }
     }
     const transaction = new FakeTransaction(this.records, rejectTransaction)
-    return transaction as unknown as IDBTransaction
+    return transaction
   }
 
   close() {}
@@ -397,7 +397,7 @@ class FakeTransaction extends EventTarget {
   }
 
   objectStore() {
-    return this.store as unknown as IDBObjectStore
+    return this.store
   }
 
   request(operation: () => unknown) {
@@ -426,7 +426,7 @@ class FakeTransaction extends EventTarget {
         this.queueCompletion()
       }
     })
-    return request as unknown as IDBRequest
+    return request
   }
 
   abort() {

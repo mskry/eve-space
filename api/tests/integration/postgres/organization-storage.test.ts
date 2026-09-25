@@ -1111,9 +1111,10 @@ describe('organization storage invariants', () => {
     `
 
     type UnsafeParameters = NonNullable<Parameters<typeof connection.unsafe>[1]>
-    const capture: {
+    type DirectoryQueryCapture = {
       value: { query: string; parameters: UnsafeParameters } | null
-    } = { value: null }
+    }
+    const capture: DirectoryQueryCapture = { value: null }
     const options = dbClient.sql.options
     const previousDebug = options.debug
     options.debug = (_connection, query, parameters) => {

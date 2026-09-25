@@ -37,7 +37,7 @@ interface FacadeRequiredOption {
   readonly parameter?: SerializableOperationParameter;
 }
 
-interface FacadeShape {
+interface FacadeCallParameters {
   readonly pathParameters: readonly FacadePathParameter[];
   readonly requiredOptions: readonly FacadeRequiredOption[];
 }
@@ -291,13 +291,13 @@ export function renderOperationSnippets(
     if (snippets.has(operation.operationId)) {
       throw new Error(`Duplicate operation snippet ID: ${operation.operationId}`);
     }
-    const shape = createFacadeShape(operation);
+    const callParameters = collectFacadeCallParameters(operation);
     snippets.set(
       operation.operationId,
       Object.freeze({
-        domainMethod: renderDomainMethodSnippet(operation, shape),
-        genericExecution: renderGenericExecutionSnippet(operation, shape),
-        standaloneDomainMethod: renderStandaloneDomainMethodSnippet(operation, shape),
+        domainMethod: renderDomainMethodSnippet(operation, callParameters),
+        genericExecution: renderGenericExecutionSnippet(operation, callParameters),
+        standaloneDomainMethod: renderStandaloneDomainMethodSnippet(operation, callParameters),
         standaloneExamples: relatedStandaloneExamples(operation),
       }),
     );
@@ -420,11 +420,11 @@ export const generatedExamplesEmitter: GeneratedOutputEmitter = createGeneratedE
 
 function renderDomainMethodSnippet(
   operation: SerializableOperationManifestEntry,
-  shape: FacadeShape,
+  callParameters: FacadeCallParameters,
 ): string {
   const imports = ["import { EsiClient } from '@evespace/esi-client';"];
   imports.push(renderOperationTypeImport(operation));
-  const declarations = renderPathDeclarations(shape.pathParameters);
+  const declarations = renderPathDeclarations(callParameters.pathParameters);
   let bodyName;
   if (operation.requestBody?.required === true) {
     bodyName = 'requestBody';
@@ -432,9 +432,9 @@ function renderDomainMethodSnippet(
       `declare const requestBody: NonNullable<${operation.requestType.export}['body']>;`,
     );
   }
-  const options = renderDomainRequiredOptions(shape.requiredOptions, bodyName);
+  const options = renderDomainRequiredOptions(callParameters.requiredOptions, bodyName);
   const callArguments = [
-    ...shape.pathParameters.map(({ identifier }) => identifier),
+    ...callParameters.pathParameters.map(({ identifier }) => identifier),
     ...(options === null ? [] : [options]),
   ];
   const lines = [
@@ -457,13 +457,13 @@ function renderDomainMethodSnippet(
 
 function renderStandaloneDomainMethodSnippet(
   operation: SerializableOperationManifestEntry,
-  shape: FacadeShape,
+  callParameters: FacadeCallParameters,
 ): string {
   const factoryName = `create${capitalize(operation.facade.domain)}Client`;
   const domainSubpath = `@evespace/esi-client/domains/${domainFileName(operation.facade.domain)}`;
   const imports = [`import { ${factoryName} } from '${domainSubpath}';`];
   imports.push(renderOperationTypeImport(operation));
-  const declarations = renderPathDeclarations(shape.pathParameters);
+  const declarations = renderPathDeclarations(callParameters.pathParameters);
   let bodyName;
   if (operation.requestBody?.required === true) {
     bodyName = 'requestBody';
@@ -471,9 +471,9 @@ function renderStandaloneDomainMethodSnippet(
       `declare const requestBody: NonNullable<${operation.requestType.export}['body']>;`,
     );
   }
-  const options = renderDomainRequiredOptions(shape.requiredOptions, bodyName);
+  const options = renderDomainRequiredOptions(callParameters.requiredOptions, bodyName);
   const callArguments = [
-    ...shape.pathParameters.map(({ identifier }) => identifier),
+    ...callParameters.pathParameters.map(({ identifier }) => identifier),
     ...(options === null ? [] : [options]),
   ];
   const lines = [
@@ -504,7 +504,7 @@ function renderOperationTypeImport(operation: SerializableOperationManifestEntry
 
 function renderGenericExecutionSnippet(
   operation: SerializableOperationManifestEntry,
-  shape: FacadeShape,
+  callParameters: FacadeCallParameters,
 ): string {
   const lines = [
     "import { EsiClient } from '@evespace/esi-client';",
@@ -513,7 +513,7 @@ function renderGenericExecutionSnippet(
     '',
     ...renderClientSetup(operation, operation.classification === 'mutation'),
   ];
-  const declarations = renderPathDeclarations(shape.pathParameters);
+  const declarations = renderPathDeclarations(callParameters.pathParameters);
   if (operation.requestBody?.required === true) {
     declarations.push(
       `declare const requestBody: NonNullable<${operation.requestType.export}['body']>;`,
@@ -522,7 +522,7 @@ function renderGenericExecutionSnippet(
   if (declarations.length > 0) {
     lines.push('', ...declarations);
   }
-  const argumentsValue = renderGenericArguments(operation, shape);
+  const argumentsValue = renderGenericArguments(operation, callParameters);
   lines.push(
     '',
     `const arguments_: CallOperationArguments<'${operation.operationId}'> = ${argumentsValue};`,
@@ -585,7 +585,9 @@ function renderStandaloneClientSetup(
   ];
 }
 
-function createFacadeShape(operation: SerializableOperationManifestEntry): FacadeShape {
+function collectFacadeCallParameters(
+  operation: SerializableOperationManifestEntry,
+): FacadeCallParameters {
   const pathByName = new Map(
     operation.parameters
       .filter(({ placement }) => placement === 'path')
@@ -645,12 +647,12 @@ function renderDomainRequiredOptions(
 
 function renderGenericArguments(
   operation: SerializableOperationManifestEntry,
-  shape: FacadeShape,
+  callParameters: FacadeCallParameters,
 ): string {
   const groups: string[] = [];
-  if (shape.pathParameters.length > 0) {
+  if (callParameters.pathParameters.length > 0) {
     groups.push(
-      `path: { ${shape.pathParameters
+      `path: { ${callParameters.pathParameters
         .map(({ identifier, parameter }) => `${JSON.stringify(parameter.name)}: ${identifier}`)
         .join(', ')} }`,
     );

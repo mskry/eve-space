@@ -18,6 +18,14 @@ type AvailableResult<T> =
   | { readonly available: false };
 
 const unavailable = Symbol('unavailable fixture');
+type SchemaContractFixture =
+  | null
+  | boolean
+  | number
+  | string
+  | readonly unknown[]
+  | Readonly<Record<string, unknown>>;
+type DerivedFixture = SchemaContractFixture | typeof unavailable;
 const unavailableResult: AvailableResult<never> = Object.freeze({ available: false });
 const annotationKeywords = new Set([
   'default',
@@ -34,7 +42,7 @@ export function createSchemaContractFixture(
   schema: NormalizedSchema,
   models: readonly NormalizedModel[],
   options: SchemaContractFixtureOptions = {},
-): unknown {
+): SchemaContractFixture {
   if (!Array.isArray(models)) {
     throw new TypeError('Normalized models must be an array');
   }
@@ -57,7 +65,7 @@ function deriveSchemaFixture(
   state: ModelIndex,
   options: SchemaContractFixtureOptions,
   active: Set<string> = new Set(),
-): unknown {
+): DerivedFixture {
   if (!isObject(schema)) {
     return unavailable;
   }
@@ -111,7 +119,7 @@ function deriveReferencedSchemaFixture(
   state: ModelIndex,
   options: SchemaContractFixtureOptions,
   active: Set<string>,
-): unknown {
+): DerivedFixture {
   if (meaningfulKeys.some((key) => key !== '$ref') || typeof schema.$ref !== 'string') {
     return unavailable;
   }
@@ -129,7 +137,7 @@ function deriveComposedSchemaFixture(
   state: ModelIndex,
   options: SchemaContractFixtureOptions,
   active: Set<string>,
-): unknown {
+): DerivedFixture {
   if (meaningfulKeys.some((key) => key !== composition)) {
     return unavailable;
   }
@@ -140,12 +148,22 @@ function deriveCandidateFixture(
   candidates: unknown,
   schema: Record<string, unknown>,
   type: string | null,
-): unknown {
+): DerivedFixture {
   if (!Array.isArray(candidates)) {
     return unavailable;
   }
   const candidate = candidates.find((value) => valueSatisfiesSimpleSchema(value, schema, type));
-  return candidate === undefined ? unavailable : candidate;
+  if (
+    candidate === null ||
+    typeof candidate === 'string' ||
+    typeof candidate === 'number' ||
+    typeof candidate === 'boolean' ||
+    Array.isArray(candidate) ||
+    isObject(candidate)
+  ) {
+    return candidate;
+  }
+  return unavailable;
 }
 
 function deriveArrayFixture(
@@ -153,7 +171,7 @@ function deriveArrayFixture(
   state: ModelIndex,
   options: SchemaContractFixtureOptions,
   active: Set<string>,
-): unknown {
+): DerivedFixture {
   if (!isObject(schema.items)) {
     return unavailable;
   }
@@ -178,7 +196,7 @@ function deriveObjectFixture(
   state: ModelIndex,
   options: SchemaContractFixtureOptions,
   active: Set<string>,
-): unknown {
+): DerivedFixture {
   const properties = schema.properties ?? {};
   if (!isObject(properties) || !Array.isArray(schema.required ?? [])) {
     return unavailable;
@@ -208,7 +226,7 @@ function deriveCompositionFixture(
   state: ModelIndex,
   options: SchemaContractFixtureOptions,
   active: Set<string>,
-): unknown {
+): DerivedFixture {
   if (!Array.isArray(branches) || branches.length === 0) {
     return unavailable;
   }
@@ -228,7 +246,7 @@ function deriveAnyOfFixture(
   state: ModelIndex,
   options: SchemaContractFixtureOptions,
   active: Set<string>,
-): unknown {
+): DerivedFixture {
   for (const branch of branches) {
     const fixture = deriveSchemaFixture(branch, state, options, active);
     if (fixture !== unavailable) {
@@ -243,7 +261,7 @@ function deriveOneOfFixture(
   state: ModelIndex,
   options: SchemaContractFixtureOptions,
   active: Set<string>,
-): unknown {
+): DerivedFixture {
   const kinds = branches.map((branch) => disjointJsonKind(branch, state));
   for (const [index, branch] of branches.entries()) {
     const kind = kinds[index];
@@ -263,7 +281,7 @@ function deriveAllOfFixture(
   state: ModelIndex,
   options: SchemaContractFixtureOptions,
   active: Set<string>,
-): unknown {
+): DerivedFixture {
   const merged: Record<string, unknown> = {};
   for (const branch of branches) {
     if (!mergeAllOfBranch(branch, merged, state, options, active)) {
@@ -332,7 +350,7 @@ function deriveStringFixture(
   return fixture === undefined ? unavailableResult : { available: true, value: fixture };
 }
 
-function deriveNumberFixture(schema: Record<string, unknown>, integer: boolean): unknown {
+function deriveNumberFixture(schema: Record<string, unknown>, integer: boolean): DerivedFixture {
   const multiple =
     typeof schema.multipleOf === 'number' && schema.multipleOf > 0 ? schema.multipleOf : 1;
   const candidates = [0, multiple, -multiple];

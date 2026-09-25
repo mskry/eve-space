@@ -26,7 +26,7 @@ interface CharacterFinanceContractDetailOptions {
   contracts: Readonly<Ref<FinanceContracts | undefined>>
   financeAccess: Readonly<Ref<ProtectedCharacterQueryAccess>>
   changePage: (resource: CharacterFinancePageResource, nextPage: number) => boolean
-  refreshRequestedServices: () => Promise<unknown>
+  refreshRequestedServices: () => Promise<void>
 }
 
 export function useCharacterFinanceContractDetail(options: CharacterFinanceContractDetailOptions) {

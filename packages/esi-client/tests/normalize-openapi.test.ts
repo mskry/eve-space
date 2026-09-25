@@ -3,7 +3,12 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { normalizeOpenApiDocument, resolveLocalReference } from '../scripts/generate/normalize.ts';
+import {
+  normalizeOpenApiDocument,
+  resolveLocalReference,
+  type JsonObject,
+  type JsonValue,
+} from '../scripts/generate/normalize.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 describe('normalized OpenAPI model', () => {
@@ -465,9 +470,15 @@ function minimalDocument(paths: Record<string, object>) {
   };
 }
 
-function operation(operationId?: string, response: object = { description: 'Removed' }) {
+function operation(
+  operationId?: string,
+  response: {
+    readonly description?: string;
+    readonly content?: Readonly<Record<string, { readonly schema: JsonObject }>>;
+  } = { description: 'Removed' },
+) {
   return {
-    ...(operationId === undefined ? {} : { operationId }),
+    ...(!(operationId === undefined) && { operationId }),
     responses: { '204': response },
   };
 }
@@ -483,7 +494,7 @@ function jsonOperation(operationId: string) {
   return { operationId, responses: { '200': jsonResponse() } };
 }
 
-function parameter(name: string, placement: string, required: boolean, schema: object) {
+function parameter(name: string, placement: string, required: boolean, schema: JsonObject) {
   return { in: placement, name, required, schema };
 }
 
@@ -502,7 +513,7 @@ async function writeExclusions(exclusions: readonly object[]): Promise<string> {
   return path;
 }
 
-function reverseObjectEntries(value: unknown): unknown {
+function reverseObjectEntries(value: JsonValue): JsonValue {
   if (Array.isArray(value)) {
     return value.map(reverseObjectEntries);
   }
@@ -510,7 +521,7 @@ function reverseObjectEntries(value: unknown): unknown {
     return value;
   }
   const entries = Object.entries(value);
-  const reversed: Record<string, unknown> = {};
+  const reversed: Record<string, JsonValue> = {};
   for (let index = entries.length - 1; index >= 0; index -= 1) {
     const entry = entries[index];
     if (entry) {
@@ -526,6 +537,6 @@ function isSorted(values: readonly string[]): boolean {
   );
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: JsonValue): value is JsonObject {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }

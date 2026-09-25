@@ -5,7 +5,11 @@ import type {
 } from '@eve-space/core-data-contract'
 import type postgres from 'postgres'
 import { sql } from '../db/client.js'
-import { executeUniverseQuery, runBoundedReadTransaction } from '../universe/database-read.js'
+import {
+  executeUniverseQuery,
+  runBoundedReadTransaction,
+  type BoundedReadDatabase,
+} from '../universe/database-read.js'
 import {
   boundedPositiveIds,
   CoreDataProductUnavailableError,
@@ -25,7 +29,7 @@ interface PublishedTypeGroupRow extends postgres.Row {
 
 export function loadPublishedTypeGroupsProduct(
   request: PublishedTypeGroupsRequest,
-  database: postgres.Sql = sql,
+  database: BoundedReadDatabase = sql,
 ): Promise<PublishedTypeGroupsResult> {
   const uniqueTypeIds = boundedPositiveIds(
     request,

@@ -205,19 +205,17 @@ async function prepareDeliveryOptions(
     backoff: { delay: 1000, jitter: 0.25, type: 'exponential' as const },
     removeOnComplete: contract.retention.completed,
     removeOnFail: contract.retention.failed,
-    ...(contract.activeWorkDeduplication === 'job-id' ? { jobId: identity } : {}),
-    ...(usesSimpleDeduplication(command, contract.activeWorkDeduplication)
-      ? { deduplication: { id: identity } }
-      : {}),
-    ...(delay > 0 ? { delay } : {}),
-    ...(contract.priority === 'resource'
-      ? {
-          priority: resourceRefreshPriority(
-            (command as Extract<QueueCommand, { name: 'resource-refresh' | 'resource-batch' }>)
-              .materializationIntervalSeconds,
-          ),
-        }
-      : {}),
+    ...(contract.activeWorkDeduplication === 'job-id' && { jobId: identity }),
+    ...(usesSimpleDeduplication(command, contract.activeWorkDeduplication) && {
+      deduplication: { id: identity },
+    }),
+    ...(delay > 0 && { delay }),
+    ...(contract.priority === 'resource' && {
+      priority: resourceRefreshPriority(
+        (command as Extract<QueueCommand, { name: 'resource-refresh' | 'resource-batch' }>)
+          .materializationIntervalSeconds,
+      ),
+    }),
   } satisfies JobsOptions
 }
 

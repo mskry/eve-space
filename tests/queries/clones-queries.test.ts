@@ -273,7 +273,7 @@ function cloneResponse(homeName: string, stale = false) {
     lastStationChangeAt: null,
     ...freshness,
     stale,
-    ...(stale ? { refreshFailureClass: 'esi-unavailable' as const } : {}),
+    ...(stale && { refreshFailureClass: 'esi-unavailable' as const }),
   }
 }
 

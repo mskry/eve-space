@@ -178,7 +178,7 @@ const walletTransactionsRead = createCharacterEsiRead({
   descriptor: operationRegistry.GetCharactersCharacterIdWalletTransactions.transport,
   encodeRequest: (input: WalletTransactionsRepresentationInput) => ({
     path: { character_id: input.characterId },
-    ...(input.fromId === null ? {} : { query: { from_id: input.fromId } }),
+    ...(input.fromId !== null && { query: { from_id: input.fromId } }),
   }),
   map: async (response, input): Promise<WalletTransactionsData> => {
     const personalTransactions = response.data.filter((transaction) => transaction.is_personal)

@@ -1,4 +1,4 @@
-import type { EntryKey, QueryCache, UseQueryEntry } from '@pinia/colada'
+import type { EntryKey, UseQueryEntry } from '@pinia/colada'
 import { describe, expect, it, vi } from 'vitest'
 import { createEveImages } from '../src/runtime/eve-images.js'
 import {
@@ -108,7 +108,7 @@ describe('platform module runtime surface', () => {
         exact ? [rootEntry] : [rootEntry, childEntry],
       ),
       remove: vi.fn(),
-    } as unknown as QueryCache
+    } satisfies Parameters<typeof removePlatformQuery>[0]
 
     removePlatformQuery(queryCache, rootEntry.key)
 
@@ -129,7 +129,7 @@ describe('platform module runtime surface', () => {
       cancel: vi.fn(),
       getEntries: vi.fn(() => [activityEntry, otherEntry]),
       remove: vi.fn(),
-    } as unknown as QueryCache
+    } satisfies Parameters<typeof removePlatformModuleQueries>[0]
 
     removePlatformModuleQueries(queryCache, 'activity')
 
@@ -156,7 +156,7 @@ describe('platform module runtime surface', () => {
       cancel: vi.fn(),
       getEntries: vi.fn(() => [skillsEntry, assetsEntry, unrelatedEntry]),
       remove: vi.fn(),
-    } as unknown as QueryCache
+    } satisfies Parameters<typeof removePlatformModuleSectionQueries>[0]
 
     removePlatformModuleSectionQueries(queryCache, 'member-audit', 'skills')
 
@@ -176,7 +176,7 @@ describe('platform module runtime surface', () => {
       getEntries: vi.fn(() => [sessionEntry, childEntry]),
       remove: vi.fn(),
       setQueryData: vi.fn(),
-    } as unknown as QueryCache
+    } satisfies Parameters<typeof clearAuthenticatedQueriesAfterSessionTransition>[0]
 
     clearAuthenticatedQueriesAfterSessionTransition(queryCache, { authenticated: false })
 
@@ -204,7 +204,7 @@ describe('platform module runtime surface', () => {
       getEntries: vi.fn(() => [sessionEntry, childEntry]),
       remove: vi.fn(),
       setQueryData: vi.fn(),
-    } as unknown as QueryCache
+    } satisfies Parameters<typeof clearAuthenticatedQueriesAfterSessionTransition>[0]
     const nextSession = { account: { userId: 'user-2' }, authenticated: true }
 
     clearAuthenticatedQueriesAfterSessionTransition(queryCache, nextSession)

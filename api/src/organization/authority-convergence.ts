@@ -38,7 +38,7 @@ export async function invalidateCharacterAuthoritySourcesInTransaction(
     .update(organizationAuthorityEvidence)
     .set({
       status: 'invalid',
-      ...(input.outcome === 'not-director' ? { directorRolePresent: false } : {}),
+      ...(input.outcome === 'not-director' && { directorRolePresent: false }),
       graceUntil: null,
       failureClass: `strict:${input.outcome}`,
       invalidatedAt: now,
@@ -77,7 +77,7 @@ export async function invalidateCharacterAuthoritySourcesInTransaction(
     .update(organizationDerivedAuthoritySources)
     .set({
       status: 'invalid',
-      ...(input.outcome === 'not-director' ? { directorRolePresent: false } : {}),
+      ...(input.outcome === 'not-director' && { directorRolePresent: false }),
       graceUntil: null,
       failureClass: `strict:${input.outcome}`,
       invalidatedAt: now,
@@ -116,7 +116,7 @@ export async function invalidateCharacterAuthoritySourcesInTransaction(
     .update(organizationCorporationSources)
     .set({
       status: 'invalid',
-      ...(input.outcome === 'not-director' ? { directorRolePresent: false } : {}),
+      ...(input.outcome === 'not-director' && { directorRolePresent: false }),
       graceUntil: null,
       failureClass: `strict:${input.outcome}`,
       invalidatedAt: now,

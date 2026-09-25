@@ -108,6 +108,15 @@ describe('mail frontend behavior', () => {
     ).toBe(true)
   })
 
+  it('preserves explicit unread and empty-label overrides without copying unchanged headers', () => {
+    const header = mailHeader(1, { isRead: true, labelIds: [1] })
+
+    expect(applyMailOverlays([header], new Map(), new Set(), new Map())[0]).toBe(header)
+    expect(
+      applyMailOverlays([header], new Map([[1, false]]), new Set(), new Map([[1, []]])),
+    ).toStrictEqual([{ ...header, isRead: false, labelIds: [] }])
+  })
+
   it('treats an absent read flag as agreement with a local unread override', () => {
     const reconciled = reconcileMailReadOverrides(
       [mailHeader(1, { isRead: null })],

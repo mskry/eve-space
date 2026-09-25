@@ -56,38 +56,59 @@ export function verifyQueueDiscardRecovery(options: {
   return snapshot
 }
 
+const readRecoveryCount = (
+  snapshot: Record<string, unknown>,
+  field: 'eventCount' | 'publishedCount' | 'unpublishedCount',
+): number => {
+  const value = snapshot[field]
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+    throw new Error(`Invalid recovery snapshot ${field}`)
+  }
+  return value
+}
+
+const readRecoveryTimestamp = (
+  snapshot: Record<string, unknown>,
+  field: 'earliestPublishedAt' | 'latestPublishedAt',
+): string | null => {
+  const value = snapshot[field]
+  if (value !== null && (typeof value !== 'string' || Number.isNaN(Date.parse(value)))) {
+    throw new Error(`Invalid recovery snapshot ${field}`)
+  }
+  return value
+}
+
 function validateRecoverySnapshot(value: unknown): DomainEventRecoverySnapshot {
   if (!value || typeof value !== 'object') {
     throw new Error('Invalid recovery snapshot')
   }
   const snapshot = value as Record<string, unknown>
-  for (const field of ['eventCount', 'publishedCount', 'unpublishedCount'] as const) {
-    if (!Number.isInteger(snapshot[field]) || (snapshot[field] as number) < 0) {
-      throw new Error(`Invalid recovery snapshot ${field}`)
-    }
-  }
-  for (const field of ['earliestPublishedAt', 'latestPublishedAt'] as const) {
-    const timestamp = snapshot[field]
-    if (
-      timestamp !== null &&
-      (typeof timestamp !== 'string' || Number.isNaN(Date.parse(timestamp)))
-    ) {
-      throw new Error(`Invalid recovery snapshot ${field}`)
-    }
-  }
-  const earliest = snapshot.earliestPublishedAt as string | null
-  const latest = snapshot.latestPublishedAt as string | null
+  const eventCount = readRecoveryCount(snapshot, 'eventCount')
+  const publishedCount = readRecoveryCount(snapshot, 'publishedCount')
+  const unpublishedCount = readRecoveryCount(snapshot, 'unpublishedCount')
+  const earliestPublishedAt = readRecoveryTimestamp(snapshot, 'earliestPublishedAt')
+  const latestPublishedAt = readRecoveryTimestamp(snapshot, 'latestPublishedAt')
   const invalidPublicationRange =
-    snapshot.publishedCount === 0
-      ? earliest !== null || latest !== null
-      : earliest === null || latest === null
+    publishedCount === 0
+      ? earliestPublishedAt !== null || latestPublishedAt !== null
+      : earliestPublishedAt === null || latestPublishedAt === null
   if (invalidPublicationRange) {
     throw new Error('Invalid recovery snapshot publication range')
   }
-  if (earliest !== null && latest !== null && Date.parse(earliest) > Date.parse(latest)) {
+  if (
+    earliestPublishedAt !== null &&
+    latestPublishedAt !== null &&
+    Date.parse(earliestPublishedAt) > Date.parse(latestPublishedAt)
+  ) {
     throw new Error('Invalid recovery snapshot publication range')
   }
-  return snapshot as unknown as DomainEventRecoverySnapshot
+  return {
+    eventCount,
+    publishedCount,
+    unpublishedCount,
+    earliestPublishedAt,
+    latestPublishedAt,
+  }
 }
 
 function snapshotsEqual(

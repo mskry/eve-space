@@ -9,7 +9,7 @@ import {
   renderSpecificationDriftReport,
   reportSpecificationDrift,
 } from '../scripts/drift-report.ts';
-import { normalizeOpenApiDocument } from '../scripts/generate/normalize.ts';
+import { normalizeOpenApiDocument, type JsonObject } from '../scripts/generate/normalize.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 describe('specification drift comparison', () => {
@@ -287,7 +287,7 @@ describe('specification drift comparison', () => {
 
 function driftDocument(version: 'pinned' | 'latest') {
   const pinned = version === 'pinned';
-  const itemSchema = pinned
+  const itemSchema: JsonObject = pinned
     ? {
         properties: { id: { type: 'integer' }, removed: { type: 'string' } },
         required: ['id'],
@@ -395,12 +395,15 @@ function parameter(
   name: string,
   placement: 'path' | 'query' | 'header',
   required: boolean,
-  schema: object,
+  schema: JsonObject,
 ) {
   return { in: placement, name, required, schema };
 }
 
-function jsonResponse(schema: object, headers: Record<string, object> = {}) {
+function jsonResponse(
+  schema: JsonObject,
+  headers: Record<string, { readonly schema: JsonObject }> = {},
+) {
   return {
     content: { 'application/json': { schema } },
     description: 'JSON response',
@@ -539,25 +542,14 @@ function sortJson(value: unknown): unknown {
     return value;
   }
   return Object.fromEntries(
-    sortedObjectEntries(value).map(([key, entry]) => [key, sortJson(entry)]),
+    Object.entries(value)
+      .toSorted(([left], [right]) => left.localeCompare(right, 'en'))
+      .map(([key, entry]) => [key, sortJson(entry)]),
   );
 }
 
 function reversed<T>(values: readonly T[]): T[] {
   return Array.from({ length: values.length }, (_, index) => values[values.length - index - 1]);
-}
-
-function sortedObjectEntries(value: object): [string, unknown][] {
-  const sorted: [string, unknown][] = [];
-  for (const entry of Object.entries(value)) {
-    const index = sorted.findIndex(([key]) => key.localeCompare(entry[0], 'en') > 0);
-    if (index === -1) {
-      sorted.push(entry);
-    } else {
-      sorted.splice(index, 0, entry);
-    }
-  }
-  return sorted;
 }
 
 function hash(value: string) {

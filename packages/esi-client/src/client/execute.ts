@@ -539,7 +539,7 @@ async function resolveAccessToken(
     throw new EsiAuthenticationRequiredError({
       operationId,
       scopes: authentication.scopes,
-      ...(typeof token === 'string' ? { redaction: { secrets: [token] } } : {}),
+      ...(typeof token === 'string' && { redaction: { secrets: [token] } }),
     });
   }
   return token;

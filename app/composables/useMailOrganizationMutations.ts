@@ -277,7 +277,7 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
       commitCreatedMailLabel(queryCache, target.characterId, label)
       queueMicrotask(() => localCreatedLabelIds.delete(labelId))
       return {
-        ...(deletedLabelIds.value.has(labelId) ? { reusedDeletedLabelId: labelId } : {}),
+        ...(deletedLabelIds.value.has(labelId) && { reusedDeletedLabelId: labelId }),
         success: true,
       }
     } catch (error) {

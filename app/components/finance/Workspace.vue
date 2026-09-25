@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { VNode } from 'vue'
 import type { FinanceRange } from '../../types/finance'
 import { FINANCE_RANGES } from '../../utils/finance'
 
@@ -21,10 +22,10 @@ const emit = defineEmits<{
 }>()
 
 defineSlots<{
-  contracts(): unknown
-  journal(): unknown
-  orders(): unknown
-  transactions(): unknown
+  contracts(): VNode[]
+  journal(): VNode[]
+  orders(): VNode[]
+  transactions(): VNode[]
 }>()
 
 const services: ReadonlyArray<{ label: string; value: FinanceService }> = [

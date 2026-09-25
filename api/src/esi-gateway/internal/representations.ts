@@ -168,6 +168,6 @@ function defineEsiRepresentation<
     descriptor: options.descriptor,
     encodeRequest: options.encodeRequest,
     map: options.map,
-    ...(options.recover ? { recover: options.recover } : {}),
+    ...(options.recover && { recover: options.recover }),
   }
 }

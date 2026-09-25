@@ -13,6 +13,8 @@ export function resolveFinanceTotalPages(totalPages: number | undefined, request
   if (totalPages === undefined || totalPages === 0) {
     return requestedPage
   }
-  assertFinancePositiveSafeInteger(totalPages, 'ESI pagination total')
+  if (!isPositiveSafeInteger(totalPages)) {
+    throw new Error('ESI pagination total must be a positive safe integer')
+  }
   return totalPages
 }

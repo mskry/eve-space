@@ -72,17 +72,17 @@ export const organizationReviewDirectoryQuery = defineEsiQueryOptions(
       const response = await apiClient.api.organization.review.members.$get(
         {
           query: {
-            ...(input.query ? { query: input.query } : {}),
-            ...(input.corporationId ? { corporationId: String(input.corporationId) } : {}),
-            ...(input.groupId ? { groupId: input.groupId } : {}),
-            ...(input.complianceState ? { complianceState: input.complianceState } : {}),
-            ...(input.blocked === undefined
-              ? {}
-              : { blocked: input.blocked ? ('true' as const) : ('false' as const) }),
-            ...(input.auditState ? { auditState: input.auditState } : {}),
-            ...(input.sort ? { sort: input.sort } : {}),
-            ...(input.direction ? { direction: input.direction } : {}),
-            ...(input.cursor ? { cursor: input.cursor } : {}),
+            ...(input.query && { query: input.query }),
+            ...(input.corporationId && { corporationId: String(input.corporationId) }),
+            ...(input.groupId && { groupId: input.groupId }),
+            ...(input.complianceState && { complianceState: input.complianceState }),
+            ...(input.blocked !== undefined && {
+              blocked: input.blocked ? ('true' as const) : ('false' as const),
+            }),
+            ...(input.auditState && { auditState: input.auditState }),
+            ...(input.sort && { sort: input.sort }),
+            ...(input.direction && { direction: input.direction }),
+            ...(input.cursor && { cursor: input.cursor }),
             limit: String(input.limit),
           },
         },

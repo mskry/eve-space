@@ -216,6 +216,7 @@ async function cancelResponseBody(response: Response, reason: unknown) {
   await response.body?.cancel(reason).catch(() => {})
 }
 
+// Preserve the original rejection identity; an abort reason or Effect defect need not be an Error.
 function errorFromCause(cause: Cause.Cause<unknown>, signal?: AbortSignal): unknown {
   if (signal?.aborted) {
     return signal.reason

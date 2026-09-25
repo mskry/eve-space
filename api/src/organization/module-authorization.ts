@@ -61,9 +61,9 @@ export async function authorizeOrganizationContribution(
       organizationVersion: organization.organizationVersion,
       audience: declaration.audience,
       requiredPermission: declaration.requiredPermission,
-      ...(declaration.additionalRequiredPermissions
-        ? { additionalRequiredPermissions: declaration.additionalRequiredPermissions }
-        : {}),
+      ...(declaration.additionalRequiredPermissions && {
+        additionalRequiredPermissions: declaration.additionalRequiredPermissions,
+      }),
       entitlementScope,
     },
   }
@@ -111,9 +111,9 @@ export async function authorizeOrganizationReviewerContribution(
       organizationVersion: organization.organizationVersion,
       audience: declaration.audience,
       requiredPermission: declaration.requiredPermission,
-      ...(declaration.additionalRequiredPermissions
-        ? { additionalRequiredPermissions: declaration.additionalRequiredPermissions }
-        : {}),
+      ...(declaration.additionalRequiredPermissions && {
+        additionalRequiredPermissions: declaration.additionalRequiredPermissions,
+      }),
       entitlementScope: 'all',
     },
   }

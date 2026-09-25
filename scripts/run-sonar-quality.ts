@@ -134,7 +134,7 @@ function recordCheckpoint(
     const record = {
       at: new Date().toISOString(),
       event,
-      ...(step ? { step } : {}),
+      ...(step && { step }),
       ...details,
       processes: await qualityProcesses(),
     }

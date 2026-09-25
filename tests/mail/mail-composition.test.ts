@@ -741,7 +741,7 @@ function compositionMailbox(
     detailQuery: { data: ref(detail) },
     mailingLists: ref(mailingLists),
     selectedMailId: ref<number | null>(detail?.mailId ?? null),
-  } as unknown as Parameters<typeof useMailComposition>[0]['mailbox']
+  }
 }
 
 function mountCompositionHarness({

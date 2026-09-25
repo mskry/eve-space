@@ -10,7 +10,7 @@ import { deepFreeze } from './internal/json.ts';
 import { splitWords } from './internal/facade-naming.ts';
 import { capitalize, compareText } from './internal/text.ts';
 
-export type NamingResponseShape = 'collection' | 'detail' | 'none';
+export type NamingResponseKind = 'collection' | 'detail' | 'none';
 
 export interface NamingReviewEntry {
   readonly operationId: string;
@@ -19,7 +19,7 @@ export interface NamingReviewEntry {
   readonly path: string;
   readonly positionalIdentifiers: readonly string[];
   readonly summary: string | null;
-  readonly responseShape: NamingResponseShape;
+  readonly responseKind: NamingResponseKind;
   readonly currentTransliteration: string;
   readonly candidateMethod: string;
   readonly candidateCollisionOperationIds: readonly string[];
@@ -92,12 +92,12 @@ export function createNamingReview(
       throw new Error(`Naming review catalog is missing operation: ${operation.operationId}`);
     }
     const positionalIdentifiers = positionalPathIdentifiers(operation);
-    const responseShape = classifyResponseShape(operation, modelsByPointer);
+    const responseKind = classifyResponseKind(operation, modelsByPointer);
     const candidateMethod = candidateMethodName(
       operation,
       accepted.domain,
       positionalIdentifiers,
-      responseShape,
+      responseKind,
     );
     return {
       acceptedDomain: accepted.domain,
@@ -113,7 +113,7 @@ export function createNamingReview(
       operationId: operation.operationId,
       path: operation.path,
       positionalIdentifiers,
-      responseShape,
+      responseKind,
       summary: operation.summary,
     };
   });
@@ -184,11 +184,11 @@ function candidateMethodName(
   operation: NormalizedOperation,
   domain: string,
   positionalIdentifiers: readonly string[],
-  responseShape: NamingResponseShape,
+  responseKind: NamingResponseKind,
 ): string {
   const summaryWords = normalizedWords(operation.summary ?? '');
   const summaryVerb = semanticVerbs.get(summaryWords[0]);
-  const verb = candidateVerb(operation.method, responseShape, summaryVerb);
+  const verb = candidateVerb(operation.method, responseKind, summaryVerb);
   const routeResource = routeResourceWords(operation.path, domain, positionalIdentifiers, verb);
   let summaryResource = summaryWords
     .filter(
@@ -210,14 +210,14 @@ function candidateMethodName(
 
 function candidateVerb(
   method: string,
-  responseShape: NamingResponseShape,
+  responseKind: NamingResponseKind,
   summaryVerb: string | undefined,
 ): string {
   if (summaryVerb === 'get' || summaryVerb === 'list') {
-    return responseShape === 'collection' ? 'list' : 'get';
+    return responseKind === 'collection' ? 'list' : 'get';
   }
   if (method === 'GET') {
-    return responseShape === 'collection' ? 'list' : 'get';
+    return responseKind === 'collection' ? 'list' : 'get';
   }
   if (summaryVerb !== undefined) {
     return summaryVerb;
@@ -292,10 +292,10 @@ function positionalPathIdentifiers(operation: NormalizedOperation): string[] {
   return identifiers;
 }
 
-function classifyResponseShape(
+function classifyResponseKind(
   operation: NormalizedOperation,
   modelsByPointer: Map<string, NormalizedSchema>,
-): NamingResponseShape {
+): NamingResponseKind {
   const schemas = operation.successResponses.flatMap((response) =>
     response.content.map(({ schema }) => resolveSchema(schema, modelsByPointer, new Set())),
   );

@@ -18,6 +18,7 @@ import {
 } from '../src/client/errors.js';
 
 const operationId = 'get_characters_character_id';
+type NestedErrorBody = string | { nested: NestedErrorBody };
 
 describe('ESI structured errors', () => {
   it('provides stable discovery, authentication, and generic mutation codes', () => {
@@ -48,29 +49,20 @@ describe('ESI structured errors', () => {
   it('skips malformed collection entries without discarding later valid entries', () => {
     const authentication = new EsiAuthenticationRequiredError({
       operationId,
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-      scopes: ['before', 123, 'after'] as unknown as string[],
+      scopes: ['before', 123, 'after'],
     });
     const response = new EsiResponseParseError({
-      metadata: {
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-        headers: {
-          before: 'first',
-          malformed: 123,
-          after: 'last',
-        } as unknown as Record<string, string>,
-      },
+      metadata: { headers: { before: 'first', malformed: 123, after: 'last' } },
       operationId,
       status: 200,
     });
     const validation = new EsiRequestValidationError({
       operationId,
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion
       issues: [
         { code: 'first', message: 'first', path: ['before'] },
         null,
         { code: 'last', message: 'last', path: ['after'] },
-      ] as unknown as ConstructorParameters<typeof EsiRequestValidationError>[0]['issues'],
+      ],
     });
 
     expect(authentication.scopes).toStrictEqual(['before', 'after']);
@@ -103,7 +95,7 @@ describe('ESI structured errors', () => {
     expect(JSON.stringify(error)).not.toContain(secret);
     expect(JSON.stringify(error)).not.toContain('cause');
     expect(() => {
-      (error as { code: string }).code = 'changed';
+      Object.assign(error, { code: 'changed' });
     }).toThrow(TypeError);
   });
 
@@ -162,7 +154,7 @@ describe('ESI structured errors', () => {
   it('parses, redacts, and structurally bounds JSON ESI error bodies', () => {
     const token = 'body-access-token';
     const providerValue = 'provider-return-value';
-    let nested: unknown = `deep ${token}`;
+    let nested: NestedErrorBody = `deep ${token}`;
     for (let index = 0; index < ESI_ERROR_BODY_LIMITS.depth + 4; index += 1) {
       nested = { nested };
     }

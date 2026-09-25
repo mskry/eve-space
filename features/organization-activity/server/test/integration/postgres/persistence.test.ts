@@ -161,7 +161,7 @@ function readCheckpoint(resourceId: string, generation = 4) {
 test('migration is idempotent and the runtime role has only generated routine access', async () => {
   const rows =
     await connection`select name from public.schema_migrations where module = ${moduleId} order by name`
-  expect(rows).toStrictEqual(migrationNames.map((name) => ({ name })))
+  expect([...rows]).toStrictEqual(migrationNames.map((name) => ({ name })))
   const [privileges] = await connection<
     {
       canReadCore: boolean
@@ -278,7 +278,7 @@ test('incremental completion does not renew untouched snapshots', async () => {
       and authorization_generation = 4
       and activity_id = ${activityId}
   `
-  expect(rows).toStrictEqual([{ unchanged: true }])
+  expect([...rows]).toStrictEqual([{ unchanged: true }])
 })
 
 test('campaign retention prunes objectives whose campaigns are no longer active', async () => {

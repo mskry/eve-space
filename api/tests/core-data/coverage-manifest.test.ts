@@ -74,7 +74,7 @@ describe('core-data coverage manifest', () => {
 function cloneManifest(): Record<string, unknown>[] {
   const manifest: Record<string, unknown>[] = []
   for (const entry of coreDataCoverageManifest) {
-    const clonedEntry: Record<string, unknown> = { ...entry }
+    const clonedEntry = { ...entry }
     if (entry.esiOperationIds) {
       clonedEntry.esiOperationIds = [...entry.esiOperationIds]
     }

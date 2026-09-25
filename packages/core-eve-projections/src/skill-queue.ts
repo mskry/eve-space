@@ -44,6 +44,11 @@ export interface ProjectedSkillQueueEntry extends SkillQueueSourceEntry {
   readonly secondaryAttribute: SkillAttribute | null
 }
 
+export interface ResolvedSkillQueueState {
+  readonly state: SkillQueueState
+  readonly activeQueuePosition: number | null
+}
+
 export function projectSkillQueueDefinitions(
   rows: readonly SkillQueueDefinitionRow[],
 ): SkillQueueDefinition[] {
@@ -96,7 +101,7 @@ export function projectSkillQueueEntries(
 export function resolveSkillQueueState(
   entries: readonly ProjectedSkillQueueEntry[],
   now: number,
-): { readonly state: SkillQueueState; readonly activeQueuePosition: number | null } {
+): ResolvedSkillQueueState {
   if (entries.length === 0) {
     return { activeQueuePosition: null, state: 'empty' }
   }

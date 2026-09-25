@@ -51,9 +51,37 @@ export interface QueryPersistenceStorage {
   write(value: string, allowPrivateWrite: boolean): Promise<QueryPersistenceStorageWrite>
 }
 
+interface IndexedDbRequest extends EventTarget {
+  readonly result: unknown
+  readonly error: DOMException | null
+}
+
+interface IndexedDbStore {
+  get(key: IDBValidKey): IndexedDbRequest
+  put(value: unknown, key: IDBValidKey): IndexedDbRequest
+  delete(key: IDBValidKey): IndexedDbRequest
+}
+
+interface IndexedDbTransaction extends EventTarget {
+  readonly error: DOMException | null
+  objectStore(name: string): IndexedDbStore
+  abort(): void
+}
+
+interface IndexedDbDatabase extends EventTarget {
+  readonly objectStoreNames: Pick<DOMStringList, 'contains'>
+  createObjectStore(name: string): unknown
+  transaction(name: string, mode: IDBTransactionMode): IndexedDbTransaction
+  close(): void
+}
+
+interface IndexedDbFactory {
+  open(name: string, version: number): IndexedDbRequest & { readonly result: IndexedDbDatabase }
+}
+
 export function createIndexedDbQueryPersistenceStorage(
   options: {
-    readonly indexedDb?: IDBFactory
+    readonly indexedDb?: IndexedDbFactory
     readonly localStorage?: Storage
     readonly now?: () => number
   } = {},
@@ -65,7 +93,7 @@ export function createIndexedDbQueryPersistenceStorage(
 
   const now = options.now ?? Date.now
   const durableState = options.localStorage ?? readBrowserLocalStorage()
-  let databasePromise: Promise<IDBDatabase> | undefined
+  let databasePromise: Promise<IndexedDbDatabase> | undefined
   let operationQueue = Promise.resolve()
 
   function run<T>(operation: () => Promise<T>) {
@@ -78,7 +106,7 @@ export function createIndexedDbQueryPersistenceStorage(
   }
 
   function openDatabase() {
-    databasePromise ??= new Promise<IDBDatabase>((resolve, reject) => {
+    databasePromise ??= new Promise<IndexedDbDatabase>((resolve, reject) => {
       const request = indexedDb.open(DATABASE_NAME, DATABASE_VERSION)
       request.addEventListener('upgradeneeded', () => {
         if (!request.result.objectStoreNames.contains(OBJECT_STORE_NAME)) {
@@ -292,7 +320,7 @@ interface StoredState {
 }
 
 function completeStorageRead(
-  store: IDBObjectStore,
+  store: IndexedDbStore,
   complete: (value: QueryPersistenceStorageRead) => void,
   storedState: StoredState,
   recoverPendingInvalidation: boolean,
@@ -311,7 +339,7 @@ function completeStorageRead(
 }
 
 function completeRecoveredStorageRead(
-  store: IDBObjectStore,
+  store: IndexedDbStore,
   complete: (value: QueryPersistenceStorageRead) => void,
   storedState: StoredState,
   control: InvalidationControl | null,
@@ -335,7 +363,7 @@ function completeRecoveredStorageRead(
 }
 
 function completeStorageReadWithInvalidControl(
-  store: IDBObjectStore,
+  store: IndexedDbStore,
   complete: (value: QueryPersistenceStorageRead) => void,
   storedValue: string | null,
   now: number,
@@ -350,7 +378,7 @@ function completeStorageReadWithInvalidControl(
 }
 
 function completeStorageReadAtGeneration(
-  store: IDBObjectStore,
+  store: IndexedDbStore,
   complete: (value: QueryPersistenceStorageRead) => void,
   storedValue: string | null,
   control: InvalidationControl | null,
@@ -384,7 +412,7 @@ function completeStorageReadAtGeneration(
   })
 }
 
-function storeSerializedEnvelope(store: IDBObjectStore, value: string | null) {
+function storeSerializedEnvelope(store: IndexedDbStore, value: string | null) {
   if (value === null) {
     store.delete(PERSISTED_ESI_QUERY_CACHE_KEY)
   } else {
@@ -392,7 +420,7 @@ function storeSerializedEnvelope(store: IDBObjectStore, value: string | null) {
   }
 }
 
-function poisonPrivatePersistence(store: IDBObjectStore) {
+function poisonPrivatePersistence(store: IndexedDbStore) {
   store.put(
     { invalidationGeneration: null, version: INVALIDATION_CONTROL_VERSION },
     INVALIDATION_CONTROL_KEY,
@@ -440,7 +468,7 @@ function clearInvalidationBarrier(storage: Storage | undefined, token?: string) 
   }
 }
 
-function beginIndexedDbInvalidationBarrier(database: IDBDatabase) {
+function beginIndexedDbInvalidationBarrier(database: IndexedDbDatabase) {
   return completeValueTransaction<boolean>(database, 'readwrite', (store, complete, fail) => {
     const request = store.get(INVALIDATION_BARRIER_KEY)
     request.addEventListener(
@@ -457,7 +485,7 @@ function beginIndexedDbInvalidationBarrier(database: IDBDatabase) {
 }
 
 function readStoredState(
-  store: IDBObjectStore,
+  store: IndexedDbStore,
   fail: (error: unknown) => void,
   complete: (storedValue: string | null, storedControl: unknown, storedBarrier: unknown) => void,
 ) {
@@ -525,9 +553,9 @@ function createInvalidationControl(generation: number): InvalidationControl {
 }
 
 function completeTransaction(
-  database: IDBDatabase,
+  database: IndexedDbDatabase,
   mode: IDBTransactionMode,
-  operation: (store: IDBObjectStore) => IDBRequest,
+  operation: (store: IndexedDbStore) => IndexedDbRequest,
 ) {
   return new Promise<void>((resolve, reject) => {
     const transaction = database.transaction(OBJECT_STORE_NAME, mode)
@@ -543,10 +571,10 @@ function completeTransaction(
 }
 
 function completeValueTransaction<T>(
-  database: IDBDatabase,
+  database: IndexedDbDatabase,
   mode: IDBTransactionMode,
   operation: (
-    store: IDBObjectStore,
+    store: IndexedDbStore,
     complete: (value: T) => void,
     fail: (error: unknown) => void,
   ) => void,

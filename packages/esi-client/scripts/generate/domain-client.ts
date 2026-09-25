@@ -230,9 +230,9 @@ function indexOperations(
   }
   const domains = new Map<string, OperationEntry[]>();
   const seenMetadata = new Set<string>();
-  for (const metadata of operationMetadata as readonly unknown[]) {
+  for (const metadata of operationMetadata) {
     if (
-      !isObject(metadata) ||
+      !isRecordLike(metadata) ||
       typeof metadata.operationId !== 'string' ||
       typeof metadata.domain !== 'string' ||
       typeof metadata.method !== 'string'
@@ -248,8 +248,7 @@ function indexOperations(
     }
     seenMetadata.add(metadata.operationId);
     const entries = domains.get(metadata.domain) ?? [];
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- operationId/domain are validated above; the rest is trusted like the prior untyped implementation
-    entries.push(createOperationEntry(operation, metadata as unknown as ResolvedOperationMetadata));
+    entries.push(createOperationEntry(operation, metadata));
     domains.set(metadata.domain, entries);
   }
   if (seenMetadata.size !== operationsById.size) {
@@ -544,23 +543,27 @@ function resolveParameterSchema(
   modelsByPointer: Map<string, { readonly name: string; readonly schema: unknown }>,
   active: Set<string>,
   operationId: string,
-): Record<string, unknown> {
-  if (!isObject(schema)) {
-    throw new Error(`Invalid parameter schema for operation ${operationId}`);
+) {
+  let current: unknown = schema;
+  const overlays: Array<Record<string, unknown>> = [];
+  while (true) {
+    if (!isObject(current)) {
+      throw new Error(`Invalid parameter schema for operation ${operationId}`);
+    }
+    if (typeof current.$ref !== 'string') {
+      return overlays.reduce((resolved, overlay) => ({ ...resolved, ...overlay }), current);
+    }
+    if (active.has(current.$ref)) {
+      throw new Error(`Recursive parameter schema reference for operation ${operationId}`);
+    }
+    const model = modelsByPointer.get(current.$ref);
+    if (model === undefined) {
+      throw new Error(`Unresolved parameter schema reference ${current.$ref} for ${operationId}`);
+    }
+    active.add(current.$ref);
+    overlays.unshift(current);
+    current = model.schema;
   }
-  if (typeof schema.$ref !== 'string') {
-    return schema;
-  }
-  if (active.has(schema.$ref)) {
-    throw new Error(`Recursive parameter schema reference for operation ${operationId}`);
-  }
-  const model = modelsByPointer.get(schema.$ref);
-  if (model === undefined) {
-    throw new Error(`Unresolved parameter schema reference ${schema.$ref} for ${operationId}`);
-  }
-  const next = new Set(active);
-  next.add(schema.$ref);
-  return { ...resolveParameterSchema(model.schema, modelsByPointer, next, operationId), ...schema };
 }
 
 function renderParameterSchema(
@@ -1105,7 +1108,3 @@ function indent(value: string, spaces: number): string {
     .map((line) => (line === '' ? '' : `${prefix}${line}`))
     .join('\n');
 }
-
-// Same runtime check as isObject, but without a type predicate: some call sites validate a
-// value whose static type is already concrete, and a predicate there would incorrectly widen
-// (rather than preserve) that type after narrowing.

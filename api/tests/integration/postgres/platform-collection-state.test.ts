@@ -833,7 +833,7 @@ describe('platform collection state PostgreSQL persistence', () => {
         expect(classification).toMatchObject({
           dueReason,
           status,
-          ...(due === null ? {} : { due }),
+          ...(!(due === null) && { due }),
         })
       }
 

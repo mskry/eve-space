@@ -96,7 +96,7 @@ export interface CommonErrorOptions {
 export interface EsiUnknownOperationErrorOptions extends CommonErrorOptions {}
 
 export interface EsiAuthenticationRequiredErrorOptions extends CommonErrorOptions {
-  readonly scopes?: readonly string[];
+  readonly scopes?: readonly unknown[];
 }
 
 export interface EsiGenericMutationDisabledErrorOptions extends CommonErrorOptions {}
@@ -126,7 +126,7 @@ export interface EsiResponseParseErrorOptions extends CommonErrorOptions {
 }
 
 export interface EsiValidationErrorOptions extends CommonErrorOptions {
-  readonly issues: readonly EsiValidationIssueInput[];
+  readonly issues: readonly (EsiValidationIssueInput | null)[];
 }
 
 export interface EsiRequestValidationErrorOptions extends EsiValidationErrorOptions {}

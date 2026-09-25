@@ -8,7 +8,7 @@ const allowedDependenciesByModule = {
   notifications: ['envelope', 'shape'],
   'private-lifecycle': ['envelope', 'notifications', 'shape', 'storage'],
   runtime: ['entry-state', 'envelope', 'notifications', 'private-lifecycle', 'state', 'storage'],
-  shape: [],
+  ['shape']: [],
   state: ['entry-state', 'envelope', 'shape'],
   storage: ['envelope', 'shape'],
 } as const

@@ -35,8 +35,14 @@ export function classifyCharacterResourceFailure(
   return { kind: 'unavailable' }
 }
 
+const hasHttpStatus = (value: unknown): value is { status: unknown } =>
+  typeof value === 'object' && value !== null && 'status' in value
+
+const isHttpStatusInput = (value: unknown): value is number | string =>
+  typeof value === 'number' || typeof value === 'string'
+
 function isRejectedAuthorization(error: unknown) {
-  if (typeof error !== 'object' || error === null || !('status' in error)) {
+  if (!hasHttpStatus(error)) {
     return false
   }
   const status = httpStatus(error.status)
@@ -44,7 +50,7 @@ function isRejectedAuthorization(error: unknown) {
 }
 
 function httpStatus(value: unknown) {
-  if (typeof value !== 'number' && typeof value !== 'string') {
+  if (!isHttpStatusInput(value)) {
     return
   }
   const status = Number(value)

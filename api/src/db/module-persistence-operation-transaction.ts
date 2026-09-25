@@ -59,8 +59,8 @@ export function createStandaloneModulePersistenceOperationInvoker(
     return result as Result
   }
   return createModulePersistenceOperationInvoker(moduleOperations, runInTransaction, {
-    ...(options.readOnly ? { expectedMode: 'read' as const } : {}),
-    ...(options.signal ? { signal: options.signal } : {}),
+    ...(options.readOnly && { expectedMode: 'read' as const }),
+    ...(options.signal && { signal: options.signal }),
   })
 }
 
@@ -108,7 +108,7 @@ export function createTransactionScopedModulePersistenceOperationInvoker(
         }
       },
       expectedMode: 'write',
-      ...(signal ? { signal } : {}),
+      ...(signal && { signal }),
     },
   )
   return {

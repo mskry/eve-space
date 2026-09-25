@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { useMailOrganization } from '../../app/composables/useMailOrganization'
 import { useMailOrganizationMutations } from '../../app/composables/useMailOrganizationMutations'
 import { subscribePrivateQueryInvalidation } from '../../app/query-persistence/runtime'
-import type { useCharacterMailbox } from '../../app/composables/useCharacterMailbox'
 import type { MailDetail, MailHeader, MailLabel } from '../../app/queries/mail'
 import { createApiClient } from '../../app/utils/api-client'
 import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
@@ -394,7 +393,7 @@ function mountOrganization(labelIds: number[] = [1]) {
       selectedMailId.value === selectedHeader.value.mailId ? selectedHeader.value : undefined,
     ),
     selectedMailId,
-  } as unknown as ReturnType<typeof useCharacterMailbox>
+  }
   let mutations!: ReturnType<typeof useMailOrganizationMutations>
   let organization!: ReturnType<typeof useMailOrganization>
   const Root = defineComponent({

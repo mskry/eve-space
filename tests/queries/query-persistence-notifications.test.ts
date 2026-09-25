@@ -13,7 +13,7 @@ describe('query persistence notifications', () => {
       addEventListener: vi.fn(),
       localStorage: { removeItem, setItem },
       removeEventListener: vi.fn(),
-    } as unknown as Window
+    }
     const notifications = createBrowserQueryPersistenceNotifications({ window: browserWindow })
     const notification = { generation: null, scope: { kind: 'all' } } as const
 

@@ -5,7 +5,11 @@ import type {
 } from '@eve-space/core-data-contract'
 import type postgres from 'postgres'
 import { sql } from '../db/client.js'
-import { executeUniverseQuery, runBoundedReadTransaction } from '../universe/database-read.js'
+import {
+  executeUniverseQuery,
+  runBoundedReadTransaction,
+  type BoundedReadDatabase,
+} from '../universe/database-read.js'
 import {
   boundedPositiveIds,
   CoreDataProductUnavailableError,
@@ -25,7 +29,7 @@ interface StaticLocationLabelRow extends postgres.Row {
 
 export function loadStaticLocationLabelsProduct(
   request: StaticLocationLabelsRequest,
-  database: postgres.Sql = sql,
+  database: BoundedReadDatabase = sql,
 ): Promise<StaticLocationLabelsResult> {
   const locationIds = boundedPositiveIds(
     request,

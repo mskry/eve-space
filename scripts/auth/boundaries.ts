@@ -51,47 +51,49 @@ const allowedExternalImportsByTier: Partial<Record<AuthTier, ReadonlySet<string>
   provider: new Set(['jose', 'zod', 'api/src/env.js']),
 }
 
-const persistenceImports: Record<string, ReadonlySet<string>> = {
-  'character-disclosure-store': new Set([
-    'drizzle-orm',
-    'api/src/db/client.js',
-    'api/src/db/schema.js',
-    'api/src/reviewer-use-disclosure.js',
-  ]),
-  'character-lock': new Set([
-    'drizzle-orm',
-    'api/src/db/client.js',
-    'api/src/db/locks.js',
-    'api/src/env.js',
-  ]),
-  'character-token-store': new Set([
-    'drizzle-orm',
-    'api/src/auth/character-disclosure-store.js',
-    'api/src/db/client.js',
-    'api/src/db/schema.js',
-    'api/src/env.js',
-    'api/src/scopes.js',
-    'api/src/auth/character-lock.js',
-  ]),
-  'character-transfer-store': new Set([
-    'drizzle-orm',
-    'api/src/db/client.js',
-    'api/src/db/schema.js',
-  ]),
-  'oauth-state-store': new Set([
-    'drizzle-orm',
-    'api/src/db/client.js',
-    'api/src/db/schema.js',
-    'api/src/reviewer-use-disclosure.js',
-    'api/src/auth/security.js',
-  ]),
-  'session-store': new Set([
-    'drizzle-orm',
-    'api/src/db/client.js',
-    'api/src/db/schema.js',
-    'api/src/auth/security.js',
-  ]),
-}
+const persistenceImports = new Map(
+  Object.entries({
+    'character-disclosure-store': new Set([
+      'drizzle-orm',
+      'api/src/db/client.js',
+      'api/src/db/schema.js',
+      'api/src/reviewer-use-disclosure.js',
+    ]),
+    'character-lock': new Set([
+      'drizzle-orm',
+      'api/src/db/client.js',
+      'api/src/db/locks.js',
+      'api/src/env.js',
+    ]),
+    'character-token-store': new Set([
+      'drizzle-orm',
+      'api/src/auth/character-disclosure-store.js',
+      'api/src/db/client.js',
+      'api/src/db/schema.js',
+      'api/src/env.js',
+      'api/src/scopes.js',
+      'api/src/auth/character-lock.js',
+    ]),
+    'character-transfer-store': new Set([
+      'drizzle-orm',
+      'api/src/db/client.js',
+      'api/src/db/schema.js',
+    ]),
+    'oauth-state-store': new Set([
+      'drizzle-orm',
+      'api/src/db/client.js',
+      'api/src/db/schema.js',
+      'api/src/reviewer-use-disclosure.js',
+      'api/src/auth/security.js',
+    ]),
+    'session-store': new Set([
+      'drizzle-orm',
+      'api/src/db/client.js',
+      'api/src/db/schema.js',
+      'api/src/auth/security.js',
+    ]),
+  }),
+)
 
 export const declaredAuthModules = Object.freeze(
   authModuleDeclarations
@@ -196,7 +198,7 @@ function violationsForImport(
 
   const allowedImports =
     sourceTier === 'persistence'
-      ? persistenceImports[module]
+      ? persistenceImports.get(module)
       : allowedExternalImportsByTier[sourceTier]
   if (allowedImports && !allowedImports.has(dependency)) {
     return [

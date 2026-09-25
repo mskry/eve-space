@@ -70,7 +70,7 @@ describe('EsiClientConfiguration', () => {
     expect(JSON.stringify(configuration)).not.toContain(token);
     expect(JSON.parse(JSON.stringify(configuration))).toStrictEqual(configuration.toJSON());
     expect(() => {
-      (configuration as { baseUrl: string }).baseUrl = 'https://unsafe.example';
+      Object.assign(configuration, { baseUrl: 'https://unsafe.example' });
     }).toThrow(TypeError);
   });
 

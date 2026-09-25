@@ -1,4 +1,3 @@
-import type postgres from 'postgres'
 import { describe, expect, test, vi } from 'vitest'
 import { loadPublishedSkillCatalogueProduct } from '../../src/core-data/published-skill-catalogue-adapter.js'
 import { loadPublishedTypeDetailsProduct } from '../../src/core-data/published-type-details-adapter.js'
@@ -27,7 +26,7 @@ describe.each([
     [{ [property]: Array.from({ length: 501 }, (_, index) => index + 1) }, 'cannot exceed 500'],
   ])('rejects invalid requests before source access', (request, message) => {
     const begin = vi.fn()
-    const sourceDatabase = { begin } as unknown as postgres.Sql
+    const sourceDatabase = { begin }
 
     expect(() => load(request as never, sourceDatabase)).toThrow(message)
     expect(begin).not.toHaveBeenCalled()
@@ -35,7 +34,7 @@ describe.each([
 
   test('deduplicates before enforcing the source request', async () => {
     const begin = vi.fn(() => Promise.reject(new Error('source reached')))
-    const sourceDatabase = { begin } as unknown as postgres.Sql
+    const sourceDatabase = { begin }
     const ids = Array.from({ length: 501 }, () => 7)
 
     await expect(load({ [property]: ids } as never, sourceDatabase)).rejects.toThrow(

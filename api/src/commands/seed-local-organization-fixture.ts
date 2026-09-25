@@ -42,7 +42,7 @@ try {
   })
 }
 
-async function cleanUp(operation: () => Promise<unknown> | undefined) {
+async function cleanUp(operation: () => Promise<void> | undefined) {
   try {
     await operation()
   } catch (error) {

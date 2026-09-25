@@ -37,7 +37,7 @@ export async function processInstalledResourceBatch(
         recordInstalledResourceCollectionFailure(identity, failure, {
           expectedAuthorizationGeneration: authorizationGeneration,
           resources: options.resources,
-          ...(managedAuthority === undefined ? {} : { expectedManagedAuthority: managedAuthority }),
+          ...(managedAuthority !== undefined && { expectedManagedAuthority: managedAuthority }),
         }),
       ),
     )
@@ -97,9 +97,9 @@ async function applyBatchClassifications(
       await recordInstalledResourceCollectionFailure(classification.identity, failure, {
         expectedAuthorizationGeneration: classification.authorizationGeneration,
         resources: options.resources,
-        ...(classification.managedAuthority === undefined
-          ? {}
-          : { expectedManagedAuthority: classification.managedAuthority }),
+        ...(classification.managedAuthority !== undefined && {
+          expectedManagedAuthority: classification.managedAuthority,
+        }),
       })
       throw failure
     }

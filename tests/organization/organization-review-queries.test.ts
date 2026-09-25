@@ -361,7 +361,7 @@ function authorized(panelEntry: ReturnType<typeof panel>) {
     contributionId,
     routeId,
     routePath,
-    ...(sectionId === undefined ? {} : { sectionId }),
+    ...(!(sectionId === undefined) && { sectionId }),
     target,
     label,
     description,

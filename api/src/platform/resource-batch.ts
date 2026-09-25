@@ -190,7 +190,7 @@ function batchEsiRequest(
     authorization: { kind: 'public' as const },
     inputs,
     operation,
-    ...(signal ? { signal } : {}),
+    ...(signal && { signal }),
   }
 }
 

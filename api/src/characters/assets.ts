@@ -173,7 +173,7 @@ export async function getCharacterAssets(
       types: types.status,
     },
     ...metadata,
-    ...(retryAt ? { retryAt } : {}),
+    ...(retryAt && { retryAt }),
   }
 }
 

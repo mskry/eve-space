@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { VNode } from 'vue'
 import type { PublicTypeDetail } from '../queries/universe'
 
 const props = withDefaults(
@@ -13,8 +14,8 @@ const props = withDefaults(
 )
 
 defineSlots<{
-  details(props: { item: PublicTypeDetail }): unknown
-  trigger(): unknown
+  details(props: { item: PublicTypeDetail }): VNode[]
+  trigger(): VNode[]
 }>()
 
 const open = defineModel<boolean>('open', { default: false })

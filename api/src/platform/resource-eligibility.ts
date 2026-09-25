@@ -278,12 +278,10 @@ export async function selectDueInstalledResources(
 function parseClassification(row: ClassificationRow): PlatformResourceEligibility {
   const state = {
     authorizationGeneration: row.expectedAuthorizationGeneration,
-    ...(row.subjectKind === 'corporation'
-      ? {
-          authorizationCharacterId: parseAuthorizationCharacterId(row.authorizationCharacterId),
-          authorizationCharacterLifecycleId: row.authorizationCharacterLifecycleId ?? null,
-        }
-      : {}),
+    ...(row.subjectKind === 'corporation' && {
+      authorizationCharacterId: parseAuthorizationCharacterId(row.authorizationCharacterId),
+      authorizationCharacterLifecycleId: row.authorizationCharacterLifecycleId ?? null,
+    }),
     nextEligibleAt: toDate(row.nextEligibleAt),
     validatedAt: toDate(row.validatedAt),
     lastFailureClass: parseFailureClass(row.lastFailureClass),

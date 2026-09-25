@@ -19,12 +19,20 @@ import {
 import { ApiQueryError } from '../utils/query-error'
 import type { useCharacterMailbox } from './useCharacterMailbox'
 
+type CharacterMailbox = ReturnType<typeof useCharacterMailbox>
+
+export interface MailCompositionMailbox {
+  readonly detailQuery: { readonly data: Pick<CharacterMailbox['detailQuery']['data'], 'value'> }
+  readonly mailingLists: Pick<CharacterMailbox['mailingLists'], 'value'>
+  readonly selectedMailId: Pick<CharacterMailbox['selectedMailId'], 'value'>
+}
+
 interface MailDraftOptions {
   apiClient: ApiClient
   authenticated: ComputedRef<boolean>
   authenticationReady: ComputedRef<boolean>
   characterId: ComputedRef<number | undefined>
-  mailbox: ReturnType<typeof useCharacterMailbox>
+  mailbox: MailCompositionMailbox
   onReset: () => void
   openConfirmDialog: ReturnType<typeof useConfirmDialog>['openConfirmDialog']
   ownsCharacter: ComputedRef<boolean>

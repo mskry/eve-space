@@ -15,10 +15,14 @@ export interface QueryPersistenceNotifications {
   subscribe(receive: (notification: QueryPersistenceNotification) => void): () => void
 }
 
+interface QueryPersistenceWindow extends Pick<Window, 'addEventListener' | 'removeEventListener'> {
+  readonly localStorage: Pick<Storage, 'removeItem' | 'setItem'>
+}
+
 export function createBrowserQueryPersistenceNotifications(
   options: {
     readonly broadcastChannel?: typeof BroadcastChannel
-    readonly window?: Window
+    readonly window?: QueryPersistenceWindow
   } = {},
 ): QueryPersistenceNotifications {
   const browserWindow = options.window ?? globalThis.window

@@ -1,3 +1,5 @@
+import type { CloneSkillArchive } from '../types/clones'
+
 export const infomorphPsychologyTypeId = 24_242
 export const advancedInfomorphPsychologyTypeId = 33_407
 export const implantSlotCount = 10
@@ -6,16 +8,6 @@ export const attributeImplantSlotCount = 5
 export interface JumpCloneCapacity {
   installed: number
   maximum: number | null
-}
-
-interface SkillArchive {
-  groups: ReadonlyArray<{
-    skills: ReadonlyArray<{
-      typeId: number
-      trainedLevel?: number
-      activeLevel?: number
-    }>
-  }>
 }
 
 interface SlottedImplant {
@@ -38,7 +30,7 @@ export interface ImplantRack<Implant extends SlottedImplant> {
 // Alpha caps do not remove installed clones, so capacity follows the trained rather than active level.
 export function deriveJumpCloneCapacity(
   installed: number,
-  skills: SkillArchive | undefined,
+  skills: CloneSkillArchive | undefined,
 ): JumpCloneCapacity {
   if (!skills) {
     return { installed, maximum: null }
@@ -66,7 +58,8 @@ export function toImplantRack<Implant extends SlottedImplant>(
   for (const implant of implants ?? []) {
     const slot = implant.slot
     if (
-      typeof slot === 'number' &&
+      slot !== null &&
+      slot !== undefined &&
       Number.isInteger(slot) &&
       slot >= 1 &&
       slot <= implantSlotCount
@@ -170,5 +163,7 @@ export function implantBonusLabel(implant: {
 }
 
 export function formatImplantSlot(slot: number | null | undefined) {
-  return typeof slot === 'number' && Number.isInteger(slot) ? String(slot).padStart(2, '0') : ''
+  return slot !== null && slot !== undefined && Number.isInteger(slot)
+    ? String(slot).padStart(2, '0')
+    : ''
 }

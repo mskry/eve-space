@@ -22,23 +22,23 @@ export interface OperationRequestSchemaLayers {
 export function composeOperationRequestSchema<TArguments extends OperationRequestArguments>(
   layers: OperationRequestSchemaLayers,
 ): z.ZodType<TArguments> {
-  const shape: Record<string, z.ZodType> = {};
+  const requestFields: Record<string, z.ZodType> = {};
   for (const name of ['headers', 'path', 'query'] as const) {
     const layer = layers[name];
     if (layer !== undefined) {
       const schema = layer.schema.strict();
-      shape[name] = layer.required ? requiredInput(schema) : optionalInput(schema);
+      requestFields[name] = layer.required ? requiredInput(schema) : optionalInput(schema);
     }
   }
   if (layers.body !== undefined) {
-    shape.body = layers.body.required
+    requestFields.body = layers.body.required
       ? requiredInput(layers.body.schema)
       : optionalInput(layers.body.schema);
   }
 
   // The generated descriptor supplies TArguments from the same natural schemas and requiredness.
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-  return z.strictObject(shape) as unknown as z.ZodType<TArguments>;
+  return z.strictObject(requestFields) as unknown as z.ZodType<TArguments>;
 }
 
 function requiredInput(schema: z.ZodType): z.ZodType {
