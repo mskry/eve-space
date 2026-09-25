@@ -24,6 +24,7 @@ export interface GetCharactersStructuresMercenaryDensDetailOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>["headers"]>["X-Tenant"];
 }
 
@@ -31,6 +32,7 @@ export interface GetCorporationsStructuresSkyhooksDetailOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>["headers"]>["X-Tenant"];
 }
 
@@ -38,6 +40,7 @@ export interface GetCorporationsStructuresSovereigntyHubsDetailOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>["headers"]>["X-Tenant"];
 }
 
@@ -45,6 +48,7 @@ export interface GetCharactersStructuresMercenaryDensListingOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensListingData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensListingData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensListingData>["headers"]>["X-Tenant"];
 }
 
@@ -52,6 +56,7 @@ export interface GetCorporationsStructuresSkyhooksListingOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksListingData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksListingData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksListingData>["headers"]>["X-Tenant"];
 }
 
@@ -59,6 +64,7 @@ export interface GetCorporationsStructuresSovereigntyHubsListingOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>["headers"]>["X-Tenant"];
 }
 

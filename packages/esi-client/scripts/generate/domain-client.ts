@@ -30,7 +30,7 @@ import { isObject, isRecordLike } from './internal/guards.ts';
 import { capitalize, compareText } from './internal/text.ts';
 
 export interface OptionField {
-  readonly kind: 'query' | 'header' | 'body' | 'compatibilityDate';
+  readonly kind: 'query' | 'header' | 'body' | 'compatibilityDate' | 'signal';
   readonly name: string;
   readonly required: boolean;
   readonly wireName: string;
@@ -361,6 +361,12 @@ function createOptionFields(
       operation.operationId,
     );
   }
+  addOptionField(
+    fields,
+    names,
+    { kind: 'signal', name: 'signal', required: false, wireName: 'signal' },
+    operation.operationId,
+  );
   return fields.toSorted((left, right) => compareText(left.name, right.name));
 }
 
@@ -763,6 +769,9 @@ function renderOptionsInterface(entry: OperationEntry): string {
 }
 
 function optionFieldType(entry: OperationEntry, field: OptionField): string {
+  if (field.kind === 'signal') {
+    return 'AbortSignal';
+  }
   if (field.kind === 'compatibilityDate') {
     return 'string';
   }
@@ -806,11 +815,11 @@ function renderMetadataMethod(entry: OperationEntry): string {
     `${entry.metadata.method}(${parameters.join(', ')}): Promise<EsiResponse<${entry.responseTypeName}>> {`,
     `  const arguments_: ${entry.argumentsTypeName} = ${renderRequestArguments(entry)};`,
   ];
-  const executionOptions = entry.compatibilityDateOverride
-    ? ', { compatibilityDate: options?.compatibilityDate }'
+  const compatibilityDate = entry.compatibilityDateOverride
+    ? 'compatibilityDate: options?.compatibilityDate, '
     : '';
   lines.push(
-    `  return executeOperation(this.#configuration, ${entry.descriptorName}, arguments_${executionOptions});`,
+    `  return executeOperation(this.#configuration, ${entry.descriptorName}, arguments_, { ${compatibilityDate}signal: options?.signal });`,
     '}',
   );
   return lines.join('\n');

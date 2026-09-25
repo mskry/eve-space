@@ -38,17 +38,17 @@ class CosmeticsDomainClientWithMetadataImplementation implements CosmeticsDomain
 
   getSkinrLicense(skinrId: NonNullable<OperationArguments<GetCosmeticsSkinrData>['path']>["skinr_id"], options?: GetCosmeticsSkinrOptions): Promise<EsiResponse<GetCosmeticsSkinrResponse>> {
     const arguments_: OperationArguments<GetCosmeticsSkinrData> = { path: { "skinr_id": skinrId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCosmeticsSkinrDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCosmeticsSkinrDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listSkinrComponentLicenses(characterId: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>['path']>["character_id"], options?: GetCharactersCosmeticsSkinrComponentsOptions): Promise<EsiResponse<GetCharactersCosmeticsSkinrComponentsResponse>> {
     const arguments_: OperationArguments<GetCharactersCosmeticsSkinrComponentsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCosmeticsSkinrComponentsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCosmeticsSkinrComponentsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listSkinrLicenses(characterId: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrData>['path']>["character_id"], options?: GetCharactersCosmeticsSkinrOptions): Promise<EsiResponse<GetCharactersCosmeticsSkinrResponse>> {
     const arguments_: OperationArguments<GetCharactersCosmeticsSkinrData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCosmeticsSkinrDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCosmeticsSkinrDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

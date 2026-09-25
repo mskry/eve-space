@@ -9,7 +9,7 @@ DO NOT EDIT.
 
 Public operations need no authentication. Authenticated operation references list every required OAuth scope.
 
-Configure either `token` or an asynchronous `tokenProvider`; do not configure both. Token providers are resolved only for authenticated requests. Credentials and authorization headers are excluded from the serializable registry, response metadata, and structured errors.
+Configure either `token` or an asynchronous `tokenProvider`; do not configure both. Token providers are resolved only for authenticated requests. A provider may accept an optional context with the caller's `signal` and stop its own work when aborted. Existing zero-argument providers remain valid; the SDK rejects promptly on caller abort even when a provider ignores the signal. Credentials and authorization headers are excluded from the serializable registry, response metadata, and structured errors.
 
 ## Related
 

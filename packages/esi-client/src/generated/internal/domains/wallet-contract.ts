@@ -24,6 +24,7 @@ export interface GetCharactersCharacterIdWalletOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletData>["headers"]>["X-Tenant"];
 }
 
@@ -32,6 +33,7 @@ export interface GetCharactersCharacterIdWalletJournalOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletJournalData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletJournalData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletJournalData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletJournalData>["headers"]>["X-Tenant"];
 }
 
@@ -40,6 +42,7 @@ export interface GetCharactersCharacterIdWalletTransactionsOptions {
   readonly "fromId"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>["query"]>["from_id"];
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>["headers"]>["X-Tenant"];
 }
 
@@ -47,6 +50,7 @@ export interface GetCorporationsCorporationIdWalletsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsData>["headers"]>["X-Tenant"];
 }
 
@@ -55,6 +59,7 @@ export interface GetCorporationsCorporationIdWalletsDivisionJournalOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>["headers"]>["X-Tenant"];
 }
 
@@ -63,6 +68,7 @@ export interface GetCorporationsCorporationIdWalletsDivisionTransactionsOptions 
   readonly "fromId"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>["query"]>["from_id"];
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>["headers"]>["X-Tenant"];
 }
 

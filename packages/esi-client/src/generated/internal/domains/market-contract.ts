@@ -34,6 +34,7 @@ export interface GetMarketsGroupsMarketGroupIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMarketsGroupsMarketGroupIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsGroupsMarketGroupIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsGroupsMarketGroupIdData>["headers"]>["X-Tenant"];
 }
 
@@ -42,6 +43,7 @@ export interface GetCharactersCharacterIdOrdersHistoryOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>["headers"]>["X-Tenant"];
 }
 
@@ -49,6 +51,7 @@ export interface GetCharactersCharacterIdOrdersOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersData>["headers"]>["X-Tenant"];
 }
 
@@ -57,6 +60,7 @@ export interface GetCorporationsCorporationIdOrdersHistoryOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>["headers"]>["X-Tenant"];
 }
 
@@ -65,6 +69,7 @@ export interface GetCorporationsCorporationIdOrdersOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersData>["headers"]>["X-Tenant"];
 }
 
@@ -72,6 +77,7 @@ export interface GetMarketsGroupsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMarketsGroupsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsGroupsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsGroupsData>["headers"]>["X-Tenant"];
 }
 
@@ -79,6 +85,7 @@ export interface GetMarketsPricesOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMarketsPricesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsPricesData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsPricesData>["headers"]>["X-Tenant"];
 }
 
@@ -86,6 +93,7 @@ export interface GetMarketsRegionIdHistoryOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "typeId": NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>["query"]>["type_id"];
   readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>["headers"]>["X-Tenant"];
 }
@@ -96,6 +104,7 @@ export interface GetMarketsRegionIdOrdersOptions {
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>["headers"]>["If-None-Match"];
   readonly "orderType": NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>["query"]>["order_type"];
   readonly "page"?: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "typeId"?: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>["query"]>["type_id"];
   readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>["headers"]>["X-Tenant"];
 }
@@ -105,6 +114,7 @@ export interface GetMarketsRegionIdTypesOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>["headers"]>["X-Tenant"];
 }
 
@@ -113,6 +123,7 @@ export interface GetMarketsStructuresStructureIdOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMarketsStructuresStructureIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsStructuresStructureIdData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetMarketsStructuresStructureIdData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsStructuresStructureIdData>["headers"]>["X-Tenant"];
 }
 

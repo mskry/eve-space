@@ -38,17 +38,17 @@ class WarsDomainClientWithMetadataImplementation implements WarsDomainClientWith
 
   get(warId: NonNullable<OperationArguments<GetWarsWarIdData>['path']>["war_id"], options?: GetWarsWarIdOptions): Promise<EsiResponse<GetWarsWarIdResponse>> {
     const arguments_: OperationArguments<GetWarsWarIdData> = { path: { "war_id": warId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetWarsWarIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetWarsWarIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   list(options?: GetWarsOptions): Promise<EsiResponse<GetWarsResponse>> {
     const arguments_: OperationArguments<GetWarsData> = { query: { "max_war_id": options?.["maxWarId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetWarsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetWarsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listKillmails(warId: NonNullable<OperationArguments<GetWarsWarIdKillmailsData>['path']>["war_id"], options?: GetWarsWarIdKillmailsOptions): Promise<EsiResponse<GetWarsWarIdKillmailsResponse>> {
     const arguments_: OperationArguments<GetWarsWarIdKillmailsData> = { path: { "war_id": warId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetWarsWarIdKillmailsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetWarsWarIdKillmailsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

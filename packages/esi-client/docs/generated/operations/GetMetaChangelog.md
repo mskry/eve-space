@@ -16,7 +16,7 @@ Get changelog
 - Domain import: `@evespace/esi-client/domains/meta`
 - Domain index: [meta](../domains/meta.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values, an available compatibility-date override, and optional caller cancellation via `signal` are fields in its final options object, even if the operation has no other options. Both the bare-data and metadata views apply the signal; required body and other required options remain required. The signal is transport-only and is not sent as an ESI parameter. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 

@@ -62,47 +62,47 @@ class MailDomainClientWithMetadataImplementation implements MailDomainClientWith
 
   createLabel(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdMailLabelsData>['path']>["character_id"], options: PostCharactersCharacterIdMailLabelsOptions): Promise<EsiResponse<PostCharactersCharacterIdMailLabelsResponse>> {
     const arguments_: OperationArguments<PostCharactersCharacterIdMailLabelsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostCharactersCharacterIdMailLabelsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostCharactersCharacterIdMailLabelsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   deleteLabel(characterId: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['path']>["character_id"], labelId: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['path']>["label_id"], options?: DeleteCharactersCharacterIdMailLabelsLabelIdOptions): Promise<EsiResponse<DeleteCharactersCharacterIdMailLabelsLabelIdResponse>> {
     const arguments_: OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData> = { path: { "character_id": characterId, "label_id": labelId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, DeleteCharactersCharacterIdMailLabelsLabelIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, DeleteCharactersCharacterIdMailLabelsLabelIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   deleteMail(characterId: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['path']>["character_id"], mailId: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['path']>["mail_id"], options?: DeleteCharactersCharacterIdMailMailIdOptions): Promise<EsiResponse<DeleteCharactersCharacterIdMailMailIdResponse>> {
     const arguments_: OperationArguments<DeleteCharactersCharacterIdMailMailIdData> = { path: { "character_id": characterId, "mail_id": mailId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, DeleteCharactersCharacterIdMailMailIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, DeleteCharactersCharacterIdMailMailIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   get(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMailMailIdData>['path']>["character_id"], mailId: NonNullable<OperationArguments<GetCharactersCharacterIdMailMailIdData>['path']>["mail_id"], options?: GetCharactersCharacterIdMailMailIdOptions): Promise<EsiResponse<GetCharactersCharacterIdMailMailIdResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdMailMailIdData> = { path: { "character_id": characterId, "mail_id": mailId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdMailMailIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdMailMailIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listHeaders(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMailData>['path']>["character_id"], options?: GetCharactersCharacterIdMailOptions): Promise<EsiResponse<GetCharactersCharacterIdMailResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdMailData> = { path: { "character_id": characterId }, query: { "labels": options?.["labels"], "last_mail_id": options?.["lastMailId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdMailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdMailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listLabels(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMailLabelsData>['path']>["character_id"], options?: GetCharactersCharacterIdMailLabelsOptions): Promise<EsiResponse<GetCharactersCharacterIdMailLabelsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdMailLabelsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdMailLabelsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdMailLabelsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listMailingLists(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMailListsData>['path']>["character_id"], options?: GetCharactersCharacterIdMailListsOptions): Promise<EsiResponse<GetCharactersCharacterIdMailListsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdMailListsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdMailListsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdMailListsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   send(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdMailData>['path']>["character_id"], options: PostCharactersCharacterIdMailOptions): Promise<EsiResponse<PostCharactersCharacterIdMailResponse>> {
     const arguments_: OperationArguments<PostCharactersCharacterIdMailData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostCharactersCharacterIdMailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostCharactersCharacterIdMailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   update(characterId: NonNullable<OperationArguments<PutCharactersCharacterIdMailMailIdData>['path']>["character_id"], mailId: NonNullable<OperationArguments<PutCharactersCharacterIdMailMailIdData>['path']>["mail_id"], options: PutCharactersCharacterIdMailMailIdOptions): Promise<EsiResponse<PutCharactersCharacterIdMailMailIdResponse>> {
     const arguments_: OperationArguments<PutCharactersCharacterIdMailMailIdData> = { path: { "character_id": characterId, "mail_id": mailId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PutCharactersCharacterIdMailMailIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PutCharactersCharacterIdMailMailIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

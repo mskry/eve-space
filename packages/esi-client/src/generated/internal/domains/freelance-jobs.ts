@@ -50,32 +50,32 @@ class FreelanceJobsDomainClientWithMetadataImplementation implements FreelanceJo
 
   get(jobId: NonNullable<OperationArguments<GetFreelanceJobsDetailData>['path']>["job_id"], options?: GetFreelanceJobsDetailOptions): Promise<EsiResponse<GetFreelanceJobsDetailResponse>> {
     const arguments_: OperationArguments<GetFreelanceJobsDetailData> = { path: { "job_id": jobId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetFreelanceJobsDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetFreelanceJobsDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getCharacterParticipation(characterId: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']>["character_id"], jobId: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']>["job_id"], options?: GetCharactersFreelanceJobsParticipationOptions): Promise<EsiResponse<GetCharactersFreelanceJobsParticipationResponse>> {
     const arguments_: OperationArguments<GetCharactersFreelanceJobsParticipationData> = { path: { "character_id": characterId, "job_id": jobId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersFreelanceJobsParticipationDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersFreelanceJobsParticipationDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCharacterJobs(characterId: NonNullable<OperationArguments<GetCharactersFreelanceJobsListingData>['path']>["character_id"], options?: GetCharactersFreelanceJobsListingOptions): Promise<EsiResponse<GetCharactersFreelanceJobsListingResponse>> {
     const arguments_: OperationArguments<GetCharactersFreelanceJobsListingData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersFreelanceJobsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersFreelanceJobsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCorporationJobs(corporationId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>['path']>["corporation_id"], options?: GetCorporationsFreelanceJobsListingOptions): Promise<EsiResponse<GetCorporationsFreelanceJobsListingResponse>> {
     const arguments_: OperationArguments<GetCorporationsFreelanceJobsListingData> = { path: { "corporation_id": corporationId }, query: { "after": options?.["after"], "before": options?.["before"], "limit": options?.["limit"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsFreelanceJobsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsFreelanceJobsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listParticipants(corporationId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']>["corporation_id"], jobId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']>["job_id"], options?: GetCorporationsFreelanceJobsParticipantsOptions): Promise<EsiResponse<GetCorporationsFreelanceJobsParticipantsResponse>> {
     const arguments_: OperationArguments<GetCorporationsFreelanceJobsParticipantsData> = { path: { "corporation_id": corporationId, "job_id": jobId }, query: { "after": options?.["after"], "before": options?.["before"], "limit": options?.["limit"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsFreelanceJobsParticipantsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsFreelanceJobsParticipantsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listPublic(options?: GetFreelanceJobsListingOptions): Promise<EsiResponse<GetFreelanceJobsListingResponse>> {
     const arguments_: OperationArguments<GetFreelanceJobsListingData> = { query: { "after": options?.["after"], "before": options?.["before"], "corporation_id": options?.["corporationId"], "limit": options?.["limit"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetFreelanceJobsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetFreelanceJobsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

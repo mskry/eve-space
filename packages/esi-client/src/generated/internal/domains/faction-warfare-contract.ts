@@ -28,6 +28,7 @@ export interface GetFwLeaderboardsCharactersOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFwLeaderboardsCharactersData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFwLeaderboardsCharactersData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetFwLeaderboardsCharactersData>["headers"]>["X-Tenant"];
 }
 
@@ -35,6 +36,7 @@ export interface GetCharactersCharacterIdFwStatsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdFwStatsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdFwStatsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdFwStatsData>["headers"]>["X-Tenant"];
 }
 
@@ -42,6 +44,7 @@ export interface GetFwLeaderboardsCorporationsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFwLeaderboardsCorporationsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFwLeaderboardsCorporationsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetFwLeaderboardsCorporationsData>["headers"]>["X-Tenant"];
 }
 
@@ -49,6 +52,7 @@ export interface GetCorporationsCorporationIdFwStatsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdFwStatsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdFwStatsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdFwStatsData>["headers"]>["X-Tenant"];
 }
 
@@ -56,6 +60,7 @@ export interface GetFwLeaderboardsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFwLeaderboardsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFwLeaderboardsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetFwLeaderboardsData>["headers"]>["X-Tenant"];
 }
 
@@ -63,6 +68,7 @@ export interface GetFwStatsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFwStatsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFwStatsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetFwStatsData>["headers"]>["X-Tenant"];
 }
 
@@ -70,6 +76,7 @@ export interface GetFwSystemsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFwSystemsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFwSystemsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetFwSystemsData>["headers"]>["X-Tenant"];
 }
 
@@ -77,6 +84,7 @@ export interface GetFwWarsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFwWarsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFwWarsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetFwWarsData>["headers"]>["X-Tenant"];
 }
 

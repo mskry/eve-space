@@ -24,6 +24,7 @@ export interface GetMilitaryCampaignsDetailOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMilitaryCampaignsDetailData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMilitaryCampaignsDetailData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetMilitaryCampaignsDetailData>["headers"]>["X-Tenant"];
 }
 
@@ -31,6 +32,7 @@ export interface GetCharactersMilitaryCampaignsObjectivesParticipationOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>["headers"]>["X-Tenant"];
 }
 
@@ -38,6 +40,7 @@ export interface GetMilitaryCampaignsObjectivesDetailOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesDetailData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesDetailData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesDetailData>["headers"]>["X-Tenant"];
 }
 
@@ -45,6 +48,7 @@ export interface GetMilitaryCampaignsListingOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMilitaryCampaignsListingData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMilitaryCampaignsListingData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetMilitaryCampaignsListingData>["headers"]>["X-Tenant"];
 }
 
@@ -55,6 +59,7 @@ export interface GetCharactersMilitaryCampaignsObjectivesListingOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>["headers"]>["If-None-Match"];
   readonly "limit"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>["query"]>["limit"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>["headers"]>["X-Tenant"];
 }
 
@@ -65,6 +70,7 @@ export interface GetMilitaryCampaignsObjectivesListingOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesListingData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesListingData>["headers"]>["If-None-Match"];
   readonly "limit"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesListingData>["query"]>["limit"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesListingData>["headers"]>["X-Tenant"];
 }
 

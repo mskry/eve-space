@@ -58,42 +58,42 @@ class FactionWarfareDomainClientWithMetadataImplementation implements FactionWar
 
   getCharacterLeaderboards(options?: GetFwLeaderboardsCharactersOptions): Promise<EsiResponse<GetFwLeaderboardsCharactersResponse>> {
     const arguments_: OperationArguments<GetFwLeaderboardsCharactersData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetFwLeaderboardsCharactersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetFwLeaderboardsCharactersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getCharacterStats(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdFwStatsData>['path']>["character_id"], options?: GetCharactersCharacterIdFwStatsOptions): Promise<EsiResponse<GetCharactersCharacterIdFwStatsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdFwStatsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdFwStatsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdFwStatsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getCorporationLeaderboards(options?: GetFwLeaderboardsCorporationsOptions): Promise<EsiResponse<GetFwLeaderboardsCorporationsResponse>> {
     const arguments_: OperationArguments<GetFwLeaderboardsCorporationsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetFwLeaderboardsCorporationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetFwLeaderboardsCorporationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getCorporationStats(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdFwStatsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdFwStatsOptions): Promise<EsiResponse<GetCorporationsCorporationIdFwStatsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdFwStatsData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdFwStatsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdFwStatsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getFactionLeaderboards(options?: GetFwLeaderboardsOptions): Promise<EsiResponse<GetFwLeaderboardsResponse>> {
     const arguments_: OperationArguments<GetFwLeaderboardsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetFwLeaderboardsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetFwLeaderboardsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listFactionStats(options?: GetFwStatsOptions): Promise<EsiResponse<GetFwStatsResponse>> {
     const arguments_: OperationArguments<GetFwStatsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetFwStatsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetFwStatsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listSystems(options?: GetFwSystemsOptions): Promise<EsiResponse<GetFwSystemsResponse>> {
     const arguments_: OperationArguments<GetFwSystemsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetFwSystemsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetFwSystemsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listWars(options?: GetFwWarsOptions): Promise<EsiResponse<GetFwWarsResponse>> {
     const arguments_: OperationArguments<GetFwWarsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetFwWarsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetFwWarsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

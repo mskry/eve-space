@@ -30,7 +30,7 @@ class StatusDomainClientWithMetadataImplementation implements StatusDomainClient
 
   get(options?: GetStatusOptions): Promise<EsiResponse<GetStatusResponse>> {
     const arguments_: OperationArguments<GetStatusData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetStatusDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetStatusDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

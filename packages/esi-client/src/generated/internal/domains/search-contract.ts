@@ -16,6 +16,7 @@ export interface GetCharactersCharacterIdSearchOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>["headers"]>["If-None-Match"];
   readonly "search": NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>["query"]>["search"];
+  readonly "signal"?: AbortSignal;
   readonly "strict"?: NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>["query"]>["strict"];
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>["headers"]>["X-Tenant"];
 }

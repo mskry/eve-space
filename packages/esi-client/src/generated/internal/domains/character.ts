@@ -82,72 +82,72 @@ class CharacterDomainClientWithMetadataImplementation implements CharacterDomain
 
   agentsResearch(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdAgentsResearchData>['path']>["character_id"], options?: GetCharactersCharacterIdAgentsResearchOptions): Promise<EsiResponse<GetCharactersCharacterIdAgentsResearchResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdAgentsResearchData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdAgentsResearchDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdAgentsResearchDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   calculateCspaCharge(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdCspaData>['path']>["character_id"], options: PostCharactersCharacterIdCspaOptions): Promise<EsiResponse<PostCharactersCharacterIdCspaResponse>> {
     const arguments_: OperationArguments<PostCharactersCharacterIdCspaData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostCharactersCharacterIdCspaDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostCharactersCharacterIdCspaDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getCorporationRoles(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdRolesData>['path']>["character_id"], options?: GetCharactersCharacterIdRolesOptions): Promise<EsiResponse<GetCharactersCharacterIdRolesResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdRolesData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdRolesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdRolesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getJumpFatigue(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdFatigueData>['path']>["character_id"], options?: GetCharactersCharacterIdFatigueOptions): Promise<EsiResponse<GetCharactersCharacterIdFatigueResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdFatigueData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdFatigueDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdFatigueDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getPortrait(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdPortraitData>['path']>["character_id"], options?: GetCharactersCharacterIdPortraitOptions): Promise<EsiResponse<GetCharactersCharacterIdPortraitResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdPortraitData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdPortraitDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdPortraitDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getPublicInfo(characterId: NonNullable<OperationArguments<GetCharactersDetailData>['path']>["character_id"], options?: GetCharactersDetailOptions): Promise<EsiResponse<GetCharactersDetailResponse>> {
     const arguments_: OperationArguments<GetCharactersDetailData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listBlueprints(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdBlueprintsData>['path']>["character_id"], options?: GetCharactersCharacterIdBlueprintsOptions): Promise<EsiResponse<GetCharactersCharacterIdBlueprintsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdBlueprintsData> = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdBlueprintsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdBlueprintsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listContactNotifications(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdNotificationsContactsData>['path']>["character_id"], options?: GetCharactersCharacterIdNotificationsContactsOptions): Promise<EsiResponse<GetCharactersCharacterIdNotificationsContactsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdNotificationsContactsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdNotificationsContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdNotificationsContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCorporationHistory(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCorporationhistoryData>['path']>["character_id"], options?: GetCharactersCharacterIdCorporationhistoryOptions): Promise<EsiResponse<GetCharactersCharacterIdCorporationhistoryResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdCorporationhistoryData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdCorporationhistoryDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdCorporationhistoryDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCorporationTitles(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdTitlesData>['path']>["character_id"], options?: GetCharactersCharacterIdTitlesOptions): Promise<EsiResponse<GetCharactersCharacterIdTitlesResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdTitlesData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdTitlesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdTitlesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listMedals(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMedalsData>['path']>["character_id"], options?: GetCharactersCharacterIdMedalsOptions): Promise<EsiResponse<GetCharactersCharacterIdMedalsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdMedalsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdMedalsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdMedalsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listNotifications(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdNotificationsData>['path']>["character_id"], options?: GetCharactersCharacterIdNotificationsOptions): Promise<EsiResponse<GetCharactersCharacterIdNotificationsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdNotificationsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdNotificationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdNotificationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listStandings(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdStandingsData>['path']>["character_id"], options?: GetCharactersCharacterIdStandingsOptions): Promise<EsiResponse<GetCharactersCharacterIdStandingsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdStandingsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdStandingsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdStandingsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   lookupAffiliations(options: PostCharactersAffiliationOptions): Promise<EsiResponse<PostCharactersAffiliationResponse>> {
     const arguments_: OperationArguments<PostCharactersAffiliationData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostCharactersAffiliationDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostCharactersAffiliationDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

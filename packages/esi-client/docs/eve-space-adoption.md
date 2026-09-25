@@ -8,6 +8,8 @@ EVE Space must pass its validated `ESI_REQUEST_TIMEOUT_MS` value as `requestTime
 
 The SDK starts its deadline after token-provider resolution and passes the composed deadline/caller signal to the configured fetch as `init.signal`. `createEsiTransport` must forward and observe that signal. It must continue to own application identification headers, distributed permit acquisition and renewal, response observations, cooldown persistence, and telemetry. A permit covers the complete upstream response-body lifecycle and is released only when the body closes, errors, or is cancelled.
 
+Typed domain calls, including metadata views and operations without other options, accept `{ signal }` as their final options object. When using a deferred credential provider, it may accept an optional `{ signal }` context to stop provider-owned work on caller abort; the SDK rejects promptly even if the provider ignores it. This caller signal remains active while resolving credentials, before the transport deadline begins.
+
 After adoption there must be one effective deadline around one SDK attempt. Remove the transport wrapper's competing timeout only after the SDK receives the deployment value and the application tests preserve timeout and permit-lifetime behavior.
 
 ## Replacement Mapping

@@ -20,6 +20,7 @@ export interface GetAlliancesAllianceIdIconsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetAlliancesAllianceIdIconsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetAlliancesAllianceIdIconsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetAlliancesAllianceIdIconsData>["headers"]>["X-Tenant"];
 }
 
@@ -27,6 +28,7 @@ export interface GetAlliancesAllianceIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetAlliancesAllianceIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetAlliancesAllianceIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetAlliancesAllianceIdData>["headers"]>["X-Tenant"];
 }
 
@@ -34,6 +36,7 @@ export interface GetAlliancesOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetAlliancesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetAlliancesData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetAlliancesData>["headers"]>["X-Tenant"];
 }
 
@@ -41,6 +44,7 @@ export interface GetAlliancesAllianceIdCorporationsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetAlliancesAllianceIdCorporationsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetAlliancesAllianceIdCorporationsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetAlliancesAllianceIdCorporationsData>["headers"]>["X-Tenant"];
 }
 

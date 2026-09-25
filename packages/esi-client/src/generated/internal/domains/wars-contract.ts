@@ -18,6 +18,7 @@ export interface GetWarsWarIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetWarsWarIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetWarsWarIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetWarsWarIdData>["headers"]>["X-Tenant"];
 }
 
@@ -26,6 +27,7 @@ export interface GetWarsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetWarsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetWarsData>["headers"]>["If-None-Match"];
   readonly "maxWarId"?: NonNullable<OperationArguments<GetWarsData>["query"]>["max_war_id"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetWarsData>["headers"]>["X-Tenant"];
 }
 
@@ -34,6 +36,7 @@ export interface GetWarsWarIdKillmailsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetWarsWarIdKillmailsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetWarsWarIdKillmailsData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetWarsWarIdKillmailsData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetWarsWarIdKillmailsData>["headers"]>["X-Tenant"];
 }
 

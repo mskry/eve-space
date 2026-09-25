@@ -46,6 +46,10 @@ describe('generated domain clients', () => {
 
     expect(second).toStrictEqual(first);
     expect(first.domains).toHaveLength(1);
+    const domain = first.domains[0];
+    if (domain === undefined) {
+      throw new Error('Missing domain fixture');
+    }
     expect(first.rootIndexSource).toContain("export * from './esi-client.js';");
     expect(first.rootIndexSource).toContain("export * from './domains/index.js';");
     expect(first.rootIndexSource).not.toContain("export * from './schemas/index.js';");
@@ -55,42 +59,60 @@ describe('generated domain clients', () => {
     expect(first.clientSource).toContain('this.items = bindItemsDomainClient(this.configuration);');
     expect(first.indexSource).toContain("export * from './items.js';");
     expect(first.indexSource).not.toContain('operation-coverage');
-    expect(first.domains[0]?.contractSource).toContain('export interface ItemsDomainClient');
-    expect(first.domains[0]?.contractSource).toContain(
+    expect(domain.contractSource).toContain('export interface ItemsDomainClient');
+    expect(domain.contractSource).toContain(
       'getItem(itemId: NonNullable<OperationArguments<GetItemData>[\'path\']>["item_id"], options?: GetItemOptions)',
     );
-    expect(first.domains[0]?.contractSource).toContain('readonly "page"?:');
-    expect(first.domains[0]?.contractSource).toContain('readonly "ifNoneMatch"?:');
-    expect(first.domains[0]?.contractSource).toContain('readonly "compatibilityDate"?: string;');
-    expect(first.domains[0]?.contractSource).not.toContain('acceptLanguage');
-    expect(first.domains[0]?.contractSource).toContain(
+    expect(domain.contractSource).toContain('readonly "page"?:');
+    expect(domain.contractSource).toContain('readonly "ifNoneMatch"?:');
+    expect(domain.contractSource).toContain('readonly "compatibilityDate"?: string;');
+    expect(domain.contractSource).toContain('readonly "signal"?: AbortSignal;');
+    expect(domain.contractSource).toContain(
+      'getSummary(options?: GetSummaryOptions): Promise<GetSummaryResponse>',
+    );
+    expect(domain.contractSource).not.toContain('acceptLanguage');
+    expect(domain.contractSource).toContain(
       'createItem(options: CreateItemOptions): Promise<CreateItemResponse>',
     );
-    expect(first.domains[0]?.contractSource).toContain(
-      'withMetadata(): ItemsDomainClientWithMetadata',
+    expect(domain.contractSource).toContain(
+      'readonly "body": OperationArguments<CreateItemData>[\'body\'];',
     );
-    expect(first.domains[0]?.domainSource).toContain(
+    expect(domain.contractSource).toContain('withMetadata(): ItemsDomainClientWithMetadata');
+    expect(domain.domainSource).toContain(
       'export function createItemsClient(options: EsiClientOptions = {})',
     );
-    expect(first.domains[0]?.domainSource).not.toContain('bindItemsDomainClient(configuration');
-    expect(first.domains[0]?.implementationSource).toContain(
+    expect(domain.domainSource).not.toContain('bindItemsDomainClient(configuration');
+    expect(domain.implementationSource).toContain(
       'export function bindItemsDomainClient(configuration: EsiClientConfiguration)',
     );
-    expect(first.domains[0]?.implementationSource).toContain(
+    expect(domain.implementationSource).toContain(
       'class ItemsDomainClientImplementation implements ItemsDomainClient',
     );
-    expect(first.domains[0]?.implementationSource.match(/const arguments_:/gu)).toHaveLength(2);
-    expect(first.domains[0]?.implementationSource).toContain(
+    expect(domain.implementationSource.match(/const arguments_:/gu)).toHaveLength(3);
+    expect(domain.implementationSource).toContain(
       'return this.#metadata.getItem(itemId, options).then((response) => response.data);',
     );
-    expect(first.domains[0]?.implementationSource).toContain(
+    expect(domain.implementationSource).toContain(
       'headers: { "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }',
     );
-    expect(first.domains[0]?.descriptorSource).toContain(
-      'transport: { compatibilityDateOverride: true }',
+    expect(domain.implementationSource).toContain(
+      'arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });',
     );
-    expect(first.domains[0]?.descriptorSource).not.toContain('X-Compatibility-Date');
-    expect(first.contractsSource.match(/^  readonly "(?:Create|Get)Item": \{$/gmu)).toHaveLength(2);
+    expect(domain.implementationSource).toContain(
+      'getSummary(options?: GetSummaryOptions): Promise<EsiResponse<GetSummaryResponse>>',
+    );
+    expect(domain.implementationSource).toContain(
+      'return this.#metadata.getSummary(options).then((response) => response.data);',
+    );
+    expect(domain.implementationSource).toContain('arguments_, { signal: options?.signal });');
+    expect(domain.implementationSource).not.toContain('"signal": options?.');
+    expect(domain.descriptorSource).toContain('transport: { compatibilityDateOverride: true }');
+    expect(domain.descriptorSource).not.toContain('X-Compatibility-Date');
+    expect(
+      first.contractsSource.match(/^  readonly "(?:CreateItem|GetItem|GetSummary)": \{$/gmu),
+    ).toHaveLength(3);
+    expect(first.contractsSource).toContain('GetSummaryOptionsAssertion');
+    expect(first.contractsSource).toContain('readonly "signal"?: AbortSignal;');
     expect(first.contractsSource).toContain(
       'IsExact<keyof GeneratedDomainOperationCoverage, keyof GeneratedOperationContractMap>',
     );
@@ -211,6 +233,25 @@ describe('generated domain clients', () => {
     expect(requests[2]?.method).toBe('POST');
     expect(requests[2]?.headers.get('authorization')).toBe('Bearer secret-token');
     await expect(requests[2]?.json()).resolves.toStrictEqual({ name: 'created' });
+
+    const beforeAbort = requests.length;
+    const controller = new AbortController();
+    controller.abort();
+    await expect(client.items.getItem(7, { signal: controller.signal })).rejects.toMatchObject({
+      phase: 'request',
+    });
+    await expect(
+      client.items.withMetadata().getSummary({ signal: controller.signal }),
+    ).rejects.toMatchObject({
+      phase: 'request',
+    });
+    await expect(
+      client.items.createItem({ body: { name: 'created' }, signal: controller.signal }),
+    ).rejects.toMatchObject({
+      phase: 'request',
+    });
+    expect(requests).toHaveLength(beforeAbort);
+    await expect(client.items.getSummary()).resolves.toMatchObject({ id: 7 });
   });
 
   it('rejects metadata gaps and facade option collisions', () => {
@@ -227,6 +268,20 @@ describe('generated domain clients', () => {
       renderDomainClientArtifacts(
         normalized([operation]),
         [operationMetadata('Collision', 'collision')],
+        provenance,
+      ),
+    ).toThrow('Facade option collision');
+
+    const signalCollision = {
+      ...makeOperation('SignalCollision', 'GET', '/signal-collision', [
+        parameter('signal', 'query', false, { type: 'string' }),
+      ]),
+      extensions: {},
+    };
+    expect(() =>
+      renderDomainClientArtifacts(
+        normalized([signalCollision]),
+        [operationMetadata('SignalCollision', 'signalCollision')],
         provenance,
       ),
     ).toThrow('Facade option collision');
@@ -284,18 +339,32 @@ describe('generated domain clients', () => {
   });
 });
 
+interface RuntimeItem {
+  readonly id: number;
+  readonly name?: string;
+}
+
+interface RuntimeGetItemOptions {
+  readonly compatibilityDate?: string;
+  readonly ifNoneMatch?: string;
+  readonly page?: number;
+  readonly xTenant?: string;
+  readonly signal?: AbortSignal;
+}
+
+interface RuntimeItemsMetadataClient {
+  getItem(itemId: number, options?: RuntimeGetItemOptions): Promise<{ readonly data: RuntimeItem }>;
+  getSummary(options?: { readonly signal?: AbortSignal }): Promise<{ readonly data: RuntimeItem }>;
+}
+
 interface RuntimeItemsDomainClient {
-  getItem(
-    itemId: number,
-    options?: {
-      readonly compatibilityDate?: string;
-      readonly ifNoneMatch?: string;
-      readonly page?: number;
-      readonly xTenant?: string;
-    },
-  ): Promise<unknown>;
-  createItem(options: { readonly body: { readonly name: string } }): Promise<unknown>;
-  withMetadata(): RuntimeItemsDomainClient;
+  getItem(itemId: number, options?: RuntimeGetItemOptions): Promise<RuntimeItem>;
+  getSummary(options?: { readonly signal?: AbortSignal }): Promise<RuntimeItem>;
+  createItem(options: {
+    readonly body: { readonly name: string };
+    readonly signal?: AbortSignal;
+  }): Promise<RuntimeItem>;
+  withMetadata(): RuntimeItemsMetadataClient;
 }
 
 interface RuntimeDomainModule {
@@ -358,8 +427,9 @@ function representativeModel(): NormalizedOpenApiModel {
     },
     security: [{ schemes: [{ name: 'OAuth2', scopes: ['esi-items.write.v1'] }] }],
   } satisfies NormalizedOperation;
+  const getSummary = { ...makeOperation('GetSummary', 'GET', '/summary', []), extensions: {} };
   return {
-    ...normalized([getItem, createItem]),
+    ...normalized([getItem, createItem, getSummary]),
     models: [
       {
         name: 'Item',
@@ -378,6 +448,7 @@ function representativeMetadata(): ResolvedOperationMetadata[] {
   return [
     operationMetadata('CreateItem', 'createItem', 'mutation'),
     operationMetadata('GetItem', 'getItem'),
+    operationMetadata('GetSummary', 'getSummary'),
   ];
 }
 
@@ -535,6 +606,19 @@ function representativeOpenApiDocument() {
     info: { title: 'Domain fixture', version: '1.0.0' },
     openapi: '3.1.0',
     paths: {
+      '/summary': {
+        get: {
+          operationId: 'GetSummary',
+          responses: {
+            200: {
+              content: {
+                'application/json': { schema: { $ref: '#/components/schemas/Item' } },
+              },
+              description: 'Success',
+            },
+          },
+        },
+      },
       '/items': {
         post: {
           operationId: 'CreateItem',

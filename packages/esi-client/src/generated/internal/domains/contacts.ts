@@ -62,47 +62,47 @@ class ContactsDomainClientWithMetadataImplementation implements ContactsDomainCl
 
   addCharacterContacts(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>['path']>["character_id"], options: PostCharactersCharacterIdContactsOptions): Promise<EsiResponse<PostCharactersCharacterIdContactsResponse>> {
     const arguments_: OperationArguments<PostCharactersCharacterIdContactsData> = { path: { "character_id": characterId }, query: { "label_ids": options?.["labelIds"], "standing": options?.["standing"], "watched": options?.["watched"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostCharactersCharacterIdContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostCharactersCharacterIdContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   deleteCharacterContacts(characterId: NonNullable<OperationArguments<DeleteCharactersCharacterIdContactsData>['path']>["character_id"], options: DeleteCharactersCharacterIdContactsOptions): Promise<EsiResponse<DeleteCharactersCharacterIdContactsResponse>> {
     const arguments_: OperationArguments<DeleteCharactersCharacterIdContactsData> = { path: { "character_id": characterId }, query: { "contact_ids": options?.["contactIds"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, DeleteCharactersCharacterIdContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, DeleteCharactersCharacterIdContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listAllianceContactLabels(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsLabelsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdContactsLabelsOptions): Promise<EsiResponse<GetAlliancesAllianceIdContactsLabelsResponse>> {
     const arguments_: OperationArguments<GetAlliancesAllianceIdContactsLabelsData> = { path: { "alliance_id": allianceId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetAlliancesAllianceIdContactsLabelsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetAlliancesAllianceIdContactsLabelsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listAllianceContacts(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdContactsOptions): Promise<EsiResponse<GetAlliancesAllianceIdContactsResponse>> {
     const arguments_: OperationArguments<GetAlliancesAllianceIdContactsData> = { path: { "alliance_id": allianceId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetAlliancesAllianceIdContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetAlliancesAllianceIdContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCharacterContactLabels(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContactsLabelsData>['path']>["character_id"], options?: GetCharactersCharacterIdContactsLabelsOptions): Promise<EsiResponse<GetCharactersCharacterIdContactsLabelsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdContactsLabelsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdContactsLabelsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdContactsLabelsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCharacterContacts(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContactsData>['path']>["character_id"], options?: GetCharactersCharacterIdContactsOptions): Promise<EsiResponse<GetCharactersCharacterIdContactsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdContactsData> = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCorporationContactLabels(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsLabelsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContactsLabelsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContactsLabelsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdContactsLabelsData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdContactsLabelsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdContactsLabelsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCorporationContacts(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContactsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContactsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdContactsData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   updateCharacterContacts(characterId: NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>['path']>["character_id"], options: PutCharactersCharacterIdContactsOptions): Promise<EsiResponse<PutCharactersCharacterIdContactsResponse>> {
     const arguments_: OperationArguments<PutCharactersCharacterIdContactsData> = { path: { "character_id": characterId }, query: { "label_ids": options?.["labelIds"], "standing": options?.["standing"], "watched": options?.["watched"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PutCharactersCharacterIdContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PutCharactersCharacterIdContactsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

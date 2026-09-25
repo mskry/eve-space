@@ -32,6 +32,7 @@ export interface PostCharactersCharacterIdContactsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>["headers"]>["If-None-Match"];
   readonly "labelIds"?: NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>["query"]>["label_ids"];
+  readonly "signal"?: AbortSignal;
   readonly "standing": NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>["query"]>["standing"];
   readonly "watched"?: NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>["query"]>["watched"];
   readonly "xTenant"?: NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>["headers"]>["X-Tenant"];
@@ -42,6 +43,7 @@ export interface DeleteCharactersCharacterIdContactsOptions {
   readonly "contactIds": NonNullable<OperationArguments<DeleteCharactersCharacterIdContactsData>["query"]>["contact_ids"];
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdContactsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdContactsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdContactsData>["headers"]>["X-Tenant"];
 }
 
@@ -49,6 +51,7 @@ export interface GetAlliancesAllianceIdContactsLabelsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsLabelsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsLabelsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsLabelsData>["headers"]>["X-Tenant"];
 }
 
@@ -57,6 +60,7 @@ export interface GetAlliancesAllianceIdContactsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsData>["headers"]>["X-Tenant"];
 }
 
@@ -64,6 +68,7 @@ export interface GetCharactersCharacterIdContactsLabelsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsLabelsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsLabelsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsLabelsData>["headers"]>["X-Tenant"];
 }
 
@@ -72,6 +77,7 @@ export interface GetCharactersCharacterIdContactsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsData>["headers"]>["X-Tenant"];
 }
 
@@ -79,6 +85,7 @@ export interface GetCorporationsCorporationIdContactsLabelsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsLabelsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsLabelsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsLabelsData>["headers"]>["X-Tenant"];
 }
 
@@ -87,6 +94,7 @@ export interface GetCorporationsCorporationIdContactsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsData>["headers"]>["X-Tenant"];
 }
 
@@ -96,6 +104,7 @@ export interface PutCharactersCharacterIdContactsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>["headers"]>["If-None-Match"];
   readonly "labelIds"?: NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>["query"]>["label_ids"];
+  readonly "signal"?: AbortSignal;
   readonly "standing": NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>["query"]>["standing"];
   readonly "watched"?: NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>["query"]>["watched"];
   readonly "xTenant"?: NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>["headers"]>["X-Tenant"];

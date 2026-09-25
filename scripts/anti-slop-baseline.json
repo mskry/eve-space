@@ -1126,8 +1126,6 @@
     "packages/esi-client/tests/client-response.test.ts:anti-slop(no-unknown-parameters):677db968b4e23843220a8c5a55b383847cc8dac661ca6c2579c09489b1ddc563": 1,
     "packages/esi-client/tests/client-response.test.ts:anti-slop(require-safety-comment-for-type-assertion):10d8ae3d1e52b1c78e5727add77587ab9c68008f0b4f1644fb3a45b7adc63566": 1,
     "packages/esi-client/tests/domain-client-emitter.test.ts:anti-slop(no-unknown-parameters):3f9c4909d9119633d4fd804ae63dd3b4ca7d76a25034bbeb0981cb361f2b95a9": 1,
-    "packages/esi-client/tests/domain-client-emitter.test.ts:anti-slop(no-unknown-returns):0580d49cae9ec18a1e9ebbbed41c67a2372dfb750eefc26dd2d48438b009dd75": 1,
-    "packages/esi-client/tests/domain-client-emitter.test.ts:anti-slop(no-unknown-returns):cdd776985a45929461b9bbec3b7dc41d9ad01562f9539553b9283aa2d3f4746a": 1,
     "packages/esi-client/tests/domain-client-emitter.test.ts:anti-slop(require-safety-comment-for-type-assertion):c7222435b9a77731cafbcb75bf12afdcef6da562e11789750239e5912d4c0aa7": 2,
     "packages/esi-client/tests/drift-report.test.ts:anti-slop(no-unknown-parameters):49470d97bccdc097a0d500ec739e1b9bdf117b1cbff7d03a97d80d4fae6ee798": 1,
     "packages/esi-client/tests/drift-report.test.ts:anti-slop(no-unknown-parameters):c4c5fdf0e76ed23970890827f3ae012996fa35244d9058e41338392aefa3c03e": 1,

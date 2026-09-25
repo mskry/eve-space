@@ -24,6 +24,7 @@ export interface GetFreelanceJobsDetailOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFreelanceJobsDetailData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFreelanceJobsDetailData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetFreelanceJobsDetailData>["headers"]>["X-Tenant"];
 }
 
@@ -31,6 +32,7 @@ export interface GetCharactersFreelanceJobsParticipationOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>["headers"]>["X-Tenant"];
 }
 
@@ -38,6 +40,7 @@ export interface GetCharactersFreelanceJobsListingOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersFreelanceJobsListingData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersFreelanceJobsListingData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersFreelanceJobsListingData>["headers"]>["X-Tenant"];
 }
 
@@ -48,6 +51,7 @@ export interface GetCorporationsFreelanceJobsListingOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>["headers"]>["If-None-Match"];
   readonly "limit"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>["query"]>["limit"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>["headers"]>["X-Tenant"];
 }
 
@@ -58,6 +62,7 @@ export interface GetCorporationsFreelanceJobsParticipantsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>["headers"]>["If-None-Match"];
   readonly "limit"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>["query"]>["limit"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>["headers"]>["X-Tenant"];
 }
 
@@ -69,6 +74,7 @@ export interface GetFreelanceJobsListingOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFreelanceJobsListingData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFreelanceJobsListingData>["headers"]>["If-None-Match"];
   readonly "limit"?: NonNullable<OperationArguments<GetFreelanceJobsListingData>["query"]>["limit"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetFreelanceJobsListingData>["headers"]>["X-Tenant"];
 }
 

@@ -29,6 +29,7 @@ export interface GetCharactersCharacterIdIndustryJobsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdIndustryJobsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdIndustryJobsData>["headers"]>["If-None-Match"];
   readonly "includeCompleted"?: NonNullable<OperationArguments<GetCharactersCharacterIdIndustryJobsData>["query"]>["include_completed"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdIndustryJobsData>["headers"]>["X-Tenant"];
 }
 
@@ -37,6 +38,7 @@ export interface GetCharactersCharacterIdMiningOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdMiningData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdMiningData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCharactersCharacterIdMiningData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdMiningData>["headers"]>["X-Tenant"];
 }
 
@@ -46,6 +48,7 @@ export interface GetCorporationsCorporationIdIndustryJobsOptions {
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>["headers"]>["If-None-Match"];
   readonly "includeCompleted"?: NonNullable<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>["query"]>["include_completed"];
   readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>["headers"]>["X-Tenant"];
 }
 
@@ -53,6 +56,7 @@ export interface GetIndustryFacilitiesOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetIndustryFacilitiesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetIndustryFacilitiesData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetIndustryFacilitiesData>["headers"]>["X-Tenant"];
 }
 
@@ -61,6 +65,7 @@ export interface GetCorporationCorporationIdMiningObserversOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversData>["headers"]>["X-Tenant"];
 }
 
@@ -69,6 +74,7 @@ export interface GetCorporationCorporationIdMiningExtractionsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>["headers"]>["X-Tenant"];
 }
 
@@ -77,6 +83,7 @@ export interface GetCorporationCorporationIdMiningObserversObserverIdOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>["headers"]>["X-Tenant"];
 }
 
@@ -84,6 +91,7 @@ export interface GetIndustrySystemsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetIndustrySystemsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetIndustrySystemsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetIndustrySystemsData>["headers"]>["X-Tenant"];
 }
 

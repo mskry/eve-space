@@ -30,6 +30,7 @@ export interface GetCharactersCharacterIdContractsContractIdBidsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>["headers"]>["X-Tenant"];
 }
 
@@ -37,6 +38,7 @@ export interface GetCharactersCharacterIdContractsContractIdItemsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>["headers"]>["X-Tenant"];
 }
 
@@ -45,6 +47,7 @@ export interface GetCharactersCharacterIdContractsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsData>["headers"]>["X-Tenant"];
 }
 
@@ -53,6 +56,7 @@ export interface GetCorporationsCorporationIdContractsContractIdBidsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>["headers"]>["X-Tenant"];
 }
 
@@ -60,6 +64,7 @@ export interface GetCorporationsCorporationIdContractsContractIdItemsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>["headers"]>["X-Tenant"];
 }
 
@@ -68,6 +73,7 @@ export interface GetCorporationsCorporationIdContractsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsData>["headers"]>["X-Tenant"];
 }
 
@@ -76,6 +82,7 @@ export interface GetContractsPublicBidsContractIdOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetContractsPublicBidsContractIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetContractsPublicBidsContractIdData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetContractsPublicBidsContractIdData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetContractsPublicBidsContractIdData>["headers"]>["X-Tenant"];
 }
 
@@ -84,6 +91,7 @@ export interface GetContractsPublicItemsContractIdOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetContractsPublicItemsContractIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetContractsPublicItemsContractIdData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetContractsPublicItemsContractIdData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetContractsPublicItemsContractIdData>["headers"]>["X-Tenant"];
 }
 
@@ -92,6 +100,7 @@ export interface GetContractsPublicRegionIdOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetContractsPublicRegionIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetContractsPublicRegionIdData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetContractsPublicRegionIdData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetContractsPublicRegionIdData>["headers"]>["X-Tenant"];
 }
 

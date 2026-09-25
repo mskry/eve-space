@@ -25,6 +25,7 @@ export interface GetCharactersCharacterIdAssetsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdAssetsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdAssetsData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCharactersCharacterIdAssetsData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdAssetsData>["headers"]>["X-Tenant"];
 }
 
@@ -33,6 +34,7 @@ export interface GetCorporationsCorporationIdAssetsOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdAssetsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdAssetsData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdAssetsData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdAssetsData>["headers"]>["X-Tenant"];
 }
 
@@ -41,6 +43,7 @@ export interface PostCharactersCharacterIdAssetsLocationsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostCharactersCharacterIdAssetsLocationsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostCharactersCharacterIdAssetsLocationsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostCharactersCharacterIdAssetsLocationsData>["headers"]>["X-Tenant"];
 }
 
@@ -49,6 +52,7 @@ export interface PostCharactersCharacterIdAssetsNamesOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostCharactersCharacterIdAssetsNamesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostCharactersCharacterIdAssetsNamesData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostCharactersCharacterIdAssetsNamesData>["headers"]>["X-Tenant"];
 }
 
@@ -57,6 +61,7 @@ export interface PostCorporationsCorporationIdAssetsLocationsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>["headers"]>["X-Tenant"];
 }
 
@@ -65,6 +70,7 @@ export interface PostCorporationsCorporationIdAssetsNamesOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostCorporationsCorporationIdAssetsNamesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostCorporationsCorporationIdAssetsNamesData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostCorporationsCorporationIdAssetsNamesData>["headers"]>["X-Tenant"];
 }
 

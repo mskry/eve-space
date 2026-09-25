@@ -114,112 +114,112 @@ class CorporationDomainClientWithMetadataImplementation implements CorporationDo
 
   getIcon(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdIconsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdIconsOptions): Promise<EsiResponse<GetCorporationsCorporationIdIconsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdIconsData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdIconsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdIconsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getMemberLimit(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersLimitData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersLimitOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersLimitResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdMembersLimitData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdMembersLimitDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdMembersLimitDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getPublicInfo(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdOptions): Promise<EsiResponse<GetCorporationsCorporationIdResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getStarbase(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']>["corporation_id"], starbaseId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']>["starbase_id"], options: GetCorporationsCorporationIdStarbasesStarbaseIdOptions): Promise<EsiResponse<GetCorporationsCorporationIdStarbasesStarbaseIdResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData> = { path: { "corporation_id": corporationId, "starbase_id": starbaseId }, query: { "system_id": options?.["systemId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdStarbasesStarbaseIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdStarbasesStarbaseIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listAllianceHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdAlliancehistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdAlliancehistoryResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdAlliancehistoryData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdAlliancehistoryDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdAlliancehistoryDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listAuditLogSecureContainerLogs(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContainersLogsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContainersLogsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContainersLogsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdContainersLogsData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdContainersLogsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdContainersLogsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listBlueprints(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdBlueprintsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdBlueprintsOptions): Promise<EsiResponse<GetCorporationsCorporationIdBlueprintsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdBlueprintsData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdBlueprintsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdBlueprintsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listDivisions(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdDivisionsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdDivisionsOptions): Promise<EsiResponse<GetCorporationsCorporationIdDivisionsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdDivisionsData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdDivisionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdDivisionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listFacilities(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdFacilitiesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdFacilitiesOptions): Promise<EsiResponse<GetCorporationsCorporationIdFacilitiesResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdFacilitiesData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdFacilitiesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdFacilitiesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listIssuedMedals(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsIssuedOptions): Promise<EsiResponse<GetCorporationsCorporationIdMedalsIssuedResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdMedalsIssuedData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdMedalsIssuedDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdMedalsIssuedDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listMedals(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsOptions): Promise<EsiResponse<GetCorporationsCorporationIdMedalsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdMedalsData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdMedalsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdMedalsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listMemberRoleHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesHistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesHistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdRolesHistoryResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdRolesHistoryData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdRolesHistoryDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdRolesHistoryDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listMemberRoles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesOptions): Promise<EsiResponse<GetCorporationsCorporationIdRolesResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdRolesData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdRolesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdRolesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listMemberTitles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersTitlesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersTitlesOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersTitlesResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdMembersTitlesData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdMembersTitlesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdMembersTitlesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listMemberTracking(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembertrackingData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembertrackingOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembertrackingResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdMembertrackingData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdMembertrackingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdMembertrackingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listMembers(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdMembersData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdMembersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdMembersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listNpcCorporations(options?: GetCorporationsNpccorpsOptions): Promise<EsiResponse<GetCorporationsNpccorpsResponse>> {
     const arguments_: OperationArguments<GetCorporationsNpccorpsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsNpccorpsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsNpccorpsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listShareholders(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdShareholdersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdShareholdersOptions): Promise<EsiResponse<GetCorporationsCorporationIdShareholdersResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdShareholdersData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdShareholdersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdShareholdersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listStandings(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStandingsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStandingsOptions): Promise<EsiResponse<GetCorporationsCorporationIdStandingsResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdStandingsData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdStandingsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdStandingsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listStarbases(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStarbasesOptions): Promise<EsiResponse<GetCorporationsCorporationIdStarbasesResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdStarbasesData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdStarbasesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdStarbasesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listStructures(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStructuresData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStructuresOptions): Promise<EsiResponse<GetCorporationsCorporationIdStructuresResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdStructuresData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdStructuresDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdStructuresDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listTitles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdTitlesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdTitlesOptions): Promise<EsiResponse<GetCorporationsCorporationIdTitlesResponse>> {
     const arguments_: OperationArguments<GetCorporationsCorporationIdTitlesData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCorporationsCorporationIdTitlesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCorporationsCorporationIdTitlesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

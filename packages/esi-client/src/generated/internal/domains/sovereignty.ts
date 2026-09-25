@@ -34,12 +34,12 @@ class SovereigntyDomainClientWithMetadataImplementation implements SovereigntyDo
 
   listCampaigns(options?: GetSovereigntyCampaignsOptions): Promise<EsiResponse<GetSovereigntyCampaignsResponse>> {
     const arguments_: OperationArguments<GetSovereigntyCampaignsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetSovereigntyCampaignsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetSovereigntyCampaignsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listSystems(options?: GetSovereigntySystemsOptions): Promise<EsiResponse<GetSovereigntySystemsResponse>> {
     const arguments_: OperationArguments<GetSovereigntySystemsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetSovereigntySystemsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetSovereigntySystemsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

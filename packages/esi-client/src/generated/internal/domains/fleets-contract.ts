@@ -40,6 +40,7 @@ export interface PostFleetsFleetIdWingsWingIdSquadsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>["headers"]>["X-Tenant"];
 }
 
@@ -47,6 +48,7 @@ export interface PostFleetsFleetIdWingsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostFleetsFleetIdWingsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostFleetsFleetIdWingsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostFleetsFleetIdWingsData>["headers"]>["X-Tenant"];
 }
 
@@ -54,6 +56,7 @@ export interface DeleteFleetsFleetIdSquadsSquadIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>["headers"]>["X-Tenant"];
 }
 
@@ -61,6 +64,7 @@ export interface DeleteFleetsFleetIdWingsWingIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<DeleteFleetsFleetIdWingsWingIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<DeleteFleetsFleetIdWingsWingIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<DeleteFleetsFleetIdWingsWingIdData>["headers"]>["X-Tenant"];
 }
 
@@ -68,6 +72,7 @@ export interface GetFleetsFleetIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFleetsFleetIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFleetsFleetIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetFleetsFleetIdData>["headers"]>["X-Tenant"];
 }
 
@@ -75,6 +80,7 @@ export interface GetCharactersCharacterIdFleetOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdFleetData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdFleetData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdFleetData>["headers"]>["X-Tenant"];
 }
 
@@ -83,6 +89,7 @@ export interface PostFleetsFleetIdMembersOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostFleetsFleetIdMembersData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostFleetsFleetIdMembersData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostFleetsFleetIdMembersData>["headers"]>["X-Tenant"];
 }
 
@@ -90,6 +97,7 @@ export interface GetFleetsFleetIdMembersOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFleetsFleetIdMembersData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFleetsFleetIdMembersData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetFleetsFleetIdMembersData>["headers"]>["X-Tenant"];
 }
 
@@ -97,6 +105,7 @@ export interface GetFleetsFleetIdWingsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFleetsFleetIdWingsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFleetsFleetIdWingsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetFleetsFleetIdWingsData>["headers"]>["X-Tenant"];
 }
 
@@ -105,6 +114,7 @@ export interface PutFleetsFleetIdMembersMemberIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PutFleetsFleetIdMembersMemberIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PutFleetsFleetIdMembersMemberIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PutFleetsFleetIdMembersMemberIdData>["headers"]>["X-Tenant"];
 }
 
@@ -112,6 +122,7 @@ export interface DeleteFleetsFleetIdMembersMemberIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>["headers"]>["X-Tenant"];
 }
 
@@ -120,6 +131,7 @@ export interface PutFleetsFleetIdSquadsSquadIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PutFleetsFleetIdSquadsSquadIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PutFleetsFleetIdSquadsSquadIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PutFleetsFleetIdSquadsSquadIdData>["headers"]>["X-Tenant"];
 }
 
@@ -128,6 +140,7 @@ export interface PutFleetsFleetIdWingsWingIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PutFleetsFleetIdWingsWingIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PutFleetsFleetIdWingsWingIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PutFleetsFleetIdWingsWingIdData>["headers"]>["X-Tenant"];
 }
 
@@ -136,6 +149,7 @@ export interface PutFleetsFleetIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PutFleetsFleetIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PutFleetsFleetIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PutFleetsFleetIdData>["headers"]>["X-Tenant"];
 }
 

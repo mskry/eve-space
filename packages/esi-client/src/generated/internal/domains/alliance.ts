@@ -42,22 +42,22 @@ class AllianceDomainClientWithMetadataImplementation implements AllianceDomainCl
 
   getIcon(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdIconsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdIconsOptions): Promise<EsiResponse<GetAlliancesAllianceIdIconsResponse>> {
     const arguments_: OperationArguments<GetAlliancesAllianceIdIconsData> = { path: { "alliance_id": allianceId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetAlliancesAllianceIdIconsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetAlliancesAllianceIdIconsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getPublicInfo(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdOptions): Promise<EsiResponse<GetAlliancesAllianceIdResponse>> {
     const arguments_: OperationArguments<GetAlliancesAllianceIdData> = { path: { "alliance_id": allianceId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetAlliancesAllianceIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetAlliancesAllianceIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   list(options?: GetAlliancesOptions): Promise<EsiResponse<GetAlliancesResponse>> {
     const arguments_: OperationArguments<GetAlliancesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetAlliancesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetAlliancesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listCorporations(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdCorporationsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdCorporationsOptions): Promise<EsiResponse<GetAlliancesAllianceIdCorporationsResponse>> {
     const arguments_: OperationArguments<GetAlliancesAllianceIdCorporationsData> = { path: { "alliance_id": allianceId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetAlliancesAllianceIdCorporationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetAlliancesAllianceIdCorporationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

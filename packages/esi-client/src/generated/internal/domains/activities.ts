@@ -38,17 +38,17 @@ class ActivitiesDomainClientWithMetadataImplementation implements ActivitiesDoma
 
   getMercenaryTacticalOperation(characterId: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['path']>["character_id"], operationId: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['path']>["operation_id"], options?: GetCharactersMercenaryTacticalOperationsDetailOptions): Promise<EsiResponse<GetCharactersMercenaryTacticalOperationsDetailResponse>> {
     const arguments_: OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData> = { path: { "character_id": characterId, "operation_id": operationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersMercenaryTacticalOperationsDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersMercenaryTacticalOperationsDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listMercenaryTacticalOperations(characterId: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>['path']>["character_id"], options?: GetCharactersMercenaryTacticalOperationsListingOptions): Promise<EsiResponse<GetCharactersMercenaryTacticalOperationsListingResponse>> {
     const arguments_: OperationArguments<GetCharactersMercenaryTacticalOperationsListingData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersMercenaryTacticalOperationsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersMercenaryTacticalOperationsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listRaidableSkyhooks(options?: GetSkyhooksRaidableOptions): Promise<EsiResponse<GetSkyhooksRaidableResponse>> {
     const arguments_: OperationArguments<GetSkyhooksRaidableData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetSkyhooksRaidableDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetSkyhooksRaidableDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

@@ -23,6 +23,7 @@ export interface PostUiOpenwindowContractOptions {
   readonly "contractId": NonNullable<OperationArguments<PostUiOpenwindowContractData>["query"]>["contract_id"];
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUiOpenwindowContractData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUiOpenwindowContractData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostUiOpenwindowContractData>["headers"]>["X-Tenant"];
 }
 
@@ -30,6 +31,7 @@ export interface PostUiOpenwindowInformationOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUiOpenwindowInformationData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUiOpenwindowInformationData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "targetId": NonNullable<OperationArguments<PostUiOpenwindowInformationData>["query"]>["target_id"];
   readonly "xTenant"?: NonNullable<OperationArguments<PostUiOpenwindowInformationData>["headers"]>["X-Tenant"];
 }
@@ -38,6 +40,7 @@ export interface PostUiOpenwindowMarketdetailsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUiOpenwindowMarketdetailsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUiOpenwindowMarketdetailsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "typeId": NonNullable<OperationArguments<PostUiOpenwindowMarketdetailsData>["query"]>["type_id"];
   readonly "xTenant"?: NonNullable<OperationArguments<PostUiOpenwindowMarketdetailsData>["headers"]>["X-Tenant"];
 }
@@ -47,6 +50,7 @@ export interface PostUiOpenwindowNewmailOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUiOpenwindowNewmailData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUiOpenwindowNewmailData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostUiOpenwindowNewmailData>["headers"]>["X-Tenant"];
 }
 
@@ -57,6 +61,7 @@ export interface PostUiAutopilotWaypointOptions {
   readonly "destinationId": NonNullable<OperationArguments<PostUiAutopilotWaypointData>["query"]>["destination_id"];
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUiAutopilotWaypointData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUiAutopilotWaypointData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<PostUiAutopilotWaypointData>["headers"]>["X-Tenant"];
 }
 

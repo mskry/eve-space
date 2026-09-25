@@ -46,27 +46,27 @@ class ParagonHubDomainClientWithMetadataImplementation implements ParagonHubDoma
 
   listListingsForAlliance(allianceId: NonNullable<OperationArguments<GetParagonHubSkinrAlliancesData>['path']>["alliance_id"], options?: GetParagonHubSkinrAlliancesOptions): Promise<EsiResponse<GetParagonHubSkinrAlliancesResponse>> {
     const arguments_: OperationArguments<GetParagonHubSkinrAlliancesData> = { path: { "alliance_id": allianceId }, query: { "after": options?.["after"], "before": options?.["before"], "limit": options?.["limit"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetParagonHubSkinrAlliancesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetParagonHubSkinrAlliancesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listListingsForCharacter(characterId: NonNullable<OperationArguments<GetParagonHubSkinrCharactersData>['path']>["character_id"], options?: GetParagonHubSkinrCharactersOptions): Promise<EsiResponse<GetParagonHubSkinrCharactersResponse>> {
     const arguments_: OperationArguments<GetParagonHubSkinrCharactersData> = { path: { "character_id": characterId }, query: { "after": options?.["after"], "before": options?.["before"], "limit": options?.["limit"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetParagonHubSkinrCharactersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetParagonHubSkinrCharactersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listListingsForCorporation(corporationId: NonNullable<OperationArguments<GetParagonHubSkinrCorporationsData>['path']>["corporation_id"], options?: GetParagonHubSkinrCorporationsOptions): Promise<EsiResponse<GetParagonHubSkinrCorporationsResponse>> {
     const arguments_: OperationArguments<GetParagonHubSkinrCorporationsData> = { path: { "corporation_id": corporationId }, query: { "after": options?.["after"], "before": options?.["before"], "limit": options?.["limit"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetParagonHubSkinrCorporationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetParagonHubSkinrCorporationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listPostedListings(characterId: NonNullable<OperationArguments<GetCharactersParagonHubSkinrData>['path']>["character_id"], options?: GetCharactersParagonHubSkinrOptions): Promise<EsiResponse<GetCharactersParagonHubSkinrResponse>> {
     const arguments_: OperationArguments<GetCharactersParagonHubSkinrData> = { path: { "character_id": characterId }, query: { "after": options?.["after"], "before": options?.["before"], "limit": options?.["limit"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersParagonHubSkinrDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersParagonHubSkinrDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listPublicListings(options?: GetParagonHubSkinrOptions): Promise<EsiResponse<GetParagonHubSkinrResponse>> {
     const arguments_: OperationArguments<GetParagonHubSkinrData> = { query: { "after": options?.["after"], "before": options?.["before"], "limit": options?.["limit"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetParagonHubSkinrDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetParagonHubSkinrDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

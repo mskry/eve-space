@@ -34,12 +34,12 @@ class AccessListDomainClientWithMetadataImplementation implements AccessListDoma
 
   get(characterId: NonNullable<OperationArguments<GetCharactersAccessListsDetailData>['path']>["character_id"], accessListId: NonNullable<OperationArguments<GetCharactersAccessListsDetailData>['path']>["access_list_id"], options?: GetCharactersAccessListsDetailOptions): Promise<EsiResponse<GetCharactersAccessListsDetailResponse>> {
     const arguments_: OperationArguments<GetCharactersAccessListsDetailData> = { path: { "character_id": characterId, "access_list_id": accessListId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersAccessListsDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersAccessListsDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   list(characterId: NonNullable<OperationArguments<GetCharactersAccessListsListingData>['path']>["character_id"], options?: GetCharactersAccessListsListingOptions): Promise<EsiResponse<GetCharactersAccessListsListingResponse>> {
     const arguments_: OperationArguments<GetCharactersAccessListsListingData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersAccessListsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersAccessListsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

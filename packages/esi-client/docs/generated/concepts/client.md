@@ -9,7 +9,7 @@ DO NOT EDIT.
 
 Create a public client with `new EsiClient()`. The pinned compatibility date, standard ESI base URL, English language, 10,000 millisecond request timeout, response validation, and the global `fetch` implementation are defaults.
 
-Constructor options include `baseUrl`, `compatibilityDate`, `language`, `requestTimeoutMs`, `token` or `tokenProvider`, `fetch`, `validateResponses`, `validateRequests`, and `allowGenericMutations`. Configuration is immutable. The positive-integer timeout starts after token-provider resolution and spans the configured fetch plus response-body consumption. Operation options can override the compatibility date where the registry declares support.
+Constructor options include `baseUrl`, `compatibilityDate`, `language`, `requestTimeoutMs`, `token` or `tokenProvider`, `fetch`, `validateResponses`, `validateRequests`, and `allowGenericMutations`. Configuration is immutable. Every typed domain method accepts an optional caller `signal` in its final options object, including methods with no other options; required request fields remain required. The positive-integer timeout starts after token-provider resolution and spans the configured fetch plus response-body consumption. Caller cancellation also applies during credential resolution. Operation options can override the compatibility date where the registry declares support.
 
 ## Related
 

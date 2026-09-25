@@ -1,14 +1,11 @@
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
-
-const run = promisify(execFile)
+import { runGit } from './git.js'
 
 export async function changedRepositoryFiles(root: string, base: string) {
   const [branch, workingTree, staged, untracked] = await Promise.all([
-    run('git', ['diff', '--name-only', `${base}...HEAD`], { cwd: root }),
-    run('git', ['diff', '--name-only'], { cwd: root }),
-    run('git', ['diff', '--cached', '--name-only'], { cwd: root }),
-    run('git', ['ls-files', '--others', '--exclude-standard'], { cwd: root }),
+    runGit(root, 'diff', '--name-only', `${base}...HEAD`),
+    runGit(root, 'diff', '--name-only'),
+    runGit(root, 'diff', '--cached', '--name-only'),
+    runGit(root, 'ls-files', '--others', '--exclude-standard'),
   ])
 
   return [
@@ -23,12 +20,12 @@ export async function changedRepositoryFiles(root: string, base: string) {
 }
 
 export async function mergeBaseRevision(root: string, base: string) {
-  return (await run('git', ['merge-base', base, 'HEAD'], { cwd: root })).stdout.trim()
+  return (await runGit(root, 'merge-base', base, 'HEAD')).stdout.trim()
 }
 
 export async function repositoryFileAtRevision(root: string, revision: string, file: string) {
   try {
-    return (await run('git', ['show', `${revision}:${file}`], { cwd: root })).stdout
+    return (await runGit(root, 'show', `${revision}:${file}`)).stdout
   } catch {
     return ''
   }

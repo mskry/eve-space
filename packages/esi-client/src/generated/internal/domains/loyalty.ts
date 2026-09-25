@@ -34,12 +34,12 @@ class LoyaltyDomainClientWithMetadataImplementation implements LoyaltyDomainClie
 
   listPoints(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>['path']>["character_id"], options?: GetCharactersCharacterIdLoyaltyPointsOptions): Promise<EsiResponse<GetCharactersCharacterIdLoyaltyPointsResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdLoyaltyPointsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdLoyaltyPointsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdLoyaltyPointsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listStoreOffers(corporationId: NonNullable<OperationArguments<GetLoyaltyStoresCorporationIdOffersData>['path']>["corporation_id"], options?: GetLoyaltyStoresCorporationIdOffersOptions): Promise<EsiResponse<GetLoyaltyStoresCorporationIdOffersResponse>> {
     const arguments_: OperationArguments<GetLoyaltyStoresCorporationIdOffersData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetLoyaltyStoresCorporationIdOffersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetLoyaltyStoresCorporationIdOffersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 

@@ -20,6 +20,7 @@ export interface GetCharactersCharacterIdPlanetsPlanetIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>["headers"]>["X-Tenant"];
 }
 
@@ -27,6 +28,7 @@ export interface GetUniverseSchematicsSchematicIdOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseSchematicsSchematicIdData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseSchematicsSchematicIdData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseSchematicsSchematicIdData>["headers"]>["X-Tenant"];
 }
 
@@ -34,6 +36,7 @@ export interface GetCharactersCharacterIdPlanetsOptions {
   readonly "compatibilityDate"?: string;
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdPlanetsData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdPlanetsData>["headers"]>["If-None-Match"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdPlanetsData>["headers"]>["X-Tenant"];
 }
 
@@ -42,6 +45,7 @@ export interface GetCorporationsCorporationIdCustomsOfficesOptions {
   readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>["headers"]>["If-Modified-Since"];
   readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>["headers"]>["If-None-Match"];
   readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>["query"]>["page"];
+  readonly "signal"?: AbortSignal;
   readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>["headers"]>["X-Tenant"];
 }
 

@@ -82,72 +82,72 @@ class FleetsDomainClientWithMetadataImplementation implements FleetsDomainClient
 
   createSquad(fleetId: NonNullable<OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>['path']>["fleet_id"], wingId: NonNullable<OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>['path']>["wing_id"], options?: PostFleetsFleetIdWingsWingIdSquadsOptions): Promise<EsiResponse<PostFleetsFleetIdWingsWingIdSquadsResponse>> {
     const arguments_: OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData> = { path: { "fleet_id": fleetId, "wing_id": wingId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, PostFleetsFleetIdWingsWingIdSquadsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostFleetsFleetIdWingsWingIdSquadsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   createWing(fleetId: NonNullable<OperationArguments<PostFleetsFleetIdWingsData>['path']>["fleet_id"], options?: PostFleetsFleetIdWingsOptions): Promise<EsiResponse<PostFleetsFleetIdWingsResponse>> {
     const arguments_: OperationArguments<PostFleetsFleetIdWingsData> = { path: { "fleet_id": fleetId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, PostFleetsFleetIdWingsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostFleetsFleetIdWingsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   deleteSquad(fleetId: NonNullable<OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>['path']>["fleet_id"], squadId: NonNullable<OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>['path']>["squad_id"], options?: DeleteFleetsFleetIdSquadsSquadIdOptions): Promise<EsiResponse<DeleteFleetsFleetIdSquadsSquadIdResponse>> {
     const arguments_: OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData> = { path: { "fleet_id": fleetId, "squad_id": squadId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, DeleteFleetsFleetIdSquadsSquadIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, DeleteFleetsFleetIdSquadsSquadIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   deleteWing(fleetId: NonNullable<OperationArguments<DeleteFleetsFleetIdWingsWingIdData>['path']>["fleet_id"], wingId: NonNullable<OperationArguments<DeleteFleetsFleetIdWingsWingIdData>['path']>["wing_id"], options?: DeleteFleetsFleetIdWingsWingIdOptions): Promise<EsiResponse<DeleteFleetsFleetIdWingsWingIdResponse>> {
     const arguments_: OperationArguments<DeleteFleetsFleetIdWingsWingIdData> = { path: { "fleet_id": fleetId, "wing_id": wingId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, DeleteFleetsFleetIdWingsWingIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, DeleteFleetsFleetIdWingsWingIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   get(fleetId: NonNullable<OperationArguments<GetFleetsFleetIdData>['path']>["fleet_id"], options?: GetFleetsFleetIdOptions): Promise<EsiResponse<GetFleetsFleetIdResponse>> {
     const arguments_: OperationArguments<GetFleetsFleetIdData> = { path: { "fleet_id": fleetId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetFleetsFleetIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetFleetsFleetIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   getCharacterFleet(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdFleetData>['path']>["character_id"], options?: GetCharactersCharacterIdFleetOptions): Promise<EsiResponse<GetCharactersCharacterIdFleetResponse>> {
     const arguments_: OperationArguments<GetCharactersCharacterIdFleetData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetCharactersCharacterIdFleetDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetCharactersCharacterIdFleetDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   inviteMember(fleetId: NonNullable<OperationArguments<PostFleetsFleetIdMembersData>['path']>["fleet_id"], options: PostFleetsFleetIdMembersOptions): Promise<EsiResponse<PostFleetsFleetIdMembersResponse>> {
     const arguments_: OperationArguments<PostFleetsFleetIdMembersData> = { path: { "fleet_id": fleetId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PostFleetsFleetIdMembersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PostFleetsFleetIdMembersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listMembers(fleetId: NonNullable<OperationArguments<GetFleetsFleetIdMembersData>['path']>["fleet_id"], options?: GetFleetsFleetIdMembersOptions): Promise<EsiResponse<GetFleetsFleetIdMembersResponse>> {
     const arguments_: OperationArguments<GetFleetsFleetIdMembersData> = { path: { "fleet_id": fleetId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetFleetsFleetIdMembersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetFleetsFleetIdMembersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   listWings(fleetId: NonNullable<OperationArguments<GetFleetsFleetIdWingsData>['path']>["fleet_id"], options?: GetFleetsFleetIdWingsOptions): Promise<EsiResponse<GetFleetsFleetIdWingsResponse>> {
     const arguments_: OperationArguments<GetFleetsFleetIdWingsData> = { path: { "fleet_id": fleetId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, GetFleetsFleetIdWingsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, GetFleetsFleetIdWingsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   moveMember(fleetId: NonNullable<OperationArguments<PutFleetsFleetIdMembersMemberIdData>['path']>["fleet_id"], memberId: NonNullable<OperationArguments<PutFleetsFleetIdMembersMemberIdData>['path']>["member_id"], options: PutFleetsFleetIdMembersMemberIdOptions): Promise<EsiResponse<PutFleetsFleetIdMembersMemberIdResponse>> {
     const arguments_: OperationArguments<PutFleetsFleetIdMembersMemberIdData> = { path: { "fleet_id": fleetId, "member_id": memberId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PutFleetsFleetIdMembersMemberIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PutFleetsFleetIdMembersMemberIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   removeMember(fleetId: NonNullable<OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>['path']>["fleet_id"], memberId: NonNullable<OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>['path']>["member_id"], options?: DeleteFleetsFleetIdMembersMemberIdOptions): Promise<EsiResponse<DeleteFleetsFleetIdMembersMemberIdResponse>> {
     const arguments_: OperationArguments<DeleteFleetsFleetIdMembersMemberIdData> = { path: { "fleet_id": fleetId, "member_id": memberId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
-    return executeOperation(this.#configuration, DeleteFleetsFleetIdMembersMemberIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, DeleteFleetsFleetIdMembersMemberIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   renameSquad(fleetId: NonNullable<OperationArguments<PutFleetsFleetIdSquadsSquadIdData>['path']>["fleet_id"], squadId: NonNullable<OperationArguments<PutFleetsFleetIdSquadsSquadIdData>['path']>["squad_id"], options: PutFleetsFleetIdSquadsSquadIdOptions): Promise<EsiResponse<PutFleetsFleetIdSquadsSquadIdResponse>> {
     const arguments_: OperationArguments<PutFleetsFleetIdSquadsSquadIdData> = { path: { "fleet_id": fleetId, "squad_id": squadId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PutFleetsFleetIdSquadsSquadIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PutFleetsFleetIdSquadsSquadIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   renameWing(fleetId: NonNullable<OperationArguments<PutFleetsFleetIdWingsWingIdData>['path']>["fleet_id"], wingId: NonNullable<OperationArguments<PutFleetsFleetIdWingsWingIdData>['path']>["wing_id"], options: PutFleetsFleetIdWingsWingIdOptions): Promise<EsiResponse<PutFleetsFleetIdWingsWingIdResponse>> {
     const arguments_: OperationArguments<PutFleetsFleetIdWingsWingIdData> = { path: { "fleet_id": fleetId, "wing_id": wingId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PutFleetsFleetIdWingsWingIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PutFleetsFleetIdWingsWingIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 
   update(fleetId: NonNullable<OperationArguments<PutFleetsFleetIdData>['path']>["fleet_id"], options: PutFleetsFleetIdOptions): Promise<EsiResponse<PutFleetsFleetIdResponse>> {
     const arguments_: OperationArguments<PutFleetsFleetIdData> = { path: { "fleet_id": fleetId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
-    return executeOperation(this.#configuration, PutFleetsFleetIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
+    return executeOperation(this.#configuration, PutFleetsFleetIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate, signal: options?.signal });
   }
 }
 
