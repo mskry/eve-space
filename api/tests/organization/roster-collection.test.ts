@@ -1,6 +1,13 @@
-import { describe, expect, test } from 'vitest'
-import { materializeCorporationRoster } from '../../src/organization/roster-collection.js'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { corporationMembershipScope } from '../../src/organization/corporation-membership.js'
+
+const mocks = vi.hoisted(() => ({ resolveSourceRoleEvidenceState: vi.fn() }))
+
+vi.mock('../../src/organization/source-role-evidence.js', () => ({
+  resolveSourceRoleEvidenceState: mocks.resolveSourceRoleEvidenceState,
+}))
+
+const { materializeCorporationRoster } = await import('../../src/organization/roster-collection.js')
 
 const input = {
   characterId: 1_404_328_063,
@@ -12,27 +19,37 @@ const input = {
   validatedAt: new Date('2026-09-01T12:00:00.000Z'),
 }
 
+const currentSource = () => ({
+  affiliationCheckedAt: new Date('2099-09-01T11:00:00.000Z'),
+  affiliationResolutionState: 'resolved',
+  characterId: input.characterId,
+  corporationId: input.corporationId,
+  currentSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+  nextAffiliationCheck: new Date('2099-09-01T12:00:00.000Z'),
+  scopes: [corporationMembershipScope],
+  sourceAffiliationPeriodRevision: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+  sourceAuthorizationGeneration: input.tokenVersion,
+  sourceCorporationId: input.corporationId,
+  sourceFreshUntil: new Date('2099-09-01T13:00:00.000Z'),
+  sourceGraceUntil: null,
+  sourceId: input.sourceId,
+  sourceInvalidatedAt: null,
+  sourceLegacyRoleContinuityUntil: null,
+  sourceOrganizationVersion: input.organizationVersion,
+  sourceRoleEvidenceRevision: '6f4a6f1e-3b1b-4f2f-9b41-6a6c1a7d9c55',
+  sourceStatus: 'fresh',
+  sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+  sourceUserId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+  tokenVersion: input.tokenVersion,
+})
+
+beforeEach(() => {
+  mocks.resolveSourceRoleEvidenceState.mockResolvedValue('fresh')
+})
+
 describe('corporation roster materialization', () => {
   test('replaces a current source snapshot atomically', async () => {
-    const current = transaction([
-      {
-        affiliationCheckedAt: new Date('2099-09-01T11:00:00.000Z'),
-        affiliationResolutionState: 'resolved',
-        characterId: input.characterId,
-        corporationId: input.corporationId,
-        currentSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
-        nextAffiliationCheck: new Date('2099-09-01T12:00:00.000Z'),
-        scopes: [corporationMembershipScope],
-        sourceAuthorizationGeneration: input.tokenVersion,
-        sourceFreshUntil: new Date('2099-09-01T13:00:00.000Z'),
-        sourceGraceUntil: null,
-        sourceId: input.sourceId,
-        sourceInvalidatedAt: null,
-        sourceStatus: 'fresh',
-        sourceSubjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
-        tokenVersion: input.tokenVersion,
-      },
-    ])
+    const current = transaction([currentSource()])
 
     await expect(materializeCorporationRoster(current.database, input)).resolves.toStrictEqual({
       characterIds: input.characterIds,
@@ -49,6 +66,34 @@ describe('corporation roster materialization', () => {
         }),
       ),
     ])
+  })
+
+  test('rejects materialization when the source projection no longer matches role evidence', async () => {
+    mocks.resolveSourceRoleEvidenceState.mockResolvedValue('invalid')
+    const mismatched = transaction([currentSource()])
+
+    await expect(materializeCorporationRoster(mismatched.database, input)).resolves.toStrictEqual({
+      outcome: 'obsolete',
+    })
+    expect(mocks.resolveSourceRoleEvidenceState).toHaveBeenCalledWith(
+      mismatched.database,
+      expect.objectContaining({
+        authorityCorporationId: input.corporationId,
+        roleEvidenceRevision: '6f4a6f1e-3b1b-4f2f-9b41-6a6c1a7d9c55',
+      }),
+      expect.any(Date),
+    )
+    expect(mismatched.deletes).toBe(0)
+    expect(mismatched.inserts).toHaveLength(0)
+  })
+
+  test('denies materialization from degraded role evidence', async () => {
+    mocks.resolveSourceRoleEvidenceState.mockResolvedValue('degraded')
+    const degraded = transaction([currentSource()])
+
+    await expect(materializeCorporationRoster(degraded.database, input)).resolves.toStrictEqual({
+      outcome: 'obsolete',
+    })
   })
 
   test('rejects obsolete source and authorization generations without changing observations', async () => {

@@ -40,6 +40,23 @@ const characterAffiliationObservedPayloadSchema = z
   .object({ characterId: positiveIdentifier, userId: z.uuid() })
   .strict()
 
+const characterCorporationRoleTransitionPayloadSchema = z
+  .object({
+    affiliationPeriodRevision: z.uuid(),
+    authorityCorporationId: positiveIdentifier,
+    authorizationGeneration: z.number().int().nonnegative(),
+    characterId: positiveIdentifier,
+    currentRoleRevision: z.uuid(),
+    organizationVersion: positiveIdentifier,
+    previousRoleRevision: z.uuid(),
+    subjectLifecycleId: z.uuid(),
+    userId: z.uuid(),
+  })
+  .strict()
+  .refine((payload) => payload.previousRoleRevision !== payload.currentRoleRevision, {
+    message: 'Previous and current role revisions must differ',
+  })
+
 const organizationChangedPayloadSchema = z
   .object({
     actorAdminId: z.uuid(),
@@ -109,6 +126,14 @@ const domainEventRegistry = {
   'character.affiliation-observed': {
     aggregateType: 'character',
     versions: { 1: characterAffiliationObservedPayloadSchema },
+  },
+  'character.corporation-roles-changed': {
+    aggregateType: 'character',
+    versions: { 1: characterCorporationRoleTransitionPayloadSchema },
+  },
+  'character.corporation-role-loss-confirmed': {
+    aggregateType: 'character',
+    versions: { 1: characterCorporationRoleTransitionPayloadSchema },
   },
   'organization.changed': {
     aggregateType: 'deployment',

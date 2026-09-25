@@ -2,11 +2,12 @@ import { randomUUID } from 'node:crypto'
 import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
+import { ScopeRequiredError } from '../../../src/auth/token-errors.js'
 import { runMigrations } from '../../../src/db/migration-runner.js'
 
 const ownerEvidenceMocks = vi.hoisted(() => ({
-  getCharacterCorporationRolesEvidence: vi.fn(),
   observeAndPersistCharacterAffiliation: vi.fn(),
+  readCharacterCorporationRoles: vi.fn(),
 }))
 
 vi.mock('../../../src/characters/affiliation-sync.js', () => ({
@@ -14,7 +15,7 @@ vi.mock('../../../src/characters/affiliation-sync.js', () => ({
 }))
 vi.mock('../../../src/characters/corporation-roles.js', () => ({
   characterCorporationRolesScope: 'esi-characters.read_corporation_roles.v1',
-  getCharacterCorporationRolesEvidence: ownerEvidenceMocks.getCharacterCorporationRolesEvidence,
+  readCharacterCorporationRoles: ownerEvidenceMocks.readCharacterCorporationRoles,
 }))
 
 let container: StartedTestContainer
@@ -22,9 +23,9 @@ let connection: postgres.Sql
 let secondConnection: postgres.Sql
 let updateDeploymentOrganization: typeof import('../../../src/admin/store.js').updateDeploymentOrganization
 let claimOrganizationOwnership: typeof import('../../../src/organization/owner-claim.js').claimOrganizationOwnership
-let refreshOrganizationOwnerEvidence: typeof import('../../../src/organization/owner-evidence.js').refreshOrganizationOwnerEvidence
-let selectDueOrganizationOwnerEvidence: typeof import('../../../src/organization/owner-evidence.js').selectDueOrganizationOwnerEvidence
-let refreshDerivedDirectorAuthority: typeof import('../../../src/organization/derived-authority.js').refreshDerivedDirectorAuthority
+let refreshCorporationRoleEvidence: typeof import('../../../src/organization/corporation-role-refresh.js').refreshCorporationRoleEvidence
+let loadCorporationRoleDemand: typeof import('../../../src/organization/corporation-role-demand.js').loadCorporationRoleDemand
+let selectDueCorporationRoleDemand: typeof import('../../../src/organization/corporation-role-demand.js').selectDueCorporationRoleDemand
 let assignOrganizationGroup: typeof import('../../../src/organization/group-store.js').assignOrganizationGroup
 let hasCurrentOrganizationManagerAuthority: typeof import('../../../src/organization/management-authority.js').hasCurrentOrganizationManagerAuthority
 let convergeRegistrationComplianceGroupAssignment: typeof import('../../../src/organization/group-compliance.js').convergeRegistrationComplianceGroupAssignment
@@ -96,10 +97,10 @@ beforeAll(async () => {
   await runMigrations(connection)
   ;({ updateDeploymentOrganization } = await import('../../../src/admin/store.js'))
   ;({ claimOrganizationOwnership } = await import('../../../src/organization/owner-claim.js'))
-  ;({ refreshOrganizationOwnerEvidence, selectDueOrganizationOwnerEvidence } =
-    await import('../../../src/organization/owner-evidence.js'))
-  ;({ refreshDerivedDirectorAuthority } =
-    await import('../../../src/organization/derived-authority.js'))
+  ;({ refreshCorporationRoleEvidence } =
+    await import('../../../src/organization/corporation-role-refresh.js'))
+  ;({ loadCorporationRoleDemand, selectDueCorporationRoleDemand } =
+    await import('../../../src/organization/corporation-role-demand.js'))
   ;({
     assignOrganizationGroup,
     createOrganizationGroup,
@@ -185,7 +186,7 @@ beforeEach(async () => {
     corporationId: 98_000_001,
     stale: false,
   })
-  ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(roleEvidence())
+  ownerEvidenceMocks.readCharacterCorporationRoles.mockResolvedValue(roleEvidence())
 })
 
 afterAll(async () => {
@@ -197,9 +198,7 @@ afterAll(async () => {
 
 describe('organization storage invariants', () => {
   test('keeps owned module permissions auditable, attributable, and inert when unavailable', async () => {
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     const targetUserId = randomUUID()
     await establishCompliantAccount(targetUserId, 90_000_001)
 
@@ -350,9 +349,7 @@ describe('organization storage invariants', () => {
   })
 
   test('rejects retained IDs that are foreign, missing, service, available, or duplicated', async () => {
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Mixed permissions',
@@ -1370,9 +1367,7 @@ describe('organization storage invariants', () => {
 
   test('prevents owner lockout and permits a verified owner to recover a bad policy', async () => {
     await ensureManagedCorporation()
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     await recomputeOrganizationAccountCompliance({
       deploymentId: 1,
       organizationVersion: 1,
@@ -1442,9 +1437,7 @@ describe('organization storage invariants', () => {
 
   test('rolls back policy and compliance together when transition persistence fails', async () => {
     await ensureManagedCorporation()
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     await recomputeOrganizationAccountCompliance({
       deploymentId: 1,
       organizationVersion: 1,
@@ -1503,9 +1496,7 @@ describe('organization storage invariants', () => {
   })
 
   test('retains established entitlements only until a configured remediation deadline', async () => {
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     const targetUserId = randomUUID()
     await establishCompliantAccount(targetUserId, 90_000_001)
     await updateOrganizationRegistrationPolicy({
@@ -1584,9 +1575,7 @@ describe('organization storage invariants', () => {
   })
 
   test('clears first-time review deadlines when affiliation evidence becomes incomplete', async () => {
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     await updateOrganizationRegistrationPolicy({
       actorUserId: userId,
       authorityEvidenceFreshDurationSeconds: 3600,
@@ -1631,9 +1620,7 @@ describe('organization storage invariants', () => {
 
   test('approves, expires, and revokes exceptions with same-transaction compliance changes', async () => {
     await ensureManagedCorporation()
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     await grantOrganizationRole({
       actorUserId: userId,
       reason: 'Registration review duty.',
@@ -1926,9 +1913,7 @@ describe('organization storage invariants', () => {
       ]'::jsonb
       where character_id = ${characterId}
     `
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
 
     await expect(
       registerOrganizationCorporationSource({
@@ -1973,9 +1958,7 @@ describe('organization storage invariants', () => {
       ]'::jsonb
       where character_id = ${characterId}
     `
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     await connection`
       update characters
       set next_affiliation_check = now() - interval '1 second'
@@ -2107,36 +2090,22 @@ describe('organization storage invariants', () => {
 
   test('derives Director authority from a non-main source and keeps main selection authority-neutral', async () => {
     const sourceCharacterId = characterId + 1
-    const sourceLifecycleId = await attachCharacterToExistingAccount(userId, sourceCharacterId)
+    await attachCharacterToExistingAccount(userId, sourceCharacterId)
     await recomputeOrganizationAccountCompliance({
       deploymentId: 1,
       organizationVersion: 1,
       userId,
     })
-    const affiliationCheckedAt = await loadAffiliationCheckedAt(sourceCharacterId)
     ownerEvidenceMocks.observeAndPersistCharacterAffiliation.mockResolvedValue({
-      affiliationCheckedAt,
+      affiliationCheckedAt: await loadAffiliationCheckedAt(sourceCharacterId),
       affiliationFreshUntil: new Date(Date.now() + 60 * 60 * 1000),
       allianceId: null,
       characterId: sourceCharacterId,
       corporationId: 98_000_001,
       stale: false,
     })
-    ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
-      roleEvidence({ roleEvidenceRevision: 'derived-role-v1' }),
-    )
 
-    await expect(
-      refreshDerivedDirectorAuthority({
-        authorizationGeneration: 0,
-        characterId: sourceCharacterId,
-        organizationVersion: 1,
-        roleEvidenceRevision: null,
-        sourceId: null,
-        subjectLifecycleId: sourceLifecycleId,
-        userId,
-      }),
-    ).resolves.toBe('fresh')
+    await expect(refreshRoleEvidence(sourceCharacterId)).resolves.toBe('observed')
     await expect(hasCurrentOrganizationManagerAuthority(userId, 'mutate')).resolves.toBe(true)
 
     await expect(setMainCharacter(userId, sourceCharacterId)).resolves.toMatchObject({
@@ -2150,32 +2119,18 @@ describe('organization storage invariants', () => {
     })
     await expect(hasCurrentOrganizationManagerAuthority(userId, 'mutate')).resolves.toBe(true)
 
-    const [source] = await connection<{ source_id: string; role_evidence_revision: string }[]>`
-      select source_id, role_evidence_revision
+    const [source] = await connection<{ source_id: string }[]>`
+      select source_id
       from organization_derived_authority_sources
       where character_id = ${sourceCharacterId} and invalidated_at is null
     `
     if (!source) {
       throw new Error('Derived authority source is missing')
     }
-    ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
-      roleEvidence({
-        roleEvidenceRevision: 'derived-role-v2',
-        roles: [],
-      }),
-    )
+    await makeRoleEvidenceDue(sourceCharacterId)
+    ownerEvidenceMocks.readCharacterCorporationRoles.mockResolvedValue(roleEvidence({ roles: [] }))
 
-    await expect(
-      refreshDerivedDirectorAuthority({
-        authorizationGeneration: 0,
-        characterId: sourceCharacterId,
-        organizationVersion: 1,
-        roleEvidenceRevision: source.role_evidence_revision,
-        sourceId: source.source_id,
-        subjectLifecycleId: sourceLifecycleId,
-        userId,
-      }),
-    ).resolves.toBe('invalid')
+    await expect(refreshRoleEvidence(sourceCharacterId)).resolves.toBe('observed')
     await expect(hasCurrentOrganizationManagerAuthority(userId, 'mutate')).resolves.toBe(false)
     const [invalidated] = await connection<
       { status: string; director_role_present: boolean; invalidation_outcome: string }[]
@@ -2192,9 +2147,7 @@ describe('organization storage invariants', () => {
   })
 
   test('commits an initial owner grant, fresh evidence, and audit entry atomically', async () => {
-    const affiliationCheckedAt = await loadAffiliationCheckedAt()
-
-    const grant = await claimOrganizationOwnership(ownerClaimInput({ affiliationCheckedAt }))
+    const grant = await claimOrganizationOwnership(ownerClaimInput())
 
     const [stored] = await connection<
       {
@@ -2234,12 +2187,9 @@ describe('organization storage invariants', () => {
     const secondSubjectLifecycleId = await seedCharacter(secondUserId, secondCharacterId)
 
     const results = await Promise.allSettled([
-      claimOrganizationOwnership(
-        ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-      ),
+      claimOrganizationOwnership(ownerClaimInput()),
       claimOrganizationOwnership(
         ownerClaimInput({
-          affiliationCheckedAt: await loadAffiliationCheckedAt(secondCharacterId),
           characterId: secondCharacterId,
           subjectLifecycleId: secondSubjectLifecycleId,
           userId: secondUserId,
@@ -2264,76 +2214,76 @@ describe('organization storage invariants', () => {
   test.each([
     ['stale organization version', { organizationVersion: 2 }, 'stale-organization'],
     ['different owner', { userId: randomUUID() }, 'character-not-owned'],
-    ['different corporation', { observedCorporationId: 98_000_002 }, 'stale-affiliation'],
+    [
+      'different corporation',
+      { authorityCorporation: { corporationId: 98_000_002, freshUntil: null } },
+      'stale-affiliation',
+    ],
   ])(
     'rejects an owner claim with %s without partial persistence',
     async (_name, override, code) => {
-      const affiliationCheckedAt = await loadAffiliationCheckedAt()
-
-      await expect(
-        claimOrganizationOwnership(ownerClaimInput({ affiliationCheckedAt, ...override })),
-      ).rejects.toMatchObject({ code })
+      await expect(claimOrganizationOwnership(ownerClaimInput(override))).rejects.toMatchObject({
+        code,
+      })
       await expect(loadOwnerClaimRowCounts()).resolves.toStrictEqual({
         audits: 0,
         evidence: 0,
         grants: 0,
       })
+      await expect(loadRoleObservationCount()).resolves.toBe(0)
     },
   )
 
   test('rejects an owner claim when the stored token lacks the required scope', async () => {
     await connection`update eve_tokens set scopes = '[]'::jsonb where character_id = ${characterId}`
+    ownerEvidenceMocks.readCharacterCorporationRoles.mockRejectedValue(
+      new ScopeRequiredError('esi-characters.read_corporation_roles.v1'),
+    )
 
-    await expect(
-      claimOrganizationOwnership(
-        ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-      ),
-    ).rejects.toMatchObject({ code: 'missing-scope' })
+    await expect(claimOrganizationOwnership(ownerClaimInput())).rejects.toMatchObject({
+      code: 'missing-scope',
+    })
     await expect(loadOwnerClaimRowCounts()).resolves.toStrictEqual({
       audits: 0,
       evidence: 0,
       grants: 0,
     })
+    await expect(loadRoleObservationCount()).resolves.toBe(0)
   })
 
-  test('reconstructs due owner evidence and refreshes it from current authority', async () => {
-    const grant = await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
-    await connection`
-      update organization_authority_evidence
-      set fresh_until = now() + interval '5 minutes'
-      where grant_id = ${grant.grantId}
-    `
+  test('reconstructs due role demand and refreshes owner evidence from current authority', async () => {
+    await claimOrganizationOwnership(ownerClaimInput())
+    await makeRoleEvidenceDue()
 
-    const due = await selectDueOrganizationOwnerEvidence()
+    const due = await selectDueCorporationRoleDemand({ dueBefore: new Date(), limit: 10 })
     expect(due).toStrictEqual([
       expect.objectContaining({
         authorizationGeneration: 0,
-        grantId: grant.grantId,
+        characterId,
+        consumers: ['derived-director', 'organization-owner'],
         organizationVersion: 1,
-        roleEvidenceRevision: 'roles-0',
-        sourceSubjectLifecycleId: subjectLifecycleId,
+        subjectLifecycleId,
       }),
     ])
-    await expect(refreshOrganizationOwnerEvidence(due[0]!)).resolves.toBe('fresh')
+    await expect(refreshCorporationRoleEvidence(due[0]!)).resolves.toBe('observed')
     expect(ownerEvidenceMocks.observeAndPersistCharacterAffiliation).toHaveBeenCalledWith(
       characterId,
       undefined,
       expect.any(Function),
     )
-    await expect(selectDueOrganizationOwnerEvidence()).resolves.toStrictEqual([])
+    await expect(
+      selectDueCorporationRoleDemand({ dueBefore: new Date(), limit: 10 }),
+    ).resolves.toStrictEqual([])
   })
 
   test('revokes and audits owner authority immediately after fresh Director loss by default', async () => {
-    const grant = await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
-    ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
+    const grant = await claimOrganizationOwnership(ownerClaimInput())
+    await makeRoleEvidenceDue()
+    ownerEvidenceMocks.readCharacterCorporationRoles.mockResolvedValue(
       roleEvidence({ roles: ['Accountant'] }),
     )
 
-    await expect(refreshOwnerEvidence(grant.grantId)).resolves.toBe('revoked')
+    await expect(refreshRoleEvidence()).resolves.toBe('observed')
     const [stored] = await connection<
       { revoked_at: Date | null; status: string; failure_class: string; audit_count: number }[]
     >`
@@ -2342,7 +2292,8 @@ describe('organization storage invariants', () => {
         evidence.status,
         evidence.failure_class,
         (select count(*)::integer from organization_audit_events
-          where event_type = 'authority-source.invalidated') as audit_count
+          where event_type = 'authority-source.invalidated'
+            and subject_id = evidence.evidence_id::text) as audit_count
       from organization_role_grants grants
       join organization_authority_evidence evidence on evidence.grant_id = grants.grant_id
       where grants.grant_id = ${grant.grantId}
@@ -2353,12 +2304,13 @@ describe('organization storage invariants', () => {
       revoked_at: null,
       status: 'invalid',
     })
+    await expect(hasCurrentOrganizationManagerAuthority(userId, 'read-continuity')).resolves.toBe(
+      false,
+    )
   })
 
   test('invalidates every current character binding after Director loss across evidence revisions', async () => {
-    const grant = await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     await connection`
       update eve_tokens
       set scopes = scopes || '["esi-corporations.read_corporation_membership.v1"]'::jsonb
@@ -2369,17 +2321,6 @@ describe('organization storage invariants', () => {
       characterId,
       corporationId: 98_000_001,
     })
-    await expect(
-      refreshDerivedDirectorAuthority({
-        authorizationGeneration: 0,
-        characterId,
-        organizationVersion: 1,
-        roleEvidenceRevision: null,
-        sourceId: null,
-        subjectLifecycleId,
-        userId,
-      }),
-    ).resolves.toBe('fresh')
     await connection`
       update organization_corporation_sources
       set role_evidence_revision = 'corporation-revision'
@@ -2390,11 +2331,10 @@ describe('organization storage invariants', () => {
       set role_evidence_revision = 'derived-revision'
       where character_id = ${characterId} and invalidated_at is null
     `
-    ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
-      roleEvidence({ roleEvidenceRevision: 'negative-revision', roles: [] }),
-    )
+    await makeRoleEvidenceDue()
+    ownerEvidenceMocks.readCharacterCorporationRoles.mockResolvedValue(roleEvidence({ roles: [] }))
 
-    await expect(refreshOwnerEvidence(grant.grantId)).resolves.toBe('revoked')
+    await expect(refreshRoleEvidence()).resolves.toBe('observed')
 
     const bindings = await connection<
       { source_type: string; status: string; director_role_present: boolean }[]
@@ -2420,17 +2360,8 @@ describe('organization storage invariants', () => {
   })
 
   test('bounds transient degradation by the last successful evidence without sliding its deadline', async () => {
-    const grant = await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
-    await connection`
-      update organization_authority_evidence
-      set
-        observed_at = now() - interval '2 hours',
-        fresh_until = now() - interval '1 second',
-        last_checked_at = now() - interval '2 hours'
-      where grant_id = ${grant.grantId}
-    `
+    const grant = await claimOrganizationOwnership(ownerClaimInput())
+    await expireRoleEvidence()
     await expect(getOrganizationAccessContext(userId)).resolves.toMatchObject({
       claimAvailable: true,
       isOrganizationOwner: false,
@@ -2448,20 +2379,30 @@ describe('organization storage invariants', () => {
       stale: true,
     })
 
-    await expect(refreshOwnerEvidence(grant.grantId)).resolves.toBe('degraded')
-    const [first] = await connection<{ grace_until: Date }[]>`
-      select grace_until
-      from organization_authority_evidence
-      where grant_id = ${grant.grantId}
+    await expect(refreshRoleEvidence()).resolves.toBe('degraded')
+    const [first] = await connection<{ grace_until: Date; degraded_until: Date }[]>`
+      select evidence.grace_until, observation.degraded_until
+      from organization_authority_evidence evidence
+      join character_corporation_role_observations observation
+        on observation.character_id = evidence.character_id and observation.status <> 'invalid'
+      where evidence.grant_id = ${grant.grantId}
     `
-    await expect(refreshOwnerEvidence(grant.grantId)).resolves.toBe('degraded')
-    const [second] = await connection<{ grace_until: Date }[]>`
-      select grace_until
-      from organization_authority_evidence
-      where grant_id = ${grant.grantId}
+    await makeRoleEvidenceDue()
+    await expect(refreshRoleEvidence()).resolves.toBe('degraded')
+    const [second] = await connection<{ grace_until: Date; degraded_until: Date }[]>`
+      select evidence.grace_until, observation.degraded_until
+      from organization_authority_evidence evidence
+      join character_corporation_role_observations observation
+        on observation.character_id = evidence.character_id and observation.status <> 'invalid'
+      where evidence.grant_id = ${grant.grantId}
     `
-    expect(second?.grace_until).toStrictEqual(first?.grace_until)
+    expect(second).toStrictEqual(first)
+    expect(first?.grace_until).toStrictEqual(first?.degraded_until)
     expect(first?.grace_until.getTime()).toBeGreaterThan(Date.now())
+    await expect(hasCurrentOrganizationManagerAuthority(userId, 'read-continuity')).resolves.toBe(
+      true,
+    )
+    await expect(hasCurrentOrganizationManagerAuthority(userId, 'mutate')).resolves.toBe(false)
   })
 
   test('never revives owner evidence after a strict failure', async () => {
@@ -2470,52 +2411,59 @@ describe('organization storage invariants', () => {
       set strict_remediation_duration_seconds = 86400, stale_evidence_grace_duration_seconds = 7200
       where id = 1
     `
-    const grant = await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
-    ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
+    const grant = await claimOrganizationOwnership(ownerClaimInput())
+    await makeRoleEvidenceDue()
+    ownerEvidenceMocks.readCharacterCorporationRoles.mockResolvedValue(
       roleEvidence({ roles: ['Accountant'] }),
     )
 
-    await expect(refreshOwnerEvidence(grant.grantId)).resolves.toBe('revoked')
+    await expect(refreshRoleEvidence()).resolves.toBe('observed')
     const [strictFailure] = await connection<{ invalidated_at: Date }[]>`
       select invalidated_at from organization_authority_evidence where grant_id = ${grant.grantId}
     `
 
-    ownerEvidenceMocks.observeAndPersistCharacterAffiliation.mockResolvedValue({
-      affiliationCheckedAt: new Date(),
-      affiliationFreshUntil: new Date(Date.now() + 60 * 60 * 1000),
-      allianceId: null,
-      characterId,
-      corporationId: 98_000_001,
-      stale: true,
-    })
-    await expect(refreshOwnerEvidence(grant.grantId)).resolves.toBe('ineligible')
-    const [afterRetry] = await connection<{ invalidated_at: Date }[]>`
-      select invalidated_at from organization_authority_evidence where grant_id = ${grant.grantId}
+    await makeRoleEvidenceDue()
+    ownerEvidenceMocks.readCharacterCorporationRoles.mockResolvedValue(roleEvidence())
+    await expect(refreshRoleEvidence()).resolves.toBe('observed')
+    const [afterRetry] = await connection<{ invalidated_at: Date; status: string }[]>`
+      select invalidated_at, status
+      from organization_authority_evidence
+      where grant_id = ${grant.grantId}
     `
 
-    expect(afterRetry?.invalidated_at).toStrictEqual(strictFailure?.invalidated_at)
+    expect(afterRetry).toStrictEqual({
+      invalidated_at: strictFailure?.invalidated_at,
+      status: 'invalid',
+    })
+    await expect(getOrganizationAccessContext(userId)).resolves.toMatchObject({
+      isOrganizationOwner: false,
+    })
   })
 
-  test('treats a successful owner refresh superseded by newer affiliation as obsolete', async () => {
-    const grant = await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+  test('treats a successful role refresh superseded by newer affiliation as obsolete', async () => {
+    await claimOrganizationOwnership(ownerClaimInput())
+    await makeRoleEvidenceDue()
+    const demand = await loadCorporationRoleDemand(dbClient.db, characterId)
     await connection`
       update characters
       set corporation_id = 98000002, affiliation_checked_at = now() + interval '1 second'
       where character_id = ${characterId}
     `
 
-    await expect(refreshOwnerEvidence(grant.grantId)).resolves.toBe('superseded')
-    await expect(selectDueOrganizationOwnerEvidence()).resolves.toStrictEqual([])
+    await expect(refreshCorporationRoleEvidence(demand!)).resolves.toBe('ineligible')
+    const [observation] = await connection<{ status: string; invalidation_outcome: string }[]>`
+      select status, invalidation_outcome
+      from character_corporation_role_observations
+      where character_id = ${characterId}
+    `
+    expect(observation).toStrictEqual({
+      invalidation_outcome: 'affiliation-changed',
+      status: 'invalid',
+    })
   })
 
   test('atomically replaces an owner whose strict authority source is invalid', async () => {
-    const original = await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    const original = await claimOrganizationOwnership(ownerClaimInput())
     await connection`
       update organization_authority_evidence
       set
@@ -2538,7 +2486,6 @@ describe('organization storage invariants', () => {
 
     const replacement = await claimOrganizationOwnership(
       ownerClaimInput({
-        affiliationCheckedAt: await loadAffiliationCheckedAt(replacementCharacterId),
         characterId: replacementCharacterId,
         subjectLifecycleId: replacementSubjectLifecycleId,
         userId: replacementUserId,
@@ -2565,9 +2512,7 @@ describe('organization storage invariants', () => {
   })
 
   test('does not expose or permit owner replacement during a transient evidence failure', async () => {
-    const original = await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    const original = await claimOrganizationOwnership(ownerClaimInput())
     await connection`
       update organization_authority_evidence
       set
@@ -2586,19 +2531,17 @@ describe('organization storage invariants', () => {
     await expect(
       claimOrganizationOwnership(
         ownerClaimInput({
-          affiliationCheckedAt: await loadAffiliationCheckedAt(claimantCharacterId),
           characterId: claimantCharacterId,
           subjectLifecycleId: claimantSubjectLifecycleId,
           userId: claimantUserId,
         }),
       ),
     ).rejects.toMatchObject({ code: 'owner-already-claimed' })
+    await expect(loadRoleObservationCount(claimantCharacterId)).resolves.toBe(0)
   })
 
   test('does not let a separately verified claimant displace a fresh owner', async () => {
-    const original = await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    const original = await claimOrganizationOwnership(ownerClaimInput())
     const claimantUserId = randomUUID()
     const claimantCharacterId = characterId + 1
     const claimantSubjectLifecycleId = await seedCharacter(claimantUserId, claimantCharacterId)
@@ -2606,7 +2549,6 @@ describe('organization storage invariants', () => {
     await expect(
       claimOrganizationOwnership(
         ownerClaimInput({
-          affiliationCheckedAt: await loadAffiliationCheckedAt(claimantCharacterId),
           characterId: claimantCharacterId,
           subjectLifecycleId: claimantSubjectLifecycleId,
           userId: claimantUserId,
@@ -2620,9 +2562,7 @@ describe('organization storage invariants', () => {
   })
 
   test('does not let a blocked user occupy a vacant organization-owner grant', async () => {
-    const ownerGrant = await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     const claimantUserId = randomUUID()
     const claimantCharacterId = characterId + 1
     const claimantSubjectLifecycleId = await seedCharacter(claimantUserId, claimantCharacterId)
@@ -2631,10 +2571,12 @@ describe('organization storage invariants', () => {
       reason: 'Member access remains under review.',
       targetUserId: claimantUserId,
     })
-    ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
+    await makeRoleEvidenceDue()
+    ownerEvidenceMocks.readCharacterCorporationRoles.mockResolvedValue(
       roleEvidence({ roles: ['Accountant'] }),
     )
-    await expect(refreshOwnerEvidence(ownerGrant.grantId)).resolves.toBe('revoked')
+    await expect(refreshRoleEvidence()).resolves.toBe('observed')
+    ownerEvidenceMocks.readCharacterCorporationRoles.mockResolvedValue(roleEvidence())
     await expect(getOrganizationAccessContext(claimantUserId)).resolves.toMatchObject({
       claimAvailable: false,
       isBlocked: true,
@@ -2644,7 +2586,6 @@ describe('organization storage invariants', () => {
     await expect(
       claimOrganizationOwnership(
         ownerClaimInput({
-          affiliationCheckedAt: await loadAffiliationCheckedAt(claimantCharacterId),
           characterId: claimantCharacterId,
           subjectLifecycleId: claimantSubjectLifecycleId,
           userId: claimantUserId,
@@ -2657,12 +2598,11 @@ describe('organization storage invariants', () => {
       where role = 'organization_owner' and user_id = ${claimantUserId} and revoked_at is null
     `
     expect(activeOwners).toStrictEqual({ count: 0 })
+    await expect(loadRoleObservationCount(claimantCharacterId)).resolves.toBe(0)
   })
 
   test('retains historical authority evidence without pinning a revoked character row', async () => {
-    const grant = await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    const grant = await claimOrganizationOwnership(ownerClaimInput())
     await connection`
       update organization_role_grants
       set
@@ -2680,20 +2620,8 @@ describe('organization storage invariants', () => {
     expect(evidence?.character_id).toBe(String(characterId))
   })
 
-  test('accepts a newer matching affiliation snapshot during owner claim persistence', async () => {
-    const checkedAt = await loadAffiliationCheckedAt()
-
-    await expect(
-      claimOrganizationOwnership(
-        ownerClaimInput({ affiliationCheckedAt: new Date(checkedAt.getTime() - 1000) }),
-      ),
-    ).resolves.toStrictEqual({ grantId: expect.any(String) })
-  })
-
   test('grants and revokes HR roles with complete immutable current-version audit entries', async () => {
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     const targetUserId = randomUUID()
     await connection`insert into users (id) values (${targetUserId})`
 
@@ -2786,9 +2714,7 @@ describe('organization storage invariants', () => {
   })
 
   test('advertises HR review capabilities only while the grantee is currently compliant', async () => {
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     const targetUserId = randomUUID()
     await establishCompliantAccount(targetUserId, 90_000_001)
     await grantOrganizationRole({
@@ -2828,9 +2754,7 @@ describe('organization storage invariants', () => {
   })
 
   test('invalidates prior owner and delegated authority when the organization changes', async () => {
-    const ownerGrant = await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    const ownerGrant = await claimOrganizationOwnership(ownerClaimInput())
     const targetUserId = randomUUID()
     await connection`insert into users (id) values (${targetUserId})`
     await grantOrganizationRole({
@@ -2897,18 +2821,17 @@ describe('organization storage invariants', () => {
       isOrganizationOwner: false,
     })
 
-    const grant = await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     await expect(getOrganizationAccessContext(userId)).resolves.toMatchObject({
       authorityCharacter: { characterId },
       isOrganizationOwner: true,
     })
 
-    ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
+    await makeRoleEvidenceDue()
+    ownerEvidenceMocks.readCharacterCorporationRoles.mockResolvedValue(
       roleEvidence({ roles: ['Accountant'] }),
     )
-    await expect(refreshOwnerEvidence(grant.grantId)).resolves.toBe('revoked')
+    await expect(refreshRoleEvidence()).resolves.toBe('observed')
     const [deploymentAdmin] = await connection<{ id: string }[]>`
       select id from deployment_admins where id = ${userId}
     `
@@ -2920,9 +2843,7 @@ describe('organization storage invariants', () => {
   })
 
   test('bundles named permissions into expiring audited manual group assignments', async () => {
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     const targetUserId = randomUUID()
     await establishCompliantAccount(targetUserId, 90_000_001)
     const bundle = await createOrganizationPermissionBundle({
@@ -3086,9 +3007,7 @@ describe('organization storage invariants', () => {
   })
 
   test('requires owner authority for restricted group membership changes', async () => {
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     const directorUserId = randomUUID()
     const targetUserId = randomUUID()
     await establishCompliantAccount(directorUserId, 90_000_010)
@@ -3151,9 +3070,7 @@ describe('organization storage invariants', () => {
   })
 
   test('converges compliance-managed groups only from their declared source', async () => {
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     const targetUserId = randomUUID()
     await establishCompliantAccount(targetUserId, 90_000_001)
     await updateOrganizationRegistrationPolicy({
@@ -3574,9 +3491,7 @@ describe('organization storage invariants', () => {
   })
 
   test('gives director-issued member blocks precedence and reevaluates only current grants on unblock', async () => {
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     const directorUserId = randomUUID()
     const targetUserId = randomUUID()
     await establishCompliantAccount(directorUserId, 90_000_010)
@@ -3766,9 +3681,7 @@ describe('organization storage invariants', () => {
   })
 
   test('serializes duplicate blocks and isolates prior-version decisions', async () => {
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     const targetUserId = randomUUID()
     await connection`insert into users (id) values (${targetUserId})`
 
@@ -3799,9 +3712,7 @@ describe('organization storage invariants', () => {
   })
 
   test('bulk compliance recomputation locks all users before compliance groups', async () => {
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     const userIds = [randomUUID(), randomUUID()].toSorted((left, right) =>
       left.localeCompare(right),
     )
@@ -3877,9 +3788,7 @@ describe('organization storage invariants', () => {
   })
 
   test('serializes group management changes against concurrent assignments', async () => {
-    await claimOrganizationOwnership(
-      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-    )
+    await claimOrganizationOwnership(ownerClaimInput())
     const targetUserId = randomUUID()
     await connection`insert into users (id) values (${targetUserId})`
     const bundle = await createOrganizationPermissionBundle({
@@ -4312,9 +4221,7 @@ async function establishRosterObservation() {
     ]'::jsonb
     where character_id = ${characterId}
   `
-  await claimOrganizationOwnership(
-    ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-  )
+  await claimOrganizationOwnership(ownerClaimInput())
   const registration = await registerOrganizationCorporationSource({
     actorUserId: userId,
     characterId,
@@ -4396,7 +4303,7 @@ async function prepareCorporationSourceReplacementCharacter() {
     corporationId: 98_000_001,
     stale: false,
   })
-  ownerEvidenceMocks.getCharacterCorporationRolesEvidence.mockResolvedValue(
+  ownerEvidenceMocks.readCharacterCorporationRoles.mockResolvedValue(
     roleEvidence({ authorizationGeneration: 0 }),
   )
   return replacementCharacterId
@@ -4732,9 +4639,10 @@ async function establishCompliantAccount(targetUserId: string, targetCharacterId
 }
 
 async function establishReviewerCommandFixture() {
-  await claimOrganizationOwnership(
-    ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
-  )
+  await connection`
+    update deployment_settings set derived_director_authority_enabled = false where id = 1
+  `
+  await claimOrganizationOwnership(ownerClaimInput())
   const reviewerRoleGrant = await grantOrganizationRole({
     actorUserId: userId,
     reason: 'Independent reviewer grant.',
@@ -4916,54 +4824,67 @@ async function attachCharacterToExistingAccount(targetUserId: string, targetChar
   return lifecycle.subject_lifecycle_id
 }
 
-function ownerClaimInput(
-  override: Partial<Parameters<typeof claimOrganizationOwnership>[0]> & {
-    affiliationCheckedAt: Date
-  },
-) {
+function ownerClaimInput(override: Partial<Parameters<typeof claimOrganizationOwnership>[0]> = {}) {
   return {
-    authorityCorporationId: 98_000_001,
-    authorizationGeneration: 0,
+    authorityCorporation: { corporationId: 98_000_001, freshUntil: null },
     characterId,
-    evidenceAuthorizationGeneration: 0,
-    evidenceFreshUntil: new Date(Date.now() + 60 * 60 * 1000),
-    observedAllianceId: null,
-    observedCorporationId: 98_000_001,
     organizationId: 98_000_001,
     organizationVersion: 1,
     requiredScope: 'esi-characters.read_corporation_roles.v1',
-    roleEvidenceRevision: 'roles-0',
     subjectLifecycleId,
     userId,
     ...override,
   }
 }
 
-async function refreshOwnerEvidence(grantId: string) {
-  const [candidate] = await connection<
-    {
-      grant_id: string
-      organization_version: string
-      source_subject_lifecycle_id: string
-      authorization_generation: number
-      role_evidence_revision: string
-    }[]
-  >`
-    select grant_id, organization_version, source_subject_lifecycle_id,
-      authorization_generation, role_evidence_revision
-    from organization_authority_evidence
-    where grant_id = ${grantId}
-  `
-  if (!candidate) {
-    throw new Error('Owner evidence candidate is missing')
+async function refreshRoleEvidence(targetCharacterId = characterId) {
+  const demand = await loadCorporationRoleDemand(dbClient.db, targetCharacterId)
+  if (!demand) {
+    return 'ineligible'
   }
-  return refreshOrganizationOwnerEvidence({
-    authorizationGeneration: candidate.authorization_generation,
-    grantId: candidate.grant_id,
-    organizationVersion: Number(candidate.organization_version),
-    roleEvidenceRevision: candidate.role_evidence_revision,
-    sourceSubjectLifecycleId: candidate.source_subject_lifecycle_id,
-  })
+  return refreshCorporationRoleEvidence(demand)
+}
+
+async function makeRoleEvidenceDue(targetCharacterId = characterId) {
+  await connection`
+    update character_corporation_role_observations
+    set next_refresh_at = now() - interval '1 second'
+    where character_id = ${targetCharacterId} and status <> 'invalid'
+  `
+}
+
+async function expireRoleEvidence(targetCharacterId = characterId) {
+  await connection`
+    update character_corporation_role_observations
+    set
+      validated_at = now() - interval '2 hours',
+      esi_fresh_until = now() - interval '1 second',
+      fresh_until = now() - interval '1 second',
+      next_refresh_at = now() - interval '1 second'
+    where character_id = ${targetCharacterId} and status = 'fresh'
+  `
+  await connection`
+    update organization_authority_evidence
+    set
+      observed_at = now() - interval '2 hours',
+      fresh_until = now() - interval '1 second',
+      last_checked_at = now() - interval '2 hours'
+    where character_id = ${targetCharacterId} and invalidated_at is null
+  `
+  await connection`
+    update organization_derived_authority_sources
+    set observed_at = now() - interval '2 hours', fresh_until = now() - interval '1 second'
+    where character_id = ${targetCharacterId} and invalidated_at is null
+  `
+}
+
+async function loadRoleObservationCount(targetCharacterId = characterId) {
+  const [row] = await connection<{ count: number }[]>`
+    select count(*)::integer as count
+    from character_corporation_role_observations
+    where character_id = ${targetCharacterId}
+  `
+  return row?.count ?? 0
 }
 
 async function insertCorporationSourceFixture(
@@ -4999,19 +4920,22 @@ async function insertCorporationSourceFixture(
   `
 }
 
-function roleEvidence(overrides: Record<string, unknown> = {}) {
-  const observedAt = new Date()
+function roleEvidence(
+  overrides: { readonly roles?: readonly string[]; readonly authorizationGeneration?: number } = {},
+) {
+  const validatedAt = new Date()
   return {
-    authorizationGeneration: 0,
-    freshUntil: new Date(observedAt.getTime() + 60 * 60 * 1000),
-    observedAt,
-    roleEvidenceRevision: observedAt.toISOString(),
-    roles: ['Director'],
-    rolesAtBase: [],
-    rolesAtHeadquarters: [],
-    rolesAtOther: [],
+    authorizationGeneration: overrides.authorizationGeneration ?? 0,
+    cachedUntil: new Date(validatedAt.getTime() + 60 * 60 * 1000),
+    retryAt: null,
+    roles: {
+      roles: [...(overrides.roles ?? ['Director'])],
+      rolesAtBase: [],
+      rolesAtHeadquarters: [],
+      rolesAtOther: [],
+    },
     stale: false,
-    ...overrides,
+    validatedAt,
   }
 }
 

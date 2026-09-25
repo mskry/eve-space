@@ -1,10 +1,5 @@
 import { and, eq, isNull } from 'drizzle-orm'
-import {
-  characterCorporationRolesScope,
-  getCharacterCorporationRolesEvidence,
-  type CharacterCorporationRolesEvidence,
-} from '../characters/corporation-roles.js'
-import { observeAndPersistCharacterAffiliation } from '../characters/affiliation-sync.js'
+import { characterCorporationRolesScope } from '../characters/corporation-roles.js'
 import { db } from '../db/client.js'
 import {
   characters,
@@ -16,11 +11,12 @@ import {
 } from '../db/schema.js'
 import { resolveOrganizationAuthorityCorporationEvidence } from './authority.js'
 import { appendOrganizationAuditEvents } from './audit.js'
-import { convergeObservedAffiliationInTransaction } from './authority-convergence.js'
+import { assertOrganizationOwnerScope, OrganizationAuthorityError } from './authority-policy.js'
 import {
-  assertOrganizationOwnerAuthorization,
-  OrganizationAuthorityError,
-} from './authority-policy.js'
+  commitCorporationRoleBootstrapInTransaction,
+  CorporationRoleBootstrapError,
+  prepareCorporationRoleBootstrap,
+} from './corporation-role-bootstrap.js'
 import { loadEffectiveOrganizationAuthority } from './effective-authority.js'
 
 export class OrganizationOwnerSourceReplacementError extends Error {
@@ -46,45 +42,38 @@ export async function replaceOrganizationOwnerSource(input: {
   if (!snapshot) {
     throw new OrganizationOwnerSourceReplacementError('replacement-not-owned')
   }
-  let authorityCorporation: Awaited<
-    ReturnType<typeof resolveOrganizationAuthorityCorporationEvidence>
-  >
-  let affiliation: Awaited<ReturnType<typeof observeAndPersistCharacterAffiliation>>
-  let roles: CharacterCorporationRolesEvidence
-  try {
-    roles = await getCharacterCorporationRolesEvidence(
-      input.characterId,
-      snapshot.subjectLifecycleId,
-      input.signal,
-    )
-    if (roles.stale) {
-      throw new OrganizationOwnerSourceReplacementError('replacement-stale')
+  const { authorityCorporation, prepared } = await withReplacementErrors(async () => {
+    assertOrganizationOwnerScope(characterCorporationRolesScope, snapshot.scopes)
+    const bootstrap = await prepareCorporationRoleBootstrap({
+      characterId: input.characterId,
+      userId: input.actorUserId,
+      ...(input.signal && { signal: input.signal }),
+    })
+    return {
+      authorityCorporation: await resolveOrganizationAuthorityCorporationEvidence(snapshot, {
+        allianceId: bootstrap.allianceId,
+        corporationId: bootstrap.binding.authorityCorporationId,
+      }),
+      prepared: bootstrap,
     }
-    assertOrganizationOwnerAuthorization(characterCorporationRolesScope, snapshot.scopes, roles)
-    affiliation = await observeAndPersistCharacterAffiliation(
-      input.characterId,
-      input.signal,
-      convergeObservedAffiliationInTransaction,
-    )
-    if (!affiliation || affiliation.stale) {
-      throw new OrganizationOwnerSourceReplacementError('replacement-stale')
-    }
-    authorityCorporation = await resolveOrganizationAuthorityCorporationEvidence(
-      snapshot,
-      affiliation,
-    )
-  } catch (error) {
-    if (error instanceof OrganizationOwnerSourceReplacementError) {
-      throw error
-    }
-    if (error instanceof OrganizationAuthorityError) {
-      throw new OrganizationOwnerSourceReplacementError('replacement-ineligible')
-    }
-    throw error
+  })
+  if (prepared.binding.subjectLifecycleId !== snapshot.subjectLifecycleId) {
+    throw new OrganizationOwnerSourceReplacementError('replacement-stale')
   }
   input.signal?.throwIfAborted()
 
   return db.transaction(async (transaction) => {
+    const roleEvidence = await withReplacementErrors(() =>
+      commitCorporationRoleBootstrapInTransaction(transaction, prepared, {
+        authorityCorporation,
+        authorize: async (_transaction, binding) =>
+          binding.organizationVersion === snapshot.organizationVersion &&
+          binding.subjectLifecycleId === snapshot.subjectLifecycleId &&
+          binding.authorityCorporationId === authorityCorporation.corporationId,
+        intent: { actorUserId: input.actorUserId, kind: 'organization-owner-source-replacement' },
+        ...(input.signal && { signal: input.signal }),
+      }),
+    )
     const [organization] = await transaction
       .select({
         freshDurationSeconds: deploymentSettings.authorityEvidenceFreshDurationSeconds,
@@ -101,7 +90,7 @@ export async function replaceOrganizationOwnerSource(input: {
 
     const [replacement] = await transaction
       .select({
-        affiliationCheckedAt: characters.affiliationCheckedAt,
+        affiliationPeriodRevision: characters.affiliationPeriodRevision,
         affiliationResolutionState: characters.affiliationResolutionState,
         allianceId: characters.allianceId,
         authorizationGeneration: eveTokens.tokenVersion,
@@ -126,12 +115,10 @@ export async function replaceOrganizationOwnerSource(input: {
       replacement.userId === input.actorUserId &&
       replacement.subjectLifecycleId === snapshot.subjectLifecycleId &&
       replacement.corporationId === authorityCorporation.corporationId &&
-      replacement.corporationId === affiliation.corporationId &&
-      replacement.allianceId === affiliation.allianceId &&
+      replacement.corporationId === roleEvidence.binding.authorityCorporationId &&
+      replacement.affiliationPeriodRevision === roleEvidence.binding.affiliationPeriodRevision &&
       replacement.affiliationResolutionState === 'resolved' &&
-      replacement.affiliationCheckedAt !== null &&
-      replacement.affiliationCheckedAt >= affiliation.affiliationCheckedAt &&
-      replacement.authorizationGeneration === roles.authorizationGeneration &&
+      replacement.authorizationGeneration === roleEvidence.binding.authorizationGeneration &&
       replacement.scopes.includes(characterCorporationRolesScope)
     if (!replacementMatches()) {
       throw new OrganizationOwnerSourceReplacementError('replacement-stale')
@@ -174,8 +161,7 @@ export async function replaceOrganizationOwnerSource(input: {
 
     const now = new Date()
     const freshUntil = earliestDate(
-      affiliation.affiliationFreshUntil,
-      roles.freshUntil,
+      roleEvidence.freshUntil,
       authorityCorporation.freshUntil,
       new Date(now.getTime() + organization.freshDurationSeconds * 1000),
     )
@@ -224,6 +210,7 @@ export async function replaceOrganizationOwnerSource(input: {
     const [evidence] = await transaction
       .insert(organizationAuthorityEvidence)
       .values({
+        affiliationPeriodRevision: roleEvidence.binding.affiliationPeriodRevision,
         authorityCorporationId: authorityCorporation.corporationId,
         authorizationGeneration: replacement.authorizationGeneration,
         characterId: input.characterId,
@@ -238,7 +225,7 @@ export async function replaceOrganizationOwnerSource(input: {
         organizationVersion: organization.organizationVersion,
         requiredScope: characterCorporationRolesScope,
         role: 'organization_owner',
-        roleEvidenceRevision: roles.roleEvidenceRevision,
+        roleEvidenceRevision: roleEvidence.roleEvidenceRevision,
         sourceSubjectLifecycleId: replacement.subjectLifecycleId,
         status: 'fresh',
         userId: input.actorUserId,
@@ -331,6 +318,26 @@ async function loadReplacementSnapshot(userId: string, characterId: number) {
     .innerJoin(deploymentSettings, eq(deploymentSettings.id, 1))
     .where(and(eq(characters.characterId, characterId), eq(characters.userId, userId)))
   return snapshot ?? null
+}
+
+const withReplacementErrors = async <T>(operation: () => Promise<T>) => {
+  try {
+    return await operation()
+  } catch (error) {
+    if (error instanceof CorporationRoleBootstrapError) {
+      throw new OrganizationOwnerSourceReplacementError(
+        error.code === 'not-director' ||
+          error.code === 'character-ineligible' ||
+          error.code === 'missing-scope'
+          ? 'replacement-ineligible'
+          : 'replacement-stale',
+      )
+    }
+    if (error instanceof OrganizationAuthorityError) {
+      throw new OrganizationOwnerSourceReplacementError('replacement-ineligible')
+    }
+    throw error
+  }
 }
 
 function earliestDate(first: Date, ...dates: readonly (Date | null)[]) {

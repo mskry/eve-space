@@ -118,9 +118,12 @@ describe('platform collection state PostgreSQL persistence', () => {
     const sourceId = randomUUID()
     const characterId = 1_404_328_070
     const migrations = await loadMigrations()
+    const upgradeIndex = migrations.findIndex(
+      ({ name }) => name === '008_multi_character_authority_sources.sql',
+    )
     try {
       await connection.unsafe('drop schema public cascade; create schema public;').simple()
-      await runMigrations(connection, migrations.slice(0, -1))
+      await runMigrations(connection, migrations.slice(0, upgradeIndex))
       await connection`insert into users (id) values (${userId})`
       await connection`
         insert into characters (character_id, user_id, name, corporation_id, is_main)
@@ -177,7 +180,7 @@ describe('platform collection state PostgreSQL persistence', () => {
         ) values (${sourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId})
       `
 
-      await runMigrations(connection, migrations.slice(-1))
+      await runMigrations(connection, migrations.slice(upgradeIndex, upgradeIndex + 1))
 
       const [character] = await connection<{ unresolved: boolean }[]>`
         select owner_hash like 'legacy-unresolved:%' as unresolved
@@ -1659,20 +1662,30 @@ describe('platform collection state PostgreSQL persistence', () => {
           character_id, encrypted_tokens, access_token_expires_at, scopes, token_version
         ) values (
           ${characterId}, 'test ciphertext', now() + interval '1 hour',
-          '["esi-corporations.read_corporation_membership.v1"]'::jsonb, 7
+          '[
+            "esi-characters.read_corporation_roles.v1",
+            "esi-corporations.read_corporation_membership.v1"
+          ]'::jsonb, 7
         )
       `
+      const roleRevision = await seedCurrentDirectorObservation(connection, {
+        authorizationGeneration: 7,
+        characterId,
+        subjectLifecycleId: characterLifecycleId,
+        userId,
+      })
       await connection`
         insert into organization_corporation_sources (
           source_id, deployment_id, organization_version, corporation_id,
           character_id, evidence_character_id, source_user_id, source_subject_lifecycle_id,
-          authorization_generation, role_evidence_revision, observed_corporation_id,
-          required_scope, director_role_present, observed_at, fresh_until, status,
-          registered_by_user_id
+          authorization_generation, role_evidence_revision, affiliation_period_revision,
+          observed_corporation_id, required_scope, director_role_present, observed_at,
+          fresh_until, status, registered_by_user_id
         ) values (
           ${sourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId},
-          ${characterLifecycleId}, 7, 'roles-1', 98000001,
-          'esi-corporations.read_corporation_membership.v1', true, now(),
+          ${characterLifecycleId}, 7, ${roleRevision},
+          (select affiliation_period_revision from characters where character_id = ${characterId}),
+          98000001, 'esi-corporations.read_corporation_membership.v1', true, now(),
           now() + interval '1 hour', 'fresh', ${userId}
         )
       `
@@ -1749,7 +1762,10 @@ describe('platform collection state PostgreSQL persistence', () => {
       ).resolves.toMatchObject({ status: 'authorization-required' })
       await connection`
         update eve_tokens
-        set scopes = '["esi-corporations.read_corporation_membership.v1"]'::jsonb
+        set scopes = '[
+          "esi-characters.read_corporation_roles.v1",
+          "esi-corporations.read_corporation_membership.v1"
+        ]'::jsonb
         where character_id = ${characterId}
       `
       await connection`
@@ -1955,4 +1971,43 @@ async function waitForDatabase(url: string) {
     await connection.end()
   }
   throw new Error('PostgreSQL did not become ready')
+}
+
+async function seedCurrentDirectorObservation(
+  connection: postgres.Sql,
+  input: {
+    readonly characterId: number
+    readonly userId: string
+    readonly subjectLifecycleId: string
+    readonly authorizationGeneration: number
+  },
+) {
+  return connection.begin(async (transaction) => {
+    const [observation] = await transaction<{ observation_id: string; role_revision: string }[]>`
+      insert into character_corporation_role_observations (
+        organization_version, user_id, character_id, source_subject_lifecycle_id,
+        affiliation_period_revision, authority_corporation_id, authorization_generation,
+        required_scope, role_revision, status, validated_at, esi_fresh_until, fresh_until,
+        next_refresh_at, last_checked_at, last_applied_observation_sequence
+      )
+      select 1, ${input.userId}, ${input.characterId}, ${input.subjectLifecycleId},
+        character.affiliation_period_revision, character.corporation_id,
+        ${input.authorizationGeneration}, 'esi-characters.read_corporation_roles.v1',
+        gen_random_uuid(), 'fresh', now(), now() + interval '1 hour',
+        now() + interval '1 hour', now() + interval '1 hour', now(),
+        nextval('character_corporation_role_observation_sequence')
+      from characters character
+      where character.character_id = ${input.characterId}
+      returning observation_id, role_revision
+    `
+    if (!observation) {
+      throw new Error('Role observation fixture is missing')
+    }
+    await transaction`
+      insert into character_corporation_role_contents (
+        observation_id, roles, roles_at_base, roles_at_hq, roles_at_other
+      ) values (${observation.observation_id}, '{Director}', '{}', '{}', '{}')
+    `
+    return observation.role_revision
+  })
 }

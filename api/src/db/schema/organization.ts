@@ -127,6 +127,7 @@ export const organizationManagedMemberLifecycles = pgTable(
 export const organizationCorporationSources = pgTable(
   'organization_corporation_sources',
   {
+    affiliationPeriodRevision: uuid('affiliation_period_revision'),
     authorizationGeneration: integer('authorization_generation').notNull(),
     characterId: bigint('character_id', { mode: 'number' }),
     corporationId: bigint('corporation_id', { mode: 'number' }).notNull(),
@@ -139,6 +140,10 @@ export const organizationCorporationSources = pgTable(
     invalidatedAt: timestamp('invalidated_at', { withTimezone: true, mode: 'date' }),
     invalidationOutcome:
       text('invalidation_outcome').$type<OrganizationAuthorityInvalidationOutcome>(),
+    legacyRoleContinuityUntil: timestamp('legacy_role_continuity_until', {
+      withTimezone: true,
+      mode: 'date',
+    }),
     observedAllianceId: bigint('observed_alliance_id', { mode: 'number' }),
     observedAt: timestamp('observed_at', { withTimezone: true, mode: 'date' }).notNull(),
     observedCorporationId: bigint('observed_corporation_id', { mode: 'number' }).notNull(),
@@ -232,6 +237,10 @@ export const organizationCorporationSources = pgTable(
     check(
       'organization_corporation_sources_invalidation_outcome_check',
       sql`invalidation_outcome is null or invalidation_outcome in ('affiliation-changed', 'authorization-generation-changed', 'authorization-missing', 'authorization-rejected', 'authorization-revoked', 'blocked', 'detached', 'expired', 'lifecycle-replaced', 'missing-scope', 'not-director', 'organization-replaced', 'owner-mismatch', 'policy-disabled', 'source-replaced', 'transferred', 'wrong-alliance', 'wrong-corporation')`,
+    ),
+    check(
+      'organization_corporation_sources_legacy_role_continuity_check',
+      sql`legacy_role_continuity_until is null or affiliation_period_revision is not null`,
     ),
     check(
       'organization_corporation_sources_status_check',
@@ -685,6 +694,7 @@ export const organizationMemberBlocks = pgTable(
 export const organizationAuthorityEvidence = pgTable(
   'organization_authority_evidence',
   {
+    affiliationPeriodRevision: uuid('affiliation_period_revision'),
     authorityCorporationId: bigint('authority_corporation_id', { mode: 'number' }).notNull(),
     authorizationGeneration: integer('authorization_generation').notNull(),
     characterId: bigint('character_id', { mode: 'number' }).notNull(),
@@ -699,6 +709,10 @@ export const organizationAuthorityEvidence = pgTable(
     invalidationOutcome:
       text('invalidation_outcome').$type<OrganizationAuthorityInvalidationOutcome>(),
     lastCheckedAt: timestamp('last_checked_at', { withTimezone: true, mode: 'date' }).notNull(),
+    legacyRoleContinuityUntil: timestamp('legacy_role_continuity_until', {
+      withTimezone: true,
+      mode: 'date',
+    }),
     observedAllianceId: bigint('observed_alliance_id', { mode: 'number' }),
     observedAt: timestamp('observed_at', { withTimezone: true, mode: 'date' }).notNull(),
     observedCorporationId: bigint('observed_corporation_id', { mode: 'number' }).notNull(),
@@ -737,6 +751,10 @@ export const organizationAuthorityEvidence = pgTable(
         and observed_corporation_id = authority_corporation_id`,
     ),
     check('organization_authority_evidence_scope_check', sql`length(trim(required_scope)) > 0`),
+    check(
+      'organization_authority_evidence_legacy_role_continuity_check',
+      sql`legacy_role_continuity_until is null or affiliation_period_revision is not null`,
+    ),
     check(
       'organization_authority_evidence_status_check',
       sql`status in ('fresh', 'degraded', 'invalid')`,
@@ -805,6 +823,7 @@ export const organizationAuthorityEvidence = pgTable(
 export const organizationDerivedAuthoritySources = pgTable(
   'organization_derived_authority_sources',
   {
+    affiliationPeriodRevision: uuid('affiliation_period_revision'),
     authorityCorporationId: bigint('authority_corporation_id', { mode: 'number' }).notNull(),
     authorizationGeneration: integer('authorization_generation').notNull(),
     characterId: bigint('character_id', { mode: 'number' }).notNull(),
@@ -816,6 +835,10 @@ export const organizationDerivedAuthoritySources = pgTable(
     invalidatedAt: timestamp('invalidated_at', { withTimezone: true, mode: 'date' }),
     invalidationOutcome:
       text('invalidation_outcome').$type<OrganizationAuthorityInvalidationOutcome>(),
+    legacyRoleContinuityUntil: timestamp('legacy_role_continuity_until', {
+      withTimezone: true,
+      mode: 'date',
+    }),
     observedAllianceId: bigint('observed_alliance_id', { mode: 'number' }),
     observedAt: timestamp('observed_at', { withTimezone: true, mode: 'date' }).notNull(),
     observedCorporationId: bigint('observed_corporation_id', { mode: 'number' }).notNull(),
@@ -866,6 +889,10 @@ export const organizationDerivedAuthoritySources = pgTable(
     check(
       'organization_derived_authority_sources_invalidation_outcome_check',
       sql`invalidation_outcome is null or invalidation_outcome in ('affiliation-changed', 'authorization-generation-changed', 'authorization-missing', 'authorization-rejected', 'authorization-revoked', 'blocked', 'detached', 'expired', 'lifecycle-replaced', 'missing-scope', 'not-director', 'organization-replaced', 'owner-mismatch', 'policy-disabled', 'source-replaced', 'transferred', 'wrong-alliance', 'wrong-corporation')`,
+    ),
+    check(
+      'organization_derived_authority_sources_legacy_role_continuity_check',
+      sql`legacy_role_continuity_until is null or affiliation_period_revision is not null`,
     ),
     check(
       'organization_derived_authority_sources_status_check',

@@ -1852,18 +1852,27 @@ describe('approved character transfer', () => {
     const [claim, redemption] = await raceBehindDeploymentSettingsLock([
       () =>
         ownerClaim.claimOrganizationOwnership({
-          affiliationCheckedAt: new Date(0),
-          authorityCorporationId: 1_000_166,
-          authorizationGeneration: ownerAuthorization.tokenVersion,
+          authorityCorporation: { corporationId: 1_000_166, freshUntil: null },
           characterId: sourceAlternateCharacterId,
-          evidenceAuthorizationGeneration: ownerAuthorization.tokenVersion,
-          evidenceFreshUntil: new Date(Date.now() + 60_000),
-          observedAllianceId: null,
-          observedCorporationId: 1_000_166,
+          observation: {
+            affiliationFreshUntil: new Date(Date.now() + 60_000),
+            read: {
+              authorizationGeneration: ownerAuthorization.tokenVersion,
+              cachedUntil: new Date(Date.now() + 60 * 60 * 1000),
+              retryAt: null,
+              roles: {
+                roles: ['Director'],
+                rolesAtBase: [],
+                rolesAtHeadquarters: [],
+                rolesAtOther: [],
+              },
+              stale: false,
+              validatedAt: new Date(),
+            },
+          },
           organizationId: 1_000_166,
           organizationVersion: 1,
           requiredScope: ownerScope,
-          roleEvidenceRevision: new Date().toISOString(),
           subjectLifecycleId: transfer.sourceSubjectLifecycleId,
           userId: transfer.sourceUserId,
         }),
@@ -1903,7 +1912,7 @@ describe('approved character transfer', () => {
             characterId: sourceAlternateCharacterId,
             corporationId: 1_000_166,
           },
-          { evidence },
+          { observation: evidence },
         ),
       () => redeemPreparedTransfer(transfer),
     ])
@@ -1951,7 +1960,7 @@ describe('approved character transfer', () => {
         characterId: sourceAlternateCharacterId,
         corporationId: 1_000_166,
       },
-      { evidence: originalEvidence },
+      { observation: originalEvidence },
     )
     const replacementEvidence = await prepareCorporationSourceCandidate(transfer, sourceCharacterId)
 
@@ -1963,7 +1972,7 @@ describe('approved character transfer', () => {
             characterId: sourceCharacterId,
             corporationId: 1_000_166,
           },
-          { evidence: replacementEvidence },
+          { observation: replacementEvidence },
         ),
       () => redeemPreparedTransfer(transfer),
     ])
@@ -3335,26 +3344,16 @@ async function prepareCorporationSourceCandidate(
   if (!binding) {
     throw new Error('Corporation-source candidate binding is missing')
   }
-  const observedAt = new Date()
+  const validatedAt = new Date()
   return {
-    affiliation: {
-      affiliationCheckedAt: binding.affiliation_checked_at,
-      affiliationFreshUntil: new Date(observedAt.getTime() + 60 * 60 * 1000),
-      allianceId: null,
-      characterId,
-      corporationId: 1_000_166,
-      stale: false,
-    },
-    roles: {
+    affiliationFreshUntil: new Date(validatedAt.getTime() + 60 * 60 * 1000),
+    read: {
       authorizationGeneration: binding.token_version,
-      freshUntil: new Date(observedAt.getTime() + 60 * 60 * 1000),
-      observedAt,
-      roleEvidenceRevision: observedAt.toISOString(),
-      roles: ['Director'],
-      rolesAtBase: [],
-      rolesAtHeadquarters: [],
-      rolesAtOther: [],
+      cachedUntil: new Date(validatedAt.getTime() + 60 * 60 * 1000),
+      retryAt: null,
+      roles: { roles: ['Director'], rolesAtBase: [], rolesAtHeadquarters: [], rolesAtOther: [] },
       stale: false,
+      validatedAt,
     },
   }
 }

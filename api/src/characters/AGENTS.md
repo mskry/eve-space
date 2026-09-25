@@ -6,7 +6,7 @@ The character subsystem is a flat set of deep modules. Keep each module's interf
 root Hono / auth / organization / queue orchestration
                          |
                          v
-character route adapters and affiliation use cases
+character route adapters and observation use cases
                          |
                          v
 character reads and local projections
@@ -19,12 +19,13 @@ registered ESI execution seam    pure/shared leaf modules
 ## Route Adapters
 
 - Route adapters own Hono route composition, validation and middleware order, response privacy, DTO shaping, and failure translation.
-- Hono belongs only in this tier. Reads, projections, affiliation use cases, and pure leaves must not import route adapters or Hono.
+- Hono belongs only in this tier. Reads, projections, observation use cases, and pure leaves must not import route adapters or Hono.
 - Keep each method and path owned by one route adapter. Do not introduce a character facade or barrel.
 
-## Affiliation Use Cases
+## Observation Use Cases
 
-- Affiliation use cases own character-domain observation, deterministic due selection, batching, persistence, and domain-event sequencing.
+- Observation use cases own character-domain affiliation and corporation-role observation, deterministic due selection, batching, fenced persistence, and domain-event sequencing.
+- Raw corporation-role content is private to the corporation-role evidence and observation modules. Other subsystems receive only opaque revisions, deadlines, status, and evaluated reviewed predicates; the character dependency verifier rejects any other reference to the content table.
 - Queue orchestration calls these interfaces but retains job contracts, stable job identity, producer admission, BullMQ adaptation, and worker delivery disposition.
 - Character modules must not import BullMQ or queue modules.
 
@@ -32,7 +33,7 @@ registered ESI execution seam    pure/shared leaf modules
 
 - Read modules own registered ESI representations, cache-facing input identity, character DTO composition, and resource-specific invariants.
 - Projection modules may enrich reads through their reviewed database, alliance, corporation, universe, text, or training seams.
-- Reads and projections may depend on other reads, projections, and pure leaves. They must not depend on route adapters or affiliation orchestration.
+- Reads and projections may depend on other reads, projections, and pure leaves. They must not depend on route adapters or observation use cases.
 
 ## Registered ESI Seam
 

@@ -12,11 +12,11 @@ import { loadCharacterSources } from '../../scripts/characters/sources'
 
 const forbiddenTierImports = [
   ['finance-pagination', 'pure-leaf', 'assets', 'read-projection'],
-  ['finance-pagination', 'pure-leaf', 'affiliation-sync', 'affiliation-use-case'],
+  ['finance-pagination', 'pure-leaf', 'affiliation-sync', 'observation-use-case'],
   ['finance-pagination', 'pure-leaf', 'routes', 'route-adapter'],
-  ['assets', 'read-projection', 'affiliation-sync', 'affiliation-use-case'],
+  ['assets', 'read-projection', 'affiliation-sync', 'observation-use-case'],
   ['assets', 'read-projection', 'routes', 'route-adapter'],
-  ['affiliation-sync', 'affiliation-use-case', 'routes', 'route-adapter'],
+  ['affiliation-sync', 'observation-use-case', 'routes', 'route-adapter'],
 ] as const
 
 describe('character module boundaries', () => {
@@ -31,6 +31,10 @@ describe('character module boundaries', () => {
       'clones-routes',
       'contracts',
       'core-routes',
+      'corporation-role-canonical',
+      'corporation-role-evidence',
+      'corporation-role-invalidation',
+      'corporation-role-observation',
       'corporation-roles',
       'finance-location-names',
       'finance-pagination',
@@ -120,7 +124,9 @@ describe('character module boundaries', () => {
       `api/src/characters/assets.ts: Character module assets cannot import ESI SDK runtime surface ${specifier}`,
     )
   })
+})
 
+describe('character module dependency declarations', () => {
   it.each(['@evespace/esi-client/operations', '@evespace/esi-client/types'])(
     'allows reviewed ESI SDK declaration surface %s',
     (specifier) => {

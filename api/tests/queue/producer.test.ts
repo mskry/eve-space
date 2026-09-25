@@ -53,29 +53,33 @@ describe('in-memory queue producer', () => {
     expect(producer.commands).toStrictEqual([onDemand, onDemand])
   })
 
-  test('coalesces immutable authority work by the production contract identity', async () => {
+  test('coalesces owner, source, and derived demand for one role binding', async () => {
     const producer = createInMemoryQueueProducer()
     const payload = {
+      affiliationPeriodRevision: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+      authorityCorporationId: 98_000_001,
       authorizationGeneration: 7,
-      grantId: '35acd527-9539-44ad-aacf-9f8e45232267',
+      characterId: 1_404_328_063,
+      expectedRoleRevision: null,
       organizationVersion: 3,
-      roleEvidenceRevision: 'revision-1',
-      sourceSubjectLifecycleId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+      subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+      userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
     }
+    const notBefore = new Date()
 
     await expect(
-      producer.enqueue({ name: 'organization-owner-evidence', payload, source: 'planner' }),
+      producer.enqueue({
+        name: 'corporation-role-observation',
+        notBefore,
+        payload,
+        source: 'planner',
+      }),
     ).resolves.toStrictEqual({ depth: 0, status: 'accepted' })
     await expect(
       producer.enqueue({
-        name: 'organization-owner-evidence',
-        payload: {
-          authorizationGeneration: payload.authorizationGeneration,
-          grantId: payload.grantId,
-          organizationVersion: payload.organizationVersion,
-          roleEvidenceRevision: payload.roleEvidenceRevision,
-          sourceSubjectLifecycleId: payload.sourceSubjectLifecycleId,
-        },
+        name: 'corporation-role-observation',
+        notBefore,
+        payload: { ...payload, authorizationGeneration: 8 },
         source: 'planner',
       }),
     ).resolves.toStrictEqual({ depth: 1, reason: 'coalesced', status: 'rejected' })

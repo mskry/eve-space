@@ -15,6 +15,8 @@ export const workerHeartbeatTtlSeconds = Math.ceil(workerHeartbeatStaleAfterMs /
 export const schedulerLockTtlMs = 30_000
 export const schedulerLockRenewalMs = 10_000
 
+export const corporationRoleRefreshLeadMilliseconds = 20 * 60 * 1000
+
 export const derivedResourcePriorityBand = {
   highest: 1,
   lowest: 2_097_151,
@@ -26,4 +28,12 @@ export function resourceRefreshPriority(materializationIntervalSeconds: number) 
   }
 
   return Math.min(materializationIntervalSeconds, derivedResourcePriorityBand.lowest)
+}
+
+export function dueTimeAdmissionDelay(notBefore: Date, now = Date.now()) {
+  const delay = notBefore.getTime() - now
+  if (!Number.isFinite(delay) || delay <= 0) {
+    return 0
+  }
+  return Math.min(Math.ceil(delay), corporationRoleRefreshLeadMilliseconds)
 }

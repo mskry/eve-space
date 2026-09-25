@@ -4,6 +4,7 @@ import {
   recomputeComplianceForManagedCorporation,
   recomputeCurrentOrganizationAccountCompliance,
 } from '../organization/compliance.js'
+import { repairCorporationRoleDependentAuthority } from '../organization/corporation-role-convergence.js'
 import { repairPlatformCollectionState } from '../platform/collection-state-repair.js'
 
 const domainEventIdempotencyStrategies = ['event-id-persistence', 'convergent-state'] as const
@@ -33,6 +34,8 @@ const characterCollectionStateEventTypes = [
   'character.detached',
   'character.scopes-changed',
   'character.affiliation-observed',
+  'character.corporation-roles-changed',
+  'character.corporation-role-loss-confirmed',
 ] as const
 
 type CharacterCollectionStateEvent = Extract<
@@ -110,6 +113,8 @@ const characterComplianceEventTypes = [
   'character.detached',
   'character.scopes-changed',
   'character.affiliation-observed',
+  'character.corporation-roles-changed',
+  'character.corporation-role-loss-confirmed',
 ] as const
 type CharacterComplianceEvent = Extract<
   DomainEventEnvelope,
@@ -137,7 +142,44 @@ export function createCharacterComplianceEventHandlers(
   }))
 }
 
+type CorporationRoleAuthorityRepair = typeof repairCorporationRoleDependentAuthority
+const corporationRoleEventTypes = [
+  'character.corporation-roles-changed',
+  'character.corporation-role-loss-confirmed',
+] as const
+const corporationRoleEventTypeValues: readonly DomainEventType[] = corporationRoleEventTypes
+type CorporationRoleEvent = Extract<
+  DomainEventEnvelope,
+  { eventType: (typeof corporationRoleEventTypes)[number] }
+>
+
+function isCorporationRoleEvent(event: DomainEventEnvelope): event is CorporationRoleEvent {
+  return corporationRoleEventTypeValues.includes(event.eventType)
+}
+
+export function createCorporationRoleAuthorityEventHandlers(
+  repair: CorporationRoleAuthorityRepair = repairCorporationRoleDependentAuthority,
+): readonly DomainEventHandler[] {
+  return corporationRoleEventTypes.map((eventType) => ({
+    eventType,
+    async handle(event, signal) {
+      if (!isCorporationRoleEvent(event)) {
+        return
+      }
+      await repair({
+        characterId: event.payload.characterId,
+        organizationVersion: event.payload.organizationVersion,
+        userId: event.payload.userId,
+        ...(signal && { signal }),
+      })
+    },
+    idempotency: 'convergent-state',
+    payloadVersion: 1,
+  }))
+}
+
 const domainEventHandlers = [
+  ...createCorporationRoleAuthorityEventHandlers(),
   ...createPlatformCollectionStateEventHandlers(),
   ...createCharacterComplianceEventHandlers(),
   ...createManagedCorporationComplianceEventHandlers(),

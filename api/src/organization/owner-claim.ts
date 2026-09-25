@@ -10,7 +10,16 @@ import {
   platformSubjectLifecycles,
 } from '../db/schema.js'
 import { appendOrganizationAuditEvents } from './audit.js'
+import { OrganizationAuthorityError } from './authority-policy.js'
 import { recomputeOrganizationAccountCompliance } from './compliance.js'
+import { loadCurrentOrganizationIdentity } from './context.js'
+import {
+  commitCorporationRoleBootstrapInTransaction,
+  CorporationRoleBootstrapError,
+  prepareCorporationRoleBootstrap,
+  type CorporationRoleBootstrapObservation,
+} from './corporation-role-bootstrap.js'
+import type { AuthorityCorporationEvidence } from './corporation-role-convergence.js'
 import { isOrganizationOwnerClaimAvailable } from './owner-claim-policy.js'
 
 export class OrganizationOwnerClaimError extends Error {
@@ -31,21 +40,70 @@ interface OrganizationOwnerClaimInput {
   userId: string
   characterId: number
   subjectLifecycleId: string
-  authorizationGeneration: number
-  roleEvidenceRevision: string
-  evidenceAuthorizationGeneration: number
-  evidenceFreshUntil: Date
   organizationId: number
   organizationVersion: number
-  authorityCorporationId: number
-  observedCorporationId: number
-  observedAllianceId: number | null
-  affiliationCheckedAt: Date
+  authorityCorporation: AuthorityCorporationEvidence
   requiredScope: string
+  signal?: AbortSignal
+  observation?: CorporationRoleBootstrapObservation
+}
+
+const toOwnerClaimError = (error: CorporationRoleBootstrapError) => {
+  if (error.code === 'not-director') {
+    return new OrganizationAuthorityError('not-director')
+  }
+  if (error.code === 'missing-scope') {
+    return new OrganizationOwnerClaimError('missing-scope')
+  }
+  return new OrganizationOwnerClaimError(
+    error.code === 'character-ineligible' || error.code === 'superseded'
+      ? 'character-not-owned'
+      : 'stale-affiliation',
+  )
+}
+
+const withOwnerClaimErrors = async <T>(operation: () => Promise<T>) => {
+  try {
+    return await operation()
+  } catch (error) {
+    if (error instanceof CorporationRoleBootstrapError) {
+      throw toOwnerClaimError(error)
+    }
+    throw error
+  }
 }
 
 export async function claimOrganizationOwnership(input: OrganizationOwnerClaimInput) {
+  const currentOrganization = await loadCurrentOrganizationIdentity()
+  if (
+    currentOrganization.organizationId !== input.organizationId ||
+    currentOrganization.organizationVersion !== input.organizationVersion
+  ) {
+    throw new OrganizationOwnerClaimError('stale-organization')
+  }
+  const prepared = await withOwnerClaimErrors(() =>
+    prepareCorporationRoleBootstrap({
+      characterId: input.characterId,
+      userId: input.userId,
+      ...(input.observation && { observation: input.observation }),
+      ...(input.signal && { signal: input.signal }),
+    }),
+  )
+  if (prepared.binding.subjectLifecycleId !== input.subjectLifecycleId) {
+    throw new OrganizationOwnerClaimError('character-not-owned')
+  }
   return db.transaction(async (transaction) => {
+    const roleEvidence = await withOwnerClaimErrors(() =>
+      commitCorporationRoleBootstrapInTransaction(transaction, prepared, {
+        authorityCorporation: input.authorityCorporation,
+        authorize: async (_transaction, binding) =>
+          binding.organizationVersion === input.organizationVersion &&
+          binding.subjectLifecycleId === input.subjectLifecycleId &&
+          binding.authorityCorporationId === input.authorityCorporation.corporationId,
+        intent: { actorUserId: input.userId, kind: 'organization-owner-claim' },
+        ...(input.signal && { signal: input.signal }),
+      }),
+    )
     const [organization] = await transaction
       .select({
         authorityEvidenceFreshDurationSeconds:
@@ -83,7 +141,7 @@ export async function claimOrganizationOwnership(input: OrganizationOwnerClaimIn
 
     const [character] = await transaction
       .select({
-        affiliationCheckedAt: characters.affiliationCheckedAt,
+        affiliationPeriodRevision: characters.affiliationPeriodRevision,
         affiliationResolutionState: characters.affiliationResolutionState,
         allianceId: characters.allianceId,
         authorizationGeneration: eveTokens.tokenVersion,
@@ -100,8 +158,8 @@ export async function claimOrganizationOwnership(input: OrganizationOwnerClaimIn
       )
       .where(eq(characters.characterId, input.characterId))
       .for('update')
-    assertClaimCharacterOwned(character, input)
-    if (!claimAffiliationMatches(character, input)) {
+    assertClaimCharacterOwned(character, input, roleEvidence.binding.authorizationGeneration)
+    if (!claimAffiliationMatches(character, input, roleEvidence.binding)) {
       throw new OrganizationOwnerClaimError('stale-affiliation')
     }
     if (!character.scopes.includes(input.requiredScope)) {
@@ -111,7 +169,8 @@ export async function claimOrganizationOwnership(input: OrganizationOwnerClaimIn
     const now = new Date()
     const freshUntil = new Date(
       Math.min(
-        input.evidenceFreshUntil.getTime(),
+        roleEvidence.freshUntil.getTime(),
+        input.authorityCorporation.freshUntil?.getTime() ?? Number.POSITIVE_INFINITY,
         now.getTime() + organization.authorityEvidenceFreshDurationSeconds * 1000,
       ),
     )
@@ -218,21 +277,22 @@ export async function claimOrganizationOwnership(input: OrganizationOwnerClaimIn
     const [evidence] = await transaction
       .insert(organizationAuthorityEvidence)
       .values({
-        authorityCorporationId: input.authorityCorporationId,
-        authorizationGeneration: input.authorizationGeneration,
+        affiliationPeriodRevision: roleEvidence.binding.affiliationPeriodRevision,
+        authorityCorporationId: input.authorityCorporation.corporationId,
+        authorizationGeneration: roleEvidence.binding.authorizationGeneration,
         characterId: input.characterId,
         deploymentId: 1,
         directorRolePresent: true,
         freshUntil,
         grantId: grant.grantId,
         lastCheckedAt: now,
-        observedAllianceId: input.observedAllianceId,
+        observedAllianceId: character.allianceId,
         observedAt: now,
-        observedCorporationId: input.observedCorporationId,
+        observedCorporationId: character.corporationId,
         organizationVersion: organization.organizationVersion,
         requiredScope: input.requiredScope,
         role: 'organization_owner',
-        roleEvidenceRevision: input.roleEvidenceRevision,
+        roleEvidenceRevision: roleEvidence.roleEvidenceRevision,
         sourceSubjectLifecycleId: input.subjectLifecycleId,
         status: 'fresh',
         userId: input.userId,
@@ -291,12 +351,12 @@ function assertClaimCharacterOwned(
       }
     | undefined,
   input: OrganizationOwnerClaimInput,
+  evidenceAuthorizationGeneration: number,
 ): asserts character is NonNullable<typeof character> {
   if (
     character?.userId !== input.userId ||
     character.subjectLifecycleId !== input.subjectLifecycleId ||
-    character.authorizationGeneration !== input.authorizationGeneration ||
-    character.authorizationGeneration !== input.evidenceAuthorizationGeneration
+    character.authorizationGeneration !== evidenceAuthorizationGeneration
   ) {
     throw new OrganizationOwnerClaimError('character-not-owned')
   }
@@ -305,17 +365,15 @@ function assertClaimCharacterOwned(
 function claimAffiliationMatches(
   character: Pick<
     typeof characters.$inferSelect,
-    'affiliationResolutionState' | 'affiliationCheckedAt' | 'corporationId' | 'allianceId'
+    'affiliationResolutionState' | 'affiliationPeriodRevision' | 'corporationId'
   >,
   input: OrganizationOwnerClaimInput,
+  binding: { readonly affiliationPeriodRevision: string; readonly authorityCorporationId: number },
 ) {
-  const checkedAt = character.affiliationCheckedAt
   return (
     character.affiliationResolutionState === 'resolved' &&
-    checkedAt !== null &&
-    checkedAt >= input.affiliationCheckedAt &&
-    character.corporationId === input.observedCorporationId &&
-    character.allianceId === input.observedAllianceId &&
-    character.corporationId === input.authorityCorporationId
+    character.affiliationPeriodRevision === binding.affiliationPeriodRevision &&
+    character.corporationId === binding.authorityCorporationId &&
+    character.corporationId === input.authorityCorporation.corporationId
   )
 }

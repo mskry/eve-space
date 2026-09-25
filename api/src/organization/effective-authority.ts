@@ -18,11 +18,20 @@ import {
   type AuthorityOperation,
 } from './authority-policy.js'
 import { hasActiveOrganizationMemberBlock } from './member-block.js'
+import {
+  resolveSourceRoleEvidenceState,
+  weakestAuthorityEvidenceState,
+} from './source-role-evidence.js'
 
 type Database = DatabaseTransaction | typeof db
 
 interface SourceRow {
   sourceId: string
+  userId: string
+  organizationVersion: number
+  affiliationPeriodRevision: string | null
+  roleEvidenceRevision: string
+  legacyRoleContinuityUntil: Date | null
   characterId: number
   sourceSubjectLifecycleId: string
   authorizationGeneration: number
@@ -101,13 +110,15 @@ export async function loadEffectiveOrganizationAuthority(
   }
 
   const owner = await loadOwnerSource(database, organizationVersion, userId)
-  const ownerSource = owner ? evaluateSource(owner, userId, organization, true, now) : null
+  const ownerSource = owner
+    ? await evaluateSource(database, owner, userId, organization, true, now)
+    : null
   const explicitDirector = await hasExplicitDirector(database, organizationVersion, userId)
   const derivedRows = organization.derivedDirectorAuthorityEnabled
     ? await loadDerivedSources(database, organizationVersion, userId)
     : []
-  const derivedSources = derivedRows.map((source) =>
-    evaluateSource(source, userId, organization, true, now),
+  const derivedSources = await Promise.all(
+    derivedRows.map((source) => evaluateSource(database, source, userId, organization, true, now)),
   )
   const organizationOwner = ownerSource?.state
     ? canUseAuthoritySource(ownerSource.state, operation)
@@ -174,6 +185,7 @@ async function loadOwnerSource(
 ): Promise<SourceRow | null> {
   const [source] = await database
     .select({
+      affiliationPeriodRevision: organizationAuthorityEvidence.affiliationPeriodRevision,
       authorityCorporationId: organizationAuthorityEvidence.authorityCorporationId,
       authorizationGeneration: organizationAuthorityEvidence.authorizationGeneration,
       characterId: organizationAuthorityEvidence.characterId,
@@ -181,11 +193,15 @@ async function loadOwnerSource(
       freshUntil: organizationAuthorityEvidence.freshUntil,
       graceUntil: organizationAuthorityEvidence.graceUntil,
       invalidatedAt: organizationAuthorityEvidence.invalidatedAt,
+      legacyRoleContinuityUntil: organizationAuthorityEvidence.legacyRoleContinuityUntil,
       observedAllianceId: organizationAuthorityEvidence.observedAllianceId,
+      organizationVersion: organizationAuthorityEvidence.organizationVersion,
       requiredScope: organizationAuthorityEvidence.requiredScope,
+      roleEvidenceRevision: organizationAuthorityEvidence.roleEvidenceRevision,
       sourceId: organizationAuthorityEvidence.evidenceId,
       sourceSubjectLifecycleId: organizationAuthorityEvidence.sourceSubjectLifecycleId,
       status: organizationAuthorityEvidence.status,
+      userId: organizationAuthorityEvidence.userId,
       ...currentSourceSelection,
     })
     .from(organizationAuthorityEvidence)
@@ -218,6 +234,7 @@ async function loadDerivedSources(
 ): Promise<SourceRow[]> {
   return database
     .select({
+      affiliationPeriodRevision: organizationDerivedAuthoritySources.affiliationPeriodRevision,
       authorityCorporationId: organizationDerivedAuthoritySources.authorityCorporationId,
       authorizationGeneration: organizationDerivedAuthoritySources.authorizationGeneration,
       characterId: organizationDerivedAuthoritySources.characterId,
@@ -225,11 +242,15 @@ async function loadDerivedSources(
       freshUntil: organizationDerivedAuthoritySources.freshUntil,
       graceUntil: organizationDerivedAuthoritySources.graceUntil,
       invalidatedAt: organizationDerivedAuthoritySources.invalidatedAt,
+      legacyRoleContinuityUntil: organizationDerivedAuthoritySources.legacyRoleContinuityUntil,
       observedAllianceId: organizationDerivedAuthoritySources.observedAllianceId,
+      organizationVersion: organizationDerivedAuthoritySources.organizationVersion,
       requiredScope: organizationDerivedAuthoritySources.requiredScope,
+      roleEvidenceRevision: organizationDerivedAuthoritySources.roleEvidenceRevision,
       sourceId: organizationDerivedAuthoritySources.sourceId,
       sourceSubjectLifecycleId: organizationDerivedAuthoritySources.sourceSubjectLifecycleId,
       status: organizationDerivedAuthoritySources.status,
+      userId: organizationDerivedAuthoritySources.userId,
       ...currentSourceSelection,
     })
     .from(organizationDerivedAuthoritySources)
@@ -252,13 +273,14 @@ async function loadDerivedSources(
     )
 }
 
-function evaluateSource(
+async function evaluateSource(
+  database: Database,
   source: SourceRow,
   userId: string,
   organization: OrganizationBoundary,
   enabled: boolean,
   now: Date,
-): EffectiveAuthoritySource {
+): Promise<EffectiveAuthoritySource> {
   const decision = evaluateDerivedDirectorSource(
     {
       affiliation: {
@@ -281,7 +303,28 @@ function evaluateSource(
     },
     now,
   )
-  return { characterId: source.characterId, sourceId: source.sourceId, state: decision.state }
+  const state =
+    decision.state === 'invalid'
+      ? decision.state
+      : weakestAuthorityEvidenceState(
+          decision.state,
+          await resolveSourceRoleEvidenceState(
+            database,
+            {
+              affiliationPeriodRevision: source.affiliationPeriodRevision,
+              authorityCorporationId: source.authorityCorporationId,
+              authorizationGeneration: source.authorizationGeneration,
+              characterId: source.characterId,
+              legacyRoleContinuityUntil: source.legacyRoleContinuityUntil,
+              organizationVersion: source.organizationVersion,
+              roleEvidenceRevision: source.roleEvidenceRevision,
+              sourceSubjectLifecycleId: source.sourceSubjectLifecycleId,
+              userId: source.userId,
+            },
+            now,
+          ),
+        )
+  return { characterId: source.characterId, sourceId: source.sourceId, state }
 }
 
 function noAuthority(): EffectiveOrganizationAuthority {

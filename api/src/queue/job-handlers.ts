@@ -3,9 +3,7 @@ import { DomainEventValidationError } from '../domain-events/definitions.js'
 import { DomainEventNotFoundError, dispatchDomainEvent } from '../domain-events/handlers.js'
 import { deletePublishedDomainEvents } from '../domain-events/store.js'
 import { env } from '../env.js'
-import { refreshDerivedDirectorAuthority } from '../organization/derived-authority.js'
-import { refreshOrganizationCorporationSource } from '../organization/corporation-sources.js'
-import { refreshOrganizationOwnerEvidence } from '../organization/owner-evidence.js'
+import { refreshCorporationRoleEvidence } from '../organization/corporation-role-refresh.js'
 import { convergeObservedAffiliationInTransaction } from '../organization/authority-convergence.js'
 import { processInstalledResourceRefresh } from '../platform/resource-refresh.js'
 import { processAffiliationBatch } from '../characters/affiliation-sync.js'
@@ -52,18 +50,11 @@ const jobHandlers = {
       )
     },
   }),
-  'corporation-source-evidence': handler({
-    name: 'corporation-source-evidence',
-    classifyError: retryable,
+  'corporation-role-observation': handler({
+    name: 'corporation-role-observation',
+    classifyError: delayedOr(retryable),
     async process(payload, context) {
-      await refreshOrganizationCorporationSource(payload, { signal: context.signal })
-    },
-  }),
-  'derived-authority': handler({
-    name: 'derived-authority',
-    classifyError: retryable,
-    async process(payload, context) {
-      await refreshDerivedDirectorAuthority(payload, { signal: context.signal })
+      await refreshCorporationRoleEvidence(payload, { signal: context.signal })
     },
   }),
   diagnostic: handler({
@@ -91,13 +82,6 @@ const jobHandlers = {
       await deletePublishedDomainEvents({
         retentionMs: env.DOMAIN_EVENT_PUBLISHED_RETENTION_DAYS * 24 * 60 * 60 * 1000,
       })
-    },
-  }),
-  'organization-owner-evidence': handler({
-    name: 'organization-owner-evidence',
-    classifyError: retryable,
-    async process(payload, context) {
-      await refreshOrganizationOwnerEvidence(payload, { signal: context.signal })
     },
   }),
   'outbox-relay': handler({

@@ -10,6 +10,10 @@ import {
   type EsiStatusTelemetry,
   type EsiUpstreamObservation,
 } from '../esi-gateway/status-interface.js'
+import {
+  probeCorporationRoleEvidenceStatus,
+  type CorporationRoleEvidenceStatus,
+} from '../organization/corporation-role-diagnostics.js'
 import { probeQueueStatus, type QueueStatus } from '../queue/status.js'
 import { readStaticLocationRevision } from '../universe/static-location-store.js'
 
@@ -89,6 +93,7 @@ export interface SystemStatus {
     esi: EsiStatus
     queue: QueueStatus & { checkedAt: string }
     eventRelay: DomainEventStatus & { checkedAt: string }
+    corporationRoleEvidence: CorporationRoleEvidenceStatus & { checkedAt: string }
     esiResilience: EsiStatusTelemetry
   }
 }
@@ -112,13 +117,15 @@ export function getSystemStatus() {
 async function probeSystemStatus(now: number): Promise<SystemStatus> {
   const esiPending = probeEsi()
   const esiResiliencePending = probeEsiStatus(esiPending.then(({ observation }) => observation))
-  const [database, sde, esiProbe, queue, esiResilience] = await Promise.all([
-    probeDatabase(),
-    probeSde(),
-    esiPending,
-    probeQueueStatus(),
-    esiResiliencePending,
-  ])
+  const [database, sde, esiProbe, queue, esiResilience, corporationRoleEvidence] =
+    await Promise.all([
+      probeDatabase(),
+      probeSde(),
+      esiPending,
+      probeQueueStatus(),
+      esiResiliencePending,
+      probeCorporationRoleEvidenceStatus(new Date(now)),
+    ])
   const esi = esiProbe.service
   const eventRelay = await probeDomainEventStatus(queue)
   const unavailableCount =
@@ -149,6 +156,10 @@ async function probeSystemStatus(now: number): Promise<SystemStatus> {
         checkedAt: new Date(now).toISOString(),
         status: 'operational',
         uptimeSeconds: Math.floor(process.uptime()),
+      },
+      corporationRoleEvidence: {
+        ...corporationRoleEvidence,
+        checkedAt: new Date(now).toISOString(),
       },
       database,
       esi,
