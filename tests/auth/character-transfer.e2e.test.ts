@@ -7,7 +7,11 @@ import type { BrowserContext, Page } from '@playwright/test'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { startAuthE2eInfrastructure, type FakeEveCharacter } from '../support/auth-e2e-stack'
 
-const sourceMain = character(90_100_001, 'Source Main')
+const corporationRoleScope = 'esi-characters.read_corporation_roles.v1'
+const sourceMain = {
+  ...character(90_100_001, 'Source Main'),
+  scopes: ['scope.owner', corporationRoleScope],
+}
 const movingCharacter = character(90_100_002, 'Moving Character')
 const destinationMain = character(90_100_003, 'Destination Main')
 const soleSourceCharacter = character(90_100_004, 'Sole Source')
@@ -428,18 +432,49 @@ async function seedOrganizationOwner(sourceUserId: string, destinationUserId: st
     ) values (1, 1, ${sourceUserId}, 'organization_owner', ${sourceUserId}, 'Browser authority')
     returning grant_id
   `
+  const roleRevision = randomUUID()
+  await infrastructure.connection.begin(async (transaction) => {
+    const [observation] = await transaction<{ observation_id: string }[]>`
+      insert into character_corporation_role_observations (
+        deployment_id, organization_version, user_id, character_id,
+        source_subject_lifecycle_id, affiliation_period_revision, authority_corporation_id,
+        authorization_generation, required_scope, role_revision, status, validated_at,
+        esi_fresh_until, fresh_until, next_refresh_at, last_checked_at,
+        last_applied_observation_sequence
+      ) values (
+        1, 1, ${sourceUserId}, ${sourceMain.characterId},
+        (select subject_lifecycle_id from platform_subject_lifecycles where character_id = ${sourceMain.characterId}),
+        (select affiliation_period_revision from characters where character_id = ${sourceMain.characterId}),
+        ${sourceMain.corporationId},
+        (select token_version from eve_tokens where character_id = ${sourceMain.characterId}),
+        ${corporationRoleScope}, ${roleRevision}, 'fresh', now(),
+        now() + interval '1 hour', now() + interval '1 hour', now() + interval '1 hour', now(),
+        nextval('character_corporation_role_observation_sequence')
+      ) returning observation_id
+    `
+    await transaction`
+      insert into character_corporation_role_contents (
+        observation_id, roles, roles_at_base, roles_at_hq, roles_at_other
+      ) values (
+        ${observation!.observation_id}, array['Director'], array[]::text[],
+        array[]::text[], array[]::text[]
+      )
+    `
+  })
   await infrastructure.connection`
     insert into organization_authority_evidence (
       grant_id, deployment_id, organization_version, user_id, character_id,
-      source_subject_lifecycle_id, authorization_generation, role_evidence_revision,
+      source_subject_lifecycle_id, affiliation_period_revision, authorization_generation,
+      role_evidence_revision,
       authority_corporation_id, observed_corporation_id, required_scope,
       director_role_present, status, observed_at, fresh_until, last_checked_at
     ) values (
       ${grant!.grant_id}, 1, 1, ${sourceUserId}, ${sourceMain.characterId},
       (select subject_lifecycle_id from platform_subject_lifecycles where character_id = ${sourceMain.characterId}),
+      (select affiliation_period_revision from characters where character_id = ${sourceMain.characterId}),
       (select token_version from eve_tokens where character_id = ${sourceMain.characterId}),
-      'browser-role-evidence',
-      ${sourceMain.corporationId}, ${sourceMain.corporationId}, 'scope.owner',
+      ${roleRevision},
+      ${sourceMain.corporationId}, ${sourceMain.corporationId}, ${corporationRoleScope},
       true, 'fresh', now(), now() + interval '1 hour', now()
     )
   `
