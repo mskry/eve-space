@@ -10,9 +10,34 @@ import { operationManifest, operationRegistry } from '../../src/generated/operat
 
 const operationContracts = [
   {
-    operationId: 'DeleteCharactersCharacterIdContacts',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        contact_ids: [0],
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.write_contacts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'DELETE',
+      path: '/characters/0/contacts?contact_ids=0',
+    },
     method: 'DELETE',
-    pathTemplate: '/characters/{character_id}/contacts',
+    operationId: 'DeleteCharactersCharacterIdContacts',
     parameters: [
       {
         name: 'character_id',
@@ -27,10 +52,10 @@ const operationContracts = [
         placement: 'query',
         required: true,
         schema: {
-          type: 'array',
           items: {
             type: 'integer',
           },
+          type: 'array',
         },
       },
       {
@@ -58,9 +83,27 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.write_contacts.v1'],
+    pathTemplate: '/characters/{character_id}/contacts',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 20,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'query',
+          maximumItems: 20,
+          path: ['contact_ids'],
+        },
+      ],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -70,49 +113,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'DeleteCharactersCharacterIdContactsData',
     responseTypeExport: 'DeleteCharactersCharacterIdContactsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        contact_ids: [0],
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'DELETE',
-      path: '/characters/0/contacts?contact_ids=0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: 20,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [
-        {
-          location: 'query',
-          path: ['contact_ids'],
-          maximumItems: 20,
-        },
-      ],
-    },
     responses: [
       {
         status: '204',
@@ -122,9 +122,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'DeleteCharactersCharacterIdFittingsFittingId',
+    arguments: {
+      path: {
+        character_id: 0,
+        fitting_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-fittings.write_fittings.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'DELETE',
+      path: '/characters/0/fittings/0',
+    },
     method: 'DELETE',
-    pathTemplate: '/characters/{character_id}/fittings/{fitting_id}',
+    operationId: 'DeleteCharactersCharacterIdFittingsFittingId',
     parameters: [
       {
         name: 'character_id',
@@ -167,9 +190,21 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fittings.write_fittings.v1'],
+    pathTemplate: '/characters/{character_id}/fittings/{fitting_id}',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'fitting',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -178,41 +213,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'DeleteCharactersCharacterIdFittingsFittingIdData',
     responseTypeExport: 'DeleteCharactersCharacterIdFittingsFittingIdResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        fitting_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'DELETE',
-      path: '/characters/0/fittings/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'fitting',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '204',
@@ -222,9 +222,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'DeleteCharactersCharacterIdMailLabelsLabelId',
+    arguments: {
+      path: {
+        character_id: 0,
+        label_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-mail.organize_mail.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'DELETE',
+      path: '/characters/0/mail/labels/0',
+    },
     method: 'DELETE',
-    pathTemplate: '/characters/{character_id}/mail/labels/{label_id}',
+    operationId: 'DeleteCharactersCharacterIdMailLabelsLabelId',
     parameters: [
       {
         name: 'character_id',
@@ -267,9 +290,21 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-mail.organize_mail.v1'],
+    pathTemplate: '/characters/{character_id}/mail/labels/{label_id}',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -278,41 +313,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'DeleteCharactersCharacterIdMailLabelsLabelIdData',
     responseTypeExport: 'DeleteCharactersCharacterIdMailLabelsLabelIdResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        label_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'DELETE',
-      path: '/characters/0/mail/labels/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '204',
@@ -322,9 +322,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'DeleteCharactersCharacterIdMailMailId',
+    arguments: {
+      path: {
+        character_id: 0,
+        mail_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-mail.organize_mail.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'DELETE',
+      path: '/characters/0/mail/0',
+    },
     method: 'DELETE',
-    pathTemplate: '/characters/{character_id}/mail/{mail_id}',
+    operationId: 'DeleteCharactersCharacterIdMailMailId',
     parameters: [
       {
         name: 'character_id',
@@ -367,9 +390,21 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-mail.organize_mail.v1'],
+    pathTemplate: '/characters/{character_id}/mail/{mail_id}',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -378,41 +413,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'DeleteCharactersCharacterIdMailMailIdData',
     responseTypeExport: 'DeleteCharactersCharacterIdMailMailIdResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        mail_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'DELETE',
-      path: '/characters/0/mail/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '204',
@@ -422,9 +422,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'DeleteFleetsFleetIdMembersMemberId',
+    arguments: {
+      path: {
+        fleet_id: 0,
+        member_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.write_fleet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'DELETE',
+      path: '/fleets/0/members/0',
+    },
     method: 'DELETE',
-    pathTemplate: '/fleets/{fleet_id}/members/{member_id}',
+    operationId: 'DeleteFleetsFleetIdMembersMemberId',
     parameters: [
       {
         name: 'fleet_id',
@@ -467,9 +490,21 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.write_fleet.v1'],
+    pathTemplate: '/fleets/{fleet_id}/members/{member_id}',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'fleet',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -478,41 +513,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'DeleteFleetsFleetIdMembersMemberIdData',
     responseTypeExport: 'DeleteFleetsFleetIdMembersMemberIdResponse',
-    arguments: {
-      path: {
-        fleet_id: 0,
-        member_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'DELETE',
-      path: '/fleets/0/members/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'fleet',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '204',
@@ -522,9 +522,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'DeleteFleetsFleetIdSquadsSquadId',
+    arguments: {
+      path: {
+        fleet_id: 0,
+        squad_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.write_fleet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'DELETE',
+      path: '/fleets/0/squads/0',
+    },
     method: 'DELETE',
-    pathTemplate: '/fleets/{fleet_id}/squads/{squad_id}',
+    operationId: 'DeleteFleetsFleetIdSquadsSquadId',
     parameters: [
       {
         name: 'fleet_id',
@@ -567,9 +590,21 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.write_fleet.v1'],
+    pathTemplate: '/fleets/{fleet_id}/squads/{squad_id}',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'fleet',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -578,41 +613,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'DeleteFleetsFleetIdSquadsSquadIdData',
     responseTypeExport: 'DeleteFleetsFleetIdSquadsSquadIdResponse',
-    arguments: {
-      path: {
-        fleet_id: 0,
-        squad_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'DELETE',
-      path: '/fleets/0/squads/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'fleet',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '204',
@@ -622,9 +622,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'DeleteFleetsFleetIdWingsWingId',
+    arguments: {
+      path: {
+        fleet_id: 0,
+        wing_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.write_fleet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'DELETE',
+      path: '/fleets/0/wings/0',
+    },
     method: 'DELETE',
-    pathTemplate: '/fleets/{fleet_id}/wings/{wing_id}',
+    operationId: 'DeleteFleetsFleetIdWingsWingId',
     parameters: [
       {
         name: 'fleet_id',
@@ -667,9 +690,21 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.write_fleet.v1'],
+    pathTemplate: '/fleets/{fleet_id}/wings/{wing_id}',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'fleet',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -678,41 +713,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'DeleteFleetsFleetIdWingsWingIdData',
     responseTypeExport: 'DeleteFleetsFleetIdWingsWingIdResponse',
-    arguments: {
-      path: {
-        fleet_id: 0,
-        wing_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'DELETE',
-      path: '/fleets/0/wings/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'fleet',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '204',
@@ -722,9 +722,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetAlliances',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/alliances',
+    },
     method: 'GET',
-    pathTemplate: '/alliances',
+    operationId: 'GetAlliances',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -751,39 +770,16 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetAlliancesHeaders'],
-    requestTypeExport: 'GetAlliancesData',
-    responseTypeExport: 'GetAlliancesResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/alliances',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/alliances',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -792,6 +788,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetAlliancesHeaders'],
+    requestTypeExport: 'GetAlliancesData',
+    responseTypeExport: 'GetAlliancesResponse',
     responses: [
       {
         status: '200',
@@ -801,9 +801,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetAlliancesAllianceId',
+    arguments: {
+      path: {
+        alliance_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/alliances/0',
+    },
     method: 'GET',
-    pathTemplate: '/alliances/{alliance_id}',
+    operationId: 'GetAlliancesAllianceId',
     parameters: [
       {
         name: 'alliance_id',
@@ -838,36 +860,9 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetAlliancesAllianceIdHeaders', 'zGetAlliancesAllianceIdPath'],
-    requestTypeExport: 'GetAlliancesAllianceIdData',
-    responseTypeExport: 'GetAlliancesAllianceIdResponse',
-    arguments: {
-      path: {
-        alliance_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/alliances/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/alliances/{alliance_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-cache-mode': 'ttl-based',
@@ -875,6 +870,7 @@ const operationContracts = [
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -883,6 +879,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetAlliancesAllianceIdHeaders', 'zGetAlliancesAllianceIdPath'],
+    requestTypeExport: 'GetAlliancesAllianceIdData',
+    responseTypeExport: 'GetAlliancesAllianceIdResponse',
     responses: [
       {
         status: '200',
@@ -892,9 +892,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetAlliancesAllianceIdContacts',
+    arguments: {
+      path: {
+        alliance_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-alliances.read_contacts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/alliances/0/contacts?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/alliances/{alliance_id}/contacts',
+    operationId: 'GetAlliancesAllianceIdContacts',
     parameters: [
       {
         name: 'alliance_id',
@@ -937,9 +962,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-alliances.read_contacts.v1'],
+    pathTemplate: '/alliances/{alliance_id}/contacts',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'alliance-social',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -949,48 +991,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetAlliancesAllianceIdContactsData',
     responseTypeExport: 'GetAlliancesAllianceIdContactsResponse',
-    arguments: {
-      path: {
-        alliance_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/alliances/0/contacts?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'alliance-social',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -1000,9 +1000,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetAlliancesAllianceIdContactsLabels',
+    arguments: {
+      path: {
+        alliance_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-alliances.read_contacts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/alliances/0/contacts/labels',
+    },
     method: 'GET',
-    pathTemplate: '/alliances/{alliance_id}/contacts/labels',
+    operationId: 'GetAlliancesAllianceIdContactsLabels',
     parameters: [
       {
         name: 'alliance_id',
@@ -1037,9 +1059,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-alliances.read_contacts.v1'],
+    pathTemplate: '/alliances/{alliance_id}/contacts/labels',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'alliance-social',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -1048,45 +1087,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetAlliancesAllianceIdContactsLabelsData',
     responseTypeExport: 'GetAlliancesAllianceIdContactsLabelsResponse',
-    arguments: {
-      path: {
-        alliance_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/alliances/0/contacts/labels',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'alliance-social',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -1096,9 +1096,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetAlliancesAllianceIdCorporations',
+    arguments: {
+      path: {
+        alliance_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/alliances/0/corporations',
+    },
     method: 'GET',
-    pathTemplate: '/alliances/{alliance_id}/corporations',
+    operationId: 'GetAlliancesAllianceIdCorporations',
     parameters: [
       {
         name: 'alliance_id',
@@ -1133,45 +1155,16 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetAlliancesAllianceIdCorporationsHeaders',
-      'zGetAlliancesAllianceIdCorporationsPath',
-    ],
-    requestTypeExport: 'GetAlliancesAllianceIdCorporationsData',
-    responseTypeExport: 'GetAlliancesAllianceIdCorporationsResponse',
-    arguments: {
-      path: {
-        alliance_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/alliances/0/corporations',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/alliances/{alliance_id}/corporations',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -1180,6 +1173,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetAlliancesAllianceIdCorporationsHeaders',
+      'zGetAlliancesAllianceIdCorporationsPath',
+    ],
+    requestTypeExport: 'GetAlliancesAllianceIdCorporationsData',
+    responseTypeExport: 'GetAlliancesAllianceIdCorporationsResponse',
     responses: [
       {
         status: '200',
@@ -1189,9 +1189,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetAlliancesAllianceIdIcons',
+    arguments: {
+      path: {
+        alliance_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/alliances/0/icons',
+    },
     method: 'GET',
-    pathTemplate: '/alliances/{alliance_id}/icons',
+    operationId: 'GetAlliancesAllianceIdIcons',
     parameters: [
       {
         name: 'alliance_id',
@@ -1226,40 +1248,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetAlliancesAllianceIdIconsHeaders',
-      'zGetAlliancesAllianceIdIconsPath',
-    ],
-    requestTypeExport: 'GetAlliancesAllianceIdIconsData',
-    responseTypeExport: 'GetAlliancesAllianceIdIconsResponse',
-    arguments: {
-      path: {
-        alliance_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/alliances/0/icons',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/alliances/{alliance_id}/icons',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -1268,6 +1261,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetAlliancesAllianceIdIconsHeaders',
+      'zGetAlliancesAllianceIdIconsPath',
+    ],
+    requestTypeExport: 'GetAlliancesAllianceIdIconsData',
+    responseTypeExport: 'GetAlliancesAllianceIdIconsResponse',
     responses: [
       {
         status: '200',
@@ -1277,9 +1277,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersAccessListsDetail',
+    arguments: {
+      path: {
+        access_list_id: 0,
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-access.read_lists.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/access-lists/0',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/access-lists/{access_list_id}',
+    operationId: 'GetCharactersAccessListsDetail',
     parameters: [
       {
         name: 'access_list_id',
@@ -1322,9 +1345,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-access.read_lists.v1'],
+    pathTemplate: '/characters/{character_id}/access-lists/{access_list_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-access',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -1333,46 +1373,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersAccessListsDetailData',
     responseTypeExport: 'GetCharactersAccessListsDetailResponse',
-    arguments: {
-      path: {
-        access_list_id: 0,
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/access-lists/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-access',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -1382,9 +1382,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersAccessListsListing',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-access.read_lists.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/access-lists',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/access-lists',
+    operationId: 'GetCharactersAccessListsListing',
     parameters: [
       {
         name: 'character_id',
@@ -1419,9 +1441,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-access.read_lists.v1'],
+    pathTemplate: '/characters/{character_id}/access-lists',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-access',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -1430,45 +1469,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersAccessListsListingData',
     responseTypeExport: 'GetCharactersAccessListsListingResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/access-lists',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-access',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -1478,9 +1478,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdAgentsResearch',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_agents_research.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/agents_research',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/agents_research',
+    operationId: 'GetCharactersCharacterIdAgentsResearch',
     parameters: [
       {
         name: 'character_id',
@@ -1515,9 +1537,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_agents_research.v1'],
+    pathTemplate: '/characters/{character_id}/agents_research',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-industry',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -1526,45 +1565,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdAgentsResearchData',
     responseTypeExport: 'GetCharactersCharacterIdAgentsResearchResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/agents_research',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-industry',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -1574,9 +1574,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdAssets',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-assets.read_assets.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/assets?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/assets',
+    operationId: 'GetCharactersCharacterIdAssets',
     parameters: [
       {
         name: 'character_id',
@@ -1619,9 +1644,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-assets.read_assets.v1'],
+    pathTemplate: '/characters/{character_id}/assets',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-asset',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -1631,48 +1673,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdAssetsData',
     responseTypeExport: 'GetCharactersCharacterIdAssetsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/assets?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-asset',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -1682,9 +1682,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdAttributes',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-skills.read_skills.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/attributes',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/attributes',
+    operationId: 'GetCharactersCharacterIdAttributes',
     parameters: [
       {
         name: 'character_id',
@@ -1719,9 +1741,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-skills.read_skills.v1'],
+    pathTemplate: '/characters/{character_id}/attributes',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 120,
+          'x-client-cache-ttl': 120,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 120,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-detail',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -1730,45 +1769,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdAttributesData',
     responseTypeExport: 'GetCharactersCharacterIdAttributesResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/attributes',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 120,
-          'x-client-cache-ttl': 120,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 120,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-detail',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -1778,9 +1778,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdBlueprints',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_blueprints.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/blueprints?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/blueprints',
+    operationId: 'GetCharactersCharacterIdBlueprints',
     parameters: [
       {
         name: 'character_id',
@@ -1823,9 +1848,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_blueprints.v1'],
+    pathTemplate: '/characters/{character_id}/blueprints',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-industry',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -1835,48 +1877,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdBlueprintsData',
     responseTypeExport: 'GetCharactersCharacterIdBlueprintsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/blueprints?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-industry',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -1886,9 +1886,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdCalendar',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        from_event: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-calendar.read_calendar_events.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/calendar?from_event=0',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/calendar',
+    operationId: 'GetCharactersCharacterIdCalendar',
     parameters: [
       {
         name: 'character_id',
@@ -1931,9 +1956,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-calendar.read_calendar_events.v1'],
+    pathTemplate: '/characters/{character_id}/calendar',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -1943,48 +1985,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdCalendarData',
     responseTypeExport: 'GetCharactersCharacterIdCalendarResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        from_event: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/calendar?from_event=0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 5,
-          'x-client-cache-ttl': 5,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 5,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -1994,9 +1994,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdCalendarEventId',
+    arguments: {
+      path: {
+        character_id: 0,
+        event_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-calendar.read_calendar_events.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/calendar/0',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/calendar/{event_id}',
+    operationId: 'GetCharactersCharacterIdCalendarEventId',
     parameters: [
       {
         name: 'character_id',
@@ -2039,9 +2062,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-calendar.read_calendar_events.v1'],
+    pathTemplate: '/characters/{character_id}/calendar/{event_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -2050,46 +2090,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdCalendarEventIdData',
     responseTypeExport: 'GetCharactersCharacterIdCalendarEventIdResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        event_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/calendar/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 5,
-          'x-client-cache-ttl': 5,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 5,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -2099,9 +2099,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdCalendarEventIdAttendees',
+    arguments: {
+      path: {
+        character_id: 0,
+        event_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-calendar.read_calendar_events.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/calendar/0/attendees',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/calendar/{event_id}/attendees',
+    operationId: 'GetCharactersCharacterIdCalendarEventIdAttendees',
     parameters: [
       {
         name: 'character_id',
@@ -2144,9 +2167,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-calendar.read_calendar_events.v1'],
+    pathTemplate: '/characters/{character_id}/calendar/{event_id}/attendees',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -2155,46 +2195,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdCalendarEventIdAttendeesData',
     responseTypeExport: 'GetCharactersCharacterIdCalendarEventIdAttendeesResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        event_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/calendar/0/attendees',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 600,
-          'x-client-cache-ttl': 600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -2204,9 +2204,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdClones',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-clones.read_clones.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/clones',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/clones',
+    operationId: 'GetCharactersCharacterIdClones',
     parameters: [
       {
         name: 'character_id',
@@ -2241,9 +2263,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-clones.read_clones.v1'],
+    pathTemplate: '/characters/{character_id}/clones',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 120,
+          'x-client-cache-ttl': 120,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 120,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-location',
+        kind: 'declared',
+        maximumTokens: 1200,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -2252,45 +2291,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdClonesData',
     responseTypeExport: 'GetCharactersCharacterIdClonesResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/clones',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 120,
-          'x-client-cache-ttl': 120,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 120,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-location',
-        maximumTokens: 1200,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -2300,9 +2300,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdContacts',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_contacts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/contacts?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/contacts',
+    operationId: 'GetCharactersCharacterIdContacts',
     parameters: [
       {
         name: 'character_id',
@@ -2345,9 +2370,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_contacts.v1'],
+    pathTemplate: '/characters/{character_id}/contacts',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -2357,48 +2399,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdContactsData',
     responseTypeExport: 'GetCharactersCharacterIdContactsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/contacts?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -2408,9 +2408,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdContactsLabels',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_contacts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/contacts/labels',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/contacts/labels',
+    operationId: 'GetCharactersCharacterIdContactsLabels',
     parameters: [
       {
         name: 'character_id',
@@ -2445,9 +2467,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_contacts.v1'],
+    pathTemplate: '/characters/{character_id}/contacts/labels',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -2456,45 +2495,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdContactsLabelsData',
     responseTypeExport: 'GetCharactersCharacterIdContactsLabelsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/contacts/labels',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -2504,9 +2504,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdContracts',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-contracts.read_character_contracts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/contracts?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/contracts',
+    operationId: 'GetCharactersCharacterIdContracts',
     parameters: [
       {
         name: 'character_id',
@@ -2549,9 +2574,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-contracts.read_character_contracts.v1'],
+    pathTemplate: '/characters/{character_id}/contracts',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-contract',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -2561,48 +2603,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdContractsData',
     responseTypeExport: 'GetCharactersCharacterIdContractsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/contracts?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-contract',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -2612,9 +2612,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdContractsContractIdBids',
+    arguments: {
+      path: {
+        character_id: 0,
+        contract_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-contracts.read_character_contracts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/contracts/0/bids',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/contracts/{contract_id}/bids',
+    operationId: 'GetCharactersCharacterIdContractsContractIdBids',
     parameters: [
       {
         name: 'character_id',
@@ -2657,9 +2680,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-contracts.read_character_contracts.v1'],
+    pathTemplate: '/characters/{character_id}/contracts/{contract_id}/bids',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-contract',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -2668,46 +2708,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdContractsContractIdBidsData',
     responseTypeExport: 'GetCharactersCharacterIdContractsContractIdBidsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        contract_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/contracts/0/bids',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-contract',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -2717,9 +2717,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdContractsContractIdItems',
+    arguments: {
+      path: {
+        character_id: 0,
+        contract_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-contracts.read_character_contracts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/contracts/0/items',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/contracts/{contract_id}/items',
+    operationId: 'GetCharactersCharacterIdContractsContractIdItems',
     parameters: [
       {
         name: 'character_id',
@@ -2762,9 +2785,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-contracts.read_character_contracts.v1'],
+    pathTemplate: '/characters/{character_id}/contracts/{contract_id}/items',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-contract',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -2773,46 +2813,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdContractsContractIdItemsData',
     responseTypeExport: 'GetCharactersCharacterIdContractsContractIdItemsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        contract_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/contracts/0/items',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-contract',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -2822,9 +2822,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdCorporationhistory',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/corporationhistory',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/corporationhistory',
+    operationId: 'GetCharactersCharacterIdCorporationhistory',
     parameters: [
       {
         name: 'character_id',
@@ -2859,45 +2881,16 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetCharactersCharacterIdCorporationhistoryHeaders',
-      'zGetCharactersCharacterIdCorporationhistoryPath',
-    ],
-    requestTypeExport: 'GetCharactersCharacterIdCorporationhistoryData',
-    responseTypeExport: 'GetCharactersCharacterIdCorporationhistoryResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/corporationhistory',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/characters/{character_id}/corporationhistory',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 86400,
           'x-client-cache-ttl': 86400,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 86400,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -2906,6 +2899,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdCorporationhistoryHeaders',
+      'zGetCharactersCharacterIdCorporationhistoryPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdCorporationhistoryData',
+    responseTypeExport: 'GetCharactersCharacterIdCorporationhistoryResponse',
     responses: [
       {
         status: '200',
@@ -2915,9 +2915,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdFatigue',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_fatigue.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/fatigue',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/fatigue',
+    operationId: 'GetCharactersCharacterIdFatigue',
     parameters: [
       {
         name: 'character_id',
@@ -2952,9 +2974,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_fatigue.v1'],
+    pathTemplate: '/characters/{character_id}/fatigue',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-location',
+        kind: 'declared',
+        maximumTokens: 1200,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -2963,45 +3002,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdFatigueData',
     responseTypeExport: 'GetCharactersCharacterIdFatigueResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/fatigue',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-location',
-        maximumTokens: 1200,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -3011,9 +3011,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdFittings',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-fittings.read_fittings.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/fittings',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/fittings',
+    operationId: 'GetCharactersCharacterIdFittings',
     parameters: [
       {
         name: 'character_id',
@@ -3048,9 +3070,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fittings.read_fittings.v1'],
+    pathTemplate: '/characters/{character_id}/fittings',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'fitting',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -3059,45 +3098,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdFittingsData',
     responseTypeExport: 'GetCharactersCharacterIdFittingsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/fittings',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'fitting',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -3107,9 +3107,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdFleet',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.read_fleet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/fleet',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/fleet',
+    operationId: 'GetCharactersCharacterIdFleet',
     parameters: [
       {
         name: 'character_id',
@@ -3144,9 +3166,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.read_fleet.v1'],
+    pathTemplate: '/characters/{character_id}/fleet',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 60,
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 60,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'fleet',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -3155,45 +3194,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdFleetData',
     responseTypeExport: 'GetCharactersCharacterIdFleetResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/fleet',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 60,
-          'x-client-cache-ttl': 60,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 60,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'fleet',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -3203,9 +3203,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdFwStats',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_fw_stats.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/fw/stats',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/fw/stats',
+    operationId: 'GetCharactersCharacterIdFwStats',
     parameters: [
       {
         name: 'character_id',
@@ -3240,9 +3262,21 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_fw_stats.v1'],
+    pathTemplate: '/characters/{character_id}/fw/stats',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'factional-warfare',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -3251,40 +3285,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdFwStatsData',
     responseTypeExport: 'GetCharactersCharacterIdFwStatsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/fw/stats',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'factional-warfare',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -3294,9 +3294,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdImplants',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-clones.read_implants.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/implants',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/implants',
+    operationId: 'GetCharactersCharacterIdImplants',
     parameters: [
       {
         name: 'character_id',
@@ -3331,9 +3353,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-clones.read_implants.v1'],
+    pathTemplate: '/characters/{character_id}/implants',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 120,
+          'x-client-cache-ttl': 120,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 120,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-detail',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -3342,45 +3381,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdImplantsData',
     responseTypeExport: 'GetCharactersCharacterIdImplantsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/implants',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 120,
-          'x-client-cache-ttl': 120,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 120,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-detail',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -3390,9 +3390,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdIndustryJobs',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        include_completed: true,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-industry.read_character_jobs.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/industry/jobs?include_completed=true',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/industry/jobs',
+    operationId: 'GetCharactersCharacterIdIndustryJobs',
     parameters: [
       {
         name: 'character_id',
@@ -3435,9 +3460,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-industry.read_character_jobs.v1'],
+    pathTemplate: '/characters/{character_id}/industry/jobs',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-industry',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -3447,48 +3489,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdIndustryJobsData',
     responseTypeExport: 'GetCharactersCharacterIdIndustryJobsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        include_completed: true,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/industry/jobs?include_completed=true',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-industry',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -3498,9 +3498,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdKillmailsRecent',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-killmails.read_killmails.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/killmails/recent?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/killmails/recent',
+    operationId: 'GetCharactersCharacterIdKillmailsRecent',
     parameters: [
       {
         name: 'character_id',
@@ -3543,9 +3568,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-killmails.read_killmails.v1'],
+    pathTemplate: '/characters/{character_id}/killmails/recent',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-killmail',
+        kind: 'declared',
+        maximumTokens: 30,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -3555,48 +3597,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdKillmailsRecentData',
     responseTypeExport: 'GetCharactersCharacterIdKillmailsRecentResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/killmails/recent?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-killmail',
-        maximumTokens: 30,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -3606,9 +3606,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdLocation',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-location.read_location.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/location',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/location',
+    operationId: 'GetCharactersCharacterIdLocation',
     parameters: [
       {
         name: 'character_id',
@@ -3643,9 +3665,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-location.read_location.v1'],
+    pathTemplate: '/characters/{character_id}/location',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-location',
+        kind: 'declared',
+        maximumTokens: 1200,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -3654,45 +3693,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdLocationData',
     responseTypeExport: 'GetCharactersCharacterIdLocationResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/location',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 5,
-          'x-client-cache-ttl': 5,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 5,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-location',
-        maximumTokens: 1200,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -3702,9 +3702,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdLoyaltyPoints',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_loyalty.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/loyalty/points',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/loyalty/points',
+    operationId: 'GetCharactersCharacterIdLoyaltyPoints',
     parameters: [
       {
         name: 'character_id',
@@ -3739,9 +3761,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_loyalty.v1'],
+    pathTemplate: '/characters/{character_id}/loyalty/points',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-wallet',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -3750,45 +3789,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdLoyaltyPointsData',
     responseTypeExport: 'GetCharactersCharacterIdLoyaltyPointsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/loyalty/points',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-wallet',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -3798,9 +3798,35 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdMail',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        labels: [0],
+        last_mail_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-mail.read_mail.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/mail?labels=0&last_mail_id=0',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/mail',
+    operationId: 'GetCharactersCharacterIdMail',
     parameters: [
       {
         name: 'character_id',
@@ -3815,10 +3841,10 @@ const operationContracts = [
         placement: 'query',
         required: false,
         schema: {
-          type: 'array',
           items: {
             type: 'integer',
           },
+          type: 'array',
         },
       },
       {
@@ -3854,9 +3880,32 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-mail.read_mail.v1'],
+    pathTemplate: '/characters/{character_id}/mail',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 30,
+          'x-client-cache-ttl': 30,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 30,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 25,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'query',
+          maximumItems: 25,
+          path: ['labels'],
+        },
+      ],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -3866,55 +3915,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdMailData',
     responseTypeExport: 'GetCharactersCharacterIdMailResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        labels: [0],
-        last_mail_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/mail?labels=0&last_mail_id=0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 30,
-          'x-client-cache-ttl': 30,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 30,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: 25,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [
-        {
-          location: 'query',
-          path: ['labels'],
-          maximumItems: 25,
-        },
-      ],
-    },
     responses: [
       {
         status: '200',
@@ -3924,9 +3924,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdMailLabels',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-mail.read_mail.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/mail/labels',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/mail/labels',
+    operationId: 'GetCharactersCharacterIdMailLabels',
     parameters: [
       {
         name: 'character_id',
@@ -3961,9 +3983,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-mail.read_mail.v1'],
+    pathTemplate: '/characters/{character_id}/mail/labels',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 30,
+          'x-client-cache-ttl': 30,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 30,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -3972,45 +4011,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdMailLabelsData',
     responseTypeExport: 'GetCharactersCharacterIdMailLabelsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/mail/labels',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 30,
-          'x-client-cache-ttl': 30,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 30,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -4020,9 +4020,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdMailLists',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-mail.read_mail.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/mail/lists',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/mail/lists',
+    operationId: 'GetCharactersCharacterIdMailLists',
     parameters: [
       {
         name: 'character_id',
@@ -4057,9 +4079,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-mail.read_mail.v1'],
+    pathTemplate: '/characters/{character_id}/mail/lists',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 120,
+          'x-client-cache-ttl': 120,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 120,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -4068,45 +4107,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdMailListsData',
     responseTypeExport: 'GetCharactersCharacterIdMailListsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/mail/lists',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 120,
-          'x-client-cache-ttl': 120,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 120,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -4116,9 +4116,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdMailMailId',
+    arguments: {
+      path: {
+        character_id: 0,
+        mail_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-mail.read_mail.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/mail/0',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/mail/{mail_id}',
+    operationId: 'GetCharactersCharacterIdMailMailId',
     parameters: [
       {
         name: 'character_id',
@@ -4161,9 +4184,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-mail.read_mail.v1'],
+    pathTemplate: '/characters/{character_id}/mail/{mail_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 30,
+          'x-client-cache-ttl': 30,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 30,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -4172,46 +4212,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdMailMailIdData',
     responseTypeExport: 'GetCharactersCharacterIdMailMailIdResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        mail_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/mail/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 30,
-          'x-client-cache-ttl': 30,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 30,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -4221,9 +4221,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdMedals',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_medals.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/medals',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/medals',
+    operationId: 'GetCharactersCharacterIdMedals',
     parameters: [
       {
         name: 'character_id',
@@ -4258,9 +4280,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_medals.v1'],
+    pathTemplate: '/characters/{character_id}/medals',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-detail',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -4269,45 +4308,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdMedalsData',
     responseTypeExport: 'GetCharactersCharacterIdMedalsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/medals',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-detail',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -4317,9 +4317,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdMining',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-industry.read_character_mining.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/mining?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/mining',
+    operationId: 'GetCharactersCharacterIdMining',
     parameters: [
       {
         name: 'character_id',
@@ -4362,9 +4387,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-industry.read_character_mining.v1'],
+    pathTemplate: '/characters/{character_id}/mining',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-industry',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -4374,6 +4416,396 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdMiningData',
     responseTypeExport: 'GetCharactersCharacterIdMiningResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetCharactersCharacterIdMiningResponse',
+      },
+    ],
+  },
+  {
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_notifications.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/notifications',
+    },
+    method: 'GET',
+    operationId: 'GetCharactersCharacterIdNotifications',
+    parameters: [
+      {
+        name: 'character_id',
+        placement: 'path',
+        required: true,
+        schema: {
+          type: 'integer',
+        },
+      },
+      {
+        name: 'If-Modified-Since',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'If-None-Match',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'X-Tenant',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+    ],
+    pathTemplate: '/characters/{character_id}/notifications',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-notification',
+        kind: 'declared',
+        maximumTokens: 15,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdNotificationsHeaders',
+      'zGetCharactersCharacterIdNotificationsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdNotificationsData',
+    responseTypeExport: 'GetCharactersCharacterIdNotificationsResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetCharactersCharacterIdNotificationsResponse',
+      },
+    ],
+  },
+  {
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_notifications.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/notifications/contacts',
+    },
+    method: 'GET',
+    operationId: 'GetCharactersCharacterIdNotificationsContacts',
+    parameters: [
+      {
+        name: 'character_id',
+        placement: 'path',
+        required: true,
+        schema: {
+          type: 'integer',
+        },
+      },
+      {
+        name: 'If-Modified-Since',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'If-None-Match',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'X-Tenant',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+    ],
+    pathTemplate: '/characters/{character_id}/notifications/contacts',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdNotificationsContactsHeaders',
+      'zGetCharactersCharacterIdNotificationsContactsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdNotificationsContactsData',
+    responseTypeExport: 'GetCharactersCharacterIdNotificationsContactsResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetCharactersCharacterIdNotificationsContactsResponse',
+      },
+    ],
+  },
+  {
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-location.read_online.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/online',
+    },
+    method: 'GET',
+    operationId: 'GetCharactersCharacterIdOnline',
+    parameters: [
+      {
+        name: 'character_id',
+        placement: 'path',
+        required: true,
+        schema: {
+          type: 'integer',
+        },
+      },
+      {
+        name: 'If-Modified-Since',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'If-None-Match',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'X-Tenant',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+    ],
+    pathTemplate: '/characters/{character_id}/online',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 60,
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 60,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-location',
+        kind: 'declared',
+        maximumTokens: 1200,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdOnlineHeaders',
+      'zGetCharactersCharacterIdOnlinePath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdOnlineData',
+    responseTypeExport: 'GetCharactersCharacterIdOnlineResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetCharactersCharacterIdOnlineResponse',
+      },
+    ],
+  },
+  {
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-markets.read_character_orders.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/orders',
+    },
+    method: 'GET',
+    operationId: 'GetCharactersCharacterIdOrders',
+    parameters: [
+      {
+        name: 'character_id',
+        placement: 'path',
+        required: true,
+        schema: {
+          type: 'integer',
+        },
+      },
+      {
+        name: 'If-Modified-Since',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'If-None-Match',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'X-Tenant',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+    ],
+    pathTemplate: '/characters/{character_id}/orders',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 1200,
+          'x-client-cache-ttl': 1200,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 1200,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdOrdersHeaders',
+      'zGetCharactersCharacterIdOrdersPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdOrdersData',
+    responseTypeExport: 'GetCharactersCharacterIdOrdersResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetCharactersCharacterIdOrdersResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
         character_id: 0,
@@ -4387,428 +4819,21 @@ const operationContracts = [
         'X-Tenant': 'x',
       },
     },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/mining?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 600,
-          'x-client-cache-ttl': 600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-industry',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetCharactersCharacterIdMiningResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetCharactersCharacterIdNotifications',
-    method: 'GET',
-    pathTemplate: '/characters/{character_id}/notifications',
-    parameters: [
-      {
-        name: 'character_id',
-        placement: 'path',
-        required: true,
-        schema: {
-          type: 'integer',
-        },
-      },
-      {
-        name: 'If-Modified-Since',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'If-None-Match',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'X-Tenant',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-    ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_notifications.v1'],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetCharactersCharacterIdNotificationsHeaders',
-      'zGetCharactersCharacterIdNotificationsPath',
-    ],
-    requestTypeExport: 'GetCharactersCharacterIdNotificationsData',
-    responseTypeExport: 'GetCharactersCharacterIdNotificationsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/notifications',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 600,
-          'x-client-cache-ttl': 600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-notification',
-        maximumTokens: 15,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetCharactersCharacterIdNotificationsResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetCharactersCharacterIdNotificationsContacts',
-    method: 'GET',
-    pathTemplate: '/characters/{character_id}/notifications/contacts',
-    parameters: [
-      {
-        name: 'character_id',
-        placement: 'path',
-        required: true,
-        schema: {
-          type: 'integer',
-        },
-      },
-      {
-        name: 'If-Modified-Since',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'If-None-Match',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'X-Tenant',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-    ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_notifications.v1'],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetCharactersCharacterIdNotificationsContactsHeaders',
-      'zGetCharactersCharacterIdNotificationsContactsPath',
-    ],
-    requestTypeExport: 'GetCharactersCharacterIdNotificationsContactsData',
-    responseTypeExport: 'GetCharactersCharacterIdNotificationsContactsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/notifications/contacts',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 600,
-          'x-client-cache-ttl': 600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetCharactersCharacterIdNotificationsContactsResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetCharactersCharacterIdOnline',
-    method: 'GET',
-    pathTemplate: '/characters/{character_id}/online',
-    parameters: [
-      {
-        name: 'character_id',
-        placement: 'path',
-        required: true,
-        schema: {
-          type: 'integer',
-        },
-      },
-      {
-        name: 'If-Modified-Since',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'If-None-Match',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'X-Tenant',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-    ],
-    authentication: {
-      required: true,
-      scopes: ['esi-location.read_online.v1'],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetCharactersCharacterIdOnlineHeaders',
-      'zGetCharactersCharacterIdOnlinePath',
-    ],
-    requestTypeExport: 'GetCharactersCharacterIdOnlineData',
-    responseTypeExport: 'GetCharactersCharacterIdOnlineResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/online',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 60,
-          'x-client-cache-ttl': 60,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 60,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-location',
-        maximumTokens: 1200,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetCharactersCharacterIdOnlineResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetCharactersCharacterIdOrders',
-    method: 'GET',
-    pathTemplate: '/characters/{character_id}/orders',
-    parameters: [
-      {
-        name: 'character_id',
-        placement: 'path',
-        required: true,
-        schema: {
-          type: 'integer',
-        },
-      },
-      {
-        name: 'If-Modified-Since',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'If-None-Match',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'X-Tenant',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-    ],
     authentication: {
       required: true,
       scopes: ['esi-markets.read_character_orders.v1'],
     },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetCharactersCharacterIdOrdersHeaders',
-      'zGetCharactersCharacterIdOrdersPath',
-    ],
-    requestTypeExport: 'GetCharactersCharacterIdOrdersData',
-    responseTypeExport: 'GetCharactersCharacterIdOrdersResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
     expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/orders',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+      method: 'GET',
+      path: '/characters/0/orders/history?page=1',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 1200,
-          'x-client-cache-ttl': 1200,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 1200,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'legacy-only',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetCharactersCharacterIdOrdersResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetCharactersCharacterIdOrdersHistory',
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/orders/history',
+    operationId: 'GetCharactersCharacterIdOrdersHistory',
     parameters: [
       {
         name: 'character_id',
@@ -4851,9 +4876,23 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-markets.read_character_orders.v1'],
+    pathTemplate: '/characters/{character_id}/orders/history',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -4863,45 +4902,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdOrdersHistoryData',
     responseTypeExport: 'GetCharactersCharacterIdOrdersHistoryResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/orders/history?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'legacy-only',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -4911,9 +4911,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdPlanets',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-planets.manage_planets.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/planets',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/planets',
+    operationId: 'GetCharactersCharacterIdPlanets',
     parameters: [
       {
         name: 'character_id',
@@ -4948,9 +4970,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-planets.manage_planets.v1'],
+    pathTemplate: '/characters/{character_id}/planets',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-industry',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -4959,45 +4998,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdPlanetsData',
     responseTypeExport: 'GetCharactersCharacterIdPlanetsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/planets',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 600,
-          'x-client-cache-ttl': 600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-industry',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -5007,9 +5007,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdPlanetsPlanetId',
+    arguments: {
+      path: {
+        character_id: 0,
+        planet_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-planets.manage_planets.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/planets/0',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/planets/{planet_id}',
+    operationId: 'GetCharactersCharacterIdPlanetsPlanetId',
     parameters: [
       {
         name: 'character_id',
@@ -5052,9 +5075,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-planets.manage_planets.v1'],
+    pathTemplate: '/characters/{character_id}/planets/{planet_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-industry',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -5063,46 +5103,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdPlanetsPlanetIdData',
     responseTypeExport: 'GetCharactersCharacterIdPlanetsPlanetIdResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        planet_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/planets/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 600,
-          'x-client-cache-ttl': 600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-industry',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -5112,9 +5112,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdPortrait',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/portrait',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/portrait',
+    operationId: 'GetCharactersCharacterIdPortrait',
     parameters: [
       {
         name: 'character_id',
@@ -5149,9 +5171,21 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
+    pathTemplate: '/characters/{character_id}/portrait',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-detail',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -5160,40 +5194,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdPortraitData',
     responseTypeExport: 'GetCharactersCharacterIdPortraitResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/portrait',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-detail',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -5203,9 +5203,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdRoles',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_corporation_roles.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/roles',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/roles',
+    operationId: 'GetCharactersCharacterIdRoles',
     parameters: [
       {
         name: 'character_id',
@@ -5240,9 +5262,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_corporation_roles.v1'],
+    pathTemplate: '/characters/{character_id}/roles',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-detail',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -5251,45 +5290,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdRolesData',
     responseTypeExport: 'GetCharactersCharacterIdRolesResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/roles',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-detail',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -5299,9 +5299,36 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdSearch',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        categories: ['agent'],
+        search: 'xxx',
+        strict: true,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-search.search_structures.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/search?categories=agent&search=xxx&strict=true',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/search',
+    operationId: 'GetCharactersCharacterIdSearch',
     parameters: [
       {
         name: 'character_id',
@@ -5316,10 +5343,10 @@ const operationContracts = [
         placement: 'query',
         required: true,
         schema: {
-          type: 'array',
           items: {
             type: 'string',
           },
+          type: 'array',
         },
       },
       {
@@ -5363,51 +5390,16 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-search.search_structures.v1'],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetCharactersCharacterIdSearchHeaders',
-      'zGetCharactersCharacterIdSearchPath',
-      'zGetCharactersCharacterIdSearchQuery',
-    ],
-    requestTypeExport: 'GetCharactersCharacterIdSearchData',
-    responseTypeExport: 'GetCharactersCharacterIdSearchResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        categories: ['agent'],
-        search: 'xxx',
-        strict: true,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/search?categories=agent&search=xxx&strict=true',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/characters/{character_id}/search',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: 11,
@@ -5417,11 +5409,19 @@ const operationContracts = [
       requestArrayLimits: [
         {
           location: 'query',
-          path: ['categories'],
           maximumItems: 11,
+          path: ['categories'],
         },
       ],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdSearchHeaders',
+      'zGetCharactersCharacterIdSearchPath',
+      'zGetCharactersCharacterIdSearchQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdSearchData',
+    responseTypeExport: 'GetCharactersCharacterIdSearchResponse',
     responses: [
       {
         status: '200',
@@ -5431,9 +5431,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdShip',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-location.read_ship_type.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/ship',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/ship',
+    operationId: 'GetCharactersCharacterIdShip',
     parameters: [
       {
         name: 'character_id',
@@ -5468,9 +5490,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-location.read_ship_type.v1'],
+    pathTemplate: '/characters/{character_id}/ship',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-location',
+        kind: 'declared',
+        maximumTokens: 1200,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -5479,45 +5518,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdShipData',
     responseTypeExport: 'GetCharactersCharacterIdShipResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/ship',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 5,
-          'x-client-cache-ttl': 5,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 5,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-location',
-        maximumTokens: 1200,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -5527,9 +5527,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdSkillqueue',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-skills.read_skillqueue.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/skillqueue',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/skillqueue',
+    operationId: 'GetCharactersCharacterIdSkillqueue',
     parameters: [
       {
         name: 'character_id',
@@ -5564,9 +5586,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-skills.read_skillqueue.v1'],
+    pathTemplate: '/characters/{character_id}/skillqueue',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-detail',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -5575,45 +5614,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdSkillqueueData',
     responseTypeExport: 'GetCharactersCharacterIdSkillqueueResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/skillqueue',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 60,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 60,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-detail',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -5623,9 +5623,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdSkills',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-skills.read_skills.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/skills',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/skills',
+    operationId: 'GetCharactersCharacterIdSkills',
     parameters: [
       {
         name: 'character_id',
@@ -5660,9 +5682,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-skills.read_skills.v1'],
+    pathTemplate: '/characters/{character_id}/skills',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-detail',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -5671,45 +5710,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdSkillsData',
     responseTypeExport: 'GetCharactersCharacterIdSkillsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/skills',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 60,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 60,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-detail',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -5719,9 +5719,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdStandings',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_standings.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/standings',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/standings',
+    operationId: 'GetCharactersCharacterIdStandings',
     parameters: [
       {
         name: 'character_id',
@@ -5756,9 +5778,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_standings.v1'],
+    pathTemplate: '/characters/{character_id}/standings',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -5767,45 +5806,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdStandingsData',
     responseTypeExport: 'GetCharactersCharacterIdStandingsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/standings',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -5815,9 +5815,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdTitles',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_titles.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/titles',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/titles',
+    operationId: 'GetCharactersCharacterIdTitles',
     parameters: [
       {
         name: 'character_id',
@@ -5852,9 +5874,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_titles.v1'],
+    pathTemplate: '/characters/{character_id}/titles',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-detail',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -5863,45 +5902,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdTitlesData',
     responseTypeExport: 'GetCharactersCharacterIdTitlesResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/titles',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-detail',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -5911,9 +5911,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdWallet',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-wallet.read_character_wallet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/wallet',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/wallet',
+    operationId: 'GetCharactersCharacterIdWallet',
     parameters: [
       {
         name: 'character_id',
@@ -5948,9 +5970,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-wallet.read_character_wallet.v1'],
+    pathTemplate: '/characters/{character_id}/wallet',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 120,
+          'x-client-cache-ttl': 120,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 120,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-wallet',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -5959,45 +5998,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdWalletData',
     responseTypeExport: 'GetCharactersCharacterIdWalletResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/wallet',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 120,
-          'x-client-cache-ttl': 120,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 120,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-wallet',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -6007,9 +6007,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdWalletJournal',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-wallet.read_character_wallet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/wallet/journal?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/wallet/journal',
+    operationId: 'GetCharactersCharacterIdWalletJournal',
     parameters: [
       {
         name: 'character_id',
@@ -6052,9 +6077,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-wallet.read_character_wallet.v1'],
+    pathTemplate: '/characters/{character_id}/wallet/journal',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-wallet',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -6064,48 +6106,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdWalletJournalData',
     responseTypeExport: 'GetCharactersCharacterIdWalletJournalResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/wallet/journal?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-wallet',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -6115,9 +6115,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCharacterIdWalletTransactions',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        from_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-wallet.read_character_wallet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/wallet/transactions?from_id=0',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/wallet/transactions',
+    operationId: 'GetCharactersCharacterIdWalletTransactions',
     parameters: [
       {
         name: 'character_id',
@@ -6160,9 +6185,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-wallet.read_character_wallet.v1'],
+    pathTemplate: '/characters/{character_id}/wallet/transactions',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-wallet',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -6172,48 +6214,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCharacterIdWalletTransactionsData',
     responseTypeExport: 'GetCharactersCharacterIdWalletTransactionsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        from_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/wallet/transactions?from_id=0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-wallet',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -6223,9 +6223,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCosmeticsSkinr',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi.cosmetic.char:read'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/cosmetics/skinr',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/cosmetics/skinr',
+    operationId: 'GetCharactersCosmeticsSkinr',
     parameters: [
       {
         name: 'character_id',
@@ -6260,9 +6282,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi.cosmetic.char:read'],
+    pathTemplate: '/characters/{character_id}/cosmetics/skinr',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-skinr',
+        kind: 'declared',
+        maximumTokens: 30,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -6271,45 +6310,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCosmeticsSkinrData',
     responseTypeExport: 'GetCharactersCosmeticsSkinrResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/cosmetics/skinr',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-skinr',
-        maximumTokens: 30,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -6319,9 +6319,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersCosmeticsSkinrComponents',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi.cosmetic.char:read'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/cosmetics/skinr/components',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/cosmetics/skinr/components',
+    operationId: 'GetCharactersCosmeticsSkinrComponents',
     parameters: [
       {
         name: 'character_id',
@@ -6356,9 +6378,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi.cosmetic.char:read'],
+    pathTemplate: '/characters/{character_id}/cosmetics/skinr/components',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-skinr',
+        kind: 'declared',
+        maximumTokens: 30,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -6367,45 +6406,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersCosmeticsSkinrComponentsData',
     responseTypeExport: 'GetCharactersCosmeticsSkinrComponentsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/cosmetics/skinr/components',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-skinr',
-        maximumTokens: 30,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -6415,9 +6415,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersDetail',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}',
+    operationId: 'GetCharactersDetail',
     parameters: [
       {
         name: 'character_id',
@@ -6452,36 +6474,9 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetCharactersDetailHeaders', 'zGetCharactersDetailPath'],
-    requestTypeExport: 'GetCharactersDetailData',
-    responseTypeExport: 'GetCharactersDetailResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/characters/{character_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 86400,
           'x-cache-mode': 'ttl-based',
@@ -6489,6 +6484,7 @@ const operationContracts = [
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 86400,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -6497,6 +6493,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetCharactersDetailHeaders', 'zGetCharactersDetailPath'],
+    requestTypeExport: 'GetCharactersDetailData',
+    responseTypeExport: 'GetCharactersDetailResponse',
     responses: [
       {
         status: '200',
@@ -6506,9 +6506,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersFreelanceJobsListing',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_freelance_jobs.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/freelance-jobs',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/freelance-jobs',
+    operationId: 'GetCharactersFreelanceJobsListing',
     parameters: [
       {
         name: 'character_id',
@@ -6543,9 +6565,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_freelance_jobs.v1'],
+    pathTemplate: '/characters/{character_id}/freelance-jobs',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-freelance-job',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -6554,45 +6593,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersFreelanceJobsListingData',
     responseTypeExport: 'GetCharactersFreelanceJobsListingResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/freelance-jobs',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 60,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 60,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-freelance-job',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -6602,9 +6602,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersFreelanceJobsParticipation',
+    arguments: {
+      path: {
+        character_id: 0,
+        job_id: '123e4567-e89b-42d3-a456-426614174000',
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_freelance_jobs.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/freelance-jobs/123e4567-e89b-42d3-a456-426614174000/participation',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/freelance-jobs/{job_id}/participation',
+    operationId: 'GetCharactersFreelanceJobsParticipation',
     parameters: [
       {
         name: 'character_id',
@@ -6647,9 +6670,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_freelance_jobs.v1'],
+    pathTemplate: '/characters/{character_id}/freelance-jobs/{job_id}/participation',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-freelance-job',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -6658,46 +6698,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersFreelanceJobsParticipationData',
     responseTypeExport: 'GetCharactersFreelanceJobsParticipationResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        job_id: '123e4567-e89b-42d3-a456-426614174000',
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/freelance-jobs/123e4567-e89b-42d3-a456-426614174000/participation',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 60,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 60,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-freelance-job',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -6707,9 +6707,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersMercenaryTacticalOperationsDetail',
+    arguments: {
+      path: {
+        character_id: 0,
+        operation_id: '123e4567-e89b-42d3-a456-426614174000',
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-activities.read_character.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/mercenary-tactical-operations/123e4567-e89b-42d3-a456-426614174000',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/mercenary-tactical-operations/{operation_id}',
+    operationId: 'GetCharactersMercenaryTacticalOperationsDetail',
     parameters: [
       {
         name: 'character_id',
@@ -6752,9 +6775,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-activities.read_character.v1'],
+    pathTemplate: '/characters/{character_id}/mercenary-tactical-operations/{operation_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-activity',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -6763,46 +6803,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersMercenaryTacticalOperationsDetailData',
     responseTypeExport: 'GetCharactersMercenaryTacticalOperationsDetailResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        operation_id: '123e4567-e89b-42d3-a456-426614174000',
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/mercenary-tactical-operations/123e4567-e89b-42d3-a456-426614174000',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-activity',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -6812,9 +6812,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersMercenaryTacticalOperationsListing',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-activities.read_character.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/mercenary-tactical-operations',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/mercenary-tactical-operations',
+    operationId: 'GetCharactersMercenaryTacticalOperationsListing',
     parameters: [
       {
         name: 'character_id',
@@ -6849,9 +6871,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-activities.read_character.v1'],
+    pathTemplate: '/characters/{character_id}/mercenary-tactical-operations',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-activity',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -6860,45 +6899,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersMercenaryTacticalOperationsListingData',
     responseTypeExport: 'GetCharactersMercenaryTacticalOperationsListingResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/mercenary-tactical-operations',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-activity',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -6908,9 +6908,36 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersMilitaryCampaignsObjectivesListing',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        after: '',
+        before: '',
+        limit: 10,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi.activity.char:read'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/military-campaigns/objectives?after=&before=&limit=10',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/military-campaigns/objectives',
+    operationId: 'GetCharactersMilitaryCampaignsObjectivesListing',
     parameters: [
       {
         name: 'character_id',
@@ -6972,9 +6999,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi.activity.char:read'],
+    pathTemplate: '/characters/{character_id}/military-campaigns/objectives',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-military-campaign',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -6984,50 +7028,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersMilitaryCampaignsObjectivesListingData',
     responseTypeExport: 'GetCharactersMilitaryCampaignsObjectivesListingResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        after: '',
-        before: '',
-        limit: 10,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/military-campaigns/objectives?after=&before=&limit=10',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 60,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 60,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-military-campaign',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -7037,9 +7037,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersMilitaryCampaignsObjectivesParticipation',
+    arguments: {
+      path: {
+        character_id: 0,
+        objective_id: '123e4567-e89b-42d3-a456-426614174000',
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi.activity.char:read'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/military-campaigns/objectives/123e4567-e89b-42d3-a456-426614174000',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/military-campaigns/objectives/{objective_id}',
+    operationId: 'GetCharactersMilitaryCampaignsObjectivesParticipation',
     parameters: [
       {
         name: 'character_id',
@@ -7082,9 +7105,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi.activity.char:read'],
+    pathTemplate: '/characters/{character_id}/military-campaigns/objectives/{objective_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-military-campaign',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -7093,46 +7133,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersMilitaryCampaignsObjectivesParticipationData',
     responseTypeExport: 'GetCharactersMilitaryCampaignsObjectivesParticipationResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        objective_id: '123e4567-e89b-42d3-a456-426614174000',
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/military-campaigns/objectives/123e4567-e89b-42d3-a456-426614174000',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 60,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 60,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-military-campaign',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -7142,9 +7142,36 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersParagonHubSkinr',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        after: '',
+        before: '',
+        limit: 10,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi.cosmetic.char:read'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/paragon-hub/skinr?after=&before=&limit=10',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/paragon-hub/skinr',
+    operationId: 'GetCharactersParagonHubSkinr',
     parameters: [
       {
         name: 'character_id',
@@ -7206,9 +7233,25 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi.cosmetic.char:read'],
+    pathTemplate: '/characters/{character_id}/paragon-hub/skinr',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+          'x-tombstone-ttl': 604800,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-paragon-hub',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -7218,49 +7261,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersParagonHubSkinrData',
     responseTypeExport: 'GetCharactersParagonHubSkinrResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        after: '',
-        before: '',
-        limit: 10,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/paragon-hub/skinr?after=&before=&limit=10',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-mode': 'event-based',
-          'x-server-cache-mode': 'event-based',
-          'x-tombstone-ttl': 604800,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-paragon-hub',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -7270,9 +7270,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersStructuresMercenaryDensDetail',
+    arguments: {
+      path: {
+        character_id: 0,
+        mercenary_den_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-structures.read_character.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/structures/mercenary-dens/0',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/structures/mercenary-dens/{mercenary_den_id}',
+    operationId: 'GetCharactersStructuresMercenaryDensDetail',
     parameters: [
       {
         name: 'character_id',
@@ -7315,9 +7338,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-structures.read_character.v1'],
+    pathTemplate: '/characters/{character_id}/structures/mercenary-dens/{mercenary_den_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-structure',
+        kind: 'declared',
+        maximumTokens: 30,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -7326,46 +7366,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersStructuresMercenaryDensDetailData',
     responseTypeExport: 'GetCharactersStructuresMercenaryDensDetailResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        mercenary_den_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/structures/mercenary-dens/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-structure',
-        maximumTokens: 30,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -7375,9 +7375,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCharactersStructuresMercenaryDensListing',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-structures.read_character.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/characters/0/structures/mercenary-dens',
+    },
     method: 'GET',
-    pathTemplate: '/characters/{character_id}/structures/mercenary-dens',
+    operationId: 'GetCharactersStructuresMercenaryDensListing',
     parameters: [
       {
         name: 'character_id',
@@ -7412,9 +7434,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-structures.read_character.v1'],
+    pathTemplate: '/characters/{character_id}/structures/mercenary-dens',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-structure',
+        kind: 'declared',
+        maximumTokens: 30,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -7423,45 +7462,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCharactersStructuresMercenaryDensListingData',
     responseTypeExport: 'GetCharactersStructuresMercenaryDensListingResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/characters/0/structures/mercenary-dens',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-structure',
-        maximumTokens: 30,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -7471,9 +7471,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetContractsPublicBidsContractId',
+    arguments: {
+      path: {
+        contract_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/contracts/public/bids/0?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/contracts/public/bids/{contract_id}',
+    operationId: 'GetContractsPublicBidsContractId',
     parameters: [
       {
         name: 'contract_id',
@@ -7516,9 +7541,23 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
+    pathTemplate: '/contracts/public/bids/{contract_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -7528,45 +7567,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetContractsPublicBidsContractIdData',
     responseTypeExport: 'GetContractsPublicBidsContractIdResponse',
-    arguments: {
-      path: {
-        contract_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/contracts/public/bids/0?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'legacy-only',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -7581,9 +7581,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetContractsPublicItemsContractId',
+    arguments: {
+      path: {
+        contract_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/contracts/public/items/0?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/contracts/public/items/{contract_id}',
+    operationId: 'GetContractsPublicItemsContractId',
     parameters: [
       {
         name: 'contract_id',
@@ -7626,9 +7651,23 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
+    pathTemplate: '/contracts/public/items/{contract_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -7638,45 +7677,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetContractsPublicItemsContractIdData',
     responseTypeExport: 'GetContractsPublicItemsContractIdResponse',
-    arguments: {
-      path: {
-        contract_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/contracts/public/items/0?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'legacy-only',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -7691,9 +7691,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetContractsPublicRegionId',
+    arguments: {
+      path: {
+        region_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/contracts/public/0?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/contracts/public/{region_id}',
+    operationId: 'GetContractsPublicRegionId',
     parameters: [
       {
         name: 'region_id',
@@ -7736,9 +7761,23 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
+    pathTemplate: '/contracts/public/{region_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 1800,
+          'x-client-cache-ttl': 1800,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 1800,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -7748,45 +7787,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetContractsPublicRegionIdData',
     responseTypeExport: 'GetContractsPublicRegionIdResponse',
-    arguments: {
-      path: {
-        region_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/contracts/public/0?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 1800,
-          'x-client-cache-ttl': 1800,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 1800,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'legacy-only',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -7796,9 +7796,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationCorporationIdMiningExtractions',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-industry.read_corporation_mining.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporation/0/mining/extractions?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporation/{corporation_id}/mining/extractions',
+    operationId: 'GetCorporationCorporationIdMiningExtractions',
     parameters: [
       {
         name: 'corporation_id',
@@ -7841,9 +7866,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-industry.read_corporation_mining.v1'],
+    pathTemplate: '/corporation/{corporation_id}/mining/extractions',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 1800,
+          'x-client-cache-ttl': 1800,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 1800,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-industry',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -7853,6 +7895,15 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationCorporationIdMiningExtractionsData',
     responseTypeExport: 'GetCorporationCorporationIdMiningExtractionsResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetCorporationCorporationIdMiningExtractionsResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
         corporation_id: 0,
@@ -7866,47 +7917,21 @@ const operationContracts = [
         'X-Tenant': 'x',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi-industry.read_corporation_mining.v1'],
+    },
     expectedRequest: {
-      method: 'GET',
-      path: '/corporation/0/mining/extractions?page=1',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+      method: 'GET',
+      path: '/corporation/0/mining/observers?page=1',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 1800,
-          'x-client-cache-ttl': 1800,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 1800,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-industry',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetCorporationCorporationIdMiningExtractionsResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetCorporationCorporationIdMiningObservers',
     method: 'GET',
-    pathTemplate: '/corporation/{corporation_id}/mining/observers',
+    operationId: 'GetCorporationCorporationIdMiningObservers',
     parameters: [
       {
         name: 'corporation_id',
@@ -7949,9 +7974,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-industry.read_corporation_mining.v1'],
+    pathTemplate: '/corporation/{corporation_id}/mining/observers',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-industry',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -7961,9 +8003,19 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationCorporationIdMiningObserversData',
     responseTypeExport: 'GetCorporationCorporationIdMiningObserversResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetCorporationCorporationIdMiningObserversResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
         corporation_id: 0,
+        observer_id: 0,
       },
       query: {
         page: 1,
@@ -7974,47 +8026,21 @@ const operationContracts = [
         'X-Tenant': 'x',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi-industry.read_corporation_mining.v1'],
+    },
     expectedRequest: {
-      method: 'GET',
-      path: '/corporation/0/mining/observers?page=1',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+      method: 'GET',
+      path: '/corporation/0/mining/observers/0?page=1',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-industry',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetCorporationCorporationIdMiningObserversResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetCorporationCorporationIdMiningObserversObserverId',
     method: 'GET',
-    pathTemplate: '/corporation/{corporation_id}/mining/observers/{observer_id}',
+    operationId: 'GetCorporationCorporationIdMiningObserversObserverId',
     parameters: [
       {
         name: 'corporation_id',
@@ -8065,9 +8091,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-industry.read_corporation_mining.v1'],
+    pathTemplate: '/corporation/{corporation_id}/mining/observers/{observer_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-industry',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -8077,49 +8120,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationCorporationIdMiningObserversObserverIdData',
     responseTypeExport: 'GetCorporationCorporationIdMiningObserversObserverIdResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-        observer_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporation/0/mining/observers/0?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-industry',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -8129,9 +8129,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationId',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}',
+    operationId: 'GetCorporationsCorporationId',
     parameters: [
       {
         name: 'corporation_id',
@@ -8166,39 +8188,9 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetCorporationsCorporationIdHeaders',
-      'zGetCorporationsCorporationIdPath',
-    ],
-    requestTypeExport: 'GetCorporationsCorporationIdData',
-    responseTypeExport: 'GetCorporationsCorporationIdResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/corporations/{corporation_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-cache-mode': 'ttl-based',
@@ -8206,6 +8198,7 @@ const operationContracts = [
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -8214,6 +8207,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdHeaders',
+      'zGetCorporationsCorporationIdPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdData',
+    responseTypeExport: 'GetCorporationsCorporationIdResponse',
     responses: [
       {
         status: '200',
@@ -8223,9 +8223,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdAlliancehistory',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/alliancehistory',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/alliancehistory',
+    operationId: 'GetCorporationsCorporationIdAlliancehistory',
     parameters: [
       {
         name: 'corporation_id',
@@ -8260,45 +8282,16 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetCorporationsCorporationIdAlliancehistoryHeaders',
-      'zGetCorporationsCorporationIdAlliancehistoryPath',
-    ],
-    requestTypeExport: 'GetCorporationsCorporationIdAlliancehistoryData',
-    responseTypeExport: 'GetCorporationsCorporationIdAlliancehistoryResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/alliancehistory',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/corporations/{corporation_id}/alliancehistory',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -8307,6 +8300,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdAlliancehistoryHeaders',
+      'zGetCorporationsCorporationIdAlliancehistoryPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdAlliancehistoryData',
+    responseTypeExport: 'GetCorporationsCorporationIdAlliancehistoryResponse',
     responses: [
       {
         status: '200',
@@ -8316,9 +8316,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdAssets',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-assets.read_corporation_assets.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/assets?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/assets',
+    operationId: 'GetCorporationsCorporationIdAssets',
     parameters: [
       {
         name: 'corporation_id',
@@ -8361,9 +8386,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-assets.read_corporation_assets.v1'],
+    pathTemplate: '/corporations/{corporation_id}/assets',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-asset',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -8373,48 +8415,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdAssetsData',
     responseTypeExport: 'GetCorporationsCorporationIdAssetsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/assets?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-asset',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -8424,9 +8424,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdBlueprints',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_blueprints.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/blueprints?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/blueprints',
+    operationId: 'GetCorporationsCorporationIdBlueprints',
     parameters: [
       {
         name: 'corporation_id',
@@ -8469,9 +8494,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_blueprints.v1'],
+    pathTemplate: '/corporations/{corporation_id}/blueprints',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-industry',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -8481,48 +8523,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdBlueprintsData',
     responseTypeExport: 'GetCorporationsCorporationIdBlueprintsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/blueprints?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-industry',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -8532,9 +8532,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdContacts',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_contacts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/contacts?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/contacts',
+    operationId: 'GetCorporationsCorporationIdContacts',
     parameters: [
       {
         name: 'corporation_id',
@@ -8577,9 +8602,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_contacts.v1'],
+    pathTemplate: '/corporations/{corporation_id}/contacts',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-social',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -8589,48 +8631,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdContactsData',
     responseTypeExport: 'GetCorporationsCorporationIdContactsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/contacts?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-social',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -8640,9 +8640,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdContactsLabels',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_contacts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/contacts/labels',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/contacts/labels',
+    operationId: 'GetCorporationsCorporationIdContactsLabels',
     parameters: [
       {
         name: 'corporation_id',
@@ -8677,9 +8699,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_contacts.v1'],
+    pathTemplate: '/corporations/{corporation_id}/contacts/labels',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-social',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -8688,45 +8727,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdContactsLabelsData',
     responseTypeExport: 'GetCorporationsCorporationIdContactsLabelsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/contacts/labels',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-social',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -8736,9 +8736,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdContainersLogs',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_container_logs.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/containers/logs?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/containers/logs',
+    operationId: 'GetCorporationsCorporationIdContainersLogs',
     parameters: [
       {
         name: 'corporation_id',
@@ -8781,9 +8806,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_container_logs.v1'],
+    pathTemplate: '/corporations/{corporation_id}/containers/logs',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-structure',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -8793,48 +8835,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdContainersLogsData',
     responseTypeExport: 'GetCorporationsCorporationIdContainersLogsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/containers/logs?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 600,
-          'x-client-cache-ttl': 600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-structure',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -8844,9 +8844,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdContracts',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-contracts.read_corporation_contracts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/contracts?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/contracts',
+    operationId: 'GetCorporationsCorporationIdContracts',
     parameters: [
       {
         name: 'corporation_id',
@@ -8889,9 +8914,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-contracts.read_corporation_contracts.v1'],
+    pathTemplate: '/corporations/{corporation_id}/contracts',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-contract',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -8901,48 +8943,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdContractsData',
     responseTypeExport: 'GetCorporationsCorporationIdContractsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/contracts?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-contract',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -8952,9 +8952,35 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdContractsContractIdBids',
+    arguments: {
+      path: {
+        contract_id: 0,
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-contracts.read_corporation_contracts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/contracts/0/bids?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/contracts/{contract_id}/bids',
+    operationId: 'GetCorporationsCorporationIdContractsContractIdBids',
     parameters: [
       {
         name: 'contract_id',
@@ -9005,9 +9031,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-contracts.read_corporation_contracts.v1'],
+    pathTemplate: '/corporations/{corporation_id}/contracts/{contract_id}/bids',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-contract',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -9017,49 +9060,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdContractsContractIdBidsData',
     responseTypeExport: 'GetCorporationsCorporationIdContractsContractIdBidsResponse',
-    arguments: {
-      path: {
-        contract_id: 0,
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/contracts/0/bids?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-contract',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -9069,9 +9069,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdContractsContractIdItems',
+    arguments: {
+      path: {
+        contract_id: 0,
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-contracts.read_corporation_contracts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/contracts/0/items',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/contracts/{contract_id}/items',
+    operationId: 'GetCorporationsCorporationIdContractsContractIdItems',
     parameters: [
       {
         name: 'contract_id',
@@ -9114,9 +9137,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-contracts.read_corporation_contracts.v1'],
+    pathTemplate: '/corporations/{corporation_id}/contracts/{contract_id}/items',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-contract',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -9125,46 +9165,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdContractsContractIdItemsData',
     responseTypeExport: 'GetCorporationsCorporationIdContractsContractIdItemsResponse',
-    arguments: {
-      path: {
-        contract_id: 0,
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/contracts/0/items',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-contract',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -9174,9 +9174,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdCustomsOffices',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-planets.read_customs_offices.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/customs_offices?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/customs_offices',
+    operationId: 'GetCorporationsCorporationIdCustomsOffices',
     parameters: [
       {
         name: 'corporation_id',
@@ -9219,9 +9244,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-planets.read_customs_offices.v1'],
+    pathTemplate: '/corporations/{corporation_id}/customs_offices',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-industry',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -9231,48 +9273,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdCustomsOfficesData',
     responseTypeExport: 'GetCorporationsCorporationIdCustomsOfficesResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/customs_offices?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-industry',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -9282,9 +9282,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdDivisions',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_divisions.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/divisions',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/divisions',
+    operationId: 'GetCorporationsCorporationIdDivisions',
     parameters: [
       {
         name: 'corporation_id',
@@ -9319,9 +9341,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_divisions.v1'],
+    pathTemplate: '/corporations/{corporation_id}/divisions',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-wallet',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -9330,45 +9369,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdDivisionsData',
     responseTypeExport: 'GetCorporationsCorporationIdDivisionsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/divisions',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-wallet',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -9378,9 +9378,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdFacilities',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_facilities.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/facilities',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/facilities',
+    operationId: 'GetCorporationsCorporationIdFacilities',
     parameters: [
       {
         name: 'corporation_id',
@@ -9415,9 +9437,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_facilities.v1'],
+    pathTemplate: '/corporations/{corporation_id}/facilities',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-structure',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -9426,45 +9465,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdFacilitiesData',
     responseTypeExport: 'GetCorporationsCorporationIdFacilitiesResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/facilities',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-structure',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -9474,9 +9474,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdFwStats',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_fw_stats.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/fw/stats',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/fw/stats',
+    operationId: 'GetCorporationsCorporationIdFwStats',
     parameters: [
       {
         name: 'corporation_id',
@@ -9511,9 +9533,21 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_fw_stats.v1'],
+    pathTemplate: '/corporations/{corporation_id}/fw/stats',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'factional-warfare',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -9522,40 +9556,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdFwStatsData',
     responseTypeExport: 'GetCorporationsCorporationIdFwStatsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/fw/stats',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'factional-warfare',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -9565,9 +9565,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdIcons',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/icons',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/icons',
+    operationId: 'GetCorporationsCorporationIdIcons',
     parameters: [
       {
         name: 'corporation_id',
@@ -9602,45 +9624,16 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetCorporationsCorporationIdIconsHeaders',
-      'zGetCorporationsCorporationIdIconsPath',
-    ],
-    requestTypeExport: 'GetCorporationsCorporationIdIconsData',
-    responseTypeExport: 'GetCorporationsCorporationIdIconsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/icons',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/corporations/{corporation_id}/icons',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -9649,6 +9642,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdIconsHeaders',
+      'zGetCorporationsCorporationIdIconsPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdIconsData',
+    responseTypeExport: 'GetCorporationsCorporationIdIconsResponse',
     responses: [
       {
         status: '200',
@@ -9658,9 +9658,35 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdIndustryJobs',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        include_completed: true,
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-industry.read_corporation_jobs.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/industry/jobs?include_completed=true&page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/industry/jobs',
+    operationId: 'GetCorporationsCorporationIdIndustryJobs',
     parameters: [
       {
         name: 'corporation_id',
@@ -9711,9 +9737,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-industry.read_corporation_jobs.v1'],
+    pathTemplate: '/corporations/{corporation_id}/industry/jobs',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-industry',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -9723,49 +9766,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdIndustryJobsData',
     responseTypeExport: 'GetCorporationsCorporationIdIndustryJobsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        include_completed: true,
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/industry/jobs?include_completed=true&page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-industry',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -9775,9 +9775,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdKillmailsRecent',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-killmails.read_corporation_killmails.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/killmails/recent?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/killmails/recent',
+    operationId: 'GetCorporationsCorporationIdKillmailsRecent',
     parameters: [
       {
         name: 'corporation_id',
@@ -9820,9 +9845,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-killmails.read_corporation_killmails.v1'],
+    pathTemplate: '/corporations/{corporation_id}/killmails/recent',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-killmail',
+        kind: 'declared',
+        maximumTokens: 30,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -9832,48 +9874,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdKillmailsRecentData',
     responseTypeExport: 'GetCorporationsCorporationIdKillmailsRecentResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/killmails/recent?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-killmail',
-        maximumTokens: 30,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -9883,9 +9883,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdMedals',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_medals.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/medals?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/medals',
+    operationId: 'GetCorporationsCorporationIdMedals',
     parameters: [
       {
         name: 'corporation_id',
@@ -9928,9 +9953,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_medals.v1'],
+    pathTemplate: '/corporations/{corporation_id}/medals',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-detail',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -9940,48 +9982,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdMedalsData',
     responseTypeExport: 'GetCorporationsCorporationIdMedalsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/medals?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-detail',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -9991,9 +9991,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdMedalsIssued',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_medals.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/medals/issued?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/medals/issued',
+    operationId: 'GetCorporationsCorporationIdMedalsIssued',
     parameters: [
       {
         name: 'corporation_id',
@@ -10036,9 +10061,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_medals.v1'],
+    pathTemplate: '/corporations/{corporation_id}/medals/issued',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-detail',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -10048,48 +10090,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdMedalsIssuedData',
     responseTypeExport: 'GetCorporationsCorporationIdMedalsIssuedResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/medals/issued?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-detail',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -10099,9 +10099,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdMembers',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_corporation_membership.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/members',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/members',
+    operationId: 'GetCorporationsCorporationIdMembers',
     parameters: [
       {
         name: 'corporation_id',
@@ -10136,9 +10158,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_corporation_membership.v1'],
+    pathTemplate: '/corporations/{corporation_id}/members',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-member',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -10147,45 +10186,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdMembersData',
     responseTypeExport: 'GetCorporationsCorporationIdMembersResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/members',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-member',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -10195,9 +10195,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdMembersLimit',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.track_members.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/members/limit',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/members/limit',
+    operationId: 'GetCorporationsCorporationIdMembersLimit',
     parameters: [
       {
         name: 'corporation_id',
@@ -10232,9 +10254,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.track_members.v1'],
+    pathTemplate: '/corporations/{corporation_id}/members/limit',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-member',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -10243,45 +10282,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdMembersLimitData',
     responseTypeExport: 'GetCorporationsCorporationIdMembersLimitResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/members/limit',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-member',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -10291,9 +10291,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdMembersTitles',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_titles.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/members/titles',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/members/titles',
+    operationId: 'GetCorporationsCorporationIdMembersTitles',
     parameters: [
       {
         name: 'corporation_id',
@@ -10328,9 +10350,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_titles.v1'],
+    pathTemplate: '/corporations/{corporation_id}/members/titles',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-member',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -10339,45 +10378,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdMembersTitlesData',
     responseTypeExport: 'GetCorporationsCorporationIdMembersTitlesResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/members/titles',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-member',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -10387,9 +10387,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdMembertracking',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.track_members.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/membertracking',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/membertracking',
+    operationId: 'GetCorporationsCorporationIdMembertracking',
     parameters: [
       {
         name: 'corporation_id',
@@ -10424,9 +10446,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.track_members.v1'],
+    pathTemplate: '/corporations/{corporation_id}/membertracking',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-member',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -10435,45 +10474,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdMembertrackingData',
     responseTypeExport: 'GetCorporationsCorporationIdMembertrackingResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/membertracking',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-member',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -10483,9 +10483,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdOrders',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-markets.read_corporation_orders.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/orders?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/orders',
+    operationId: 'GetCorporationsCorporationIdOrders',
     parameters: [
       {
         name: 'corporation_id',
@@ -10528,9 +10553,23 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-markets.read_corporation_orders.v1'],
+    pathTemplate: '/corporations/{corporation_id}/orders',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 1200,
+          'x-client-cache-ttl': 1200,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 1200,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -10540,45 +10579,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdOrdersData',
     responseTypeExport: 'GetCorporationsCorporationIdOrdersResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/orders?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 1200,
-          'x-client-cache-ttl': 1200,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 1200,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'legacy-only',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -10588,9 +10588,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdOrdersHistory',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-markets.read_corporation_orders.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/orders/history?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/orders/history',
+    operationId: 'GetCorporationsCorporationIdOrdersHistory',
     parameters: [
       {
         name: 'corporation_id',
@@ -10633,9 +10658,23 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-markets.read_corporation_orders.v1'],
+    pathTemplate: '/corporations/{corporation_id}/orders/history',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -10645,45 +10684,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdOrdersHistoryData',
     responseTypeExport: 'GetCorporationsCorporationIdOrdersHistoryResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/orders/history?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'legacy-only',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -10693,9 +10693,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdRoles',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_corporation_membership.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/roles',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/roles',
+    operationId: 'GetCorporationsCorporationIdRoles',
     parameters: [
       {
         name: 'corporation_id',
@@ -10730,9 +10752,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_corporation_membership.v1'],
+    pathTemplate: '/corporations/{corporation_id}/roles',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-member',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -10741,45 +10780,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdRolesData',
     responseTypeExport: 'GetCorporationsCorporationIdRolesResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/roles',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-member',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -10789,9 +10789,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdRolesHistory',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_corporation_membership.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/roles/history?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/roles/history',
+    operationId: 'GetCorporationsCorporationIdRolesHistory',
     parameters: [
       {
         name: 'corporation_id',
@@ -10834,9 +10859,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_corporation_membership.v1'],
+    pathTemplate: '/corporations/{corporation_id}/roles/history',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-member',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -10846,48 +10888,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdRolesHistoryData',
     responseTypeExport: 'GetCorporationsCorporationIdRolesHistoryResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/roles/history?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-member',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -10897,9 +10897,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdShareholders',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-wallet.read_corporation_wallets.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/shareholders?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/shareholders',
+    operationId: 'GetCorporationsCorporationIdShareholders',
     parameters: [
       {
         name: 'corporation_id',
@@ -10942,9 +10967,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-wallet.read_corporation_wallets.v1'],
+    pathTemplate: '/corporations/{corporation_id}/shareholders',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-detail',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -10954,48 +10996,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdShareholdersData',
     responseTypeExport: 'GetCorporationsCorporationIdShareholdersResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/shareholders?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-detail',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -11005,9 +11005,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdStandings',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_standings.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/standings?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/standings',
+    operationId: 'GetCorporationsCorporationIdStandings',
     parameters: [
       {
         name: 'corporation_id',
@@ -11050,9 +11075,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_standings.v1'],
+    pathTemplate: '/corporations/{corporation_id}/standings',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-member',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -11062,6 +11104,15 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdStandingsData',
     responseTypeExport: 'GetCorporationsCorporationIdStandingsResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetCorporationsCorporationIdStandingsResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
         corporation_id: 0,
@@ -11075,47 +11126,21 @@ const operationContracts = [
         'X-Tenant': 'x',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_starbases.v1'],
+    },
     expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/standings?page=1',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+      method: 'GET',
+      path: '/corporations/0/starbases?page=1',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-member',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetCorporationsCorporationIdStandingsResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetCorporationsCorporationIdStarbases',
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/starbases',
+    operationId: 'GetCorporationsCorporationIdStarbases',
     parameters: [
       {
         name: 'corporation_id',
@@ -11158,9 +11183,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_starbases.v1'],
+    pathTemplate: '/corporations/{corporation_id}/starbases',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-structure',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -11170,48 +11212,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdStarbasesData',
     responseTypeExport: 'GetCorporationsCorporationIdStarbasesResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/starbases?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-structure',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -11221,9 +11221,35 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdStarbasesStarbaseId',
+    arguments: {
+      path: {
+        corporation_id: 0,
+        starbase_id: 0,
+      },
+      query: {
+        system_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_starbases.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/starbases/0?system_id=0',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/starbases/{starbase_id}',
+    operationId: 'GetCorporationsCorporationIdStarbasesStarbaseId',
     parameters: [
       {
         name: 'corporation_id',
@@ -11274,9 +11300,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_starbases.v1'],
+    pathTemplate: '/corporations/{corporation_id}/starbases/{starbase_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-structure',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -11286,49 +11329,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdStarbasesStarbaseIdData',
     responseTypeExport: 'GetCorporationsCorporationIdStarbasesStarbaseIdResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-        starbase_id: 0,
-      },
-      query: {
-        system_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/starbases/0?system_id=0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-structure',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -11338,9 +11338,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdStructures',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_structures.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/structures?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/structures',
+    operationId: 'GetCorporationsCorporationIdStructures',
     parameters: [
       {
         name: 'corporation_id',
@@ -11383,9 +11408,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_structures.v1'],
+    pathTemplate: '/corporations/{corporation_id}/structures',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-structure',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -11395,9 +11437,211 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdStructuresData',
     responseTypeExport: 'GetCorporationsCorporationIdStructuresResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetCorporationsCorporationIdStructuresResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
         corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_titles.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/titles',
+    },
+    method: 'GET',
+    operationId: 'GetCorporationsCorporationIdTitles',
+    parameters: [
+      {
+        name: 'corporation_id',
+        placement: 'path',
+        required: true,
+        schema: {
+          type: 'integer',
+        },
+      },
+      {
+        name: 'If-Modified-Since',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'If-None-Match',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'X-Tenant',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+    ],
+    pathTemplate: '/corporations/{corporation_id}/titles',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-detail',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdTitlesHeaders',
+      'zGetCorporationsCorporationIdTitlesPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdTitlesData',
+    responseTypeExport: 'GetCorporationsCorporationIdTitlesResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetCorporationsCorporationIdTitlesResponse',
+      },
+    ],
+  },
+  {
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-wallet.read_corporation_wallets.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/wallets',
+    },
+    method: 'GET',
+    operationId: 'GetCorporationsCorporationIdWallets',
+    parameters: [
+      {
+        name: 'corporation_id',
+        placement: 'path',
+        required: true,
+        schema: {
+          type: 'integer',
+        },
+      },
+      {
+        name: 'If-Modified-Since',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'If-None-Match',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'X-Tenant',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+    ],
+    pathTemplate: '/corporations/{corporation_id}/wallets',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-wallet',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdWalletsHeaders',
+      'zGetCorporationsCorporationIdWalletsPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdWalletsData',
+    responseTypeExport: 'GetCorporationsCorporationIdWalletsResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetCorporationsCorporationIdWalletsResponse',
+      },
+    ],
+  },
+  {
+    arguments: {
+      path: {
+        corporation_id: 0,
+        division: 0,
       },
       query: {
         page: 1,
@@ -11408,239 +11652,21 @@ const operationContracts = [
         'X-Tenant': 'x',
       },
     },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/structures?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-structure',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetCorporationsCorporationIdStructuresResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetCorporationsCorporationIdTitles',
-    method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/titles',
-    parameters: [
-      {
-        name: 'corporation_id',
-        placement: 'path',
-        required: true,
-        schema: {
-          type: 'integer',
-        },
-      },
-      {
-        name: 'If-Modified-Since',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'If-None-Match',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'X-Tenant',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-    ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_titles.v1'],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetCorporationsCorporationIdTitlesHeaders',
-      'zGetCorporationsCorporationIdTitlesPath',
-    ],
-    requestTypeExport: 'GetCorporationsCorporationIdTitlesData',
-    responseTypeExport: 'GetCorporationsCorporationIdTitlesResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/titles',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-detail',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetCorporationsCorporationIdTitlesResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetCorporationsCorporationIdWallets',
-    method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/wallets',
-    parameters: [
-      {
-        name: 'corporation_id',
-        placement: 'path',
-        required: true,
-        schema: {
-          type: 'integer',
-        },
-      },
-      {
-        name: 'If-Modified-Since',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'If-None-Match',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'X-Tenant',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-    ],
     authentication: {
       required: true,
       scopes: ['esi-wallet.read_corporation_wallets.v1'],
     },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetCorporationsCorporationIdWalletsHeaders',
-      'zGetCorporationsCorporationIdWalletsPath',
-    ],
-    requestTypeExport: 'GetCorporationsCorporationIdWalletsData',
-    responseTypeExport: 'GetCorporationsCorporationIdWalletsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
     expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/wallets',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+      method: 'GET',
+      path: '/corporations/0/wallets/0/journal?page=1',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-wallet',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetCorporationsCorporationIdWalletsResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetCorporationsCorporationIdWalletsDivisionJournal',
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/wallets/{division}/journal',
+    operationId: 'GetCorporationsCorporationIdWalletsDivisionJournal',
     parameters: [
       {
         name: 'corporation_id',
@@ -11691,9 +11717,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-wallet.read_corporation_wallets.v1'],
+    pathTemplate: '/corporations/{corporation_id}/wallets/{division}/journal',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-wallet',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -11703,49 +11746,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdWalletsDivisionJournalData',
     responseTypeExport: 'GetCorporationsCorporationIdWalletsDivisionJournalResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-        division: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/wallets/0/journal?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-wallet',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -11755,9 +11755,35 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsCorporationIdWalletsDivisionTransactions',
+    arguments: {
+      path: {
+        corporation_id: 0,
+        division: 0,
+      },
+      query: {
+        from_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-wallet.read_corporation_wallets.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/wallets/0/transactions?from_id=0',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/wallets/{division}/transactions',
+    operationId: 'GetCorporationsCorporationIdWalletsDivisionTransactions',
     parameters: [
       {
         name: 'corporation_id',
@@ -11808,9 +11834,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-wallet.read_corporation_wallets.v1'],
+    pathTemplate: '/corporations/{corporation_id}/wallets/{division}/transactions',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-wallet',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -11820,49 +11863,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsCorporationIdWalletsDivisionTransactionsData',
     responseTypeExport: 'GetCorporationsCorporationIdWalletsDivisionTransactionsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-        division: 0,
-      },
-      query: {
-        from_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/wallets/0/transactions?from_id=0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-wallet',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -11872,9 +11872,36 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsFreelanceJobsListing',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        after: '',
+        before: '',
+        limit: 10,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_freelance_jobs.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/freelance-jobs?after=&before=&limit=10',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/freelance-jobs',
+    operationId: 'GetCorporationsFreelanceJobsListing',
     parameters: [
       {
         name: 'corporation_id',
@@ -11936,9 +11963,24 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_freelance_jobs.v1'],
+    pathTemplate: '/corporations/{corporation_id}/freelance-jobs',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-freelance-job',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -11948,9 +11990,19 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsFreelanceJobsListingData',
     responseTypeExport: 'GetCorporationsFreelanceJobsListingResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetCorporationsFreelanceJobsListingResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
         corporation_id: 0,
+        job_id: '123e4567-e89b-42d3-a456-426614174000',
       },
       query: {
         after: '',
@@ -11963,45 +12015,21 @@ const operationContracts = [
         'X-Tenant': 'x',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_freelance_jobs.v1'],
+    },
     expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/freelance-jobs?after=&before=&limit=10',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+      method: 'GET',
+      path: '/corporations/0/freelance-jobs/123e4567-e89b-42d3-a456-426614174000/participants?after=&before=&limit=10',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-mode': 'event-based',
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-freelance-job',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetCorporationsFreelanceJobsListingResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetCorporationsFreelanceJobsParticipants',
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/freelance-jobs/{job_id}/participants',
+    operationId: 'GetCorporationsFreelanceJobsParticipants',
     parameters: [
       {
         name: 'corporation_id',
@@ -12071,9 +12099,24 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_freelance_jobs.v1'],
+    pathTemplate: '/corporations/{corporation_id}/freelance-jobs/{job_id}/participants',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-freelance-job',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -12083,49 +12126,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsFreelanceJobsParticipantsData',
     responseTypeExport: 'GetCorporationsFreelanceJobsParticipantsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-        job_id: '123e4567-e89b-42d3-a456-426614174000',
-      },
-      query: {
-        after: '',
-        before: '',
-        limit: 10,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/freelance-jobs/123e4567-e89b-42d3-a456-426614174000/participants?after=&before=&limit=10',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-mode': 'event-based',
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-freelance-job',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -12135,9 +12135,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsNpccorps',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/npccorps',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/npccorps',
+    operationId: 'GetCorporationsNpccorps',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -12164,34 +12183,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetCorporationsNpccorpsHeaders'],
-    requestTypeExport: 'GetCorporationsNpccorpsData',
-    responseTypeExport: 'GetCorporationsNpccorpsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/npccorps',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/corporations/npccorps',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -12200,6 +12196,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetCorporationsNpccorpsHeaders'],
+    requestTypeExport: 'GetCorporationsNpccorpsData',
+    responseTypeExport: 'GetCorporationsNpccorpsResponse',
     responses: [
       {
         status: '200',
@@ -12209,10 +12209,33 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsProjectsContribution',
+    arguments: {
+      path: {
+        character_id: 0,
+        corporation_id: 0,
+        project_id: '123e4567-e89b-42d3-a456-426614174000',
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_projects.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/projects/123e4567-e89b-42d3-a456-426614174000/contribution/0',
+    },
     method: 'GET',
-    pathTemplate:
-      '/corporations/{corporation_id}/projects/{project_id}/contribution/{character_id}',
+    operationId: 'GetCorporationsProjectsContribution',
     parameters: [
       {
         name: 'character_id',
@@ -12263,9 +12286,27 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_projects.v1'],
+    pathTemplate:
+      '/corporations/{corporation_id}/projects/{project_id}/contribution/{character_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-project',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -12274,47 +12315,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsProjectsContributionData',
     responseTypeExport: 'GetCorporationsProjectsContributionResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        corporation_id: 0,
-        project_id: '123e4567-e89b-42d3-a456-426614174000',
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/projects/123e4567-e89b-42d3-a456-426614174000/contribution/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 60,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 60,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-project',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -12324,9 +12324,37 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsProjectsContributors',
+    arguments: {
+      path: {
+        corporation_id: 0,
+        project_id: '123e4567-e89b-42d3-a456-426614174000',
+      },
+      query: {
+        after: '',
+        before: '',
+        limit: 10,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_projects.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/projects/123e4567-e89b-42d3-a456-426614174000/contributors?after=&before=&limit=10',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/projects/{project_id}/contributors',
+    operationId: 'GetCorporationsProjectsContributors',
     parameters: [
       {
         name: 'corporation_id',
@@ -12396,9 +12424,24 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_projects.v1'],
+    pathTemplate: '/corporations/{corporation_id}/projects/{project_id}/contributors',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-project',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -12408,49 +12451,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsProjectsContributorsData',
     responseTypeExport: 'GetCorporationsProjectsContributorsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-        project_id: '123e4567-e89b-42d3-a456-426614174000',
-      },
-      query: {
-        after: '',
-        before: '',
-        limit: 10,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/projects/123e4567-e89b-42d3-a456-426614174000/contributors?after=&before=&limit=10',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-mode': 'event-based',
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-project',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -12460,9 +12460,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsProjectsDetail',
+    arguments: {
+      path: {
+        corporation_id: 0,
+        project_id: '123e4567-e89b-42d3-a456-426614174000',
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_projects.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/projects/123e4567-e89b-42d3-a456-426614174000',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/projects/{project_id}',
+    operationId: 'GetCorporationsProjectsDetail',
     parameters: [
       {
         name: 'corporation_id',
@@ -12505,9 +12528,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_projects.v1'],
+    pathTemplate: '/corporations/{corporation_id}/projects/{project_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-project',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -12516,46 +12556,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsProjectsDetailData',
     responseTypeExport: 'GetCorporationsProjectsDetailResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-        project_id: '123e4567-e89b-42d3-a456-426614174000',
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/projects/123e4567-e89b-42d3-a456-426614174000',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 60,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 60,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-project',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -12565,9 +12565,37 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsProjectsListing',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      query: {
+        after: '',
+        before: '',
+        limit: 10,
+        state: 'All',
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-corporations.read_projects.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/projects?after=&before=&limit=10&state=All',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/projects',
+    operationId: 'GetCorporationsProjectsListing',
     parameters: [
       {
         name: 'corporation_id',
@@ -12638,9 +12666,24 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-corporations.read_projects.v1'],
+    pathTemplate: '/corporations/{corporation_id}/projects',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-project',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -12650,49 +12693,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsProjectsListingData',
     responseTypeExport: 'GetCorporationsProjectsListingResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        after: '',
-        before: '',
-        limit: 10,
-        state: 'All',
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/projects?after=&before=&limit=10&state=All',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-mode': 'event-based',
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-project',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -12702,9 +12702,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsStructuresSkyhooksDetail',
+    arguments: {
+      path: {
+        corporation_id: 0,
+        skyhook_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-structures.read_corporation.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/structures/skyhooks/0',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/structures/skyhooks/{skyhook_id}',
+    operationId: 'GetCorporationsStructuresSkyhooksDetail',
     parameters: [
       {
         name: 'corporation_id',
@@ -12747,9 +12770,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-structures.read_corporation.v1'],
+    pathTemplate: '/corporations/{corporation_id}/structures/skyhooks/{skyhook_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-structure',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -12758,46 +12798,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsStructuresSkyhooksDetailData',
     responseTypeExport: 'GetCorporationsStructuresSkyhooksDetailResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-        skyhook_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/structures/skyhooks/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-structure',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -12807,9 +12807,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsStructuresSkyhooksListing',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-structures.read_corporation.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/structures/skyhooks',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/structures/skyhooks',
+    operationId: 'GetCorporationsStructuresSkyhooksListing',
     parameters: [
       {
         name: 'corporation_id',
@@ -12844,9 +12866,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-structures.read_corporation.v1'],
+    pathTemplate: '/corporations/{corporation_id}/structures/skyhooks',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-structure',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -12855,45 +12894,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsStructuresSkyhooksListingData',
     responseTypeExport: 'GetCorporationsStructuresSkyhooksListingResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/structures/skyhooks',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-structure',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -12903,9 +12903,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsStructuresSovereigntyHubsDetail',
+    arguments: {
+      path: {
+        corporation_id: 0,
+        sovereignty_hub_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-structures.read_corporation.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/structures/sovereignty-hubs/0',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/structures/sovereignty-hubs/{sovereignty_hub_id}',
+    operationId: 'GetCorporationsStructuresSovereigntyHubsDetail',
     parameters: [
       {
         name: 'corporation_id',
@@ -12948,9 +12971,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-structures.read_corporation.v1'],
+    pathTemplate: '/corporations/{corporation_id}/structures/sovereignty-hubs/{sovereignty_hub_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-structure',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -12959,46 +12999,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsStructuresSovereigntyHubsDetailData',
     responseTypeExport: 'GetCorporationsStructuresSovereigntyHubsDetailResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-        sovereignty_hub_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/structures/sovereignty-hubs/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-structure',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -13008,9 +13008,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCorporationsStructuresSovereigntyHubsListing',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-structures.read_corporation.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/corporations/0/structures/sovereignty-hubs',
+    },
     method: 'GET',
-    pathTemplate: '/corporations/{corporation_id}/structures/sovereignty-hubs',
+    operationId: 'GetCorporationsStructuresSovereigntyHubsListing',
     parameters: [
       {
         name: 'corporation_id',
@@ -13045,9 +13067,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-structures.read_corporation.v1'],
+    pathTemplate: '/corporations/{corporation_id}/structures/sovereignty-hubs',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'corp-structure',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -13056,45 +13095,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetCorporationsStructuresSovereigntyHubsListingData',
     responseTypeExport: 'GetCorporationsStructuresSovereigntyHubsListingResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/corporations/0/structures/sovereignty-hubs',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-structure',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -13104,9 +13104,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetCosmeticsSkinr',
+    arguments: {
+      path: {
+        skinr_id: 'x',
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/cosmetics/skinr/x',
+    },
     method: 'GET',
-    pathTemplate: '/cosmetics/skinr/{skinr_id}',
+    operationId: 'GetCosmeticsSkinr',
     parameters: [
       {
         name: 'skinr_id',
@@ -13141,36 +13163,9 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetCosmeticsSkinrHeaders', 'zGetCosmeticsSkinrPath'],
-    requestTypeExport: 'GetCosmeticsSkinrData',
-    responseTypeExport: 'GetCosmeticsSkinrResponse',
-    arguments: {
-      path: {
-        skinr_id: 'x',
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/cosmetics/skinr/x',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/cosmetics/skinr/{skinr_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 31536000,
           'x-cache-mode': 'ttl-based',
@@ -13178,17 +13173,22 @@ const operationContracts = [
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 604800,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'skinr',
+        kind: 'declared',
         maximumTokens: 12000,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetCosmeticsSkinrHeaders', 'zGetCosmeticsSkinrPath'],
+    requestTypeExport: 'GetCosmeticsSkinrData',
+    responseTypeExport: 'GetCosmeticsSkinrResponse',
     responses: [
       {
         status: '200',
@@ -13198,9 +13198,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetDogmaAttributes',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/dogma/attributes',
+    },
     method: 'GET',
-    pathTemplate: '/dogma/attributes',
+    operationId: 'GetDogmaAttributes',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -13227,34 +13246,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetDogmaAttributesHeaders'],
-    requestTypeExport: 'GetDogmaAttributesData',
-    responseTypeExport: 'GetDogmaAttributesResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/dogma/attributes',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/dogma/attributes',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -13263,6 +13259,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetDogmaAttributesHeaders'],
+    requestTypeExport: 'GetDogmaAttributesData',
+    responseTypeExport: 'GetDogmaAttributesResponse',
     responses: [
       {
         status: '200',
@@ -13272,9 +13272,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetDogmaAttributesAttributeId',
+    arguments: {
+      path: {
+        attribute_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/dogma/attributes/0',
+    },
     method: 'GET',
-    pathTemplate: '/dogma/attributes/{attribute_id}',
+    operationId: 'GetDogmaAttributesAttributeId',
     parameters: [
       {
         name: 'attribute_id',
@@ -13309,40 +13331,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetDogmaAttributesAttributeIdHeaders',
-      'zGetDogmaAttributesAttributeIdPath',
-    ],
-    requestTypeExport: 'GetDogmaAttributesAttributeIdData',
-    responseTypeExport: 'GetDogmaAttributesAttributeIdResponse',
-    arguments: {
-      path: {
-        attribute_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/dogma/attributes/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/dogma/attributes/{attribute_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -13351,6 +13344,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetDogmaAttributesAttributeIdHeaders',
+      'zGetDogmaAttributesAttributeIdPath',
+    ],
+    requestTypeExport: 'GetDogmaAttributesAttributeIdData',
+    responseTypeExport: 'GetDogmaAttributesAttributeIdResponse',
     responses: [
       {
         status: '200',
@@ -13360,9 +13360,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetDogmaDynamicItemsTypeIdItemId',
+    arguments: {
+      path: {
+        item_id: 0,
+        type_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/dogma/dynamic/items/0/0',
+    },
     method: 'GET',
-    pathTemplate: '/dogma/dynamic/items/{type_id}/{item_id}',
+    operationId: 'GetDogmaDynamicItemsTypeIdItemId',
     parameters: [
       {
         name: 'item_id',
@@ -13405,41 +13428,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetDogmaDynamicItemsTypeIdItemIdHeaders',
-      'zGetDogmaDynamicItemsTypeIdItemIdPath',
-    ],
-    requestTypeExport: 'GetDogmaDynamicItemsTypeIdItemIdData',
-    responseTypeExport: 'GetDogmaDynamicItemsTypeIdItemIdResponse',
-    arguments: {
-      path: {
-        item_id: 0,
-        type_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/dogma/dynamic/items/0/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/dogma/dynamic/items/{type_id}/{item_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -13448,6 +13441,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetDogmaDynamicItemsTypeIdItemIdHeaders',
+      'zGetDogmaDynamicItemsTypeIdItemIdPath',
+    ],
+    requestTypeExport: 'GetDogmaDynamicItemsTypeIdItemIdData',
+    responseTypeExport: 'GetDogmaDynamicItemsTypeIdItemIdResponse',
     responses: [
       {
         status: '200',
@@ -13457,9 +13457,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetDogmaEffects',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/dogma/effects',
+    },
     method: 'GET',
-    pathTemplate: '/dogma/effects',
+    operationId: 'GetDogmaEffects',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -13486,34 +13505,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetDogmaEffectsHeaders'],
-    requestTypeExport: 'GetDogmaEffectsData',
-    responseTypeExport: 'GetDogmaEffectsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/dogma/effects',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/dogma/effects',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -13522,6 +13518,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetDogmaEffectsHeaders'],
+    requestTypeExport: 'GetDogmaEffectsData',
+    responseTypeExport: 'GetDogmaEffectsResponse',
     responses: [
       {
         status: '200',
@@ -13531,9 +13531,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetDogmaEffectsEffectId',
+    arguments: {
+      path: {
+        effect_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/dogma/effects/0',
+    },
     method: 'GET',
-    pathTemplate: '/dogma/effects/{effect_id}',
+    operationId: 'GetDogmaEffectsEffectId',
     parameters: [
       {
         name: 'effect_id',
@@ -13568,37 +13590,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetDogmaEffectsEffectIdHeaders', 'zGetDogmaEffectsEffectIdPath'],
-    requestTypeExport: 'GetDogmaEffectsEffectIdData',
-    responseTypeExport: 'GetDogmaEffectsEffectIdResponse',
-    arguments: {
-      path: {
-        effect_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/dogma/effects/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/dogma/effects/{effect_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -13607,6 +13603,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetDogmaEffectsEffectIdHeaders', 'zGetDogmaEffectsEffectIdPath'],
+    requestTypeExport: 'GetDogmaEffectsEffectIdData',
+    responseTypeExport: 'GetDogmaEffectsEffectIdResponse',
     responses: [
       {
         status: '200',
@@ -13616,9 +13616,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetFleetsFleetId',
+    arguments: {
+      path: {
+        fleet_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.read_fleet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/fleets/0',
+    },
     method: 'GET',
-    pathTemplate: '/fleets/{fleet_id}',
+    operationId: 'GetFleetsFleetId',
     parameters: [
       {
         name: 'fleet_id',
@@ -13653,53 +13675,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.read_fleet.v1'],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetFleetsFleetIdHeaders', 'zGetFleetsFleetIdPath'],
-    requestTypeExport: 'GetFleetsFleetIdData',
-    responseTypeExport: 'GetFleetsFleetIdResponse',
-    arguments: {
-      path: {
-        fleet_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/fleets/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/fleets/{fleet_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 5,
           'x-client-cache-ttl': 5,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 5,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'fleet',
+        kind: 'declared',
         maximumTokens: 1800,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetFleetsFleetIdHeaders', 'zGetFleetsFleetIdPath'],
+    requestTypeExport: 'GetFleetsFleetIdData',
+    responseTypeExport: 'GetFleetsFleetIdResponse',
     responses: [
       {
         status: '200',
@@ -13709,9 +13709,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetFleetsFleetIdMembers',
+    arguments: {
+      path: {
+        fleet_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.read_fleet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/fleets/0/members',
+    },
     method: 'GET',
-    pathTemplate: '/fleets/{fleet_id}/members',
+    operationId: 'GetFleetsFleetIdMembers',
     parameters: [
       {
         name: 'fleet_id',
@@ -13746,53 +13768,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.read_fleet.v1'],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetFleetsFleetIdMembersHeaders', 'zGetFleetsFleetIdMembersPath'],
-    requestTypeExport: 'GetFleetsFleetIdMembersData',
-    responseTypeExport: 'GetFleetsFleetIdMembersResponse',
-    arguments: {
-      path: {
-        fleet_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/fleets/0/members',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/fleets/{fleet_id}/members',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 5,
           'x-client-cache-ttl': 5,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 5,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'fleet',
+        kind: 'declared',
         maximumTokens: 1800,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetFleetsFleetIdMembersHeaders', 'zGetFleetsFleetIdMembersPath'],
+    requestTypeExport: 'GetFleetsFleetIdMembersData',
+    responseTypeExport: 'GetFleetsFleetIdMembersResponse',
     responses: [
       {
         status: '200',
@@ -13802,9 +13802,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetFleetsFleetIdWings',
+    arguments: {
+      path: {
+        fleet_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.read_fleet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/fleets/0/wings',
+    },
     method: 'GET',
-    pathTemplate: '/fleets/{fleet_id}/wings',
+    operationId: 'GetFleetsFleetIdWings',
     parameters: [
       {
         name: 'fleet_id',
@@ -13839,53 +13861,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.read_fleet.v1'],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetFleetsFleetIdWingsHeaders', 'zGetFleetsFleetIdWingsPath'],
-    requestTypeExport: 'GetFleetsFleetIdWingsData',
-    responseTypeExport: 'GetFleetsFleetIdWingsResponse',
-    arguments: {
-      path: {
-        fleet_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/fleets/0/wings',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/fleets/{fleet_id}/wings',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 5,
           'x-client-cache-ttl': 5,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 5,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'fleet',
+        kind: 'declared',
         maximumTokens: 1800,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetFleetsFleetIdWingsHeaders', 'zGetFleetsFleetIdWingsPath'],
+    requestTypeExport: 'GetFleetsFleetIdWingsData',
+    responseTypeExport: 'GetFleetsFleetIdWingsResponse',
     responses: [
       {
         status: '200',
@@ -13895,9 +13895,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetFreelanceJobsDetail',
+    arguments: {
+      path: {
+        job_id: '123e4567-e89b-42d3-a456-426614174000',
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/freelance-jobs/123e4567-e89b-42d3-a456-426614174000',
+    },
     method: 'GET',
-    pathTemplate: '/freelance-jobs/{job_id}',
+    operationId: 'GetFreelanceJobsDetail',
     parameters: [
       {
         name: 'job_id',
@@ -13932,53 +13954,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetFreelanceJobsDetailHeaders', 'zGetFreelanceJobsDetailPath'],
-    requestTypeExport: 'GetFreelanceJobsDetailData',
-    responseTypeExport: 'GetFreelanceJobsDetailResponse',
-    arguments: {
-      path: {
-        job_id: '123e4567-e89b-42d3-a456-426614174000',
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/freelance-jobs/123e4567-e89b-42d3-a456-426614174000',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/freelance-jobs/{job_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 60,
           'x-cache-mode': 'event-based',
           'x-client-cache-ttl': 60,
           'x-server-cache-mode': 'event-based',
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'freelance-job',
+        kind: 'declared',
         maximumTokens: 900,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetFreelanceJobsDetailHeaders', 'zGetFreelanceJobsDetailPath'],
+    requestTypeExport: 'GetFreelanceJobsDetailData',
+    responseTypeExport: 'GetFreelanceJobsDetailResponse',
     responses: [
       {
         status: '200',
@@ -13988,9 +13988,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetFreelanceJobsListing',
+    arguments: {
+      query: {
+        after: '',
+        before: '',
+        corporation_id: 0,
+        limit: 10,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/freelance-jobs?after=&before=&corporation_id=0&limit=10',
+    },
     method: 'GET',
-    pathTemplate: '/freelance-jobs',
+    operationId: 'GetFreelanceJobsListing',
     parameters: [
       {
         name: 'after',
@@ -14053,54 +14078,29 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetFreelanceJobsListingHeaders', 'zGetFreelanceJobsListingQuery'],
-    requestTypeExport: 'GetFreelanceJobsListingData',
-    responseTypeExport: 'GetFreelanceJobsListingResponse',
-    arguments: {
-      query: {
-        after: '',
-        before: '',
-        corporation_id: 0,
-        limit: 10,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/freelance-jobs?after=&before=&corporation_id=0&limit=10',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/freelance-jobs',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-mode': 'event-based',
           'x-server-cache-mode': 'event-based',
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'freelance-job',
+        kind: 'declared',
         maximumTokens: 900,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetFreelanceJobsListingHeaders', 'zGetFreelanceJobsListingQuery'],
+    requestTypeExport: 'GetFreelanceJobsListingData',
+    responseTypeExport: 'GetFreelanceJobsListingResponse',
     responses: [
       {
         status: '200',
@@ -14110,9 +14110,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetFwLeaderboards',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/fw/leaderboards',
+    },
     method: 'GET',
-    pathTemplate: '/fw/leaderboards',
+    operationId: 'GetFwLeaderboards',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -14139,45 +14158,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetFwLeaderboardsHeaders'],
-    requestTypeExport: 'GetFwLeaderboardsData',
-    responseTypeExport: 'GetFwLeaderboardsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/fw/leaderboards',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/fw/leaderboards',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'factional-warfare',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetFwLeaderboardsHeaders'],
+    requestTypeExport: 'GetFwLeaderboardsData',
+    responseTypeExport: 'GetFwLeaderboardsResponse',
     responses: [
       {
         status: '200',
@@ -14187,9 +14187,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetFwLeaderboardsCharacters',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/fw/leaderboards/characters',
+    },
     method: 'GET',
-    pathTemplate: '/fw/leaderboards/characters',
+    operationId: 'GetFwLeaderboardsCharacters',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -14216,45 +14235,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetFwLeaderboardsCharactersHeaders'],
-    requestTypeExport: 'GetFwLeaderboardsCharactersData',
-    responseTypeExport: 'GetFwLeaderboardsCharactersResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/fw/leaderboards/characters',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/fw/leaderboards/characters',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'factional-warfare',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetFwLeaderboardsCharactersHeaders'],
+    requestTypeExport: 'GetFwLeaderboardsCharactersData',
+    responseTypeExport: 'GetFwLeaderboardsCharactersResponse',
     responses: [
       {
         status: '200',
@@ -14264,9 +14264,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetFwLeaderboardsCorporations',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/fw/leaderboards/corporations',
+    },
     method: 'GET',
-    pathTemplate: '/fw/leaderboards/corporations',
+    operationId: 'GetFwLeaderboardsCorporations',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -14293,45 +14312,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetFwLeaderboardsCorporationsHeaders'],
-    requestTypeExport: 'GetFwLeaderboardsCorporationsData',
-    responseTypeExport: 'GetFwLeaderboardsCorporationsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/fw/leaderboards/corporations',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/fw/leaderboards/corporations',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'factional-warfare',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetFwLeaderboardsCorporationsHeaders'],
+    requestTypeExport: 'GetFwLeaderboardsCorporationsData',
+    responseTypeExport: 'GetFwLeaderboardsCorporationsResponse',
     responses: [
       {
         status: '200',
@@ -14341,9 +14341,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetFwStats',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/fw/stats',
+    },
     method: 'GET',
-    pathTemplate: '/fw/stats',
+    operationId: 'GetFwStats',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -14370,45 +14389,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetFwStatsHeaders'],
-    requestTypeExport: 'GetFwStatsData',
-    responseTypeExport: 'GetFwStatsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/fw/stats',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/fw/stats',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'factional-warfare',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetFwStatsHeaders'],
+    requestTypeExport: 'GetFwStatsData',
+    responseTypeExport: 'GetFwStatsResponse',
     responses: [
       {
         status: '200',
@@ -14418,9 +14418,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetFwSystems',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/fw/systems',
+    },
     method: 'GET',
-    pathTemplate: '/fw/systems',
+    operationId: 'GetFwSystems',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -14447,50 +14466,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetFwSystemsHeaders'],
-    requestTypeExport: 'GetFwSystemsData',
-    responseTypeExport: 'GetFwSystemsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/fw/systems',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/fw/systems',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 1800,
           'x-client-cache-ttl': 1800,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 1800,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'factional-warfare',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetFwSystemsHeaders'],
+    requestTypeExport: 'GetFwSystemsData',
+    responseTypeExport: 'GetFwSystemsResponse',
     responses: [
       {
         status: '200',
@@ -14500,9 +14500,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetFwWars',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/fw/wars',
+    },
     method: 'GET',
-    pathTemplate: '/fw/wars',
+    operationId: 'GetFwWars',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -14529,45 +14548,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetFwWarsHeaders'],
-    requestTypeExport: 'GetFwWarsData',
-    responseTypeExport: 'GetFwWarsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/fw/wars',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/fw/wars',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'factional-warfare',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetFwWarsHeaders'],
+    requestTypeExport: 'GetFwWarsData',
+    responseTypeExport: 'GetFwWarsResponse',
     responses: [
       {
         status: '200',
@@ -14577,9 +14577,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetIncursions',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/incursions',
+    },
     method: 'GET',
-    pathTemplate: '/incursions',
+    operationId: 'GetIncursions',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -14606,50 +14625,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetIncursionsHeaders'],
-    requestTypeExport: 'GetIncursionsData',
-    responseTypeExport: 'GetIncursionsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/incursions',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/incursions',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 300,
           'x-client-cache-ttl': 300,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 300,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'incursion',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetIncursionsHeaders'],
+    requestTypeExport: 'GetIncursionsData',
+    responseTypeExport: 'GetIncursionsResponse',
     responses: [
       {
         status: '200',
@@ -14659,9 +14659,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetIndustryFacilities',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/industry/facilities',
+    },
     method: 'GET',
-    pathTemplate: '/industry/facilities',
+    operationId: 'GetIndustryFacilities',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -14688,50 +14707,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetIndustryFacilitiesHeaders'],
-    requestTypeExport: 'GetIndustryFacilitiesData',
-    responseTypeExport: 'GetIndustryFacilitiesResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/industry/facilities',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/industry/facilities',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'industry',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetIndustryFacilitiesHeaders'],
+    requestTypeExport: 'GetIndustryFacilitiesData',
+    responseTypeExport: 'GetIndustryFacilitiesResponse',
     responses: [
       {
         status: '200',
@@ -14741,9 +14741,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetIndustrySystems',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/industry/systems',
+    },
     method: 'GET',
-    pathTemplate: '/industry/systems',
+    operationId: 'GetIndustrySystems',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -14770,50 +14789,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetIndustrySystemsHeaders'],
-    requestTypeExport: 'GetIndustrySystemsData',
-    responseTypeExport: 'GetIndustrySystemsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/industry/systems',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/industry/systems',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'industry',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetIndustrySystemsHeaders'],
+    requestTypeExport: 'GetIndustrySystemsData',
+    responseTypeExport: 'GetIndustrySystemsResponse',
     responses: [
       {
         status: '200',
@@ -14823,9 +14823,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetInsurancePrices',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/insurance/prices',
+    },
     method: 'GET',
-    pathTemplate: '/insurance/prices',
+    operationId: 'GetInsurancePrices',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -14852,50 +14871,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetInsurancePricesHeaders'],
-    requestTypeExport: 'GetInsurancePricesData',
-    responseTypeExport: 'GetInsurancePricesResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/insurance/prices',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/insurance/prices',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'insurance',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetInsurancePricesHeaders'],
+    requestTypeExport: 'GetInsurancePricesData',
+    responseTypeExport: 'GetInsurancePricesResponse',
     responses: [
       {
         status: '200',
@@ -14905,9 +14905,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetKillmailsKillmailIdKillmailHash',
+    arguments: {
+      path: {
+        killmail_hash: 'x',
+        killmail_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/killmails/0/x',
+    },
     method: 'GET',
-    pathTemplate: '/killmails/{killmail_id}/{killmail_hash}',
+    operationId: 'GetKillmailsKillmailIdKillmailHash',
     parameters: [
       {
         name: 'killmail_hash',
@@ -14950,9 +14973,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
+    pathTemplate: '/killmails/{killmail_id}/{killmail_hash}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 2592000,
+          'x-client-cache-ttl': 2592000,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 2592000,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'killmail',
+        kind: 'declared',
+        maximumTokens: 3600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -14961,46 +15001,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetKillmailsKillmailIdKillmailHashData',
     responseTypeExport: 'GetKillmailsKillmailIdKillmailHashResponse',
-    arguments: {
-      path: {
-        killmail_hash: 'x',
-        killmail_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/killmails/0/x',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 2592000,
-          'x-client-cache-ttl': 2592000,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 2592000,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'killmail',
-        maximumTokens: 3600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -15010,9 +15010,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetLoyaltyStoresCorporationIdOffers',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/loyalty/stores/0/offers',
+    },
     method: 'GET',
-    pathTemplate: '/loyalty/stores/{corporation_id}/offers',
+    operationId: 'GetLoyaltyStoresCorporationIdOffers',
     parameters: [
       {
         name: 'corporation_id',
@@ -15047,40 +15069,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetLoyaltyStoresCorporationIdOffersHeaders',
-      'zGetLoyaltyStoresCorporationIdOffersPath',
-    ],
-    requestTypeExport: 'GetLoyaltyStoresCorporationIdOffersData',
-    responseTypeExport: 'GetLoyaltyStoresCorporationIdOffersResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/loyalty/stores/0/offers',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/loyalty/stores/{corporation_id}/offers',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -15089,6 +15082,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetLoyaltyStoresCorporationIdOffersHeaders',
+      'zGetLoyaltyStoresCorporationIdOffersPath',
+    ],
+    requestTypeExport: 'GetLoyaltyStoresCorporationIdOffersData',
+    responseTypeExport: 'GetLoyaltyStoresCorporationIdOffersResponse',
     responses: [
       {
         status: '200',
@@ -15098,9 +15098,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMarketsGroups',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/markets/groups',
+    },
     method: 'GET',
-    pathTemplate: '/markets/groups',
+    operationId: 'GetMarketsGroups',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -15127,34 +15146,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetMarketsGroupsHeaders'],
-    requestTypeExport: 'GetMarketsGroupsData',
-    responseTypeExport: 'GetMarketsGroupsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/markets/groups',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/markets/groups',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -15163,6 +15159,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetMarketsGroupsHeaders'],
+    requestTypeExport: 'GetMarketsGroupsData',
+    responseTypeExport: 'GetMarketsGroupsResponse',
     responses: [
       {
         status: '200',
@@ -15172,9 +15172,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMarketsGroupsMarketGroupId',
+    arguments: {
+      path: {
+        market_group_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/markets/groups/0',
+    },
     method: 'GET',
-    pathTemplate: '/markets/groups/{market_group_id}',
+    operationId: 'GetMarketsGroupsMarketGroupId',
     parameters: [
       {
         name: 'market_group_id',
@@ -15209,40 +15231,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetMarketsGroupsMarketGroupIdHeaders',
-      'zGetMarketsGroupsMarketGroupIdPath',
-    ],
-    requestTypeExport: 'GetMarketsGroupsMarketGroupIdData',
-    responseTypeExport: 'GetMarketsGroupsMarketGroupIdResponse',
-    arguments: {
-      path: {
-        market_group_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/markets/groups/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/markets/groups/{market_group_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -15251,6 +15244,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetMarketsGroupsMarketGroupIdHeaders',
+      'zGetMarketsGroupsMarketGroupIdPath',
+    ],
+    requestTypeExport: 'GetMarketsGroupsMarketGroupIdData',
+    responseTypeExport: 'GetMarketsGroupsMarketGroupIdResponse',
     responses: [
       {
         status: '200',
@@ -15260,9 +15260,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMarketsPrices',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/markets/prices',
+    },
     method: 'GET',
-    pathTemplate: '/markets/prices',
+    operationId: 'GetMarketsPrices',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -15289,39 +15308,16 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetMarketsPricesHeaders'],
-    requestTypeExport: 'GetMarketsPricesData',
-    responseTypeExport: 'GetMarketsPricesResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/markets/prices',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/markets/prices',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -15330,6 +15326,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetMarketsPricesHeaders'],
+    requestTypeExport: 'GetMarketsPricesData',
+    responseTypeExport: 'GetMarketsPricesResponse',
     responses: [
       {
         status: '200',
@@ -15339,9 +15339,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMarketsRegionIdHistory',
+    arguments: {
+      path: {
+        region_id: 0,
+      },
+      query: {
+        type_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/markets/0/history?type_id=0',
+    },
     method: 'GET',
-    pathTemplate: '/markets/{region_id}/history',
+    operationId: 'GetMarketsRegionIdHistory',
     parameters: [
       {
         name: 'region_id',
@@ -15384,9 +15409,18 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
+    pathTemplate: '/markets/{region_id}/history',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -15396,40 +15430,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetMarketsRegionIdHistoryData',
     responseTypeExport: 'GetMarketsRegionIdHistoryResponse',
-    arguments: {
-      path: {
-        region_id: 0,
-      },
-      query: {
-        type_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/markets/0/history?type_id=0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'legacy-only',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -15439,9 +15439,36 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMarketsRegionIdOrders',
+    arguments: {
+      path: {
+        region_id: 0,
+      },
+      query: {
+        order_type: 'buy',
+        page: 1,
+        type_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/markets/0/orders?order_type=buy&page=1&type_id=0',
+    },
     method: 'GET',
-    pathTemplate: '/markets/{region_id}/orders',
+    operationId: 'GetMarketsRegionIdOrders',
     parameters: [
       {
         name: 'region_id',
@@ -15500,9 +15527,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
+    pathTemplate: '/markets/{region_id}/orders',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'market-order',
+        kind: 'declared',
+        maximumTokens: 12000,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -15512,50 +15556,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetMarketsRegionIdOrdersData',
     responseTypeExport: 'GetMarketsRegionIdOrdersResponse',
-    arguments: {
-      path: {
-        region_id: 0,
-      },
-      query: {
-        order_type: 'buy',
-        page: 1,
-        type_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/markets/0/orders?order_type=buy&page=1&type_id=0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'market-order',
-        maximumTokens: 12000,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -15565,9 +15565,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMarketsRegionIdTypes',
+    arguments: {
+      path: {
+        region_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/markets/0/types?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/markets/{region_id}/types',
+    operationId: 'GetMarketsRegionIdTypes',
     parameters: [
       {
         name: 'region_id',
@@ -15610,9 +15635,23 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
+    pathTemplate: '/markets/{region_id}/types',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -15622,9 +15661,18 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetMarketsRegionIdTypesData',
     responseTypeExport: 'GetMarketsRegionIdTypesResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetMarketsRegionIdTypesResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
-        region_id: 0,
+        structure_id: 0,
       },
       query: {
         page: 1,
@@ -15635,44 +15683,21 @@ const operationContracts = [
         'X-Tenant': 'x',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi-markets.structure_markets.v1'],
+    },
     expectedRequest: {
-      method: 'GET',
-      path: '/markets/0/types?page=1',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+      method: 'GET',
+      path: '/markets/structures/0?page=1',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 600,
-          'x-client-cache-ttl': 600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'legacy-only',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetMarketsRegionIdTypesResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetMarketsStructuresStructureId',
     method: 'GET',
-    pathTemplate: '/markets/structures/{structure_id}',
+    operationId: 'GetMarketsStructuresStructureId',
     parameters: [
       {
         name: 'structure_id',
@@ -15715,9 +15740,23 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-markets.structure_markets.v1'],
+    pathTemplate: '/markets/structures/{structure_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -15727,45 +15766,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetMarketsStructuresStructureIdData',
     responseTypeExport: 'GetMarketsStructuresStructureIdResponse',
-    arguments: {
-      path: {
-        structure_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/markets/structures/0?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 300,
-          'x-client-cache-ttl': 300,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 300,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'legacy-only',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -15775,9 +15775,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMetaChangelog',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/meta/changelog',
+    },
     method: 'GET',
-    pathTemplate: '/meta/changelog',
+    operationId: 'GetMetaChangelog',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -15804,50 +15823,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetMetaChangelogHeaders'],
-    requestTypeExport: 'GetMetaChangelogData',
-    responseTypeExport: 'GetMetaChangelogResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/meta/changelog',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/meta/changelog',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 600,
           'x-cache-mode': 'event-based',
           'x-client-cache-ttl': 600,
           'x-server-cache-mode': 'event-based',
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'meta',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetMetaChangelogHeaders'],
+    requestTypeExport: 'GetMetaChangelogData',
+    responseTypeExport: 'GetMetaChangelogResponse',
     responses: [
       {
         status: '200',
@@ -15857,9 +15857,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMetaCompatibilityDates',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/meta/compatibility-dates',
+    },
     method: 'GET',
-    pathTemplate: '/meta/compatibility-dates',
+    operationId: 'GetMetaCompatibilityDates',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -15886,50 +15905,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetMetaCompatibilityDatesHeaders'],
-    requestTypeExport: 'GetMetaCompatibilityDatesData',
-    responseTypeExport: 'GetMetaCompatibilityDatesResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/meta/compatibility-dates',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/meta/compatibility-dates',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 600,
           'x-cache-mode': 'event-based',
           'x-client-cache-ttl': 600,
           'x-server-cache-mode': 'event-based',
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'meta',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetMetaCompatibilityDatesHeaders'],
+    requestTypeExport: 'GetMetaCompatibilityDatesData',
+    responseTypeExport: 'GetMetaCompatibilityDatesResponse',
     responses: [
       {
         status: '200',
@@ -15939,9 +15939,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMetaName',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/meta/name',
+    },
     method: 'GET',
-    pathTemplate: '/meta/name',
+    operationId: 'GetMetaName',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -15968,50 +15987,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetMetaNameHeaders'],
-    requestTypeExport: 'GetMetaNameData',
-    responseTypeExport: 'GetMetaNameResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/meta/name',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/meta/name',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 600,
           'x-cache-mode': 'event-based',
           'x-client-cache-ttl': 600,
           'x-server-cache-mode': 'event-based',
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'meta',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetMetaNameHeaders'],
+    requestTypeExport: 'GetMetaNameData',
+    responseTypeExport: 'GetMetaNameResponse',
     responses: [
       {
         status: '200',
@@ -16021,9 +16021,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMetaStatus',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/meta/status',
+    },
     method: 'GET',
-    pathTemplate: '/meta/status',
+    operationId: 'GetMetaStatus',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -16050,48 +16069,29 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetMetaStatusHeaders'],
-    requestTypeExport: 'GetMetaStatusData',
-    responseTypeExport: 'GetMetaStatusResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/meta/status',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/meta/status',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-mode': 'event-based',
           'x-server-cache-mode': 'event-based',
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'meta',
+        kind: 'declared',
         maximumTokens: 150,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetMetaStatusHeaders'],
+    requestTypeExport: 'GetMetaStatusData',
+    responseTypeExport: 'GetMetaStatusResponse',
     responses: [
       {
         status: '200',
@@ -16101,9 +16101,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMilitaryCampaignsDetail',
+    arguments: {
+      path: {
+        campaign_id: '123e4567-e89b-42d3-a456-426614174000',
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/military-campaigns/123e4567-e89b-42d3-a456-426614174000',
+    },
     method: 'GET',
-    pathTemplate: '/military-campaigns/{campaign_id}',
+    operationId: 'GetMilitaryCampaignsDetail',
     parameters: [
       {
         name: 'campaign_id',
@@ -16138,53 +16160,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetMilitaryCampaignsDetailHeaders', 'zGetMilitaryCampaignsDetailPath'],
-    requestTypeExport: 'GetMilitaryCampaignsDetailData',
-    responseTypeExport: 'GetMilitaryCampaignsDetailResponse',
-    arguments: {
-      path: {
-        campaign_id: '123e4567-e89b-42d3-a456-426614174000',
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/military-campaigns/123e4567-e89b-42d3-a456-426614174000',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/military-campaigns/{campaign_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 60,
           'x-cache-mode': 'event-based',
           'x-client-cache-ttl': 60,
           'x-server-cache-mode': 'event-based',
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'military-campaign',
+        kind: 'declared',
         maximumTokens: 300,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetMilitaryCampaignsDetailHeaders', 'zGetMilitaryCampaignsDetailPath'],
+    requestTypeExport: 'GetMilitaryCampaignsDetailData',
+    responseTypeExport: 'GetMilitaryCampaignsDetailResponse',
     responses: [
       {
         status: '200',
@@ -16194,9 +16194,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMilitaryCampaignsListing',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/military-campaigns',
+    },
     method: 'GET',
-    pathTemplate: '/military-campaigns',
+    operationId: 'GetMilitaryCampaignsListing',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -16223,50 +16242,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetMilitaryCampaignsListingHeaders'],
-    requestTypeExport: 'GetMilitaryCampaignsListingData',
-    responseTypeExport: 'GetMilitaryCampaignsListingResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/military-campaigns',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/military-campaigns',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 60,
           'x-cache-mode': 'event-based',
           'x-client-cache-ttl': 60,
           'x-server-cache-mode': 'event-based',
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'military-campaign',
+        kind: 'declared',
         maximumTokens: 300,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetMilitaryCampaignsListingHeaders'],
+    requestTypeExport: 'GetMilitaryCampaignsListingData',
+    responseTypeExport: 'GetMilitaryCampaignsListingResponse',
     responses: [
       {
         status: '200',
@@ -16276,9 +16276,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMilitaryCampaignsObjectivesDetail',
+    arguments: {
+      path: {
+        campaign_id: '123e4567-e89b-42d3-a456-426614174000',
+        objective_id: '123e4567-e89b-42d3-a456-426614174000',
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/military-campaigns/123e4567-e89b-42d3-a456-426614174000/objectives/123e4567-e89b-42d3-a456-426614174000',
+    },
     method: 'GET',
-    pathTemplate: '/military-campaigns/{campaign_id}/objectives/{objective_id}',
+    operationId: 'GetMilitaryCampaignsObjectivesDetail',
     parameters: [
       {
         name: 'campaign_id',
@@ -16321,9 +16344,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
+    pathTemplate: '/military-campaigns/{campaign_id}/objectives/{objective_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'military-campaign',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -16332,46 +16372,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetMilitaryCampaignsObjectivesDetailData',
     responseTypeExport: 'GetMilitaryCampaignsObjectivesDetailResponse',
-    arguments: {
-      path: {
-        campaign_id: '123e4567-e89b-42d3-a456-426614174000',
-        objective_id: '123e4567-e89b-42d3-a456-426614174000',
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/military-campaigns/123e4567-e89b-42d3-a456-426614174000/objectives/123e4567-e89b-42d3-a456-426614174000',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 60,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 60,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'military-campaign',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -16381,9 +16381,36 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetMilitaryCampaignsObjectivesListing',
+    arguments: {
+      path: {
+        campaign_id: '123e4567-e89b-42d3-a456-426614174000',
+      },
+      query: {
+        after: '',
+        before: '',
+        limit: 10,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/military-campaigns/123e4567-e89b-42d3-a456-426614174000/objectives?after=&before=&limit=10',
+    },
     method: 'GET',
-    pathTemplate: '/military-campaigns/{campaign_id}/objectives',
+    operationId: 'GetMilitaryCampaignsObjectivesListing',
     parameters: [
       {
         name: 'campaign_id',
@@ -16445,9 +16472,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
+    pathTemplate: '/military-campaigns/{campaign_id}/objectives',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'military-campaign',
+        kind: 'declared',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -16457,10 +16501,16 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetMilitaryCampaignsObjectivesListingData',
     responseTypeExport: 'GetMilitaryCampaignsObjectivesListingResponse',
-    arguments: {
-      path: {
-        campaign_id: '123e4567-e89b-42d3-a456-426614174000',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetMilitaryCampaignsObjectivesListingResponse',
       },
+    ],
+  },
+  {
+    arguments: {
       query: {
         after: '',
         before: '',
@@ -16472,47 +16522,21 @@ const operationContracts = [
         'X-Tenant': 'x',
       },
     },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
     expectedRequest: {
-      method: 'GET',
-      path: '/military-campaigns/123e4567-e89b-42d3-a456-426614174000/objectives?after=&before=&limit=10',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+      method: 'GET',
+      path: '/paragon-hub/skinr?after=&before=&limit=10',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 60,
-          'x-cache-mode': 'event-based',
-          'x-client-cache-ttl': 60,
-          'x-server-cache-mode': 'event-based',
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'military-campaign',
-        maximumTokens: 300,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetMilitaryCampaignsObjectivesListingResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetParagonHubSkinr',
     method: 'GET',
-    pathTemplate: '/paragon-hub/skinr',
+    operationId: 'GetParagonHubSkinr',
     parameters: [
       {
         name: 'after',
@@ -16566,15 +16590,43 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
+    pathTemplate: '/paragon-hub/skinr',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+          'x-tombstone-ttl': 604800,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'paragon-hub',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: ['zGetParagonHubSkinrHeaders', 'zGetParagonHubSkinrQuery'],
     requestTypeExport: 'GetParagonHubSkinrData',
     responseTypeExport: 'GetParagonHubSkinrResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetParagonHubSkinrResponse',
+      },
+    ],
+  },
+  {
     arguments: {
+      path: {
+        alliance_id: 0,
+      },
       query: {
         after: '',
         before: '',
@@ -16586,46 +16638,21 @@ const operationContracts = [
         'X-Tenant': 'x',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi.cosmetic.char:read'],
+    },
     expectedRequest: {
-      method: 'GET',
-      path: '/paragon-hub/skinr?after=&before=&limit=10',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+      method: 'GET',
+      path: '/paragon-hub/skinr/alliances/0?after=&before=&limit=10',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-mode': 'event-based',
-          'x-server-cache-mode': 'event-based',
-          'x-tombstone-ttl': 604800,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'paragon-hub',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetParagonHubSkinrResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetParagonHubSkinrAlliances',
     method: 'GET',
-    pathTemplate: '/paragon-hub/skinr/alliances/{alliance_id}',
+    operationId: 'GetParagonHubSkinrAlliances',
     parameters: [
       {
         name: 'alliance_id',
@@ -16687,9 +16714,25 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi.cosmetic.char:read'],
+    pathTemplate: '/paragon-hub/skinr/alliances/{alliance_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+          'x-tombstone-ttl': 604800,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-paragon-hub',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -16699,9 +16742,18 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetParagonHubSkinrAlliancesData',
     responseTypeExport: 'GetParagonHubSkinrAlliancesResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetParagonHubSkinrAlliancesResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
-        alliance_id: 0,
+        character_id: 0,
       },
       query: {
         after: '',
@@ -16714,46 +16766,21 @@ const operationContracts = [
         'X-Tenant': 'x',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi.cosmetic.char:read'],
+    },
     expectedRequest: {
-      method: 'GET',
-      path: '/paragon-hub/skinr/alliances/0?after=&before=&limit=10',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+      method: 'GET',
+      path: '/paragon-hub/skinr/characters/0?after=&before=&limit=10',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-mode': 'event-based',
-          'x-server-cache-mode': 'event-based',
-          'x-tombstone-ttl': 604800,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-paragon-hub',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetParagonHubSkinrAlliancesResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetParagonHubSkinrCharacters',
     method: 'GET',
-    pathTemplate: '/paragon-hub/skinr/characters/{character_id}',
+    operationId: 'GetParagonHubSkinrCharacters',
     parameters: [
       {
         name: 'character_id',
@@ -16815,9 +16842,25 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi.cosmetic.char:read'],
+    pathTemplate: '/paragon-hub/skinr/characters/{character_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+          'x-tombstone-ttl': 604800,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-paragon-hub',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -16827,9 +16870,18 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetParagonHubSkinrCharactersData',
     responseTypeExport: 'GetParagonHubSkinrCharactersResponse',
+    responses: [
+      {
+        status: '200',
+        body: 'json',
+        schemaExport: 'zGetParagonHubSkinrCharactersResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
-        character_id: 0,
+        corporation_id: 0,
       },
       query: {
         after: '',
@@ -16842,46 +16894,21 @@ const operationContracts = [
         'X-Tenant': 'x',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi.cosmetic.char:read'],
+    },
     expectedRequest: {
-      method: 'GET',
-      path: '/paragon-hub/skinr/characters/0?after=&before=&limit=10',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+      method: 'GET',
+      path: '/paragon-hub/skinr/corporations/0?after=&before=&limit=10',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-mode': 'event-based',
-          'x-server-cache-mode': 'event-based',
-          'x-tombstone-ttl': 604800,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-paragon-hub',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '200',
-        body: 'json',
-        schemaExport: 'zGetParagonHubSkinrCharactersResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'GetParagonHubSkinrCorporations',
     method: 'GET',
-    pathTemplate: '/paragon-hub/skinr/corporations/{corporation_id}',
+    operationId: 'GetParagonHubSkinrCorporations',
     parameters: [
       {
         name: 'corporation_id',
@@ -16943,9 +16970,25 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi.cosmetic.char:read'],
+    pathTemplate: '/paragon-hub/skinr/corporations/{corporation_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+          'x-tombstone-ttl': 604800,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-paragon-hub',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -16955,49 +16998,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetParagonHubSkinrCorporationsData',
     responseTypeExport: 'GetParagonHubSkinrCorporationsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      query: {
-        after: '',
-        before: '',
-        limit: 10,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/paragon-hub/skinr/corporations/0?after=&before=&limit=10',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-mode': 'event-based',
-          'x-server-cache-mode': 'event-based',
-          'x-tombstone-ttl': 604800,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-paragon-hub',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -17007,9 +17007,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetSkyhooksRaidable',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/skyhooks/raidable',
+    },
     method: 'GET',
-    pathTemplate: '/skyhooks/raidable',
+    operationId: 'GetSkyhooksRaidable',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -17036,33 +17055,9 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetSkyhooksRaidableHeaders'],
-    requestTypeExport: 'GetSkyhooksRaidableData',
-    responseTypeExport: 'GetSkyhooksRaidableResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/skyhooks/raidable',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/skyhooks/raidable',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 300,
           'x-cache-mode': 'ttl-based',
@@ -17070,17 +17065,22 @@ const operationContracts = [
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 60,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'activity',
+        kind: 'declared',
         maximumTokens: 30,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetSkyhooksRaidableHeaders'],
+    requestTypeExport: 'GetSkyhooksRaidableData',
+    responseTypeExport: 'GetSkyhooksRaidableResponse',
     responses: [
       {
         status: '200',
@@ -17090,9 +17090,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetSovereigntyCampaigns',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/sovereignty/campaigns',
+    },
     method: 'GET',
-    pathTemplate: '/sovereignty/campaigns',
+    operationId: 'GetSovereigntyCampaigns',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -17119,50 +17138,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetSovereigntyCampaignsHeaders'],
-    requestTypeExport: 'GetSovereigntyCampaignsData',
-    responseTypeExport: 'GetSovereigntyCampaignsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/sovereignty/campaigns',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/sovereignty/campaigns',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 5,
           'x-client-cache-ttl': 5,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 5,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'sovereignty',
+        kind: 'declared',
         maximumTokens: 600,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetSovereigntyCampaignsHeaders'],
+    requestTypeExport: 'GetSovereigntyCampaignsData',
+    responseTypeExport: 'GetSovereigntyCampaignsResponse',
     responses: [
       {
         status: '200',
@@ -17172,9 +17172,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetSovereigntySystems',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/sovereignty/systems',
+    },
     method: 'GET',
-    pathTemplate: '/sovereignty/systems',
+    operationId: 'GetSovereigntySystems',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -17201,33 +17220,9 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetSovereigntySystemsHeaders'],
-    requestTypeExport: 'GetSovereigntySystemsData',
-    responseTypeExport: 'GetSovereigntySystemsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/sovereignty/systems',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/sovereignty/systems',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 300,
           'x-cache-mode': 'ttl-based',
@@ -17235,17 +17230,22 @@ const operationContracts = [
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 300,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'sovereignty',
+        kind: 'declared',
         maximumTokens: 600,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetSovereigntySystemsHeaders'],
+    requestTypeExport: 'GetSovereigntySystemsData',
+    responseTypeExport: 'GetSovereigntySystemsResponse',
     responses: [
       {
         status: '200',
@@ -17255,9 +17255,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetStatus',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/status',
+    },
     method: 'GET',
-    pathTemplate: '/status',
+    operationId: 'GetStatus',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -17284,33 +17303,9 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetStatusHeaders'],
-    requestTypeExport: 'GetStatusData',
-    responseTypeExport: 'GetStatusResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/status',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/status',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 30,
           'x-cache-mode': 'ttl-based',
@@ -17318,17 +17313,22 @@ const operationContracts = [
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 30,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'status',
+        kind: 'declared',
         maximumTokens: 600,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetStatusHeaders'],
+    requestTypeExport: 'GetStatusData',
+    responseTypeExport: 'GetStatusResponse',
     responses: [
       {
         status: '200',
@@ -17338,9 +17338,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseAncestries',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/ancestries',
+    },
     method: 'GET',
-    pathTemplate: '/universe/ancestries',
+    operationId: 'GetUniverseAncestries',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -17367,34 +17386,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseAncestriesHeaders'],
-    requestTypeExport: 'GetUniverseAncestriesData',
-    responseTypeExport: 'GetUniverseAncestriesResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/ancestries',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/ancestries',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -17403,6 +17399,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseAncestriesHeaders'],
+    requestTypeExport: 'GetUniverseAncestriesData',
+    responseTypeExport: 'GetUniverseAncestriesResponse',
     responses: [
       {
         status: '200',
@@ -17412,9 +17412,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseAsteroidBeltsAsteroidBeltId',
+    arguments: {
+      path: {
+        asteroid_belt_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/asteroid_belts/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/asteroid_belts/{asteroid_belt_id}',
+    operationId: 'GetUniverseAsteroidBeltsAsteroidBeltId',
     parameters: [
       {
         name: 'asteroid_belt_id',
@@ -17449,40 +17471,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetUniverseAsteroidBeltsAsteroidBeltIdHeaders',
-      'zGetUniverseAsteroidBeltsAsteroidBeltIdPath',
-    ],
-    requestTypeExport: 'GetUniverseAsteroidBeltsAsteroidBeltIdData',
-    responseTypeExport: 'GetUniverseAsteroidBeltsAsteroidBeltIdResponse',
-    arguments: {
-      path: {
-        asteroid_belt_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/asteroid_belts/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/asteroid_belts/{asteroid_belt_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -17491,6 +17484,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetUniverseAsteroidBeltsAsteroidBeltIdHeaders',
+      'zGetUniverseAsteroidBeltsAsteroidBeltIdPath',
+    ],
+    requestTypeExport: 'GetUniverseAsteroidBeltsAsteroidBeltIdData',
+    responseTypeExport: 'GetUniverseAsteroidBeltsAsteroidBeltIdResponse',
     responses: [
       {
         status: '200',
@@ -17500,9 +17500,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseBloodlines',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/bloodlines',
+    },
     method: 'GET',
-    pathTemplate: '/universe/bloodlines',
+    operationId: 'GetUniverseBloodlines',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -17529,34 +17548,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseBloodlinesHeaders'],
-    requestTypeExport: 'GetUniverseBloodlinesData',
-    responseTypeExport: 'GetUniverseBloodlinesResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/bloodlines',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/bloodlines',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -17565,6 +17561,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseBloodlinesHeaders'],
+    requestTypeExport: 'GetUniverseBloodlinesData',
+    responseTypeExport: 'GetUniverseBloodlinesResponse',
     responses: [
       {
         status: '200',
@@ -17574,9 +17574,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseCategories',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/categories',
+    },
     method: 'GET',
-    pathTemplate: '/universe/categories',
+    operationId: 'GetUniverseCategories',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -17603,34 +17622,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseCategoriesHeaders'],
-    requestTypeExport: 'GetUniverseCategoriesData',
-    responseTypeExport: 'GetUniverseCategoriesResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/categories',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/categories',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -17639,6 +17635,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseCategoriesHeaders'],
+    requestTypeExport: 'GetUniverseCategoriesData',
+    responseTypeExport: 'GetUniverseCategoriesResponse',
     responses: [
       {
         status: '200',
@@ -17648,9 +17648,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseCategoriesCategoryId',
+    arguments: {
+      path: {
+        category_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/categories/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/categories/{category_id}',
+    operationId: 'GetUniverseCategoriesCategoryId',
     parameters: [
       {
         name: 'category_id',
@@ -17685,40 +17707,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetUniverseCategoriesCategoryIdHeaders',
-      'zGetUniverseCategoriesCategoryIdPath',
-    ],
-    requestTypeExport: 'GetUniverseCategoriesCategoryIdData',
-    responseTypeExport: 'GetUniverseCategoriesCategoryIdResponse',
-    arguments: {
-      path: {
-        category_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/categories/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/categories/{category_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -17727,6 +17720,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetUniverseCategoriesCategoryIdHeaders',
+      'zGetUniverseCategoriesCategoryIdPath',
+    ],
+    requestTypeExport: 'GetUniverseCategoriesCategoryIdData',
+    responseTypeExport: 'GetUniverseCategoriesCategoryIdResponse',
     responses: [
       {
         status: '200',
@@ -17736,9 +17736,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseConstellations',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/constellations',
+    },
     method: 'GET',
-    pathTemplate: '/universe/constellations',
+    operationId: 'GetUniverseConstellations',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -17765,34 +17784,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseConstellationsHeaders'],
-    requestTypeExport: 'GetUniverseConstellationsData',
-    responseTypeExport: 'GetUniverseConstellationsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/constellations',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/constellations',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -17801,6 +17797,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseConstellationsHeaders'],
+    requestTypeExport: 'GetUniverseConstellationsData',
+    responseTypeExport: 'GetUniverseConstellationsResponse',
     responses: [
       {
         status: '200',
@@ -17810,9 +17810,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseConstellationsConstellationId',
+    arguments: {
+      path: {
+        constellation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/constellations/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/constellations/{constellation_id}',
+    operationId: 'GetUniverseConstellationsConstellationId',
     parameters: [
       {
         name: 'constellation_id',
@@ -17847,40 +17869,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetUniverseConstellationsConstellationIdHeaders',
-      'zGetUniverseConstellationsConstellationIdPath',
-    ],
-    requestTypeExport: 'GetUniverseConstellationsConstellationIdData',
-    responseTypeExport: 'GetUniverseConstellationsConstellationIdResponse',
-    arguments: {
-      path: {
-        constellation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/constellations/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/constellations/{constellation_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -17889,6 +17882,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetUniverseConstellationsConstellationIdHeaders',
+      'zGetUniverseConstellationsConstellationIdPath',
+    ],
+    requestTypeExport: 'GetUniverseConstellationsConstellationIdData',
+    responseTypeExport: 'GetUniverseConstellationsConstellationIdResponse',
     responses: [
       {
         status: '200',
@@ -17898,9 +17898,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseFactions',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/factions',
+    },
     method: 'GET',
-    pathTemplate: '/universe/factions',
+    operationId: 'GetUniverseFactions',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -17927,34 +17946,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseFactionsHeaders'],
-    requestTypeExport: 'GetUniverseFactionsData',
-    responseTypeExport: 'GetUniverseFactionsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/factions',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/factions',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -17963,6 +17959,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseFactionsHeaders'],
+    requestTypeExport: 'GetUniverseFactionsData',
+    responseTypeExport: 'GetUniverseFactionsResponse',
     responses: [
       {
         status: '200',
@@ -17972,9 +17972,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseGraphics',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/graphics',
+    },
     method: 'GET',
-    pathTemplate: '/universe/graphics',
+    operationId: 'GetUniverseGraphics',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -18001,34 +18020,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseGraphicsHeaders'],
-    requestTypeExport: 'GetUniverseGraphicsData',
-    responseTypeExport: 'GetUniverseGraphicsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/graphics',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/graphics',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -18037,6 +18033,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseGraphicsHeaders'],
+    requestTypeExport: 'GetUniverseGraphicsData',
+    responseTypeExport: 'GetUniverseGraphicsResponse',
     responses: [
       {
         status: '200',
@@ -18046,9 +18046,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseGraphicsGraphicId',
+    arguments: {
+      path: {
+        graphic_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/graphics/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/graphics/{graphic_id}',
+    operationId: 'GetUniverseGraphicsGraphicId',
     parameters: [
       {
         name: 'graphic_id',
@@ -18083,40 +18105,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetUniverseGraphicsGraphicIdHeaders',
-      'zGetUniverseGraphicsGraphicIdPath',
-    ],
-    requestTypeExport: 'GetUniverseGraphicsGraphicIdData',
-    responseTypeExport: 'GetUniverseGraphicsGraphicIdResponse',
-    arguments: {
-      path: {
-        graphic_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/graphics/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/graphics/{graphic_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -18125,6 +18118,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetUniverseGraphicsGraphicIdHeaders',
+      'zGetUniverseGraphicsGraphicIdPath',
+    ],
+    requestTypeExport: 'GetUniverseGraphicsGraphicIdData',
+    responseTypeExport: 'GetUniverseGraphicsGraphicIdResponse',
     responses: [
       {
         status: '200',
@@ -18134,9 +18134,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseGroups',
+    arguments: {
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/groups?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/universe/groups',
+    operationId: 'GetUniverseGroups',
     parameters: [
       {
         name: 'page',
@@ -18171,37 +18193,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseGroupsHeaders', 'zGetUniverseGroupsQuery'],
-    requestTypeExport: 'GetUniverseGroupsData',
-    responseTypeExport: 'GetUniverseGroupsResponse',
-    arguments: {
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/groups?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/groups',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -18210,6 +18206,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseGroupsHeaders', 'zGetUniverseGroupsQuery'],
+    requestTypeExport: 'GetUniverseGroupsData',
+    responseTypeExport: 'GetUniverseGroupsResponse',
     responses: [
       {
         status: '200',
@@ -18219,9 +18219,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseGroupsGroupId',
+    arguments: {
+      path: {
+        group_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/groups/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/groups/{group_id}',
+    operationId: 'GetUniverseGroupsGroupId',
     parameters: [
       {
         name: 'group_id',
@@ -18256,37 +18278,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseGroupsGroupIdHeaders', 'zGetUniverseGroupsGroupIdPath'],
-    requestTypeExport: 'GetUniverseGroupsGroupIdData',
-    responseTypeExport: 'GetUniverseGroupsGroupIdResponse',
-    arguments: {
-      path: {
-        group_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/groups/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/groups/{group_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -18295,6 +18291,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseGroupsGroupIdHeaders', 'zGetUniverseGroupsGroupIdPath'],
+    requestTypeExport: 'GetUniverseGroupsGroupIdData',
+    responseTypeExport: 'GetUniverseGroupsGroupIdResponse',
     responses: [
       {
         status: '200',
@@ -18304,9 +18304,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseMoonsMoonId',
+    arguments: {
+      path: {
+        moon_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/moons/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/moons/{moon_id}',
+    operationId: 'GetUniverseMoonsMoonId',
     parameters: [
       {
         name: 'moon_id',
@@ -18341,37 +18363,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseMoonsMoonIdHeaders', 'zGetUniverseMoonsMoonIdPath'],
-    requestTypeExport: 'GetUniverseMoonsMoonIdData',
-    responseTypeExport: 'GetUniverseMoonsMoonIdResponse',
-    arguments: {
-      path: {
-        moon_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/moons/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/moons/{moon_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -18380,6 +18376,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseMoonsMoonIdHeaders', 'zGetUniverseMoonsMoonIdPath'],
+    requestTypeExport: 'GetUniverseMoonsMoonIdData',
+    responseTypeExport: 'GetUniverseMoonsMoonIdResponse',
     responses: [
       {
         status: '200',
@@ -18389,9 +18389,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniversePlanetsPlanetId',
+    arguments: {
+      path: {
+        planet_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/planets/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/planets/{planet_id}',
+    operationId: 'GetUniversePlanetsPlanetId',
     parameters: [
       {
         name: 'planet_id',
@@ -18426,37 +18448,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniversePlanetsPlanetIdHeaders', 'zGetUniversePlanetsPlanetIdPath'],
-    requestTypeExport: 'GetUniversePlanetsPlanetIdData',
-    responseTypeExport: 'GetUniversePlanetsPlanetIdResponse',
-    arguments: {
-      path: {
-        planet_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/planets/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/planets/{planet_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -18465,6 +18461,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniversePlanetsPlanetIdHeaders', 'zGetUniversePlanetsPlanetIdPath'],
+    requestTypeExport: 'GetUniversePlanetsPlanetIdData',
+    responseTypeExport: 'GetUniversePlanetsPlanetIdResponse',
     responses: [
       {
         status: '200',
@@ -18474,9 +18474,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseRaces',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/races',
+    },
     method: 'GET',
-    pathTemplate: '/universe/races',
+    operationId: 'GetUniverseRaces',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -18503,34 +18522,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseRacesHeaders'],
-    requestTypeExport: 'GetUniverseRacesData',
-    responseTypeExport: 'GetUniverseRacesResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/races',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/races',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -18539,6 +18535,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseRacesHeaders'],
+    requestTypeExport: 'GetUniverseRacesData',
+    responseTypeExport: 'GetUniverseRacesResponse',
     responses: [
       {
         status: '200',
@@ -18548,9 +18548,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseRegions',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/regions',
+    },
     method: 'GET',
-    pathTemplate: '/universe/regions',
+    operationId: 'GetUniverseRegions',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -18577,34 +18596,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseRegionsHeaders'],
-    requestTypeExport: 'GetUniverseRegionsData',
-    responseTypeExport: 'GetUniverseRegionsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/regions',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/regions',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -18613,6 +18609,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseRegionsHeaders'],
+    requestTypeExport: 'GetUniverseRegionsData',
+    responseTypeExport: 'GetUniverseRegionsResponse',
     responses: [
       {
         status: '200',
@@ -18622,9 +18622,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseRegionsRegionId',
+    arguments: {
+      path: {
+        region_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/regions/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/regions/{region_id}',
+    operationId: 'GetUniverseRegionsRegionId',
     parameters: [
       {
         name: 'region_id',
@@ -18659,37 +18681,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseRegionsRegionIdHeaders', 'zGetUniverseRegionsRegionIdPath'],
-    requestTypeExport: 'GetUniverseRegionsRegionIdData',
-    responseTypeExport: 'GetUniverseRegionsRegionIdResponse',
-    arguments: {
-      path: {
-        region_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/regions/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/regions/{region_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -18698,6 +18694,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseRegionsRegionIdHeaders', 'zGetUniverseRegionsRegionIdPath'],
+    requestTypeExport: 'GetUniverseRegionsRegionIdData',
+    responseTypeExport: 'GetUniverseRegionsRegionIdResponse',
     responses: [
       {
         status: '200',
@@ -18707,9 +18707,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseSchematicsSchematicId',
+    arguments: {
+      path: {
+        schematic_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/schematics/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/schematics/{schematic_id}',
+    operationId: 'GetUniverseSchematicsSchematicId',
     parameters: [
       {
         name: 'schematic_id',
@@ -18744,45 +18766,16 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetUniverseSchematicsSchematicIdHeaders',
-      'zGetUniverseSchematicsSchematicIdPath',
-    ],
-    requestTypeExport: 'GetUniverseSchematicsSchematicIdData',
-    responseTypeExport: 'GetUniverseSchematicsSchematicIdResponse',
-    arguments: {
-      path: {
-        schematic_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/schematics/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/schematics/{schematic_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -18791,6 +18784,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetUniverseSchematicsSchematicIdHeaders',
+      'zGetUniverseSchematicsSchematicIdPath',
+    ],
+    requestTypeExport: 'GetUniverseSchematicsSchematicIdData',
+    responseTypeExport: 'GetUniverseSchematicsSchematicIdResponse',
     responses: [
       {
         status: '200',
@@ -18800,9 +18800,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseStargatesStargateId',
+    arguments: {
+      path: {
+        stargate_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/stargates/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/stargates/{stargate_id}',
+    operationId: 'GetUniverseStargatesStargateId',
     parameters: [
       {
         name: 'stargate_id',
@@ -18837,40 +18859,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetUniverseStargatesStargateIdHeaders',
-      'zGetUniverseStargatesStargateIdPath',
-    ],
-    requestTypeExport: 'GetUniverseStargatesStargateIdData',
-    responseTypeExport: 'GetUniverseStargatesStargateIdResponse',
-    arguments: {
-      path: {
-        stargate_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/stargates/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/stargates/{stargate_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -18879,6 +18872,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetUniverseStargatesStargateIdHeaders',
+      'zGetUniverseStargatesStargateIdPath',
+    ],
+    requestTypeExport: 'GetUniverseStargatesStargateIdData',
+    responseTypeExport: 'GetUniverseStargatesStargateIdResponse',
     responses: [
       {
         status: '200',
@@ -18888,9 +18888,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseStarsStarId',
+    arguments: {
+      path: {
+        star_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/stars/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/stars/{star_id}',
+    operationId: 'GetUniverseStarsStarId',
     parameters: [
       {
         name: 'star_id',
@@ -18925,37 +18947,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseStarsStarIdHeaders', 'zGetUniverseStarsStarIdPath'],
-    requestTypeExport: 'GetUniverseStarsStarIdData',
-    responseTypeExport: 'GetUniverseStarsStarIdResponse',
-    arguments: {
-      path: {
-        star_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/stars/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/stars/{star_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -18964,6 +18960,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseStarsStarIdHeaders', 'zGetUniverseStarsStarIdPath'],
+    requestTypeExport: 'GetUniverseStarsStarIdData',
+    responseTypeExport: 'GetUniverseStarsStarIdResponse',
     responses: [
       {
         status: '200',
@@ -18973,9 +18973,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseStationsStationId',
+    arguments: {
+      path: {
+        station_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/stations/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/stations/{station_id}',
+    operationId: 'GetUniverseStationsStationId',
     parameters: [
       {
         name: 'station_id',
@@ -19010,40 +19032,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetUniverseStationsStationIdHeaders',
-      'zGetUniverseStationsStationIdPath',
-    ],
-    requestTypeExport: 'GetUniverseStationsStationIdData',
-    responseTypeExport: 'GetUniverseStationsStationIdResponse',
-    arguments: {
-      path: {
-        station_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/stations/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/stations/{station_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -19052,6 +19045,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetUniverseStationsStationIdHeaders',
+      'zGetUniverseStationsStationIdPath',
+    ],
+    requestTypeExport: 'GetUniverseStationsStationIdData',
+    responseTypeExport: 'GetUniverseStationsStationIdResponse',
     responses: [
       {
         status: '200',
@@ -19061,9 +19061,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseStructures',
+    arguments: {
+      query: {
+        filter: 'market',
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/structures?filter=market',
+    },
     method: 'GET',
-    pathTemplate: '/universe/structures',
+    operationId: 'GetUniverseStructures',
     parameters: [
       {
         name: 'filter',
@@ -19098,42 +19120,16 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseStructuresHeaders', 'zGetUniverseStructuresQuery'],
-    requestTypeExport: 'GetUniverseStructuresData',
-    responseTypeExport: 'GetUniverseStructuresResponse',
-    arguments: {
-      query: {
-        filter: 'market',
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/structures?filter=market',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/structures',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -19142,6 +19138,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseStructuresHeaders', 'zGetUniverseStructuresQuery'],
+    requestTypeExport: 'GetUniverseStructuresData',
+    responseTypeExport: 'GetUniverseStructuresResponse',
     responses: [
       {
         status: '200',
@@ -19151,9 +19151,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseStructuresStructureId',
+    arguments: {
+      path: {
+        structure_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-universe.read_structures.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/structures/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/structures/{structure_id}',
+    operationId: 'GetUniverseStructuresStructureId',
     parameters: [
       {
         name: 'structure_id',
@@ -19188,45 +19210,16 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-universe.read_structures.v1'],
-    },
-    requestBody: null,
-    requestSchemaExports: [
-      'zGetUniverseStructuresStructureIdHeaders',
-      'zGetUniverseStructuresStructureIdPath',
-    ],
-    requestTypeExport: 'GetUniverseStructuresStructureIdData',
-    responseTypeExport: 'GetUniverseStructuresStructureIdResponse',
-    arguments: {
-      path: {
-        structure_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/structures/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/structures/{structure_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -19235,6 +19228,13 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: [
+      'zGetUniverseStructuresStructureIdHeaders',
+      'zGetUniverseStructuresStructureIdPath',
+    ],
+    requestTypeExport: 'GetUniverseStructuresStructureIdData',
+    responseTypeExport: 'GetUniverseStructuresStructureIdResponse',
     responses: [
       {
         status: '200',
@@ -19244,9 +19244,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseSystemJumps',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/system_jumps',
+    },
     method: 'GET',
-    pathTemplate: '/universe/system_jumps',
+    operationId: 'GetUniverseSystemJumps',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -19273,39 +19292,16 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseSystemJumpsHeaders'],
-    requestTypeExport: 'GetUniverseSystemJumpsData',
-    responseTypeExport: 'GetUniverseSystemJumpsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/system_jumps',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/system_jumps',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -19314,6 +19310,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseSystemJumpsHeaders'],
+    requestTypeExport: 'GetUniverseSystemJumpsData',
+    responseTypeExport: 'GetUniverseSystemJumpsResponse',
     responses: [
       {
         status: '200',
@@ -19323,9 +19323,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseSystemKills',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/system_kills',
+    },
     method: 'GET',
-    pathTemplate: '/universe/system_kills',
+    operationId: 'GetUniverseSystemKills',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -19352,39 +19371,16 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseSystemKillsHeaders'],
-    requestTypeExport: 'GetUniverseSystemKillsData',
-    responseTypeExport: 'GetUniverseSystemKillsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/system_kills',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/system_kills',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -19393,6 +19389,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseSystemKillsHeaders'],
+    requestTypeExport: 'GetUniverseSystemKillsData',
+    responseTypeExport: 'GetUniverseSystemKillsResponse',
     responses: [
       {
         status: '200',
@@ -19402,9 +19402,28 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseSystems',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/systems',
+    },
     method: 'GET',
-    pathTemplate: '/universe/systems',
+    operationId: 'GetUniverseSystems',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -19431,34 +19450,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseSystemsHeaders'],
-    requestTypeExport: 'GetUniverseSystemsData',
-    responseTypeExport: 'GetUniverseSystemsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/systems',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/systems',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -19467,6 +19463,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseSystemsHeaders'],
+    requestTypeExport: 'GetUniverseSystemsData',
+    responseTypeExport: 'GetUniverseSystemsResponse',
     responses: [
       {
         status: '200',
@@ -19476,9 +19476,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseSystemsSystemId',
+    arguments: {
+      path: {
+        system_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/systems/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/systems/{system_id}',
+    operationId: 'GetUniverseSystemsSystemId',
     parameters: [
       {
         name: 'system_id',
@@ -19513,37 +19535,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseSystemsSystemIdHeaders', 'zGetUniverseSystemsSystemIdPath'],
-    requestTypeExport: 'GetUniverseSystemsSystemIdData',
-    responseTypeExport: 'GetUniverseSystemsSystemIdResponse',
-    arguments: {
-      path: {
-        system_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/systems/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/systems/{system_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -19552,6 +19548,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseSystemsSystemIdHeaders', 'zGetUniverseSystemsSystemIdPath'],
+    requestTypeExport: 'GetUniverseSystemsSystemIdData',
+    responseTypeExport: 'GetUniverseSystemsSystemIdResponse',
     responses: [
       {
         status: '200',
@@ -19561,9 +19561,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseTypes',
+    arguments: {
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/types?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/universe/types',
+    operationId: 'GetUniverseTypes',
     parameters: [
       {
         name: 'page',
@@ -19598,37 +19620,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseTypesHeaders', 'zGetUniverseTypesQuery'],
-    requestTypeExport: 'GetUniverseTypesData',
-    responseTypeExport: 'GetUniverseTypesResponse',
-    arguments: {
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/types?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/types',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -19637,6 +19633,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseTypesHeaders', 'zGetUniverseTypesQuery'],
+    requestTypeExport: 'GetUniverseTypesData',
+    responseTypeExport: 'GetUniverseTypesResponse',
     responses: [
       {
         status: '200',
@@ -19646,9 +19646,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetUniverseTypesTypeId',
+    arguments: {
+      path: {
+        type_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/universe/types/0',
+    },
     method: 'GET',
-    pathTemplate: '/universe/types/{type_id}',
+    operationId: 'GetUniverseTypesTypeId',
     parameters: [
       {
         name: 'type_id',
@@ -19683,37 +19705,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetUniverseTypesTypeIdHeaders', 'zGetUniverseTypesTypeIdPath'],
-    requestTypeExport: 'GetUniverseTypesTypeIdData',
-    responseTypeExport: 'GetUniverseTypesTypeIdResponse',
-    arguments: {
-      path: {
-        type_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/universe/types/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/universe/types/{type_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
@@ -19722,6 +19718,10 @@ const operationContracts = [
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetUniverseTypesTypeIdHeaders', 'zGetUniverseTypesTypeIdPath'],
+    requestTypeExport: 'GetUniverseTypesTypeIdData',
+    responseTypeExport: 'GetUniverseTypesTypeIdResponse',
     responses: [
       {
         status: '200',
@@ -19731,9 +19731,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetWars',
+    arguments: {
+      query: {
+        max_war_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/wars?max_war_id=0',
+    },
     method: 'GET',
-    pathTemplate: '/wars',
+    operationId: 'GetWars',
     parameters: [
       {
         name: 'max_war_id',
@@ -19768,53 +19790,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetWarsHeaders', 'zGetWarsQuery'],
-    requestTypeExport: 'GetWarsData',
-    responseTypeExport: 'GetWarsResponse',
-    arguments: {
-      query: {
-        max_war_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/wars?max_war_id=0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/wars',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'killmail',
+        kind: 'declared',
         maximumTokens: 3600,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetWarsHeaders', 'zGetWarsQuery'],
+    requestTypeExport: 'GetWarsData',
+    responseTypeExport: 'GetWarsResponse',
     responses: [
       {
         status: '200',
@@ -19824,9 +19824,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetWarsWarId',
+    arguments: {
+      path: {
+        war_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/wars/0',
+    },
     method: 'GET',
-    pathTemplate: '/wars/{war_id}',
+    operationId: 'GetWarsWarId',
     parameters: [
       {
         name: 'war_id',
@@ -19861,53 +19883,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zGetWarsWarIdHeaders', 'zGetWarsWarIdPath'],
-    requestTypeExport: 'GetWarsWarIdData',
-    responseTypeExport: 'GetWarsWarIdResponse',
-    arguments: {
-      path: {
-        war_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/wars/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/wars/{war_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'killmail',
+        kind: 'declared',
         maximumTokens: 3600,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zGetWarsWarIdHeaders', 'zGetWarsWarIdPath'],
+    requestTypeExport: 'GetWarsWarIdData',
+    responseTypeExport: 'GetWarsWarIdResponse',
     responses: [
       {
         status: '200',
@@ -19917,9 +19917,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'GetWarsWarIdKillmails',
+    arguments: {
+      path: {
+        war_id: 0,
+      },
+      query: {
+        page: 1,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'GET',
+      path: '/wars/0/killmails?page=1',
+    },
     method: 'GET',
-    pathTemplate: '/wars/{war_id}/killmails',
+    operationId: 'GetWarsWarIdKillmails',
     parameters: [
       {
         name: 'war_id',
@@ -19962,9 +19987,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
+    pathTemplate: '/wars/{war_id}/killmails',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'killmail',
+        kind: 'declared',
+        maximumTokens: 3600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -19974,48 +20016,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'GetWarsWarIdKillmailsData',
     responseTypeExport: 'GetWarsWarIdKillmailsResponse',
-    arguments: {
-      path: {
-        war_id: 0,
-      },
-      query: {
-        page: 1,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'GET',
-      path: '/wars/0/killmails?page=1',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 3600,
-          'x-client-cache-ttl': 3600,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 3600,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'killmail',
-        maximumTokens: 3600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '200',
@@ -20025,9 +20025,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostCharactersAffiliation',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: [0],
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'POST',
+      path: '/characters/affiliation',
+      body: '[0]',
+    },
     method: 'POST',
-    pathTemplate: '/characters/affiliation',
+    operationId: 'PostCharactersAffiliation',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -20054,45 +20076,16 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: {
-      required: true,
-      mediaType: 'application/json',
-    },
-    requestSchemaExports: ['zPostCharactersAffiliationBody', 'zPostCharactersAffiliationHeaders'],
-    requestTypeExport: 'PostCharactersAffiliationData',
-    responseTypeExport: 'PostCharactersAffiliationResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: [0],
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/characters/affiliation',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '[0]',
-    },
+    pathTemplate: '/characters/affiliation',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-age': 3600,
           'x-client-cache-ttl': 3600,
           'x-server-cache-mode': 'ttl-based',
           'x-server-cache-ttl': 3600,
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: 1000,
@@ -20102,11 +20095,18 @@ const operationContracts = [
       requestArrayLimits: [
         {
           location: 'body',
-          path: [],
           maximumItems: 1000,
+          path: [],
         },
       ],
     },
+    requestBody: {
+      mediaType: 'application/json',
+      required: true,
+    },
+    requestSchemaExports: ['zPostCharactersAffiliationBody', 'zPostCharactersAffiliationHeaders'],
+    requestTypeExport: 'PostCharactersAffiliationData',
+    responseTypeExport: 'PostCharactersAffiliationResponse',
     responses: [
       {
         status: '200',
@@ -20116,9 +20116,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostCharactersCharacterIdAssetsLocations',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: [0],
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-assets.read_assets.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'POST',
+      path: '/characters/0/assets/locations',
+      body: '[0]',
+    },
     method: 'POST',
-    pathTemplate: '/characters/{character_id}/assets/locations',
+    operationId: 'PostCharactersCharacterIdAssetsLocations',
     parameters: [
       {
         name: 'character_id',
@@ -20153,13 +20178,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-assets.read_assets.v1'],
+    pathTemplate: '/characters/{character_id}/assets/locations',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 1000,
+      rateLimit: {
+        group: 'char-asset',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          maximumItems: 1000,
+          path: [],
+        },
+      ],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
       'zPostCharactersCharacterIdAssetsLocationsBody',
@@ -20168,49 +20211,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PostCharactersCharacterIdAssetsLocationsData',
     responseTypeExport: 'PostCharactersCharacterIdAssetsLocationsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: [0],
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/characters/0/assets/locations',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '[0]',
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: 1000,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-asset',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [
-        {
-          location: 'body',
-          path: [],
-          maximumItems: 1000,
-        },
-      ],
-    },
     responses: [
       {
         status: '200',
@@ -20220,9 +20220,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostCharactersCharacterIdAssetsNames',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: [0],
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-assets.read_assets.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'POST',
+      path: '/characters/0/assets/names',
+      body: '[0]',
+    },
     method: 'POST',
-    pathTemplate: '/characters/{character_id}/assets/names',
+    operationId: 'PostCharactersCharacterIdAssetsNames',
     parameters: [
       {
         name: 'character_id',
@@ -20257,13 +20282,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-assets.read_assets.v1'],
+    pathTemplate: '/characters/{character_id}/assets/names',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 1000,
+      rateLimit: {
+        group: 'char-asset',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          maximumItems: 1000,
+          path: [],
+        },
+      ],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
       'zPostCharactersCharacterIdAssetsNamesBody',
@@ -20272,49 +20315,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PostCharactersCharacterIdAssetsNamesData',
     responseTypeExport: 'PostCharactersCharacterIdAssetsNamesResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: [0],
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/characters/0/assets/names',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '[0]',
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: 1000,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-asset',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [
-        {
-          location: 'body',
-          path: [],
-          maximumItems: 1000,
-        },
-      ],
-    },
     responses: [
       {
         status: '200',
@@ -20324,9 +20324,39 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostCharactersCharacterIdContacts',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        label_ids: [0],
+        standing: 0,
+        watched: true,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: [0],
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.write_contacts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'POST',
+      path: '/characters/0/contacts?label_ids=0&standing=0&watched=true',
+      body: '[0]',
+    },
     method: 'POST',
-    pathTemplate: '/characters/{character_id}/contacts',
+    operationId: 'PostCharactersCharacterIdContacts',
     parameters: [
       {
         name: 'character_id',
@@ -20341,10 +20371,10 @@ const operationContracts = [
         placement: 'query',
         required: false,
         schema: {
-          type: 'array',
           items: {
             type: 'integer',
           },
+          type: 'array',
         },
       },
       {
@@ -20388,13 +20418,36 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.write_contacts.v1'],
+    pathTemplate: '/characters/{character_id}/contacts',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          maximumItems: 100,
+          path: [],
+        },
+        {
+          location: 'query',
+          maximumItems: 63,
+          path: ['label_ids'],
+        },
+      ],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
       'zPostCharactersCharacterIdContactsBody',
@@ -20404,59 +20457,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PostCharactersCharacterIdContactsData',
     responseTypeExport: 'PostCharactersCharacterIdContactsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        label_ids: [0],
-        standing: 0,
-        watched: true,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: [0],
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/characters/0/contacts?label_ids=0&standing=0&watched=true',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '[0]',
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [
-        {
-          location: 'body',
-          path: [],
-          maximumItems: 100,
-        },
-        {
-          location: 'query',
-          path: ['label_ids'],
-          maximumItems: 63,
-        },
-      ],
-    },
     responses: [
       {
         status: '201',
@@ -20466,58 +20466,6 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostCharactersCharacterIdCspa',
-    method: 'POST',
-    pathTemplate: '/characters/{character_id}/cspa',
-    parameters: [
-      {
-        name: 'character_id',
-        placement: 'path',
-        required: true,
-        schema: {
-          type: 'integer',
-        },
-      },
-      {
-        name: 'If-Modified-Since',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'If-None-Match',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'X-Tenant',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-    ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.read_contacts.v1'],
-    },
-    requestBody: {
-      required: true,
-      mediaType: 'application/json',
-    },
-    requestSchemaExports: [
-      'zPostCharactersCharacterIdCspaBody',
-      'zPostCharactersCharacterIdCspaHeaders',
-      'zPostCharactersCharacterIdCspaPath',
-    ],
-    requestTypeExport: 'PostCharactersCharacterIdCspaData',
-    responseTypeExport: 'PostCharactersCharacterIdCspaResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -20529,50 +20477,23 @@ const operationContracts = [
       },
       body: [0],
     },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.read_contacts.v1'],
+    },
     expectedRequest: {
-      method: 'POST',
-      path: '/characters/0/cspa',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
         'content-type': 'application/json',
       },
+      method: 'POST',
+      path: '/characters/0/cspa',
       body: '[0]',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: 100,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-detail',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [
-        {
-          location: 'body',
-          path: [],
-          maximumItems: 100,
-        },
-      ],
-    },
-    responses: [
-      {
-        status: '201',
-        body: 'json',
-        schemaExport: 'zPostCharactersCharacterIdCspaResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'PostCharactersCharacterIdFittings',
     method: 'POST',
-    pathTemplate: '/characters/{character_id}/fittings',
+    operationId: 'PostCharactersCharacterIdCspa',
     parameters: [
       {
         name: 'character_id',
@@ -20607,21 +20528,48 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fittings.write_fittings.v1'],
+    pathTemplate: '/characters/{character_id}/cspa',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 100,
+      rateLimit: {
+        group: 'char-detail',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          maximumItems: 100,
+          path: [],
+        },
+      ],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
-      'zPostCharactersCharacterIdFittingsBody',
-      'zPostCharactersCharacterIdFittingsHeaders',
-      'zPostCharactersCharacterIdFittingsPath',
+      'zPostCharactersCharacterIdCspaBody',
+      'zPostCharactersCharacterIdCspaHeaders',
+      'zPostCharactersCharacterIdCspaPath',
     ],
-    requestTypeExport: 'PostCharactersCharacterIdFittingsData',
-    responseTypeExport: 'PostCharactersCharacterIdFittingsResponse',
+    requestTypeExport: 'PostCharactersCharacterIdCspaData',
+    responseTypeExport: 'PostCharactersCharacterIdCspaResponse',
+    responses: [
+      {
+        status: '201',
+        body: 'json',
+        schemaExport: 'zPostCharactersCharacterIdCspaResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
         character_id: 0,
@@ -20644,50 +20592,23 @@ const operationContracts = [
         ship_type_id: 0,
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi-fittings.write_fittings.v1'],
+    },
     expectedRequest: {
-      method: 'POST',
-      path: '/characters/0/fittings',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
         'content-type': 'application/json',
       },
+      method: 'POST',
+      path: '/characters/0/fittings',
       body: '{"description":"x","items":[{"flag":"Cargo","quantity":0,"type_id":0}],"name":"x","ship_type_id":0}',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: 512,
-      rateLimit: {
-        kind: 'declared',
-        group: 'fitting',
-        maximumTokens: 150,
-        window: '15m',
-      },
-      requestArrayLimits: [
-        {
-          location: 'body',
-          path: ['items'],
-          maximumItems: 512,
-        },
-      ],
-    },
-    responses: [
-      {
-        status: '201',
-        body: 'json',
-        schemaExport: 'zPostCharactersCharacterIdFittingsResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'PostCharactersCharacterIdMail',
     method: 'POST',
-    pathTemplate: '/characters/{character_id}/mail',
+    operationId: 'PostCharactersCharacterIdFittings',
     parameters: [
       {
         name: 'character_id',
@@ -20722,21 +20643,48 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-mail.send_mail.v1'],
+    pathTemplate: '/characters/{character_id}/fittings',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 512,
+      rateLimit: {
+        group: 'fitting',
+        kind: 'declared',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          maximumItems: 512,
+          path: ['items'],
+        },
+      ],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
-      'zPostCharactersCharacterIdMailBody',
-      'zPostCharactersCharacterIdMailHeaders',
-      'zPostCharactersCharacterIdMailPath',
+      'zPostCharactersCharacterIdFittingsBody',
+      'zPostCharactersCharacterIdFittingsHeaders',
+      'zPostCharactersCharacterIdFittingsPath',
     ],
-    requestTypeExport: 'PostCharactersCharacterIdMailData',
-    responseTypeExport: 'PostCharactersCharacterIdMailResponse',
+    requestTypeExport: 'PostCharactersCharacterIdFittingsData',
+    responseTypeExport: 'PostCharactersCharacterIdFittingsResponse',
+    responses: [
+      {
+        status: '201',
+        body: 'json',
+        schemaExport: 'zPostCharactersCharacterIdFittingsResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
         character_id: 0,
@@ -20757,50 +20705,23 @@ const operationContracts = [
         subject: 'x',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi-mail.send_mail.v1'],
+    },
     expectedRequest: {
-      method: 'POST',
-      path: '/characters/0/mail',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
         'content-type': 'application/json',
       },
+      method: 'POST',
+      path: '/characters/0/mail',
       body: '{"body":"x","recipients":[{"recipient_id":0,"recipient_type":"alliance"}],"subject":"x"}',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: 50,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [
-        {
-          location: 'body',
-          path: ['recipients'],
-          maximumItems: 50,
-        },
-      ],
-    },
-    responses: [
-      {
-        status: '201',
-        body: 'json',
-        schemaExport: 'zPostCharactersCharacterIdMailResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'PostCharactersCharacterIdMailLabels',
     method: 'POST',
-    pathTemplate: '/characters/{character_id}/mail/labels',
+    operationId: 'PostCharactersCharacterIdMail',
     parameters: [
       {
         name: 'character_id',
@@ -20835,21 +20756,48 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-mail.organize_mail.v1'],
+    pathTemplate: '/characters/{character_id}/mail',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 50,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          maximumItems: 50,
+          path: ['recipients'],
+        },
+      ],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
-      'zPostCharactersCharacterIdMailLabelsBody',
-      'zPostCharactersCharacterIdMailLabelsHeaders',
-      'zPostCharactersCharacterIdMailLabelsPath',
+      'zPostCharactersCharacterIdMailBody',
+      'zPostCharactersCharacterIdMailHeaders',
+      'zPostCharactersCharacterIdMailPath',
     ],
-    requestTypeExport: 'PostCharactersCharacterIdMailLabelsData',
-    responseTypeExport: 'PostCharactersCharacterIdMailLabelsResponse',
+    requestTypeExport: 'PostCharactersCharacterIdMailData',
+    responseTypeExport: 'PostCharactersCharacterIdMailResponse',
+    responses: [
+      {
+        status: '201',
+        body: 'json',
+        schemaExport: 'zPostCharactersCharacterIdMailResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
         character_id: 0,
@@ -20863,32 +20811,84 @@ const operationContracts = [
         name: 'x',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi-mail.organize_mail.v1'],
+    },
     expectedRequest: {
-      method: 'POST',
-      path: '/characters/0/mail/labels',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
         'content-type': 'application/json',
       },
+      method: 'POST',
+      path: '/characters/0/mail/labels',
       body: '{"name":"x"}',
     },
+    method: 'POST',
+    operationId: 'PostCharactersCharacterIdMailLabels',
+    parameters: [
+      {
+        name: 'character_id',
+        placement: 'path',
+        required: true,
+        schema: {
+          type: 'integer',
+        },
+      },
+      {
+        name: 'If-Modified-Since',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'If-None-Match',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'X-Tenant',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+    ],
+    pathTemplate: '/characters/{character_id}/mail/labels',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'char-social',
+        kind: 'declared',
         maximumTokens: 600,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: {
+      mediaType: 'application/json',
+      required: true,
+    },
+    requestSchemaExports: [
+      'zPostCharactersCharacterIdMailLabelsBody',
+      'zPostCharactersCharacterIdMailLabelsHeaders',
+      'zPostCharactersCharacterIdMailLabelsPath',
+    ],
+    requestTypeExport: 'PostCharactersCharacterIdMailLabelsData',
+    responseTypeExport: 'PostCharactersCharacterIdMailLabelsResponse',
     responses: [
       {
         status: '201',
@@ -20898,9 +20898,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostCorporationsCorporationIdAssetsLocations',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: [0],
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-assets.read_corporation_assets.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'POST',
+      path: '/corporations/0/assets/locations',
+      body: '[0]',
+    },
     method: 'POST',
-    pathTemplate: '/corporations/{corporation_id}/assets/locations',
+    operationId: 'PostCorporationsCorporationIdAssetsLocations',
     parameters: [
       {
         name: 'corporation_id',
@@ -20935,13 +20960,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-assets.read_corporation_assets.v1'],
+    pathTemplate: '/corporations/{corporation_id}/assets/locations',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 1000,
+      rateLimit: {
+        group: 'corp-asset',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          maximumItems: 1000,
+          path: [],
+        },
+      ],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
       'zPostCorporationsCorporationIdAssetsLocationsBody',
@@ -20950,49 +20993,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PostCorporationsCorporationIdAssetsLocationsData',
     responseTypeExport: 'PostCorporationsCorporationIdAssetsLocationsResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: [0],
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/corporations/0/assets/locations',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '[0]',
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: 1000,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-asset',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [
-        {
-          location: 'body',
-          path: [],
-          maximumItems: 1000,
-        },
-      ],
-    },
     responses: [
       {
         status: '200',
@@ -21002,9 +21002,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostCorporationsCorporationIdAssetsNames',
+    arguments: {
+      path: {
+        corporation_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: [0],
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-assets.read_corporation_assets.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'POST',
+      path: '/corporations/0/assets/names',
+      body: '[0]',
+    },
     method: 'POST',
-    pathTemplate: '/corporations/{corporation_id}/assets/names',
+    operationId: 'PostCorporationsCorporationIdAssetsNames',
     parameters: [
       {
         name: 'corporation_id',
@@ -21039,13 +21064,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-assets.read_corporation_assets.v1'],
+    pathTemplate: '/corporations/{corporation_id}/assets/names',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 1000,
+      rateLimit: {
+        group: 'corp-asset',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          maximumItems: 1000,
+          path: [],
+        },
+      ],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
       'zPostCorporationsCorporationIdAssetsNamesBody',
@@ -21054,49 +21097,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PostCorporationsCorporationIdAssetsNamesData',
     responseTypeExport: 'PostCorporationsCorporationIdAssetsNamesResponse',
-    arguments: {
-      path: {
-        corporation_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: [0],
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/corporations/0/assets/names',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '[0]',
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: 1000,
-      rateLimit: {
-        kind: 'declared',
-        group: 'corp-asset',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [
-        {
-          location: 'body',
-          path: [],
-          maximumItems: 1000,
-        },
-      ],
-    },
     responses: [
       {
         status: '200',
@@ -21106,58 +21106,6 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostFleetsFleetIdMembers',
-    method: 'POST',
-    pathTemplate: '/fleets/{fleet_id}/members',
-    parameters: [
-      {
-        name: 'fleet_id',
-        placement: 'path',
-        required: true,
-        schema: {
-          type: 'integer',
-        },
-      },
-      {
-        name: 'If-Modified-Since',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'If-None-Match',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'X-Tenant',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-    ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.write_fleet.v1'],
-    },
-    requestBody: {
-      required: true,
-      mediaType: 'application/json',
-    },
-    requestSchemaExports: [
-      'zPostFleetsFleetIdMembersBody',
-      'zPostFleetsFleetIdMembersHeaders',
-      'zPostFleetsFleetIdMembersPath',
-    ],
-    requestTypeExport: 'PostFleetsFleetIdMembersData',
-    responseTypeExport: 'PostFleetsFleetIdMembersResponse',
     arguments: {
       path: {
         fleet_id: 0,
@@ -21172,44 +21120,23 @@ const operationContracts = [
         role: 'fleet_commander',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.write_fleet.v1'],
+    },
     expectedRequest: {
-      method: 'POST',
-      path: '/fleets/0/members',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
         'content-type': 'application/json',
       },
+      method: 'POST',
+      path: '/fleets/0/members',
       body: '{"character_id":0,"role":"fleet_commander"}',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'fleet',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '204',
-        body: 'none',
-        schemaExport: 'zPostFleetsFleetIdMembersResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'PostFleetsFleetIdWings',
     method: 'POST',
-    pathTemplate: '/fleets/{fleet_id}/wings',
+    operationId: 'PostFleetsFleetIdMembers',
     parameters: [
       {
         name: 'fleet_id',
@@ -21244,14 +21171,42 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.write_fleet.v1'],
+    pathTemplate: '/fleets/{fleet_id}/members',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'fleet',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
-    requestBody: null,
-    requestSchemaExports: ['zPostFleetsFleetIdWingsHeaders', 'zPostFleetsFleetIdWingsPath'],
-    requestTypeExport: 'PostFleetsFleetIdWingsData',
-    responseTypeExport: 'PostFleetsFleetIdWingsResponse',
+    requestBody: {
+      mediaType: 'application/json',
+      required: true,
+    },
+    requestSchemaExports: [
+      'zPostFleetsFleetIdMembersBody',
+      'zPostFleetsFleetIdMembersHeaders',
+      'zPostFleetsFleetIdMembersPath',
+    ],
+    requestTypeExport: 'PostFleetsFleetIdMembersData',
+    responseTypeExport: 'PostFleetsFleetIdMembersResponse',
+    responses: [
+      {
+        status: '204',
+        body: 'none',
+        schemaExport: 'zPostFleetsFleetIdMembersResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
         fleet_id: 0,
@@ -21262,30 +21217,75 @@ const operationContracts = [
         'X-Tenant': 'x',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.write_fleet.v1'],
+    },
     expectedRequest: {
-      method: 'POST',
-      path: '/fleets/0/wings',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+      method: 'POST',
+      path: '/fleets/0/wings',
     },
+    method: 'POST',
+    operationId: 'PostFleetsFleetIdWings',
+    parameters: [
+      {
+        name: 'fleet_id',
+        placement: 'path',
+        required: true,
+        schema: {
+          type: 'integer',
+        },
+      },
+      {
+        name: 'If-Modified-Since',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'If-None-Match',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'X-Tenant',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+    ],
+    pathTemplate: '/fleets/{fleet_id}/wings',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'fleet',
+        kind: 'declared',
         maximumTokens: 1800,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zPostFleetsFleetIdWingsHeaders', 'zPostFleetsFleetIdWingsPath'],
+    requestTypeExport: 'PostFleetsFleetIdWingsData',
+    responseTypeExport: 'PostFleetsFleetIdWingsResponse',
     responses: [
       {
         status: '201',
@@ -21295,9 +21295,32 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostFleetsFleetIdWingsWingIdSquads',
+    arguments: {
+      path: {
+        fleet_id: 0,
+        wing_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.write_fleet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'POST',
+      path: '/fleets/0/wings/0/squads',
+    },
     method: 'POST',
-    pathTemplate: '/fleets/{fleet_id}/wings/{wing_id}/squads',
+    operationId: 'PostFleetsFleetIdWingsWingIdSquads',
     parameters: [
       {
         name: 'fleet_id',
@@ -21340,9 +21363,21 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.write_fleet.v1'],
+    pathTemplate: '/fleets/{fleet_id}/wings/{wing_id}/squads',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'fleet',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -21351,41 +21386,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PostFleetsFleetIdWingsWingIdSquadsData',
     responseTypeExport: 'PostFleetsFleetIdWingsWingIdSquadsResponse',
-    arguments: {
-      path: {
-        fleet_id: 0,
-        wing_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/fleets/0/wings/0/squads',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'fleet',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '201',
@@ -21395,9 +21395,35 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostRoute',
+    arguments: {
+      path: {
+        destination_system_id: 0,
+        origin_system_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: {},
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'POST',
+      path: '/route/0/0',
+      body: '{}',
+    },
     method: 'POST',
-    pathTemplate: '/route/{origin_system_id}/{destination_system_id}',
+    operationId: 'PostRoute',
     parameters: [
       {
         name: 'destination_system_id',
@@ -21440,69 +21466,43 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: {
-      required: true,
-      mediaType: 'application/json',
-    },
-    requestSchemaExports: ['zPostRouteBody', 'zPostRouteHeaders', 'zPostRoutePath'],
-    requestTypeExport: 'PostRouteData',
-    responseTypeExport: 'PostRouteResponse',
-    arguments: {
-      path: {
-        destination_system_id: 0,
-        origin_system_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: {},
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/route/0/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '{}',
-    },
+    pathTemplate: '/route/{origin_system_id}/{destination_system_id}',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {
           'x-cache-mode': 'not-cached',
           'x-server-cache-mode': 'not-cached',
         },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'routes',
+        kind: 'declared',
         maximumTokens: 3600,
         window: '15m',
       },
       requestArrayLimits: [
         {
           location: 'body',
-          path: ['avoid_systems'],
           maximumItems: 1000,
+          path: ['avoid_systems'],
         },
         {
           location: 'body',
-          path: ['connections'],
           maximumItems: 1000,
+          path: ['connections'],
         },
       ],
     },
+    requestBody: {
+      mediaType: 'application/json',
+      required: true,
+    },
+    requestSchemaExports: ['zPostRouteBody', 'zPostRouteHeaders', 'zPostRoutePath'],
+    requestTypeExport: 'PostRouteData',
+    responseTypeExport: 'PostRouteResponse',
     responses: [
       {
         status: '200',
@@ -21512,9 +21512,33 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostUiAutopilotWaypoint',
+    arguments: {
+      query: {
+        add_to_beginning: true,
+        clear_other_waypoints: true,
+        destination_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-ui.write_waypoint.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'POST',
+      path: '/ui/autopilot/waypoint?add_to_beginning=true&clear_other_waypoints=true&destination_id=0',
+    },
     method: 'POST',
-    pathTemplate: '/ui/autopilot/waypoint',
+    operationId: 'PostUiAutopilotWaypoint',
     parameters: [
       {
         name: 'add_to_beginning',
@@ -21565,50 +21589,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-ui.write_waypoint.v1'],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zPostUiAutopilotWaypointHeaders', 'zPostUiAutopilotWaypointQuery'],
-    requestTypeExport: 'PostUiAutopilotWaypointData',
-    responseTypeExport: 'PostUiAutopilotWaypointResponse',
-    arguments: {
-      query: {
-        add_to_beginning: true,
-        clear_other_waypoints: true,
-        destination_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/ui/autopilot/waypoint?add_to_beginning=true&clear_other_waypoints=true&destination_id=0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/ui/autopilot/waypoint',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'ui',
+        kind: 'declared',
         maximumTokens: 900,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zPostUiAutopilotWaypointHeaders', 'zPostUiAutopilotWaypointQuery'],
+    requestTypeExport: 'PostUiAutopilotWaypointData',
+    responseTypeExport: 'PostUiAutopilotWaypointResponse',
     responses: [
       {
         status: '204',
@@ -21618,9 +21618,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostUiOpenwindowContract',
+    arguments: {
+      query: {
+        contract_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-ui.open_window.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'POST',
+      path: '/ui/openwindow/contract?contract_id=0',
+    },
     method: 'POST',
-    pathTemplate: '/ui/openwindow/contract',
+    operationId: 'PostUiOpenwindowContract',
     parameters: [
       {
         name: 'contract_id',
@@ -21655,48 +21677,26 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-ui.open_window.v1'],
-    },
-    requestBody: null,
-    requestSchemaExports: ['zPostUiOpenwindowContractHeaders', 'zPostUiOpenwindowContractQuery'],
-    requestTypeExport: 'PostUiOpenwindowContractData',
-    responseTypeExport: 'PostUiOpenwindowContractResponse',
-    arguments: {
-      query: {
-        contract_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/ui/openwindow/contract?contract_id=0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
+    pathTemplate: '/ui/openwindow/contract',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: null,
       rateLimit: {
-        kind: 'declared',
         group: 'ui',
+        kind: 'declared',
         maximumTokens: 900,
         window: '15m',
       },
       requestArrayLimits: [],
     },
+    requestBody: null,
+    requestSchemaExports: ['zPostUiOpenwindowContractHeaders', 'zPostUiOpenwindowContractQuery'],
+    requestTypeExport: 'PostUiOpenwindowContractData',
+    responseTypeExport: 'PostUiOpenwindowContractResponse',
     responses: [
       {
         status: '204',
@@ -21706,9 +21706,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostUiOpenwindowInformation',
+    arguments: {
+      query: {
+        target_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-ui.open_window.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'POST',
+      path: '/ui/openwindow/information?target_id=0',
+    },
     method: 'POST',
-    pathTemplate: '/ui/openwindow/information',
+    operationId: 'PostUiOpenwindowInformation',
     parameters: [
       {
         name: 'target_id',
@@ -21743,9 +21765,21 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-ui.open_window.v1'],
+    pathTemplate: '/ui/openwindow/information',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'ui',
+        kind: 'declared',
+        maximumTokens: 900,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -21754,40 +21788,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PostUiOpenwindowInformationData',
     responseTypeExport: 'PostUiOpenwindowInformationResponse',
-    arguments: {
-      query: {
-        target_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/ui/openwindow/information?target_id=0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'ui',
-        maximumTokens: 900,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '204',
@@ -21797,9 +21797,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostUiOpenwindowMarketdetails',
+    arguments: {
+      query: {
+        type_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-ui.open_window.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+      },
+      method: 'POST',
+      path: '/ui/openwindow/marketdetails?type_id=0',
+    },
     method: 'POST',
-    pathTemplate: '/ui/openwindow/marketdetails',
+    operationId: 'PostUiOpenwindowMarketdetails',
     parameters: [
       {
         name: 'type_id',
@@ -21834,9 +21856,21 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-ui.open_window.v1'],
+    pathTemplate: '/ui/openwindow/marketdetails',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'ui',
+        kind: 'declared',
+        maximumTokens: 900,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: null,
     requestSchemaExports: [
@@ -21845,40 +21879,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PostUiOpenwindowMarketdetailsData',
     responseTypeExport: 'PostUiOpenwindowMarketdetailsResponse',
-    arguments: {
-      query: {
-        type_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/ui/openwindow/marketdetails?type_id=0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-      },
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'ui',
-        maximumTokens: 900,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '204',
@@ -21888,46 +21888,6 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostUiOpenwindowNewmail',
-    method: 'POST',
-    pathTemplate: '/ui/openwindow/newmail',
-    parameters: [
-      {
-        name: 'If-Modified-Since',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'If-None-Match',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-      {
-        name: 'X-Tenant',
-        placement: 'header',
-        required: false,
-        schema: {
-          type: 'string',
-        },
-      },
-    ],
-    authentication: {
-      required: true,
-      scopes: ['esi-ui.open_window.v1'],
-    },
-    requestBody: {
-      required: true,
-      mediaType: 'application/json',
-    },
-    requestSchemaExports: ['zPostUiOpenwindowNewmailBody', 'zPostUiOpenwindowNewmailHeaders'],
-    requestTypeExport: 'PostUiOpenwindowNewmailData',
-    responseTypeExport: 'PostUiOpenwindowNewmailResponse',
     arguments: {
       headers: {
         'If-Modified-Since': 'x',
@@ -21940,38 +21900,78 @@ const operationContracts = [
         subject: 'x',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi-ui.open_window.v1'],
+    },
     expectedRequest: {
-      method: 'POST',
-      path: '/ui/openwindow/newmail',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
         'content-type': 'application/json',
       },
+      method: 'POST',
+      path: '/ui/openwindow/newmail',
       body: '{"body":"x","recipients":[0],"subject":"x"}',
     },
+    method: 'POST',
+    operationId: 'PostUiOpenwindowNewmail',
+    parameters: [
+      {
+        name: 'If-Modified-Since',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'If-None-Match',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'X-Tenant',
+        placement: 'header',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+    ],
+    pathTemplate: '/ui/openwindow/newmail',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: 50,
       rateLimit: {
-        kind: 'declared',
         group: 'ui',
+        kind: 'declared',
         maximumTokens: 900,
         window: '15m',
       },
       requestArrayLimits: [
         {
           location: 'body',
-          path: ['recipients'],
           maximumItems: 50,
+          path: ['recipients'],
         },
       ],
     },
+    requestBody: {
+      mediaType: 'application/json',
+      required: true,
+    },
+    requestSchemaExports: ['zPostUiOpenwindowNewmailBody', 'zPostUiOpenwindowNewmailHeaders'],
+    requestTypeExport: 'PostUiOpenwindowNewmailData',
+    responseTypeExport: 'PostUiOpenwindowNewmailResponse',
     responses: [
       {
         status: '204',
@@ -21981,9 +21981,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostUniverseIds',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: ['x'],
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'POST',
+      path: '/universe/ids',
+      body: '["x"]',
+    },
     method: 'POST',
-    pathTemplate: '/universe/ids',
+    operationId: 'PostUniverseIds',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -22010,40 +22032,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: {
-      required: true,
-      mediaType: 'application/json',
-    },
-    requestSchemaExports: ['zPostUniverseIdsBody', 'zPostUniverseIdsHeaders'],
-    requestTypeExport: 'PostUniverseIdsData',
-    responseTypeExport: 'PostUniverseIdsResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: ['x'],
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/universe/ids',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '["x"]',
-    },
+    pathTemplate: '/universe/ids',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: 500,
@@ -22053,11 +22046,18 @@ const operationContracts = [
       requestArrayLimits: [
         {
           location: 'body',
-          path: [],
           maximumItems: 500,
+          path: [],
         },
       ],
     },
+    requestBody: {
+      mediaType: 'application/json',
+      required: true,
+    },
+    requestSchemaExports: ['zPostUniverseIdsBody', 'zPostUniverseIdsHeaders'],
+    requestTypeExport: 'PostUniverseIdsData',
+    responseTypeExport: 'PostUniverseIdsResponse',
     responses: [
       {
         status: '200',
@@ -22067,9 +22067,31 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PostUniverseNames',
+    arguments: {
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: [0],
+    },
+    authentication: {
+      required: false,
+      scopes: [],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'POST',
+      path: '/universe/names',
+      body: '[0]',
+    },
     method: 'POST',
-    pathTemplate: '/universe/names',
+    operationId: 'PostUniverseNames',
     parameters: [
       {
         name: 'If-Modified-Since',
@@ -22096,40 +22118,11 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: false,
-      scopes: [],
-    },
-    requestBody: {
-      required: true,
-      mediaType: 'application/json',
-    },
-    requestSchemaExports: ['zPostUniverseNamesBody', 'zPostUniverseNamesHeaders'],
-    requestTypeExport: 'PostUniverseNamesData',
-    responseTypeExport: 'PostUniverseNamesResponse',
-    arguments: {
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: [0],
-    },
-    expectedRequest: {
-      method: 'POST',
-      path: '/universe/names',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '[0]',
-    },
+    pathTemplate: '/universe/names',
     protocol: {
       cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
         extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
       },
       conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
       maximumBatchSize: 1000,
@@ -22139,11 +22132,18 @@ const operationContracts = [
       requestArrayLimits: [
         {
           location: 'body',
-          path: [],
           maximumItems: 1000,
+          path: [],
         },
       ],
     },
+    requestBody: {
+      mediaType: 'application/json',
+      required: true,
+    },
+    requestSchemaExports: ['zPostUniverseNamesBody', 'zPostUniverseNamesHeaders'],
+    requestTypeExport: 'PostUniverseNamesData',
+    responseTypeExport: 'PostUniverseNamesResponse',
     responses: [
       {
         status: '200',
@@ -22153,9 +22153,37 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PutCharactersCharacterIdCalendarEventId',
+    arguments: {
+      path: {
+        character_id: 0,
+        event_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: {
+        response: 'accepted',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-calendar.respond_calendar_events.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'PUT',
+      path: '/characters/0/calendar/0',
+      body: '{"response":"accepted"}',
+    },
     method: 'PUT',
-    pathTemplate: '/characters/{character_id}/calendar/{event_id}',
+    operationId: 'PutCharactersCharacterIdCalendarEventId',
     parameters: [
       {
         name: 'character_id',
@@ -22198,13 +22226,30 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-calendar.respond_calendar_events.v1'],
+    pathTemplate: '/characters/{character_id}/calendar/{event_id}',
+    protocol: {
+      cache: {
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
       'zPutCharactersCharacterIdCalendarEventIdBody',
@@ -22213,51 +22258,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PutCharactersCharacterIdCalendarEventIdData',
     responseTypeExport: 'PutCharactersCharacterIdCalendarEventIdResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        event_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: {
-        response: 'accepted',
-      },
-    },
-    expectedRequest: {
-      method: 'PUT',
-      path: '/characters/0/calendar/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '{"response":"accepted"}',
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {
-          'x-cache-age': 5,
-          'x-client-cache-ttl': 5,
-          'x-server-cache-mode': 'ttl-based',
-          'x-server-cache-ttl': 5,
-        },
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '204',
@@ -22267,9 +22267,39 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PutCharactersCharacterIdContacts',
+    arguments: {
+      path: {
+        character_id: 0,
+      },
+      query: {
+        label_ids: [0],
+        standing: 0,
+        watched: true,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: [0],
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-characters.write_contacts.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'PUT',
+      path: '/characters/0/contacts?label_ids=0&standing=0&watched=true',
+      body: '[0]',
+    },
     method: 'PUT',
-    pathTemplate: '/characters/{character_id}/contacts',
+    operationId: 'PutCharactersCharacterIdContacts',
     parameters: [
       {
         name: 'character_id',
@@ -22284,10 +22314,10 @@ const operationContracts = [
         placement: 'query',
         required: false,
         schema: {
-          type: 'array',
           items: {
             type: 'integer',
           },
+          type: 'array',
         },
       },
       {
@@ -22331,13 +22361,36 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-characters.write_contacts.v1'],
+    pathTemplate: '/characters/{character_id}/contacts',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          maximumItems: 100,
+          path: [],
+        },
+        {
+          location: 'query',
+          maximumItems: 63,
+          path: ['label_ids'],
+        },
+      ],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
       'zPutCharactersCharacterIdContactsBody',
@@ -22347,59 +22400,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PutCharactersCharacterIdContactsData',
     responseTypeExport: 'PutCharactersCharacterIdContactsResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-      },
-      query: {
-        label_ids: [0],
-        standing: 0,
-        watched: true,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: [0],
-    },
-    expectedRequest: {
-      method: 'PUT',
-      path: '/characters/0/contacts?label_ids=0&standing=0&watched=true',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '[0]',
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [
-        {
-          location: 'body',
-          path: [],
-          maximumItems: 100,
-        },
-        {
-          location: 'query',
-          path: ['label_ids'],
-          maximumItems: 63,
-        },
-      ],
-    },
     responses: [
       {
         status: '204',
@@ -22409,9 +22409,35 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PutCharactersCharacterIdMailMailId',
+    arguments: {
+      path: {
+        character_id: 0,
+        mail_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: {},
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-mail.organize_mail.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'PUT',
+      path: '/characters/0/mail/0',
+      body: '{}',
+    },
     method: 'PUT',
-    pathTemplate: '/characters/{character_id}/mail/{mail_id}',
+    operationId: 'PutCharactersCharacterIdMailMailId',
     parameters: [
       {
         name: 'character_id',
@@ -22454,13 +22480,31 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-mail.organize_mail.v1'],
+    pathTemplate: '/characters/{character_id}/mail/{mail_id}',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 25,
+      rateLimit: {
+        group: 'char-social',
+        kind: 'declared',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          maximumItems: 25,
+          path: ['labels'],
+        },
+      ],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
       'zPutCharactersCharacterIdMailMailIdBody',
@@ -22469,50 +22513,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PutCharactersCharacterIdMailMailIdData',
     responseTypeExport: 'PutCharactersCharacterIdMailMailIdResponse',
-    arguments: {
-      path: {
-        character_id: 0,
-        mail_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: {},
-    },
-    expectedRequest: {
-      method: 'PUT',
-      path: '/characters/0/mail/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '{}',
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: 25,
-      rateLimit: {
-        kind: 'declared',
-        group: 'char-social',
-        maximumTokens: 600,
-        window: '15m',
-      },
-      requestArrayLimits: [
-        {
-          location: 'body',
-          path: ['labels'],
-          maximumItems: 25,
-        },
-      ],
-    },
     responses: [
       {
         status: '204',
@@ -22522,9 +22522,34 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PutFleetsFleetId',
+    arguments: {
+      path: {
+        fleet_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: {},
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.write_fleet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'PUT',
+      path: '/fleets/0',
+      body: '{}',
+    },
     method: 'PUT',
-    pathTemplate: '/fleets/{fleet_id}',
+    operationId: 'PutFleetsFleetId',
     parameters: [
       {
         name: 'fleet_id',
@@ -22559,13 +22584,25 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.write_fleet.v1'],
+    pathTemplate: '/fleets/{fleet_id}',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'fleet',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
       'zPutFleetsFleetIdBody',
@@ -22574,43 +22611,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PutFleetsFleetIdData',
     responseTypeExport: 'PutFleetsFleetIdResponse',
-    arguments: {
-      path: {
-        fleet_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: {},
-    },
-    expectedRequest: {
-      method: 'PUT',
-      path: '/fleets/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '{}',
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'fleet',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '204',
@@ -22620,9 +22620,37 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PutFleetsFleetIdMembersMemberId',
+    arguments: {
+      path: {
+        fleet_id: 0,
+        member_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: {
+        role: 'fleet_commander',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.write_fleet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'PUT',
+      path: '/fleets/0/members/0',
+      body: '{"role":"fleet_commander"}',
+    },
     method: 'PUT',
-    pathTemplate: '/fleets/{fleet_id}/members/{member_id}',
+    operationId: 'PutFleetsFleetIdMembersMemberId',
     parameters: [
       {
         name: 'fleet_id',
@@ -22665,13 +22693,25 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.write_fleet.v1'],
+    pathTemplate: '/fleets/{fleet_id}/members/{member_id}',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'fleet',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
       'zPutFleetsFleetIdMembersMemberIdBody',
@@ -22680,46 +22720,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PutFleetsFleetIdMembersMemberIdData',
     responseTypeExport: 'PutFleetsFleetIdMembersMemberIdResponse',
-    arguments: {
-      path: {
-        fleet_id: 0,
-        member_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: {
-        role: 'fleet_commander',
-      },
-    },
-    expectedRequest: {
-      method: 'PUT',
-      path: '/fleets/0/members/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '{"role":"fleet_commander"}',
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'fleet',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '204',
@@ -22729,9 +22729,37 @@ const operationContracts = [
     ],
   },
   {
-    operationId: 'PutFleetsFleetIdSquadsSquadId',
+    arguments: {
+      path: {
+        fleet_id: 0,
+        squad_id: 0,
+      },
+      headers: {
+        'If-Modified-Since': 'x',
+        'If-None-Match': 'x',
+        'X-Tenant': 'x',
+      },
+      body: {
+        name: 'x',
+      },
+    },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.write_fleet.v1'],
+    },
+    expectedRequest: {
+      headers: {
+        'if-modified-since': 'x',
+        'if-none-match': 'x',
+        'x-tenant': 'x',
+        'content-type': 'application/json',
+      },
+      method: 'PUT',
+      path: '/fleets/0/squads/0',
+      body: '{"name":"x"}',
+    },
     method: 'PUT',
-    pathTemplate: '/fleets/{fleet_id}/squads/{squad_id}',
+    operationId: 'PutFleetsFleetIdSquadsSquadId',
     parameters: [
       {
         name: 'fleet_id',
@@ -22774,13 +22802,25 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.write_fleet.v1'],
+    pathTemplate: '/fleets/{fleet_id}/squads/{squad_id}',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'fleet',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
       'zPutFleetsFleetIdSquadsSquadIdBody',
@@ -22789,10 +22829,19 @@ const operationContracts = [
     ],
     requestTypeExport: 'PutFleetsFleetIdSquadsSquadIdData',
     responseTypeExport: 'PutFleetsFleetIdSquadsSquadIdResponse',
+    responses: [
+      {
+        status: '204',
+        body: 'none',
+        schemaExport: 'zPutFleetsFleetIdSquadsSquadIdResponse',
+      },
+    ],
+  },
+  {
     arguments: {
       path: {
         fleet_id: 0,
-        squad_id: 0,
+        wing_id: 0,
       },
       headers: {
         'If-Modified-Since': 'x',
@@ -22803,44 +22852,23 @@ const operationContracts = [
         name: 'x',
       },
     },
+    authentication: {
+      required: true,
+      scopes: ['esi-fleets.write_fleet.v1'],
+    },
     expectedRequest: {
-      method: 'PUT',
-      path: '/fleets/0/squads/0',
       headers: {
         'if-modified-since': 'x',
         'if-none-match': 'x',
         'x-tenant': 'x',
         'content-type': 'application/json',
       },
+      method: 'PUT',
+      path: '/fleets/0/wings/0',
       body: '{"name":"x"}',
     },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'fleet',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
-    responses: [
-      {
-        status: '204',
-        body: 'none',
-        schemaExport: 'zPutFleetsFleetIdSquadsSquadIdResponse',
-      },
-    ],
-  },
-  {
-    operationId: 'PutFleetsFleetIdWingsWingId',
     method: 'PUT',
-    pathTemplate: '/fleets/{fleet_id}/wings/{wing_id}',
+    operationId: 'PutFleetsFleetIdWingsWingId',
     parameters: [
       {
         name: 'fleet_id',
@@ -22883,13 +22911,25 @@ const operationContracts = [
         },
       },
     ],
-    authentication: {
-      required: true,
-      scopes: ['esi-fleets.write_fleet.v1'],
+    pathTemplate: '/fleets/{fleet_id}/wings/{wing_id}',
+    protocol: {
+      cache: {
+        extensions: {},
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        group: 'fleet',
+        kind: 'declared',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     requestBody: {
-      required: true,
       mediaType: 'application/json',
+      required: true,
     },
     requestSchemaExports: [
       'zPutFleetsFleetIdWingsWingIdBody',
@@ -22898,46 +22938,6 @@ const operationContracts = [
     ],
     requestTypeExport: 'PutFleetsFleetIdWingsWingIdData',
     responseTypeExport: 'PutFleetsFleetIdWingsWingIdResponse',
-    arguments: {
-      path: {
-        fleet_id: 0,
-        wing_id: 0,
-      },
-      headers: {
-        'If-Modified-Since': 'x',
-        'If-None-Match': 'x',
-        'X-Tenant': 'x',
-      },
-      body: {
-        name: 'x',
-      },
-    },
-    expectedRequest: {
-      method: 'PUT',
-      path: '/fleets/0/wings/0',
-      headers: {
-        'if-modified-since': 'x',
-        'if-none-match': 'x',
-        'x-tenant': 'x',
-        'content-type': 'application/json',
-      },
-      body: '{"name":"x"}',
-    },
-    protocol: {
-      cache: {
-        responseHeaders: ['cache-control', 'etag', 'last-modified'],
-        extensions: {},
-      },
-      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
-      maximumBatchSize: null,
-      rateLimit: {
-        kind: 'declared',
-        group: 'fleet',
-        maximumTokens: 1800,
-        window: '15m',
-      },
-      requestArrayLimits: [],
-    },
     responses: [
       {
         status: '204',

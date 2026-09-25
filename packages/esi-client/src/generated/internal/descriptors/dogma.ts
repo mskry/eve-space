@@ -53,7 +53,7 @@ export const GetDogmaAttributesAttributeIdDescriptor: OperationExecutionDescript
   requestBody: null,
   requestSchema: GetDogmaAttributesAttributeIdRequestSchema,
   authentication: null,
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetDogmaAttributesAttributeIdResponse },
   ],
@@ -79,7 +79,7 @@ export const GetDogmaDynamicItemsTypeIdItemIdDescriptor: OperationExecutionDescr
   requestBody: null,
   requestSchema: GetDogmaDynamicItemsTypeIdItemIdRequestSchema,
   authentication: null,
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetDogmaDynamicItemsTypeIdItemIdResponse },
   ],
@@ -104,7 +104,7 @@ export const GetDogmaEffectsEffectIdDescriptor: OperationExecutionDescriptor<Ope
   requestBody: null,
   requestSchema: GetDogmaEffectsEffectIdRequestSchema,
   authentication: null,
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetDogmaEffectsEffectIdResponse },
   ],
@@ -127,7 +127,7 @@ export const GetDogmaAttributesDescriptor: OperationExecutionDescriptor<Operatio
   requestBody: null,
   requestSchema: GetDogmaAttributesRequestSchema,
   authentication: null,
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetDogmaAttributesResponse },
   ],
@@ -150,7 +150,7 @@ export const GetDogmaEffectsDescriptor: OperationExecutionDescriptor<OperationAr
   requestBody: null,
   requestSchema: GetDogmaEffectsRequestSchema,
   authentication: null,
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetDogmaEffectsResponse },
   ],

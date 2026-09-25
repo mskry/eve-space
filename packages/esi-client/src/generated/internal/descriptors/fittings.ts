@@ -47,7 +47,7 @@ export const PostCharactersCharacterIdFittingsDescriptor: OperationExecutionDesc
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostCharactersCharacterIdFittingsRequestSchema,
   authentication: { scopes: ["esi-fittings.write_fittings.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":512,"rateLimit":{"kind":"declared","group":"fitting","maximumTokens":150,"window":"15m"},"requestArrayLimits":[{"location":"body","path":["items"],"maximumItems":512}]},
+  protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":512,"rateLimit":{"group":"fitting","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[{"location":"body","maximumItems":512,"path":["items"]}]},
   successResponses: [
     { status: 201, body: 'json', schema: zPostCharactersCharacterIdFittingsResponse },
   ],
@@ -73,7 +73,7 @@ export const DeleteCharactersCharacterIdFittingsFittingIdDescriptor: OperationEx
   requestBody: null,
   requestSchema: DeleteCharactersCharacterIdFittingsFittingIdRequestSchema,
   authentication: { scopes: ["esi-fittings.write_fittings.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fitting","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"fitting","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -98,7 +98,7 @@ export const GetCharactersCharacterIdFittingsDescriptor: OperationExecutionDescr
   requestBody: null,
   requestSchema: GetCharactersCharacterIdFittingsRequestSchema,
   authentication: { scopes: ["esi-fittings.read_fittings.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fitting","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"fitting","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdFittingsResponse },
   ],

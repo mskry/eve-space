@@ -126,12 +126,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -229,16 +229,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [
         {
           "location": "query",
+          "maximumItems": 20,
           "path": [
             "contact_ids"
-          ],
-          "maximumItems": 20
+          ]
         }
       ],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -282,12 +288,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -313,12 +313,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -411,8 +411,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "fitting",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -449,12 +455,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fitting",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -480,12 +480,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -578,8 +578,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -616,12 +622,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -647,12 +647,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -745,8 +745,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -783,12 +789,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -814,12 +814,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -914,8 +914,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -952,12 +958,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -983,12 +983,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -1083,8 +1083,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -1121,12 +1127,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -1152,12 +1152,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -1252,8 +1252,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -1290,12 +1296,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -1319,17 +1319,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -1394,8 +1394,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -1432,9 +1435,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -1458,18 +1458,18 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-cache-mode": "ttl-based",
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -1548,8 +1548,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -1593,9 +1596,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -1621,17 +1621,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -1729,8 +1729,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "alliance-social",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -1781,12 +1787,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "alliance-social",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -1812,17 +1812,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -1900,8 +1900,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "alliance-social",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -1945,12 +1951,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "alliance-social",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -1974,17 +1974,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -2062,8 +2062,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -2107,9 +2110,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -2133,12 +2133,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -2216,8 +2216,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -2261,9 +2264,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -2289,17 +2289,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -2392,8 +2392,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-access",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -2437,12 +2443,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-access",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -2468,17 +2468,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -2557,8 +2557,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-access",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -2602,12 +2608,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-access",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -2633,17 +2633,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -2721,8 +2721,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-industry",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -2766,12 +2772,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-industry",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -2797,17 +2797,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -2905,8 +2905,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-asset",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -2957,12 +2963,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-asset",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -2988,17 +2988,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 120,
           "x-client-cache-ttl": 120,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 120
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -3076,8 +3076,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-detail",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -3121,12 +3127,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-detail",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -3152,17 +3152,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -3260,8 +3260,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-industry",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -3312,12 +3318,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-industry",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -3343,17 +3343,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 5,
           "x-client-cache-ttl": 5,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 5
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -3446,8 +3446,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -3498,12 +3504,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -3529,17 +3529,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 5,
           "x-client-cache-ttl": 5,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 5
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -3632,8 +3632,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -3677,12 +3683,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -3708,17 +3708,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 600,
           "x-client-cache-ttl": 600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -3811,8 +3811,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -3856,12 +3862,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -3887,17 +3887,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 120,
           "x-client-cache-ttl": 120,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 120
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -3975,8 +3975,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-location",
+        "kind": "declared",
+        "maximumTokens": 1200,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -4020,12 +4026,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-location",
-        "maximumTokens": 1200,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -4051,17 +4051,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -4159,8 +4159,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -4211,12 +4217,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -4242,17 +4242,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -4330,8 +4330,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -4375,12 +4381,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -4406,17 +4406,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -4514,8 +4514,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-contract",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -4566,12 +4572,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-contract",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -4597,17 +4597,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -4700,8 +4700,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-contract",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -4745,12 +4751,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-contract",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -4776,17 +4776,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -4879,8 +4879,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-contract",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -4924,12 +4930,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-contract",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -4953,17 +4953,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 86400,
           "x-client-cache-ttl": 86400,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 86400
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -5041,8 +5041,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -5086,9 +5089,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -5114,17 +5114,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -5202,8 +5202,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-location",
+        "kind": "declared",
+        "maximumTokens": 1200,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -5247,12 +5253,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-location",
-        "maximumTokens": 1200,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -5278,17 +5278,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -5366,8 +5366,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "fitting",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -5411,12 +5417,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fitting",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -5442,17 +5442,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 60
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -5530,8 +5530,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -5575,12 +5581,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -5606,12 +5606,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -5689,8 +5689,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "factional-warfare",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -5734,12 +5740,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "factional-warfare",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -5765,17 +5765,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 120,
           "x-client-cache-ttl": 120,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 120
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -5853,8 +5853,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-detail",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -5898,12 +5904,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-detail",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -5929,17 +5929,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -6031,8 +6031,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-industry",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -6083,12 +6089,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-industry",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -6114,17 +6114,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -6222,8 +6222,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-killmail",
+        "kind": "declared",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -6274,12 +6280,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-killmail",
-        "maximumTokens": 30,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -6305,17 +6305,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 5,
           "x-client-cache-ttl": 5,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 5
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -6393,8 +6393,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-location",
+        "kind": "declared",
+        "maximumTokens": 1200,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -6438,12 +6444,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-location",
-        "maximumTokens": 1200,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -6469,17 +6469,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -6557,8 +6557,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-wallet",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -6602,12 +6608,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-wallet",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -6633,17 +6633,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 30,
           "x-client-cache-ttl": 30,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 30
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -6757,16 +6757,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [
         {
           "location": "query",
+          "maximumItems": 25,
           "path": [
             "labels"
-          ],
-          "maximumItems": 25
+          ]
         }
       ],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -6817,12 +6823,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -6848,17 +6848,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 30,
           "x-client-cache-ttl": 30,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 30
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -6936,8 +6936,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -6981,12 +6987,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -7012,17 +7012,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 120,
           "x-client-cache-ttl": 120,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 120
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -7100,8 +7100,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -7145,12 +7151,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -7176,17 +7176,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 30,
           "x-client-cache-ttl": 30,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 30
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -7279,8 +7279,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -7324,12 +7330,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -7355,17 +7355,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -7443,8 +7443,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-detail",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -7488,12 +7494,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-detail",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -7519,17 +7519,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 600,
           "x-client-cache-ttl": 600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -7627,8 +7627,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-industry",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -7679,12 +7685,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-industry",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -7710,17 +7710,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 600,
           "x-client-cache-ttl": 600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -7798,8 +7798,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-notification",
+        "kind": "declared",
+        "maximumTokens": 15,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -7843,12 +7849,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-notification",
-        "maximumTokens": 15,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -7874,17 +7874,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 600,
           "x-client-cache-ttl": 600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -7962,8 +7962,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -8007,12 +8013,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -8038,17 +8038,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 60
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -8126,8 +8126,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-location",
+        "kind": "declared",
+        "maximumTokens": 1200,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -8171,12 +8177,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-location",
-        "maximumTokens": 1200,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -8202,17 +8202,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 1200,
           "x-client-cache-ttl": 1200,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 1200
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -8290,8 +8290,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -8335,9 +8338,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -8363,17 +8363,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -8471,8 +8471,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -8523,9 +8526,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -8551,17 +8551,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 600,
           "x-client-cache-ttl": 600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -8639,8 +8639,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-industry",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -8684,12 +8690,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-industry",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -8715,17 +8715,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 600,
           "x-client-cache-ttl": 600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -8818,8 +8818,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-industry",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -8863,12 +8869,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-industry",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -8892,12 +8892,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -8975,8 +8975,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-detail",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -9020,12 +9026,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-detail",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -9051,17 +9051,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -9139,8 +9139,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-detail",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -9184,12 +9190,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-detail",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -9215,17 +9215,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -9366,16 +9366,19 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [
         {
           "location": "query",
+          "maximumItems": 11,
           "path": [
             "categories"
-          ],
-          "maximumItems": 11
+          ]
         }
       ],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -9426,9 +9429,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -9454,17 +9454,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 5,
           "x-client-cache-ttl": 5,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 5
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -9542,8 +9542,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-location",
+        "kind": "declared",
+        "maximumTokens": 1200,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -9587,12 +9593,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-location",
-        "maximumTokens": 1200,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -9618,17 +9618,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -9707,8 +9707,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-detail",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -9755,12 +9761,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-detail",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -9786,17 +9786,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -9875,8 +9875,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-detail",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -9920,12 +9926,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-detail",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -9951,17 +9951,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -10039,8 +10039,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -10084,12 +10090,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -10115,17 +10115,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -10203,8 +10203,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-detail",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -10248,12 +10254,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-detail",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -10279,17 +10279,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 120,
           "x-client-cache-ttl": 120,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 120
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -10367,8 +10367,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-wallet",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -10412,12 +10418,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-wallet",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -10443,17 +10443,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -10551,8 +10551,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-wallet",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -10603,12 +10609,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-wallet",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -10634,17 +10634,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -10737,8 +10737,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-wallet",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -10789,12 +10795,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-wallet",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -10820,17 +10820,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -10909,8 +10909,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-skinr",
+        "kind": "declared",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -10954,12 +10960,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-skinr",
-        "maximumTokens": 30,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -10985,17 +10985,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -11074,8 +11074,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-skinr",
+        "kind": "declared",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -11119,12 +11125,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-skinr",
-        "maximumTokens": 30,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -11148,18 +11148,18 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 86400,
           "x-cache-mode": "ttl-based",
           "x-client-cache-ttl": 86400,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 86400
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -11238,8 +11238,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -11283,9 +11286,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -11311,17 +11311,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -11400,8 +11400,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-freelance-job",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -11445,12 +11451,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-freelance-job",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -11476,17 +11476,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -11579,8 +11579,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-freelance-job",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -11624,12 +11630,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-freelance-job",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -11655,17 +11655,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -11758,8 +11758,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-activity",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -11803,12 +11809,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-activity",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -11834,17 +11834,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -11923,8 +11923,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-activity",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -11968,12 +11974,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-activity",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -11999,17 +11999,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -12134,8 +12134,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-military-campaign",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -12186,12 +12192,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-military-campaign",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -12217,17 +12217,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -12320,8 +12320,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-military-campaign",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -12365,12 +12371,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-military-campaign",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -12396,16 +12396,16 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-mode": "event-based",
           "x-server-cache-mode": "event-based",
           "x-tombstone-ttl": 604800
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -12530,8 +12530,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-paragon-hub",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -12582,12 +12588,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-paragon-hub",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -12613,17 +12613,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -12716,8 +12716,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-structure",
+        "kind": "declared",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -12761,12 +12767,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-structure",
-        "maximumTokens": 30,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -12792,17 +12792,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -12881,8 +12881,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-structure",
+        "kind": "declared",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -12926,12 +12932,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-structure",
-        "maximumTokens": 30,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -12955,17 +12955,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -13065,8 +13065,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -13127,9 +13130,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -13153,17 +13153,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -13263,8 +13263,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -13325,9 +13328,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -13351,17 +13351,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 1800,
           "x-client-cache-ttl": 1800,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 1800
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -13461,8 +13461,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -13513,9 +13516,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -13541,17 +13541,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 1800,
           "x-client-cache-ttl": 1800,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 1800
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -13649,8 +13649,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-industry",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -13701,12 +13707,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-industry",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -13732,17 +13732,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -13840,8 +13840,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-industry",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -13892,12 +13898,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-industry",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -13923,17 +13923,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -14046,8 +14046,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-industry",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -14098,12 +14104,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-industry",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -14127,18 +14127,18 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-cache-mode": "ttl-based",
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -14217,8 +14217,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -14262,9 +14265,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -14288,17 +14288,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -14376,8 +14376,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -14421,9 +14424,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -14449,17 +14449,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -14557,8 +14557,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-asset",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -14609,12 +14615,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-asset",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -14640,17 +14640,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -14748,8 +14748,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-industry",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -14800,12 +14806,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-industry",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -14831,17 +14831,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -14939,8 +14939,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-social",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -14991,12 +14997,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-social",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -15022,17 +15022,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -15110,8 +15110,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-social",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -15155,12 +15161,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-social",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -15186,17 +15186,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 600,
           "x-client-cache-ttl": 600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -15294,8 +15294,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-structure",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -15346,12 +15352,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-structure",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -15377,17 +15377,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -15485,8 +15485,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-contract",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -15537,12 +15543,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-contract",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -15568,17 +15568,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -15691,8 +15691,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-contract",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -15743,12 +15749,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-contract",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -15774,17 +15774,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -15877,8 +15877,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-contract",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -15922,12 +15928,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-contract",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -15953,17 +15953,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -16061,8 +16061,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-industry",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -16113,12 +16119,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-industry",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -16144,17 +16144,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -16232,8 +16232,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-wallet",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -16277,12 +16283,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-wallet",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -16308,17 +16308,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -16396,8 +16396,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-structure",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -16441,12 +16447,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-structure",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -16472,12 +16472,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -16555,8 +16555,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "factional-warfare",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -16600,12 +16606,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "factional-warfare",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -16629,17 +16629,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -16717,8 +16717,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -16762,9 +16765,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -16790,17 +16790,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -16913,8 +16913,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-industry",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -16965,12 +16971,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-industry",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -16996,17 +16996,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -17104,8 +17104,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-killmail",
+        "kind": "declared",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -17156,12 +17162,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-killmail",
-        "maximumTokens": 30,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -17187,17 +17187,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -17295,8 +17295,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-detail",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -17347,12 +17353,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-detail",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -17378,17 +17378,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -17486,8 +17486,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-detail",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -17538,12 +17544,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-detail",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -17569,17 +17569,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -17657,8 +17657,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-member",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -17702,12 +17708,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-member",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -17733,17 +17733,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -17821,8 +17821,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-member",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -17866,12 +17872,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-member",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -17897,17 +17897,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -17985,8 +17985,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-member",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -18030,12 +18036,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-member",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -18061,17 +18061,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -18149,8 +18149,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-member",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -18194,12 +18200,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-member",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -18225,17 +18225,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 1200,
           "x-client-cache-ttl": 1200,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 1200
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -18333,8 +18333,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -18385,9 +18388,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -18413,17 +18413,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -18521,8 +18521,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -18573,9 +18576,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -18601,17 +18601,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -18689,8 +18689,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-member",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -18734,12 +18740,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-member",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -18765,17 +18765,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -18873,8 +18873,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-member",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -18925,12 +18931,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-member",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -18956,17 +18956,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -19064,8 +19064,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-detail",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -19116,12 +19122,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-detail",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -19147,17 +19147,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -19255,8 +19255,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-member",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -19307,12 +19313,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-member",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -19338,17 +19338,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -19446,8 +19446,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-structure",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -19498,12 +19504,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-structure",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -19529,17 +19529,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -19647,8 +19647,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-structure",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -19699,12 +19705,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-structure",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -19730,17 +19730,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -19838,8 +19838,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-structure",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -19890,12 +19896,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-structure",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -19921,17 +19921,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -20009,8 +20009,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-detail",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -20054,12 +20060,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-detail",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -20085,17 +20085,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -20173,8 +20173,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-wallet",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -20218,12 +20224,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-wallet",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -20249,17 +20249,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -20372,8 +20372,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-wallet",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -20424,12 +20430,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-wallet",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -20455,17 +20455,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -20573,8 +20573,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-wallet",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -20625,12 +20631,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-wallet",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -20656,15 +20656,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based"
+        },
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {
-          "x-cache-mode": "event-based",
-          "x-server-cache-mode": "event-based"
-        }
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -20789,8 +20789,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-freelance-job",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -20841,12 +20847,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-freelance-job",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -20872,15 +20872,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based"
+        },
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {
-          "x-cache-mode": "event-based",
-          "x-server-cache-mode": "event-based"
-        }
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -21019,8 +21019,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-freelance-job",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -21071,12 +21077,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-freelance-job",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -21100,12 +21100,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -21170,8 +21170,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -21208,9 +21211,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -21236,17 +21236,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -21353,8 +21353,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-project",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -21398,12 +21404,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-project",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -21429,15 +21429,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based"
+        },
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {
-          "x-cache-mode": "event-based",
-          "x-server-cache-mode": "event-based"
-        }
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -21576,8 +21576,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-project",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -21628,12 +21634,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-project",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -21659,17 +21659,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -21762,8 +21762,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-project",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -21807,12 +21813,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-project",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -21838,15 +21838,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based"
+        },
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {
-          "x-cache-mode": "event-based",
-          "x-server-cache-mode": "event-based"
-        }
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -21994,8 +21994,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-project",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -22046,12 +22052,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-project",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -22077,17 +22077,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -22180,8 +22180,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-structure",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -22225,12 +22231,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-structure",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -22256,17 +22256,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -22345,8 +22345,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-structure",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -22390,12 +22396,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-structure",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -22421,17 +22421,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -22524,8 +22524,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-structure",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -22569,12 +22575,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-structure",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -22600,17 +22600,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -22689,8 +22689,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "corp-structure",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -22734,12 +22740,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-structure",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -22763,18 +22763,18 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 31536000,
           "x-cache-mode": "ttl-based",
           "x-client-cache-ttl": 31536000,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 604800
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -22853,8 +22853,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "skinr",
+        "kind": "declared",
+        "maximumTokens": 12000,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -22898,12 +22904,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "skinr",
-        "maximumTokens": 12000,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -22927,12 +22927,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -22997,8 +22997,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -23035,9 +23038,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23061,12 +23061,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -23146,8 +23146,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -23191,9 +23194,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23217,12 +23217,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -23315,8 +23315,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -23360,9 +23363,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23386,12 +23386,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -23456,8 +23456,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -23494,9 +23497,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23520,12 +23520,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -23605,8 +23605,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -23650,9 +23653,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23678,17 +23678,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 5,
           "x-client-cache-ttl": 5,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 5
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -23768,8 +23768,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -23813,12 +23819,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23844,17 +23844,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 5,
           "x-client-cache-ttl": 5,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 5
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -23934,8 +23934,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -23979,12 +23985,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24010,17 +24010,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 5,
           "x-client-cache-ttl": 5,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 5
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -24100,8 +24100,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -24145,12 +24151,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24174,17 +24174,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -24263,8 +24263,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "freelance-job",
+        "kind": "declared",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -24308,12 +24314,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "freelance-job",
-        "maximumTokens": 900,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24337,15 +24337,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based"
+        },
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {
-          "x-cache-mode": "event-based",
-          "x-server-cache-mode": "event-based"
-        }
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -24470,8 +24470,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "freelance-job",
+        "kind": "declared",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -24515,12 +24521,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "freelance-job",
-        "maximumTokens": 900,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24544,12 +24544,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -24614,8 +24614,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "factional-warfare",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -24652,12 +24658,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "factional-warfare",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24681,12 +24681,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -24751,8 +24751,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "factional-warfare",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -24789,12 +24795,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "factional-warfare",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24818,12 +24818,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -24888,8 +24888,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "factional-warfare",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -24926,12 +24932,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "factional-warfare",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24955,12 +24955,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -25025,8 +25025,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "factional-warfare",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -25063,12 +25069,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "factional-warfare",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -25092,17 +25092,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 1800,
           "x-client-cache-ttl": 1800,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 1800
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -25167,8 +25167,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "factional-warfare",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -25205,12 +25211,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "factional-warfare",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -25234,12 +25234,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -25304,8 +25304,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "factional-warfare",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -25342,12 +25348,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "factional-warfare",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -25371,17 +25371,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -25446,8 +25446,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "incursion",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -25484,12 +25490,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "incursion",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -25513,17 +25513,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -25588,8 +25588,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "industry",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -25626,12 +25632,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "industry",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -25655,17 +25655,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -25730,8 +25730,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "industry",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -25768,12 +25774,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "industry",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -25797,17 +25797,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -25872,8 +25872,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "insurance",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -25910,12 +25916,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "insurance",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -25939,17 +25939,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 2592000,
           "x-client-cache-ttl": 2592000,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 2592000
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -26043,8 +26043,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "killmail",
+        "kind": "declared",
+        "maximumTokens": 3600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -26088,12 +26094,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "killmail",
-        "maximumTokens": 3600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -26117,12 +26117,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -26200,8 +26200,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -26245,9 +26248,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -26271,12 +26271,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -26341,8 +26341,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -26379,9 +26382,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -26405,12 +26405,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -26490,8 +26490,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -26535,9 +26538,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -26561,17 +26561,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -26636,8 +26636,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -26674,9 +26677,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -26700,12 +26700,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -26800,8 +26800,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -26852,9 +26855,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -26878,17 +26878,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -27023,8 +27023,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "market-order",
+        "kind": "declared",
+        "maximumTokens": 12000,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -27075,12 +27081,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "market-order",
-        "maximumTokens": 12000,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -27104,17 +27104,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 600,
           "x-client-cache-ttl": 600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -27214,8 +27214,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -27266,9 +27269,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -27294,17 +27294,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -27404,8 +27404,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -27456,9 +27459,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -27482,17 +27482,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 600,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 600,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -27557,8 +27557,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "meta",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -27595,12 +27601,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "meta",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -27624,17 +27624,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 600,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 600,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -27699,8 +27699,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "meta",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -27737,12 +27743,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "meta",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -27766,17 +27766,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 600,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 600,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -27841,8 +27841,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "meta",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -27879,12 +27885,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "meta",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -27908,15 +27908,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based"
+        },
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {
-          "x-cache-mode": "event-based",
-          "x-server-cache-mode": "event-based"
-        }
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -27981,8 +27981,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "meta",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -28019,12 +28025,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "meta",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28048,17 +28048,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -28137,8 +28137,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "military-campaign",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -28182,12 +28188,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "military-campaign",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28211,17 +28211,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -28286,8 +28286,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "military-campaign",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -28324,12 +28330,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "military-campaign",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28353,17 +28353,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -28456,8 +28456,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "military-campaign",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -28501,12 +28507,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "military-campaign",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28530,17 +28530,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 60,
           "x-cache-mode": "event-based",
           "x-client-cache-ttl": 60,
           "x-server-cache-mode": "event-based"
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -28665,8 +28665,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "military-campaign",
+        "kind": "declared",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -28717,12 +28723,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "military-campaign",
-        "maximumTokens": 300,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28746,16 +28746,16 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-mode": "event-based",
           "x-server-cache-mode": "event-based",
           "x-tombstone-ttl": 604800
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -28866,8 +28866,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "paragon-hub",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -28911,12 +28917,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "paragon-hub",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28942,16 +28942,16 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-mode": "event-based",
           "x-server-cache-mode": "event-based",
           "x-tombstone-ttl": 604800
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -29076,8 +29076,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-paragon-hub",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -29128,12 +29134,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-paragon-hub",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -29159,16 +29159,16 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-mode": "event-based",
           "x-server-cache-mode": "event-based",
           "x-tombstone-ttl": 604800
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -29293,8 +29293,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-paragon-hub",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -29345,12 +29351,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-paragon-hub",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -29376,16 +29376,16 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-mode": "event-based",
           "x-server-cache-mode": "event-based",
           "x-tombstone-ttl": 604800
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -29510,8 +29510,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "char-paragon-hub",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -29562,12 +29568,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-paragon-hub",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -29591,18 +29591,18 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-cache-mode": "ttl-based",
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 60
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -29667,8 +29667,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "activity",
+        "kind": "declared",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -29705,12 +29711,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "activity",
-        "maximumTokens": 30,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -29734,17 +29734,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 5,
           "x-client-cache-ttl": 5,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 5
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -29809,8 +29809,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "sovereignty",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -29847,12 +29853,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "sovereignty",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -29876,18 +29876,18 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 300,
           "x-cache-mode": "ttl-based",
           "x-client-cache-ttl": 300,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 300
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -29952,8 +29952,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "sovereignty",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -29990,12 +29996,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "sovereignty",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30019,18 +30019,18 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 30,
           "x-cache-mode": "ttl-based",
           "x-client-cache-ttl": 30,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 30
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -30095,8 +30095,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "status",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -30133,12 +30139,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "status",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30162,12 +30162,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -30232,8 +30232,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -30270,9 +30273,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30296,12 +30296,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -30380,8 +30380,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -30425,9 +30428,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30451,12 +30451,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -30521,8 +30521,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -30559,9 +30562,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30585,12 +30585,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -30655,8 +30655,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -30693,9 +30696,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30719,12 +30719,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -30804,8 +30804,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -30849,9 +30852,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30875,12 +30875,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -30945,8 +30945,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -30983,9 +30986,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31009,12 +31009,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -31093,8 +31093,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -31138,9 +31141,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31164,12 +31164,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -31234,8 +31234,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -31272,9 +31275,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31298,12 +31298,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -31368,8 +31368,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -31406,9 +31409,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31432,12 +31432,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -31516,8 +31516,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -31561,9 +31564,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31587,12 +31587,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -31677,8 +31677,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -31722,9 +31725,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31748,12 +31748,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -31833,8 +31833,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -31878,9 +31881,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31904,12 +31904,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -31988,8 +31988,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -32033,9 +32036,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -32059,12 +32059,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -32143,8 +32143,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -32188,9 +32191,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -32214,12 +32214,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -32284,8 +32284,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -32322,9 +32325,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -32348,12 +32348,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -32418,8 +32418,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -32456,9 +32459,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -32482,12 +32482,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -32566,8 +32566,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -32611,9 +32614,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -32637,17 +32637,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -32727,8 +32727,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -32772,9 +32775,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -32798,12 +32798,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -32882,8 +32882,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -32927,9 +32930,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -32953,12 +32953,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -33037,8 +33037,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -33082,9 +33085,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -33108,12 +33108,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -33192,8 +33192,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -33237,9 +33240,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -33263,17 +33263,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -33356,8 +33356,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -33401,9 +33404,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -33429,17 +33429,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -33519,8 +33519,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -33564,9 +33567,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -33590,17 +33590,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -33665,8 +33665,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -33703,9 +33706,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -33729,17 +33729,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -33804,8 +33804,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -33842,9 +33845,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -33868,12 +33868,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -33938,8 +33938,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -33976,9 +33979,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -34002,12 +34002,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -34086,8 +34086,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -34131,9 +34134,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -34157,12 +34157,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -34247,8 +34247,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -34292,9 +34295,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -34318,12 +34318,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -34403,8 +34403,11 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -34448,9 +34451,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -34474,17 +34474,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -34564,8 +34564,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "killmail",
+        "kind": "declared",
+        "maximumTokens": 3600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -34609,12 +34615,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "killmail",
-        "maximumTokens": 3600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -34638,17 +34638,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -34728,8 +34728,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "killmail",
+        "kind": "declared",
+        "maximumTokens": 3600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -34773,12 +34779,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "killmail",
-        "maximumTokens": 3600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -34802,17 +34802,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -34912,8 +34912,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "killmail",
+        "kind": "declared",
+        "maximumTokens": 3600,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -34964,12 +34970,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "killmail",
-        "maximumTokens": 3600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -34993,17 +34993,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 3600,
           "x-client-cache-ttl": 3600,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 3600
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -35068,6 +35068,16 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 1000,
+          "path": []
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -35088,13 +35098,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [],
-          "maximumItems": 1000
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -35138,9 +35141,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -35169,12 +35169,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -35252,6 +35252,19 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "char-asset",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 1000,
+          "path": []
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -35272,13 +35285,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [],
-          "maximumItems": 1000
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -35329,12 +35335,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-asset",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -35363,12 +35363,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -35446,6 +35446,19 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "char-asset",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 1000,
+          "path": []
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -35466,13 +35479,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [],
-          "maximumItems": 1000
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -35523,12 +35529,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-asset",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -35557,12 +35557,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -35689,6 +35689,26 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 100,
+          "path": []
+        },
+        {
+          "location": "query",
+          "maximumItems": 63,
+          "path": [
+            "label_ids"
+          ]
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -35708,20 +35728,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [],
-          "maximumItems": 100
-        },
-        {
-          "location": "query",
-          "path": [
-            "label_ids"
-          ],
-          "maximumItems": 63
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -35779,12 +35785,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -35810,12 +35810,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -35893,6 +35893,19 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "char-detail",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 100,
+          "path": []
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -35913,13 +35926,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [],
-          "maximumItems": 100
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -35970,12 +35976,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-detail",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -36004,12 +36004,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -36085,6 +36085,21 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
             "default": "tranquility",
             "type": "string"
           }
+        }
+      ],
+      "rateLimit": {
+        "group": "fitting",
+        "kind": "declared",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 512,
+          "path": [
+            "items"
+          ]
         }
       ],
       "requestBody": {
@@ -36193,15 +36208,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [
-            "items"
-          ],
-          "maximumItems": 512
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -36252,12 +36258,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fitting",
-        "maximumTokens": 150,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -36283,12 +36283,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -36366,6 +36366,21 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 50,
+          "path": [
+            "recipients"
+          ]
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -36426,15 +36441,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [
-            "recipients"
-          ],
-          "maximumItems": 50
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -36485,12 +36491,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -36516,12 +36516,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -36599,6 +36599,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
+      "requestArrayLimits": [],
       "requestBody": {
         "content": [
           {
@@ -36646,7 +36653,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -36697,12 +36703,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -36728,12 +36728,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -36811,6 +36811,19 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "corp-asset",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 1000,
+          "path": []
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -36831,13 +36844,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [],
-          "maximumItems": 1000
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -36888,12 +36894,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-asset",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -36922,12 +36922,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -37005,6 +37005,19 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "corp-asset",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 1000,
+          "path": []
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -37025,13 +37038,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [],
-          "maximumItems": 1000
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -37082,12 +37088,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "corp-asset",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -37116,12 +37116,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -37201,6 +37201,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
+      "requestArrayLimits": [],
       "requestBody": {
         "content": [
           {
@@ -37242,7 +37249,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -37286,12 +37292,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -37317,12 +37317,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -37402,8 +37402,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -37447,12 +37453,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -37478,12 +37478,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -37578,8 +37578,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -37623,12 +37629,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -37652,15 +37652,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {
+          "x-cache-mode": "not-cached",
+          "x-server-cache-mode": "not-cached"
+        },
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {
-          "x-cache-mode": "not-cached",
-          "x-server-cache-mode": "not-cached"
-        }
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -37753,6 +37753,28 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "routes",
+        "kind": "declared",
+        "maximumTokens": 3600,
+        "window": "15m"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 1000,
+          "path": [
+            "avoid_systems"
+          ]
+        },
+        {
+          "location": "body",
+          "maximumItems": 1000,
+          "path": [
+            "connections"
+          ]
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -37765,22 +37787,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [
-            "avoid_systems"
-          ],
-          "maximumItems": 1000
-        },
-        {
-          "location": "body",
-          "path": [
-            "connections"
-          ],
-          "maximumItems": 1000
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -37831,12 +37837,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "routes",
-        "maximumTokens": 3600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -37865,12 +37865,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -37980,8 +37980,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "ui",
+        "kind": "declared",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -38018,12 +38024,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "ui",
-        "maximumTokens": 900,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -38049,12 +38049,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -38134,8 +38134,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "ui",
+        "kind": "declared",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -38172,12 +38178,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "ui",
-        "maximumTokens": 900,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -38203,12 +38203,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -38288,8 +38288,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "ui",
+        "kind": "declared",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -38326,12 +38332,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "ui",
-        "maximumTokens": 900,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -38357,12 +38357,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -38442,8 +38442,14 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
-      "requestBody": null,
+      "rateLimit": {
+        "group": "ui",
+        "kind": "declared",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
       "requestArrayLimits": [],
+      "requestBody": null,
       "requestSchemas": [
         {
           "group": "headers",
@@ -38480,12 +38486,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "ui",
-        "maximumTokens": 900,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -38511,12 +38511,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -38581,6 +38581,21 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "ui",
+        "kind": "declared",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 50,
+          "path": [
+            "recipients"
+          ]
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -38627,15 +38642,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [
-            "recipients"
-          ],
-          "maximumItems": 50
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -38672,12 +38678,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "ui",
-        "maximumTokens": 900,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -38701,12 +38701,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -38771,6 +38771,16 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 500,
+          "path": []
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -38792,13 +38802,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [],
-          "maximumItems": 500
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -38842,9 +38845,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -38871,12 +38871,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "scopes": []
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "read",
       "conditionalRequestValidators": [
@@ -38941,6 +38941,16 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 1000,
+          "path": []
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -38961,13 +38971,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [],
-          "maximumItems": 1000
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -39011,9 +39014,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
-      "rateLimit": {
-        "kind": "legacy-only"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -39042,17 +39042,17 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
-        "responseHeaders": [
-          "cache-control",
-          "etag",
-          "last-modified"
-        ],
         "extensions": {
           "x-cache-age": 5,
           "x-client-cache-ttl": 5,
           "x-server-cache-mode": "ttl-based",
           "x-server-cache-ttl": 5
-        }
+        },
+        "responseHeaders": [
+          "cache-control",
+          "etag",
+          "last-modified"
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -39145,6 +39145,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
+      "requestArrayLimits": [],
       "requestBody": {
         "content": [
           {
@@ -39170,7 +39177,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -39214,12 +39220,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -39245,12 +39245,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -39377,6 +39377,26 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 100,
+          "path": []
+        },
+        {
+          "location": "query",
+          "maximumItems": 63,
+          "path": [
+            "label_ids"
+          ]
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -39396,20 +39416,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [],
-          "maximumItems": 100
-        },
-        {
-          "location": "query",
-          "path": [
-            "label_ids"
-          ],
-          "maximumItems": 63
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -39460,12 +39466,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -39491,12 +39491,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -39589,6 +39589,21 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "char-social",
+        "kind": "declared",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "maximumItems": 25,
+          "path": [
+            "labels"
+          ]
+        }
+      ],
       "requestBody": {
         "content": [
           {
@@ -39618,15 +39633,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [
-        {
-          "location": "body",
-          "path": [
-            "labels"
-          ],
-          "maximumItems": 25
-        }
-      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -39670,12 +39676,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "char-social",
-        "maximumTokens": 600,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -39701,12 +39701,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -39786,6 +39786,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
+      "requestArrayLimits": [],
       "requestBody": {
         "content": [
           {
@@ -39808,7 +39815,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -39852,12 +39858,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -39883,12 +39883,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -39983,6 +39983,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
+      "requestArrayLimits": [],
       "requestBody": {
         "content": [
           {
@@ -40018,7 +40025,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -40062,12 +40068,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -40093,12 +40093,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -40193,6 +40193,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
+      "requestArrayLimits": [],
       "requestBody": {
         "content": [
           {
@@ -40214,7 +40221,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -40258,12 +40264,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -40289,12 +40289,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ]
       },
       "cache": {
+        "extensions": {},
         "responseHeaders": [
           "cache-control",
           "etag",
           "last-modified"
-        ],
-        "extensions": {}
+        ]
       },
       "classification": "mutation",
       "conditionalRequestValidators": [
@@ -40389,6 +40389,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           }
         }
       ],
+      "rateLimit": {
+        "group": "fleet",
+        "kind": "declared",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
+      "requestArrayLimits": [],
       "requestBody": {
         "content": [
           {
@@ -40410,7 +40417,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -40454,12 +40460,6 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
-      "rateLimit": {
-        "kind": "declared",
-        "group": "fleet",
-        "maximumTokens": 1800,
-        "window": "15m"
-      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,

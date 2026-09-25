@@ -76,7 +76,7 @@ export const GetCharactersCharacterIdIndustryJobsDescriptor: OperationExecutionD
   requestBody: null,
   requestSchema: GetCharactersCharacterIdIndustryJobsRequestSchema,
   authentication: { scopes: ["esi-industry.read_character_jobs.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-industry","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-industry","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdIndustryJobsResponse },
   ],
@@ -103,7 +103,7 @@ export const GetCharactersCharacterIdMiningDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetCharactersCharacterIdMiningRequestSchema,
   authentication: { scopes: ["esi-industry.read_character_mining.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":600,"x-client-cache-ttl":600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-industry","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":600,"x-client-cache-ttl":600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-industry","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdMiningResponse },
   ],
@@ -131,7 +131,7 @@ export const GetCorporationsCorporationIdIndustryJobsDescriptor: OperationExecut
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdIndustryJobsRequestSchema,
   authentication: { scopes: ["esi-industry.read_corporation_jobs.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-industry","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-industry","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdIndustryJobsResponse },
   ],
@@ -154,7 +154,7 @@ export const GetIndustryFacilitiesDescriptor: OperationExecutionDescriptor<Opera
   requestBody: null,
   requestSchema: GetIndustryFacilitiesRequestSchema,
   authentication: null,
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"industry","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"industry","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetIndustryFacilitiesResponse },
   ],
@@ -181,7 +181,7 @@ export const GetCorporationCorporationIdMiningObserversDescriptor: OperationExec
   requestBody: null,
   requestSchema: GetCorporationCorporationIdMiningObserversRequestSchema,
   authentication: { scopes: ["esi-industry.read_corporation_mining.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-industry","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-industry","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationCorporationIdMiningObserversResponse },
   ],
@@ -208,7 +208,7 @@ export const GetCorporationCorporationIdMiningExtractionsDescriptor: OperationEx
   requestBody: null,
   requestSchema: GetCorporationCorporationIdMiningExtractionsRequestSchema,
   authentication: { scopes: ["esi-industry.read_corporation_mining.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":1800,"x-client-cache-ttl":1800,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":1800}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-industry","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":1800,"x-client-cache-ttl":1800,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":1800},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-industry","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationCorporationIdMiningExtractionsResponse },
   ],
@@ -236,7 +236,7 @@ export const GetCorporationCorporationIdMiningObserversObserverIdDescriptor: Ope
   requestBody: null,
   requestSchema: GetCorporationCorporationIdMiningObserversObserverIdRequestSchema,
   authentication: { scopes: ["esi-industry.read_corporation_mining.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-industry","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-industry","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationCorporationIdMiningObserversObserverIdResponse },
   ],
@@ -259,7 +259,7 @@ export const GetIndustrySystemsDescriptor: OperationExecutionDescriptor<Operatio
   requestBody: null,
   requestSchema: GetIndustrySystemsRequestSchema,
   authentication: null,
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"industry","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"industry","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetIndustrySystemsResponse },
   ],

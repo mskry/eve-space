@@ -48,7 +48,7 @@ export const GetKillmailsKillmailIdKillmailHashDescriptor: OperationExecutionDes
   requestBody: null,
   requestSchema: GetKillmailsKillmailIdKillmailHashRequestSchema,
   authentication: null,
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":2592000,"x-client-cache-ttl":2592000,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":2592000}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"killmail","maximumTokens":3600,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":2592000,"x-client-cache-ttl":2592000,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":2592000},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"killmail","kind":"declared","maximumTokens":3600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetKillmailsKillmailIdKillmailHashResponse },
   ],
@@ -75,7 +75,7 @@ export const GetCharactersCharacterIdKillmailsRecentDescriptor: OperationExecuti
   requestBody: null,
   requestSchema: GetCharactersCharacterIdKillmailsRecentRequestSchema,
   authentication: { scopes: ["esi-killmails.read_killmails.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-killmail","maximumTokens":30,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-killmail","kind":"declared","maximumTokens":30,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdKillmailsRecentResponse },
   ],
@@ -102,7 +102,7 @@ export const GetCorporationsCorporationIdKillmailsRecentDescriptor: OperationExe
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdKillmailsRecentRequestSchema,
   authentication: { scopes: ["esi-killmails.read_corporation_killmails.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-killmail","maximumTokens":30,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-killmail","kind":"declared","maximumTokens":30,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdKillmailsRecentResponse },
   ],

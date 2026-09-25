@@ -44,7 +44,7 @@ export const GetMetaChangelogDescriptor: OperationExecutionDescriptor<OperationA
   requestBody: null,
   requestSchema: GetMetaChangelogRequestSchema,
   authentication: null,
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":600,"x-cache-mode":"event-based","x-client-cache-ttl":600,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"meta","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":600,"x-cache-mode":"event-based","x-client-cache-ttl":600,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"meta","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMetaChangelogResponse },
   ],
@@ -67,7 +67,7 @@ export const GetMetaStatusDescriptor: OperationExecutionDescriptor<OperationArgu
   requestBody: null,
   requestSchema: GetMetaStatusRequestSchema,
   authentication: null,
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-mode":"event-based","x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"meta","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-mode":"event-based","x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"meta","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMetaStatusResponse },
   ],
@@ -90,7 +90,7 @@ export const GetMetaNameDescriptor: OperationExecutionDescriptor<OperationArgume
   requestBody: null,
   requestSchema: GetMetaNameRequestSchema,
   authentication: null,
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":600,"x-cache-mode":"event-based","x-client-cache-ttl":600,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"meta","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":600,"x-cache-mode":"event-based","x-client-cache-ttl":600,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"meta","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMetaNameResponse },
   ],
@@ -113,7 +113,7 @@ export const GetMetaCompatibilityDatesDescriptor: OperationExecutionDescriptor<O
   requestBody: null,
   requestSchema: GetMetaCompatibilityDatesRequestSchema,
   authentication: null,
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":600,"x-cache-mode":"event-based","x-client-cache-ttl":600,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"meta","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":600,"x-cache-mode":"event-based","x-client-cache-ttl":600,"x-server-cache-mode":"event-based"},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"meta","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMetaCompatibilityDatesResponse },
   ],

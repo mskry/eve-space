@@ -40,7 +40,7 @@ export const GetCharactersCharacterIdLoyaltyPointsDescriptor: OperationExecution
   requestBody: null,
   requestSchema: GetCharactersCharacterIdLoyaltyPointsRequestSchema,
   authentication: { scopes: ["esi-characters.read_loyalty.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-wallet","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-wallet","kind":"declared","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdLoyaltyPointsResponse },
   ],
@@ -65,7 +65,7 @@ export const GetLoyaltyStoresCorporationIdOffersDescriptor: OperationExecutionDe
   requestBody: null,
   requestSchema: GetLoyaltyStoresCorporationIdOffersRequestSchema,
   authentication: null,
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetLoyaltyStoresCorporationIdOffersResponse },
   ],

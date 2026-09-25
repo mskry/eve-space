@@ -88,7 +88,7 @@ export const PostCharactersCharacterIdContactsDescriptor: OperationExecutionDesc
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostCharactersCharacterIdContactsRequestSchema,
   authentication: { scopes: ["esi-characters.write_contacts.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[{"location":"body","path":[],"maximumItems":100},{"location":"query","path":["label_ids"],"maximumItems":63}]},
+  protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-social","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[{"location":"body","maximumItems":100,"path":[]},{"location":"query","maximumItems":63,"path":["label_ids"]}]},
   successResponses: [
     { status: 201, body: 'json', schema: zPostCharactersCharacterIdContactsResponse },
   ],
@@ -115,7 +115,7 @@ export const DeleteCharactersCharacterIdContactsDescriptor: OperationExecutionDe
   requestBody: null,
   requestSchema: DeleteCharactersCharacterIdContactsRequestSchema,
   authentication: { scopes: ["esi-characters.write_contacts.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":20,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[{"location":"query","path":["contact_ids"],"maximumItems":20}]},
+  protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":20,"rateLimit":{"group":"char-social","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[{"location":"query","maximumItems":20,"path":["contact_ids"]}]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -140,7 +140,7 @@ export const GetAlliancesAllianceIdContactsLabelsDescriptor: OperationExecutionD
   requestBody: null,
   requestSchema: GetAlliancesAllianceIdContactsLabelsRequestSchema,
   authentication: { scopes: ["esi-alliances.read_contacts.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"alliance-social","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"alliance-social","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetAlliancesAllianceIdContactsLabelsResponse },
   ],
@@ -167,7 +167,7 @@ export const GetAlliancesAllianceIdContactsDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetAlliancesAllianceIdContactsRequestSchema,
   authentication: { scopes: ["esi-alliances.read_contacts.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"alliance-social","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"alliance-social","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetAlliancesAllianceIdContactsResponse },
   ],
@@ -192,7 +192,7 @@ export const GetCharactersCharacterIdContactsLabelsDescriptor: OperationExecutio
   requestBody: null,
   requestSchema: GetCharactersCharacterIdContactsLabelsRequestSchema,
   authentication: { scopes: ["esi-characters.read_contacts.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-social","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdContactsLabelsResponse },
   ],
@@ -219,7 +219,7 @@ export const GetCharactersCharacterIdContactsDescriptor: OperationExecutionDescr
   requestBody: null,
   requestSchema: GetCharactersCharacterIdContactsRequestSchema,
   authentication: { scopes: ["esi-characters.read_contacts.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-social","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdContactsResponse },
   ],
@@ -244,7 +244,7 @@ export const GetCorporationsCorporationIdContactsLabelsDescriptor: OperationExec
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdContactsLabelsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_contacts.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-social","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-social","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdContactsLabelsResponse },
   ],
@@ -271,7 +271,7 @@ export const GetCorporationsCorporationIdContactsDescriptor: OperationExecutionD
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdContactsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_contacts.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-social","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
+  protocol: {"cache":{"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"corp-social","kind":"declared","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdContactsResponse },
   ],
@@ -301,7 +301,7 @@ export const PutCharactersCharacterIdContactsDescriptor: OperationExecutionDescr
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PutCharactersCharacterIdContactsRequestSchema,
   authentication: { scopes: ["esi-characters.write_contacts.v1"] },
-  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[{"location":"body","path":[],"maximumItems":100},{"location":"query","path":["label_ids"],"maximumItems":63}]},
+  protocol: {"cache":{"extensions":{},"responseHeaders":["cache-control","etag","last-modified"]},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"group":"char-social","kind":"declared","maximumTokens":600,"window":"15m"},"requestArrayLimits":[{"location":"body","maximumItems":100,"path":[]},{"location":"query","maximumItems":63,"path":["label_ids"]}]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
