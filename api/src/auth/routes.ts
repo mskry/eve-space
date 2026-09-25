@@ -36,14 +36,10 @@ import { recordDiagnostic } from '../logging.js'
 import { loadCurrentOrganizationIdentity } from '../organization/context.js'
 import { resolveOrganizationAuthorityCorporationEvidence } from '../organization/authority.js'
 import {
-  assertOrganizationOwnerDirectorRole,
   assertOrganizationOwnerScope,
   OrganizationAuthorityError,
 } from '../organization/authority-policy.js'
-import {
-  characterCorporationRolesScope,
-  getCharacterCorporationRolesEvidence,
-} from '../characters/corporation-roles.js'
+import { characterCorporationRolesScope } from '../characters/corporation-roles.js'
 import {
   claimOrganizationOwnership,
   OrganizationOwnerClaimError,
@@ -530,43 +526,21 @@ async function saveOrganizationOwnerClaim(
     organization,
     authorization,
   )
-  const { affiliationCheckedAt, subjectLifecycleId, authorizationGeneration } =
-    await reauthorizeCharacter({
-      ...authorization,
-      expectedCharacterId: state.characterId,
-      sessionToken,
-      userId: state.userId,
-    })
-  const roles = await getCharacterCorporationRolesEvidence(state.characterId, subjectLifecycleId)
-  if (roles.stale) {
-    throw new OrganizationOwnerClaimError('stale-affiliation')
-  }
-  assertOrganizationOwnerDirectorRole(roles)
+  const { subjectLifecycleId } = await reauthorizeCharacter({
+    ...authorization,
+    expectedCharacterId: state.characterId,
+    sessionToken,
+    userId: state.userId,
+  })
   await claimOrganizationOwnership({
-    affiliationCheckedAt,
-    authorityCorporationId: authorityCorporation.corporationId,
-    authorizationGeneration,
+    authorityCorporation,
     characterId: state.characterId,
-    evidenceAuthorizationGeneration: roles.authorizationGeneration,
-    evidenceFreshUntil: earliestDate(roles.freshUntil, authorityCorporation.freshUntil),
-    observedAllianceId: authorization.allianceId,
-    observedCorporationId: authorization.corporationId,
     organizationId: state.organizationId,
     organizationVersion: state.organizationVersion,
     requiredScope: characterCorporationRolesScope,
-    roleEvidenceRevision: roles.roleEvidenceRevision,
     subjectLifecycleId,
     userId: state.userId,
   })
-}
-
-function earliestDate(first: Date, ...dates: readonly (Date | null)[]) {
-  return new Date(
-    Math.min(
-      first.getTime(),
-      ...dates.filter((date): date is Date => date !== null).map((date) => date.getTime()),
-    ),
-  )
 }
 
 function redirectForIntent(

@@ -19,19 +19,10 @@ export type QueueCommand =
       readonly source: 'planner'
     }
   | {
-      readonly name: 'organization-owner-evidence'
-      readonly payload: JobPayloadByName['organization-owner-evidence']
+      readonly name: 'corporation-role-observation'
+      readonly payload: JobPayloadByName['corporation-role-observation']
       readonly source: 'planner'
-    }
-  | {
-      readonly name: 'derived-authority'
-      readonly payload: JobPayloadByName['derived-authority']
-      readonly source: 'planner'
-    }
-  | {
-      readonly name: 'corporation-source-evidence'
-      readonly payload: JobPayloadByName['corporation-source-evidence']
-      readonly source: 'planner'
+      readonly notBefore: Date
     }
   | {
       readonly name: 'resource-refresh'

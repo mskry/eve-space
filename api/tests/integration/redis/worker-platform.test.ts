@@ -102,6 +102,50 @@ describe('durable worker platform', () => {
     }
   })
 
+  test('admits role work as bounded delayed jobs and coalesces one binding', async () => {
+    await flushQueueRedis()
+    const handle = await openQueue()
+    const { createBullMqQueueProducer } = await import('../../../src/queue/bullmq-producer.js')
+    const producer = createBullMqQueueProducer({ handle })
+    const payload = {
+      affiliationPeriodRevision: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+      authorityCorporationId: 98_000_001,
+      authorizationGeneration: 7,
+      characterId: 1_404_328_063,
+      expectedRoleRevision: null,
+      organizationVersion: 3,
+      subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+      userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+    }
+    try {
+      await expect(
+        producer.enqueue({
+          name: 'corporation-role-observation',
+          notBefore: new Date(Date.now() + 10 * 60_000),
+          payload,
+          source: 'planner',
+        }),
+      ).resolves.toMatchObject({ status: 'accepted' })
+      await expect(
+        producer.enqueue({
+          name: 'corporation-role-observation',
+          notBefore: new Date(Date.now() + 24 * 60 * 60_000),
+          payload: { ...payload, authorizationGeneration: 8 },
+          source: 'planner',
+        }),
+      ).resolves.toMatchObject({ reason: 'coalesced', status: 'rejected' })
+
+      const [delayed] = await handle.queue.getJobs(['delayed'])
+      expect(delayed?.name).toBe('corporation-role-observation')
+      expect(delayed?.opts.delay).toBeGreaterThan(9 * 60_000)
+      expect(delayed?.opts.delay).toBeLessThanOrEqual(20 * 60_000)
+      expect(JSON.stringify(delayed?.data)).not.toMatch(/Director|roles_at|token|etag/i)
+    } finally {
+      await handle.queue.drain(true)
+      await handle.close()
+    }
+  })
+
   test('persists and logs only sanitized dependency failures', async () => {
     await flushQueueRedis()
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)

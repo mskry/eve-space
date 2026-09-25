@@ -3,7 +3,7 @@ import { env } from '../env.js'
 import { getJobContract, resolveJobContract, type JobName } from './job-contracts.js'
 import { outboxRelayStateKey, plannerStateKey } from './namespaces.js'
 import { createOperationsQueueHandle, type OperationsQueueHandle } from './operations-queue.js'
-import { resourceRefreshPriority } from './policy.js'
+import { dueTimeAdmissionDelay, resourceRefreshPriority } from './policy.js'
 import {
   rejectionReason,
   type QueueCapacityQuery,
@@ -197,8 +197,7 @@ async function prepareDeliveryOptions(
   signal?: AbortSignal,
 ) {
   signal?.throwIfAborted()
-  const delay =
-    command.source === 'planner' && contract.delay === 'planner-stagger' ? await plannerDelay() : 0
+  const delay = await resolveDeliveryDelay(command, contract, plannerDelay)
   signal?.throwIfAborted()
   return {
     attempts: contract.attempts,
@@ -217,6 +216,20 @@ async function prepareDeliveryOptions(
       ),
     }),
   } satisfies JobsOptions
+}
+
+async function resolveDeliveryDelay(
+  command: QueueCommand,
+  contract: ReturnType<typeof getJobContract<JobName>>,
+  plannerDelay: () => Promise<number>,
+) {
+  if (contract.delay === 'due-time' && 'notBefore' in command) {
+    return dueTimeAdmissionDelay(command.notBefore)
+  }
+  if (command.source === 'planner' && contract.delay === 'planner-stagger') {
+    return plannerDelay()
+  }
+  return 0
 }
 
 async function findCoalescedCommands(

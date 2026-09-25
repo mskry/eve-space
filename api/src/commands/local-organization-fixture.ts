@@ -121,19 +121,27 @@ export async function seedLocalOrganizationFixture({
       throw new Error('Local organization fixture authorization was not persisted')
     }
 
+    const directorObservation = () => ({
+      affiliationFreshUntil: sessionExpiresAt,
+      read: {
+        authorizationGeneration: authorization.tokenVersion,
+        cachedUntil: new Date(now.getTime() + 60 * 60 * 1000),
+        retryAt: null,
+        roles: { roles: ['Director'], rolesAtBase: [], rolesAtHeadquarters: [], rolesAtOther: [] },
+        stale: false,
+        validatedAt: now,
+      },
+    })
     await claimOrganizationOwnership({
-      affiliationCheckedAt: now,
-      authorityCorporationId: localOrganizationFixture.corporationId,
-      authorizationGeneration: authorization.tokenVersion,
+      authorityCorporation: {
+        corporationId: localOrganizationFixture.corporationId,
+        freshUntil: null,
+      },
       characterId: localOrganizationFixture.directorCharacterId,
-      evidenceAuthorizationGeneration: authorization.tokenVersion,
-      evidenceFreshUntil: sessionExpiresAt,
-      observedAllianceId: null,
-      observedCorporationId: localOrganizationFixture.corporationId,
+      observation: directorObservation(),
       organizationId: localOrganizationFixture.corporationId,
       organizationVersion,
       requiredScope: 'esi-characters.read_corporation_roles.v1',
-      roleEvidenceRevision: now.toISOString(),
       subjectLifecycleId: character.subjectLifecycleId,
       userId: account.userId,
     })
@@ -185,29 +193,7 @@ export async function seedLocalOrganizationFixture({
         characterId: localOrganizationFixture.directorCharacterId,
         corporationId: localOrganizationFixture.corporationId,
       },
-      {
-        evidence: {
-          affiliation: {
-            affiliationCheckedAt: now,
-            affiliationFreshUntil: sessionExpiresAt,
-            allianceId: null,
-            characterId: localOrganizationFixture.directorCharacterId,
-            corporationId: localOrganizationFixture.corporationId,
-            stale: false,
-          },
-          roles: {
-            authorizationGeneration: authorization.tokenVersion,
-            freshUntil: sessionExpiresAt,
-            observedAt: now,
-            roleEvidenceRevision: now.toISOString(),
-            roles: ['Director'],
-            rolesAtBase: [],
-            rolesAtHeadquarters: [],
-            rolesAtOther: [],
-            stale: false,
-          },
-        },
-      },
+      { observation: directorObservation() },
     )
 
     const seededResourceCount = await seedFixtureResources(new Date())

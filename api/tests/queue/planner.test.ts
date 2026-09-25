@@ -2,10 +2,8 @@ import { expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   affiliation: vi.fn(),
-  corporationSource: vi.fn(),
-  derivedAuthority: vi.fn(),
+  corporationRoles: vi.fn(),
   maintenance: vi.fn(),
-  ownerEvidence: vi.fn(),
   repairCollection: vi.fn(),
   repairCompliance: vi.fn(),
   resources: vi.fn(),
@@ -14,14 +12,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../src/queue/affiliation-planner.js', () => ({
   runAffiliationPlanner: mocks.affiliation,
 }))
-vi.mock('../../src/queue/owner-evidence-planner.js', () => ({
-  runOrganizationOwnerEvidencePlanner: mocks.ownerEvidence,
-}))
-vi.mock('../../src/queue/corporation-source-planner.js', () => ({
-  runCorporationSourcePlanner: mocks.corporationSource,
-}))
-vi.mock('../../src/queue/derived-authority-planner.js', () => ({
-  runDerivedAuthorityPlanner: mocks.derivedAuthority,
+vi.mock('../../src/queue/corporation-role-planner.js', () => ({
+  runCorporationRolePlanner: mocks.corporationRoles,
 }))
 vi.mock('../../src/platform/collection-state-repair.js', () => ({
   repairPlatformCollectionState: mocks.repairCollection,
@@ -42,8 +34,8 @@ test('runs installed resource maintenance from the production planner', async ()
 
   await runQueuePlanner({ outcomes: {} as never, producer, signal } as never)
 
-  expect(mocks.derivedAuthority).toHaveBeenCalledWith(expect.objectContaining({ signal }))
-  expect(mocks.corporationSource).toHaveBeenCalledWith(expect.objectContaining({ signal }))
+  expect(mocks.corporationRoles).toHaveBeenCalledOnce()
+  expect(mocks.corporationRoles).toHaveBeenCalledWith(expect.objectContaining({ signal }))
   expect(mocks.maintenance).toHaveBeenCalledWith({ signal })
   expect(mocks.repairCollection.mock.invocationCallOrder[0]).toBeLessThan(
     mocks.maintenance.mock.invocationCallOrder[0]!,

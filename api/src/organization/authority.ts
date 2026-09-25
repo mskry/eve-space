@@ -34,7 +34,7 @@ export async function resolveOrganizationAuthorityCorporationEvidence(
   return executor
 }
 
-async function getAllianceExecutorCorporation(allianceId: number) {
+export async function getAllianceExecutorCorporation(allianceId: number) {
   const result = await getAlliancePublicResult(allianceId)
   if (result.stale) {
     throw new OrganizationAuthorityError('stale-affiliation')

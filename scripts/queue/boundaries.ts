@@ -6,10 +6,8 @@ const modulesByTier = {
   adapter: ['bullmq-producer', 'operations-queue', 'redis', 'worker-identity'],
   application: [
     'affiliation-planner',
-    'corporation-source-planner',
-    'derived-authority-planner',
+    'corporation-role-planner',
     'outbox-relay',
-    'owner-evidence-planner',
     'planning-context',
     'resource-batch-processor',
     'resource-planner',

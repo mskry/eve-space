@@ -2,11 +2,25 @@ import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdRolesResponse } from '@evespace/esi-client/types'
 import { z } from 'zod'
 import { createCharacterEsiRead } from '../esi-gateway/feature-execution.js'
+import {
+  canonicalizeCorporationRoleSets,
+  type CorporationRoleSets,
+} from './corporation-role-canonical.js'
 
-interface CharacterCorporationRolesRepresentationInput {
-  characterId: number
-  subjectLifecycleId: string
-  signal?: AbortSignal
+export interface CharacterCorporationRolesReadInput {
+  readonly characterId: number
+  readonly subjectLifecycleId: string
+  readonly affiliationPeriodRevision: string
+  readonly signal?: AbortSignal
+}
+
+export interface CharacterCorporationRolesRead {
+  readonly roles: CorporationRoleSets
+  readonly authorizationGeneration: number
+  readonly validatedAt: Date
+  readonly cachedUntil: Date
+  readonly stale: boolean
+  readonly retryAt: Date | null
 }
 
 const characterCorporationRolesCacheSchema = z.object({
@@ -16,10 +30,24 @@ const characterCorporationRolesCacheSchema = z.object({
   rolesAtOther: z.array(z.string()),
 })
 
+const mapCharacterCorporationRoles = (
+  result: GetCharactersCharacterIdRolesResponse,
+): CorporationRoleSets =>
+  canonicalizeCorporationRoleSets({
+    roles: result.roles ?? [],
+    rolesAtBase: result.roles_at_base ?? [],
+    rolesAtHeadquarters: result.roles_at_hq ?? [],
+    rolesAtOther: result.roles_at_other ?? [],
+  })
+
 const characterCorporationRolesRead = createCharacterEsiRead({
+  cacheIdentity: (input: CharacterCorporationRolesReadInput) => ({
+    affiliationPeriodRevision: input.affiliationPeriodRevision,
+    characterId: input.characterId,
+  }),
   cacheSchema: characterCorporationRolesCacheSchema,
   descriptor: operationRegistry.GetCharactersCharacterIdRoles.transport,
-  encodeRequest: (input: CharacterCorporationRolesRepresentationInput) => ({
+  encodeRequest: (input: CharacterCorporationRolesReadInput) => ({
     path: { character_id: input.characterId },
   }),
   map: (response) => mapCharacterCorporationRoles(response.data),
@@ -29,66 +57,16 @@ const characterCorporationRolesRead = createCharacterEsiRead({
 
 export const characterCorporationRolesScope = characterCorporationRolesRead.requiredScope
 
-export interface CharacterCorporationRoles {
-  roles: string[]
-  rolesAtBase: string[]
-  rolesAtHeadquarters: string[]
-  rolesAtOther: string[]
-}
-
-export interface CharacterCorporationRolesEvidence extends CharacterCorporationRoles {
-  authorizationGeneration: number
-  roleEvidenceRevision: string
-  observedAt: Date
-  freshUntil: Date
-  stale: boolean
-}
-
-export async function getCharacterCorporationRoles(
-  characterId: number,
-  subjectLifecycleId: string,
-  signal?: AbortSignal,
-): Promise<CharacterCorporationRoles> {
-  const evidence = await getCharacterCorporationRolesEvidence(
-    characterId,
-    subjectLifecycleId,
-    signal,
-  )
+export const readCharacterCorporationRoles = async (
+  input: CharacterCorporationRolesReadInput,
+): Promise<CharacterCorporationRolesRead> => {
+  const result = await characterCorporationRolesRead.execute(input)
   return {
-    roles: evidence.roles,
-    rolesAtBase: evidence.rolesAtBase,
-    rolesAtHeadquarters: evidence.rolesAtHeadquarters,
-    rolesAtOther: evidence.rolesAtOther,
-  }
-}
-
-export async function getCharacterCorporationRolesEvidence(
-  characterId: number,
-  subjectLifecycleId: string,
-  signal?: AbortSignal,
-): Promise<CharacterCorporationRolesEvidence> {
-  const result = await characterCorporationRolesRead.execute({
-    characterId,
-    subjectLifecycleId,
-    ...(signal && { signal }),
-  })
-  return {
-    ...result.data,
     authorizationGeneration: result.authorizationGeneration,
-    freshUntil: new Date(result.cachedUntil),
-    observedAt: new Date(result.validatedAt),
-    roleEvidenceRevision: result.validatedAt,
+    cachedUntil: new Date(result.cachedUntil),
+    retryAt: result.retryAt ? new Date(result.retryAt) : null,
+    roles: canonicalizeCorporationRoleSets(result.data),
     stale: result.stale,
-  }
-}
-
-function mapCharacterCorporationRoles(
-  result: GetCharactersCharacterIdRolesResponse,
-): CharacterCorporationRoles {
-  return {
-    roles: result.roles ?? [],
-    rolesAtBase: result.roles_at_base ?? [],
-    rolesAtHeadquarters: result.roles_at_hq ?? [],
-    rolesAtOther: result.roles_at_other ?? [],
+    validatedAt: new Date(result.validatedAt),
   }
 }

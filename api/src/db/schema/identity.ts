@@ -39,6 +39,7 @@ export const characters = pgTable(
       .$type<'pending' | 'resolved' | 'unresolvable'>()
       .default('pending')
       .notNull(),
+    affiliationPeriodRevision: uuid('affiliation_period_revision').defaultRandom().notNull(),
     allianceId: bigint('alliance_id', { mode: 'number' }),
     characterId: bigint('character_id', { mode: 'number' }).primaryKey().notNull(),
     corporationId: bigint('corporation_id', { mode: 'number' }).notNull(),

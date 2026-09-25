@@ -63,7 +63,8 @@ export const coreEsiOperationCatalog = {
     retry,
   }),
   'character-corporation-roles': defineContract('character-corporation-roles', {
-    identity: { kind: 'ordered', fields: ['characterId'] },
+    representationVersion: 'v2',
+    identity: { kind: 'ordered', fields: ['characterId', 'affiliationPeriodRevision'] },
     cache: sharedPrivateCache(),
     retry,
   }),

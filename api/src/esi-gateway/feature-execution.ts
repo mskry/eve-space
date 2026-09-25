@@ -35,6 +35,7 @@ interface EsiReadDefinition<
   readonly descriptor: OperationExecutionDescriptor<Arguments, WireResult>
   readonly cacheSchema: OperationSchema<Result>
   readonly encodeRequest: (input: Input) => EsiFeatureRequest<Arguments>
+  readonly cacheIdentity?: (input: Input) => Readonly<Record<string, string | number>>
   readonly map: (response: EsiResponse<WireResult>, input: Input) => Result | Promise<Result>
   readonly recover?: (error: unknown, input: Input) => EsiLoadResult<Result> | undefined
 }

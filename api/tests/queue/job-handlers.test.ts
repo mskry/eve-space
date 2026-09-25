@@ -5,10 +5,8 @@ import { createInMemoryQueueProducer } from '../../src/queue/producer.js'
 
 const mocks = vi.hoisted(() => ({
   affiliation: vi.fn(),
-  corporationSource: vi.fn(),
-  derivedAuthority: vi.fn(),
+  corporationRoles: vi.fn(),
   domainEvent: vi.fn(),
-  ownerEvidence: vi.fn(),
   planner: vi.fn(),
   resourceRefresh: vi.fn(),
   sql: vi.fn(),
@@ -26,14 +24,8 @@ vi.mock('../../src/domain-events/handlers.js', () => ({
   dispatchDomainEvent: mocks.domainEvent,
 }))
 vi.mock('../../src/domain-events/store.js', () => ({ deletePublishedDomainEvents: vi.fn() }))
-vi.mock('../../src/organization/owner-evidence.js', () => ({
-  refreshOrganizationOwnerEvidence: mocks.ownerEvidence,
-}))
-vi.mock('../../src/organization/derived-authority.js', () => ({
-  refreshDerivedDirectorAuthority: mocks.derivedAuthority,
-}))
-vi.mock('../../src/organization/corporation-sources.js', () => ({
-  refreshOrganizationCorporationSource: mocks.corporationSource,
+vi.mock('../../src/organization/corporation-role-refresh.js', () => ({
+  refreshCorporationRoleEvidence: mocks.corporationRoles,
 }))
 vi.mock('../../src/platform/resource-refresh.js', () => ({
   processInstalledResourceRefresh: mocks.resourceRefresh,
@@ -132,6 +124,32 @@ describe('job handlers', () => {
     await expect(
       executeJobHandler('diagnostic', { operationId: 'queue-diagnostic' }, context),
     ).resolves.toStrictEqual({ error: failure, type: 'retryable' })
+  })
+
+  test('refreshes role evidence for the queued binding and delays provider cooldowns', async () => {
+    const { executeJobHandler } = await import('../../src/queue/job-handlers.js')
+    const context = executionContext()
+    const payload = {
+      affiliationPeriodRevision: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+      authorityCorporationId: 98_000_001,
+      authorizationGeneration: 7,
+      characterId: 1_404_328_063,
+      expectedRoleRevision: null,
+      organizationVersion: 3,
+      subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+      userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+    }
+
+    await expect(
+      executeJobHandler('corporation-role-observation', payload, context),
+    ).resolves.toStrictEqual({ type: 'completed' })
+    expect(mocks.corporationRoles).toHaveBeenCalledWith(payload, { signal: context.signal })
+
+    const retryAt = new Date('2026-09-10T12:05:00.000Z')
+    mocks.corporationRoles.mockRejectedValueOnce(new EsiQuotaError(300, 0, retryAt))
+    await expect(
+      executeJobHandler('corporation-role-observation', payload, context),
+    ).resolves.toStrictEqual({ retryAt: retryAt.getTime(), type: 'delayed' })
   })
 
   test('rethrows shutdown cancellation without classifying it', async () => {

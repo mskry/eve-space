@@ -84,7 +84,7 @@ export function assertOrganizationOwnerScope(requiredScope: string, scopes: read
   }
 }
 
-export function assertOrganizationOwnerDirectorRole(roles: OrganizationDirectorRoles) {
+function assertOrganizationOwnerDirectorRole(roles: OrganizationDirectorRoles) {
   if (!roles.roles.includes('Director')) {
     throw new OrganizationAuthorityError('not-director')
   }

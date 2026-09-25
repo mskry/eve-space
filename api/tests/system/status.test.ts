@@ -5,6 +5,7 @@ import { getSystemStatus } from '../../src/system/status.js'
 
 const mocks = vi.hoisted(() => ({
   get: vi.fn(),
+  probeCorporationRoleEvidenceStatus: vi.fn(),
   probeDomainEventStatus: vi.fn(),
   probeEsiStatus: vi.fn(),
   probeQueueStatus: vi.fn(),
@@ -31,6 +32,10 @@ vi.mock('../../src/domain-events/status.js', () => ({
   probeDomainEventStatus: mocks.probeDomainEventStatus,
 }))
 
+vi.mock('../../src/organization/corporation-role-diagnostics.js', () => ({
+  probeCorporationRoleEvidenceStatus: mocks.probeCorporationRoleEvidenceStatus,
+}))
+
 vi.mock('../../src/queue/status.js', () => ({ probeQueueStatus: mocks.probeQueueStatus }))
 
 vi.mock('../../src/universe/static-location-store.js', () => ({
@@ -55,6 +60,15 @@ beforeEach(() => {
   mocks.sql.mockResolvedValue([{ '?column?': 1 }])
   mocks.probeQueueStatus.mockResolvedValue(queueStatus())
   mocks.probeDomainEventStatus.mockResolvedValue(eventRelayStatus())
+  mocks.probeCorporationRoleEvidenceStatus.mockResolvedValue({
+    degraded: 0,
+    fresh: 1,
+    invalid: 0,
+    legacy: 0,
+    overdue: 0,
+    pending: 0,
+    status: 'operational',
+  })
   mocks.probeEsiStatus.mockResolvedValue(resilienceTelemetry())
   mocks.readStaticLocationRevision.mockResolvedValue({
     buildNumber: 3_503_375,
@@ -71,6 +85,7 @@ describe('system status service', () => {
       services: {
         api: { checkedAt: '2026-08-20T12:00:00.000Z', status: 'operational' },
         database: { checkedAt: '2026-08-20T12:00:00.000Z', status: 'operational' },
+        corporationRoleEvidence: { overdue: 0, status: 'operational' },
         esi: { players: 31_337, status: 'operational' },
         esiResilience: {
           cache: { status: 'operational' },
@@ -207,6 +222,26 @@ describe('system status service', () => {
       status: 'degraded',
     })
   })
+
+  test.each(['degraded', 'unavailable'] as const)(
+    'degrades aggregate health when corporation-role evidence is %s',
+    async (roleStatus) => {
+      mocks.probeCorporationRoleEvidenceStatus.mockResolvedValue({
+        degraded: 0,
+        fresh: 1,
+        invalid: 0,
+        legacy: 0,
+        overdue: roleStatus === 'degraded' ? 1 : null,
+        pending: 0,
+        status: roleStatus,
+      })
+
+      await expect(getSystemStatus()).resolves.toMatchObject({
+        services: { corporationRoleEvidence: { status: roleStatus } },
+        status: 'degraded',
+      })
+    },
+  )
 
   test.each([
     ['cooldown', 'esi-cooldown'],

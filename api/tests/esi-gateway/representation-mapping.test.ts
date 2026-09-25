@@ -71,6 +71,7 @@ await Promise.all([
 
 const characterId = 7
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
+const affiliationPeriodRevision = '22222222-2222-4222-8222-222222222222'
 
 interface MappingCase {
   readonly name: string
@@ -992,7 +993,7 @@ const cases: readonly MappingCase[] = [
       rolesAtHeadquarters: ['Station_Manager'],
       rolesAtOther: ['Personnel_Manager'],
     },
-    input: { characterId, subjectLifecycleId },
+    input: { affiliationPeriodRevision, characterId, subjectLifecycleId },
     name: 'character-corporation-roles-core',
     response: {
       roles: ['Director'],
@@ -1086,7 +1087,7 @@ const cases: readonly MappingCase[] = [
   },
   {
     expected: { roles: [], rolesAtBase: [], rolesAtHeadquarters: [], rolesAtOther: [] },
-    input: { characterId, subjectLifecycleId },
+    input: { affiliationPeriodRevision, characterId, subjectLifecycleId },
     name: 'character-corporation-roles-core',
     response: {},
   },
@@ -1385,6 +1386,32 @@ describe('registered representation mapping', () => {
       await runtime.close()
     },
   )
+
+  test('binds warm corporation-role cache entries to the affiliation period', async () => {
+    const fetch = vi.fn()
+    const runtime = createRuntimeTestExecution(
+      createRuntimeTestPorts({ fetch, response: { roles: ['Director'] } }),
+    )
+    gatewayMocks.getProductionRuntime.mockResolvedValue(runtime)
+    const caller = gatewayMocks.callables.get('character-corporation-roles-core')
+    if (!caller) {
+      throw new Error('Missing registered corporation-role caller')
+    }
+    const previousPeriod = { affiliationPeriodRevision, characterId, subjectLifecycleId }
+
+    await expect(caller.execute(previousPeriod)).resolves.toMatchObject({ source: 'esi' })
+    await expect(caller.execute(previousPeriod)).resolves.toMatchObject({ source: 'cache' })
+    expect(fetch).toHaveBeenCalledOnce()
+
+    await expect(
+      caller.execute({
+        ...previousPeriod,
+        affiliationPeriodRevision: '33333333-3333-4333-8333-333333333333',
+      }),
+    ).resolves.toMatchObject({ source: 'esi' })
+    expect(fetch).toHaveBeenCalledTimes(2)
+    await runtime.close()
+  })
 
   test('rejects an unknown wallet journal reference type', () => {
     const schema = gatewayMocks.callables.get('wallet-journal-core')?.cacheSchema

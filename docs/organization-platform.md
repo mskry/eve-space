@@ -54,6 +54,51 @@ Invalid evidence grants nothing. A transient ESI, SSO, quota, or executor-discov
 degraded state, but confirmed lifecycle, owner, authorization, scope, affiliation, role, block, or
 organization-version failure invalidates immediately.
 
+### Corporation-Role Evidence
+
+The character subsystem owns one current PostgreSQL role observation per demanded source binding:
+organization version, account, character lifecycle, affiliation period, authority corporation, and
+authorization generation. The observation records the canonical `roles`, `roles_at_base`,
+`roles_at_hq`, and `roles_at_other` sets in a private content table, an opaque random revision that
+changes only for semantic or binding changes, and validated, fresh, degraded, next-refresh, and
+last-applied sequence metadata. Owner, derived-Director, and corporation-source records store only
+the opaque revision they were projected from; raw roles never reach modules, routes, jobs, events,
+audits, telemetry, or logs, and the character dependency verifier rejects other references to the
+content table.
+
+- The affiliation period rotates in PostgreSQL whenever the observed corporation or alliance changes
+  and stays stable across unchanged revalidation. Role cache identity includes it, so a warm response
+  from a previous corporation can never become evidence for the current one.
+- Every attempt that can persist a success or failure first allocates a database sequence. Outcomes
+  apply only when newer than every sequence already applied for that character; lifecycle,
+  authorization, and organization invalidations allocate their own sequence and leave a content-free
+  tombstone.
+- Authorization, source eligibility, queued corporation execution, and materialization compare the
+  source's lifecycle, affiliation period, organization version, corporation, authorization
+  generation, scope, and revision with the current observation and evaluate its deadlines by clock.
+  A mismatched projection fails closed before asynchronous repair runs.
+- Scope-preserving access-token refresh carries the generation forward in place. Scope changes,
+  revocation, reauthorization, detachment, and transfer invalidate the binding.
+- Refresh demand is the union of claimed owner sources, registered corporation sources, and
+  derived-Director candidates while that policy is enabled. Owner claims, owner-source replacement,
+  and corporation-source registration or replacement observe roles under an explicit bootstrap
+  intent and commit that evidence only together with the mutation.
+- Normal revalidation is scheduled at the ESI freshness boundary, one hour by default. The planner
+  admits work up to 20 minutes ahead as a delayed job that cannot run before the persisted due time.
+  Transient failures retry no sooner than five minutes or any later provider cooldown.
+- Fresh evidence ends at the earliest of the ESI boundary, affiliation freshness, executor freshness
+  for owner and derived authority, and the configured authority-evidence duration. After that,
+  transient failure degrades evidence until the fixed stale-evidence grace deadline, one hour by
+  default. Degraded evidence supports only declared read continuity and source remediation; new
+  authority, governance mutation, source registration or replacement, external synchronization,
+  role-gated collection, and materialization require fresh evidence.
+- A fresh successful response is the only input that confirms a gain or loss, and an empty response
+  is valid negative evidence. Accepted changes append `character.corporation-roles-changed` or
+  `character.corporation-role-loss-confirmed` in the same transaction with only identities, the
+  affiliation period, and previous and current opaque revisions. Convergent handlers recompute from
+  current evidence.
+- `/api/status` reports only aggregate pending, fresh, degraded, invalid, legacy, and overdue counts.
+
 ## Local Organization Fixture
 
 The organization fixture is a one-shot development aid for exercising member, HR, director, owner,
@@ -156,6 +201,21 @@ must never be substituted.
    monitor `/api/status`, queue age, collection freshness, compliance transitions, and provider
    degradation through the rollout window.
 
+### Corporation-Role Evidence Rollout
+
+Deploy migration `009_corporation_role_observations.sql` with the matching API and worker together.
+The migration creates no synthetic role content. It marks each owner, derived-Director, or
+corporation source that was fresh at migration with its original deadline and captured binding. Such
+a source keeps exactly its prior behavior only while no observation has been accepted for that
+binding, the binding and role outcome are unchanged, and that deadline is in the future. The first
+accepted observation, a strict failure, any binding change, or the deadline ends the exception; a
+trigger rejects creating, extending, or copying it. Every demanded binding without evidence is due
+immediately, and new claims or source mutations always require a current observation.
+
+Watch `corporationRoleEvidence` in `/api/status` until `legacy` reaches zero, `pending` drains, and
+`overdue` stays at zero. A legacy source that has not observed by its original deadline fails closed;
+reauthorize or replace it rather than extending it.
+
 ### Authority Operations
 
 - Inspect the administration source ledger before changing policy or delegated access. Confirm the
@@ -173,6 +233,9 @@ must never be substituted.
 - Queued source work carries organization version, lifecycle, authorization generation, and evidence
   revision. A superseded result is expected after replacement or reauthorization and must not be
   replayed under a newer source.
+- Corporation-role work is one derived `corporation-role-observation` job per lifecycle, affiliation
+  period, and expected revision. Losing the queue is harmless because the planner reconstructs due
+  work from PostgreSQL on its next pass.
 
 ## Rollback
 
@@ -191,6 +254,11 @@ must never be substituted.
 - Rolling back to a prior application image is valid only when that image accepts the current additive
   schema and domain-event versions. Otherwise keep the current API/worker and disable the affected
   feature or policy gate.
+- To roll back corporation-role evidence, first stop new API mutations and the role planner, leave the
+  additive observation tables intact, and let the current worker drain pending
+  `character.corporation-role*` events. Only then restore the previous API and worker; their source
+  rows and deadlines remain readable. After the legacy window has passed, affected authority may need
+  EVE revalidation because raw roles are never reconstructed from provenance.
 - Changing back to a previous corporation or alliance creates another organization version. Re-claim
   owner authority and register fresh corporation sources; never reactivate grants or observations from
   an older version.

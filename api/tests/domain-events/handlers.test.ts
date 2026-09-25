@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
   createCharacterComplianceEventHandlers,
+  createCorporationRoleAuthorityEventHandlers,
   createManagedCorporationComplianceEventHandlers,
   createPlatformCollectionStateEventHandlers,
   dispatchDomainEvent,
@@ -139,6 +140,53 @@ describe('domain event handlers', () => {
     })
   })
 
+  test.each([
+    'character.corporation-roles-changed',
+    'character.corporation-role-loss-confirmed',
+  ] as const)(
+    'repairs role-dependent authority from current evidence for %s events',
+    async (eventType) => {
+      const repair = vi.fn().mockResolvedValue(undefined)
+      const handlers = createCorporationRoleAuthorityEventHandlers(repair)
+      const event = { ...storedEvent(), eventType, payload: roleTransitionPayload() } as never
+      const loader = vi.fn().mockResolvedValue(event)
+
+      await dispatchDomainEvent(eventId, handlers, loader)
+      await dispatchDomainEvent(eventId, handlers, loader)
+
+      expect(repair).toHaveBeenCalledTimes(2)
+      expect(repair).toHaveBeenLastCalledWith({
+        characterId: 1_404_328_063,
+        organizationVersion: 4,
+        userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+      })
+      expect(handlers.every(({ idempotency }) => idempotency === 'convergent-state')).toBe(true)
+    },
+  )
+
+  test('recomputes compliance and collection state after confirmed role loss', async () => {
+    const recompute = vi.fn().mockResolvedValue(undefined)
+    const repairCollection = vi.fn().mockResolvedValue(undefined)
+    const event = {
+      ...storedEvent(),
+      eventType: 'character.corporation-role-loss-confirmed',
+      payload: roleTransitionPayload(),
+    } as never
+    const loader = vi.fn().mockResolvedValue(event)
+
+    await dispatchDomainEvent(
+      eventId,
+      [
+        ...createCharacterComplianceEventHandlers(recompute),
+        ...createPlatformCollectionStateEventHandlers(repairCollection),
+      ],
+      loader,
+    )
+
+    expect(recompute).toHaveBeenCalledWith('2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c')
+    expect(repairCollection).toHaveBeenCalledWith({ characterId: 1_404_328_063 })
+  })
+
   test('redelivers compliance events through convergent handlers', async () => {
     const recompute = vi.fn().mockResolvedValue({ outcome: 'unchanged' })
     const handlers = createCharacterComplianceEventHandlers(recompute)
@@ -182,5 +230,19 @@ function storedEvent() {
       userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
     },
     payloadVersion: 1 as const,
+  }
+}
+
+function roleTransitionPayload() {
+  return {
+    affiliationPeriodRevision: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+    authorityCorporationId: 98_000_001,
+    authorizationGeneration: 7,
+    characterId: 1_404_328_063,
+    currentRoleRevision: '6f4a6f1e-3b1b-4f2f-9b41-6a6c1a7d9c55',
+    organizationVersion: 4,
+    previousRoleRevision: '0d1e2f3a-4b5c-4d6e-8f70-8192a3b4c5d6',
+    subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+    userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
   }
 }

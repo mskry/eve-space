@@ -13,9 +13,43 @@ import {
 import { resolveAuthorityEvidenceState } from './authority-policy.js'
 import { resolveAffiliationFreshness } from './affiliation-freshness.js'
 import { corporationMembershipScope } from './corporation-membership.js'
+import { resolveSourceRoleEvidenceState } from './source-role-evidence.js'
 
 type Transaction = Pick<typeof db, 'delete' | 'insert' | 'select'>
 type SourceExecutionDatabase = Pick<typeof db, 'select'>
+
+const resolveCorporationSourceRoleEvidence = (
+  database: SourceExecutionDatabase,
+  source: {
+    readonly affiliationPeriodRevision: string | null
+    readonly authorizationGeneration: number
+    readonly characterId: number | null
+    readonly corporationId: number
+    readonly legacyRoleContinuityUntil: Date | null
+    readonly organizationVersion: number
+    readonly roleEvidenceRevision: string
+    readonly sourceSubjectLifecycleId: string
+    readonly sourceUserId: string
+  },
+  now: Date,
+) =>
+  source.characterId === null
+    ? Promise.resolve('invalid' as const)
+    : resolveSourceRoleEvidenceState(
+        database,
+        {
+          affiliationPeriodRevision: source.affiliationPeriodRevision,
+          authorityCorporationId: source.corporationId,
+          authorizationGeneration: source.authorizationGeneration,
+          characterId: source.characterId,
+          legacyRoleContinuityUntil: source.legacyRoleContinuityUntil,
+          organizationVersion: source.organizationVersion,
+          roleEvidenceRevision: source.roleEvidenceRevision,
+          sourceSubjectLifecycleId: source.sourceSubjectLifecycleId,
+          userId: source.sourceUserId,
+        },
+        now,
+      )
 
 export async function isCorporationSourceExecutionCurrent(
   input: {
@@ -29,6 +63,7 @@ export async function isCorporationSourceExecutionCurrent(
 ) {
   const [source] = await database
     .select({
+      affiliationPeriodRevision: organizationCorporationSources.affiliationPeriodRevision,
       authorizationGeneration: organizationCorporationSources.authorizationGeneration,
       characterId: organizationCorporationSources.characterId,
       corporationId: organizationCorporationSources.corporationId,
@@ -41,9 +76,12 @@ export async function isCorporationSourceExecutionCurrent(
       freshUntil: organizationCorporationSources.freshUntil,
       graceUntil: organizationCorporationSources.graceUntil,
       invalidatedAt: organizationCorporationSources.invalidatedAt,
+      legacyRoleContinuityUntil: organizationCorporationSources.legacyRoleContinuityUntil,
       observedAllianceId: organizationCorporationSources.observedAllianceId,
       observedCorporationId: organizationCorporationSources.observedCorporationId,
+      organizationVersion: organizationCorporationSources.organizationVersion,
       requiredScope: organizationCorporationSources.requiredScope,
+      roleEvidenceRevision: organizationCorporationSources.roleEvidenceRevision,
       scopes: eveTokens.scopes,
       sourceId: organizationCorporationSources.sourceId,
       sourceSubjectLifecycleId: organizationCorporationSources.sourceSubjectLifecycleId,
@@ -118,7 +156,11 @@ export async function isCorporationSourceExecutionCurrent(
   if (corporationLifecycle?.sourceId !== source.sourceId) {
     return false
   }
-  return resolveAuthorityEvidenceState(source, input.now ?? new Date()) === 'fresh'
+  const now = input.now ?? new Date()
+  return (
+    resolveAuthorityEvidenceState(source, now) === 'fresh' &&
+    (await resolveCorporationSourceRoleEvidence(database, source, now)) === 'fresh'
+  )
 }
 
 export async function lockCorporationSourceExecutionCurrent(
@@ -131,6 +173,7 @@ export async function lockCorporationSourceExecutionCurrent(
     now?: Date
   },
 ) {
+  const nowValue = (input.now ?? new Date()).toISOString()
   const [source] = await transaction<{ sourceId: string }[]>`
     select source.source_id as "sourceId"
     from organization_corporation_sources source
@@ -167,7 +210,39 @@ export async function lockCorporationSourceExecutionCurrent(
       and source.invalidated_at is null
       and source.status = 'fresh'
       and source.director_role_present
-      and source.fresh_until > ${(input.now ?? new Date()).toISOString()}::text::timestamptz
+      and source.fresh_until > ${nowValue}::text::timestamptz
+      and source.affiliation_period_revision = character.affiliation_period_revision
+      and (
+        exists (
+          select 1
+          from character_corporation_role_observations observation
+          where observation.deployment_id = source.deployment_id
+            and observation.organization_version = source.organization_version
+            and observation.character_id = source.character_id
+            and observation.user_id = source.source_user_id
+            and observation.source_subject_lifecycle_id = source.source_subject_lifecycle_id
+            and observation.affiliation_period_revision = source.affiliation_period_revision
+            and observation.authority_corporation_id = source.corporation_id
+            and observation.authorization_generation = source.authorization_generation
+            and observation.role_revision::text = source.role_evidence_revision
+            and observation.status = 'fresh'
+            and observation.fresh_until > ${nowValue}::text::timestamptz
+        )
+        or (
+          source.legacy_role_continuity_until > ${nowValue}::text::timestamptz
+          and not exists (
+            select 1
+            from character_corporation_role_observations observation
+            where observation.deployment_id = source.deployment_id
+              and observation.organization_version = source.organization_version
+              and observation.source_subject_lifecycle_id = source.source_subject_lifecycle_id
+              and observation.affiliation_period_revision = source.affiliation_period_revision
+              and observation.authority_corporation_id = source.corporation_id
+              and observation.authorization_generation = source.authorization_generation
+              and observation.status <> 'pending'
+          )
+        )
+      )
     for share of source
   `
   return Boolean(source)
@@ -194,7 +269,13 @@ export async function materializeCorporationRoster(
       currentSubjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
       nextAffiliationCheck: characters.nextAffiliationCheck,
       scopes: eveTokens.scopes,
+      sourceAffiliationPeriodRevision: organizationCorporationSources.affiliationPeriodRevision,
       sourceAuthorizationGeneration: organizationCorporationSources.authorizationGeneration,
+      sourceCorporationId: organizationCorporationSources.corporationId,
+      sourceLegacyRoleContinuityUntil: organizationCorporationSources.legacyRoleContinuityUntil,
+      sourceOrganizationVersion: organizationCorporationSources.organizationVersion,
+      sourceRoleEvidenceRevision: organizationCorporationSources.roleEvidenceRevision,
+      sourceUserId: organizationCorporationSources.sourceUserId,
       sourceFreshUntil: organizationCorporationSources.freshUntil,
       sourceGraceUntil: organizationCorporationSources.graceUntil,
       sourceId: organizationCorporationSources.sourceId,
@@ -252,7 +333,22 @@ export async function materializeCorporationRoster(
       },
       new Date(),
     ) !== 'fresh' ||
-    !source.scopes.includes(corporationMembershipScope)
+    !source.scopes.includes(corporationMembershipScope) ||
+    (await resolveCorporationSourceRoleEvidence(
+      transaction,
+      {
+        affiliationPeriodRevision: source.sourceAffiliationPeriodRevision,
+        authorizationGeneration: source.sourceAuthorizationGeneration,
+        characterId: source.characterId,
+        corporationId: source.sourceCorporationId,
+        legacyRoleContinuityUntil: source.sourceLegacyRoleContinuityUntil,
+        organizationVersion: source.sourceOrganizationVersion,
+        roleEvidenceRevision: source.sourceRoleEvidenceRevision,
+        sourceSubjectLifecycleId: source.sourceSubjectLifecycleId,
+        sourceUserId: source.sourceUserId,
+      },
+      new Date(),
+    )) !== 'fresh'
   ) {
     return { outcome: 'obsolete' as const }
   }

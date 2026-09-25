@@ -4,12 +4,10 @@ import { env } from '../../src/env.js'
 import {
   affiliationJobId,
   assertSafeJobPayload,
-  corporationSourceEvidenceJobId,
-  derivedAuthorityJobId,
+  corporationRoleObservationJobId,
   domainEventJobId,
   getJobContract,
   listJobContracts,
-  organizationOwnerEvidenceJobId,
   parseJobPayload,
   resourceBatchJobId,
   resourceRefreshJobId,
@@ -20,13 +18,16 @@ import {
 
 const eventId = '98a782d2-e042-47d7-9659-03b218121a1a'
 const grantId = '35acd527-9539-44ad-aacf-9f8e45232267'
-const sourceId = '66503848-72b8-4fa3-8af5-de056001a37e'
 const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
-const sourceContext = {
+const roleObservation = {
+  affiliationPeriodRevision: '66503848-72b8-4fa3-8af5-de056001a37e',
+  authorityCorporationId: 98_000_001,
   authorizationGeneration: 7,
+  characterId: 1_404_328_063,
+  expectedRoleRevision: null,
   organizationVersion: 3,
-  roleEvidenceRevision: '2026-09-21T12:00:00.000Z',
-  sourceSubjectLifecycleId: grantId,
+  subjectLifecycleId: grantId,
+  userId,
 } as const
 const resourceIdentity = {
   moduleId: 'member-audit',
@@ -49,23 +50,10 @@ if (affiliationMaximumBatchSize === null) {
 
 const fixtures = {
   affiliation: { characterIds: [1], operationId: `affiliation-1--${eventId}` },
-  'corporation-source-evidence': { sourceId, ...sourceContext },
-  'derived-authority': {
-    authorizationGeneration: sourceContext.authorizationGeneration,
-    characterId: 1_404_328_063,
-    organizationVersion: sourceContext.organizationVersion,
-    roleEvidenceRevision: null,
-    sourceId: null,
-    subjectLifecycleId: sourceContext.sourceSubjectLifecycleId,
-    userId,
-  },
+  'corporation-role-observation': roleObservation,
   diagnostic: { operationId: 'queue-diagnostic' },
   'domain-event': { eventId },
   'domain-event-retention': { operationId: 'domain-event-retention' },
-  'organization-owner-evidence': {
-    grantId,
-    ...sourceContext,
-  },
   'outbox-relay': { operationId: 'outbox-relay' },
   planner: { operationId: 'queue-planner' },
   'resource-batch': resourceBatch,
@@ -79,9 +67,7 @@ const expected = [
   ['outbox-relay', 3, 'derived', undefined, 'scheduler', 'none', 'none'],
   ['domain-event-retention', 3, 'derived', undefined, 'scheduler', 'none', 'none'],
   ['affiliation', 5, 'derived', undefined, 'job-id', 'none', 'none'],
-  ['organization-owner-evidence', 3, 'derived', undefined, 'simple', 'none', 'none'],
-  ['corporation-source-evidence', 3, 'derived', undefined, 'simple', 'none', 'none'],
-  ['derived-authority', 3, 'derived', undefined, 'simple', 'none', 'none'],
+  ['corporation-role-observation', 3, 'derived', undefined, 'simple', 'due-time', 'none'],
   ['resource-refresh', 1, 'derived', undefined, 'simple', 'planner-stagger', 'resource'],
   ['resource-batch', 1, 'derived', undefined, 'simple', 'planner-stagger', 'resource'],
 ] as const
@@ -119,13 +105,15 @@ describe('job contracts', () => {
     expect(affiliationJobId([3, 1, 2])).toBe('affiliation-1-2-3')
     expect(affiliationJobId([3, 1, 2], eventId)).toBe(`affiliation-1-2-3--${eventId}`)
     expect(domainEventJobId(eventId)).toBe(`domain-event-${eventId}`)
-    expect(organizationOwnerEvidenceJobId(fixtures['organization-owner-evidence'])).toMatch(
-      /^organization-owner-evidence-3-7-/,
+    expect(corporationRoleObservationJobId(roleObservation)).toBe(
+      `corporation-role-observation-3-1404328063-${grantId}-${roleObservation.affiliationPeriodRevision}-98000001-initial`,
     )
-    expect(corporationSourceEvidenceJobId(fixtures['corporation-source-evidence'])).toMatch(
-      /^corporation-source-evidence-3-7-/,
-    )
-    expect(derivedAuthorityJobId(fixtures['derived-authority'])).toContain('-initial-')
+    expect(
+      corporationRoleObservationJobId({ ...roleObservation, authorizationGeneration: 8 }),
+    ).toBe(corporationRoleObservationJobId(roleObservation))
+    expect(
+      corporationRoleObservationJobId({ ...roleObservation, expectedRoleRevision: eventId }),
+    ).toMatch(new RegExp(`-${eventId}$`))
     expect(resourceRefreshJobId(resourceIdentity)).toMatch(/^resource-refresh-[0-9a-f]{64}$/)
     expect(resourceBatchJobId(resourceBatch)).toMatch(/^resource-batch-[0-9a-f]{64}$/)
     expect(
@@ -170,6 +158,18 @@ describe('job contracts', () => {
       )
     }
     expect(() => assertSafeJobPayload({ refreshToken: 'not-allowed' })).toThrow('sensitive')
+    expect(() =>
+      parseJobPayload('corporation-role-observation', {
+        ...roleObservation,
+        roles: ['Director'],
+      }),
+    ).toThrow('Invalid corporation-role-observation')
+    expect(() =>
+      parseJobPayload('corporation-role-observation', {
+        ...roleObservation,
+        expectedRoleRevision: '2026-09-21T12:00:00.000Z',
+      }),
+    ).toThrow('Invalid corporation-role-observation')
     expect(() =>
       parseJobPayload('affiliation', {
         characterIds: Array.from({ length: 1001 }, (_, index) => index + 1),

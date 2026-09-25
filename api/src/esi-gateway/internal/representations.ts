@@ -29,6 +29,11 @@ interface EsiRepresentationOptions<
   name: string
   descriptor: OperationExecutionDescriptor<Arguments, WireResult>
   encodeRequest: (input: Input) => EsiRepresentationRequest<Arguments>
+  /**
+   * Projects application-owned cache identity that is never sent upstream. The projection replaces
+   * the SDK request as identity input, so it must also carry every upstream identity field.
+   */
+  cacheIdentity?: (input: Input) => Readonly<Record<string, string | number>>
   map: (response: EsiResponse<WireResult>, input: Input) => Result | Promise<Result>
   /**
    * Classifies an upstream failure as a cacheable answer. Returning a result stores it like any
@@ -65,6 +70,7 @@ export interface EsiRepresentation<
   readonly execution: Execution
   readonly descriptor: OperationExecutionDescriptor<Arguments, WireResult>
   encodeRequest(input: Input): EsiRepresentationRequest<Arguments>
+  cacheIdentity?(input: Input): Readonly<Record<string, string | number>>
   map(response: EsiResponse<WireResult>, input: Input): Result | Promise<Result>
   recover?(error: unknown, input: Input): EsiLoadResult<Result> | undefined
 }
@@ -167,6 +173,7 @@ function defineEsiRepresentation<
     execution,
     descriptor: options.descriptor,
     encodeRequest: options.encodeRequest,
+    ...(options.cacheIdentity && { cacheIdentity: options.cacheIdentity }),
     map: options.map,
     ...(options.recover && { recover: options.recover }),
   }

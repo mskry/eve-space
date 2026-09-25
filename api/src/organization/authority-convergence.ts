@@ -1,4 +1,9 @@
 import { and, eq, inArray, isNull, ne, or, sql, type SQLWrapper } from 'drizzle-orm'
+import {
+  advanceCharacterCorporationRoleObservationGenerationInTransaction,
+  invalidateCharacterCorporationRoleObservationsInTransaction,
+  invalidateOrganizationCorporationRoleObservationsInTransaction,
+} from '../characters/corporation-role-invalidation.js'
 import type { DatabaseTransaction } from '../db/client.js'
 import {
   characters,
@@ -6,11 +11,29 @@ import {
   organizationAuthorityEvidence,
   organizationCorporationSources,
   organizationDerivedAuthoritySources,
+  type CorporationRoleObservationInvalidationOutcome,
   type OrganizationAuthorityEvidenceStatus,
   type OrganizationAuthorityInvalidationOutcome,
 } from '../db/schema.js'
 import { appendOrganizationAuditEvents } from './audit.js'
 import { convergeCurrentManagedMemberLifecyclesInTransaction } from './managed-member-lifecycle.js'
+
+const roleObservationBindingOutcomes = new Set<OrganizationAuthorityInvalidationOutcome>([
+  'authorization-generation-changed',
+  'authorization-missing',
+  'authorization-rejected',
+  'authorization-revoked',
+  'detached',
+  'lifecycle-replaced',
+  'missing-scope',
+  'owner-mismatch',
+  'transferred',
+])
+
+const isRoleObservationBindingOutcome = (
+  outcome: OrganizationAuthorityInvalidationOutcome,
+): outcome is CorporationRoleObservationInvalidationOutcome =>
+  roleObservationBindingOutcomes.has(outcome)
 
 export async function invalidateCharacterAuthoritySourcesInTransaction(
   transaction: DatabaseTransaction,
@@ -26,6 +49,13 @@ export async function invalidateCharacterAuthoritySourcesInTransaction(
   },
 ) {
   const now = input.now ?? new Date()
+  if (isRoleObservationBindingOutcome(input.outcome)) {
+    await invalidateCharacterCorporationRoleObservationsInTransaction(transaction, {
+      characterId: input.characterId,
+      now,
+      outcome: input.outcome,
+    })
+  }
   const [settings] = await transaction
     .select({ policyVersion: deploymentSettings.registrationPolicyVersion })
     .from(deploymentSettings)
@@ -200,6 +230,11 @@ export async function advanceCharacterAuthorityAuthorizationGenerationInTransact
   input: { characterId: number; authorizationGeneration: number; now?: Date },
 ) {
   const updatedAt = input.now ?? new Date()
+  await advanceCharacterCorporationRoleObservationGenerationInTransaction(transaction, {
+    authorizationGeneration: input.authorizationGeneration,
+    characterId: input.characterId,
+    now: updatedAt,
+  })
   await transaction
     .update(organizationAuthorityEvidence)
     .set({ authorizationGeneration: input.authorizationGeneration, updatedAt })
@@ -251,6 +286,7 @@ async function convergeAffiliationAuthoritySourcesInTransaction(
         or(
           ne(organizationDerivedAuthoritySources.observedCorporationId, characters.corporationId),
           sql`${organizationDerivedAuthoritySources.observedAllianceId} is distinct from ${characters.allianceId}`,
+          sql`${organizationDerivedAuthoritySources.affiliationPeriodRevision} is distinct from ${characters.affiliationPeriodRevision}`,
         ),
       ),
     )
@@ -265,6 +301,7 @@ async function convergeAffiliationAuthoritySourcesInTransaction(
         or(
           ne(organizationAuthorityEvidence.observedCorporationId, characters.corporationId),
           sql`${organizationAuthorityEvidence.observedAllianceId} is distinct from ${characters.allianceId}`,
+          sql`${organizationAuthorityEvidence.affiliationPeriodRevision} is distinct from ${characters.affiliationPeriodRevision}`,
         ),
       ),
     )
@@ -282,6 +319,7 @@ async function convergeAffiliationAuthoritySourcesInTransaction(
         or(
           ne(organizationCorporationSources.observedCorporationId, characters.corporationId),
           sql`${organizationCorporationSources.observedAllianceId} is distinct from ${characters.allianceId}`,
+          sql`${organizationCorporationSources.affiliationPeriodRevision} is distinct from ${characters.affiliationPeriodRevision}`,
         ),
       ),
     )
@@ -320,6 +358,10 @@ export async function invalidateOrganizationAuthoritySourcesInTransaction(
   input: { organizationVersion: number; policyVersion: number; now?: Date },
 ) {
   const now = input.now ?? new Date()
+  await invalidateOrganizationCorporationRoleObservationsInTransaction(transaction, {
+    now,
+    organizationVersion: input.organizationVersion,
+  })
   const invalidation = {
     failureClass: 'strict:organization-replaced',
     graceUntil: null,

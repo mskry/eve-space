@@ -3,13 +3,19 @@ import { findDependencyCycles } from '../dependency-cycles.js'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
-  'affiliation-use-case': ['affiliation-planning', 'affiliation-sync'],
-  'pure-leaf': ['finance-pagination', 'resource-failure'],
+  'observation-use-case': [
+    'affiliation-planning',
+    'affiliation-sync',
+    'corporation-role-invalidation',
+    'corporation-role-observation',
+  ],
+  'pure-leaf': ['corporation-role-canonical', 'finance-pagination', 'resource-failure'],
   'read-projection': [
     'assets',
     'attributes',
     'clones',
     'contracts',
+    'corporation-role-evidence',
     'corporation-roles',
     'finance-location-names',
     'finance-type-names',
@@ -55,14 +61,14 @@ export const declaredCharacterModules = Object.freeze(
 )
 
 const allowedImportTiersBySourceTier: Record<CharacterTier, readonly CharacterTier[]> = {
-  'affiliation-use-case': ['pure-leaf', 'read-projection', 'affiliation-use-case'],
+  'observation-use-case': ['pure-leaf', 'read-projection', 'observation-use-case'],
   'pure-leaf': ['pure-leaf'],
   'read-projection': ['pure-leaf', 'read-projection'],
-  'route-adapter': ['pure-leaf', 'read-projection', 'affiliation-use-case', 'route-adapter'],
+  'route-adapter': ['pure-leaf', 'read-projection', 'observation-use-case', 'route-adapter'],
 }
 
 const allowedPackagesByTier: Record<CharacterTier, ReadonlySet<string>> = {
-  'affiliation-use-case': new Set(['drizzle-orm', 'zod']),
+  'observation-use-case': new Set(['drizzle-orm', 'node:crypto', 'zod']),
   'pure-leaf': new Set(),
   'read-projection': new Set([
     '@eve-space/core-eve-projections/assets',
@@ -117,6 +123,23 @@ const allowedCrossSubsystemImportsByModule = new Map(
       'api/src/middleware/owned-character',
     ],
     contracts: ['api/src/esi-gateway/feature-execution'],
+    'corporation-role-canonical': [],
+    'corporation-role-evidence': [
+      'api/src/db/client',
+      'api/src/db/schema',
+      'api/src/esi-gateway/catalog-interface',
+    ],
+    'corporation-role-invalidation': ['api/src/db/client', 'api/src/db/schema'],
+    'corporation-role-observation': [
+      'api/src/auth/character-token-store',
+      'api/src/auth/sso',
+      'api/src/auth/token-errors',
+      'api/src/db/client',
+      'api/src/db/locks',
+      'api/src/db/schema',
+      'api/src/domain-events/store',
+      'api/src/esi-gateway/failures',
+    ],
     'core-routes': [
       'api/src/auth/character-lifecycle',
       'api/src/esi-gateway/feature-execution',
@@ -190,6 +213,31 @@ export interface CharacterSource {
 interface CharacterBoundaryModel {
   readonly declarationsByModule: ReadonlyMap<string, readonly CharacterModuleDeclaration[]>
   readonly sourcesByModule: ReadonlyMap<string, readonly CharacterSource[]>
+}
+
+const rawCorporationRoleContentOwners = new Set([
+  'api/src/characters/corporation-role-evidence.ts',
+  'api/src/characters/corporation-role-invalidation.ts',
+  'api/src/characters/corporation-role-observation.ts',
+  'api/src/db/schema/character-corporation-roles.ts',
+])
+const rawCorporationRoleContentMarkers = [
+  'characterCorporationRoleContents',
+  'character_corporation_role_contents',
+] as const
+
+export function rawCorporationRoleContentViolations(apiSources: readonly CharacterSource[]) {
+  return apiSources
+    .filter(
+      ({ path, source }) =>
+        !rawCorporationRoleContentOwners.has(path) &&
+        rawCorporationRoleContentMarkers.some((marker) => source.includes(marker)),
+    )
+    .map(
+      ({ path }) =>
+        `${path}: raw corporation-role content is private to the character evidence modules`,
+    )
+    .toSorted((left, right) => left.localeCompare(right))
 }
 
 export function characterBoundaryViolations(
@@ -278,7 +326,7 @@ function violationsForImport(
   }
   if (isPackageOrSubpath(dependency, '@evespace/esi-client')) {
     if (
-      (sourceTier === 'read-projection' || sourceTier === 'affiliation-use-case') &&
+      (sourceTier === 'read-projection' || sourceTier === 'observation-use-case') &&
       (dependency === '@evespace/esi-client/operations' ||
         dependency === '@evespace/esi-client/types')
     ) {

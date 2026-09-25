@@ -46,39 +46,18 @@ const affiliationJobPayload = z
       })
     }
   })
-const organizationOwnerEvidenceJobPayload = z
+const corporationRoleObservationJobPayload = z
   .object({
-    authorizationGeneration: z.number().int().nonnegative(),
-    grantId: z.uuid(),
-    organizationVersion: z.number().int().positive(),
-    roleEvidenceRevision: z.string().trim().min(1).max(200),
-    sourceSubjectLifecycleId: z.uuid(),
-  })
-  .strict()
-const corporationSourceEvidenceJobPayload = z
-  .object({
-    authorizationGeneration: z.number().int().nonnegative(),
-    organizationVersion: z.number().int().positive(),
-    roleEvidenceRevision: z.string().trim().min(1).max(200),
-    sourceId: z.uuid(),
-    sourceSubjectLifecycleId: z.uuid(),
-  })
-  .strict()
-const derivedAuthorityJobPayload = z
-  .object({
+    affiliationPeriodRevision: z.uuid(),
+    authorityCorporationId: z.number().int().positive(),
     authorizationGeneration: z.number().int().nonnegative(),
     characterId: z.number().int().positive(),
+    expectedRoleRevision: z.uuid().nullable(),
     organizationVersion: z.number().int().positive(),
-    roleEvidenceRevision: z.string().trim().min(1).max(200).nullable(),
-    sourceId: z.uuid().nullable(),
     subjectLifecycleId: z.uuid(),
     userId: z.uuid(),
   })
   .strict()
-  .refine(
-    ({ sourceId, roleEvidenceRevision }) => (sourceId === null) === (roleEvidenceRevision === null),
-    { message: 'Source identity and evidence revision must both be present or absent' },
-  )
 const resourceRefreshJobPayload = platformCollectionStateIdentitySchema
 const resourceBatchJobPayload = platformResourceBatchPayloadSchema.safeExtend({
   subjects: platformResourceBatchPayloadSchema.shape.subjects.max(
@@ -93,9 +72,7 @@ export interface JobPayloadByName {
   'outbox-relay': z.infer<typeof outboxRelayJobPayload>
   'domain-event-retention': z.infer<typeof domainEventRetentionJobPayload>
   affiliation: z.infer<typeof affiliationJobPayload>
-  'organization-owner-evidence': z.infer<typeof organizationOwnerEvidenceJobPayload>
-  'corporation-source-evidence': z.infer<typeof corporationSourceEvidenceJobPayload>
-  'derived-authority': z.infer<typeof derivedAuthorityJobPayload>
+  'corporation-role-observation': z.infer<typeof corporationRoleObservationJobPayload>
   'resource-refresh': PlatformCollectionStateIdentity
   'resource-batch': PlatformResourceBatchPayload
 }
@@ -112,7 +89,7 @@ export interface JobContract<Name extends JobName> {
   readonly attempts: number
   readonly durability: JobDurability
   readonly activeWorkDeduplication: ActiveWorkDeduplication
-  readonly delay: 'none' | 'planner-stagger'
+  readonly delay: 'none' | 'planner-stagger' | 'due-time'
   readonly priority: 'none' | 'resource'
   readonly retention: {
     readonly completed: { readonly age: number; readonly count: number }
@@ -145,25 +122,15 @@ const jobContracts = {
     priority: 'none',
     operationIdentity: ({ operationId }) => operationId,
   }),
-  'corporation-source-evidence': contract({
-    name: 'corporation-source-evidence',
-    payload: corporationSourceEvidenceJobPayload,
+  'corporation-role-observation': contract({
+    name: 'corporation-role-observation',
+    payload: corporationRoleObservationJobPayload,
     attempts: 3,
     durability: { kind: 'derived' },
     activeWorkDeduplication: 'simple',
-    delay: 'none',
+    delay: 'due-time',
     priority: 'none',
-    operationIdentity: corporationSourceEvidenceJobId,
-  }),
-  'derived-authority': contract({
-    name: 'derived-authority',
-    payload: derivedAuthorityJobPayload,
-    attempts: 3,
-    durability: { kind: 'derived' },
-    activeWorkDeduplication: 'simple',
-    delay: 'none',
-    priority: 'none',
-    operationIdentity: derivedAuthorityJobId,
+    operationIdentity: corporationRoleObservationJobId,
   }),
   diagnostic: contract({
     name: 'diagnostic',
@@ -194,16 +161,6 @@ const jobContracts = {
     delay: 'none',
     priority: 'none',
     operationIdentity: ({ operationId }) => operationId,
-  }),
-  'organization-owner-evidence': contract({
-    name: 'organization-owner-evidence',
-    payload: organizationOwnerEvidenceJobPayload,
-    attempts: 3,
-    durability: { kind: 'derived' },
-    activeWorkDeduplication: 'simple',
-    delay: 'none',
-    priority: 'none',
-    operationIdentity: organizationOwnerEvidenceJobId,
   }),
   'outbox-relay': contract({
     name: 'outbox-relay',
@@ -302,53 +259,17 @@ export function affiliationJobId(characterIds: readonly number[], refreshId?: st
   return buildAffiliationJobId(characterIds, refreshId ? z.uuid().parse(refreshId) : undefined)
 }
 
-export function corporationSourceEvidenceJobId(
-  candidate: z.infer<typeof corporationSourceEvidenceJobPayload>,
+export function corporationRoleObservationJobId(
+  candidate: z.infer<typeof corporationRoleObservationJobPayload>,
 ) {
-  const revisionDigest = createHash('sha256')
-    .update(candidate.roleEvidenceRevision)
-    .digest('hex')
-    .slice(0, 16)
   return [
-    'corporation-source-evidence',
-    candidate.organizationVersion,
-    candidate.authorizationGeneration,
-    candidate.sourceId,
-    candidate.sourceSubjectLifecycleId,
-    revisionDigest,
-  ].join('-')
-}
-
-export function organizationOwnerEvidenceJobId(
-  candidate: z.infer<typeof organizationOwnerEvidenceJobPayload>,
-) {
-  const revisionDigest = createHash('sha256')
-    .update(candidate.roleEvidenceRevision)
-    .digest('hex')
-    .slice(0, 16)
-  return [
-    'organization-owner-evidence',
-    candidate.organizationVersion,
-    candidate.authorizationGeneration,
-    candidate.grantId,
-    candidate.sourceSubjectLifecycleId,
-    revisionDigest,
-  ].join('-')
-}
-
-export function derivedAuthorityJobId(candidate: z.infer<typeof derivedAuthorityJobPayload>) {
-  const revisionDigest = createHash('sha256')
-    .update(candidate.roleEvidenceRevision ?? 'initial')
-    .digest('hex')
-    .slice(0, 16)
-  return [
-    'derived-authority',
+    'corporation-role-observation',
     candidate.organizationVersion,
     candidate.characterId,
-    candidate.authorizationGeneration,
     candidate.subjectLifecycleId,
-    candidate.sourceId ?? 'initial',
-    revisionDigest,
+    candidate.affiliationPeriodRevision,
+    candidate.authorityCorporationId,
+    candidate.expectedRoleRevision ?? 'initial',
   ].join('-')
 }
 
